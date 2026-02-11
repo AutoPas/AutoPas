@@ -1,19 +1,19 @@
 /**
- * @file LCC08Traversal.h
- * @author F. Gratl
- * @date 5/4/18
+ * @file LCC08NeighborListBuilding3B.h
+ * @author Alexander Haberl
+ * @date 2024/04/15
  */
 
 #pragma once
 
-#include "LCC08CellHandler.h"
+#include "LCC08CellHandlerNeighborList3B.h"
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellTraversals/C08BasedTraversal.h"
+#include "autopas/containers/cellTraversals/C08BasedNeighborListBuilding3B.h"
 
 namespace autopas {
 
 /**
- * This class provides the lc_c08 traversal.
+ * This class provides the lc_c08 traversal for 3-Body neighbor list building.
  *
  * The traversal uses the c08 base step performed on every single cell.
  * \image html C08.png "C08 base step in 2D. (dark blue cell = base cell)"
@@ -24,7 +24,8 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
+class LCC08NeighborListBuilding3B : public C08BasedNeighborListBuilding3B<ParticleCell, PairwiseFunctor>,
+                                    public LCTraversalInterface {
  public:
   /**
    * Constructor of the lc_c08 traversal.
@@ -36,12 +37,11 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, 
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit LCC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                          double interactionLength, const std::array<double, 3> &cellLength,
-                          DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                         dataLayout, useNewton3),
-
+  explicit LCC08NeighborListBuilding3B(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+                                       const double interactionLength, const std::array<double, 3> &cellLength,
+                                       DataLayoutOption dataLayout, bool useNewton3)
+      : C08BasedNeighborListBuilding3B<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
+                                                                      cellLength, dataLayout, useNewton3),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}
 
@@ -61,11 +61,11 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, 
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
+  LCC08CellHandlerNeighborList3B<ParticleCell, PairwiseFunctor> _cellHandler;
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void LCC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
+inline void LCC08NeighborListBuilding3B<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

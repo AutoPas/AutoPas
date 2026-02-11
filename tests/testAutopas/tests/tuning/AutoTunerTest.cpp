@@ -20,7 +20,6 @@
 #include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
-#include "autopas/utils/checkFunctorType.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -31,7 +30,9 @@
 
 using ::testing::_;
 
-TEST_F(AutoTunerTest, testAllConfigurations) {
+template <typename Functor>
+void AutoTunerTest::testAllConfigsOfType(Functor &functor, size_t numExpectedConfigs,
+                                         const autopas::InteractionTypeOption &interactionType) {
   const autopas::NumberSetFinite<double> cellSizeFactors({1});
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 20;
@@ -47,95 +48,40 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       .maxSamples = 2,
   };
 
-  // the NiceMock wrapper suppresses warnings from uninteresting function calls
-  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  // Need to resize cells during loading, otherwise we get exceptions in SoAFunctors
-  EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Molecule> &>(_), _, _, _))
-      .Times(testing::AtLeast(1))
-      .WillRepeatedly(
-          testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
+
+  // No triwise algorithm with ReferenceParticleCells yet
+  if (interactionType == autopas::InteractionTypeOption::pairwise) {
+    // Need to resize cells during loading, otherwise we get exceptions in SoAFunctors
+    EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Molecule> &>(_), _, _, _))
+        .Times(testing::AtLeast(1))
+        .WillRepeatedly(
+            testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
+  }
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<FMCell &>(_), _, _, _))
       .Times(testing::AtLeast(1))
       .WillRepeatedly(
           testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
+
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::InteractionTypeOption::pairwise);
+      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, interactionType);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::pairwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  tunerMap.emplace(interactionType, std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo,
+                                                                         verletRebuildFrequency, ""));
   autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
-  //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
   auto prevConfig = autopas::Configuration();
 
-  std::map<autopas::ContainerOption, size_t> configsPerContainer;
-
-  // number of configs manually counted:
-  //
-  // Direct Sum:            ds_sequential               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  configsPerContainer[autopas::ContainerOption::directSum] = 4;
-  // LinkedCells:           lc_c08                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_sliced                   (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_sliced_balanced          (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
-  //                        lc_sliced_c02               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_c18                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_c01                      (AoS <=> SoA, noNewton3)                             = 2
-  //                        lc_c01_combined_SoA         (SoA, noNewton3)                                     = 1
-  //                        lc_c04                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_c04_combined_SoA         (SoA, newton3 <=> noNewton3)                         = 2
-  //                        lc_c04_HCP                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  configsPerContainer[autopas::ContainerOption::linkedCells] = 37;
-  // same as linked Cells but load estimator stuff is currently missing
-  configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
-      configsPerContainer[autopas::ContainerOption::linkedCells] - 4;
-  // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                             = 2
-  configsPerContainer[autopas::ContainerOption::verletLists] = 2;
-  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics)   = 12
-  //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlc_c01                     (AoS <=> SoA, noNewton3)                             = 2
-  //                        vlc_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  configsPerContainer[autopas::ContainerOption::verletListsCells] = 30;
-  // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                             = 2
-  //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3)                             = 2
-  //                        vcl_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vcl_sliced_c02              (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vcl_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
-  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 24;
-  // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
-
-  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlp_c01                     (AoS <=> SoA, noNewton3)                             = 2
-  //                        vlp_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 22;
-
-  // Octree:                ot_c01                      (AoS <=> SoA, noNewton3)                             = 2
-  //                        ot_c18                      (AoS <=> SoA, newton3)                               = 2
-  configsPerContainer[autopas::ContainerOption::octree] = 4;
-
-  // check that there is an entry for every container.
-  ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size());
-
-  const size_t numberOfConfigs = std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
-                                                 [](auto acc, auto &pair) { return acc + pair.second; });
-  ASSERT_EQ(numberOfConfigs, searchSpace.size())
+  ASSERT_EQ(numExpectedConfigs, searchSpace.size())
       << "The calculated number of configurations is not equal to the cross product search space!";
   // total number of possible configurations * number of samples + last iteration after tuning
-  const size_t expectedNumberOfIterations = numberOfConfigs * autoTunerInfo.maxSamples + 1;
+  const size_t expectedNumberOfIterations = numExpectedConfigs * autoTunerInfo.maxSamples + 1;
 
   int collectedSamples = 0;
   int iterations = 0;
@@ -147,10 +93,10 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
 
     // Should not have any leaving particles in this test
     auto dummyParticlesVec = logicHandler.updateContainer();
-    stillTuning = logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+    stillTuning = logicHandler.computeInteractionsPipeline(&functor, interactionType);
     ++iterations;
     ++collectedSamples;
-    const auto currentConfig = tunerMap[autopas::InteractionTypeOption::pairwise]->getCurrentConfig();
+    const auto currentConfig = tunerMap[interactionType]->getCurrentConfig();
     if (stillTuning) {
       if (collectedSamples == 1) {
         EXPECT_NE(currentConfig, prevConfig)
@@ -164,6 +110,94 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   }
 
   EXPECT_EQ(expectedNumberOfIterations, iterations);
+}
+
+TEST_F(AutoTunerTest, testAllConfigurations) {
+  for (const auto &interactionType : autopas::InteractionTypeOption::getAllOptions()) {
+    if (interactionType == autopas::InteractionTypeOption::pairwise) {
+      std::map<autopas::ContainerOption, size_t> configsPerContainer;
+      // number of configs manually counted:
+      //
+      // Direct Sum:            ds_sequential               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      configsPerContainer[autopas::ContainerOption::directSum] = 4;
+      // LinkedCells:           lc_c08                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        lc_sliced                   (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        lc_sliced_balanced          (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
+      //                        lc_sliced_c02               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        lc_c18                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        lc_c01                      (AoS <=> SoA, noNewton3)                             = 2
+      //                        lc_c01_combined_SoA         (SoA, noNewton3)                                     = 1
+      //                        lc_c04                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        lc_c04_combined_SoA         (SoA, newton3 <=> noNewton3)                         = 2
+      //                        lc_c04_HCP                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      configsPerContainer[autopas::ContainerOption::linkedCells] = 37;
+      // same as linked Cells but load estimator stuff is currently missing
+      configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
+          configsPerContainer[autopas::ContainerOption::linkedCells] - 4;
+      // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                             = 2
+      configsPerContainer[autopas::ContainerOption::verletLists] = 2;
+      // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics)   = 12
+      //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        vlc_c01                     (AoS <=> SoA, noNewton3)                             = 2
+      //                        vlc_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      configsPerContainer[autopas::ContainerOption::verletListsCells] = 30;
+      // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                             = 2
+      //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3)                             = 2
+      //                        vcl_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        vcl_sliced_c02              (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        vcl_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
+      configsPerContainer[autopas::ContainerOption::verletClusterLists] = 24;
+      // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
+
+      // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      //                        vlp_c01                     (AoS <=> SoA, noNewton3)                             = 2
+      //                        vlp_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+      configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 22;
+
+      // Octree:                ot_c01                      (AoS <=> SoA, noNewton3)                             = 2
+      //                        ot_c18                      (AoS <=> SoA, newton3)                               = 2
+      configsPerContainer[autopas::ContainerOption::octree] = 4;
+
+      // check that there is an entry for every relevant container.
+      ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllPairwiseOptions().size());
+
+      const size_t numberOfConfigs = std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
+                                                     [](auto acc, auto &pair) { return acc + pair.second; });
+
+      testing::NiceMock<MockPairwiseFunctor<Molecule>> pairwiseFunctor;
+      testAllConfigsOfType(pairwiseFunctor, numberOfConfigs, interactionType);
+
+    } else if (interactionType == autopas::InteractionTypeOption::triwise) {
+      std::map<autopas::ContainerOption, size_t> configsPerContainer;
+      // number of configs manually counted:
+      //
+      // Direct Sum:            ds_sequential                     (AoS <=> SoA, newton3 <=> noNewton3)           = 4
+      configsPerContainer[autopas::ContainerOption::directSum] = 4;
+      // LinkedCells:           lc_c01                            (AoS <=> SoA, noNewton3)                       = 2
+      configsPerContainer[autopas::ContainerOption::linkedCells] = 2;
+      // VerletLists:           vl_list_iteration                 (AoS <=> SoA, noNewton3)                       = 2
+      //                        vl_pair_list_iteration_3b         (AoS, noNewton3)                               = 1
+      //                        vl_list_intersection_sorted_3b    (AoS, noNewton3)                               = 1
+      //                        vl_list_intersection_hashing_3b   (AoS, noNewton3)                               = 1
+      configsPerContainer[autopas::ContainerOption::verletLists] = 5;
+
+      // check that there is an entry for every relevant container.
+      ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllTriwiseOptions().size());
+
+      const size_t numberOfConfigs = std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
+                                                     [](auto acc, auto &pair) { return acc + pair.second; });
+
+      testing::NiceMock<MockTriwiseFunctor<Molecule>> triwiseFunctor;
+      testAllConfigsOfType(triwiseFunctor, numberOfConfigs, interactionType);
+    }
+  }
 }
 
 TEST_F(AutoTunerTest, testTuningIntervalIsFixed) {

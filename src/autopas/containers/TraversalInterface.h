@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/TraversalOption.h"
 
 namespace autopas {
