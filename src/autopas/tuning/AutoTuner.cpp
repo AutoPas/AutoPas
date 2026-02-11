@@ -242,6 +242,7 @@ void AutoTuner::addMeasurement(std::pair<long, long> sample, bool neighborListRe
   }
   AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
   if (neighborListRebuilt) {
+    // Avoiding adding zeros so that we can apply different strategies (mean, median and min) to find the optimum value.
     _samplesRebuildingNeighborLists.push_back(sample.first);
   }
   _samplesNotRebuildingNeighborLists.push_back(sample.second);
