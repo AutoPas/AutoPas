@@ -16,8 +16,7 @@
 
 class LoggerTest : public AutoPasTestBase {
  public:
-  void SetUp() override;
-  void TearDown() override;
+  LoggerTest() : AutoPasTestBase(stream) {}
   int testLevel(autopas::Logger::LogLevel level, bool enabled);
 
  private:
@@ -26,18 +25,18 @@ class LoggerTest : public AutoPasTestBase {
 
 // Helper:
 
-class ScopedRedirect {
- public:
-  ScopedRedirect(std::ostream &inOriginal, std::ostream &inRedirect) : mOriginal(inOriginal), mRedirect(inRedirect) {
-    mOriginal.rdbuf(mRedirect.rdbuf(mOriginal.rdbuf()));
-  }
-
-  ~ScopedRedirect() { mOriginal.rdbuf(mRedirect.rdbuf(mOriginal.rdbuf())); }
-
- private:
-  ScopedRedirect(const ScopedRedirect &);
-  ScopedRedirect &operator=(const ScopedRedirect &);
-
-  std::ostream &mOriginal;
-  std::ostream &mRedirect;
-};
+// class ScopedRedirect {
+//  public:
+//   ScopedRedirect(std::ostream &inOriginal, std::ostream &inRedirect) : mOriginal(inOriginal), mRedirect(inRedirect) {
+//     mOriginal.rdbuf(mRedirect.rdbuf(mOriginal.rdbuf()));
+//   }
+//
+//   ~ScopedRedirect() { mOriginal.rdbuf(mRedirect.rdbuf(mOriginal.rdbuf())); }
+//
+//  private:
+//   ScopedRedirect(const ScopedRedirect &);
+//   ScopedRedirect &operator=(const ScopedRedirect &);
+//
+//   std::ostream &mOriginal;
+//   std::ostream &mRedirect;
+// };

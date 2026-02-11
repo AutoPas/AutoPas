@@ -12,7 +12,8 @@
 
 class AutoPasTestBase : public testing::Test {
  public:
-  AutoPasTestBase() { autopas::Logger::create(); }
+  explicit AutoPasTestBase(std::ostream &os = std::cout) : _logger(os) {}
 
-  virtual ~AutoPasTestBase() { autopas::Logger::unregister(); }
+ private:
+  autopas::Logger _logger;
 };

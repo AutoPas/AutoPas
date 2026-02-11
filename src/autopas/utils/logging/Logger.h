@@ -29,36 +29,53 @@ namespace autopas {
  * You can create the spdlog's logger or delete it using the provided functions.
  */
 class Logger {
- private:
   static inline auto loggerName() { return "AutoPasLog"; };
 
  public:
+  explicit Logger(std::ostream &logOutputStream = std::cout) {
+    if (_instanceCount.fetch_add(1) == 0) {
+      // Only first AutoPas instance creates the logger
+      create(logOutputStream);
+    }
+  }
+
+  explicit Logger(const std::string &filename) {
+    if (_instanceCount.fetch_add(1) == 0) {
+      // Only first AutoPas instance creates the logger
+      create(filename);
+    }
+  }
+
+  ~Logger() {
+    if (_instanceCount.fetch_sub(1) == 1) {
+      // Only the last AutoPas instance shuts down the logger
+      unregister();
+    }
+  }
+
   /**
    * Typalias for log levels.
    */
   using LogLevel = spdlog::level::level_enum;
-  /**
-   * create a logger writing to the file system
-   * @param filename
-   */
-  static void create(std::string &filename) {
-    // drop an already registered Logger if it exists
-    if (spdlog::get(loggerName())) {
-      unregister();
-    }
-    spdlog::basic_logger_mt(loggerName(), filename);
-  }
 
   /**
-   * create a logger with an arbitrary ostream.
+   * Get a pointer to the actual logger object.
+   * @return Pointer to logger.
+   */
+  static auto get() { return spdlog::get(loggerName()); }
+
+ private:
+  static inline std::atomic<size_t> _instanceCount{0};
+
+  /**
+   * Create a logger with an arbitrary ostream.
    * default is std::cout
    * @param oss
    */
   static void create(std::ostream &oss = std::cout) {
-    // drop an already registered Logger if it exists
-    if (spdlog::get(loggerName())) {
-      unregister();
-    }
+    // drops an already registered Logger if it exists
+    unregister();
+
     std::shared_ptr<spdlog::sinks::sink> ostreamSink;
 #ifdef AUTOPAS_COLORED_CONSOLE_LOGGING
     if (oss.rdbuf() == std::cout.rdbuf()) {
@@ -72,21 +89,28 @@ class Logger {
     ostreamSink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
 #endif
     auto logger = std::make_shared<spdlog::logger>(loggerName(), ostreamSink);
+    // The logger is normally only flushed on successful program termination.
+    // This line ensures flushing when log messages of level warning or more severe are created.
+    logger->flush_on(spdlog::level::warn);
     spdlog::register_logger(logger);
   }
 
   /**
-   * removes the logger. This should only be done at teardown of the simulation or
-   * for tests.
-   * logging after the logger has been removed and no new logger has been defined
-   * will lead to undefined behavior!!!
+   * Static: Create a file logger
    */
-  static void unregister() { spdlog::drop(loggerName()); }
+  static void create(const std::string &filename) {
+    unregister();
+    // basic_logger_mt creates a simple file sink
+    auto logger = spdlog::basic_logger_mt(loggerName(), filename);
+    logger->flush_on(spdlog::level::warn);
+  }
 
   /**
-   * Get a pointer to the actual logger object.
-   * @return Pointer to logger.
+   * Removes the logger. This should only be done at teardown of the simulation or
+   * for tests.
+   * Logging after the logger has been removed and no new logger has been defined
+   * will lead to undefined behavior!
    */
-  static auto get() { return spdlog::get(loggerName()); }
+  static void unregister() { spdlog::drop(loggerName()); }
 };  // class Logger
 }  // namespace autopas

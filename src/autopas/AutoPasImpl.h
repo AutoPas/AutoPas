@@ -15,7 +15,6 @@
 // The LogicHandler includes dependencies to wide parts of AutoPas, making it expensive to compile and thus is moved
 // here from AutoPasDecl.h.
 #include "autopas/AutoPasDecl.h"
-#include "autopas/InstanceCounter.h"
 #include "autopas/LogicHandler.h"
 #include "autopas/Version.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
@@ -33,27 +32,13 @@
 namespace autopas {
 
 template <class Particle_T>
-AutoPas<Particle_T>::AutoPas(std::ostream &logOutputStream) {
-  // count the number of autopas instances. This is needed to ensure that the autopas
-  // logger is not unregistered while other instances are still using it.
-  InstanceCounter::count++;
-  // remove potentially existing logger
-  autopas::Logger::unregister();
-  // initialize the Logger
-  autopas::Logger::create(logOutputStream);
-  // The logger is normally only flushed on successful program termination.
-  // This line ensures flushing when log messages of level warning or more severe are created.
-  autopas::Logger::get()->flush_on(spdlog::level::warn);
-}
+AutoPas<Particle_T>::AutoPas(std::ostream &logOutputStream) : _logger(logOutputStream) {}
 
 template <class Particle_T>
-AutoPas<Particle_T>::~AutoPas() {
-  InstanceCounter::count--;
-  if (InstanceCounter::count == 0) {
-    // remove the Logger from the registry. Do this only if we have no other autopas instances running.
-    autopas::Logger::unregister();
-  }
-}
+AutoPas<Particle_T>::AutoPas(const std::string &logFileName) : _logger(logFileName) {}
+
+template <class Particle_T>
+AutoPas<Particle_T>::~AutoPas() = default;
 
 template <class Particle_T>
 AutoPas<Particle_T> &AutoPas<Particle_T>::operator=(AutoPas &&other) noexcept {

@@ -6,10 +6,6 @@
 
 #include "LoggerTest.h"
 
-void LoggerTest::SetUp() { autopas::Logger::create(stream); }
-
-void LoggerTest::TearDown() { autopas::Logger::unregister(); }
-
 /**
  * Counts how many log levels print when the logger is set to the given level.
  * @param level
@@ -20,7 +16,7 @@ int LoggerTest::testLevel(autopas::Logger::LogLevel level, bool enabled = true) 
   autopas::Logger::get()->set_level(level);
   if (not enabled) autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
 
-  stream.flush();
+  stream.str("");
   stream.clear();
 
   AutoPasLog(TRACE, "trace");

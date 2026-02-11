@@ -80,6 +80,8 @@ class AutoPas {
    */
   explicit AutoPas(std::ostream &logOutputStream = std::cout);
 
+  explicit AutoPas(const std::string &logFileName);
+
   ~AutoPas();
 
   /**
@@ -1114,6 +1116,11 @@ class AutoPas {
   size_t getSortingThreshold() const { return _sortingThreshold; }
 
  private:
+  /**
+   * Shared logger among AutoPas instances
+   */
+  Logger _logger;
+
   autopas::ParticleContainerInterface<Particle_T> &getContainer();
 
   const autopas::ParticleContainerInterface<Particle_T> &getContainer() const;
