@@ -38,7 +38,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _samplesNotRebuildingNeighborLists(autoTunerInfo.maxSamples),
       _searchSpace(searchSpace),
       _configQueue(searchSpace.begin(), searchSpace.end()),
-      _tuningResultLogger(outputSuffix),
+      _tuningResultLogger(outputSuffix, autoTunerInfo.tuningMetric),
       _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix),
       _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)) {
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
