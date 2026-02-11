@@ -109,7 +109,7 @@ bool almostEqualParticlesUlps(const auto &lhs, const auto &rhs,
  *
  * @param ulpDistance Maximum allowed distance in ULPs forwarded to the underlying comparisons.
  */
-MATCHER_P(ParticleAlmostEqUlps, ulpDistance,
+MATCHER_P(ParticleUlpsEq, ulpDistance,
           "Comparing if two particles are almost equal to each other given an ULP distance") {
   const auto &lhs = std::get<0>(arg);
   const auto &rhs = std::get<1>(arg);
