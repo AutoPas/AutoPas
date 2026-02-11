@@ -1051,7 +1051,7 @@ class LJFunctorHWY
 
     if constexpr (useMixing) {
       fillPhysicsRegisters<remainderI, remainderJ, reversed, vecPattern>(typeID1Ptr, typeID2Ptr, epsilon24s,
-                                                                         sigmaSquareds, shift6s, j, restI, restJ);
+                                                                         sigmaSquareds, shift6s, restI, restJ);
     } else {
       epsilon24s = highway::Set(tag_double, _epsilon24AoS);
       sigmaSquareds = highway::Set(tag_double, _sigmaSquareAoS);
@@ -1065,7 +1065,7 @@ class LJFunctorHWY
     VectorDouble z2;
     MaskDouble ownedMaskJ;
 
-    fillJRegisters<remainderJ, vecPattern>(x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedMaskJ, restJ);
+    fillJRegisters<remainderJ, vecPattern>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedMaskJ, restJ);
 
     // distance calculations
     const auto drX = highway::Sub(x1, x2);
@@ -1109,7 +1109,7 @@ class LJFunctorHWY
     fzAcc = highway::Add(fzAcc, fz);
 
     if constexpr (newton3) {
-      handleNewton3Reduction<remainderJ, reversed, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, i, j, restJ);
+      handleNewton3Reduction<remainderJ, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, i, j, restJ);
     }
 
     if constexpr (calculateGlobals) {
