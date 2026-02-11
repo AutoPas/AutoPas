@@ -32,23 +32,34 @@ class Logger {
   static inline auto loggerName() { return "AutoPasLog"; };
 
  public:
+  /**
+   * Constructor for a Logger that logs to an output stream. Per default to std::cout.
+   * @param logOutputStream
+   */
   explicit Logger(std::ostream &logOutputStream = std::cout) {
+    // Only first AutoPas instance creates the logger
     if (_instanceCount.fetch_add(1) == 0) {
-      // Only first AutoPas instance creates the logger
       create(logOutputStream);
     }
   }
 
+  /**
+   * Constructor for a Logger that logs to a file.
+   * @param filename
+   */
   explicit Logger(const std::string &filename) {
+    // Only first AutoPas instance creates the logger
     if (_instanceCount.fetch_add(1) == 0) {
-      // Only first AutoPas instance creates the logger
       create(filename);
     }
   }
 
+  /**
+   * Destructor that shuts down the logger if this was the last instance.
+   */
   ~Logger() {
+    // Only the last AutoPas instance shuts down the logger
     if (_instanceCount.fetch_sub(1) == 1) {
-      // Only the last AutoPas instance shuts down the logger
       unregister();
     }
   }
@@ -65,11 +76,14 @@ class Logger {
   static auto get() { return spdlog::get(loggerName()); }
 
  private:
+  /**
+   * Atomic instance counter to avoid shutting down the AutoPas logger when another instance is still running.
+   */
   static inline std::atomic<size_t> _instanceCount{0};
 
   /**
    * Create a logger with an arbitrary ostream.
-   * default is std::cout
+   * Default is std::cout
    * @param oss
    */
   static void create(std::ostream &oss = std::cout) {
