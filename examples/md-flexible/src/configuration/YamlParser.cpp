@@ -240,7 +240,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         auto strArg = node[key].as<std::string>();
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
-        if (strArg.find("at") != std::string::npos or strArg.find("axilrod-teller") != std::string::npos) {
+        if (strArg.find("atm") != std::string::npos or strArg.find("axilrod-teller-muto") != std::string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
         } else {
           throw std::runtime_error("Unrecognized triwise functor!");
@@ -297,6 +297,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.deltaT.description;
 
         config.deltaT.value = node[key].as<double>();
+      } else if (key == config.energySensorOption.name) {
+        expected = "Exactly one energy sensor out of the possible options.";
+        description = config.energySensorOption.description;
+        const auto parsedOptions = autopas::EnergySensorOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one energy sensor!"));
+        config.energySensorOption.value = *parsedOptions.begin();
       } else if (key == config.pauseSimulationDuringTuning.name) {
         expected = "Boolean Value";
         description = config.pauseSimulationDuringTuning.description;
@@ -355,6 +361,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.tuningSamples.value = node[key].as<int>();
         if (config.tuningSamples.value < 1) {
           throw std::runtime_error("Tuning samples has to be a positive integer!");
+        }
+      } else if (key == config.earlyStoppingFactor.name) {
+        expected = "Floating point value > 1";
+        description = config.earlyStoppingFactor.description;
+
+        config.earlyStoppingFactor.value = node[key].as<double>();
+        if (config.earlyStoppingFactor.value <= 1) {
+          throw std::runtime_error("EarlyStoppingFactor has to be greater than 1!");
         }
       } else if (key == config.useLOESSSmoothening.name) {
         expected = "Boolean Value";
@@ -523,11 +537,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.verletRebuildFrequency.value < 1) {
           throw std::runtime_error("Verlet rebuild frequency has to be a positive integer >= 1!");
         }
-      } else if (key == config.verletSkinRadiusPerTimestep.name) {
+      } else if (key == config.verletSkinRadius.name) {
         expected = "Positive floating-point value.";
-        description = config.verletSkinRadiusPerTimestep.description;
+        description = config.verletSkinRadius.description;
 
-        config.verletSkinRadiusPerTimestep.value = node[key].as<double>();
+        config.verletSkinRadius.value = node[key].as<double>();
       } else if (key == config.fastParticlesThrow.name) {
         expected = "Boolean Value";
         description = config.fastParticlesThrow.description;
@@ -617,7 +631,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                                                  siteErrors, false);
           config.addLJParametersToSite(siteID, epsilon, sigma);
 
-          // Check Axilrod-Teller parameter
+          // Check Axilrod-Teller-Muto parameter
           const auto nu =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.nuMap.name.c_str(), siteErrors, false);
           config.addATParametersToSite(siteID, nu);

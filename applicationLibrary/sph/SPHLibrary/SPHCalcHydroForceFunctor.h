@@ -13,18 +13,17 @@ namespace sphLib {
 /**
  * Class that defines the hydrodynamic force functor.
  * It is used to calculate the force based on the given SPH kernels.
- * @tparam Particle
- * @tparam ParticleCell
+ * @tparam Particle_T
  */
-template <class Particle>
-class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcHydroForceFunctor<Particle>> {
+template <class Particle_T>
+class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle_T, SPHCalcHydroForceFunctor<Particle_T>> {
  public:
   /// soa arrays type
-  using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAArraysType = typename Particle_T::SoAArraysType;
 
   SPHCalcHydroForceFunctor()
       // the actual cutoff used is dynamic. 0 is used to pass the sanity check.
-      : autopas::PairwiseFunctor<Particle, SPHCalcHydroForceFunctor<Particle>>(0.){};
+      : autopas::PairwiseFunctor<Particle_T, SPHCalcHydroForceFunctor<Particle_T>>(0.){};
 
   virtual std::string getName() override { return "SPHHydroForceFunctor"; }
 
@@ -43,7 +42,7 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCa
    * @param j second particle of the interaction
    * @param newton3 defines whether or whether not to use newton 3
    */
-  void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
+  void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3 = true) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy()) {
@@ -112,25 +111,25 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCa
     using namespace autopas::utils::ArrayMath::literals;
     if (soa.size() == 0) return;
 
-    double *const __restrict massptr = soa.template begin<Particle::AttributeNames::mass>();
-    double *const __restrict densityptr = soa.template begin<Particle::AttributeNames::density>();
-    double *const __restrict smthptr = soa.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict soundSpeedptr = soa.template begin<Particle::AttributeNames::soundSpeed>();
-    double *const __restrict pressureptr = soa.template begin<Particle::AttributeNames::pressure>();
-    double *const __restrict vsigmaxptr = soa.template begin<Particle::AttributeNames::vsigmax>();
-    double *const __restrict engDotptr = soa.template begin<Particle::AttributeNames::engDot>();
+    double *const __restrict massptr = soa.template begin<Particle_T::AttributeNames::mass>();
+    double *const __restrict densityptr = soa.template begin<Particle_T::AttributeNames::density>();
+    double *const __restrict smthptr = soa.template begin<Particle_T::AttributeNames::smth>();
+    double *const __restrict soundSpeedptr = soa.template begin<Particle_T::AttributeNames::soundSpeed>();
+    double *const __restrict pressureptr = soa.template begin<Particle_T::AttributeNames::pressure>();
+    double *const __restrict vsigmaxptr = soa.template begin<Particle_T::AttributeNames::vsigmax>();
+    double *const __restrict engDotptr = soa.template begin<Particle_T::AttributeNames::engDot>();
 
-    double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict velXptr = soa.template begin<Particle::AttributeNames::velX>();
-    double *const __restrict velYptr = soa.template begin<Particle::AttributeNames::velY>();
-    double *const __restrict velZptr = soa.template begin<Particle::AttributeNames::velZ>();
-    double *const __restrict accXptr = soa.template begin<Particle::AttributeNames::accX>();
-    double *const __restrict accYptr = soa.template begin<Particle::AttributeNames::accY>();
-    double *const __restrict accZptr = soa.template begin<Particle::AttributeNames::accZ>();
+    double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
+    double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
+    double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
+    double *const __restrict velXptr = soa.template begin<Particle_T::AttributeNames::velX>();
+    double *const __restrict velYptr = soa.template begin<Particle_T::AttributeNames::velY>();
+    double *const __restrict velZptr = soa.template begin<Particle_T::AttributeNames::velZ>();
+    double *const __restrict accXptr = soa.template begin<Particle_T::AttributeNames::accX>();
+    double *const __restrict accYptr = soa.template begin<Particle_T::AttributeNames::accY>();
+    double *const __restrict accZptr = soa.template begin<Particle_T::AttributeNames::accZ>();
 
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
     for (unsigned int indexFirst = 0; indexFirst < soa.size(); ++indexFirst) {
       // checks whether particle i is owned.
@@ -232,44 +231,44 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCa
     using namespace autopas::utils::ArrayMath::literals;
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
-    double *const __restrict massptr1 = soa1.template begin<Particle::AttributeNames::mass>();
-    double *const __restrict densityptr1 = soa1.template begin<Particle::AttributeNames::density>();
-    double *const __restrict smthptr1 = soa1.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict soundSpeedptr1 = soa1.template begin<Particle::AttributeNames::soundSpeed>();
-    double *const __restrict pressureptr1 = soa1.template begin<Particle::AttributeNames::pressure>();
-    double *const __restrict vsigmaxptr1 = soa1.template begin<Particle::AttributeNames::vsigmax>();
-    double *const __restrict engDotptr1 = soa1.template begin<Particle::AttributeNames::engDot>();
+    double *const __restrict massptr1 = soa1.template begin<Particle_T::AttributeNames::mass>();
+    double *const __restrict densityptr1 = soa1.template begin<Particle_T::AttributeNames::density>();
+    double *const __restrict smthptr1 = soa1.template begin<Particle_T::AttributeNames::smth>();
+    double *const __restrict soundSpeedptr1 = soa1.template begin<Particle_T::AttributeNames::soundSpeed>();
+    double *const __restrict pressureptr1 = soa1.template begin<Particle_T::AttributeNames::pressure>();
+    double *const __restrict vsigmaxptr1 = soa1.template begin<Particle_T::AttributeNames::vsigmax>();
+    double *const __restrict engDotptr1 = soa1.template begin<Particle_T::AttributeNames::engDot>();
 
-    double *const __restrict xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict velXptr1 = soa1.template begin<Particle::AttributeNames::velX>();
-    double *const __restrict velYptr1 = soa1.template begin<Particle::AttributeNames::velY>();
-    double *const __restrict velZptr1 = soa1.template begin<Particle::AttributeNames::velZ>();
-    double *const __restrict accXptr1 = soa1.template begin<Particle::AttributeNames::accX>();
-    double *const __restrict accYptr1 = soa1.template begin<Particle::AttributeNames::accY>();
-    double *const __restrict accZptr1 = soa1.template begin<Particle::AttributeNames::accZ>();
+    double *const __restrict xptr1 = soa1.template begin<Particle_T::AttributeNames::posX>();
+    double *const __restrict yptr1 = soa1.template begin<Particle_T::AttributeNames::posY>();
+    double *const __restrict zptr1 = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    double *const __restrict velXptr1 = soa1.template begin<Particle_T::AttributeNames::velX>();
+    double *const __restrict velYptr1 = soa1.template begin<Particle_T::AttributeNames::velY>();
+    double *const __restrict velZptr1 = soa1.template begin<Particle_T::AttributeNames::velZ>();
+    double *const __restrict accXptr1 = soa1.template begin<Particle_T::AttributeNames::accX>();
+    double *const __restrict accYptr1 = soa1.template begin<Particle_T::AttributeNames::accY>();
+    double *const __restrict accZptr1 = soa1.template begin<Particle_T::AttributeNames::accZ>();
 
-    double *const __restrict massptr2 = soa2.template begin<Particle::AttributeNames::mass>();
-    double *const __restrict densityptr2 = soa2.template begin<Particle::AttributeNames::density>();
-    double *const __restrict smthptr2 = soa2.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict soundSpeedptr2 = soa2.template begin<Particle::AttributeNames::soundSpeed>();
-    double *const __restrict pressureptr2 = soa2.template begin<Particle::AttributeNames::pressure>();
-    double *const __restrict vsigmaxptr2 = soa2.template begin<Particle::AttributeNames::vsigmax>();
-    double *const __restrict engDotptr2 = soa2.template begin<Particle::AttributeNames::engDot>();
+    double *const __restrict massptr2 = soa2.template begin<Particle_T::AttributeNames::mass>();
+    double *const __restrict densityptr2 = soa2.template begin<Particle_T::AttributeNames::density>();
+    double *const __restrict smthptr2 = soa2.template begin<Particle_T::AttributeNames::smth>();
+    double *const __restrict soundSpeedptr2 = soa2.template begin<Particle_T::AttributeNames::soundSpeed>();
+    double *const __restrict pressureptr2 = soa2.template begin<Particle_T::AttributeNames::pressure>();
+    double *const __restrict vsigmaxptr2 = soa2.template begin<Particle_T::AttributeNames::vsigmax>();
+    double *const __restrict engDotptr2 = soa2.template begin<Particle_T::AttributeNames::engDot>();
 
-    double *const __restrict xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict velXptr2 = soa2.template begin<Particle::AttributeNames::velX>();
-    double *const __restrict velYptr2 = soa2.template begin<Particle::AttributeNames::velY>();
-    double *const __restrict velZptr2 = soa2.template begin<Particle::AttributeNames::velZ>();
-    double *const __restrict accXptr2 = soa2.template begin<Particle::AttributeNames::accX>();
-    double *const __restrict accYptr2 = soa2.template begin<Particle::AttributeNames::accY>();
-    double *const __restrict accZptr2 = soa2.template begin<Particle::AttributeNames::accZ>();
+    double *const __restrict xptr2 = soa2.template begin<Particle_T::AttributeNames::posX>();
+    double *const __restrict yptr2 = soa2.template begin<Particle_T::AttributeNames::posY>();
+    double *const __restrict zptr2 = soa2.template begin<Particle_T::AttributeNames::posZ>();
+    double *const __restrict velXptr2 = soa2.template begin<Particle_T::AttributeNames::velX>();
+    double *const __restrict velYptr2 = soa2.template begin<Particle_T::AttributeNames::velY>();
+    double *const __restrict velZptr2 = soa2.template begin<Particle_T::AttributeNames::velZ>();
+    double *const __restrict accXptr2 = soa2.template begin<Particle_T::AttributeNames::accX>();
+    double *const __restrict accYptr2 = soa2.template begin<Particle_T::AttributeNames::accY>();
+    double *const __restrict accZptr2 = soa2.template begin<Particle_T::AttributeNames::accZ>();
 
-    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
-    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
 
     for (unsigned int indexFirst = 0; indexFirst < soa1.size(); ++indexFirst) {
       // checks whether particle i is owned.
@@ -376,30 +375,30 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCa
     using namespace autopas::utils::ArrayMath::literals;
     if (soa.size() == 0) return;
 
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
     // checks whether particle i is owned.
     if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
       return;
     }
 
-    double *const __restrict massptr = soa.template begin<Particle::AttributeNames::mass>();
-    double *const __restrict densityptr = soa.template begin<Particle::AttributeNames::density>();
-    double *const __restrict smthptr = soa.template begin<Particle::AttributeNames::smth>();
-    double *const __restrict soundSpeedptr = soa.template begin<Particle::AttributeNames::soundSpeed>();
-    double *const __restrict pressureptr = soa.template begin<Particle::AttributeNames::pressure>();
-    double *const __restrict vsigmaxptr = soa.template begin<Particle::AttributeNames::vsigmax>();
-    double *const __restrict engDotptr = soa.template begin<Particle::AttributeNames::engDot>();
+    double *const __restrict massptr = soa.template begin<Particle_T::AttributeNames::mass>();
+    double *const __restrict densityptr = soa.template begin<Particle_T::AttributeNames::density>();
+    double *const __restrict smthptr = soa.template begin<Particle_T::AttributeNames::smth>();
+    double *const __restrict soundSpeedptr = soa.template begin<Particle_T::AttributeNames::soundSpeed>();
+    double *const __restrict pressureptr = soa.template begin<Particle_T::AttributeNames::pressure>();
+    double *const __restrict vsigmaxptr = soa.template begin<Particle_T::AttributeNames::vsigmax>();
+    double *const __restrict engDotptr = soa.template begin<Particle_T::AttributeNames::engDot>();
 
-    double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict velXptr = soa.template begin<Particle::AttributeNames::velX>();
-    double *const __restrict velYptr = soa.template begin<Particle::AttributeNames::velY>();
-    double *const __restrict velZptr = soa.template begin<Particle::AttributeNames::velZ>();
-    double *const __restrict accXptr = soa.template begin<Particle::AttributeNames::accX>();
-    double *const __restrict accYptr = soa.template begin<Particle::AttributeNames::accY>();
-    double *const __restrict accZptr = soa.template begin<Particle::AttributeNames::accZ>();
+    double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
+    double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
+    double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
+    double *const __restrict velXptr = soa.template begin<Particle_T::AttributeNames::velX>();
+    double *const __restrict velYptr = soa.template begin<Particle_T::AttributeNames::velY>();
+    double *const __restrict velZptr = soa.template begin<Particle_T::AttributeNames::velZ>();
+    double *const __restrict accXptr = soa.template begin<Particle_T::AttributeNames::accX>();
+    double *const __restrict accYptr = soa.template begin<Particle_T::AttributeNames::accY>();
+    double *const __restrict accZptr = soa.template begin<Particle_T::AttributeNames::accZ>();
 
     double localvsigmax = 0.;
     double localengdotsum = 0.;
@@ -499,38 +498,39 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCa
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 17>{
-        Particle::AttributeNames::mass,          Particle::AttributeNames::density,
-        Particle::AttributeNames::smth,          Particle::AttributeNames::soundSpeed,
-        Particle::AttributeNames::pressure,      Particle::AttributeNames::vsigmax,
-        Particle::AttributeNames::engDot,        Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY,          Particle::AttributeNames::posZ,
-        Particle::AttributeNames::velX,          Particle::AttributeNames::velY,
-        Particle::AttributeNames::velZ,          Particle::AttributeNames::accX,
-        Particle::AttributeNames::accY,          Particle::AttributeNames::accZ,
-        Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 17>{
+        Particle_T::AttributeNames::mass,          Particle_T::AttributeNames::density,
+        Particle_T::AttributeNames::smth,          Particle_T::AttributeNames::soundSpeed,
+        Particle_T::AttributeNames::pressure,      Particle_T::AttributeNames::vsigmax,
+        Particle_T::AttributeNames::engDot,        Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,          Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::velX,          Particle_T::AttributeNames::velY,
+        Particle_T::AttributeNames::velZ,          Particle_T::AttributeNames::accX,
+        Particle_T::AttributeNames::accY,          Particle_T::AttributeNames::accZ,
+        Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 12>{
-        Particle::AttributeNames::mass,     Particle::AttributeNames::density,
-        Particle::AttributeNames::smth,     Particle::AttributeNames::soundSpeed,
-        Particle::AttributeNames::pressure, Particle::AttributeNames::posX,
-        Particle::AttributeNames::posY,     Particle::AttributeNames::posZ,
-        Particle::AttributeNames::velX,     Particle::AttributeNames::velY,
-        Particle::AttributeNames::velZ,     Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 12>{
+        Particle_T::AttributeNames::mass,     Particle_T::AttributeNames::density,
+        Particle_T::AttributeNames::smth,     Particle_T::AttributeNames::soundSpeed,
+        Particle_T::AttributeNames::pressure, Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,     Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::velX,     Particle_T::AttributeNames::velY,
+        Particle_T::AttributeNames::velZ,     Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 6>{
-        Particle::AttributeNames::vsigmax, Particle::AttributeNames::engDot, Particle::AttributeNames::accX,
-        Particle::AttributeNames::accY,    Particle::AttributeNames::accZ,   Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 6>{
+        Particle_T::AttributeNames::vsigmax, Particle_T::AttributeNames::engDot,
+        Particle_T::AttributeNames::accX,    Particle_T::AttributeNames::accY,
+        Particle_T::AttributeNames::accZ,    Particle_T::AttributeNames::ownershipState};
   }
 };
 

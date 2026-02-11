@@ -15,29 +15,29 @@
  * Empty Functor, this functor is empty and can be used for testing purposes.
  * It returns that it is applicable for everything.
  */
-template <class Particle>
-class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle, EmptyPairwiseFunctor<Particle>> {
+template <class Particle_T>
+class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, EmptyPairwiseFunctor<Particle_T>> {
  private:
  public:
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAArraysType = typename Particle_T::SoAArraysType;
 
   /**
    * Default constructor.
    */
-  EmptyPairwiseFunctor() : autopas::PairwiseFunctor<Particle, EmptyPairwiseFunctor<Particle>>(0.){};
+  EmptyPairwiseFunctor() : autopas::PairwiseFunctor<Particle_T, EmptyPairwiseFunctor<Particle_T>>(0.){};
 
   /**
    * @copydoc autopas::PairwiseFunctor::AoSFunctor()
    */
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {}
+  void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {}
 
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    */
-  void SoAFunctorSingle(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {}
+  void SoAFunctorSingle(autopas::SoAView<typename Particle_T::SoAArraysType> soa, bool newton3) override {}
 
   /**
    * SoAFunctor for a pair of SoAs.
@@ -45,13 +45,13 @@ class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle, EmptyPair
    * @param soa2 A second autopas::SoAView for the Functor
    * @param newton3 A boolean to indicate whether to allow newton3
    */
-  void SoAFunctorPair(autopas::SoAView<typename Particle::SoAArraysType> soa1,
-                      autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3) override {}
+  void SoAFunctorPair(autopas::SoAView<typename Particle_T::SoAArraysType> soa1,
+                      autopas::SoAView<typename Particle_T::SoAArraysType> soa2, bool newton3) override {}
 
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    */
-  void SoAFunctorVerlet(autopas::SoAView<typename Particle::SoAArraysType> soa, size_t indexFirst,
+  void SoAFunctorVerlet(autopas::SoAView<typename Particle_T::SoAArraysType> soa, size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override{};
 

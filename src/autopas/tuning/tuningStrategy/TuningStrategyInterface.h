@@ -95,16 +95,17 @@ class TuningStrategyInterface {
   virtual void rejectConfiguration(const Configuration &configuration, bool indefinitely){};
 
   /**
-   * Indicate whether the strategy needs smoothed values of homogeneity and max density
+   * Indicate whether the strategy needs domain similarity statistics.
    * @return
    */
-  virtual bool needsSmoothedHomogeneityAndMaxDensity() const { return false; }
+  [[nodiscard]] virtual bool needsDomainSimilarityStatistics() const { return false; }
 
   /**
-   * Method to pass smoothed homogeneity and the maximal density to the tuning strategy.
-   * @param homogeneity
-   * @param maxDensity
+   * Method to pass smoothed domain similarity statistics (particle-dependent bin standard deviation in density and max
+   * density) to the tuning strategy. See LiveInfo::gather for meaning of particle dependent bin.
+   * @param pdBinStdDevDensity particle-dependent bin density standard deviation.
+   * @param pdBinMaxDensity particle-dependent bin maximum density.
    */
-  virtual void receiveSmoothedHomogeneityAndMaxDensity(double homogeneity, double maxDensity){};
+  virtual void receiveDomainSimilarityStatistics(double pdBinStdDevDensity, double pdBinMaxDensity){};
 };
 }  // namespace autopas

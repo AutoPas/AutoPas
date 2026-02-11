@@ -34,8 +34,10 @@ These classes suggest how to calculate and store the interactions, as well as so
 The critical elements to implement are:
 - `AoSFunctor()`:
   This function defines how particles interact if both are stored in the Array-of-Structs format, which is exactly what was previously defined as particle class.
+  This always has to be implemented.
 - All versions of `SoAFunctor()`:
   This function defines the same interaction as `AoSFunctor`, but optimized for different data structure layouts.
+  It is possible to not implement this and avoid its usage by never allowing `DataLayout::soa`.
 - `allowsNewton3()` and `allowsNonNewton3()`:
   Indicator functions to tell AutoPas if the functor supports optimizations using Newton's third law of motion.
   Should the functor calculate global forces, e.g. potential energy or virial, this must be implemented in a way that supports a mixture of all supported Newton3 modes within one iteration.
@@ -52,7 +54,7 @@ The critical elements to implement are:
   This function should return the name of the functor as a `std::string`.
 
 As an example for a pairwise functor see [`SPHCalcDensityFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/sph/SPHLibrary/SPHCalcDensityFunctor.h).
-As an example for a triwise functor see [`AxilrodTellerFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/AxilrodTellerFunctor.h).
+As an example for a triwise functor see [`AxilrodTellerMutoFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h).
 
 ### Using multiple functors
 AutoPas is able to work with simulation setups that use multiple functors of the same or different interaction types to describe different forces.

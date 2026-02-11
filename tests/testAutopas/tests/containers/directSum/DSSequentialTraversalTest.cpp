@@ -21,7 +21,7 @@ TEST_F(DSSequentialTraversalTest, testTraversalTriwiseAoS) { testTraversalTriwis
 TEST_F(DSSequentialTraversalTest, testTraversalTriwiseSoA) { testTraversalTriwise(true); }
 
 std::vector<FPCell> DSSequentialTraversalTest::fillParticleCells(size_t numParticles, size_t numHaloParticlesPerCell) {
-  autopas::Particle particle;
+  autopas::ParticleBaseFP64 particle;
   std::vector<FPCell> cells(7);
   std::mt19937 generator(42);
 

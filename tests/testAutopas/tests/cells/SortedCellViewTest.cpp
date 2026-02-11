@@ -11,10 +11,10 @@
 #include "testingHelpers/commonTypedefs.h"
 
 TEST_F(SortedCellViewTest, testParticleAccess) {
-  auto fpc = autopas::FullParticleCell<Particle>();
-  Particle p1 = Particle();
+  auto fpc = autopas::FullParticleCell<ParticleFP64>();
+  ParticleFP64 p1 = ParticleFP64();
   fpc.addParticle(p1);
-  auto fspc = autopas::SortedCellView<autopas::FullParticleCell<Particle>>(fpc, {1., 0., 0.});
+  auto fspc = autopas::SortedCellView<autopas::FullParticleCell<ParticleFP64>>(fpc, {1., 0., 0.});
   EXPECT_EQ(fspc._particles.size(), 1);
   std::array<double, 3> force{3.1416, 2.7183, 9.8067};
   fspc._particles.front().second->addF(force);
@@ -22,20 +22,20 @@ TEST_F(SortedCellViewTest, testParticleAccess) {
 }
 
 TEST_F(SortedCellViewTest, testParticleSorting) {
-  auto fpc = autopas::FullParticleCell<Particle>();
-  Particle p1 = Particle({0., 3., 0.}, {0., 0., 0.}, 0);
+  auto fpc = autopas::FullParticleCell<ParticleFP64>();
+  ParticleFP64 p1 = ParticleFP64({0., 3., 0.}, {0., 0., 0.}, 0);
   fpc.addParticle(p1);
-  Particle p2 = Particle({2., 1., 2.}, {0., 0., 0.}, 2);
+  ParticleFP64 p2 = ParticleFP64({2., 1., 2.}, {0., 0., 0.}, 2);
   fpc.addParticle(p2);
-  Particle p3 = Particle({1., 2., 1.}, {0., 0., 0.}, 1);
+  ParticleFP64 p3 = ParticleFP64({1., 2., 1.}, {0., 0., 0.}, 1);
   fpc.addParticle(p3);
-  Particle p4 = Particle({3., 0., 3.}, {0., 0., 0.}, 3);
+  ParticleFP64 p4 = ParticleFP64({3., 0., 3.}, {0., 0., 0.}, 3);
   fpc.addParticle(p4);
 
   unsigned int id = 0u;
 
   {
-    auto fspc = autopas::SortedCellView<autopas::FullParticleCell<Particle>>(fpc, {1., 0., 0.});
+    auto fspc = autopas::SortedCellView<autopas::FullParticleCell<ParticleFP64>>(fpc, {1., 0., 0.});
     EXPECT_EQ(fspc.size(), 4);
 
     for (auto &p : fspc._particles) {
@@ -45,7 +45,7 @@ TEST_F(SortedCellViewTest, testParticleSorting) {
     }
   }
   {
-    auto fspc = autopas::SortedCellView<autopas::FullParticleCell<Particle>>(fpc, {0., 1., 0.});
+    auto fspc = autopas::SortedCellView<autopas::FullParticleCell<ParticleFP64>>(fpc, {0., 1., 0.});
     EXPECT_EQ(fspc.size(), 4);
 
     for (auto &p : fspc._particles) {

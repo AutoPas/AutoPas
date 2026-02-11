@@ -1,0 +1,243 @@
+/**
+ * @file LogicHandlerTest.cpp
+ * @author Manish
+ * @date 13.05.24
+ */
+
+#include "LogicHandlerTest.h"
+
+#include "autopas/LogicHandler.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
+#include "testingHelpers/commonTypedefs.h"
+
+using ::testing::_;
+using ::testing::AtLeast;
+using ::testing::Return;
+
+void LogicHandlerTest::initLogicHandler() {
+  const autopas::LogicHandlerInfo logicHandlerInfo{
+      .boxMin{0., 0., 0.},
+      .boxMax{10., 10., 10.},
+      .cutoff = 2.5,
+      .verletSkin = 0.5,
+  };
+  const autopas::AutoTunerInfo autoTunerInfo{
+      .tuningInterval = 10000,
+      .maxSamples = 3,
+  };
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  constexpr double cellSizeFactor = 1.;
+  constexpr unsigned int verletRebuildFrequency = 10;
+  const std::set<autopas::Configuration> searchSpace(
+      {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
+        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
+        autopas::InteractionTypeOption::pairwise}});
+  _tunerMap.emplace(
+      autopas::InteractionTypeOption::pairwise,
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  _logicHandler =
+      std::make_unique<autopas::LogicHandler<Molecule>>(_tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+}
+
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+/**
+ * Tests dynamic rebuild functionalities for one particle case.
+ * Dynamic rebuild should be triggered only when particle moves more than skin/2
+ */
+TEST_F(LogicHandlerTest, testOneParticleForDynamicRebuild) {
+  initLogicHandler();
+  Molecule p1({0.5, 1., 1.}, {0., 0., 0.}, 0, 0);
+  _logicHandler->addParticle(p1);
+  auto &container = _logicHandler->getContainer();
+  std::array<double, 3> moveVec{0, container.getVerletSkin() * 0.3, 0};
+
+  // In the beginning, dynamic build is not required, so we expect false
+  ASSERT_FALSE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
+      << " Particle has not moved yet, so no dynamic rebuild required. \n";
+
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1) << "Only one particle has been added \n";
+
+  for (auto iter = _logicHandler->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    iter->addR(moveVec);
+  }
+  _logicHandler->resetNeighborListsInvalidDoDynamicRebuild();
+  _logicHandler->checkNeighborListsInvalidDoDynamicRebuild();
+  ASSERT_FALSE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
+      << " Particle has moved but not more than half the skin, so dynamic rebuild is not required. \n";
+
+  for (auto iter = _logicHandler->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    iter->addR(moveVec);
+  }
+  _logicHandler->resetNeighborListsInvalidDoDynamicRebuild();
+  _logicHandler->checkNeighborListsInvalidDoDynamicRebuild();
+  ASSERT_TRUE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
+      << " Particle has moved more than half the skin, so dynamic rebuild is required. \n";
+}
+/**
+ * Tests that the Velocity Method correctly estimates the rebuild frequency using the formula skin/vmax/deltaT/2 + 1.
+ * First we test if the method works with one particle. We then add two more particles and test it again.
+ */
+TEST_F(LogicHandlerTest, testVelocityMethod) {
+  initLogicHandler();
+  Molecule p1({0.5, 1., 1.}, {0., 0.2, 0.}, 0, 0);
+  _logicHandler->addParticle(p1);
+  double skin = 2.;
+  double deltaT = 1.;
+  double velocityMethodRFEstimate = _logicHandler->getVelocityMethodRFEstimate(skin, deltaT);
+  // only one particle in the container --> vmax = 0.2
+  // set vmax according to the maximum velocity of the particles that were added to the container before
+  double vmax = 0.2;
+  EXPECT_NEAR(velocityMethodRFEstimate, skin / vmax / deltaT / 2, 5);
+
+  // test for multiple particles case
+  Molecule p2({1.5, 1., 1.}, {0., 0.4, 0.3}, 0, 0);
+  Molecule p3({1.5, 2., 2.}, {0., 0., 0.3}, 0, 0);
+  _logicHandler->addParticle(p2);
+  _logicHandler->addParticle(p3);
+  // test the method with different skin length
+  skin = 10.;
+  velocityMethodRFEstimate = _logicHandler->getVelocityMethodRFEstimate(skin, deltaT);
+  // 3 particles in the container --> vmax = (0.3*0.3 + 0.4*0.4)^0.5 = 0.5
+  // set vmax according to the maximum velocity of the particles that were added to the container before
+  vmax = 0.5;
+  EXPECT_NEAR(velocityMethodRFEstimate, skin / vmax / deltaT / 2, 10);
+}
+
+/**
+ * Tests dynamic rebuild functionalities for one particle moving across the periodic boundary and added to the container
+ * when entering from other side. Particle is added to the container when rebuild is expected and hence should not
+ * affect simulation pipeline anyway.
+ */
+TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDynamicRebuild) {
+  initLogicHandler();
+  auto boxMaxY = _logicHandler->getContainer().getBoxMax()[1];
+  auto boxMinY = _logicHandler->getContainer().getBoxMin()[1];
+  auto &container = _logicHandler->getContainer();
+  auto skin = container.getVerletSkin();
+  std::array<double, 3> moveVec{0, skin * 0.3, 0};
+  // periodic boundary shift
+  std::array<double, 3> shiftVecPeriodicY{0, boxMinY - boxMaxY, 0};
+
+  Molecule p1({0.5, boxMaxY - skin * 0.15, 1.}, {0., 0., 0.}, 0, 0);
+  _logicHandler->addParticle(p1);
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1) << "Only one particle has been added \n";
+
+  // In the beginning, dynamic build is not required, so we expect false
+  ASSERT_FALSE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
+      << " Particle has not moved yet, so no dynamic rebuild required. \n";
+
+  // In the first step, neighborListsAreValid is false
+  ASSERT_FALSE(_logicHandler->neighborListsAreValid()) << "In the first iteration, neighbor lists are invalid.";
+
+  // 0.3 skin + (boxMaxY - 0.15 skin) = boxMaxY + 0.15 skim -> particle is outside the boundary
+  for (auto iter = _logicHandler->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    iter->addR(moveVec);
+  }
+  auto leavingParticles = _logicHandler->updateContainer();
+  EXPECT_EQ(leavingParticles.size(), 1) << "Exactly one particle has left the container \n";
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 0) << "No particle left in the container \n";
+
+  // shifting particle position to replicate periodic boundary effect
+  for (auto particle : leavingParticles) {
+    particle.addR(shiftVecPeriodicY);
+    _logicHandler->addParticle(particle);
+  }
+  // As neighbor lists are invalid, particle is added to the container directly, as it will be rebuilt soon
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1)
+      << "One particle added on the other side of periodic boundary \n";
+
+  _logicHandler->resetNeighborListsInvalidDoDynamicRebuild();
+  _logicHandler->checkNeighborListsInvalidDoDynamicRebuild();
+  ASSERT_TRUE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
+      << " Particle has moved across the periodic boundary but not more than half the skin, so dynamic rebuild is not "
+         "required. But because we have not shifted the rAtRebuild, we expect otherwise. \n";
+
+  constexpr double cutoff = 1.1;
+  LJFunctorGlobals functor(cutoff);
+  functor.setParticleProperties(24.0, 1);
+
+  // iterate once so that neighbor lists are valid
+  leavingParticles = _logicHandler->updateContainer();
+  EXPECT_EQ(leavingParticles.size(), 0) << "No particle has the container \n";
+  _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
+
+  // After one iteration, neighbor lists are rebuilt, and neighborListsAreValid is false
+  ASSERT_TRUE(_logicHandler->neighborListsAreValid()) << "After one iteration, neighbor lists are valid.";
+
+  _logicHandler->resetNeighborListsInvalidDoDynamicRebuild();
+  _logicHandler->checkNeighborListsInvalidDoDynamicRebuild();
+  ASSERT_FALSE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
+      << " The neighbor list is rebuilt as previously neighbor lists were invalid. rAtRebuild is reset at the same "
+         "time.\n";
+}
+
+/**
+ * Tests dynamic rebuild functionalities for one particle moving across the periodic boundary and added to the buffer
+ * when entering from other side. Particle is added to the buffer as the neighbor lists for the container is valid.
+ * Dynamic rebuild should not be triggered even when particle moves more than skin/2 as it is now in buffer and hence
+ * should not affect simulation pipeline anyway.
+ */
+TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynamicRebuild) {
+  initLogicHandler();
+  auto boxMaxY = _logicHandler->getContainer().getBoxMax()[1];
+  auto boxMinY = _logicHandler->getContainer().getBoxMin()[1];
+  auto &container = _logicHandler->getContainer();
+  auto skin = container.getVerletSkin();
+  std::array<double, 3> moveVec{0, skin * 0.3, 0};
+  // periodic boundary shift
+  std::array<double, 3> shiftVecPeriodicY{0, boxMinY - boxMaxY, 0};
+
+  Molecule p1({0.5, boxMaxY - skin * 0.15, 1.}, {0., 0., 0.}, 0, 0);
+  _logicHandler->addParticle(p1);
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1) << "Only one particle has been added \n";
+
+  // In the beginning, dynamic build is not required, so we expect false
+  ASSERT_FALSE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
+      << " Particle has not moved yet, so no dynamic rebuild required. \n";
+
+  // In the first step, neighborListsAreValid is false
+  ASSERT_FALSE(_logicHandler->neighborListsAreValid()) << "In the first iteration, neighbor lists are invalid.";
+
+  constexpr double cutoff = 1.1;
+  LJFunctorGlobals functor(cutoff);
+  functor.setParticleProperties(24.0, 1);
+
+  // iterate once so that neighbor lists are valid
+  auto leavingParticles = _logicHandler->updateContainer();
+  _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
+
+  // After one iteration, neighbor lists are rebuilt, and neighborListsAreValid is false
+  ASSERT_TRUE(_logicHandler->neighborListsAreValid()) << "After one iteration, neighbor lists are valid.";
+
+  _logicHandler->checkNeighborListsInvalidDoDynamicRebuild();
+  ASSERT_FALSE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
+      << " The neighbor list is rebuilt as previously neighbor lists were invalid.\n";
+
+  // 0.3 skin + (boxMaxY - 0.15 skin) = boxMaxY + 0.15 skim -> particle is outside the boundary and has travelled less
+  // than skin/2
+  for (auto iter = _logicHandler->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    iter->addR(moveVec);
+  }
+  leavingParticles = _logicHandler->updateContainer();
+  EXPECT_EQ(leavingParticles.size(), 1) << "Exactly one particle has left the container \n";
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 0) << "No particle left in the container \n";
+
+  // shifting particle position to replicate periodic boundary effect
+  for (auto particle : leavingParticles) {
+    particle.addR(shiftVecPeriodicY);
+    _logicHandler->addParticle(particle);
+  }
+  // As neighbor lists are valid, particle is added to the buffer, so container will have 0 particles
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 0)
+      << "Particle added to the buffer, so container must still be empty. \n";
+
+  EXPECT_EQ(_logicHandler->getNumberOfParticlesOwned(), 1)
+      << "One particle added on the other side of periodic boundary \n";
+
+  _logicHandler->resetNeighborListsInvalidDoDynamicRebuild();
+  _logicHandler->checkNeighborListsInvalidDoDynamicRebuild();
+  ASSERT_FALSE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
+      << " Particle has moved across the periodic boundary and more than half the skin, but as it is in the buffer, it "
+         "doesn't affect the container. \n";
+}
+#endif

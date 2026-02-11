@@ -48,7 +48,7 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   autoPas.setBoxMin({0, 0, 0});
   autoPas.setBoxMax({3, 3, 3});
   autoPas.setCutoff(1.1);
-  autoPas.setVerletSkinPerTimestep(0.2);
+  autoPas.setVerletSkin(0.2);
   autoPas.setVerletRebuildFrequency(1);
   if (isVerlet) {
     autoPas.setAllowedContainers({autopas::ContainerOption::verletListsCells});

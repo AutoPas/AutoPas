@@ -9,20 +9,20 @@
 #include <cstring>
 #include <vector>
 
-#include "autopas/particles/Particle.h"
+#include "autopas/particles/ParticleDefinitions.h"
 
 namespace sphLib {
 /**
  * Basic SPHParticle class.
  */
-class SPHParticle : public autopas::Particle {
+class SPHParticle : public autopas::ParticleBaseFP64 {
  public:
   /**
    * Default constructor of SPHParticle.
    * Will initialize all values to some basic defaults.
    */
   SPHParticle()
-      : autopas::Particle(),
+      : autopas::ParticleBaseFP64(),
         _density(0.),
         _pressure(0.),
         _mass(0.),
@@ -43,7 +43,7 @@ class SPHParticle : public autopas::Particle {
    * @param id id of the particle. This id should be unique
    */
   SPHParticle(const std::array<double, 3> &r, const std::array<double, 3> &v, unsigned long id)
-      : autopas::Particle(r, v, id),
+      : autopas::ParticleBaseFP64(r, v, id),
         _density(0.),
         _pressure(0.),
         _mass(0.),
@@ -69,7 +69,7 @@ class SPHParticle : public autopas::Particle {
    */
   SPHParticle(const std::array<double, 3> &r, const std::array<double, 3> &v, unsigned long id, double mass,
               double smth, double snds)
-      : autopas::Particle(r, v, id),
+      : autopas::ParticleBaseFP64(r, v, id),
         _density(0.),
         _pressure(0.),
         _mass(mass),

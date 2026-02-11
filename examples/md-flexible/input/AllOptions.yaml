@@ -13,15 +13,16 @@ data-layout-3b                       :  [AoS, SoA]
 
 # General options
 verlet-rebuild-frequency             :  20
-verlet-skin-radius-per-timestep      :  0.01
+verlet-skin-radius                   :  0.2
 verlet-cluster-size                  :  4
 selector-strategy                    :  Fastest-Absolute-Value
-tuning-metric                        :  time
+tuning-metric                        :  time # alternatively: energy
 tuning-strategies                    :  [slow-config-filter, rule-based-tuning, predictive-tuning]
 tuning-interval                      :  5000
 tuning-samples                       :  3
 use-LOESS-smoothening                :  false
 tuning-max-evidence                  :  10
+energy-sensor                        :  rapl  # alternatively: likwid
 cutoff                               :  1
 box-min                              :  [-1.75, -1.75, -1.75]
 box-max                              :  [7.25, 7.25, 7.25]

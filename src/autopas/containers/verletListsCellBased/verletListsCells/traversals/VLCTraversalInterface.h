@@ -10,10 +10,21 @@
 #include <utility>
 #include <vector>
 
-#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
+#include "autopas/options/ContainerOption.h"
 
 namespace autopas {
+
+/**
+ *
+ * Forward declaration of the neighbor list types used in this interface.
+ * This avoid circular dependencies in the header files.
+ * VLCAllCellsNeighborList.h/VLCCellPairNeighborList.h -> VLCTraversalInterface.h (This file)
+ */
+template <class Particle_T>
+class VLCAllCellsNeighborList;
+
+template <class Particle_T>
+class VLCCellPairNeighborList;
 
 /**
  * This class provides the Traversal Interface for the verlet lists cells container.
@@ -23,7 +34,7 @@ namespace autopas {
  *
  * The container only accepts traversals in its computeInteractions() method that implement this interface.
  */
-template <class Particle, class NeighborList>
+template <class Particle_T, class NeighborList>
 class VLCTraversalInterface {
  public:
   VLCTraversalInterface() = delete;
@@ -58,7 +69,7 @@ class VLCTraversalInterface {
 
   /**
    * Load the SoA from the respective neighbor list.
-   * @tparam pairwiseFunctor
+   * @tparam PairwiseFunctor
    * @param pairwiseFunctor
    * @param neighborLists
    */
@@ -70,7 +81,7 @@ class VLCTraversalInterface {
 
   /**
    * Extract the SoA from the respective neighbor list.
-   * @tparam pairwiseFunctor
+   * @tparam PairwiseFunctor
    * @param pairwiseFunctor
    * @param neighborLists
    */
@@ -89,7 +100,7 @@ class VLCTraversalInterface {
   /**
    * Structure of arrays to be used if the data layout is SoA.
    */
-  SoA<typename Particle::SoAArraysType> *_soa;
+  SoA<typename Particle_T::SoAArraysType> *_soa;
 
   /**
    * The type of neighbor list as an enum value.
@@ -107,14 +118,14 @@ class VLCTraversalInterface {
    * @param useNewton3
    */
   template <class PairwiseFunctor>
-  void processCellListsImpl(VLCAllCellsNeighborList<Particle> &neighborList, unsigned long cellIndex,
+  void processCellListsImpl(VLCAllCellsNeighborList<Particle_T> &neighborList, unsigned long cellIndex,
                             PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3) {
     if (dataLayout == DataLayoutOption::aos) {
       auto &aosList = neighborList.getAoSNeighborList();
       for (auto &[particlePtr, neighbors] : aosList[cellIndex]) {
-        Particle &particle = *particlePtr;
+        Particle_T &particle = *particlePtr;
         for (auto neighborPtr : neighbors) {
-          Particle &neighbor = *neighborPtr;
+          Particle_T &neighbor = *neighborPtr;
           pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
         }
       }
@@ -140,15 +151,15 @@ class VLCTraversalInterface {
    * @param useNewton3
    */
   template <class PairwiseFunctor>
-  void processCellListsImpl(VLCCellPairNeighborList<Particle> &neighborList, unsigned long cellIndex,
+  void processCellListsImpl(VLCCellPairNeighborList<Particle_T> &neighborList, unsigned long cellIndex,
                             PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3) {
     if (dataLayout == DataLayoutOption::aos) {
       auto &aosList = neighborList.getAoSNeighborList();
       for (auto &cellPair : aosList[cellIndex]) {
         for (auto &[particlePtr, neighbors] : cellPair) {
-          Particle &particle = *particlePtr;
+          Particle_T &particle = *particlePtr;
           for (auto neighborPtr : neighbors) {
-            Particle &neighbor = *neighborPtr;
+            Particle_T &neighbor = *neighborPtr;
             pairwiseFunctor->AoSFunctor(particle, neighbor, useNewton3);
           }
         }

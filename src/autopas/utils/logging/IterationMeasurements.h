@@ -37,23 +37,22 @@ struct IterationMeasurements {
   bool energyMeasurementsPossible{false};
 
   /**
-   * Energy consumed by the entire system.
+   * Average energy consumed per time in Watts.
    */
-  double energyPsys{};
+  double energyWatts{};
 
   /**
-   * Energy consumed by the CPU package.
+   * Total energy consumed in Joules.
    */
-  double energyPkg{};
+  double energyJoules{};
 
   /**
-   * Energy consumed by the RAM.
+   * Time in seconds during which energy was consumed.
    */
-  double energyRam{};
+  double energyDeltaT{};
 
   /**
-   * Total energy consumed. This is identical to energyPsys if it is available, otherwise it is the sum of all other
-   * energy sources.
+   * Total energy consumed so far
    */
   long energyTotal{};
 };

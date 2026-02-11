@@ -27,7 +27,7 @@ template <class ParticleCell, class PairwiseFunctor>
 class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor>,
                         public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
-  using Particle = typename ParticleCell::ParticleType;
+  using ParticleType = typename ParticleCell::ParticleType;
 
   /**
    * Each base step looks like this:
@@ -71,18 +71,18 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
 
   void initTraversal() override {
     if (this->_dataLayout == DataLayoutOption::soa) {
-      VCLTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
+      VCLTraversalInterface<ParticleType>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
     }
   }
 
   void endTraversal() override {
     if (this->_dataLayout == DataLayoutOption::soa) {
-      VCLTraversalInterface<Particle>::_verletClusterLists->extractParticlesFromSoAs(_functor);
+      VCLTraversalInterface<ParticleType>::_verletClusterLists->extractParticlesFromSoAs(_functor);
     }
   }
 
   void traverseParticles() override {
-    auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+    auto &clusterList = *VCLTraversalInterface<ParticleType>::_verletClusterLists;
 
     const auto towersPerColoringCell = clusterList.getNumTowersPerInteractionLength();
     std::array<unsigned long, 2> coloringCellsPerDim{};
@@ -109,7 +109,7 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
 
  private:
   PairwiseFunctor *_functor;
-  internal::VCLClusterFunctor<Particle, PairwiseFunctor> _clusterFunctor;
+  internal::VCLClusterFunctor<ParticleType, PairwiseFunctor> _clusterFunctor;
 };
 
 template <class ParticleCell, class PairwiseFunctor>
@@ -122,7 +122,7 @@ void VCLC06Traversal<ParticleCell, PairwiseFunctor>::processColorCell(unsigned l
     autopas::utils::ExceptionHandler::exception("Coloring should only be 2D, not in z-direction!");
   }
 
-  auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+  auto &clusterList = *VCLTraversalInterface<ParticleType>::_verletClusterLists;
   const auto towersPerDim = clusterList.getTowersPerDimension();
 
   for (int yInner = 0; yInner < towersPerColoringCell; yInner++) {

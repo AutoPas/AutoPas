@@ -1,6 +1,5 @@
 
-// Generated from AutoPas/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleLanguage.g4
-// by ANTLR 4.9.1
+// Generated from RuleLanguage.g4 by ANTLR 4.13.2
 
 #include "RuleLanguageBaseVisitor.h"
 

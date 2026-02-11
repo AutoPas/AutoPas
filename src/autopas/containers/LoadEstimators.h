@@ -52,9 +52,9 @@ unsigned long squaredParticlesPerCell(const std::vector<ParticleCell> &cells,
  * @param cellIndex the index of the current cell being processed
  * @return estimated load for current cell
  */
-template <class Particle>
+template <class Particle_T>
 unsigned long neighborListLengthImpl(
-    const typename autopas::VerletListsCellsHelpers::AllCellsNeighborListsType<Particle> &neighborLists,
+    const typename autopas::VerletListsCellsHelpers::AllCellsNeighborListsType<Particle_T> &neighborLists,
     unsigned long cellIndex) {
   unsigned long cellLoad = 0;
   for (auto &list : neighborLists[cellIndex]) {
@@ -71,9 +71,9 @@ unsigned long neighborListLengthImpl(
  * @param cellIndex the index of the current cell being processed
  * @return estimated load for current cell
  */
-template <class Particle>
+template <class Particle_T>
 unsigned long neighborListLengthImpl(
-    const typename autopas::VerletListsCellsHelpers::PairwiseNeighborListsType<Particle> &neighborLists,
+    const typename autopas::VerletListsCellsHelpers::PairwiseNeighborListsType<Particle_T> &neighborLists,
     unsigned long cellIndex) {
   unsigned long cellLoad = 0;
   for (auto &list : neighborLists[cellIndex]) {
@@ -94,7 +94,7 @@ unsigned long neighborListLengthImpl(
  * @param upperCorner upper boundary indices for region
  * @return estimated load for given region
  */
-template <class Particle, class NeighborList>
+template <class Particle_T, class NeighborList>
 unsigned long neighborListLength(NeighborList &neighborLists, const std::array<unsigned long, 3> &cellsPerDimension,
                                  const std::array<unsigned long, 3> &lowerCorner,
                                  const std::array<unsigned long, 3> &upperCorner) {
@@ -104,7 +104,7 @@ unsigned long neighborListLength(NeighborList &neighborLists, const std::array<u
     for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
       for (unsigned long z = lowerCorner[2]; z <= upperCorner[2]; z++) {
         auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension);
-        sum += neighborListLengthImpl<Particle>(internalList, cellIndex);
+        sum += neighborListLengthImpl<Particle_T>(internalList, cellIndex);
       }
     }
   }

@@ -21,22 +21,22 @@ namespace autopas {
  * particles.
  * @copydoc autopas::Functor
  *
- * @tparam Particle the type of Particle
+ * @tparam Particle_T the type of Particle
  * @tparam CRTP_T the actual type of the functor
  */
-template <class Particle, class CRTP_T>
-class TriwiseFunctor : public Functor<Particle, CRTP_T> {
+template <class Particle_T, class CRTP_T>
+class TriwiseFunctor : public Functor<Particle_T, CRTP_T> {
  public:
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAArraysType = typename Particle_T::SoAArraysType;
 
   /**
    * Constructor
    * @param cutoff
    */
-  explicit TriwiseFunctor(double cutoff) : Functor<Particle, CRTP_T>(cutoff){};
+  explicit TriwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff){};
 
   virtual ~TriwiseFunctor() = default;
 
@@ -51,7 +51,7 @@ class TriwiseFunctor : public Functor<Particle, CRTP_T> {
    * @param k Particle k
    * @param newton3 defines whether or whether not to use newton 3
    */
-  virtual void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) {
+  virtual void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool newton3) {
     utils::ExceptionHandler::exception("{}::AoSFunctor: not implemented", this->getName());
   }
 

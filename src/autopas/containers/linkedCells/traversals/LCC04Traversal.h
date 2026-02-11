@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandler.h"
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"

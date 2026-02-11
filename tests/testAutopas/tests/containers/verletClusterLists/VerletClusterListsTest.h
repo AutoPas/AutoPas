@@ -11,7 +11,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
-#include "autopas/particles/Particle.h"
+#include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/UniformGenerator.h"
 #include "mocks/MockPairwiseFunctor.h"
@@ -19,9 +19,9 @@
 
 class VerletClusterListsTest : public AutoPasTestBase {};
 
-class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<autopas::Particle, CollectParticlePairsFunctor> {
+class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<ParticleFP64, CollectParticlePairsFunctor> {
  public:
-  std::vector<std::pair<Particle *, Particle *>> _pairs{};
+  std::vector<std::pair<ParticleFP64 *, ParticleFP64 *>> _pairs{};
   std::array<double, 3> _min;
   std::array<double, 3> _max;
 
@@ -30,7 +30,7 @@ class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<autopas::Par
 
   void initTraversal() override { _pairs.clear(); }
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+  void AoSFunctor(ParticleFP64 &i, ParticleFP64 &j, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     auto dist = i.getR() - j.getR();
@@ -56,11 +56,11 @@ class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<autopas::Par
 
 #if defined(AUTOPAS_USE_OPENMP)
 class CollectParticlesPerThreadFunctor
-    : public autopas::PairwiseFunctor<autopas::Particle, CollectParticlesPerThreadFunctor> {
+    : public autopas::PairwiseFunctor<ParticleFP64, CollectParticlesPerThreadFunctor> {
  public:
   int _currentColor{};
 
-  std::array<std::vector<std::set<Particle *>>, 8> _particlesPerThreadPerColor;
+  std::array<std::vector<std::set<ParticleFP64 *>>, 8> _particlesPerThreadPerColor;
 
  public:
   CollectParticlesPerThreadFunctor() : PairwiseFunctor(0) {}
@@ -71,7 +71,7 @@ class CollectParticlesPerThreadFunctor
     }
   }
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+  void AoSFunctor(ParticleFP64 &i, ParticleFP64 &j, bool newton3) override {
     if (i.isDummy() or j.isDummy()) {
       return;
     }

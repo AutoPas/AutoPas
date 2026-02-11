@@ -22,7 +22,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor>
 class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
-  using Particle = typename ParticleCell::ParticleType;
+  using ParticleType = typename ParticleCell::ParticleType;
 
  public:
   /**
@@ -84,18 +84,18 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
           for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
             auto endIter = aosNeighborLists.end(bucketId);
             for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
-              Particle &particle = *(bucketIter->first);
+              ParticleType &particle = *(bucketIter->first);
               for (auto neighborPtr : bucketIter->second) {
-                Particle &neighbor = *neighborPtr;
+                ParticleType &neighbor = *neighborPtr;
                 _functor->AoSFunctor(particle, neighbor, false);
               }
             }
           }
         } else {
           for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
-            Particle &particle = *particlePtr;
+            ParticleType &particle = *particlePtr;
             for (auto neighborPtr : neighborPtrList) {
-              Particle &neighbor = *neighborPtr;
+              ParticleType &neighbor = *neighborPtr;
               _functor->AoSFunctor(particle, neighbor, _useNewton3);
             }
           }
@@ -133,7 +133,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   /**
    * SoA buffer of verlet lists.
    */
-  SoA<typename Particle::SoAArraysType> _soa;
+  SoA<typename ParticleType::SoAArraysType> _soa;
 };
 
 }  // namespace autopas

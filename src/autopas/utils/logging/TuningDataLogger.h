@@ -40,11 +40,12 @@ class TuningDataLogger {
    * @param iteration
    * @param reducedValue
    * @param smoothedVale
+   * @param meanRebuildFrequency
    */
   void logTuningData(const autopas::Configuration &configuration,
                      const std::vector<long> &samplesRebuildingNeighborLists,
                      const std::vector<long> &samplesNotRebuildingNeighborLists, size_t iteration, long reducedValue,
-                     long smoothedVale) const;
+                     long smoothedVale, double meanRebuildFrequency) const;
 
  private:
   std::string _loggerName;

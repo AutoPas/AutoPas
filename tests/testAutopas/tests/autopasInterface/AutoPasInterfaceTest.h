@@ -78,11 +78,11 @@ static inline auto getTestableContainerOptions() { return autopas::ContainerOpti
  * @return Vector of added particles
  */
 template <class Container>
-std::vector<typename Container::Particle_t> addParticlesMinMidMax(Container &container) {
+std::vector<typename Container::ParticleType> addParticlesMinMidMax(Container &container) {
   using namespace autopas::utils::ArrayMath::literals;
 
   constexpr size_t numParticles = 3;
-  std::vector<typename Container::Particle_t> addedParticles;
+  std::vector<typename Container::ParticleType> addedParticles;
   addedParticles.reserve(numParticles);
 
   // helper for Positions
@@ -100,7 +100,7 @@ std::vector<typename Container::Particle_t> addParticlesMinMidMax(Container &con
     constexpr double scalingFactor = 1. / (numParticles - 1);
     // boxMin + i/scalingFactor * boxMax
     auto pos = nearBoxMin + (nearBoxLength * (i * scalingFactor));
-    typename Container::Particle_t particle(pos, {0., 0., 0.}, 1);
+    typename Container::ParticleType particle(pos, {0., 0., 0.}, 1);
     container.addParticle(particle);
     addedParticles.push_back(particle);
   }

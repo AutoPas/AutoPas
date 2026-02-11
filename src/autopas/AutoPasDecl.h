@@ -14,6 +14,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
@@ -32,46 +33,46 @@ namespace autopas {
 
 // Forward declare Handler so that including this header does not include the whole library with all
 // containers and traversals.
-template <class Particle>
+template <class Particle_T>
 class LogicHandler;
 
 /**
  * The AutoPas class is intended to be the main point of Interaction for the user.
  * It acts as an interface from where all features of the library can be triggered and configured.
- * @tparam Particle Class for particles
+ * @tparam Particle_T Class for particles
  * @tparam ParticleCell Class for the particle cells
  */
-template <class Particle>
+template <class Particle_T>
 class AutoPas {
  public:
   /**
    * Particle type to be accessible after initialization.
    */
-  using Particle_t = Particle;
+  using ParticleType = Particle_T;
 
   /**
    * Define the iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using IteratorT = autopas::ContainerIterator<Particle, true, false>;
+  using IteratorT = autopas::ContainerIterator<Particle_T, true, false>;
 
   /**
    * Define the const iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using ConstIteratorT = autopas::ContainerIterator<Particle, false, false>;
+  using ConstIteratorT = autopas::ContainerIterator<Particle_T, false, false>;
 
   /**
    * Define the region iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using RegionIteratorT = autopas::ContainerIterator<Particle, true, true>;
+  using RegionIteratorT = autopas::ContainerIterator<Particle_T, true, true>;
 
   /**
    * Define the const region iterator type for ease of use. Also for external use.
    * Helps to, e.g., wrap the AutoPas iterators
    */
-  using RegionConstIteratorT = autopas::ContainerIterator<Particle, false, true>;
+  using RegionConstIteratorT = autopas::ContainerIterator<Particle_T, false, true>;
 
   /**
    * Constructor for the autopas class.
@@ -104,7 +105,7 @@ class AutoPas {
    * @param boxMax
    * @return Vector of particles that are outside the box after the resize.
    */
-  std::vector<Particle> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
+  std::vector<Particle_T> resizeBox(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
 
   /**
    * Force the internal tuner to enter a new tuning phase upon the next call to computeInteractions().
@@ -128,7 +129,7 @@ class AutoPas {
    * and returned.
    * @return A vector of invalid particles that do no longer belong in the current container.
    */
-  [[nodiscard]] std::vector<Particle> updateContainer();
+  [[nodiscard]] std::vector<Particle_T> updateContainer();
 
   /**
    * Reserve memory for a given number of particles in the container and logic layers.
@@ -160,7 +161,7 @@ class AutoPas {
    * boxMin and boxMax) of the container.
    * @note This function is NOT thread-safe if the container is Octree.
    */
-  void addParticle(const Particle &p);
+  void addParticle(const Particle_T &p);
 
   /**
    * Adds all particles from the collection to the container.
@@ -177,7 +178,7 @@ class AutoPas {
    * @note This function uses reserve().
    * @note This function uses addParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
-   * @tparam F Function type of predicate. Should be of the form: (const Particle &) -> bool.
+   * @tparam F Function type of predicate. Should be of the form: (const Particle_T &) -> bool.
    * @param particles Particles that are potentially added.
    * @param predicate Condition that determines if an individual particle should be added.
    */
@@ -191,7 +192,7 @@ class AutoPas {
    * and boxMax) of the container.
    * @note This function is NOT thread-safe if the container is Octree.
    */
-  void addHaloParticle(const Particle &haloParticle);
+  void addHaloParticle(const Particle_T &haloParticle);
 
   /**
    * Adds all halo particles from the collection to the container.
@@ -208,7 +209,7 @@ class AutoPas {
    * @note This function uses reserve().
    * @note This function uses addHaloParticle().
    * @tparam Collection Collection type that contains the particles (e.g. std::vector). Needs to support `.size()`.
-   * @tparam F Function type of predicate. Should be of the form: (const Particle &) -> bool.
+   * @tparam F Function type of predicate. Should be of the form: (const Particle_T &) -> bool.
    * @param particles Particles that are potentially added.
    * @param predicate Condition that determines if an individual particle should be added.
    */
@@ -250,7 +251,7 @@ class AutoPas {
    *
    * @return True iff the reference still points to a valid particle.
    */
-  bool deleteParticle(Particle &particle);
+  bool deleteParticle(Particle_T &particle);
 
   /**
    * Function to iterate over all inter-particle interactions in the container
@@ -278,7 +279,7 @@ class AutoPas {
 
   /**
    * execute code on all particles in parallel as defined by a lambda function
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    * @note not actually parallel until kokkos integration
@@ -301,7 +302,7 @@ class AutoPas {
 
   /**
    * Execute code on all particles as defined by a lambda function.
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
    */
@@ -321,7 +322,7 @@ class AutoPas {
 
   /**
    * Reduce properties of particles in parallel as defined by a lambda function.
-   * @tparam Lambda (Particle p, A &initialValue) -> void
+   * @tparam Lambda (Particle_T p, A &initialValue) -> void
    * @tparam reference to result of type A
    * @param reduceLambda code to reduce properties of particles
    * @param result reference to result of type A
@@ -346,7 +347,7 @@ class AutoPas {
 
   /**
    * Reduce properties of particles as defined by a lambda function.
-   * @tparam Lambda (Particle p, A &initialValue) -> void
+   * @tparam Lambda (Particle_T p, A &initialValue) -> void
    * @tparam reference to result of type A
    * @param reduceLambda code to reduce properties of particles
    * @param result reference to result of type A
@@ -407,7 +408,7 @@ class AutoPas {
 
   /**
    * Execute code on all particles in a certain region in parallel as defined by a lambda function.
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param lowerCorner lower corner of bounding box
    * @param higherCorner higher corner of bounding box
@@ -440,7 +441,7 @@ class AutoPas {
 
   /**
    * Execute code on all particles in a certain region as defined by a lambda function.
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param lowerCorner lower corner of bounding box
    * @param higherCorner higher corner of bounding box
@@ -470,7 +471,7 @@ class AutoPas {
 
   /**
    * Execute code on all particles in a certain region in parallel as defined by a lambda function.
-   * @tparam Lambda (Particle &p, A &result) -> void
+   * @tparam Lambda (Particle_T &p, A &result) -> void
    * @tparam A type of reduction value
    * @param reduceLambda code to be executed on all particles
    * @param result reference to starting and final value of reduction
@@ -505,7 +506,7 @@ class AutoPas {
 
   /**
    * Execute code on all particles in a certain region as defined by a lambda function.
-   * @tparam Lambda (Particle &p, A &result) -> void
+   * @tparam Lambda (Particle_T &p, A &result) -> void
    * @tparam A type of reduction value
    * @param reduceLambda code to be executed on all particles
    * @param result reference to starting and final value of reduction
@@ -540,7 +541,7 @@ class AutoPas {
    * This function only handles short-range interactions.
    * @return _verletSkin
    */
-  double getVerletSkin() { return _logicHandlerInfo.verletSkinPerTimestep * _verletRebuildFrequency; };
+  double getVerletSkin() { return _logicHandlerInfo.verletSkin; };
 
   /**
    * Returns the number of particles in this container.
@@ -632,18 +633,17 @@ class AutoPas {
   }
 
   /**
-   * Get length added to the cutoff for the Verlet lists' skin per timestep.
-   * @return _verletSkinPerTimestep
+   * Set length added to the cutoff for the Verlet lists' skin per timestep.
+   * @param verletSkin
    */
-  [[nodiscard]] double getVerletSkinPerTimestep() const { return _logicHandlerInfo.verletSkinPerTimestep; }
+  void setVerletSkin(double verletSkin) { _logicHandlerInfo.verletSkin = verletSkin; }
 
   /**
-   * Set length added to the cutoff for the Verlet lists' skin per timestep.
-   * @param verletSkinPerTimestep
+   * Set time step of the simulation.
+   * This is currently used for estimating the rebuild frequency.
+   * @param deltaT
    */
-  void setVerletSkinPerTimestep(double verletSkinPerTimestep) {
-    _logicHandlerInfo.verletSkinPerTimestep = verletSkinPerTimestep;
-  }
+  void setDeltaT(double deltaT) { _logicHandlerInfo.deltaT = deltaT; }
 
   /**
    * Get Verlet rebuild frequency.
@@ -693,6 +693,13 @@ class AutoPas {
    * @param numSamples
    */
   void setNumSamples(unsigned int numSamples) { _autoTunerInfo.maxSamples = numSamples; }
+
+  /**
+   * Set the earlyStoppingFactor for the auto tuner. If a configuration seems to be slower than the optimum
+   * configuration found so far by more than this factor, it will not be sampled again during that tuning phase.
+   * @param earlyStoppingFactor
+   */
+  void setEarlyStoppingFactor(double earlyStoppingFactor) { _autoTunerInfo.earlyStoppingFactor = earlyStoppingFactor; }
 
   /**
    * Get flag for whether a LOESS-based smoothening is used.
@@ -1005,6 +1012,20 @@ class AutoPas {
   }
 
   /**
+   * Getter for the energy sensor
+   * @return
+   */
+  [[nodiscard]] const EnergySensorOption &getEnergySensorOption() const { return _autoTunerInfo.energySensor; }
+
+  /**
+   * Setter for the energy sensor
+   * @param energySensorOption
+   */
+  void setEnergySensorOption(EnergySensorOption energySensorOption) {
+    _autoTunerInfo.energySensor = energySensorOption;
+  }
+
+  /**
    * Setter for the maximal Difference for the bucket distribution.
    * @param MPITuningMaxDifferenceForBucket
    */
@@ -1043,6 +1064,14 @@ class AutoPas {
    * @param suffix
    */
   void setOutputSuffix(const std::string &suffix) { _outputSuffix = suffix; }
+
+  /**
+   * Getter for the mean rebuild frequency.
+   * Helpful for determining the frequency for the dynamic containers as well as for determining fast particles by
+   * computing skinPerStep for static container
+   * @return Value of the mean rebuild frequency as double
+   */
+  double getMeanRebuildFrequency() { return _logicHandler->getMeanRebuildFrequency(); }
 
   /**
    * Set if the tuning information should be logged to a file. It can then be replayed to test other tuning strategies.
@@ -1085,9 +1114,9 @@ class AutoPas {
   size_t getSortingThreshold() const { return _sortingThreshold; }
 
  private:
-  autopas::ParticleContainerInterface<Particle> &getContainer();
+  autopas::ParticleContainerInterface<Particle_T> &getContainer();
 
-  const autopas::ParticleContainerInterface<Particle> &getContainer() const;
+  const autopas::ParticleContainerInterface<Particle_T> &getContainer() const;
   /**
    * Information needed for TuningStrategyFactory::generateTuningStrategy().
    */
@@ -1105,9 +1134,10 @@ class AutoPas {
    */
   bool _useTuningStrategyLoggerProxy{false};
   /**
-   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
+   * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild, if a rebuild is not triggered
+   * earlier by the dynamic rebuild mechanic.
    */
-  unsigned int _verletRebuildFrequency{20};
+  unsigned int _verletRebuildFrequency{100};
   /**
    * Strategy option for the auto tuner.
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.
@@ -1156,7 +1186,7 @@ class AutoPas {
   /**
    * LogicHandler of autopas.
    */
-  std::unique_ptr<autopas::LogicHandler<Particle>> _logicHandler;
+  std::unique_ptr<autopas::LogicHandler<Particle_T>> _logicHandler;
 
   /**
    * All AutoTuners used in this instance of AutoPas.

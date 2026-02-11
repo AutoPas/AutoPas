@@ -26,7 +26,8 @@ autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string
     samplesHeader << ",sample" << i;
   }
   // print csv header
-  headerLogger->info("Date,Iteration,{}{},Reduced,Smoothed", Configuration().getCSVHeader(), samplesHeader.str());
+  headerLogger->info("Date,Iteration,{}{},Reduced,Smoothed,Mean Rebuild Frequency", Configuration().getCSVHeader(),
+                     samplesHeader.str());
   spdlog::drop(headerLoggerName);
   // End of workaround
 
@@ -46,12 +47,13 @@ autopas::TuningDataLogger::~TuningDataLogger() {
 void autopas::TuningDataLogger::logTuningData(const autopas::Configuration &configuration,
                                               const std::vector<long> &samplesRebuildingNeighborLists,
                                               const std::vector<long> &samplesNotRebuildingNeighborLists,
-                                              size_t iteration, long reducedValue, long smoothedValue) const {
+                                              size_t iteration, long reducedValue, long smoothedValue,
+                                              double meanRebuildFrequency) const {
 #ifdef AUTOPAS_LOG_TUNINGDATA
   spdlog::get(_loggerName)
-      ->info("{},{},{},{},{},{}", iteration, configuration.getCSVLine(),
+      ->info("{},{},{},{},{},{},{}", iteration, configuration.getCSVLine(),
              utils::ArrayUtils::to_string(samplesRebuildingNeighborLists, ",", {"", ""}),
              utils::ArrayUtils::to_string(samplesNotRebuildingNeighborLists, ",", {"", ""}), reducedValue,
-             smoothedValue);
+             smoothedValue, meanRebuildFrequency);
 #endif
 }

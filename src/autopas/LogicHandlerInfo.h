@@ -30,7 +30,7 @@ class LogicHandlerInfo {
   /**
    * Length added to the cutoff for the Verlet lists' skin.
    */
-  double verletSkinPerTimestep{0.02};
+  double verletSkin{0.4};
   /**
    * Number of particles in a cluster to use in VCL.
    */
@@ -39,5 +39,10 @@ class LogicHandlerInfo {
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
   size_t sortingThreshold{8};
+  /**
+   * Time step used in the simulation.
+   * This is currently used in rebuild frequency estimation for dynamic containers.
+   */
+  double deltaT{0};
 };
 }  // namespace autopas

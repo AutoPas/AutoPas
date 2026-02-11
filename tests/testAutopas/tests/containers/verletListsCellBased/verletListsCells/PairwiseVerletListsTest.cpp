@@ -6,6 +6,10 @@
 #include "PairwiseVerletListsTest.h"
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
+
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Values;
@@ -17,29 +21,28 @@ using ::testing::Values;
  * This scenario is an interaction between two particles and the result should be 1.
  */
 TEST_P(PairwiseVerletListsTest, testTwoParticles) {
-  MockPairwiseFunctor<Particle> emptyFunctor;
+  MockPairwiseFunctor<ParticleFP64> emptyFunctor;
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
-  unsigned int rebuildFrequency = 20;
+  double skin = 0.2;
   auto params = GetParam();
   double cellSizeFactor = std::get<0>(params);
   bool useNewton3 = std::get<1>(params);
   auto buildType = std::get<2>(params);
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, useNewton3)).Times(AtLeast(1));
-  autopas::VerletListsCells<Particle, autopas::VLCCellPairNeighborList<Particle>> verletLists(
-      min, max, cutoff, skinPerTimestep, rebuildFrequency, cellSizeFactor, loadEstimator, buildType);
+  autopas::VerletListsCells<ParticleFP64, autopas::VLCCellPairNeighborList<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, cellSizeFactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2, 2, 2};
-  Particle p(r, {0., 0., 0.}, 0);
+  ParticleFP64 p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
   std::array<double, 3> r2 = {1.5, 2, 2};
-  Particle p2(r2, {0., 0., 0.}, 1);
+  ParticleFP64 p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCCellPairNeighborList<Particle>> traversal(
+  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCCellPairNeighborList<ParticleFP64>> traversal(
       verletLists.getCellsPerDimension(), &emptyFunctor, verletLists.getInteractionLength(),
       verletLists.getCellLength(), autopas::DataLayoutOption::aos, useNewton3,
       autopas::ContainerOption::pairwiseVerletLists);
@@ -47,7 +50,7 @@ TEST_P(PairwiseVerletListsTest, testTwoParticles) {
   verletLists.rebuildNeighborLists(&traversal);
   verletLists.computeInteractions(&traversal);
 
-  std::vector<Particle *> list;
+  std::vector<ParticleFP64 *> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
 
   size_t partners = 0;
@@ -71,12 +74,11 @@ TEST_P(PairwiseVerletListsTest, testTwoParticles) {
  * The result should be 2.
  */
 TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
-  MockPairwiseFunctor<Particle> emptyFunctorOther;
+  MockPairwiseFunctor<ParticleFP64> emptyFunctorOther;
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
-  unsigned int rebuildFrequency = 20;
+  double skin = 0.2;
   auto params = GetParam();
   double cellSizeFactor = std::get<0>(params);
   bool useNewton3 = std::get<1>(params);
@@ -85,20 +87,20 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
 
   EXPECT_CALL(emptyFunctorOther, AoSFunctor(_, _, useNewton3)).Times(AtLeast(1));
 
-  autopas::VerletListsCells<Particle, autopas::VLCCellPairNeighborList<Particle>> verletLists(
-      min, max, cutoff, skinPerTimestep, rebuildFrequency, cellSizeFactor, loadEstimator, buildType);
+  autopas::VerletListsCells<ParticleFP64, autopas::VLCCellPairNeighborList<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, cellSizeFactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2.5, 2.5, 2.5};
-  Particle p(r, {0., 0., 0.}, 0);
+  ParticleFP64 p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
   std::array<double, 3> r2 = {2.5, 2.5, 3.5};
-  Particle p2(r2, {0., 0., 0.}, 1);
+  ParticleFP64 p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
   std::array<double, 3> r3 = {3, 3, 3.5};
-  Particle p3(r3, {0., 0., 0.}, 1);
+  ParticleFP64 p3(r3, {0., 0., 0.}, 1);
   verletLists.addParticle(p3);
 
-  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCCellPairNeighborList<Particle>> traversal(
+  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCCellPairNeighborList<ParticleFP64>> traversal(
       verletLists.getCellsPerDimension(), &emptyFunctorOther, verletLists.getInteractionLength(),
       verletLists.getCellLength(), autopas::DataLayoutOption::aos, useNewton3,
       autopas::ContainerOption::pairwiseVerletLists);
@@ -106,7 +108,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
   verletLists.rebuildNeighborLists(&traversal);
   verletLists.computeInteractions(&traversal);
 
-  std::vector<Particle *> list;
+  std::vector<ParticleFP64 *> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
 
   size_t partners = 0;
@@ -131,12 +133,11 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
  * This scenario includes three particles interacting with each other and the result should be 3.
  */
 TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
-  MockPairwiseFunctor<Particle> mock;
+  MockPairwiseFunctor<ParticleFP64> mock;
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
-  unsigned int rebuildFrequency = 20;
+  double skin = 0.2;
   auto params = GetParam();
   double cellSizeFactor = std::get<0>(params);
   bool useNewton3 = std::get<1>(params);
@@ -144,27 +145,27 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
 
   EXPECT_CALL(mock, AoSFunctor(_, _, useNewton3)).Times(AtLeast(1));
-  autopas::VerletListsCells<Particle, autopas::VLCCellPairNeighborList<Particle>> verletLists(
-      min, max, cutoff, skinPerTimestep, rebuildFrequency, cellSizeFactor, loadEstimator, buildType);
+  autopas::VerletListsCells<ParticleFP64, autopas::VLCCellPairNeighborList<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, cellSizeFactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2.5, 2.5, 2.5};
-  Particle p(r, {0., 0., 0.}, 0);
+  ParticleFP64 p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
   std::array<double, 3> r2 = {2.5, 2.5, 3.5};
-  Particle p2(r2, {0., 0., 0.}, 1);
+  ParticleFP64 p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
   std::array<double, 3> r3 = {2, 2, 3};
-  Particle p3(r3, {0., 0., 0.}, 1);
+  ParticleFP64 p3(r3, {0., 0., 0.}, 1);
   verletLists.addParticle(p3);
 
-  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCCellPairNeighborList<Particle>> traversal(
+  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCCellPairNeighborList<ParticleFP64>> traversal(
       verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(), verletLists.getCellLength(),
       autopas::DataLayoutOption::aos, useNewton3, autopas::ContainerOption::pairwiseVerletLists);
 
   verletLists.rebuildNeighborLists(&traversal);
   verletLists.computeInteractions(&traversal);
 
-  std::vector<Particle *> list;
+  std::vector<ParticleFP64 *> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
 
   size_t partners = 0;
@@ -189,33 +190,32 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
  * This scenario includes a single particle and the result should be 0.
  */
 TEST_P(PairwiseVerletListsTest, testOneParticle) {
-  MockPairwiseFunctor<Particle> mock;
+  MockPairwiseFunctor<ParticleFP64> mock;
   // EXPECT_CALL(mock, AoSFunctor(_, _, true)); ?????
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
-  unsigned int rebuildFrequency = 20;
+  double skin = 0.2;
   auto params = GetParam();
   double cellSizeFactor = std::get<0>(params);
   bool useNewton3 = std::get<1>(params);
   auto buildType = std::get<2>(params);
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
-  autopas::VerletListsCells<Particle, autopas::VLCCellPairNeighborList<Particle>> verletLists(
-      min, max, cutoff, skinPerTimestep, rebuildFrequency, cellSizeFactor, loadEstimator, buildType);
+  autopas::VerletListsCells<ParticleFP64, autopas::VLCCellPairNeighborList<ParticleFP64>> verletLists(
+      min, max, cutoff, skin, cellSizeFactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2.5, 2.5, 2.5};
-  Particle p(r, {0., 0., 0.}, 0);
+  ParticleFP64 p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
 
-  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCCellPairNeighborList<Particle>> traversal(
+  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCCellPairNeighborList<ParticleFP64>> traversal(
       verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(), verletLists.getCellLength(),
       autopas::DataLayoutOption::aos, useNewton3, autopas::ContainerOption::pairwiseVerletLists);
 
   verletLists.rebuildNeighborLists(&traversal);
   verletLists.computeInteractions(&traversal);
 
-  std::vector<Particle *> list;
+  std::vector<ParticleFP64 *> list;
   for (auto iter = verletLists.begin(); iter.isValid(); ++iter) list.push_back(&*iter);
 
   size_t partners = 0;
@@ -250,9 +250,9 @@ TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
   std::array<double, 3> min = {0, 0, 0};
   std::array<double, 3> max = {10, 10, 10};
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists1(
-      min, max, cutoff, 0.01, 30, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, 0.01, cellSizeFactor, loadEstimator, buildType);
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists2(
-      min, max, cutoff, 0.01, 30, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, 0.01, cellSizeFactor, loadEstimator, buildType);
 
   Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),

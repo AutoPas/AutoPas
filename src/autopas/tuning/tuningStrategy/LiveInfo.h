@@ -12,6 +12,7 @@
 #include <limits>
 #include <variant>
 
+#include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -19,7 +20,8 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/SimilarityFunctions.h"
+#include "autopas/utils/ParticleBinStructure.h"
+#include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -33,6 +35,82 @@ class LiveInfo {
   // know the Particle type. Actually, no particle specific information can be used here, so only a pointer to
   // ParticleBase would suffice, but iteration doesn't work that way at the moment.
 
+ private:
+  /**
+   * Returns a particle bin structure that mimics a Linked Cells container with cell size factor 1.
+   *
+   * @param domainSize Size of (sub)domain.
+   * @param interactionLength Interaction length (cutoff + skin).
+   * @param boxMin Lower left corner of (sub)domain.
+   * @param boxMax Upper right corner of (sub)domain.
+   * @param cutoff Cutoff.
+   * @return
+   */
+  static utils::ParticleBinStructure buildCellBinStructure(const std::array<double, 3> &domainSize,
+                                                           const double interactionLength,
+                                                           const std::array<double, 3> &boxMin,
+                                                           const std::array<double, 3> &boxMax, double cutoff) {
+    std::array<size_t, 3> cellsPerDim{};
+    std::array<double, 3> cellLength{};
+
+    for (int d = 0; d < 3; ++d) {
+      // The number of cells is rounded down because the cells will be stretched to fit.
+      // std::max to ensure there is at least one cell.
+      cellsPerDim[d] = std::max(static_cast<size_t>(std::floor(domainSize[d] / interactionLength)), 1ul);
+      cellLength[d] = domainSize[d] / static_cast<double>(cellsPerDim[d]);
+    }
+
+    return {cellsPerDim, cellLength, boxMin, boxMax, cutoff};
+  }
+
+  /**
+   * Returns a bin structure where there are, on average, roughly ten particles per bin, and the bin dimensions are
+   * simply a scaling of the domain dimensions. Forces there to be at least one bin, e.g. in the case of no particles.
+   *
+   * Todo The choice of 10 is arbitrary and probably can be optimized.
+   *
+   * @param domainSize size of (sub)domain
+   * @param numParticles number of particles
+   * @param boxMin Lower left corner of (sub)domain.
+   * @param boxMax Upper right corner of (sub)domain.
+   * @param cutoff Cutoff.
+   * @return
+   */
+  static utils::ParticleBinStructure buildParticleDependentBinStructure(const std::array<double, 3> &domainSize,
+                                                                        const size_t numParticles,
+                                                                        const std::array<double, 3> &boxMin,
+                                                                        const std::array<double, 3> &boxMax,
+                                                                        double cutoff) {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    const auto targetNumberOfBins = std::max(std::ceil(static_cast<double>(numParticles) / 10.), 1.);
+    const auto targetNumberOfBinsPerDim = std::cbrt(targetNumberOfBins);
+    // This is probably not an integer, so we floor to get more than 10 particles per bin
+    const auto numberOfBinsPerDim = static_cast<size_t>(std::floor(targetNumberOfBinsPerDim));
+    const auto binDimensions = domainSize / static_cast<double>(numberOfBinsPerDim);
+
+    return {numberOfBinsPerDim, binDimensions, boxMin, boxMax, cutoff};
+  }
+
+  /**
+   * Returns a bin structure the domain is divided into 3x3x3 uniform bins.
+   *
+   * @param domainSize size of (sub)domain
+   * @param boxMin Lower left corner of (sub)domain.
+   * @param boxMax Upper right corner of (sub)domain.
+   * @param cutoff Cutoff.
+   * @return
+   */
+  static utils::ParticleBinStructure buildBlurredBinStructure(const std::array<double, 3> &domainSize,
+                                                              const std::array<double, 3> &boxMin,
+                                                              const std::array<double, 3> &boxMax, double cutoff) {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    const auto binLength = domainSize / 3.;
+
+    return {3, binLength, boxMin, boxMax, cutoff};
+  }
+
  public:
   /**
    * The type of an info.
@@ -41,178 +119,307 @@ class LiveInfo {
                                 DataLayoutOption, Newton3Option>;
 
   /**
-   * Gathers important information from a particle container and functor.
+   * Constructor.
+   */
+  LiveInfo() = default;
+
+  /**
+   * Constructor for LiveInfo using the parameters.
    *
-   * The gathered information should allow to estimate the performance of different configurations.
+   * @param numOwnedParticles The number of owned particles.
+   * @param numHaloParticles The number of halo particles.
+   * @param cutoff The cutoff radius.
+   * @param skin The skin radius.
+   * @param domainSizeX The size of the domain in x direction.
+   * @param domainSizeY The size of the domain in y direction.
+   * @param domainSizeZ The size of the domain in z direction.
+   * @param particleSize The size of a particle in bytes.
+   * @param threadCount The number of threads used.
+   * @param rebuildFrequency The rebuild frequency of the neighbor lists.
+   * @param numCells The number of cells in the container.
+   * @param numEmptyCells The number of empty cells in the container.
+   * @param minParticlesPerCell The minimum number of particles in a cell.
+   * @param maxParticlesPerCell The maximum number of particles in a cell.
+   * @param medianParticlesPerCell The median number of particles in a cell.
+   * @param lowerQuartileParticlesPerCell The lower quartile of particles per cell.
+   * @param upperQuartileParticlesPerCell The upper quartile of particles per cell.
+   * @param meanParticlesPerCell The mean number of particles per cell.
+   * @param particlesPerCellStdDev The standard deviation of particles per cell.
+   * @param relativeParticlesPerCellStdDev The relative standard deviation of particles per cell. (mean normalized)
+   * @param estimatedNumNeighborInteractions The estimated number of neighbor interactions.
+   * @param particleDependentBinMaxDensity The maximum density of the particle-dependent bin structure.
+   * @param particleDependentBinDensityStdDev The standard deviation of the densities of the particle-dependent bin
+   * structure.
+   * @param maxParticlesPerBlurredBin The maximum number of particles in a blurred bin.
+   * @param minParticlesPerBlurredBin The minimum number of particles in a blurred bin.
+   * @param medianParticlesPerBlurredBin The median number of particles in a blurred bin.
+   * @param lowerQuartileParticlesPerBlurredBin The lower quartile of particles per blurred bin.
+   * @param upperQuartileParticlesPerBlurredBin The upper quartile of particles per blurred bin.
+   * @param meanParticlesPerBlurredBin The mean number of particles in a blurred bin.
+   * @param particlesPerBlurredBinStdDev The standard deviation of particles per blurred bin.
+   * @param relativeParticlesPerBlurredBinStdDev The relative standard deviation of particles per blurred bin. (mean
+   * normalized)
+   */
+  LiveInfo(size_t numOwnedParticles, size_t numHaloParticles, double cutoff, double skin, double domainSizeX,
+           double domainSizeY, double domainSizeZ, size_t particleSize, size_t threadCount, size_t rebuildFrequency,
+           size_t numCells, size_t numEmptyCells, size_t minParticlesPerCell, size_t maxParticlesPerCell,
+           size_t medianParticlesPerCell, size_t lowerQuartileParticlesPerCell, size_t upperQuartileParticlesPerCell,
+           double meanParticlesPerCell, double particlesPerCellStdDev, double relativeParticlesPerCellStdDev,
+           size_t estimatedNumNeighborInteractions, double particleDependentBinMaxDensity,
+           double particleDependentBinDensityStdDev, size_t maxParticlesPerBlurredBin, size_t minParticlesPerBlurredBin,
+           size_t medianParticlesPerBlurredBin, size_t lowerQuartileParticlesPerBlurredBin,
+           size_t upperQuartileParticlesPerBlurredBin, double meanParticlesPerBlurredBin,
+           double particlesPerBlurredBinStdDev, double relativeParticlesPerBlurredBinStdDev) {
+    // Validate all inputs and log warnings if invalid
+    if (cutoff <= 0) {
+      AutoPasLog(WARN, "LiveInfo: cutoff must be greater than 0");
+    }
+    if (skin < 0) {
+      AutoPasLog(WARN, "LiveInfo: skin must be non-negative");
+    }
+    if (domainSizeX <= 0 or domainSizeY <= 0 or domainSizeZ <= 0) {
+      AutoPasLog(WARN, "LiveInfo: domain sizes must be greater than 0");
+    }
+    if (particleSize == 0) {
+      AutoPasLog(WARN, "LiveInfo: particleSize must be greater than 0");
+    }
+    if (threadCount == 0) {
+      AutoPasLog(WARN, "LiveInfo: threadCount must be greater than 0");
+    }
+    if (rebuildFrequency == 0) {
+      AutoPasLog(WARN, "LiveInfo: rebuildFrequency must be greater than 0");
+    }
+    if (numCells == 0) {
+      AutoPasLog(WARN, "LiveInfo: numCells must be greater than 0");
+    }
+    if (maxParticlesPerCell < minParticlesPerCell) {
+      AutoPasLog(WARN, "LiveInfo: maxParticlesPerCell must be >= minParticlesPerCell");
+    }
+    if (meanParticlesPerCell < 0) {
+      AutoPasLog(WARN, "LiveInfo: meanParticlesPerCell must be non-negative");
+    }
+    if (particlesPerCellStdDev < 0) {
+      AutoPasLog(WARN, "LiveInfo: particlesPerCellStdDev must be non-negative");
+    }
+    if (relativeParticlesPerCellStdDev < 0) {
+      AutoPasLog(WARN, "LiveInfo: relativeParticlesPerCellStdDev must be non-negative");
+    }
+    if (particleDependentBinMaxDensity < 0) {
+      AutoPasLog(WARN, "LiveInfo: particleDependentBinMaxDensity must be non-negative");
+    }
+    if (particleDependentBinDensityStdDev < 0) {
+      AutoPasLog(WARN, "LiveInfo: particleDependentBinDensityStdDev must be non-negative");
+    }
+    if (maxParticlesPerBlurredBin < minParticlesPerBlurredBin) {
+      AutoPasLog(WARN, "LiveInfo: maxParticlesPerBlurredBin must be >= minParticlesPerBlurredBin");
+    }
+    if (meanParticlesPerBlurredBin < 0) {
+      AutoPasLog(WARN, "LiveInfo: meanParticlesPerBlurredBin must be non-negative");
+    }
+    if (particlesPerBlurredBinStdDev < 0) {
+      AutoPasLog(WARN, "LiveInfo: particlesPerBlurredBinStdDev must be non-negative");
+    }
+    if (relativeParticlesPerBlurredBinStdDev < 0) {
+      AutoPasLog(WARN, "LiveInfo: relativeParticlesPerBlurredBinStdDev must be non-negative");
+    }
+
+    // Store validated parameters in infos
+    infos["numOwnedParticles"] = numOwnedParticles;
+    infos["numHaloParticles"] = numHaloParticles;
+    infos["cutoff"] = cutoff;
+    infos["skin"] = skin;
+    infos["domainSizeX"] = domainSizeX;
+    infos["domainSizeY"] = domainSizeY;
+    infos["domainSizeZ"] = domainSizeZ;
+    infos["particleSize"] = particleSize;
+    infos["threadCount"] = threadCount;
+    infos["rebuildFrequency"] = rebuildFrequency;
+    infos["numCells"] = numCells;
+    infos["numEmptyCells"] = numEmptyCells;
+    infos["minParticlesPerCell"] = minParticlesPerCell;
+    infos["maxParticlesPerCell"] = maxParticlesPerCell;
+    infos["medianParticlesPerCell"] = medianParticlesPerCell;
+    infos["lowerQuartileParticlesPerCell"] = lowerQuartileParticlesPerCell;
+    infos["upperQuartileParticlesPerCell"] = upperQuartileParticlesPerCell;
+    infos["meanParticlesPerCell"] = meanParticlesPerCell;
+    infos["particlesPerCellStdDev"] = particlesPerCellStdDev;
+    infos["relativeParticlesPerCellStdDev"] = relativeParticlesPerCellStdDev;
+    infos["estimatedNumNeighborInteractions"] = estimatedNumNeighborInteractions;
+    infos["particleDependentBinMaxDensity"] = particleDependentBinMaxDensity;
+    infos["particleDependentBinDensityStdDev"] = particleDependentBinDensityStdDev;
+    infos["maxParticlesPerBlurredBin"] = maxParticlesPerBlurredBin;
+    infos["minParticlesPerBlurredBin"] = minParticlesPerBlurredBin;
+    infos["medianParticlesPerBlurredBin"] = medianParticlesPerBlurredBin;
+    infos["lowerQuartileParticlesPerBlurredBin"] = lowerQuartileParticlesPerBlurredBin;
+    infos["upperQuartileParticlesPerBlurredBin"] = upperQuartileParticlesPerBlurredBin;
+    infos["meanParticlesPerBlurredBin"] = meanParticlesPerBlurredBin;
+    infos["particlesPerBlurredBinStdDev"] = particlesPerBlurredBinStdDev;
+    infos["relativeParticlesPerBlurredBinStdDev"] = relativeParticlesPerBlurredBinStdDev;
+  }
+
+  /**
+   * Gathers key statistics that define the computational profile of the simulation, in order to provide lower
+   * dimensional and human understandable inputs for the tuning strategies.
+   *
+   * A lot of the information is based on a couple of different spatial bin resolutions:
+   * - cells: Bin dimensions are the same as cells in the Linked Cells container with CSF 1.
+   * - particleDependentBins: Bin dimensions are designed such that the are approximately 10 particles per bin.
+   * - blurredBins: The domain is divided equally into 3x3x3 "blurred" bins
+   *
+   * @note It is not clear how useful the statistics derived from the particleDependentBins are, as the "resolution"
+   * varies depending on the number of particles. E.g. Consider a sparse simulation with a "macroscopic" heterogeneity
+   * and a dense simulation with a "microscopic" heterogeneity but at a "macroscopic" level is rather homogeneous.
+   * These could have the same particleDependentBin homogeneity (relative std. dev. of bin counts) but would respond
+   * to traversals very differently. This could, however, provide a useful metric for homogeneity which is somewhat
+   * independent of particle density (e.g. could be useful for determining the best traversal with one statistic
+   * independently of what cell-size factor is chosen)
    *
    * Currently, it provides:
-   * - numParticles: The number of particles in the container.
-   * - numHaloParticles: The number of particles in the container that are outside of the domain.
+   * ---- Bin Independent Statistics ----
+   * - numOwnedParticles: The number of particles in the container that are marked as owned.
+   * - numHaloParticles: The number of particles in the container that are marked as halo.
    * - cutoff: The configured cutoff radius.
    * - skin: The configured skin radius.
    * - domainSizeX: The size of the domain on the x-axis.
    * - domainSizeY: The size of the domain on the y-axis.
    * - domainSizeZ: The size of the domain on the z-axis.
    * - particleSize: The number of bytes one particle in AoS layout needs.
-   * - particleSizeNeededByFunctor: The number of bytes the information needed by the functor from each particle
-   * occupies. Important for the SoA data layout, but irrelevant for the AoS data layout.
-   * - numCells: The number of cells in the domain if a cell has a side-length equal to the cutoff.
-   * - numEmptyCells: The number of empty cells in the domain.
-   * - minParticlesPerCell: The minimum number of particles a cell in the domain contains.
-   * - maxParticlesPerCell: The maximum number of particles a cell in the domain contains.
-   * - avgParticlesPerCell: The average number of particles per cell. (Cells are small so we don't expect outliers
-   * that make the average useless).
-   * - estimatedNumNeighborInteractions: Rough estimation of number of neighbor interactions. Assumes that neighboring
-   * cells contain roughly the same number of particles. Estimation does not work well if this is not the case.
-   * - percentParticlesPerCellStdDev: The standard deviation of the number of particles in each cell from the
-   * average number of particles per cell, divided by the avgParticlesPerCell.
-   * -percentParticlesPerBlurredCellStdDev: The standard deviation of the number of particles in each blurred cell,
-   * divided by the average number of particles per blurred cell. A blurred cell is exactly 1/27th of the domain.
-   * - threadCount: The number of threads that can be used.
+   * - threadCount: The number of OMP threads that can be used.
    * - rebuildFrequency: The current verlet-rebuild-frequency of the simulation.
+   * ---- Cell Statistics ----
+   * - numCells: The number of cell-bins in the domain.
+   * - numEmptyCells: The number of cell-bins that are empty.
+   * - minParticlesPerCell: The minimum number of particles in a cell-bin.
+   * - maxParticlesPerCell: The maximum number of particles in a cell-bin.
+   * - medianParticlesPerCell: The median number of particles per cell-bin.
+   * - lowerQuartileParticlesPerCell: The lower quartile number of particles per cell-bin.
+   * - upperQuartileParticlesPerCell: The upper quartile number of particles per cell-bin.
+   * - meanParticlesPerCell: The average number of particles per cell-bin.
+   * - particlesPerCellStdDev: The standard deviation in the number of particles per cell-bin.
+   * - relativeParticlesPerCellStdDev: The, relative to the mean, standard deviation in the number of particles per
+   * cell-bin.
+   * - estimatedNumNeighborInteractions: Rough estimation of number of neighbor interactions. Assumes that neighboring
+   * cell-bins contain roughly the same number of particles. Estimation does not work well if this is not the case.
+   * ---- Particle Dependent Bin Statistics ----
+   * - particleDependentBinMaxDensity: The maximum density of particles of a particle-dependent bin.
+   * - particleDependentBinDensityStdDev: The standard deviation in the density of particles per particle-dependent
+   * bin. In earlier versions of AutoPas, this was referred to as "Homogeneity".
+   * ---- Blurred Bin Statistics ----
+   * - maxParticlesPerBlurredBin: The maximum number of particles in a blurred bin.
+   * - minParticlesPerBlurredBin: The minimum number of particles in a blurred bin.
+   * - medianParticlesPerBlurredBin: The median number of particles per blurred bin.
+   * - lowerQuartileParticlesPerBlurredBin: The lower quartile number of particles per blurred bin.
+   * - upperQuartileParticlesPerBlurredBin: The upper quartile number of particles per blurred bin.
+   * - meanParticlesPerBlurredBin: The mean number of particles per blurred bin.
+   * - particlesPerBlurredBinStdDev: The standard deviation in the number of particles per blurred bin.
+   * - relativeParticlesPerBlurredBinStdDev: The, relative to the mean, standard deviation in the number of particles
+   * per blurred bin.
    *
-   * @tparam Particle The type of particle the container stores.
-   * @tparam PairwiseFunctor The type of functor.
-   * @param container The container to gather the infos from.
-   * @param functor The functor to gather the infos from.
+   * @tparam Particle_T The type of particle the container stores.
+   * @param particleIter Iterator to the first particle in the AutoPas container.
    * @param rebuildFrequency The current verlet rebuild frequency that is used in the simulation.
+   * @param numOwnedParticles The number of owned particles in the container.
+   * @param boxMin Lower left corner of (sub)domain.
+   * @param boxMax Upper right corner of (sub)domain.
+   * @param cutoff The cutoff.
+   * @param skin The (Verlet) skin.
    */
-  template <class Particle, class PairwiseFunctor>
-  void gather(const autopas::ParticleContainerInterface<Particle> &container, const PairwiseFunctor &functor,
-              unsigned int rebuildFrequency) {
-    using namespace autopas::utils::ArrayMath::literals;
-    using autopas::utils::ArrayMath::ceilToInt;
-    using autopas::utils::ArrayMath::floorToInt;
+  template <class Particle_T>
+  void gather(ContainerIterator<Particle_T, true, false> particleIter, size_t rebuildFrequency,
+              size_t numOwnedParticles, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
+              double skin) {
+    using namespace utils::ArrayMath::literals;
+    using utils::ArrayMath::ceilAndCast;
 
-    // Some aliases for quicker access
-    const auto &boxMin = container.getBoxMin();
-    const auto &boxMax = container.getBoxMax();
-    const auto cutoff = container.getCutoff();
-    const auto cutoffInv = 1.0 / cutoff;
-    const auto numParticles = container.getNumberOfParticles();
+    // Timer for debugging
+    utils::Timer timerGatherLiveInfo;
+    timerGatherLiveInfo.start();
 
-    infos["numParticles"] = numParticles;
+    // Aliases and info of particle distribution independent information
+    const auto interactionLength = cutoff + skin;
+
     infos["cutoff"] = cutoff;
-    infos["skin"] = container.getVerletSkin();
-    infos["rebuildFrequency"] = static_cast<size_t>(rebuildFrequency);
-    const auto domainSize = boxMax - boxMin;
+    infos["skin"] = skin;
+    infos["rebuildFrequency"] = rebuildFrequency;
+    infos["particleSize"] = sizeof(Particle_T);
+    infos["threadCount"] = static_cast<size_t>(autopas_get_max_threads());
 
+    infos["numOwnedParticles"] = numOwnedParticles;
+
+    const auto domainSize = boxMax - boxMin;
     infos["domainSizeX"] = domainSize[0];
     infos["domainSizeY"] = domainSize[1];
     infos["domainSizeZ"] = domainSize[2];
 
-    infos["particleSize"] = sizeof(Particle);
+    // Build bin structures
+    auto cellBinStruct = buildCellBinStructure(domainSize, interactionLength, boxMin, boxMax, cutoff);
+    auto particleDependentBinStruct =
+        buildParticleDependentBinStructure(domainSize, numOwnedParticles, boxMin, boxMax, cutoff);
+    auto blurredBinStruct = buildBlurredBinStructure(domainSize, boxMin, boxMax, cutoff);
 
-    // Calculate number of cells for a linked cells container, assuming cell size factor == 1
-    const auto cellsPerDim = ceilToInt(domainSize * cutoffInv);
-    const auto numCells = static_cast<size_t>(cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2]);
-    infos["numCells"] = numCells;
+    infos["numCells"] = cellBinStruct.getNumberOfBins();
 
-    // Count how many particles are in each cell via bin counting
-    std::vector<size_t> particleBins;
-    // +1 because we count all halo particles in the last bin
-    particleBins.resize(numCells + 1);
-    // Blurred cells divide the domain into 3x3x3 equivalent boxes.
-    std::vector<size_t> particleBinsBlurred;
-    particleBinsBlurred.resize(27);
-    const auto blurredCellDimsReciproc = std::array<double, 3>{3.0, 3.0, 3.0} / domainSize;
-    for (const Particle &particle : container) {
-      if (utils::inBox(particle.getR(), boxMin, boxMax)) {
-        // find the actual cell
-        const auto offsetIntoBox = particle.getR() - boxMin;
-        const auto cell = floorToInt(offsetIntoBox * cutoffInv);
-        const auto binIndex = (cell[2] * cellsPerDim[1] + cell[1]) * cellsPerDim[0] + cell[0];
-        particleBins[binIndex]++;
-
-        // find the blurred cell
-        const auto cellBlurred = floorToInt(offsetIntoBox * blurredCellDimsReciproc);
-        const auto binIndexBlurred = (cellBlurred[2] * 3 + cellBlurred[1]) * 3 + cellBlurred[0];
-        particleBinsBlurred[binIndexBlurred]++;
-      } else {
-        // found a halo particle
-        particleBins.back()++;
+    // Count the number of owned particles per bin for each bin structure. Also include total count for halo particles.
+    size_t numOwnedParticlesCount = 0;
+    size_t numHaloParticlesCount = 0;
+    for (; particleIter.isValid(); ++particleIter) {
+      if (particleIter->isOwned()) {
+        numOwnedParticlesCount++;
+        const auto particlePos = particleIter->getR();
+        if (utils::inBox(particlePos, boxMin, boxMax)) {
+          cellBinStruct.countParticle(particlePos);
+          particleDependentBinStruct.countParticle(particlePos);
+          blurredBinStruct.countParticle(particlePos);
+        }
+      } else if (particleIter->isHalo()) {
+        numHaloParticlesCount++;
       }
     }
 
-    infos["numHaloParticles"] = particleBins.back();
+    // Sanity Check
+    if (numOwnedParticlesCount != numOwnedParticles) {
+      AutoPasLog(ERROR,
+                 "Number of owned particles tracked by AutoPas ({}) does not match number of owned particles "
+                 "counted using the iterator ({}).",
+                 numOwnedParticles, numOwnedParticlesCount);
+    }
 
-    // calculate statistics about particle distributions per cell
-    const auto avgParticlesPerCell = numParticles == 0
-                                         ? 0.
-                                         : static_cast<double>(container.getNumberOfParticles() - particleBins.back()) /
-                                               static_cast<double>(numCells);
-    const auto avgParticlesPerBlurredCell =
-        numParticles == 0 ? 0.
-                          : static_cast<double>(container.getNumberOfParticles() - particleBins.back()) /
-                                static_cast<double>(particleBinsBlurred.size());
+    infos["numOwnedParticles"] = numOwnedParticlesCount;
+    infos["numHaloParticles"] = numHaloParticlesCount;
 
-    const auto [estimatedNumNeighborInteractions, maxDiff, sumStddev, numEmptyCells, maxParticlesPerCell,
-                minParticlesPerCell] = [&]() {
-      double estimatedNumNeighborInteractionsLambda = 0.;
-      double maxDiffLambda = 0.;
-      double sumStddevLambda = 0.;
-      size_t numEmptyCellsLambda = 0;
-      size_t maxParticlesPerCellLambda = std::numeric_limits<size_t>::min();
-      size_t minParticlesPerCellLambda = std::numeric_limits<size_t>::max();
-      // go over all bins and calculate statistics
-      for (size_t i = 0; i < particleBins.size() - 1; i++) {
-        const auto particlesInBin = particleBins[i];
-        if (particlesInBin == 0) {
-          ++numEmptyCellsLambda;
-        } else {
-          // FIXME: Tobias explain this calculation (:
-          estimatedNumNeighborInteractionsLambda +=
-              static_cast<double>(particlesInBin * (particlesInBin * 27 - 1)) * 0.155;
-        }
-        maxParticlesPerCellLambda = std::max(particlesInBin, maxParticlesPerCellLambda);
-        minParticlesPerCellLambda = std::min(particlesInBin, minParticlesPerCellLambda);
-        const auto diffFromAvg = avgParticlesPerCell - static_cast<int>(particlesInBin);
-        maxDiffLambda = std::max(diffFromAvg, maxDiffLambda);
-        sumStddevLambda += diffFromAvg * diffFromAvg;
-      }
-      estimatedNumNeighborInteractionsLambda /= 2;
+    // calculate statistics
+    cellBinStruct.calculateStatistics();
+    particleDependentBinStruct.calculateStatistics();
+    blurredBinStruct.calculateStatistics();
 
-      return std::tuple{estimatedNumNeighborInteractionsLambda,
-                        maxDiffLambda,
-                        sumStddevLambda,
-                        numEmptyCellsLambda,
-                        maxParticlesPerCellLambda,
-                        minParticlesPerCellLambda};
-    }();
+    // write cellBinStruct statistics to live info
+    infos["numEmptyCells"] = cellBinStruct.getNumEmptyBins();
+    infos["maxParticlesPerCell"] = cellBinStruct.getMaxParticlesPerBin();
+    infos["minParticlesPerCell"] = cellBinStruct.getMinParticlesPerBin();
+    infos["medianParticlesPerCell"] = cellBinStruct.getMedianParticlesPerBin();
+    infos["lowerQuartileParticlesPerCell"] = cellBinStruct.getLowerQuartileParticlesPerBin();
+    infos["upperQuartileParticlesPerCell"] = cellBinStruct.getUpperQuartileParticlesPerBin();
+    infos["meanParticlesPerCell"] = cellBinStruct.getMeanParticlesPerBin();
+    infos["relativeParticlesPerCellStdDev"] = cellBinStruct.getRelStdDevParticlesPerBin();
+    infos["particlesPerCellStdDev"] = cellBinStruct.getStdDevParticlesPerBin();
+    infos["estimatedNumNeighborInteractions"] = cellBinStruct.getEstimatedNumberOfNeighborInteractions();
 
-    infos["numEmptyCells"] = numEmptyCells;
-    infos["maxParticlesPerCell"] = maxParticlesPerCell;
-    infos["minParticlesPerCell"] = minParticlesPerCell;
-    infos["particlesPerCellStdDev"] =
-        numParticles == 0 ? 0.
-                          : std::sqrt(sumStddev) / static_cast<double>(particleBins.size() - 1) / avgParticlesPerCell;
-    infos["avgParticlesPerCell"] = avgParticlesPerCell;
+    // write particle dependent bin statistics to live info
+    infos["particleDependentBinMaxDensity"] = particleDependentBinStruct.getMaxDensity();
+    infos["particleDependentBinDensityStdDev"] = particleDependentBinStruct.getStdDevDensity();
 
-    const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(container);
+    // write blurred bin statistics to live info
+    infos["maxParticlesPerBlurredBin"] = blurredBinStruct.getMaxParticlesPerBin();
+    infos["minParticlesPerBlurredBin"] = blurredBinStruct.getMinParticlesPerBin();
+    infos["medianParticlesPerBlurredBin"] = blurredBinStruct.getMedianParticlesPerBin();
+    infos["lowerQuartileParticlesPerBlurredBin"] = blurredBinStruct.getLowerQuartileParticlesPerBin();
+    infos["upperQuartileParticlesPerBlurredBin"] = blurredBinStruct.getUpperQuartileParticlesPerBin();
+    infos["meanParticlesPerBlurredBin"] = blurredBinStruct.getMeanParticlesPerBin();
+    infos["relativeParticlesPerBlurredBinStdDev"] = blurredBinStruct.getRelStdDevParticlesPerBin();
+    infos["particlesPerBlurredBinStdDev"] = blurredBinStruct.getStdDevParticlesPerBin();
 
-    infos["homogeneity"] = homogeneity;
-    infos["maxDensity"] = maxDensity;
-
-    infos["estimatedNumNeighborInteractions"] = static_cast<unsigned long>(estimatedNumNeighborInteractions);
-
-    const double sumStddevBlurred = [&]() {
-      double res = 0.;
-      for (auto numParticlesInBin : particleBinsBlurred) {
-        auto diff = avgParticlesPerBlurredCell - static_cast<int>(numParticlesInBin);
-        res += diff * diff;
-      }
-      return res;
-    }();
-    infos["particlesPerBlurredCellStdDev"] = numParticles == 0 ? 0.
-                                                               : std::sqrt(sumStddevBlurred) /
-                                                                     static_cast<double>(particleBinsBlurred.size()) /
-                                                                     avgParticlesPerBlurredCell;
-
-    infos["threadCount"] = static_cast<size_t>(autopas::autopas_get_max_threads());
-
-    constexpr size_t particleSizeNeededByFunctor = calculateParticleSizeNeededByFunctor<Particle, PairwiseFunctor>(
-        std::make_index_sequence<PairwiseFunctor::getNeededAttr().size()>());
-    infos["particleSizeNeededByFunctor"] = particleSizeNeededByFunctor;
+    timerGatherLiveInfo.stop();
+    AutoPasLog(DEBUG, "Gathering of LiveInfo took {} ns.", timerGatherLiveInfo.getTotalTime());
   }
 
   /**
@@ -220,6 +427,31 @@ class LiveInfo {
    * @return A map of all infos.
    */
   [[nodiscard]] const auto &get() const { return infos; }
+
+  /**
+   * Gets a single value from the infos that corresponds to the given string.
+   * @tparam T return type
+   * @param key string key for the infos map
+   * @return
+   */
+  template <typename T>
+  T get(const std::string &key) const {
+    // Find the key in the map
+    const auto it = infos.find(key);
+
+    // If key is not found, log an error
+    if (it == infos.end()) {
+      AutoPasLog(ERROR, "Key '" + key + "' not found in infos map.");
+    }
+
+    // Use std::get<T> to extract the value of the desired type
+    try {
+      return std::get<T>(it->second);
+    } catch (const std::bad_variant_access &e) {
+      AutoPasLog(ERROR, "Type mismatch for key '" + key + "'. Requested type does not match the stored type.");
+      return T{};
+    }
+  }
 
   /**
    * Creates a string containing all live info gathered.
@@ -327,21 +559,6 @@ class LiveInfo {
   }
 
  private:
-  /**
-   * Private helper to calculate the particle size needed by a functor. This is the sum of the size of the type of all
-   * needed attributes.
-   * @tparam Particle The type of the Particle
-   * @tparam PairwiseFunctor The Functor
-   * @tparam Idx An index sequence for all elements of PairwiseFunctor::getNeededAttr() elements.
-   * @return The number of bytes needed by the information of a particle the functor needs.
-   */
-  template <class Particle, class PairwiseFunctor, size_t... Idx>
-  constexpr static auto calculateParticleSizeNeededByFunctor(std::index_sequence<Idx...>) {
-    return (0 + ... +
-            sizeof(typename std::tuple_element<PairwiseFunctor::getNeededAttr()[Idx],
-                                               typename Particle::SoAArraysType>::type::value_type));
-  }
-
   /**
    * If the template argument Idx is equal to the function argument idx, the method reads in Type from in and stores it
    * in var.

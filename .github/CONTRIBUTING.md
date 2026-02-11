@@ -6,7 +6,7 @@ Please keep in mind the following notes while working.
 
 ## C++
 ### General Notes
-* Cpp standard: C++17. If there is a piece of code, which could be done better using a newer standard, please add a comment like `@todo C++20` including the alternative version of the code.
+* Cpp standard: C++20. If there is a piece of code, which could be done better using a newer standard, please add a comment like `@todo C++23` including the alternative version of the code.
 * Pointers: Always use smart pointers when you are managing memory. Don't use `new` or `delete`.
 * OpenMP: Use AutoPas wrapper functions and macros for OpenMP from [`WrapOpenMP.h`](/src/autopas/utils/WrapOpenMP.h) instead of native OpenMP to allow clean building without OpenMP.
 * `#pragma once` instead of header guards.
@@ -19,6 +19,7 @@ Please keep in mind the following notes while working.
 
 ### Code Style
 * Private attributes are prefixed with `_`.
+* Postfix template class/typename parameters with `_T`. (This has not been applied retroactively and so there are plenty of cases where this is not yet the case, but should be applied for new contributions.
 * Every (abstract) class gets its own file, named exactly like the class.
 * Class names start with a capital letter.
 * Use `camelCase` over `snake_case`.

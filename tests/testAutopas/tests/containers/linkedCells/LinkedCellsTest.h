@@ -11,7 +11,7 @@
 #include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
-#include "autopas/particles/Particle.h"
+#include "autopas/particles/ParticleDefinitions.h"
 #include "testingHelpers/commonTypedefs.h"
 
 template <class TestingType>

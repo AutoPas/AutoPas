@@ -19,10 +19,10 @@ namespace autopas::internal {
  *
  * It contains a pointer to the particles for AoS, a SoAView for SoA, and the neighbor list for this cluster.
  *
- * @tparam Particle The type of the particles this cluster consists of.
+ * @tparam Particle_T The type of the particles this cluster consists of.
  * @tparam clusterSize The number of particles in the cluster.
  */
-template <class Particle>
+template <class Particle_T>
 class Cluster {
  public:
   /**
@@ -33,7 +33,7 @@ class Cluster {
    * @param firstParticle A pointer to the first particle of the cluster.
    * @param clusterSize Number of particles in the cluster.
    */
-  explicit Cluster(Particle *firstParticle, size_t clusterSize)
+  explicit Cluster(Particle_T *firstParticle, size_t clusterSize)
       : _firstParticle(firstParticle), _clusterSize(clusterSize) {}
 
   /**
@@ -44,12 +44,12 @@ class Cluster {
    * @param index The index of the particle to return.
    * @return the particle at position index in the cluster.
    */
-  Particle &operator[](size_t index) { return *(_firstParticle + index); }
+  Particle_T &operator[](size_t index) { return *(_firstParticle + index); }
 
   /**
    * @copydoc operator[](size_t)
    */
-  const Particle &operator[](size_t index) const { return *(_firstParticle + index); }
+  const Particle_T &operator[](size_t index) const { return *(_firstParticle + index); }
 
   /**
    * Indicates if the cluster contains any non-dummy particles.
@@ -93,25 +93,25 @@ class Cluster {
    * Set the SoAView for this cluster.
    * @param view the new SoAView for this cluster.
    */
-  void setSoAView(const SoAView<typename Particle::SoAArraysType> &view) { _soaView = view; }
+  void setSoAView(const SoAView<typename Particle_T::SoAArraysType> &view) { _soaView = view; }
 
   /**
    * Set the internal neighbor list pointer to an allocated, but not necessarily complete, existing list.
    * @param neighborList Allocated neighbor list.
    */
-  void setNeighborList(std::vector<Cluster<Particle> *> *neighborList) { _neighborClusters = neighborList; }
+  void setNeighborList(std::vector<Cluster<Particle_T> *> *neighborList) { _neighborClusters = neighborList; }
 
   /**
    * Returns the reference to the neighbor list for this cluster.
    * @return reference to the neighbor list.
    */
-  std::vector<Cluster<Particle> *> *getNeighbors() { return _neighborClusters; }
+  std::vector<Cluster<Particle_T> *> *getNeighbors() { return _neighborClusters; }
 
   /**
    * Adds the given cluster to the neighbor list of this cluster.
    * @param neighbor The cluster to add as neighbor.
    */
-  void addNeighbor(Cluster<Particle> &neighbor) { _neighborClusters->push_back(&neighbor); }
+  void addNeighbor(Cluster<Particle_T> &neighbor) { _neighborClusters->push_back(&neighbor); }
 
   /**
    * Remove all neighbors.
@@ -126,7 +126,7 @@ class Cluster {
    *
    * @param firstParticle
    */
-  void reset(Particle *firstParticle) { _firstParticle = firstParticle; }
+  void reset(Particle_T *firstParticle) { _firstParticle = firstParticle; }
 
   /**
    * Get the bounding box of this cluster
@@ -157,11 +157,11 @@ class Cluster {
   /**
    * A pointer to the first particle of the cluster.
    */
-  Particle *_firstParticle = nullptr;
+  Particle_T *_firstParticle = nullptr;
   /**
    * The SoAView for this cluster.
    */
-  SoAView<typename Particle::SoAArraysType> _soaView;
+  SoAView<typename Particle_T::SoAArraysType> _soaView;
   /**
    * The list of neighbor clusters of this cluster.
    */

@@ -8,6 +8,7 @@
 
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
+#include "autopas/particles/OwnershipState.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 
 using ::testing::_;
@@ -21,21 +22,19 @@ TEST_P(VerletListsTest, testVerletListBuildAndIterate) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
-  unsigned int rebuildFrequency = 20;
+  double skin = 0.2;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skinPerTimestep, rebuildFrequency,
-                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
-                                             cellSizeFactor);
+  autopas::VerletLists<ParticleFP64> verletLists(
+      min, max, cutoff, skin, autopas::VerletLists<ParticleFP64>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   std::array<double, 3> r = {2, 2, 2};
-  Particle p(r, {0., 0., 0.}, 0);
+  ParticleFP64 p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
   std::array<double, 3> r2 = {1.5, 2, 2};
-  Particle p2(r2, {0., 0., 0.}, 1);
+  ParticleFP64 p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  MockPairwiseFunctor<Particle> emptyFunctor;
+  MockPairwiseFunctor<ParticleFP64> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(1);
 
   autopas::VLListIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&emptyFunctor,
@@ -57,21 +56,19 @@ TEST_P(VerletListsTest, testVerletListInSkin) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
-  unsigned int rebuildFrequency = 20;
+  double skin = 0.2;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skinPerTimestep, rebuildFrequency,
-                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
-                                             cellSizeFactor);
+  autopas::VerletLists<ParticleFP64> verletLists(
+      min, max, cutoff, skin, autopas::VerletLists<ParticleFP64>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   std::array<double, 3> r = {1.4, 2, 2};
-  Particle p(r, {0., 0., 0.}, 0);
+  ParticleFP64 p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
   std::array<double, 3> r2 = {2.5, 2, 2};
-  Particle p2(r2, {0., 0., 0.}, 1);
+  ParticleFP64 p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  MockPairwiseFunctor<Particle> mockFunctor;
+  MockPairwiseFunctor<ParticleFP64> mockFunctor;
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
   autopas::VLListIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&mockFunctor,
@@ -93,21 +90,19 @@ TEST_P(VerletListsTest, testVerletListBuildTwice) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
-  unsigned int rebuildFrequency = 20;
+  double skin = 0.2;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skinPerTimestep, rebuildFrequency,
-                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
-                                             cellSizeFactor);
+  autopas::VerletLists<ParticleFP64> verletLists(
+      min, max, cutoff, skin, autopas::VerletLists<ParticleFP64>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   std::array<double, 3> r = {2, 2, 2};
-  Particle p(r, {0., 0., 0.}, 0);
+  ParticleFP64 p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
   std::array<double, 3> r2 = {1.5, 2, 2};
-  Particle p2(r2, {0., 0., 0.}, 1);
+  ParticleFP64 p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  MockPairwiseFunctor<Particle> emptyFunctor;
+  MockPairwiseFunctor<ParticleFP64> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
   autopas::VLListIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&emptyFunctor,
@@ -130,26 +125,24 @@ TEST_P(VerletListsTest, testVerletListBuildFarAway) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
-  unsigned int rebuildFrequency = 20;
+  double skin = 0.2;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skinPerTimestep, rebuildFrequency,
-                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
-                                             cellSizeFactor);
+  autopas::VerletLists<ParticleFP64> verletLists(
+      min, max, cutoff, skin, autopas::VerletLists<ParticleFP64>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   std::array<double, 3> r = {2, 2, 2};
-  Particle p(r, {0., 0., 0.}, 0);
+  ParticleFP64 p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
 
   std::array<double, 3> r2 = {1.5, 2, 2};
-  Particle p2(r2, {0., 0., 0.}, 1);
+  ParticleFP64 p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
   std::array<double, 3> r3 = {4.5, 4.5, 4.5};
-  Particle p3(r3, {0., 0., 0.}, 2);
+  ParticleFP64 p3(r3, {0., 0., 0.}, 2);
   verletLists.addParticle(p3);
 
-  MockPairwiseFunctor<Particle> emptyFunctor;
+  MockPairwiseFunctor<ParticleFP64> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
   autopas::VLListIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&emptyFunctor,
@@ -171,21 +164,19 @@ TEST_P(VerletListsTest, testVerletListBuildHalo) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
-  unsigned int rebuildFrequency = 20;
+  double skin = 0.2;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skinPerTimestep, rebuildFrequency,
-                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
-                                             cellSizeFactor);
+  autopas::VerletLists<ParticleFP64> verletLists(
+      min, max, cutoff, skin, autopas::VerletLists<ParticleFP64>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   std::array<double, 3> r = {0.9, 0.9, 0.9};
-  Particle p(r, {0., 0., 0.}, 0, autopas::OwnershipState::halo);
+  ParticleFP64 p(r, {0., 0., 0.}, 0, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p);
   std::array<double, 3> r2 = {1.1, 1.1, 1.1};
-  Particle p2(r2, {0., 0., 0.}, 1);
+  ParticleFP64 p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  MockPairwiseFunctor<Particle> emptyFunctor;
+  MockPairwiseFunctor<ParticleFP64> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
   autopas::VLListIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&emptyFunctor,
@@ -205,8 +196,8 @@ TEST_P(VerletListsTest, testVerletListBuildHalo) {
   ASSERT_EQ(partners, 1);
 }
 
-template <class Container, class Particle>
-bool moveUpdateAndExpectEqual(Container &container, Particle &particle, const std::array<double, 3> &newPosition) {
+template <class Container, class Particle_T>
+bool moveUpdateAndExpectEqual(Container &container, Particle_T &particle, const std::array<double, 3> &newPosition) {
   particle.setR(newPosition);
   bool updated = container.updateHaloParticle(particle);
   if (updated) {
@@ -219,11 +210,11 @@ bool moveUpdateAndExpectEqual(Container &container, Particle &particle, const st
 
 TEST_P(VerletListsTest, testUpdateHaloParticle) {
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.01, 30,
-                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
-                                             cellSizeFactor);
+  autopas::VerletLists<ParticleFP64> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3,
+                                                 autopas::VerletLists<ParticleFP64>::BuildVerletListType::VerletSoA,
+                                                 cellSizeFactor);
 
-  Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1, autopas::OwnershipState::halo);
+  ParticleFP64 p({-.1, 10.1, -.1}, {0., 0., 0.}, 1, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p);
 
   // test same position, change velocity
@@ -250,44 +241,45 @@ TEST_P(VerletListsTest, testUpdateHaloParticle) {
   EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.05, 9.95, .05}));
 
   // check for particle with wrong id
-  Particle p2({-.1, -.1, -.1}, {0., 0., 0.}, 2, autopas::OwnershipState::halo);
+  ParticleFP64 p2({-.1, -.1, -.1}, {0., 0., 0.}, 2, autopas::OwnershipState::halo);
   EXPECT_FALSE(verletLists.updateHaloParticle(p2));
 
   // test move far, expect throw
   EXPECT_FALSE(moveUpdateAndExpectEqual(verletLists, p, {3, 3, 3}));
 
   // test particles at intermediate positions (not at corners)
-  Particle p3({-1., 4., 2.}, {0., 0., 0.}, 3, autopas::OwnershipState::halo);
+  ParticleFP64 p3({-1., 4., 2.}, {0., 0., 0.}, 3, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p3);
   EXPECT_TRUE(verletLists.updateHaloParticle(p3));
-  Particle p4({4., 10.2, 2.}, {0., 0., 0.}, 4, autopas::OwnershipState::halo);
+  ParticleFP64 p4({4., 10.2, 2.}, {0., 0., 0.}, 4, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p4);
   EXPECT_TRUE(verletLists.updateHaloParticle(p4));
-  Particle p5({5., 4., 10.2}, {0., 0., 0.}, 3, autopas::OwnershipState::halo);
+  ParticleFP64 p5({5., 4., 10.2}, {0., 0., 0.}, 3, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p5);
   EXPECT_TRUE(verletLists.updateHaloParticle(p5));
 }
 
 TEST_P(VerletListsTest, LoadExtractSoA) {
   const double cutoff = 2.;
-  double skinPerTimestep = 0.01;
-  unsigned int rebuildFrequency = 30;
+  double skin = 0.3;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, skinPerTimestep, rebuildFrequency,
-                                             autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
-                                             cellSizeFactor);
+  autopas::VerletLists<ParticleFP64> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, skin,
+                                                 autopas::VerletLists<ParticleFP64>::BuildVerletListType::VerletSoA,
+                                                 cellSizeFactor);
 
-  Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1, autopas::OwnershipState::halo);
+  ParticleFP64 p({-.1, 10.1, -.1}, {0., 0., 0.}, 1, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p);
 
-  MockPairwiseFunctor<Particle> mockFunctor;
+  MockPairwiseFunctor<ParticleFP64> mockFunctor;
 
   autopas::VLListIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&mockFunctor,
                                                                               autopas::DataLayoutOption::soa, false);
-  const size_t dimWithHalo = 10 / ((cutoff + skinPerTimestep * rebuildFrequency) * cellSizeFactor) + 2ul;
+  const size_t dimWithHalo = 10 / ((cutoff + skin) * cellSizeFactor) + 2ul;
   const size_t numCells = dimWithHalo * dimWithHalo * dimWithHalo;
-  EXPECT_CALL(mockFunctor, SoALoader(testing::An<autopas::FullParticleCell<Particle> &>(), _, _, _)).Times(numCells);
-  EXPECT_CALL(mockFunctor, SoAExtractor(testing::An<autopas::FullParticleCell<Particle> &>(), _, _)).Times(numCells);
+  EXPECT_CALL(mockFunctor, SoALoader(testing::An<autopas::FullParticleCell<ParticleFP64> &>(), _, _, _))
+      .Times(numCells);
+  EXPECT_CALL(mockFunctor, SoAExtractor(testing::An<autopas::FullParticleCell<ParticleFP64> &>(), _, _))
+      .Times(numCells);
   EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, _)).Times(1);
 
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -300,9 +292,9 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
 TEST_P(VerletListsTest, LoadExtractSoALJ) {
   const double cutoff = 2.;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Molecule> verletLists(
-      {0., 0., 0.}, {10., 10., 10.}, cutoff, 0.01 /*skin*/, 30 /*rebuildFrequency*/,
-      autopas::VerletLists<Molecule>::BuildVerletListType::VerletSoA, cellSizeFactor);
+  autopas::VerletLists<Molecule> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3 /*skin*/,
+                                             autopas::VerletLists<Molecule>::BuildVerletListType::VerletSoA,
+                                             cellSizeFactor);
 
   Molecule p({-.1, 10.1, -.1}, {0., 0., 0.}, 1, 0);
   p.setOwnershipState(autopas::OwnershipState::halo);
@@ -319,11 +311,11 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
 TEST_P(VerletListsTest, SoAvsAoSLJ) {
   const double cutoff = 2.;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Molecule> verletLists1({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.01, 30,
+  autopas::VerletLists<Molecule> verletLists1({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.01,
                                               autopas::VerletLists<Molecule>::BuildVerletListType::VerletSoA,
                                               cellSizeFactor);
 
-  autopas::VerletLists<Molecule> verletLists2({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.01, 30,
+  autopas::VerletLists<Molecule> verletLists2({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.01,
                                               autopas::VerletLists<Molecule>::BuildVerletListType::VerletSoA,
                                               cellSizeFactor);
 

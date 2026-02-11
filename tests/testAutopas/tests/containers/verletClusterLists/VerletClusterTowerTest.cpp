@@ -9,13 +9,13 @@
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "testingHelpers/commonTypedefs.h"
 
-template <class Particle>
-using ClusterTower = autopas::internal::ClusterTower<Particle>;
+template <class Particle_T>
+using ClusterTower = autopas::internal::ClusterTower<Particle_T>;
 
 TEST_F(VerletClusterTowerTest, testAddParticle) {
-  ClusterTower<Particle> tower(4);
-  Particle p1;
-  Particle p2;
+  ClusterTower<ParticleFP64> tower(4);
+  ParticleFP64 p1;
+  ParticleFP64 p2;
 
   tower.addParticle(p1);
   tower.addParticle(p2);
@@ -26,10 +26,10 @@ TEST_F(VerletClusterTowerTest, testAddParticle) {
 static void testClusterGenerationAndDummies(size_t clusterSize) {
   // Test for different number of particles
   for (size_t numParticles : {29, 64, 1, 2, 4, 0}) {
-    ClusterTower<Particle> tower(clusterSize);
+    ClusterTower<ParticleFP64> tower(clusterSize);
 
     for (size_t i = 0; i < numParticles; i++) {
-      tower.addParticle(Particle{{0.0, 0.0, (double)i}, {0, 0, 0}, i});
+      tower.addParticle(ParticleFP64{{0.0, 0.0, (double)i}, {0, 0, 0}, i});
     }
     EXPECT_EQ(tower.getNumActualParticles(), numParticles);
 
@@ -74,7 +74,7 @@ TEST_F(VerletClusterTowerTest, testClusterGenerationAndDummies) {
 }
 
 TEST_F(VerletClusterTowerTest, testCollectAllActualParticles) {
-  ClusterTower<Particle> tower(4);
+  ClusterTower<ParticleFP64> tower(4);
   constexpr size_t numParticles = 21;
 
   for (size_t i = 0; i < numParticles; i++) {
@@ -94,7 +94,7 @@ TEST_F(VerletClusterTowerTest, testCollectAllActualParticles) {
 
 TEST_F(VerletClusterTowerTest, testIterator) {
   constexpr size_t clusterSize = 4;
-  ClusterTower<Particle> tower(clusterSize);
+  ClusterTower<ParticleFP64> tower(clusterSize);
   constexpr size_t numParticles = 21;
   constexpr size_t numDummies = clusterSize - (numParticles % clusterSize);
   static_assert(numDummies != 0, "Without dummies this test is boring. Adapt parameters!");

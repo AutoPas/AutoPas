@@ -25,13 +25,13 @@ template <class ParticleCell, class PairwiseFunctor>
 class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor>,
                               public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
-  using Particle = typename ParticleCell::ParticleType;
+  using ParticleType = typename ParticleCell::ParticleType;
 
   PairwiseFunctor *_functor;
-  internal::VCLClusterFunctor<Particle, PairwiseFunctor> _clusterFunctor;
+  internal::VCLClusterFunctor<ParticleType, PairwiseFunctor> _clusterFunctor;
 
   void processBaseStep(unsigned long x, unsigned long y) {
-    auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
+    auto &clusterList = *VCLTraversalInterface<ParticleType>::_verletClusterLists;
     auto &currentTower = clusterList.getTowerByIndex(x, y);
     for (auto clusterIter =
              (this->_useNewton3 ? currentTower.getClusters().begin() : currentTower.getFirstOwnedCluster());
@@ -67,13 +67,18 @@ class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
 
   void loadDataLayout() override {
     if (this->_dataLayout == DataLayoutOption::soa) {
-      VCLTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
+      VCLTraversalInterface<ParticleType>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
     }
+  }
+
+  void initTraversal() override {
+    SlicedBasedTraversal<ParticleCell, PairwiseFunctor>::reinitForVCL(this->_verletClusterLists);
+    SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor>::initTraversal();
   }
 
   void endTraversal() override {
     if (this->_dataLayout == DataLayoutOption::soa) {
-      VCLTraversalInterface<Particle>::_verletClusterLists->extractParticlesFromSoAs(_functor);
+      VCLTraversalInterface<ParticleType>::_verletClusterLists->extractParticlesFromSoAs(_functor);
     }
   }
 

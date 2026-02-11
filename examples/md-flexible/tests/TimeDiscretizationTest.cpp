@@ -82,8 +82,8 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   fillWithParticlesAndInit(*autoPas);
   initPPL(*PPL);
 
-  // Set verlet skin per timestep to something large so no error messages are displayed
-  autoPas->setVerletSkinPerTimestep(1.);
+  // Set verlet skin to something large so no error messages are displayed
+  autoPas->setVerletSkin(10.);
 
   // The reference positions are the position of the particles in the AutoPas container before
   // calling calculatePositions.
@@ -464,6 +464,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
 #endif
 }
 
+#ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
 /**
  * Test the mechanism that throws an exception when particles travel faster than skin/2/rebuildFreq
  */
@@ -473,7 +474,7 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
 
   autoPas->setBoxMin({0., 0., 0.});
   autoPas->setBoxMax({10., 10., 10.});
-  autoPas->setVerletSkinPerTimestep(.02);
+  autoPas->setVerletSkin(.2);
   autoPas->setVerletRebuildFrequency(10);
   autoPas->init();
 
@@ -495,7 +496,7 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
                std::runtime_error)
       << "The particle moved farther than the allowed change in position but no exception was thrown.";
 }
-
+#endif
 // @todo: move tests to new class SimulationTest.cpp -> Issue #641
 // https://github.com/AutoPas/AutoPas/issues/641
 // @note: since this issue was made, these tests have been converted to templates for either Molecule or

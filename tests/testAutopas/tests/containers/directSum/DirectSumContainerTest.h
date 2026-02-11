@@ -9,7 +9,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/directSum/DirectSum.h"
-#include "autopas/particles/Particle.h"
+#include "autopas/particles/ParticleDefinitions.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ParamType = bool;

@@ -32,8 +32,8 @@
 
 namespace autopas {
 
-template <class Particle>
-AutoPas<Particle>::AutoPas(std::ostream &logOutputStream) {
+template <class Particle_T>
+AutoPas<Particle_T>::AutoPas(std::ostream &logOutputStream) {
   // count the number of autopas instances. This is needed to ensure that the autopas
   // logger is not unregistered while other instances are still using it.
   InstanceCounter::count++;
@@ -46,8 +46,8 @@ AutoPas<Particle>::AutoPas(std::ostream &logOutputStream) {
   autopas::Logger::get()->flush_on(spdlog::level::warn);
 }
 
-template <class Particle>
-AutoPas<Particle>::~AutoPas() {
+template <class Particle_T>
+AutoPas<Particle_T>::~AutoPas() {
   InstanceCounter::count--;
   if (InstanceCounter::count == 0) {
     // remove the Logger from the registry. Do this only if we have no other autopas instances running.
@@ -55,15 +55,15 @@ AutoPas<Particle>::~AutoPas() {
   }
 }
 
-template <class Particle>
-AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
+template <class Particle_T>
+AutoPas<Particle_T> &AutoPas<Particle_T>::operator=(AutoPas &&other) noexcept {
   _autoTuners = std::move(other._autoTuners);
   _logicHandler = std::move(other._logicHandler);
   return *this;
 }
 
-template <class Particle>
-void AutoPas<Particle>::init() {
+template <class Particle_T>
+void AutoPas<Particle_T>::init() {
   int myRank{};
   AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
   if (myRank == 0) {
@@ -87,8 +87,7 @@ void AutoPas<Particle>::init() {
   // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.
   const auto cellSizeFactors = [&]() -> NumberSetFinite<double> {
     if (const auto *csfIntervalPtr = dynamic_cast<NumberInterval<double> *>(_allowedCellSizeFactors.get())) {
-      const auto interactionLength =
-          _logicHandlerInfo.cutoff * _logicHandlerInfo.verletSkinPerTimestep * _verletRebuildFrequency;
+      const auto interactionLength = _logicHandlerInfo.cutoff * _logicHandlerInfo.verletSkin;
       const auto boxLengthX = _logicHandlerInfo.boxMax[0] - _logicHandlerInfo.boxMin[0];
       return {SearchSpaceGenerators::calculateRelevantCsfs(*csfIntervalPtr, interactionLength, boxLengthX)};
     } else {
@@ -108,7 +107,7 @@ void AutoPas<Particle>::init() {
     tuningStrategies.reserve(_tuningStrategyOptions.size());
     for (const auto &strategy : _tuningStrategyOptions) {
       tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
-          searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
+          searchSpace, strategy, _tuningStrategyFactoryInfo, interactionType, _outputSuffix));
     }
     if (_useTuningStrategyLoggerProxy) {
       tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
@@ -124,11 +123,11 @@ void AutoPas<Particle>::init() {
       _autoTuners, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 }
 
-template <class Particle>
+template <class Particle_T>
 template <class Functor>
-bool AutoPas<Particle>::computeInteractions(Functor *f) {
+bool AutoPas<Particle_T>::computeInteractions(Functor *f) {
   static_assert(
-      not std::is_same_v<Functor, autopas::Functor<Particle, Functor>>,
+      not std::is_same_v<Functor, autopas::Functor<Particle_T, Functor>>,
       "The static type of Functor in computeInteractions is not allowed to be autopas::Functor. Please use the "
       "derived type instead, e.g. by using a dynamic_cast.");
   if (f->getCutoff() > this->getCutoff()) {
@@ -148,8 +147,8 @@ bool AutoPas<Particle>::computeInteractions(Functor *f) {
   return false;
 }
 
-template <class Particle>
-size_t AutoPas<Particle>::getNumberOfParticles(IteratorBehavior behavior) const {
+template <class Particle_T>
+size_t AutoPas<Particle_T>::getNumberOfParticles(IteratorBehavior behavior) const {
   size_t numParticles{0};
   if (behavior & IteratorBehavior::owned) {
     numParticles += _logicHandler->getNumberOfParticlesOwned();
@@ -166,20 +165,20 @@ size_t AutoPas<Particle>::getNumberOfParticles(IteratorBehavior behavior) const 
   return numParticles;
 }
 
-template <class Particle>
-void AutoPas<Particle>::reserve(size_t numParticles) {
+template <class Particle_T>
+void AutoPas<Particle_T>::reserve(size_t numParticles) {
   _logicHandler->reserve(numParticles);
 }
 
-template <class Particle>
-void AutoPas<Particle>::reserve(size_t numParticles, size_t numHaloParticles) {
+template <class Particle_T>
+void AutoPas<Particle_T>::reserve(size_t numParticles, size_t numHaloParticles) {
   _logicHandler->reserve(numParticles, numHaloParticles);
 }
 
-template <class Particle>
+template <class Particle_T>
 template <class F>
-void AutoPas<Particle>::addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize,
-                                        F loopBody) {
+void AutoPas<Particle_T>::addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize,
+                                          F loopBody) {
   reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
           getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
   AUTOPAS_OPENMP(parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads())))
@@ -188,20 +187,20 @@ void AutoPas<Particle>::addParticlesAux(size_t numParticlesToAdd, size_t numHalo
   }
 }
 
-template <class Particle>
-void AutoPas<Particle>::addParticle(const Particle &p) {
+template <class Particle_T>
+void AutoPas<Particle_T>::addParticle(const Particle_T &p) {
   _logicHandler->addParticle(p);
 }
 
-template <class Particle>
+template <class Particle_T>
 template <class Collection>
-void AutoPas<Particle>::addParticles(Collection &&particles) {
+void AutoPas<Particle_T>::addParticles(Collection &&particles) {
   addParticlesAux(particles.size(), 0, particles.size(), [&](auto i) { addParticle(particles[i]); });
 }
 
-template <class Particle>
+template <class Particle_T>
 template <class Collection, class F>
-void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate) {
+void AutoPas<Particle_T>::addParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
   AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
@@ -221,14 +220,14 @@ void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate) {
   });
 }
 
-template <class Particle>
-std::vector<Particle> AutoPas<Particle>::updateContainer() {
+template <class Particle_T>
+std::vector<Particle_T> AutoPas<Particle_T>::updateContainer() {
   return _logicHandler->updateContainer();
 }
 
-template <class Particle>
-std::vector<Particle> AutoPas<Particle>::resizeBox(const std::array<double, 3> &boxMin,
-                                                   const std::array<double, 3> &boxMax) {
+template <class Particle_T>
+std::vector<Particle_T> AutoPas<Particle_T>::resizeBox(const std::array<double, 3> &boxMin,
+                                                       const std::array<double, 3> &boxMax) {
   if (_allowedCellSizeFactors->isInterval()) {
     AutoPasLog(WARN,
                "The allowed Cell Size Factors are a continuous interval but internally only those values that "
@@ -240,27 +239,27 @@ std::vector<Particle> AutoPas<Particle>::resizeBox(const std::array<double, 3> &
   return _logicHandler->resizeBox(boxMin, boxMax);
 }
 
-template <class Particle>
-void AutoPas<Particle>::forceRetune() {
+template <class Particle_T>
+void AutoPas<Particle_T>::forceRetune() {
   for (auto &[interaction, tuner] : _autoTuners) {
     tuner->forceRetune();
   }
 }
 
-template <class Particle>
-void AutoPas<Particle>::addHaloParticle(const Particle &haloParticle) {
+template <class Particle_T>
+void AutoPas<Particle_T>::addHaloParticle(const Particle_T &haloParticle) {
   _logicHandler->addHaloParticle(haloParticle);
 }
 
-template <class Particle>
+template <class Particle_T>
 template <class Collection>
-void AutoPas<Particle>::addHaloParticles(Collection &&particles) {
+void AutoPas<Particle_T>::addHaloParticles(Collection &&particles) {
   addParticlesAux(0, particles.size(), particles.size(), [&](auto i) { addHaloParticle(particles[i]); });
 }
 
-template <class Particle>
+template <class Particle_T>
 template <class Collection, class F>
-void AutoPas<Particle>::addHaloParticlesIf(Collection &&particles, F predicate) {
+void AutoPas<Particle_T>::addHaloParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
   AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
@@ -280,25 +279,25 @@ void AutoPas<Particle>::addHaloParticlesIf(Collection &&particles, F predicate) 
   });
 }
 
-template <class Particle>
-void AutoPas<Particle>::deleteAllParticles() {
+template <class Particle_T>
+void AutoPas<Particle_T>::deleteAllParticles() {
   _logicHandler->deleteAllParticles();
 }
 
-template <class Particle>
-void AutoPas<Particle>::deleteParticle(IteratorT &iter) {
+template <class Particle_T>
+void AutoPas<Particle_T>::deleteParticle(IteratorT &iter) {
   _logicHandler->decreaseParticleCounter(*iter);
   internal::deleteParticle(iter);
 }
 
-template <class Particle>
-void AutoPas<Particle>::deleteParticle(RegionIteratorT &iter) {
+template <class Particle_T>
+void AutoPas<Particle_T>::deleteParticle(RegionIteratorT &iter) {
   _logicHandler->decreaseParticleCounter(*iter);
   internal::deleteParticle(iter);
 }
 
-template <class Particle>
-bool AutoPas<Particle>::deleteParticle(Particle &particle) {
+template <class Particle_T>
+bool AutoPas<Particle_T>::deleteParticle(Particle_T &particle) {
   _logicHandler->decreaseParticleCounter(particle);
   // if the particle was not found in the logic handler's buffers it must be in the container
   auto [particleDeleted, refStillValid] = _logicHandler->deleteParticleFromBuffers(particle);
@@ -308,56 +307,56 @@ bool AutoPas<Particle>::deleteParticle(Particle &particle) {
   return refStillValid;
 }
 
-template <class Particle>
-typename AutoPas<Particle>::IteratorT AutoPas<Particle>::begin(IteratorBehavior behavior) {
+template <class Particle_T>
+typename AutoPas<Particle_T>::IteratorT AutoPas<Particle_T>::begin(IteratorBehavior behavior) {
   return _logicHandler->begin(behavior);
 }
 
-template <class Particle>
-typename AutoPas<Particle>::ConstIteratorT AutoPas<Particle>::begin(IteratorBehavior behavior) const {
+template <class Particle_T>
+typename AutoPas<Particle_T>::ConstIteratorT AutoPas<Particle_T>::begin(IteratorBehavior behavior) const {
   return std::as_const(*_logicHandler).begin(behavior);
 }
 
-template <class Particle>
-typename AutoPas<Particle>::RegionIteratorT AutoPas<Particle>::getRegionIterator(
+template <class Particle_T>
+typename AutoPas<Particle_T>::RegionIteratorT AutoPas<Particle_T>::getRegionIterator(
     const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
   return _logicHandler->getRegionIterator(lowerCorner, higherCorner, behavior);
 }
 
-template <class Particle>
-typename AutoPas<Particle>::RegionConstIteratorT AutoPas<Particle>::getRegionIterator(
+template <class Particle_T>
+typename AutoPas<Particle_T>::RegionConstIteratorT AutoPas<Particle_T>::getRegionIterator(
     const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner,
     IteratorBehavior behavior) const {
   return std::as_const(*_logicHandler).getRegionIterator(lowerCorner, higherCorner, behavior);
 }
 
-template <class Particle>
-unsigned long AutoPas<Particle>::getContainerType() const {
+template <class Particle_T>
+unsigned long AutoPas<Particle_T>::getContainerType() const {
   return _logicHandler->getContainer().getContainerType();
 }
 
-template <class Particle>
-const std::array<double, 3> &AutoPas<Particle>::getBoxMin() const {
+template <class Particle_T>
+const std::array<double, 3> &AutoPas<Particle_T>::getBoxMin() const {
   return _logicHandler->getContainer().getBoxMin();
 }
 
-template <class Particle>
-const std::array<double, 3> &AutoPas<Particle>::getBoxMax() const {
+template <class Particle_T>
+const std::array<double, 3> &AutoPas<Particle_T>::getBoxMax() const {
   return _logicHandler->getContainer().getBoxMax();
 }
 
-template <class Particle>
-autopas::ParticleContainerInterface<Particle> &AutoPas<Particle>::getContainer() {
+template <class Particle_T>
+autopas::ParticleContainerInterface<Particle_T> &AutoPas<Particle_T>::getContainer() {
   return _logicHandler->getContainer();
 }
 
-template <class Particle>
-const autopas::ParticleContainerInterface<Particle> &AutoPas<Particle>::getContainer() const {
+template <class Particle_T>
+const autopas::ParticleContainerInterface<Particle_T> &AutoPas<Particle_T>::getContainer() const {
   return _logicHandler->getContainer();
 }
 
-template <class Particle>
-bool AutoPas<Particle>::searchSpaceIsTrivial() {
+template <class Particle_T>
+bool AutoPas<Particle_T>::searchSpaceIsTrivial() {
   bool isTrivial = true;
   for (auto &[interaction, tuner] : _autoTuners) {
     isTrivial = isTrivial and tuner->searchSpaceIsTrivial();

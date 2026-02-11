@@ -61,38 +61,38 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [1, 2] # Split tests into two parts, to be run by separate runners
-        md-flex-mode: [singlesite, multisite]
+        part: [ 1, 2 ] # Split tests into two parts, to be run by separate runners
+        md-flex-mode: [ singlesite, multisite ]
         config: [
-            #    0              1       2       3                   4        5       6     7      8
-            # container      , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan,  AVX
-        [autopas-build-clang , clang, clang++, Ninja            , Debug  , ON     , ON  , OFF ,  ON],
-        [autopas-build-clang , clang, clang++, Ninja            , Release, OFF    , ON  , OFF ,  ON],
-        [autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ,  ON],
-        [autopas-build-clang , clang, clang++, Ninja            , Release, ON     , ON  , OFF ,  ON],
-        [autopas-build-gcc   , gcc  , g++    ,"'Unix Makefiles'", Release, ON     , OFF , OFF ,  ON],
-        [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,  ON],
+          #    0              1       2       3                   4        5       6     7      8
+          # container      , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan,  AVX
+          [ autopas-build-clang , clang, clang++, Ninja            , Debug  , ON     , ON  , OFF ,  ON ],
+          [ autopas-build-clang , clang, clang++, Ninja            , Release, OFF    , ON  , OFF ,  ON ],
+          [ autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ,  ON ],
+          [ autopas-build-clang , clang, clang++, Ninja            , Release, ON     , ON  , OFF ,  ON ],
+          [ autopas-build-gcc   , gcc  , g++    ,"'Unix Makefiles'", Release, ON     , OFF , OFF ,  ON ],
+          [ autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,  ON ],
         ]
         exclude:
           # Exclude multisite tests (to later be re-added for some configurations)
           - md-flex-mode: multisite
           # Exclude MPI configuration from part 2, as there are not many tests and so don't need to be split
-          - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF   , ON]
+          - config: [ autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF   , ON ]
             part: 2
         # For two configurations, compile with Multi-Site Molecule support for md-flexible. There are not so many tests
         # so we only add tests for part 1
         include:
-          - config: [autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON    , OFF]
+          - config: [ autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON    , OFF ]
             md-flex-mode: multisite
             part: 1
-          - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF   , OFF]
+          - config: [ autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF   , OFF ]
             md-flex-mode: multisite
             part: 1
     name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|${{ matrix.md-flex-mode }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
     container: autopas/${{ matrix.config[0] }}
     env:
-        TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
-        LSAN_OPTIONS: "verbosity=1:log_threads=1"
+      TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
+      LSAN_OPTIONS: "verbosity=1:log_threads=1"
     defaults:
       run:
         # make sure the scripts are executed with bash (needed for [[) and not sh.
@@ -125,6 +125,7 @@ jobs:
             -DAUTOPAS_ENABLE_HARMONY=ON \
             -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON \
             -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON \
+            -DAUTOPAS_ENABLE_DYNAMIC_CONTAINERS=ON \
             ..
           entrypoint.sh cmake --build . --parallel 8
       - name: Run tests ${{ matrix.part }}/2
@@ -165,4 +166,35 @@ jobs:
             cd ../examples/md-flexible
             ctest --output-on-failure --build-config mdFlexTests 
           fi
-              
+
+  macOSJob:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # On macOS the aliases clang and gcc both point by default to Apple Clang
+        # To use GNU gcc, we need to explicitly point to the installation directory or use the versioned
+        # executable as installed by brew (in this workflow gcc@14)
+        compiler: [ [ clang, clang++ ], [ gcc-14, g++-14 ] ]
+    name: macOS Build, Compile, and Run using ${{matrix.compiler[0]}}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install requirements
+        run: |
+          brew install libomp gcc@14 ninja
+      - name: Configure and Build md-flexible
+        run: |
+          mkdir build && cd build
+          CC=${{matrix.compiler[0]}} CXX=${{matrix.compiler[1]}} cmake .. -G Ninja \
+            -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/libomp \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DAUTOPAS_LOG_ITERATIONS=ON \
+            -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON \
+            -DMD_FLEXIBLE_FUNCTOR_AVX=OFF \
+            -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
+            -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=OFF
+          cmake --build . --target md-flexible
+      - name: Run md-flexible
+        run: cd build/examples/md-flexible && ./md-flexible
+

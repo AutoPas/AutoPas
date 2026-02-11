@@ -63,6 +63,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.dontShowProgressBar,
       config.evidenceFirstPrediction,
       config.extrapolationMethodOption,
+      config.energySensorOption,
       config.functorOption,
       config.functorOption3B,
       config.generatorOption,
@@ -100,7 +101,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.useTuningLogger,
       config.verletClusterSize,
       config.verletRebuildFrequency,
-      config.verletSkinRadiusPerTimestep,
+      config.verletSkinRadius,
       config.vtkFileName,
       config.vtkOutputFolder,
       config.vtkWriteFrequency,
@@ -316,7 +317,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
         } else {
           cerr << "Unknown triwise functor: " << strArg << endl;
-          cerr << "Please use 'Axilrod-Teller'" << endl;
+          cerr << "Please use 'Axilrod-Teller-Muto'" << endl;
           displayHelp = true;
         }
         config.addInteractionType(autopas::InteractionTypeOption::triwise);
@@ -502,11 +503,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.verletSkinRadiusPerTimestep)::getoptChar: {
+      case decltype(config.verletSkinRadius)::getoptChar: {
         try {
-          config.verletSkinRadiusPerTimestep.value = stod(strArg);
+          config.verletSkinRadius.value = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing verlet-skin-radius-per-timestep: " << optarg << endl;
+          cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -580,6 +581,16 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         config.tuningMetricOption.value = *parsedOptions.begin();
         break;
+      }
+      case decltype(config.energySensorOption)::getoptChar: {
+        auto parsedOptions = autopas::EnergySensorOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one energy sensor option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.energySensorOption.value = *parsedOptions.begin();
       }
       case decltype(config.ruleFilename)::getoptChar: {
         config.ruleFilename.value = optarg;

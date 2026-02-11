@@ -9,12 +9,12 @@
 INSTANTIATE_TEST_SUITE_P(Generated, DirectSumContainerTest, testing::Bool());
 
 TEST_P(DirectSumContainerTest, testUpdateContainerCloseToBoundary) {
-  autopas::DirectSum<autopas::Particle> directSum({0., 0., 0.}, {10., 10., 10.}, 1., 0., 0);
+  autopas::DirectSum<autopas::ParticleBaseFP64> directSum({0., 0., 0.}, {10., 10., 10.}, 1., 0., 0);
   int id = 1;
   for (double x : {0., 5., 9.999}) {
     for (double y : {0., 5., 9.999}) {
       for (double z : {0., 5., 9.999}) {
-        autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
+        autopas::ParticleBaseFP64 p({x, y, z}, {0., 0., 0.}, id++);
         EXPECT_NO_THROW(directSum.addParticle(p));  // inside, therefore ok!
       }
     }

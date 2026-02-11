@@ -1,7 +1,5 @@
 
-// Generated from
-// AutoPas/src/autopas/tuning/tuningStrategy/fuzzyTuning\FuzzyLanguage.g4 by
-// ANTLR 4.9.1
+// Generated from FuzzyLanguage.g4 by ANTLR 4.13.2
 
 #include "FuzzyLanguageVisitor.h"
 

@@ -10,7 +10,6 @@
 
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
-#include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopasTools/generators/UniformGenerator.h"
 
@@ -107,8 +106,8 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
         functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
   } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-    mdLib::AxilrodTellerFunctor<Molecule, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                                globals /*calculateGlobals*/>
+    mdLib::AxilrodTellerMutoFunctor<Molecule, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+                                    globals /*calculateGlobals*/>
         functor{_cutoff};
     functor.setParticleProperties(_nu);
     std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
@@ -141,61 +140,53 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
         interactionType] = key;
 
   // Construct container
-  autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
-  constexpr double skinPerTimestep = _cutoff * 0.1;
+  constexpr double skin = _cutoff * 0.1;
   constexpr unsigned int rebuildFrequency = 1;
-  selector.selectContainer(containerOption,
-                           autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
-                                                          autopas::LoadEstimatorOption::none});
-  auto &container = selector.getCurrentContainer();
+  const size_t sortingThreshold = useSorting ? 5 : std::numeric_limits<size_t>::max();
+  const auto containerInfo = autopas::ContainerSelectorInfo{
+      _boxMin, boxMax, _cutoff, cellSizeFactor, skin, 32, sortingThreshold, autopas::LoadEstimatorOption::none};
+  auto container = autopas::ContainerSelector<Molecule>::generateContainer(containerOption, containerInfo);
 
-  autopasTools::generators::UniformGenerator::fillWithParticles(
-      container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), container.getBoxMin(), container.getBoxMax(), numParticles);
-  EXPECT_EQ(container.size(), numParticles) << "Wrong number of molecules inserted!";
+  autopasTools::generators::UniformGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
+                                                                container->getBoxMin(), container->getBoxMax(),
+                                                                numParticles);
+  EXPECT_EQ(container->size(), numParticles) << "Wrong number of molecules inserted!";
   autopasTools::generators::UniformGenerator::fillWithHaloParticles(
-      container, Molecule({0., 0., 0.}, {0., 0., 0.}, numParticles /*initial ID*/), container.getCutoff(),
+      *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numParticles /*initial ID*/), container->getCutoff(),
       numHaloParticles);
-  EXPECT_EQ(container.size(), numParticles + numHaloParticles) << "Wrong number of halo molecules inserted!";
-  auto traversal =
-      autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        auto traversalUniquePtr =
-            autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<decltype(functor)>(
-                traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+  EXPECT_EQ(container->size(), numParticles + numHaloParticles) << "Wrong number of halo molecules inserted!";
+  const auto config =
+      autopas::Configuration{containerOption,  cellSizeFactor, traversalOption, autopas::LoadEstimatorOption::none,
+                             dataLayoutOption, newton3Option,  interactionType};
 
-        // set useSorting of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
-        if (auto *cellTraversalPtr =
-                dynamic_cast<autopas::CellTraversal<decltype(particleCellDummy)> *>(traversalUniquePtr.get())) {
-          cellTraversalPtr->setSortingThreshold(useSorting ? 5 : std::numeric_limits<size_t>::max());
-        }
+  auto traversal = autopas::TraversalSelector::generateTraversalFromConfig<Molecule, decltype(functor)>(
+      config, functor, container->getTraversalSelectorInfo());
 
-        return traversalUniquePtr;
-      });
-
-  if (not traversal->isApplicable()) {
+  if (not traversal) {
     return {};
   }
 
   if (particleDeletionPosition & DeletionPosition::beforeLists) {
-    markSomeParticlesAsDeleted(container, numParticles + numHaloParticles, 19, interactionType);
+    markSomeParticlesAsDeleted(*container, numParticles + numHaloParticles, 19, interactionType);
   }
 
-  container.rebuildNeighborLists(traversal.get());
+  container->rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
-    executeShift(container, skinPerTimestep * rebuildFrequency / 2, numParticles + numHaloParticles);
+    executeShift(*container, skin / 2, numParticles + numHaloParticles);
   }
 
   if (particleDeletionPosition & DeletionPosition::afterLists) {
-    markSomeParticlesAsDeleted(container, numParticles + numHaloParticles, 99, interactionType);
+    markSomeParticlesAsDeleted(*container, numParticles + numHaloParticles, 99, interactionType);
   }
 
   functor.initTraversal();
-  container.computeInteractions(traversal.get());
+  container->computeInteractions(traversal.get());
 
   functor.endTraversal(newton3Option);
 
   std::vector<std::array<double, 3>> forces(numParticles);
-  for (auto it = container.begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
+  for (auto it = container->begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
     EXPECT_TRUE(it->isOwned());
     forces.at(it->getID()) = it->getF();
   }

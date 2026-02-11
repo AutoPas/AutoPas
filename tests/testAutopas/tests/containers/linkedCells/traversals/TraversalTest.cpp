@@ -28,8 +28,8 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   const std::array<double, 3> linkedCellsBoxMin = {0., 0., 0.};
 
   TraversalTest::CountFunctor functor(cutoff);
-  autopas::LinkedCells<Particle> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1, 1.0 / cutoff,
-                                             loadEstimatorOption);
+  autopas::LinkedCells<ParticleFP64> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1.0 / cutoff, 32,
+                                                 loadEstimatorOption);
 
   autopasTools::generators::GridGenerator::fillWithParticles(linkedCells, edgeLength);
   ASSERT_EQ(linkedCells.size(), edgeLength[0] * edgeLength[1] * edgeLength[2]);
@@ -46,10 +46,10 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   autopas::TraversalSelectorInfo tsi(cellsPerDim, cutoff, {1., 1., 1.}, clusterSize);
   std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::lc_c01) {
-    traversal = autopas::TraversalSelector<FPCell>::template generatePairwiseTraversal<TraversalTest::CountFunctor>(
+    traversal = autopas::TraversalSelector::generatePairwiseTraversal<FPCell, TraversalTest::CountFunctor>(
         traversalOption, functor, tsi, autopas::DataLayoutOption::aos, true);
   } else {
-    traversal = autopas::TraversalSelector<FPCell>::template generatePairwiseTraversal<TraversalTest::CountFunctor>(
+    traversal = autopas::TraversalSelector::generatePairwiseTraversal<FPCell, TraversalTest::CountFunctor>(
         traversalOption, functor, tsi, autopas::DataLayoutOption::aos, false);
   }
 
@@ -121,7 +121,7 @@ TEST_P(TraversalTest, testTraversal_8x8x8_overlap2) {
   std::array<size_t, 3> domain = {8ul, 8ul, 8ul};
   const auto cutoff = 2.0;
 
-  if (traversalOption == autopas::TraversalOption::lc_c04) {
+  if (traversalOption == autopas::TraversalOption::lc_c04 or traversalOption == autopas::TraversalOption::lc_c04_HCP) {
     GTEST_SKIP_("C04 doesn't support cellSizeFactors < 1.0");
   }
   testTraversal(traversalOption, loadEstimatorOption, newton3, domain, 32, cutoff);
@@ -144,7 +144,7 @@ TEST_P(TraversalTest, testTraversal_6x7x8_overlap2) {
   std::array<size_t, 3> domain = {6ul, 7ul, 8ul};
   const auto cutoff = 2.0;
 
-  if (traversalOption == autopas::TraversalOption::lc_c04) {
+  if (traversalOption == autopas::TraversalOption::lc_c04 or traversalOption == autopas::TraversalOption::lc_c04_HCP) {
     GTEST_SKIP_("C04 doesn't support cellSizeFactors < 1.0");
   }
   testTraversal(traversalOption, loadEstimatorOption, newton3, domain, 32, cutoff);
@@ -159,7 +159,7 @@ TEST_P(TraversalTest, testTraversal_7x8x9_overlap3) {
   // metrics.
   const auto cutoff = 3.000000001;
 
-  if (traversalOption == autopas::TraversalOption::lc_c04) {
+  if (traversalOption == autopas::TraversalOption::lc_c04 or traversalOption == autopas::TraversalOption::lc_c04_HCP) {
     GTEST_SKIP_("C04 doesn't support cellSizeFactors < 1.0");
   }
   testTraversal(traversalOption, loadEstimatorOption, newton3, domain, 122, cutoff);

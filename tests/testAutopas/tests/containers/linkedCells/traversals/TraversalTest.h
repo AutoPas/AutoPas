@@ -41,14 +41,14 @@ class TraversalTest
     }
   };
 
-  class CountFunctor : public autopas::PairwiseFunctor<Particle, CountFunctor> {
+  class CountFunctor : public autopas::PairwiseFunctor<ParticleFP64, CountFunctor> {
    public:
-    using SoAArraysType = Particle::SoAArraysType;
+    using SoAArraysType = ParticleFP64::SoAArraysType;
     using ParticleCell = FPCell;
     using floatType = double;
 
     CountFunctor(floatType cutoff)
-        : autopas::PairwiseFunctor<Particle, CountFunctor>(cutoff), _cutoffSquare(cutoff * cutoff){};
+        : autopas::PairwiseFunctor<ParticleFP64, CountFunctor>(cutoff), _cutoffSquare(cutoff * cutoff){};
 
     std::string getName() override { return "TraversalTestCountFunctor"; }
 
@@ -58,7 +58,7 @@ class TraversalTest
 
     bool allowsNonNewton3() override { return true; }
 
-    void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    void AoSFunctor(ParticleFP64 &i, ParticleFP64 &j, bool newton3) override {
       using namespace autopas::utils::ArrayMath::literals;
 
       if (i.isDummy() or j.isDummy()) {

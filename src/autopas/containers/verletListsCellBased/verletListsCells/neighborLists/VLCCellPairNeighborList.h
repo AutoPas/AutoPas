@@ -5,35 +5,27 @@
  */
 
 #pragma once
-#include "VLCCellPairGeneratorFunctor.h"
-#include "VLCNeighborListInterface.h"
-#include "autopas/utils/StaticBoolSelector.h"
+
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCNeighborListInterface.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairTraversalInterface.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 
 namespace autopas {
 
 /**
- * TraversalSelector is used for the construction of the list in the applyBuildFunctor method.
- * Forward declaration necessary to avoid circle of includes:
- * TraversalSelector includes all VLC traversals include VLCTraversalInterface includes VLCCellPairNeighborList
- */
-template <class ParticleCell>
-class TraversalSelector;
-
-template <class Particle>
-class VLCCellPairTraversalInterface;
-/**
  * Neighbor list to be used with VerletListsCells container.
  * Pairwise verlet lists iterates through each pair of neighboring cells
  * and generates a neighbor list for each particle from cell1, which consists of its (potential) partners from cell2.
- * @tparam Particle Type of particle to be used for this neighbor list.
+ * @tparam Particle_T Type of particle to be used for this neighbor list.
  */
-template <class Particle>
-class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
+template <class Particle_T>
+class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
  public:
   /**
    * Type of the data structure used to save the neighbor lists.
    */
-  using listType = typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle>;
+  using ListType = typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle_T>;
 
   /**
    * Helper type definition. Pair of particle and neighbor list for SoA layout.
@@ -48,30 +40,39 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pairwiseVerletLists; }
 
-  size_t getNumberOfPartners(const Particle *particle) const override {
-    size_t listSize = 0;
-    const auto &[firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle));
-    for (auto &cellPair : _aosNeighborList[firstCellIndex]) {
-      listSize += cellPair[particleInCellIndex].second.size();
+  size_t getNumberOfPartners(const Particle_T *particle) const override {
+    size_t listSize{0};
+    bool particleFound{false};
+    for (auto &neighborListsForOneCell : _aosNeighborList) {
+      for (const auto &neighborListsForCellCellPair : neighborListsForOneCell) {
+        // Check for the desired particle in the first cell. We check all "partner" cells because the particle might not
+        // have any particles from one "partner" cell in its list.
+        for (size_t i{0}; i < neighborListsForCellCellPair.size(); ++i) {
+          if (neighborListsForCellCellPair[i].first == particle) {
+            particleFound = true;
+            // We accumulate the number of partners. Partners can be in all lists of neighboring cells (middle for loop)
+            listSize += neighborListsForCellCellPair[i].second.size();
+            // Since we found the particle, we can skip all the other particles in the current list
+            break;
+          }
+        }
+      }
+      if (particleFound) {
+        // We've found the particle in the cell with neighbor lists neighborListsForOneCell. So we can skip all the
+        // other cells (outer for loop)
+        return listSize;
+      }
     }
-    return listSize;
+    return 0lu;
   }
 
   /**
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
    */
-  typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle> &getAoSNeighborList() {
+  typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle_T> &getAoSNeighborList() {
     return _aosNeighborList;
   }
-
-  /**
-   * Returns a map of each cell's global index to its local index in another cell's neighbor list. More specifically,
-   * for each cell1: a mapping of the "absolute" index of cell2 (in the base linked cells structure) to its "relative"
-   * index in cell1's neighbors.
-   * @return a map of each cell's global index to its local index in another cell's neighbor list
-   */
-  auto &getGlobalToLocalMap() { return _globalToLocalIndex; }
 
   /**
    * Returns the neighbor list in SoA layout.
@@ -79,79 +80,215 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
    */
   auto &getSoANeighborList() { return _soaNeighborList; }
 
-  void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
-                            double interactionLength, const TraversalOption vlcTraversalOpt,
-                            typename VerletListsCellsHelpers::VLCBuildType buildType) override {
-    this->_internalLinkedCells = &linkedCells;
-    _aosNeighborList.clear();
-    _globalToLocalIndex.clear();
-    _particleToCellMap.clear();
+  /**
+   * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
+   */
+  void buildAoSNeighborList(TraversalOption vlcTraversalOpt, LinkedCells<Particle_T> &linkedCells,
+                            bool useNewton3) override {
+    using namespace utils::ArrayMath::literals;
+    // Sanity check.
+    if (linkedCells.getCellBlock().getCellsPerInteractionLength() > 1) {
+      utils::ExceptionHandler::exception(
+          "VLCCellPairNeighborList::buildAoSNeighborList() was called with a CSF < 1 but it only supports CSF>=1.");
+    }
+    // Define some aliases
+    auto &neighborLists = getAoSNeighborList();
     auto &cells = linkedCells.getCells();
-    const auto cellsSize = cells.size();
-    _aosNeighborList.resize(cellsSize);
-    _globalToLocalIndex.resize(cellsSize);
+    const auto interactionLength = linkedCells.getInteractionLength();
+    const auto interactionLengthSquared = interactionLength * interactionLength;
+    const auto boxSizeWithHalo = linkedCells.getBoxMax() - linkedCells.getBoxMin() +
+                                 std::array<double, 3>{interactionLength, interactionLength, interactionLength} * 2.;
 
-    const auto cellLength = linkedCells.getCellBlock().getCellLength();
-    const auto interactionLengthSquare = linkedCells.getInteractionLength() * linkedCells.getInteractionLength();
+    // Helper lambda to compute the relative index from two cells within in a 3x3x3 cell-cube
+    auto relativeNeighborhoodIndex = [&](auto cellIndex1, auto cellIndex2) {
+      const auto cellsPerDimensionWithHalo = linkedCells.getCellBlock().getCellsPerDimensionWithHalo();
+      const auto threeDPosCell1 = utils::ThreeDimensionalMapping::oneToThreeD(static_cast<long unsigned>(cellIndex1),
+                                                                              cellsPerDimensionWithHalo);
+      const auto threeDPosCell2 = utils::ThreeDimensionalMapping::oneToThreeD(static_cast<long unsigned>(cellIndex2),
+                                                                              cellsPerDimensionWithHalo);
+      const auto offset = threeDPosCell2 - threeDPosCell1;
+      return (offset[0] + 1) * 9 + (offset[1] + 1) * 3 + (offset[2] + 1);
+    };
 
-    std::array<long, 3> overlap{};
-    for (unsigned int d = 0; d < 3; d++) {
-      overlap[d] = std::ceil(linkedCells.getInteractionLength() / cellLength[d]);
+    // This assumes homogeneous distribution and some overestimation.
+    const auto listLengthEstimate = VerletListsCellsHelpers::estimateListLength(
+        linkedCells.getNumberOfParticles(IteratorBehavior::ownedOrHalo), boxSizeWithHalo, interactionLength, 1.3);
+
+    // Reset lists. Don't free any memory, only mark as unused.
+    this->setLinkedCellsPointer(&linkedCells);
+    for (auto &neighborCellLists : neighborLists) {
+      for (auto &cellLists : neighborCellLists) {
+        for (auto &[particlePtr, neighbors] : cellLists) {
+          particlePtr = nullptr;
+          neighbors.clear();
+        }
+      }
+    }
+    neighborLists.resize(cells.size());
+    // each cell hast 27 neighbors including itself
+    for (auto &neighborList : neighborLists) {
+      neighborList.resize(27);
     }
 
-    // count number of neighbor cells
-    size_t neighborCells = 0;
-    for (int x = -static_cast<int>(overlap[0]); x < overlap[0] + 1; x++) {
-      std::array<double, 3> pos{};
-      pos[0] = std::max(0l, (std::abs(x) - 1l)) * cellLength[0];
-      for (int y = -static_cast<int>(overlap[1]); y < overlap[1] + 1; y++) {
-        pos[1] = std::max(0l, (std::abs(y) - 1l)) * cellLength[1];
-        for (int z = -static_cast<int>(overlap[2]); z < overlap[2] + 1; z++) {
-          pos[2] = std::max(0l, (std::abs(z) - 1l)) * cellLength[2];
-          const double distSquare = utils::ArrayMath::dot(pos, pos);
-          if (distSquare <= interactionLengthSquare) {
-            neighborCells++;
+    /* This must not be a doc comment (with two **) to not confuse doxygen.
+     * Helper function to insert a pointer into a list of the base cell.
+     * It considers the cases that neither particle is in the base cell
+     * and in that case finds or creates the appropriate list.
+     *
+     * @param p1 Reference to source particle.
+     * @param p2 Reference to target particle.
+     * @param neighborList Reference to the list where the particle pair should be stored.
+     */
+    auto insert = [&](auto &p1, auto &p2, auto &neighborList) {
+      // Check if the base cell already has a list for p1
+      auto iter = std::find_if(neighborList.begin(), neighborList.end(), [&](const auto &pair) {
+        const auto &[particlePtr, list] = pair;
+        return particlePtr == &p1;
+      });
+      // If yes, append p2 to it.
+      if (iter != neighborList.end()) {
+        iter->second.push_back(&p2);
+      } else {
+        // If no, create one (or reuse an empty pair), reserve space for the list and emplace p2
+        if (auto insertLoc = std::find_if(neighborList.begin(), neighborList.end(),
+                                          [&](const auto &pair) {
+                                            const auto &[particlePtr, list] = pair;
+                                            return particlePtr == nullptr;
+                                          });
+            insertLoc != neighborList.end()) {
+          auto &[particlePtr, neighbors] = *insertLoc;
+          particlePtr = &p1;
+          neighbors.reserve(listLengthEstimate);
+          neighbors.push_back(&p2);
+        } else {
+          neighborList.emplace_back(&p1, std::vector<Particle_T *>{});
+          neighborList.back().second.reserve(listLengthEstimate);
+          neighborList.back().second.push_back(&p2);
+        }
+      }
+    };
+
+    const auto &cellsPerDim =
+        utils::ArrayUtils::static_cast_copy_array<int>(linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
+    // Vector of offsets from the base cell for the given base step
+    // and respective factors for the fraction of particles per cell that need neighbor lists in the base cell.
+    const auto offsets = VerletListsCellsHelpers::buildBaseStep(cellsPerDim, vlcTraversalOpt);
+
+    int xEnd{};
+    int yEnd{};
+    int zEnd{};
+
+    switch (vlcTraversalOpt) {
+      case TraversalOption::vlc_c08:
+        // Go over all cells except the very last layer and create lists per base step.
+        xEnd = cellsPerDim[0] - 1;
+        yEnd = cellsPerDim[1] - 1;
+        zEnd = cellsPerDim[2] - 1;
+        break;
+      default:
+        xEnd = cellsPerDim[0];
+        yEnd = cellsPerDim[1];
+        zEnd = cellsPerDim[2];
+        break;
+    }
+
+    // Since there are no loop dependencies merge all for loops and create 10 chunks per thread.
+    AUTOPAS_OPENMP(parallel for collapse(3) schedule(dynamic, std::max(cells.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
+    for (int z = 0; z < zEnd; ++z) {
+      for (int y = 0; y < yEnd; ++y) {
+        for (int x = 0; x < xEnd; ++x) {
+          // aliases
+          const auto cellIndexBase = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDim);
+          auto &baseCell = cells[cellIndexBase];
+          auto &baseCellsLists = neighborLists[cellIndexBase];
+          auto threadNum = autopas_get_thread_num();
+
+          // Build lists for this base step according to predefined cell pairs
+          for (const auto &[offset1, offset2, _] : offsets) {
+            const auto cell1Index1D = cellIndexBase + offset1;
+            const auto cell2Index1D = cellIndexBase + offset2;
+            auto &cell1List = neighborLists[cell1Index1D];
+            auto &cell2List = neighborLists[cell2Index1D];
+
+            // For all traversals ensures the partner cell is not outside the boundary
+            const auto cell2Index3D = utils::ThreeDimensionalMapping::oneToThreeD(cell2Index1D, cellsPerDim);
+            if (cell2Index3D[0] >= cellsPerDim[0] or cell2Index3D[0] < 0 or cell2Index3D[1] >= cellsPerDim[1] or
+                cell2Index3D[1] < 0 or cell2Index3D[2] >= cellsPerDim[2] or cell2Index3D[2] < 0) {
+              continue;
+            }
+
+            // Skip if both cells only contain halos or dummys
+            if (not(cells[cell1Index1D].getPossibleParticleOwnerships() == OwnershipState::owned) and
+                not(cells[cell2Index1D].getPossibleParticleOwnerships() == OwnershipState::owned)) {
+              continue;
+            }
+
+            // Go over all particle pairs in the two cells and insert close pairs into their respective lists
+            for (size_t particleIndexCell1 = 0; particleIndexCell1 < cells[cell1Index1D].size(); ++particleIndexCell1) {
+              auto &p1 = cells[cell1Index1D][particleIndexCell1];
+
+              // Determine the starting index for the second particle in the pair.
+              // If both cells are the same and the traversal is newton3 compatible, this is the next particle in the
+              // cell. If the cells are different or the traversal is not newton3 compatible, this is index 0. For
+              // non-newton 3 compatible traversals (vlp_c01) we have to consider the interaction in both directions, so
+              // we always start from index 0.
+              size_t startIndexCell2 = 0;
+              if (cell1Index1D == cell2Index1D and vlcTraversalOpt != TraversalOption::vlp_c01) {
+                startIndexCell2 = particleIndexCell1 + 1;
+              }
+
+              for (size_t particleIndexCell2 = startIndexCell2; particleIndexCell2 < cells[cell2Index1D].size();
+                   ++particleIndexCell2) {
+                auto &p2 = cells[cell2Index1D][particleIndexCell2];
+                // Ignore dummies and self interaction
+                if (&p1 == &p2 or p1.isDummy() or p2.isDummy()) {
+                  continue;
+                }
+
+                // If the distance is less than interaction length add the pair to the list
+                const auto distVec = p2.getR() - p1.getR();
+                const auto distSquared = utils::ArrayMath::dot(distVec, distVec);
+                if (distSquared < interactionLengthSquared) {
+                  {
+                    const size_t secondCellIndexInFirst = relativeNeighborhoodIndex(cell1Index1D, cell2Index1D);
+                    insert(p1, p2, cell1List[secondCellIndexInFirst]);
+                  }
+                  // If the traversal is Newton3 compatible, Newton3 is used for building regardless of if the actual
+                  // interactions will use Newton3. In the case that Newton3 will not be used, the inverse interaction
+                  // also needs to be stored in p2's list. If the traversal is Newton3 incompatible, the insertion into
+                  // p2's list will occur when the p2 particle is p1. This is ensured above by the startIndexCell2.
+                  if (not useNewton3 and not(vlcTraversalOpt == TraversalOption::vlp_c01)) {
+                    {
+                      const size_t secondCellIndexInFirst = relativeNeighborhoodIndex(cell2Index1D, cell1Index1D);
+                      insert(p2, p1, cell2List[secondCellIndexInFirst]);
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
     }
 
-    // when N3 is used we only need half of the cells (rounded up)
-    if (useNewton3) {
-      neighborCells /= 2;
-      if (neighborCells % 2 != 0) {
-        neighborCells++;
+    // Cleanup: Remove any unused ptr-list pairs to avoid accessing nullptr
+    for (auto &neighborCellLists : neighborLists) {
+      for (auto &cellLists : neighborCellLists) {
+        cellLists.erase(std::remove_if(cellLists.begin(), cellLists.end(),
+                                       [](const auto &pair) {
+                                         const auto &[particlePtr, neighbors] = pair;
+                                         return particlePtr == nullptr;
+                                       }),
+                        cellLists.end());
       }
     }
-
-    // initialize empty lists for every particle-cell pair
-    for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
-      _aosNeighborList[firstCellIndex].resize(neighborCells);
-      size_t numParticlesFirstCell = cells[firstCellIndex].size();
-      for (auto &cellPair : _aosNeighborList[firstCellIndex]) {
-        // reserve vector of neighbor lists for every particle in cell1
-        cellPair.reserve(numParticlesFirstCell);
-        size_t particleIndexCurrentCell = 0;
-        for (auto &particle : cells[firstCellIndex]) {
-          // for each particle in cell1 make a pair of particle and neighbor list
-          cellPair.emplace_back(std::make_pair(&particle, std::vector<Particle *>()));
-
-          // add a pair of cell's index and particle's index in the cell
-          _particleToCellMap[&particle] = std::make_pair(firstCellIndex, particleIndexCurrentCell);
-          particleIndexCurrentCell++;
-        }
-      }
-    }
-
-    // fill the lists
-    applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, vlcTraversalOpt, buildType);
   }
 
-  void generateSoAFromAoS(LinkedCells<Particle> &linkedCells) override {
+  void generateSoAFromAoS(LinkedCells<Particle_T> &linkedCells) override {
     _soaNeighborList.clear();
 
     // particle pointer to global index of particle
-    std::unordered_map<Particle *, size_t> particlePtrToIndex;
+    std::unordered_map<Particle_T *, size_t> particlePtrToIndex;
     particlePtrToIndex.reserve(linkedCells.size());
     size_t i = 0;
     for (auto iter = linkedCells.begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
@@ -194,12 +331,13 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   }
 
   void setUpTraversal(TraversalInterface *traversal) override {
-    auto vTraversal = dynamic_cast<VLCCellPairTraversalInterface<Particle> *>(traversal);
+    auto vTraversal = dynamic_cast<VLCCellPairTraversalInterface<Particle_T> *>(traversal);
 
     if (vTraversal) {
       vTraversal->setVerletList(*this);
     } else {
-      auto traversal2 = dynamic_cast<VLCTraversalInterface<Particle, VLCCellPairNeighborList<Particle>> *>(traversal);
+      auto traversal2 =
+          dynamic_cast<VLCTraversalInterface<Particle_T, VLCCellPairNeighborList<Particle_T>> *>(traversal);
       if (traversal2) {
         traversal2->setVerletList(*this);
       } else {
@@ -211,45 +349,11 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   }
 
  private:
-  void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
-                         double interactionLength, const TraversalOption /*vlcTraversalOpt*/ &,
-                         typename VerletListsCellsHelpers::VLCBuildType buildType) override {
-    VLCCellPairGeneratorFunctor<Particle> f(_aosNeighborList, _particleToCellMap, _globalToLocalIndex, cutoff + skin);
-
-    // Generate the build traversal with the traversal selector and apply the build functor with it.
-    TraversalSelector<FullParticleCell<Particle>> traversalSelector;
-    // Argument "cluster size" does not matter here.
-    TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
-                                                interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
-
-    const auto dataLayout =
-        buildType == VerletListsCellsHelpers::VLCBuildType::aosBuild ? DataLayoutOption::aos : DataLayoutOption::soa;
-
-    // Build the AoS list using the AoS or SoA functor depending on buildType
-    auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
-        TraversalOption::lc_c18, f, traversalSelectorInfo, dataLayout, useNewton3);
-    auto pairBuildTraversal = dynamic_cast<TraversalInterface *>(buildTraversal.get());
-    linkedCells.computeInteractions(pairBuildTraversal);
-  }
-
   /**
    * Internal neighbor list structure in AoS format - Verlet lists for each particle for each cell pair.
    */
-  typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle> _aosNeighborList =
-      std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>();
-
-  /**
-   * Mapping of each particle to its corresponding cell and id within this cell.
-   */
-  std::unordered_map<Particle *, std::pair<size_t, size_t>> _particleToCellMap =
-      std::unordered_map<Particle *, std::pair<size_t, size_t>>();
-
-  /**
-   * For each cell1: a mapping of the "absolute" index of cell2 (in the base linked cells structure) to its "relative"
-   * index in cell1's neighbors.
-   */
-  std::vector<std::unordered_map<size_t, size_t>> _globalToLocalIndex =
-      std::vector<std::unordered_map<size_t, size_t>>();
+  typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle_T> _aosNeighborList =
+      std::vector<std::vector<std::vector<std::pair<Particle_T *, std::vector<Particle_T *>>>>>();
 
   /**
    * Internal neighbor list structure in SoA format - Verlet lists for each particle for each cell pair.
