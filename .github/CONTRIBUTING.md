@@ -126,6 +126,8 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * Add a new enum in `ContainerOption::Value`.
   * Add a new string representation in the `map` of `ContainerOption::getOptionNames()`.
 * Create a new set of compatible traversals in [`CompatibleTraversals`](/src/autopas/containers/CompatibleTraversals.h).
+* If the new container supports cell-size-factors less than 1.0, add it to [`CompatibleCellSizeFactors::allContainersSupportingSub1CSF`](src/autopas/containers/CompatibleCellSizeFactors.h).
+* If the new container supports only cell-size-factor 1.0, or is independent of cell-size-factor, add it to [`CompatibleCellSizeFactors::allContainersOnlySupportingCSF1`](src/autopas/containers/CompatibleCellSizeFactors.h).
 * Create a new `case` statement in [`StaticContainerSelector`](/src/autopas/utils/StaticContainerSelector.h).
 * Add a case for the new container in [`ContainerSelector::generateContainer()`](/src/autopas/tuning/selectors/ContainerSelector.h).
 * Check that the new option is working in the md-flexible example.
