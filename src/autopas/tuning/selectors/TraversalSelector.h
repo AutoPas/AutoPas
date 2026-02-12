@@ -287,7 +287,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
       break;
     }
     case TraversalOption::vcl_c08: {
-      return std::make_unique<VCLC08Traversal<ParticleCell, PairwiseFunctor>>(
+      return std::make_unique<VCLC08Traversal<ParticleCell_T, PairwiseFunctor_T>>(
           &pairwiseFunctor, traversalInfo.clusterSize, dataLayout, useNewton3);
     }
     // Pairwise Verlet Lists
