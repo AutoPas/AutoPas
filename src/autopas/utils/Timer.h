@@ -14,6 +14,10 @@
 
 namespace autopas::utils {
 
+// Use steady_clock if high_resolution_clock is not monotonous in time.
+using bestSteadyClock = std::conditional_t<std::chrono::high_resolution_clock::is_steady,
+                                           std::chrono::high_resolution_clock, std::chrono::steady_clock>;
+
 /**
  * Timer class to stop times.
  */
@@ -70,7 +74,7 @@ class Timer {
   /**
    * Time point of last call of start().
    */
-  std::chrono::high_resolution_clock::time_point _startTime;
+  bestSteadyClock::time_point _startTime;
 
   /**
    * Accumulated total time.

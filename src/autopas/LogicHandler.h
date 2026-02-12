@@ -26,6 +26,7 @@
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/TraceTimer.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/logging/FLOPLogger.h"
 #include "autopas/utils/logging/IterationLogger.h"
@@ -1402,15 +1403,14 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
   // The following part performs the main remainder traversal. The actual calculation is done in 4 steps carried out
   // in three helper functions.
 
-  // only activate time measurements if it will actually be logged
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-  autopas::utils::Timer timerBufferContainer;
-  autopas::utils::Timer timerPBufferPBuffer;
-  autopas::utils::Timer timerPBufferHBuffer;
-  autopas::utils::Timer timerBufferSoAConversion;
+  // TraceTimers are only active with log level TRACE
+  utils::TraceTimer timerBufferContainer;
+  utils::TraceTimer timerPBufferPBuffer;
+  utils::TraceTimer timerPBufferHBuffer;
+  utils::TraceTimer timerBufferSoAConversion;
 
   timerBufferContainer.start();
-#endif
+
   // steps 1 & 2.
   // particleBuffer with all particles close in container
   // and haloParticleBuffer with owned, close particles in container.
@@ -1418,10 +1418,9 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
   // which don't have an SoA interface.
   remainderHelperBufferContainerAoS<newton3>(f, container, particleBuffers, haloParticleBuffers);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferContainer.stop();
   timerBufferSoAConversion.start();
-#endif
+
   if (useSoA) {
     // All (halo-)buffer interactions shall happen vectorized, hence, load all buffer data into SoAs
     for (auto &buffer : particleBuffers) {
@@ -1431,25 +1430,20 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
       f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
     }
   }
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+
   timerBufferSoAConversion.stop();
   timerPBufferPBuffer.start();
-#endif
 
   // step 3. particleBuffer with itself and all other buffers
   remainderHelperBufferBuffer<newton3>(f, particleBuffers, useSoA);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerPBufferPBuffer.stop();
   timerPBufferHBuffer.start();
-#endif
 
   // step 4. particleBuffer with haloParticleBuffer
   remainderHelperBufferHaloBuffer(f, particleBuffers, haloParticleBuffers, useSoA);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerPBufferHBuffer.stop();
-#endif
 
   // unpack particle SoAs. Halo data is not interesting
   if (useSoA) {
@@ -1686,36 +1680,28 @@ void LogicHandler<Particle_T>::computeRemainderInteractions3B(
 
   // The following part performs the main remainder traversal.
 
-  // only activate time measurements if it will actually be logged
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-  autopas::utils::Timer timerBufferBufferBuffer;
-  autopas::utils::Timer timerBufferBufferContainer;
-  autopas::utils::Timer timerBufferContainerContainer;
+  // TraceTimers only run with log level TRACE
+  utils::TraceTimer timerBufferBufferBuffer;
+  utils::TraceTimer timerBufferBufferContainer;
+  utils::TraceTimer timerBufferContainerContainer;
   timerBufferBufferBuffer.start();
-#endif
 
   // Step 1: Triwise interactions of all particles in the buffers (owned and halo)
   remainderHelper3bBufferBufferBufferAoS(bufferParticles, numOwnedBufferParticles, f);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferBufferBuffer.stop();
   timerBufferBufferContainer.start();
-#endif
 
   // Step 2: Triwise interactions of 2 buffer particles with 1 container particle
   remainderHelper3bBufferBufferContainerAoS(bufferParticles, numOwnedBufferParticles, container, f);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferBufferContainer.stop();
   timerBufferContainerContainer.start();
-#endif
 
   // Step 3: Triwise interactions of 1 buffer particle and 2 container particles
   remainderHelper3bBufferContainerContainerAoS<newton3>(bufferParticles, numOwnedBufferParticles, container, f);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferContainerContainer.stop();
-#endif
 
   AutoPasLog(TRACE, "Timer Buffer <-> Buffer <-> Buffer       : {}", timerBufferBufferBuffer.getTotalTime());
   AutoPasLog(TRACE, "Timer Buffer <-> Buffer <-> Container    : {}", timerBufferBufferContainer.getTotalTime());
@@ -1903,10 +1889,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   }
 
   size_t numRejectedConfigs = 0;
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-  utils::Timer selectConfigurationTimer;
+  utils::TraceTimer selectConfigurationTimer;
   selectConfigurationTimer.start();
-#endif
+
   auto [configuration, stillTuning] = autoTuner.getNextConfig();
 
   // loop as long as we don't get a valid configuration
@@ -1914,11 +1899,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     // applicability check also sets the container
     auto [traversalPtr, rejectIndefinitely] = isConfigurationApplicable(configuration, functor);
     if (traversalPtr) {
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
       selectConfigurationTimer.stop();
       AutoPasLog(TRACE, "Select Configuration took {} ms. A total of {} configurations were rejected.",
                  selectConfigurationTimer.getTotalTime(), numRejectedConfigs);
-#endif
       return {configuration, std::move(traversalPtr), stillTuning};
     }
     // if no config is left after rejecting this one, an exception is thrown here.
