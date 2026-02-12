@@ -31,13 +31,13 @@ class VCLC08Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
 
   /**
    * Each base step looks like this:
-   *     C N  Colors:  1 2 
+   *     C N  Colors:  1 2
    *     N N           3 4
    * Where C is the current cell, N are the neighbor cells that is worked on, and X is not worked on. The neighbor list
    * with newton 3 of the VerletClusterLists container is build in a way that the neighbor lists already contain only
    * the neighbor clusters of these cells.s
    */
-static constexpr std::array<unsigned long, 3> _stride{2ul, 2ul, 1ul};
+  static constexpr std::array<unsigned long, 3> _stride{2ul, 2ul, 1ul};
 
   /**
    * Helper method to iterate over one color cell.
@@ -87,9 +87,8 @@ static constexpr std::array<unsigned long, 3> _stride{2ul, 2ul, 1ul};
     const auto towersPerColoringCell = clusterList.getNumTowersPerInteractionLength();
     std::array<unsigned long, 2> coloringCellsPerDim{};
     for (int i = 0; i < 2; i++) {
-    coloringCellsPerDim[i] =
-    static_cast<unsigned long>(std::ceil(clusterList.getTowersPerDimension()[i] /
-                                         (double)towersPerColoringCell));
+      coloringCellsPerDim[i] =
+          static_cast<unsigned long>(std::ceil(clusterList.getTowersPerDimension()[i] / (double)towersPerColoringCell));
     }
 
     auto loopBody = [this, towersPerColoringCell](unsigned long x, unsigned long y, unsigned long z) {
@@ -99,9 +98,7 @@ static constexpr std::array<unsigned long, 3> _stride{2ul, 2ul, 1ul};
     // localStride is necessary because stride is constexpr and colorTraversal() wants a const &
     auto localStride = _stride;
     this->colorTraversal(std::forward<decltype(loopBody)>(loopBody),
-                     {coloringCellsPerDim[0], coloringCellsPerDim[1], 1},
-                     localStride);
-
+                         {coloringCellsPerDim[0], coloringCellsPerDim[1], 1}, localStride);
   }
 
   /**
@@ -120,22 +117,20 @@ void VCLC08Traversal<ParticleCell, PairwiseFunctor>::processColorCell(unsigned l
                                                                       unsigned long yColorCell,
                                                                       unsigned long zColorCell,
                                                                       int towersPerColoringCell) {
- 
   auto &clusterList = *VCLTraversalInterface<ParticleType>::_verletClusterLists;
   const auto towersPerDim = clusterList.getTowersPerDimension();
   if (zColorCell != 0) {
     autopas::utils::ExceptionHandler::exception("Coloring should only be 2D, not in z-direction!");
-        }
+  }
   for (int yInner = 0; yInner < towersPerColoringCell; yInner++) {
     for (int xInner = 0; xInner < towersPerColoringCell; xInner++) {
-      
       const auto y = yColorCell * towersPerColoringCell + yInner;
       const auto x = xColorCell * towersPerColoringCell + xInner;
 
       // Not every coloring cell has to have gridsPerColoringCell grids in every direction.
-    if (x >= towersPerDim[0] || y >= towersPerDim[1]) {
+      if (x >= towersPerDim[0] || y >= towersPerDim[1]) {
         continue;
-        }
+      }
       auto &currentTower = clusterList.getTowerByIndex(x, y);
       for (auto clusterIter = this->_useNewton3 ? currentTower.getClusters().begin()
                                                 : currentTower.getFirstOwnedCluster();
@@ -147,8 +142,7 @@ void VCLC08Traversal<ParticleCell, PairwiseFunctor>::processColorCell(unsigned l
         _clusterFunctor.processCluster(*clusterIter, isHaloCluster);
       }
     }
-  
- }
+  }
 }
 
 }  // namespace autopas

@@ -544,7 +544,6 @@ long Simulation::accumulateTime(const long &time) {
   return reducedTime;
 }
 
-
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration = applyWithChosenFunctor<bool>([&](auto &&functor) {
     auto isTuningIteration = _autoPasContainer->computeInteractions(&functor);

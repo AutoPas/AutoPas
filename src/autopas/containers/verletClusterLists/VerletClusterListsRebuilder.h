@@ -377,16 +377,16 @@ class VerletClusterListsRebuilder {
     };
     const double interactionLength = std::sqrt(_interactionLengthSqr);
 
-        auto &clustersB = towerB.getClusters();
-        const size_t nB = clustersB.size();
-        std::vector<double> bMinX(nB), bMinY(nB), bMinZ(nB);
-        std::vector<double> bMaxX(nB), bMaxY(nB), bMaxZ(nB);
-        std::vector<bool> bValid(nB);
-        std::vector<bool> bIsHalo(nB);
-            double dx;
-            double dy;
-            double dz;
-        
+    auto &clustersB = towerB.getClusters();
+    const size_t nB = clustersB.size();
+    std::vector<double> bMinX(nB), bMinY(nB), bMinZ(nB);
+    std::vector<double> bMaxX(nB), bMaxY(nB), bMaxZ(nB);
+    std::vector<bool> bValid(nB);
+    std::vector<bool> bIsHalo(nB);
+    double dx;
+    double dy;
+    double dz;
+
     // iterate over all clusters from tower A. In newton3 mode go over all of them, otherwise only owned.
     for (auto clusterIterA = _newton3 ? towerA.getClusters().begin() : towerA.getFirstOwnedCluster();
          clusterIterA < (_newton3 ? towerA.getClusters().end() : towerA.getFirstTailHaloCluster()); ++clusterIterA) {
@@ -396,22 +396,22 @@ class VerletClusterListsRebuilder {
 
         size_t startB = 0;
         if (isSameTower && _newton3) {
-        startB = (clusterIterA - towerA.getClusters().begin()) + 1;
+          startB = (clusterIterA - towerA.getClusters().begin()) + 1;
         }
 
         for (size_t i = 0; i < nB; ++i) {
-        if (clustersB[i].empty()) {
-          bValid[i] = false;
+          if (clustersB[i].empty()) {
+            bValid[i] = false;
             continue;
           }
-        auto [bmin, bmax] = clustersB[i].getBoundingBox();
-        bMinX[i] = bmin[0];
-        bMinY[i] = bmin[1];
-        bMinZ[i] = bmin[2];
-        bMaxX[i] = bmax[0];
-        bMaxY[i] = bmax[1];
-        bMaxZ[i] = bmax[2];
-        bValid[i] = true;
+          auto [bmin, bmax] = clustersB[i].getBoundingBox();
+          bMinX[i] = bmin[0];
+          bMinY[i] = bmin[1];
+          bMinZ[i] = bmin[2];
+          bMaxX[i] = bmax[0];
+          bMaxY[i] = bmax[1];
+          bMaxZ[i] = bmax[2];
+          bValid[i] = true;
         }
 
         auto [aMin, aMax] = clusterIterA->getBoundingBox();
@@ -420,8 +420,8 @@ class VerletClusterListsRebuilder {
         // if we are within one tower depending on newton3 only look at forward neighbors
         // clusterIterB can't be const because it will potentially be added as a non-const neighbor
         for (size_t i = startB; i < nB; ++i) {
-            auto it = clustersB.begin() + i;
-            bIsHalo[i] = (it < firstOwnedB) or (it >= firstTailHaloB);
+          auto it = clustersB.begin() + i;
+          bIsHalo[i] = (it < firstOwnedB) or (it >= firstTailHaloB);
 
           // a cluster cannot be a neighbor to itself
           if (&*clusterIterA == &clustersB[i]) {
@@ -431,18 +431,17 @@ class VerletClusterListsRebuilder {
           // never do halo-halo interactions
           if (isHaloCluster(clusterIterA, towerA) && bIsHalo[i]) continue;
 
-            if (!bValid[i]) continue;
-             dx = std::max(0.0, aMin[0] - bMaxX[i]) + std::max(0.0, bMinX[i] - aMax[0]);
-             dy = std::max(0.0, aMin[1] - bMaxY[i]) + std::max(0.0, bMinY[i] - aMax[1]);
-             dz = std::max(0.0, aMin[2] - bMaxZ[i]) + std::max(0.0, bMinZ[i] - aMax[2]);
-           //  if (bmin[2] > aMax[2] + interactionLength) {
-             //   break;   
+          if (!bValid[i]) continue;
+          dx = std::max(0.0, aMin[0] - bMaxX[i]) + std::max(0.0, bMinX[i] - aMax[0]);
+          dy = std::max(0.0, aMin[1] - bMaxY[i]) + std::max(0.0, bMinY[i] - aMax[1]);
+          dz = std::max(0.0, aMin[2] - bMaxZ[i]) + std::max(0.0, bMinZ[i] - aMax[2]);
+          //  if (bmin[2] > aMax[2] + interactionLength) {
+          //   break;
           //  }
-            const auto boxDistSquared = dx*dx + dy*dy + dz*dz;
-            if (boxDistSquared <= _interactionLengthSqr) {
-              clusterIterA->addNeighbor(clustersB[i]);
-            }
-          
+          const auto boxDistSquared = dx * dx + dy * dy + dz * dz;
+          if (boxDistSquared <= _interactionLengthSqr) {
+            clusterIterA->addNeighbor(clustersB[i]);
+          }
         }
       }
     }
