@@ -21,74 +21,89 @@
  * @param ... Formatting arguments
  * @note A ';' is enforced at the end of the macro.
  */
-#define AutoPasLog(lvl, fmt, ...) SPDLOG_LOGGER_##lvl(spdlog::get("AutoPasLog"), fmt, ##__VA_ARGS__)
+#define AutoPasLog(lvl, fmt, ...) SPDLOG_LOGGER_##lvl(autopas::Logger::get(), fmt, ##__VA_ARGS__)
 
 namespace autopas {
 /**
  * Logger class to provide interface to basic functions of the logger.
- * You can create the spdlog's logger or delete it using the provided functions.
+ * It manages the lifecycle safely using lazy initialization.
  */
 class Logger {
   static inline auto loggerName() { return "AutoPasLog"; };
 
  public:
   /**
-   * Constructor for a Logger that logs to an output stream. Per default to std::cout.
-   * @param logOutputStream
-   */
-  explicit Logger(std::ostream &logOutputStream = std::cout) {
-    // Only first AutoPas instance creates the logger
-    if (_instanceCount.fetch_add(1) == 0) {
-      create(logOutputStream);
-    }
-  }
-
-  /**
-   * Constructor for a Logger that logs to a file.
-   * @param filename
-   */
-  explicit Logger(const std::string &filename) {
-    // Only first AutoPas instance creates the logger
-    if (_instanceCount.fetch_add(1) == 0) {
-      create(filename);
-    }
-  }
-
-  /**
-   * Destructor that shuts down the logger if this was the last instance.
-   */
-  ~Logger() {
-    // Only the last AutoPas instance shuts down the logger
-    if (_instanceCount.fetch_sub(1) == 1) {
-      unregister();
-    }
-  }
-
-  /**
-   * Typalias for log levels.
+   * Typealias for log levels.
    */
   using LogLevel = spdlog::level::level_enum;
 
   /**
-   * Get a pointer to the actual logger object.
-   * @return Pointer to logger.
+   * Get the pointer to the spdlog logger.
+   * If the logger does not exist yet (e.g., during static initialization),
+   * this function will automatically create a default one (std::cout).
+   * * This guarantees that spdlog::get() never returns nullptr.
+   * * @return Shared pointer to the logger.
    */
-  static auto get() { return spdlog::get(loggerName()); }
+  static std::shared_ptr<spdlog::logger> get() {
+    auto logger = spdlog::get(loggerName());
+    if (logger) {
+      return logger;
+    }
+
+    // Logger not found? Create a default one safely.
+    std::lock_guard<std::mutex> lock(_registrationMutex);
+
+    // Double-check after locking in case another thread created it just now
+    logger = spdlog::get(loggerName());
+    if (!logger) {
+      create_internal(std::cout);  // Default to cout
+      logger = spdlog::get(loggerName());
+    }
+    return logger;
+  }
+
+  /**
+   * Explicitly initialize/reset the logger to write to an output stream.
+   * @param logOutputStream Stream to write to (default std::cout)
+   */
+  static void create(std::ostream &logOutputStream = std::cout) {
+    std::lock_guard<std::mutex> lock(_registrationMutex);
+    create_internal(logOutputStream);
+  }
+
+  /**
+   * Explicitly initialize/reset the logger to write to a file.
+   * @param filename Path to the log file.
+   */
+  static void create(const std::string &filename) {
+    std::lock_guard<std::mutex> lock(_registrationMutex);
+    unregister_internal();  // Drop old one first
+
+    auto logger = spdlog::basic_logger_mt(loggerName(), filename);
+    logger->flush_on(spdlog::level::warn);
+    // spdlog automatically registers the logger upon creation via factory methods
+  }
+
+  /**
+   * Removes the logger from the registry.
+   * Usually not needed unless you want to silence leak detectors at the very end of main().
+   */
+  static void unregister() {
+    std::lock_guard<std::mutex> lock(_registrationMutex);
+    unregister_internal();
+  }
 
  private:
   /**
-   * Atomic instance counter to avoid shutting down the AutoPas logger when another instance is still running.
+   * Mutex to protect creation and destruction of the global logger.
    */
-  static inline std::atomic<size_t> _instanceCount{0};
+  static inline std::mutex _registrationMutex;
 
   /**
-   * Create a logger with an arbitrary ostream.
-   * Default is std::cout
-   * @param oss
+   * Internal helper to create the logger (must be called with lock held).
    */
-  static void create(std::ostream &oss = std::cout) {
-    // drops an already registered Logger if it exists
-    unregister();
+  static void create_internal(std::ostream &oss) {
+    unregister_internal();  // clear any existing logger
 
     std::shared_ptr<spdlog::sinks::sink> ostreamSink;
 #ifdef AUTOPAS_COLORED_CONSOLE_LOGGING
@@ -110,21 +125,8 @@ class Logger {
   }
 
   /**
-   * Static: Create a file logger
+   * Internal helper to drop the logger (must be called with lock held).
    */
-  static void create(const std::string &filename) {
-    unregister();
-    // basic_logger_mt creates a simple file sink
-    auto logger = spdlog::basic_logger_mt(loggerName(), filename);
-    logger->flush_on(spdlog::level::warn);
-  }
-
-  /**
-   * Removes the logger. This should only be done at teardown of the simulation or
-   * for tests.
-   * Logging after the logger has been removed and no new logger has been defined
-   * will lead to undefined behavior!
-   */
-  static void unregister() { spdlog::drop(loggerName()); }
+  static void unregister_internal() { spdlog::drop(loggerName()); }
 };  // class Logger
 }  // namespace autopas

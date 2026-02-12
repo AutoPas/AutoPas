@@ -8,13 +8,13 @@
 
 #include <gtest/gtest.h>
 
-#include <ostream>
+#include <sstream>
 
 #include "AutoPasTestBase.h"
+#include "autopas/utils/logging/Logger.h"
 
 class LoggerTest : public AutoPasTestBase {
  public:
-  LoggerTest() : AutoPasTestBase(stream) {}
   int testLevel(autopas::Logger::LogLevel level, bool enabled);
 
  private:

@@ -7,14 +7,4 @@
 
 #include <gtest/gtest.h>
 
-#include "autopas/utils/logging/Logger.h"
-
-#pragma once
-
-class AutoPasTestBase : public testing::Test {
- public:
-  explicit AutoPasTestBase(std::ostream &os = std::cout) : _logger(os) {}
-
- private:
-  autopas::Logger _logger;
-};
+class AutoPasTestBase : public testing::Test {};

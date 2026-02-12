@@ -1120,11 +1120,6 @@ class AutoPas {
   size_t getSortingThreshold() const { return _sortingThreshold; }
 
  private:
-  /**
-   * Shared logger among AutoPas instances
-   */
-  Logger _logger;
-
   autopas::ParticleContainerInterface<Particle_T> &getContainer();
 
   const autopas::ParticleContainerInterface<Particle_T> &getContainer() const;

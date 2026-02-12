@@ -32,10 +32,14 @@
 namespace autopas {
 
 template <class Particle_T>
-AutoPas<Particle_T>::AutoPas(std::ostream &logOutputStream) : _logger(logOutputStream) {}
+AutoPas<Particle_T>::AutoPas(std::ostream &logOutputStream) {
+  Logger::create(logOutputStream);
+}
 
 template <class Particle_T>
-AutoPas<Particle_T>::AutoPas(const std::string &logFileName) : _logger(logFileName) {}
+AutoPas<Particle_T>::AutoPas(const std::string &logFileName) {
+  Logger::create(logFileName);
+}
 
 template <class Particle_T>
 AutoPas<Particle_T>::~AutoPas() = default;
