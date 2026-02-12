@@ -3,6 +3,7 @@
  * @author seckler
  * @date 24.04.18
  */
+#pragma once
 
 #include <gtest/gtest.h>
 

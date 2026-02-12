@@ -39,7 +39,7 @@ void addParticles(AutoPasContainer &sph_system, int numParticles) {
 }
 
 int main(int argc, char *argv[]) {
-  autopas::Logger::create();
+  autopas::Logger logger{};
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 0.15;
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;

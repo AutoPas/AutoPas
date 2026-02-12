@@ -3,6 +3,7 @@
  * @author W. Thieme
  * @date 01.05.2020
  */
+#pragma once
 
 #include <gtest/gtest.h>
 
@@ -12,7 +13,8 @@
 
 class AutoPasMPITestBase : public testing::Test {
  public:
-  AutoPasMPITestBase() { autopas::Logger::create(); }
+  explicit AutoPasMPITestBase(std::ostream &os = std::cout) : _logger(os) {}
 
-  virtual ~AutoPasMPITestBase() { autopas::Logger::unregister(); }
+ private:
+  autopas::Logger _logger;
 };
