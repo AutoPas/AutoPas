@@ -12,7 +12,6 @@
 #include <tuple>
 
 #include "GlobalVariableLogger.h"
-#include "GlobalVariableLogger.h"
 #include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/ParallelVtkWriter.h"
