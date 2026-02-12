@@ -18,7 +18,8 @@
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/IteratorBehavior.h"
-#include "autopas/remainder/RemainderHandler.h"
+#include "autopas/remainder/RemainderHandlerPairwise.h"
+#include "autopas/remainder/RemainderHandlerTriwise.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
@@ -59,6 +60,8 @@ class LogicHandler {
         _neighborListRebuildFrequency{rebuildFrequency},
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()),
+        _remainderHandlerPairwise(_spatialLocks),
+        _remainderHandlerTriwise(_spatialLocks),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix, std::any_of(autotuners.begin(), autotuners.end(),
@@ -89,7 +92,7 @@ class LogicHandler {
     const auto interactionLength = logicHandlerInfo.cutoff + logicHandlerInfo.verletSkin;
     const auto interactionLengthInv = 1. / interactionLength;
     const auto boxLengthWithHalo = logicHandlerInfo.boxMax - logicHandlerInfo.boxMin + (2 * interactionLength);
-    _remainder.initSpatialLocks(boxLengthWithHalo, interactionLengthInv);
+    initSpatialLocks(boxLengthWithHalo, interactionLengthInv);
   }
 
   /**
@@ -269,7 +272,7 @@ class LogicHandler {
     // The container might have changed sufficiently that we would need a different number of spatial locks.
     const auto boxLength = boxMax - boxMin;
     const auto interactionLengthInv = 1. / _currentContainer->getInteractionLength();
-    _remainder.initSpatialLocks(boxLength, interactionLengthInv);
+    initSpatialLocks(boxLength, interactionLengthInv);
 
     // Set this flag, s.t., the container is rebuilt!
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
@@ -678,6 +681,78 @@ class LogicHandler {
 
  private:
   /**
+   * Initialize or update the spatial locks used during the remainder traversal.
+   * If the locks are already initialized but the container size changed, surplus locks will
+   * be deleted, new locks are allocated and locks that are still necessary are reused.
+   *
+   * @note Should the generated number of locks exceed 1e6, the number of locks is reduced so that
+   * the number of locks per dimensions is proportional to the domain side lengths and smaller than the limit.
+   *
+   * @param boxLength Size per dimension for the box that should be covered by locks (should include halo).
+   * @param interactionLengthInv Inverse of the side length of the virtual boxes one lock is responsible for.
+   *
+   */
+  void initSpatialLocks(const std::array<double, 3> &boxLength, double interactionLengthInv) {
+    using namespace autopas::utils::ArrayMath::literals;
+    using utils::ArrayMath::ceil;
+    using utils::ArrayUtils::static_cast_copy_array;
+
+    // The maximum number of spatial locks is capped at 1e6.
+    // This limit is chosen more or less arbitrary. It is big enough so that our regular MD simulations
+    // fall well within it and small enough so that no memory issues arise.
+    // There were no rigorous tests for an optimal number of locks.
+    // Without this cap, very large domains (or tiny cutoffs) would generate an insane number of locks,
+    // that could blow up the memory.
+    constexpr size_t maxNumSpacialLocks{1000000};
+
+    // One lock per interaction length or less if this would generate too many.
+    const std::array<size_t, 3> locksPerDim = [&]() {
+      // First naively calculate the number of locks if we simply take the desired cell length.
+      // Ceil because both decisions are possible, and we are generous gods.
+      const std::array<size_t, 3> locksPerDimNaive =
+          static_cast_copy_array<size_t>(ceil(boxLength * interactionLengthInv));
+      const auto totalLocksNaive =
+          std::accumulate(locksPerDimNaive.begin(), locksPerDimNaive.end(), 1ul, std::multiplies<>());
+      // If the number of locks is within the limits everything is fine and we can return.
+      if (totalLocksNaive <= maxNumSpacialLocks) {
+        return locksPerDimNaive;
+      } else {
+        // If the number of locks grows too large, calculate the locks per dimension proportionally to the side lengths.
+        // Calculate side length relative to dimension 0.
+        const std::array<double, 3> boxSideProportions = {
+            1.,
+            boxLength[0] / boxLength[1],
+            boxLength[0] / boxLength[2],
+        };
+        // With this, calculate the number of locks the first dimension should receive.
+        const auto prodProportions =
+            std::accumulate(boxSideProportions.begin(), boxSideProportions.end(), 1., std::multiplies<>());
+        // Needs floor, otherwise we exceed the limit.
+        const auto locksInFirstDimFloat = std::floor(std::cbrt(maxNumSpacialLocks * prodProportions));
+        // From this and the proportions relative to the first dimension, we can calculate the remaining number of locks
+        const std::array<size_t, 3> locksPerDimLimited = {
+            static_cast<size_t>(locksInFirstDimFloat),  // omitted div by 1
+            static_cast<size_t>(locksInFirstDimFloat / boxSideProportions[1]),
+            static_cast<size_t>(locksInFirstDimFloat / boxSideProportions[2]),
+        };
+        return locksPerDimLimited;
+      }
+    }();
+    _spatialLocks.resize(locksPerDim[0]);
+    for (auto &lockVecVec : _spatialLocks) {
+      lockVecVec.resize(locksPerDim[1]);
+      for (auto &lockVec : lockVecVec) {
+        lockVec.resize(locksPerDim[2]);
+        for (auto &lockPtr : lockVec) {
+          if (not lockPtr) {
+            lockPtr = std::make_unique<std::mutex>();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Gathers dynamic data from the domain if necessary and retrieves the next configuration to use.
    * @tparam Functor
    * @param functor
@@ -773,7 +848,10 @@ class LogicHandler {
    */
   ContainerSelectorInfo _currentContainerSelectorInfo;
 
-  RemainderHandler<Particle_T> _remainder{};
+  RemainderHandlerPairwise<Particle_T> _remainderHandlerPairwise;
+
+  RemainderHandlerTriwise<Particle_T> _remainderHandlerTriwise;
+
   /**
    * Set of interaction types AutoPas is initialized to, determined by the given AutoTuners.
    */
@@ -823,6 +901,13 @@ class LogicHandler {
    * Buffer to store halo particles that should not yet be added to the container. There is one buffer per thread.
    */
   std::vector<FullParticleCell<Particle_T>> _haloParticleBuffer;
+
+  /**
+   * Locks for regions in the domain. Used for buffer <-> container interaction.
+   * The number of locks depends on the size of the domain and interaction length but is capped to avoid
+   * having an insane number of locks. For details see initSpacialLocks().
+   */
+  std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> _spatialLocks;
 
   /**
    * Logger for configuration used and time spent breakdown of iteratePairwise.
@@ -1073,10 +1158,24 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 template <typename Particle_T>
 template <class Functor>
 void LogicHandler<Particle_T>::computeRemainderInteractions(Functor &functor, bool newton3, bool useSoA) {
-  // Helper to access the actual static container type
   withStaticContainerType(*_currentContainer, [&](auto &actualContainerType) {
-    _remainder.computeRemainderInteractions(functor, actualContainerType, _particleBuffer, _haloParticleBuffer, newton3,
-                                            useSoA);
+    if constexpr (utils::isPairwiseFunctor<Functor>()) {
+      if (newton3) {
+        _remainderHandlerPairwise.template computeRemainderInteractions<true>(
+            &functor, actualContainerType, _particleBuffer, _haloParticleBuffer, useSoA);
+      } else {
+        _remainderHandlerPairwise.template computeRemainderInteractions<false>(
+            &functor, actualContainerType, _particleBuffer, _haloParticleBuffer, useSoA);
+      }
+    } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
+      if (newton3) {
+        _remainderHandlerTriwise.template computeRemainderInteractions<true>(&functor, actualContainerType,
+                                                                             _particleBuffer, _haloParticleBuffer);
+      } else {
+        _remainderHandlerTriwise.template computeRemainderInteractions<false>(&functor, actualContainerType,
+                                                                              _particleBuffer, _haloParticleBuffer);
+      }
+    }
   });
 }
 

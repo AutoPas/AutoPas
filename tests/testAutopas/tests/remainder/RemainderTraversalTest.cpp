@@ -7,7 +7,6 @@
 #include "RemainderTraversalTest.h"
 
 #include "autopas/LogicHandler.h"
-#include "autopas/options/TuningMetricOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
@@ -22,9 +21,11 @@
  * @note Buffers need to have at least one (empty) cell. They must not be empty.
  *
  * @param particlesContainerOwned
- * @param particlesBuffer
- * @param particlesHaloBuffer
+ * @param particlesContainerHalo
+ * @param particlesBuffers
+ * @param particlesHaloBuffers
  * @param n3 Newton3 on or off
+ * @param dataLayout
  */
 void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
                               std::vector<Molecule> &particlesContainerHalo,
@@ -49,13 +50,13 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
 
   constexpr double cellSizeFactor = 1.;
   constexpr unsigned int verletRebuildFrequency = 10;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
       .boxMax{10., 10., 10.},
       .cutoff = 2.5,
       .verletSkin = 0.5,
   };
-  const autopas::AutoTunerInfo autoTunerInfo{
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
       .maxSamples = 3,
   };
@@ -368,13 +369,13 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   /// Setup AutoTuner
   constexpr double cellSizeFactor = 1.;
   constexpr unsigned int verletRebuildFrequency = 10;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
       .boxMax{9., 9., 9.},
       .cutoff = 2.5,
       .verletSkin = 0.5,
   };
-  const autopas::AutoTunerInfo autoTunerInfo{
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
       .maxSamples = 3,
   };
