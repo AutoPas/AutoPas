@@ -195,7 +195,7 @@ class AutoTuner {
    * @param sample
    * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
    */
-  void addMeasurement(long sample, bool neighborListRebuilt);
+  void addMeasurement(std::pair<long, long> sample, bool neighborListRebuilt);
 
   /**
    * Adds domain similarity statistics to a vector of measurements, which can be smoothed for use in MPI Tuning to find

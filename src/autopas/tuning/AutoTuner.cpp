@@ -38,8 +38,8 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _samplesNotRebuildingNeighborLists(autoTunerInfo.maxSamples),
       _searchSpace(searchSpace),
       _configQueue(searchSpace.begin(), searchSpace.end()),
-      _tuningResultLogger(outputSuffix),
-      _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix),
+      _tuningResultLogger(outputSuffix, autoTunerInfo.tuningMetric),
+      _tuningDataLogger(autoTunerInfo.maxSamples, rebuildFrequency, outputSuffix),
       _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)) {
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _pdBinDensityStdDevOfLastTenIterations.reserve(10);
@@ -166,6 +166,7 @@ void AutoTuner::handleEndOfTuningPhaseIfRelevant() {
     _isTuning = false;
     // Fill up sample buffer to indicate we are not collecting samples anymore.
     _samplesRebuildingNeighborLists.resize(_maxSamples);
+    _samplesNotRebuildingNeighborLists.resize(_maxSamples);
     _iterationBaseline = 0;
   }
 }
@@ -232,7 +233,7 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
   return {getCurrentConfig(), _isTuning};
 }
 
-void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
+void AutoTuner::addMeasurement(std::pair<long, long> sample, bool neighborListRebuilt) {
   const auto &currentConfig = _configQueue.back();
   // sanity check
   if (getCurrentNumSamples() >= _maxSamples) {
@@ -243,10 +244,10 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   }
   AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
   if (neighborListRebuilt) {
-    _samplesRebuildingNeighborLists.push_back(sample);
-  } else {
-    _samplesNotRebuildingNeighborLists.push_back(sample);
+    // Avoiding adding zeros so that we can apply different strategies (mean, median and min) to find the optimum value.
+    _samplesRebuildingNeighborLists.push_back(sample.first);
   }
+  _samplesNotRebuildingNeighborLists.push_back(sample.second);
 
   checkEarlyStoppingCondition();
 
@@ -302,6 +303,10 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
     auto samplesNotRebuildingNeighborLists = _samplesNotRebuildingNeighborLists;
 
     if (_earlyStoppingOfResampling) {
+      // pad sample vectors to length expected by the tuning data logger
+      auto numRebuildSamples = static_cast<size_t>(std::ceil(_maxSamples * 1.0 / _rebuildFrequency)) -
+                               _samplesRebuildingNeighborLists.size();
+      _samplesRebuildingNeighborLists.resize(numRebuildSamples, -1);
       // pad sample vectors to length of maxSamples to ensure correct logging
       samplesNotRebuildingNeighborLists.resize(_maxSamples - samplesRebuildingNeighborLists.size(), -1);
     }
@@ -359,22 +364,19 @@ std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
 }
 
 size_t AutoTuner::getCurrentNumSamples() const {
-  return _samplesNotRebuildingNeighborLists.size() + _samplesRebuildingNeighborLists.size();
+  // We use the non rebuilding samples because these are added for every sample
+  return _samplesNotRebuildingNeighborLists.size();
 }
 
 long AutoTuner::estimateRuntimeFromSamples() const {
   // reduce samples for rebuild and non-rebuild iterations with the given selector strategy
   const auto reducedValueBuilding =
       autopas::OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy);
-  // if there is no data for the non rebuild iterations we have to assume them taking the same time as rebuilding ones
-  // this might neither be a good estimate nor fair but the best we can do
   const auto reducedValueNotBuilding =
-      _samplesNotRebuildingNeighborLists.empty()
-          ? reducedValueBuilding
-          : autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
+      autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
 
   // Calculate weighted average as if there was exactly one sample for each iteration in the rebuild interval.
-  return (reducedValueBuilding + (_rebuildFrequency - 1) * reducedValueNotBuilding) / _rebuildFrequency;
+  return reducedValueBuilding / _rebuildFrequency + reducedValueNotBuilding;
 }
 
 bool AutoTuner::isStartOfTuningPhase() const {
@@ -443,12 +445,6 @@ bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
 void AutoTuner::setRebuildFrequency(double rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
 
 void AutoTuner::checkEarlyStoppingCondition() {
-  if (_samplesNotRebuildingNeighborLists.empty()) {
-    // Wait until a sample without the expensive rebuilding has occurred to compare the configurations based on
-    // estimated runtime for the non-tuning phase. This should generally happen in the second sample.
-    return;
-  }
-
   if (_iterationBaseline < _maxSamples) {
     // Since there is no prior evidence, we must fully evaluate the first configuration.
     return;

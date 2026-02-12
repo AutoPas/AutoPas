@@ -55,5 +55,15 @@ struct IterationMeasurements {
    * Total energy consumed so far
    */
   long energyTotal{};
+
+  /**
+   * Total energy consumed during rebuilding.
+   */
+  long energyTotalRebuild{};
+
+  /**
+   * Total energy consumed during compute interactions and remainder traversal.
+   */
+  long energyTotalNonRebuild{};
 };
 }  // namespace autopas

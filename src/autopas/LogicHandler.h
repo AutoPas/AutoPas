@@ -1307,15 +1307,15 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   utils::Timer timerRebuild;
   utils::Timer timerComputeInteractions;
   utils::Timer timerComputeRemainder;
+  long energyTotalRebuild;
 
   const bool energyMeasurementsPossible = autoTuner.resetEnergy();
-
   timerTotal.start();
+  timerRebuild.start();
   functor.initTraversal();
 
   // if lists are not valid -> rebuild;
   if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
-    timerRebuild.start();
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->updateRebuildPositions();
 #endif
@@ -1327,9 +1327,10 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
       _numRebuildsInNonTuningPhase++;
     }
 #endif
-    timerRebuild.stop();
     _neighborListsAreValid.store(true, std::memory_order_relaxed);
   }
+  timerRebuild.stop();
+  std::tie(std::ignore, std::ignore, std::ignore, energyTotalRebuild) = autoTuner.sampleEnergy();
 
   timerComputeInteractions.start();
   _currentContainer->computeInteractions(&traversal);
@@ -1356,7 +1357,10 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
           energyMeasurementsPossible ? energyWatts : nanD,
           energyMeasurementsPossible ? energyJoules : nanD,
           energyMeasurementsPossible ? energyDeltaT : nanD,
-          energyMeasurementsPossible ? energyTotal : nanL};
+          energyMeasurementsPossible ? energyTotal : nanL,
+          energyMeasurementsPossible ? energyTotalRebuild : nanL,
+          energyMeasurementsPossible ? energyTotal - energyTotalRebuild
+                                     : nanL};  // ComputeInteractions + Remainder Traversal energy consumption
 }
 
 template <typename Particle_T>
@@ -2013,12 +2017,13 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
       const auto measurement = [&]() {
         switch (autoTuner.getTuningMetric()) {
           case TuningMetricOption::time:
-            return measurements.timeTotal;
+            return std::make_pair(measurements.timeRebuild,
+                                  measurements.timeComputeInteractions + measurements.timeRemainderTraversal);
           case TuningMetricOption::energy:
-            return measurements.energyTotal;
+            return std::make_pair(measurements.energyTotalRebuild, measurements.energyTotalNonRebuild);
           default:
             utils::ExceptionHandler::exception("LogicHandler::computeInteractionsPipeline(): Unknown tuning metric.");
-            return 0l;
+            return std::make_pair(0l, 0l);
         }
       }();
       autoTuner.addMeasurement(measurement, rebuildIteration);
