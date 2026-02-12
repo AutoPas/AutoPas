@@ -12,7 +12,8 @@
 #include <numeric>
 #include <sstream>
 
-#include "Math.h"
+#include "autopas/utils/ContainerConcept.h"
+#include "autopas/utils/Math.h"
 
 namespace autopas::utils::ArrayMath {
 
@@ -358,22 +359,37 @@ template <class target_T = int, class float_T, std::size_t SIZE>
 }
 
 /**
+ * Function for comparing closeness of two floating point numbers using ULP (Units in the Last Place) method.
+ *
+ * @tparam Container must be container type (array, set, vector)
+ * @param lhs The left hand side floating point number to compare.
+ * @param rhs The right hand side floating point number to compare.
+ * @param ulpDistance The maximum acceptable ULP distance between the two floating points
+ *      for which they would be considered near each other. This is optional and by default, it will be {@link
+ * MAX_ULP_DISTANCE}.
+ * @return true if the UPL distance for all elements of lhs and rhs is less than or equal to the provided value
+ */
+template <Container Container>
+bool isInUlp(Container lhs, Container rhs, unsigned int ulpDistance = Math::MAX_ULP_DISTANCE) {
+  return lhs.size() == rhs.size() && std::ranges::equal(lhs, rhs, [&ulpDistance](const auto &lhs, const auto &rhs) {
+           return Math::isInUlp(lhs, rhs, ulpDistance);
+         });
+}
+
+/**
  * Returns true if arrays are elementwise relatively near each other.
- * @tparam T floating point type
- * @tparam SIZE size of the array
- * @param a input array
- * @param b input array
+ * @tparam Container the container type
+ * @param lhs input array
+ * @param rhs input array
  * @param maxRelativeDifference
  * @return
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] bool isNearRel(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b,
-                             double maxRelativeDifference = 1e-9) {
-  bool arraysAreNear = true;
-  for (std::size_t i = 0; i < SIZE; ++i) {
-    arraysAreNear = arraysAreNear and utils::Math::isNearRel(a[i], b[i], maxRelativeDifference);
-  }
-  return arraysAreNear;
+template <Container Container>
+bool isNearRel(Container lhs, Container rhs, double maxRelativeDifference = Math::EPSILON_RELATIVE_EQUALITY) {
+  return lhs.size() == rhs.size() &&
+         std::ranges::equal(lhs, rhs, [&maxRelativeDifference](const auto &lhs, const auto &rhs) {
+           return Math::isNearRel(lhs, rhs, maxRelativeDifference);
+         });
 }
 
 /**
@@ -388,7 +404,7 @@ template <class T, std::size_t SIZE>
  */
 template <class T, std::size_t SIZE>
 [[nodiscard]] bool isNearRel(const std::vector<std::array<T, SIZE>> &a, const std::vector<std::array<T, SIZE>> &b,
-                             double maxRelativeDifference = 1e-9) {
+                             double maxRelativeDifference = Math::EPSILON_RELATIVE_EQUALITY) {
   const auto size = a.size();
   if (size != b.size()) {
     return false;

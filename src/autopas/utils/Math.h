@@ -219,13 +219,97 @@ double normalCDF(double x);
 double sigmoid(double x);
 
 /**
+ * This default relative EPSILON used for the {@link isNearRel} function.
+ */
+constexpr double EPSILON_RELATIVE_EQUALITY = 1e-9;
+
+/**
+ * The default maximal allowed ULP (Units in the Last Place) distance utilized for FloatingPoint comparisons using the
+ * {@link almostEqualUlps} function.
+ *
+ * This is also the value utilized in GoogleTest for their DoubleEq() and FloatEq() Matchers.
+ *
+ * @see https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+ */
+constexpr unsigned int MAX_ULP_DISTANCE = 4;
+
+namespace internal {
+/**
+ * Helper to find out the bit size of a given type
+ * @tparam T any type T
+ */
+template <typename T>
+constexpr size_t bit_size_v = sizeof(T) * 8;
+
+/**
+ * Helper struct to get the correspondingly sized integer for a given floating type.
+ * As 128-bit type floating points are not yet available in C++20, we ensure it will fail to be instantiated - so that
+ * the necessary code changes in the conditional can happen.
+ * @tparam FloatType floating point type
+ */
+template <std::floating_point FloatType>
+struct int_t_impl {
+  static_assert(bit_size_v<FloatType> == 32 || bit_size_v<FloatType> == 64,
+                "int_t only supports 32-bit and 64-bit floating-point types.");
+  /** access the int data type */
+  using type = std::conditional_t<bit_size_v<FloatType> == 32, std::int32_t, std::int64_t>;
+};
+
+}  // namespace internal
+
+/**
+ * Returns the correspondingly sized integer type for a given float. E.g. int_t of float would be int32_t.
+ */
+template <std::floating_point FloatType>
+using int_t = typename internal::int_t_impl<FloatType>::type;
+
+/**
+ * Function for comparing closeness of two floating point numbers using ULP (Units in the Last Place) method.
+ *
+ * @tparam FloatType must be either double or float (ensured by static assertion)
+ * @param lhs The left hand side floating point number to compare.
+ * @param rhs The right hand side floating point number to compare.
+ * @param ulpDistance The maximum acceptable ULP distance between the two floating points
+ *      for which they would be considered near each other. This is optional and by default, it will be {@link
+ * MAX_ULP_DISTANCE}.
+ *
+ * @return true if the ULP distance between lhs and rhs is less than or equal to the provided ulpDistance value,
+ * otherwise, false. Returns true if both numbers are exactly the same. Returns false if the signs do not match.
+ * @note The ULP distance between 3.0 and std::nextafter(3.0, INFINITY) would be 1,
+ *      the ULP distance of 3.0 and std::nextafter(std::nextafter(3.0, INFINITY), INFINITY) would be 2, etc.
+ * @see https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+ */
+template <std::floating_point FloatType>
+bool isInUlp(FloatType lhs, FloatType rhs, unsigned int ulpDistance = MAX_ULP_DISTANCE) {
+  // In case the floats are equal in their bitwise representation, return true
+  if (lhs == rhs) {
+    return true;
+  }
+
+  // In case the signs mismatch, return false
+  if (lhs < static_cast<FloatType>(0.0) && rhs > static_cast<FloatType>(0.0) ||
+      lhs > static_cast<FloatType>(0.0) && rhs < static_cast<FloatType>(0.0)) {
+    return false;
+  }
+
+  // Compute ULP distance by interpreting the floating point as an equivalent-sized integer
+  return reinterpret_cast<int_t<FloatType> &>(rhs) - reinterpret_cast<int_t<FloatType> &>(lhs) <= ulpDistance;
+}
+
+/**
  * Determines if two doubles are near each other. This function should be preferred to comparing with ==.
  * @param a
  * @param b
  * @param maxRelativeDifference inclusive, relative to max(|a|, |b|).
  * @return
  */
-bool isNearRel(double a, double b, double maxRelativeDifference = 1e-9);
+template <std::floating_point FloatType>
+bool isNearRel(FloatType a, FloatType b, double maxRelativeDifference = EPSILON_RELATIVE_EQUALITY) {
+  const auto greaterNumber = std::max(std::abs(a), std::abs(b));
+  const auto absoluteDifference = maxRelativeDifference * greaterNumber;
+  const auto diff = std::abs(a - b);
+  return diff <= absoluteDifference;
+}
 
 /**
  * Determines if two doubles are near each other. This function should be preferred to comparing with ==.
@@ -234,7 +318,10 @@ bool isNearRel(double a, double b, double maxRelativeDifference = 1e-9);
  * @param maxAbsoluteDifference inclusive
  * @return
  */
-bool isNearAbs(double a, double b, double maxAbsoluteDifference);
+template <std::floating_point FloatType>
+bool isNearAbs(FloatType a, FloatType b, double maxAbsoluteDifference) {
+  return std::abs(a - b) <= maxAbsoluteDifference;
+}
 
 /**
  * Round a floating point number to a given number of decimal digits.

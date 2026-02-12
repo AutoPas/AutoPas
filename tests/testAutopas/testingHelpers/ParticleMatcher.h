@@ -9,7 +9,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "autopas/utils/FloatComparison.h"
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/Math.h"
 
 /**
  * Check if two particle-like objects are strictly equal.
@@ -57,10 +58,11 @@ MATCHER(ParticleEq, "Comparing if two particles are strictly equal to each other
  * @param epsilon Relative tolerance used for the floating-point comparisons.
  * @return True if `getR()`, `getV()`, and `getF()` are almost equal (relative) and `getTypeId()` matches.
  */
-bool almostEqualParticles(const auto &lhs, const auto &rhs, double epsilon = autopas::utils::EPSILON_ALMOST_EQUAL) {
-  return autopas::utils::almostEqualRelative(lhs.getR(), rhs.getR(), epsilon) &&
-         autopas::utils::almostEqualRelative(lhs.getV(), rhs.getV(), epsilon) &&
-         autopas::utils::almostEqualRelative(lhs.getF(), rhs.getF(), epsilon) && lhs.getTypeId() == rhs.getTypeId();
+bool almostEqualParticles(const auto &lhs, const auto &rhs,
+                          double epsilon = autopas::utils::Math::EPSILON_RELATIVE_EQUALITY) {
+  return autopas::utils::ArrayMath::isNearRel(lhs.getR(), rhs.getR(), epsilon) &&
+         autopas::utils::ArrayMath::isNearRel(lhs.getV(), rhs.getV(), epsilon) &&
+         autopas::utils::ArrayMath::isNearRel(lhs.getF(), rhs.getF(), epsilon) && lhs.getTypeId() == rhs.getTypeId();
 }
 
 //! @cond Doxygen_Suppress
@@ -96,10 +98,10 @@ MATCHER_P(ParticleAlmostEq, epsilon,
  * @return True if `getR()`, `getV()`, and `getF()` are almost equal (ULPs) and `getTypeId()` matches.
  */
 bool almostEqualParticlesUlps(const auto &lhs, const auto &rhs,
-                              unsigned int ulpDistance = autopas::utils::MAX_ULP_DISTANCE) {
-  return autopas::utils::almostEqualUlps(lhs.getR(), rhs.getR(), ulpDistance) &&
-         autopas::utils::almostEqualUlps(lhs.getV(), rhs.getV(), ulpDistance) &&
-         autopas::utils::almostEqualUlps(lhs.getF(), rhs.getF(), ulpDistance) && lhs.getTypeId() == rhs.getTypeId();
+                              unsigned int ulpDistance = autopas::utils::Math::MAX_ULP_DISTANCE) {
+  return autopas::utils::ArrayMath::isInUlp(lhs.getR(), rhs.getR(), ulpDistance) &&
+         autopas::utils::ArrayMath::isInUlp(lhs.getV(), rhs.getV(), ulpDistance) &&
+         autopas::utils::ArrayMath::isInUlp(lhs.getF(), rhs.getF(), ulpDistance) && lhs.getTypeId() == rhs.getTypeId();
 }
 
 //! @cond Doxygen_Suppress
