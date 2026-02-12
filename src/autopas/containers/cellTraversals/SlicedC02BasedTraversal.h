@@ -53,10 +53,9 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Functo
   inline void cSlicedTraversal(LoopBody &&loopBody);
 
   /**
-   * Checks if the traversal is applicable to the current state of the domain.
-   * @return true iff the traversal can be applied.
+   * @copydoc TraversalInterface::isApplicableToDomain
    */
-  [[nodiscard]] bool isApplicable() const override {
+  [[nodiscard]] bool isApplicableToDomain() const override {
     return this->_cellsPerDimension[this->_dimsSortedByLength[0]] >= this->_overlapLongestAxis;
   }
 

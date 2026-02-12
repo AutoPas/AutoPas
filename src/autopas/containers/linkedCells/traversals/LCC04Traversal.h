@@ -56,7 +56,7 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, 
    * C04 traversals are usable, if cellSizeFactor >= 1.0 and there are at least 3 cells for each dimension.
    * @return information about applicability
    */
-  [[nodiscard]] bool isApplicable() const override {
+  [[nodiscard]] bool isApplicableToDomain() const override {
     // The cellsize cannot be smaller then the cutoff, if OpenMP is used.
     // Also see: https://github.com/AutoPas/AutoPas/issues/464
     const double minLength = *std::min_element(this->_cellLength.cbegin(), this->_cellLength.cend());

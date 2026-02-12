@@ -63,9 +63,11 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
     return TraversalOption();
   }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (this->_dataLayout == DataLayoutOption::aos or this->_dataLayout == DataLayoutOption::soa);
-  }
+  /**
+   * VLC C18 is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()

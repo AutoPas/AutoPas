@@ -51,10 +51,10 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08; }
 
   /**
-   * C08 traversals are always usable.
-   * @return
+   * LC C08 is always applicable to the domain.
+   * @return true
    */
-  [[nodiscard]] bool isApplicable() const override { return true; }
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()

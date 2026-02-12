@@ -6,46 +6,97 @@
 
 #include "C01TraversalTest.h"
 
+#include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
-#include "autopas/utils/checkFunctorType.h"
+#include "autopas/tuning/Configuration.h"
 #include "testingHelpers/commonTypedefs.h"
 
 // Place to implement special test cases, which only apply to C01 Traversal
 
-TEST_F(C01TraversalTest, testIsApplicable) {
-  const std::array<unsigned long, 3> dims({1ul, 1ul, 1ul});
+TEST_F(C01TraversalTest, testHasCompatibleValues) {
+  using namespace autopas;
 
   /// Pairwise traversal tests
-  MPairwiseFunctor pairwiseFunctor;
+  Configuration c01T_N3off(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01, LoadEstimatorOption::none,
+                           DataLayoutOption::soa, Newton3Option::disabled, InteractionTypeOption::pairwise);
+  EXPECT_EQ(c01T_N3off.hasCompatibleValues(), true);
 
-  autopas::LCC01Traversal<FPCell, MPairwiseFunctor, false> c01T_N3off(dims, &pairwiseFunctor, 1., {1., 1., 1.},
-                                                                      autopas::DataLayoutOption::soa, false);
-  EXPECT_EQ(c01T_N3off.isApplicable(), true);
+  Configuration c01T_N3off_AoS(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01,
+                               LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::disabled,
+                               InteractionTypeOption::pairwise);
+  EXPECT_EQ(c01T_N3off_AoS.hasCompatibleValues(), true);
 
-  autopas::LCC01Traversal<FPCell, MPairwiseFunctor, false> c01T_N3on(dims, &pairwiseFunctor, 1., {1., 1., 1.},
-                                                                     autopas::DataLayoutOption::soa, true);
-  EXPECT_EQ(c01T_N3on.isApplicable(), false);
+  Configuration c01T_N3on(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01, LoadEstimatorOption::none,
+                          DataLayoutOption::soa, Newton3Option::enabled, InteractionTypeOption::pairwise);
+  EXPECT_EQ(c01T_N3on.hasCompatibleValues(), false);
 
-  autopas::LCC01Traversal<FPCell, MPairwiseFunctor, true> c01T_N3off_combineSoA(
-      dims, &pairwiseFunctor, 1., {1., 1., 1.}, autopas::DataLayoutOption::soa, false);
-  EXPECT_EQ(c01T_N3off_combineSoA.isApplicable(), true);
+  Configuration c01T_N3on_AoS(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01,
+                              LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::enabled,
+                              InteractionTypeOption::pairwise);
+  EXPECT_EQ(c01T_N3on_AoS.hasCompatibleValues(), false);
 
-  autopas::LCC01Traversal<FPCell, MPairwiseFunctor, true> c01T_N3off_combineSoA_AoS(
-      dims, &pairwiseFunctor, 1., {1., 1., 1.}, autopas::DataLayoutOption::aos, false);
-  EXPECT_EQ(c01T_N3off_combineSoA_AoS.isApplicable(), false);
+  // Combined SoA Tests
 
-  autopas::LCC01Traversal<FPCell, MPairwiseFunctor, true> c01T_N3on_combineSoA(dims, &pairwiseFunctor, 1., {1., 1., 1.},
-                                                                               autopas::DataLayoutOption::soa, true);
-  EXPECT_EQ(c01T_N3on_combineSoA.isApplicable(), false);
+  Configuration c01T_N3off_combineSoA(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA,
+                                      LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::disabled,
+                                      InteractionTypeOption::pairwise);
+  EXPECT_EQ(c01T_N3off_combineSoA.hasCompatibleValues(), true);
+
+  Configuration c01T_N3off_combineSoA_AoS(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA,
+                                          LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::disabled,
+                                          InteractionTypeOption::pairwise);
+  EXPECT_EQ(c01T_N3off_combineSoA_AoS.hasCompatibleValues(), false);
+
+  Configuration c01T_N3on_combineSoA(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA,
+                                     LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::enabled,
+                                     InteractionTypeOption::pairwise);
+  EXPECT_EQ(c01T_N3on_combineSoA.hasCompatibleValues(), false);
+
+  Configuration c01T_N3on_combineSoA_AoS(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA,
+                                         LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::enabled,
+                                         InteractionTypeOption::pairwise);
+  EXPECT_EQ(c01T_N3on_combineSoA_AoS.hasCompatibleValues(), false);
 
   /// Triwise traversal tests
-  MTriwiseFunctor triwiseFunctor;
+  Configuration c01T_N3off_3B(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01,
+                              LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::disabled,
+                              InteractionTypeOption::triwise);
+  EXPECT_EQ(c01T_N3off_3B.hasCompatibleValues(), true);
 
-  autopas::LCC01Traversal<FPCell, MTriwiseFunctor> c01T_N3off_3B(dims, &triwiseFunctor, 1., {1., 1., 1.},
-                                                                 autopas::DataLayoutOption::aos, false);
-  EXPECT_EQ(c01T_N3off_3B.isApplicable(), true);
+  Configuration c01T_N3off_AoS_3B(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01,
+                                  LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::disabled,
+                                  InteractionTypeOption::triwise);
+  EXPECT_EQ(c01T_N3off_AoS_3B.hasCompatibleValues(), true);
 
-  autopas::LCC01Traversal<FPCell, MTriwiseFunctor> c01T_N3on_3B(dims, &triwiseFunctor, 1., {1., 1., 1.},
-                                                                autopas::DataLayoutOption::aos, true);
-  EXPECT_EQ(c01T_N3on_3B.isApplicable(), false);
+  Configuration c01T_N3on_3B(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01,
+                             LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::enabled,
+                             InteractionTypeOption::triwise);
+  EXPECT_EQ(c01T_N3on_3B.hasCompatibleValues(), false);
+
+  Configuration c01T_N3on_AoS_3B(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01,
+                                 LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::enabled,
+                                 InteractionTypeOption::triwise);
+  EXPECT_EQ(c01T_N3on_AoS_3B.hasCompatibleValues(), false);
+
+  // Combined SoA Tests
+
+  Configuration c01T_N3off_combineSoA_3B(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA,
+                                         LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::disabled,
+                                         InteractionTypeOption::triwise);
+  EXPECT_EQ(c01T_N3off_combineSoA_3B.hasCompatibleValues(), false);
+
+  Configuration c01T_N3off_combineSoA_AoS_3B(
+      ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA, LoadEstimatorOption::none,
+      DataLayoutOption::aos, Newton3Option::disabled, InteractionTypeOption::triwise);
+  EXPECT_EQ(c01T_N3off_combineSoA_AoS_3B.hasCompatibleValues(), false);
+
+  Configuration c01T_N3on_combineSoA_3B(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA,
+                                        LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::enabled,
+                                        InteractionTypeOption::triwise);
+  EXPECT_EQ(c01T_N3on_combineSoA_3B.hasCompatibleValues(), false);
+
+  Configuration c01T_N3on_combineSoA_AoS_3B(
+      ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA, LoadEstimatorOption::none,
+      DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::triwise);
+  EXPECT_EQ(c01T_N3on_combineSoA_AoS_3B.hasCompatibleValues(), false);
 }

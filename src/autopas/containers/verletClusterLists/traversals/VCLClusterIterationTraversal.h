@@ -39,9 +39,11 @@ class VCLClusterIterationTraversal : public TraversalInterface,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_cluster_iteration; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (_dataLayout == DataLayoutOption::aos or _dataLayout == DataLayoutOption::soa) and not _useNewton3;
-  }
+  /**
+   * VCL Cluster Iteration is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     if (_dataLayout == DataLayoutOption::soa) {
