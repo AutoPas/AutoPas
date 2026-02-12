@@ -25,7 +25,7 @@ class TuningDataLogger {
    * @param numSamples Number of samples that are taken per configuration.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
-  explicit TuningDataLogger(size_t numSamples, const std::string &outputSuffix = "");
+  explicit TuningDataLogger(size_t numSamples, size_t rebuildFrequency, const std::string &outputSuffix = "");
 
   /**
    * Destructor drops the logger from the spd registry.

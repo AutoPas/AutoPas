@@ -39,7 +39,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _searchSpace(searchSpace),
       _configQueue(searchSpace.begin(), searchSpace.end()),
       _tuningResultLogger(outputSuffix, autoTunerInfo.tuningMetric),
-      _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix),
+      _tuningDataLogger(autoTunerInfo.maxSamples, rebuildFrequency, outputSuffix),
       _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)) {
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _pdBinDensityStdDevOfLastTenIterations.reserve(10);

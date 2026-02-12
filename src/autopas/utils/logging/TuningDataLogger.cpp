@@ -10,7 +10,7 @@
 
 #include "utils/Timer.h"
 
-autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string &outputSuffix)
+autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, size_t rebuildFrequency, const std::string &outputSuffix)
     : _loggerName("TuningDataLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_TUNINGDATA
   const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
@@ -22,8 +22,12 @@ autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string
   // set the pattern to the message only
   headerLogger->set_pattern("%v");
   std::stringstream samplesHeader;
+  auto numRebuildSamples = static_cast<size_t>(std::ceil(numSamples * 1.0 / rebuildFrequency));
+  for (size_t i = 0; i < numRebuildSamples; ++i) {
+    samplesHeader << ",Rebuild sample " << i;
+  }
   for (size_t i = 0; i < numSamples; ++i) {
-    samplesHeader << ",sample" << i;
+    samplesHeader << ",Non rebuild sample " << i;
   }
   // print csv header
   headerLogger->info("Date,Iteration,{}{},Reduced,Smoothed,Mean Rebuild Frequency", Configuration().getCSVHeader(),
