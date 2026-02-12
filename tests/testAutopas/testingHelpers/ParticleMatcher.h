@@ -26,6 +26,7 @@ bool equalParticles(const auto &lhs, const auto &rhs) {
   return lhs.getR() == rhs.getR() && lhs.getV() == rhs.getV() && lhs.getF() == rhs.getF() && lhs.getID() == rhs.getID();
 }
 
+//! @cond Doxygen_Suppress
 /**
  * GoogleTest Matcher for strict particle equality.
  * Compares `getR()`, `getV()`, `getF()`, and `getID()` via `operator==`.
@@ -41,6 +42,7 @@ MATCHER(ParticleEq, "Comparing if two particles are strictly equal to each other
 
   return lhs.getR() == rhs.getR() && lhs.getV() == rhs.getV() && lhs.getF() == rhs.getF() && lhs.getID() == rhs.getID();
 }
+//! @endcond
 
 /**
  * Check if two particle-like objects are almost equal using relative comparisons.
@@ -61,6 +63,7 @@ bool almostEqualParticles(const auto &lhs, const auto &rhs, double epsilon = aut
          autopas::utils::almostEqualRelative(lhs.getF(), rhs.getF(), epsilon) && lhs.getTypeId() == rhs.getTypeId();
 }
 
+//! @cond Doxygen_Suppress
 /**
  * GoogleTest Matcher for approximate particle equality with configurable relative tolerance.
  * Uses `almostEqualParticles(lhs, rhs, epsilon)` internally.
@@ -78,6 +81,7 @@ MATCHER_P(ParticleAlmostEq, epsilon,
   const auto &rhs = std::get<1>(arg);
   return almostEqualParticles(lhs, rhs, epsilon);
 }
+//! @endcond
 
 /**
  * Check if two particle-like objects are almost equal using an ULP distance.
@@ -98,6 +102,7 @@ bool almostEqualParticlesUlps(const auto &lhs, const auto &rhs,
          autopas::utils::almostEqualUlps(lhs.getF(), rhs.getF(), ulpDistance) && lhs.getTypeId() == rhs.getTypeId();
 }
 
+//! @cond Doxygen_Suppress
 /**
  * GoogleTest Matcher for approximate particle equality with configurable ULP distance.
  * Uses `almostEqualParticlesUlps(lhs, rhs, ulpDistance)` internally.
@@ -115,3 +120,4 @@ MATCHER_P(ParticleUlpsEq, ulpDistance,
   const auto &rhs = std::get<1>(arg);
   return almostEqualParticlesUlps(lhs, rhs, ulpDistance);
 }
+//! @endcond
