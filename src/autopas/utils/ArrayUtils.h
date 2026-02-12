@@ -129,7 +129,7 @@ template <class Container>
  * @return string representation of a container
  */
 
-template <Container Container>
+template <ContainerType Container>
 std::ostream &operator<<(std::ostream &os, const Container &container) {
   const std::string &delimiter = ", ";
   const std::array<std::string, 2> &surround = {"[", "]"};

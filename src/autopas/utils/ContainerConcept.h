@@ -40,7 +40,7 @@ template <typename... Args>
 struct is_container<std::vector<Args...>> : std::true_type {};
 
 /**
- * Specialization to allow std::vector.
+ * Specialization to allow std::set.
  * @tparam Args
  */
 template <typename... Args>
@@ -53,6 +53,6 @@ struct is_container<std::set<Args...>> : std::true_type {};
  * @tparam T Type to check.
  */
 template <typename T>
-concept Container = is_container_impl::is_container<std::decay_t<T>>::value;
+concept ContainerType = is_container_impl::is_container<std::decay_t<T>>::value;
 
 }  // namespace autopas::utils

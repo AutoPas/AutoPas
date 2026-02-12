@@ -369,7 +369,7 @@ template <class target_T = int, class float_T, std::size_t SIZE>
  * MAX_ULP_DISTANCE}.
  * @return true if the UPL distance for all elements of lhs and rhs is less than or equal to the provided value
  */
-template <Container Container>
+template <ContainerType Container>
 bool isInUlp(Container lhs, Container rhs, unsigned int ulpDistance = Math::MAX_ULP_DISTANCE) {
   return lhs.size() == rhs.size() && std::ranges::equal(lhs, rhs, [&ulpDistance](const auto &lhs, const auto &rhs) {
            return Math::isInUlp(lhs, rhs, ulpDistance);
@@ -384,7 +384,7 @@ bool isInUlp(Container lhs, Container rhs, unsigned int ulpDistance = Math::MAX_
  * @param maxRelativeDifference
  * @return
  */
-template <Container Container>
+template <ContainerType Container>
 bool isNearRel(Container lhs, Container rhs, double maxRelativeDifference = Math::EPSILON_RELATIVE_EQUALITY) {
   return lhs.size() == rhs.size() &&
          std::ranges::equal(lhs, rhs, [&maxRelativeDifference](const auto &lhs, const auto &rhs) {
