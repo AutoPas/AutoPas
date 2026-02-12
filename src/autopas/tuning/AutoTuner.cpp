@@ -303,6 +303,10 @@ void AutoTuner::addMeasurement(std::pair<long, long> sample, bool neighborListRe
     auto samplesNotRebuildingNeighborLists = _samplesNotRebuildingNeighborLists;
 
     if (_earlyStoppingOfResampling) {
+      // pad sample vectors to length expected by the tuning data logger
+      auto numRebuildSamples = static_cast<size_t>(std::ceil(_maxSamples * 1.0 / _rebuildFrequency)) -
+                               _samplesRebuildingNeighborLists.size();
+      _samplesRebuildingNeighborLists.resize(numRebuildSamples, -1);
       // pad sample vectors to length of maxSamples to ensure correct logging
       samplesNotRebuildingNeighborLists.resize(_maxSamples - samplesRebuildingNeighborLists.size(), -1);
     }

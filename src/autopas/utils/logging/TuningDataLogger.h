@@ -23,6 +23,8 @@ class TuningDataLogger {
   /**
    * Constructor initializes the logger and sets the output file name.
    * @param numSamples Number of samples that are taken per configuration.
+   * @param rebuildFrequency Number of iterations at which the neighbor lists are updated. This is used here to evaluate
+   * how many rebuild samples we will collect.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
   explicit TuningDataLogger(size_t numSamples, size_t rebuildFrequency, const std::string &outputSuffix = "");
