@@ -569,6 +569,16 @@ class LogicHandler {
    * For this, the container and traversal need to be instantiated, hence if the configuration is applicable, it sets
    * the current container and returns the traversal.
    *
+   * This function uses
+   * - Configuration::hasCompatibleValues for checking configuration is compatible independent of the functor and domain.
+   * - TraversalInterface::isApplicableToDomain (via TraversalSelector::generateTraversalFromConfig) for checking
+   * configuration (specifically traversal) is compatible with the domain.
+   *
+   * In addition, this function checks that the configuration is applicable to the functor.
+   *
+   * @note for developers: this function should not directly check configuration compatibility where it could be done
+   * indirectly through Configuration::hasCompatibleValues or TraversalInterface::isApplicableToDomain.
+   *
    * @tparam Functor
    * @param config
    * @param functor
@@ -2034,14 +2044,16 @@ template <typename Particle_T>
 template <class Functor>
 std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::isConfigurationApplicable(
     const Configuration &config, Functor &functor) {
-  // Check if the container supports the traversal
-  const auto allContainerTraversals =
-      compatibleTraversals::allCompatibleTraversals(config.container, config.interactionType);
-  if (allContainerTraversals.find(config.traversal) == allContainerTraversals.end()) {
-    AutoPasLog(WARN, "Configuration rejected: Container {} does not support the traversal {}.", config.container,
-               config.traversal);
-    return {nullptr, /*rejectIndefinitely*/ true};
+  // Check if the configuration is compatible, independent of domain or functor
+  if (not config.hasCompatibleValues()) {
+    AutoPasLog(WARN, "A configuration was rejected by LogicHandler::isConfigurationApplicable, as it was incompatible"
+      " independently of domain or functor. This should not occur and implies illegal configurations are being added"
+      " to the configuration queue during simulation (potentially by a tuning strategy).");
+    AutoPasLog(WARN, "Configuration rejected: {}", config.toString());
+    // Such illegal configurations should be filtered out in the generation of the search space.
+    return {nullptr, /*rejectIndefinitely*/ false};
   }
+
 
   // Check if the functor supports the required Newton 3 mode
   if ((config.newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
@@ -2071,7 +2083,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   const auto traversalInfo =
       generateNewContainer ? containerPtr->getTraversalSelectorInfo() : _currentContainer->getTraversalSelectorInfo();
 
-  // Generates a traversal if applicable, otherwise returns a nullptr
+  // Generates a traversal if applicable to domain, otherwise returns a nullptr
   auto traversalPtr =
       TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(config, functor, traversalInfo);
 

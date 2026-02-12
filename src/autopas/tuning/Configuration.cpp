@@ -52,14 +52,14 @@ std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) 
 bool autopas::Configuration::hasCompatibleValues() const {
   // Check if container and traversal fit together
   const auto &allContainerTraversals = compatibleTraversals::allCompatibleTraversals(container, interactionType);
-  if (allContainerTraversals.find(traversal) == allContainerTraversals.end()) {
+  if (not allContainerTraversals.contains(traversal)) {
     return false;
   }
 
   // Check if the selected load estimator option is applicable.
   const std::set<LoadEstimatorOption> applicableLoadEstimators =
       loadEstimators::getApplicableLoadEstimators(container, traversal, LoadEstimatorOption::getAllOptions());
-  if (applicableLoadEstimators.find(loadEstimator) == applicableLoadEstimators.end()) {
+  if (not applicableLoadEstimators.contains(loadEstimator)) {
     return false;
   }
 
