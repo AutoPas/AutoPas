@@ -1132,7 +1132,7 @@ class LJFunctor
     }
   }
 
-#pragma code_align (64)
+#pragma code_align 32
   template <bool newton3>
   void SoAFunctorVerletOptimizedImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>> &neighborList) {
@@ -1235,7 +1235,7 @@ class LJFunctor
           xArr[tmpJ] = xPtr[indexInSoAJ];
           yArr[tmpJ] = yPtr[indexInSoAJ];
           zArr[tmpJ] = zPtr[indexInSoAJ];
-          ownedStateArr[tmpJ] = ownedStatePtr[indexInSoAJ] == autopas::OwnershipState::dummy ? 0. : 1.;
+          ownedStateArr[tmpJ] = ownedStatePtr[indexInSoAJ] == autopas::OwnershipState::dummy ? SoAFloatPrecision{0} : SoAFloatPrecision{1.};
 
           if constexpr (useMixing) {
             const auto typeIdJ = typeIdPtr[indexInSoAJ];
@@ -1272,7 +1272,7 @@ class LJFunctor
 
             // Mask away if distance is too large or any particle is a dummy. ownedStateI was already checked
             // previously.
-            const SoAFloatPrecision belowCutOff = dr2 <= cutoffSquared ? 1. : 0.;
+            const SoAFloatPrecision belowCutOff = dr2 <= cutoffSquared ? SoAFloatPrecision{1.} : SoAFloatPrecision{0};
             const SoAFloatPrecision mask = belowCutOff * ownedStateArr[j];
 
             const SoAFloatPrecision inverseDr2 = 1. / dr2;
@@ -1394,7 +1394,6 @@ class LJFunctor
       }
     }
 
-    #pragma code_align 64
     // this loop goes over the remainder and uses no optimizations
     for (size_t jNeighIndex = jOff; jNeighIndex < neighborListSize; ++jNeighIndex) {
       size_t j = neighborList[jNeighIndex];
