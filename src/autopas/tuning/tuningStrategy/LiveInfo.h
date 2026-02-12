@@ -21,6 +21,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleBinStructure.h"
+#include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -118,6 +119,145 @@ class LiveInfo {
                                 DataLayoutOption, Newton3Option>;
 
   /**
+   * Constructor.
+   */
+  LiveInfo() = default;
+
+  /**
+   * Constructor for LiveInfo using the parameters.
+   *
+   * @param numOwnedParticles The number of owned particles.
+   * @param numHaloParticles The number of halo particles.
+   * @param cutoff The cutoff radius.
+   * @param skin The skin radius.
+   * @param domainSizeX The size of the domain in x direction.
+   * @param domainSizeY The size of the domain in y direction.
+   * @param domainSizeZ The size of the domain in z direction.
+   * @param particleSize The size of a particle in bytes.
+   * @param threadCount The number of threads used.
+   * @param rebuildFrequency The rebuild frequency of the neighbor lists.
+   * @param numCells The number of cells in the container.
+   * @param numEmptyCells The number of empty cells in the container.
+   * @param minParticlesPerCell The minimum number of particles in a cell.
+   * @param maxParticlesPerCell The maximum number of particles in a cell.
+   * @param medianParticlesPerCell The median number of particles in a cell.
+   * @param lowerQuartileParticlesPerCell The lower quartile of particles per cell.
+   * @param upperQuartileParticlesPerCell The upper quartile of particles per cell.
+   * @param meanParticlesPerCell The mean number of particles per cell.
+   * @param particlesPerCellStdDev The standard deviation of particles per cell.
+   * @param relativeParticlesPerCellStdDev The relative standard deviation of particles per cell. (mean normalized)
+   * @param estimatedNumNeighborInteractions The estimated number of neighbor interactions.
+   * @param particleDependentBinMaxDensity The maximum density of the particle-dependent bin structure.
+   * @param particleDependentBinDensityStdDev The standard deviation of the densities of the particle-dependent bin
+   * structure.
+   * @param maxParticlesPerBlurredBin The maximum number of particles in a blurred bin.
+   * @param minParticlesPerBlurredBin The minimum number of particles in a blurred bin.
+   * @param medianParticlesPerBlurredBin The median number of particles in a blurred bin.
+   * @param lowerQuartileParticlesPerBlurredBin The lower quartile of particles per blurred bin.
+   * @param upperQuartileParticlesPerBlurredBin The upper quartile of particles per blurred bin.
+   * @param meanParticlesPerBlurredBin The mean number of particles in a blurred bin.
+   * @param particlesPerBlurredBinStdDev The standard deviation of particles per blurred bin.
+   * @param relativeParticlesPerBlurredBinStdDev The relative standard deviation of particles per blurred bin. (mean
+   * normalized)
+   */
+  LiveInfo(size_t numOwnedParticles, size_t numHaloParticles, double cutoff, double skin, double domainSizeX,
+           double domainSizeY, double domainSizeZ, size_t particleSize, size_t threadCount, size_t rebuildFrequency,
+           size_t numCells, size_t numEmptyCells, size_t minParticlesPerCell, size_t maxParticlesPerCell,
+           size_t medianParticlesPerCell, size_t lowerQuartileParticlesPerCell, size_t upperQuartileParticlesPerCell,
+           double meanParticlesPerCell, double particlesPerCellStdDev, double relativeParticlesPerCellStdDev,
+           size_t estimatedNumNeighborInteractions, double particleDependentBinMaxDensity,
+           double particleDependentBinDensityStdDev, size_t maxParticlesPerBlurredBin, size_t minParticlesPerBlurredBin,
+           size_t medianParticlesPerBlurredBin, size_t lowerQuartileParticlesPerBlurredBin,
+           size_t upperQuartileParticlesPerBlurredBin, double meanParticlesPerBlurredBin,
+           double particlesPerBlurredBinStdDev, double relativeParticlesPerBlurredBinStdDev) {
+    // Validate all inputs and log warnings if invalid
+    if (cutoff <= 0) {
+      AutoPasLog(WARN, "LiveInfo: cutoff must be greater than 0");
+    }
+    if (skin < 0) {
+      AutoPasLog(WARN, "LiveInfo: skin must be non-negative");
+    }
+    if (domainSizeX <= 0 or domainSizeY <= 0 or domainSizeZ <= 0) {
+      AutoPasLog(WARN, "LiveInfo: domain sizes must be greater than 0");
+    }
+    if (particleSize == 0) {
+      AutoPasLog(WARN, "LiveInfo: particleSize must be greater than 0");
+    }
+    if (threadCount == 0) {
+      AutoPasLog(WARN, "LiveInfo: threadCount must be greater than 0");
+    }
+    if (rebuildFrequency == 0) {
+      AutoPasLog(WARN, "LiveInfo: rebuildFrequency must be greater than 0");
+    }
+    if (numCells == 0) {
+      AutoPasLog(WARN, "LiveInfo: numCells must be greater than 0");
+    }
+    if (maxParticlesPerCell < minParticlesPerCell) {
+      AutoPasLog(WARN, "LiveInfo: maxParticlesPerCell must be >= minParticlesPerCell");
+    }
+    if (meanParticlesPerCell < 0) {
+      AutoPasLog(WARN, "LiveInfo: meanParticlesPerCell must be non-negative");
+    }
+    if (particlesPerCellStdDev < 0) {
+      AutoPasLog(WARN, "LiveInfo: particlesPerCellStdDev must be non-negative");
+    }
+    if (relativeParticlesPerCellStdDev < 0) {
+      AutoPasLog(WARN, "LiveInfo: relativeParticlesPerCellStdDev must be non-negative");
+    }
+    if (particleDependentBinMaxDensity < 0) {
+      AutoPasLog(WARN, "LiveInfo: particleDependentBinMaxDensity must be non-negative");
+    }
+    if (particleDependentBinDensityStdDev < 0) {
+      AutoPasLog(WARN, "LiveInfo: particleDependentBinDensityStdDev must be non-negative");
+    }
+    if (maxParticlesPerBlurredBin < minParticlesPerBlurredBin) {
+      AutoPasLog(WARN, "LiveInfo: maxParticlesPerBlurredBin must be >= minParticlesPerBlurredBin");
+    }
+    if (meanParticlesPerBlurredBin < 0) {
+      AutoPasLog(WARN, "LiveInfo: meanParticlesPerBlurredBin must be non-negative");
+    }
+    if (particlesPerBlurredBinStdDev < 0) {
+      AutoPasLog(WARN, "LiveInfo: particlesPerBlurredBinStdDev must be non-negative");
+    }
+    if (relativeParticlesPerBlurredBinStdDev < 0) {
+      AutoPasLog(WARN, "LiveInfo: relativeParticlesPerBlurredBinStdDev must be non-negative");
+    }
+
+    // Store validated parameters in infos
+    infos["numOwnedParticles"] = numOwnedParticles;
+    infos["numHaloParticles"] = numHaloParticles;
+    infos["cutoff"] = cutoff;
+    infos["skin"] = skin;
+    infos["domainSizeX"] = domainSizeX;
+    infos["domainSizeY"] = domainSizeY;
+    infos["domainSizeZ"] = domainSizeZ;
+    infos["particleSize"] = particleSize;
+    infos["threadCount"] = threadCount;
+    infos["rebuildFrequency"] = rebuildFrequency;
+    infos["numCells"] = numCells;
+    infos["numEmptyCells"] = numEmptyCells;
+    infos["minParticlesPerCell"] = minParticlesPerCell;
+    infos["maxParticlesPerCell"] = maxParticlesPerCell;
+    infos["medianParticlesPerCell"] = medianParticlesPerCell;
+    infos["lowerQuartileParticlesPerCell"] = lowerQuartileParticlesPerCell;
+    infos["upperQuartileParticlesPerCell"] = upperQuartileParticlesPerCell;
+    infos["meanParticlesPerCell"] = meanParticlesPerCell;
+    infos["particlesPerCellStdDev"] = particlesPerCellStdDev;
+    infos["relativeParticlesPerCellStdDev"] = relativeParticlesPerCellStdDev;
+    infos["estimatedNumNeighborInteractions"] = estimatedNumNeighborInteractions;
+    infos["particleDependentBinMaxDensity"] = particleDependentBinMaxDensity;
+    infos["particleDependentBinDensityStdDev"] = particleDependentBinDensityStdDev;
+    infos["maxParticlesPerBlurredBin"] = maxParticlesPerBlurredBin;
+    infos["minParticlesPerBlurredBin"] = minParticlesPerBlurredBin;
+    infos["medianParticlesPerBlurredBin"] = medianParticlesPerBlurredBin;
+    infos["lowerQuartileParticlesPerBlurredBin"] = lowerQuartileParticlesPerBlurredBin;
+    infos["upperQuartileParticlesPerBlurredBin"] = upperQuartileParticlesPerBlurredBin;
+    infos["meanParticlesPerBlurredBin"] = meanParticlesPerBlurredBin;
+    infos["particlesPerBlurredBinStdDev"] = particlesPerBlurredBinStdDev;
+    infos["relativeParticlesPerBlurredBinStdDev"] = relativeParticlesPerBlurredBinStdDev;
+  }
+
+  /**
    * Gathers key statistics that define the computational profile of the simulation, in order to provide lower
    * dimensional and human understandable inputs for the tuning strategies.
    *
@@ -190,6 +330,10 @@ class LiveInfo {
               double skin) {
     using namespace utils::ArrayMath::literals;
     using utils::ArrayMath::ceilAndCast;
+
+    // Timer for debugging
+    utils::Timer timerGatherLiveInfo;
+    timerGatherLiveInfo.start();
 
     // Aliases and info of particle distribution independent information
     const auto interactionLength = cutoff + skin;
@@ -273,6 +417,9 @@ class LiveInfo {
     infos["meanParticlesPerBlurredBin"] = blurredBinStruct.getMeanParticlesPerBin();
     infos["relativeParticlesPerBlurredBinStdDev"] = blurredBinStruct.getRelStdDevParticlesPerBin();
     infos["particlesPerBlurredBinStdDev"] = blurredBinStruct.getStdDevParticlesPerBin();
+
+    timerGatherLiveInfo.stop();
+    AutoPasLog(DEBUG, "Gathering of LiveInfo took {} ns.", timerGatherLiveInfo.getTotalTime());
   }
 
   /**
@@ -302,6 +449,7 @@ class LiveInfo {
       return std::get<T>(it->second);
     } catch (const std::bad_variant_access &e) {
       AutoPasLog(ERROR, "Type mismatch for key '" + key + "'. Requested type does not match the stored type.");
+      return T{};
     }
   }
 

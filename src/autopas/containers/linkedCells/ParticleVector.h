@@ -38,6 +38,15 @@ class ParticleVector {
   }
 
   /**
+   * Remove all particles from the container and mark it as dirty.
+   */
+  void clearAllParticles() {
+    _particleListImp.clear();
+    _dirty = true;
+    _dirtyIndex = 0;
+  }
+
+  /**
    * Remove all halo particles from the container and mark it as dirty.
    */
   void clearHaloParticles() {
