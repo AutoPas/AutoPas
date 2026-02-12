@@ -12,6 +12,8 @@
 #include <tuple>
 #include <type_traits>
 #include <vector>
+#include <optional>
+#include <functional>
 
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options/IteratorBehavior.h"
