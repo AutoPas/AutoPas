@@ -12,6 +12,7 @@
 #include <tuple>
 
 #include "GlobalVariableLogger.h"
+#include "GlobalVariableLogger.h"
 #include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/ParallelVtkWriter.h"
@@ -104,10 +105,9 @@ class Simulation {
   double _totalVirialSum{};
 
   /**
-   * Logger for FLOP count and hit rate.
+   * Logger for global variables calculated by the Functor, eg. Virial, Potential Energy, etc.
    */
   std::unique_ptr<GlobalVariableLogger> _globalLogger;
-
 
   /**
    * Number of completed iterations. Aka. number of current iteration.
@@ -250,6 +250,11 @@ class Simulation {
      */
     autopas::utils::Timer updateContainer;
   };
+
+  /**
+   * Sensor for energy measurement
+   */
+  autopas::utils::EnergySensor _totalEnergySensor;
 
   /**
    * The timers used during the simulation.

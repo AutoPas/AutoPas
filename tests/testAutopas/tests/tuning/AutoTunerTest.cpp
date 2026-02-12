@@ -143,15 +143,6 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
     if (collectedSamples == autoTunerInfo.maxSamples) {
       collectedSamples = 0;
       logicHandler.getContainer().deleteAllParticles();
-      // add particles, so VerletClusterLists uses more than one tower, otherwise its traversals are invalid.
-      if (logicHandler.getContainer().getContainerType() == autopas::ContainerOption::verletClusterLists) {
-        const std::array<size_t, 3> particlesPerDim = {8, 16, 8};
-        const std::array<double, 3> spacing = {0.25, 0.25, 0.25};
-        const std::array<double, 3> offset = {0.125, 0.125, 0.125};
-        Molecule defaultParticle{};
-        autopasTools::generators::GridGenerator::fillWithParticles(logicHandler.getContainer(), particlesPerDim,
-                                                                   defaultParticle, spacing, offset);
-      }
     }
 
     // Should not have any leaving particles in this test
@@ -969,4 +960,64 @@ TEST_F(AutoTunerTest, testMultipleTuners) {
     EXPECT_TRUE(logicHandler.computeInteractionsPipeline(&pairFunctor, autopas::InteractionTypeOption::pairwise));
     EXPECT_TRUE(logicHandler.computeInteractionsPipeline(&triFunctor, autopas::InteractionTypeOption::triwise));
   }
+}
+
+void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinitely) const {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+
+  constexpr autopas::AutoTunerInfo autoTunerInfo{.tuningInterval = 100, .maxSamples = 1};
+  constexpr unsigned int rebuildFrequency = 1;
+
+  const autopas::AutoTuner::SearchSpaceType searchSpace{
+      _confDs_seq_noN3,
+      _confDs_seq_N3,
+      _confLc_c08_N3,
+      _confLc_c18_N3,
+  };
+
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  // 1) Sample first config (accepted).
+  const auto [config1, stillTuning1] = autoTuner.getNextConfig();
+  EXPECT_TRUE(stillTuning1);
+  autoTuner.addMeasurement(200, /*neighborListRebuilt*/ true);
+  autoTuner.bumpIterationCounters();
+
+  // 2) Second config is rejected, should immediately get the next one.
+  const auto [config2, stillTuning2] = autoTuner.getNextConfig();
+  EXPECT_TRUE(stillTuning2);
+  const auto [configAfterReject2, stillTuningAfterReject2] =
+      autoTuner.rejectConfig(config2, /*indefinitely*/ rejectIndefinitely);
+  EXPECT_TRUE(stillTuningAfterReject2);
+
+  // 3) Sample third config (accepted). Make it faster than config1 so it becomes the optimum.
+  autoTuner.addMeasurement(100, /*neighborListRebuilt*/ true);
+  autoTuner.bumpIterationCounters();
+
+  // 4) Final config is rejected.
+  const auto [config4, stillTuning4] = autoTuner.getNextConfig();
+  EXPECT_TRUE(stillTuning4);
+  const auto [configAfterReject4, stillTuningAfterReject4] =
+      autoTuner.rejectConfig(config4, /*indefinitely*/ rejectIndefinitely);
+  EXPECT_FALSE(stillTuningAfterReject4);
+
+  const auto expectedBest = _confLc_c08_N3;
+  EXPECT_EQ(configAfterReject4, expectedBest);
+
+  // We should be able to later call getCurrentConfig and receive the expectedBest
+  EXPECT_EQ(autoTuner.getCurrentConfig(), expectedBest);
+
+  // Similarly with getNextConfig during non-tuning phase
+  EXPECT_EQ(std::get<0>(autoTuner.getNextConfig()), expectedBest);
+}
+
+/**
+ * Tests that ending a tuning phase with a reject configuration is handled correctly.
+ *
+ * Mimics an AutoTuner trialling four configurations. The second and the final configurations will be rejected. After
+ * the tuning phase is completed, the test should get the correct configuration upon calling `getNextConfig`
+ */
+TEST_F(AutoTunerTest, testEndingTuningPhaseWithRejectedConfig) {
+  testEndingTuningPhaseWithRejectedConfig(true);
+  testEndingTuningPhaseWithRejectedConfig(false);
 }

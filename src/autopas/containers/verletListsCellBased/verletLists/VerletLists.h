@@ -30,7 +30,14 @@ namespace autopas {
  */
 template <class Particle_T>
 class VerletLists : public VerletListsLinkedBase<Particle_T> {
-  using LinkedParticleCell = FullParticleCell<Particle_T>;
+  /**
+   * Type of the Particle.
+   */
+  using ParticleType = Particle_T;
+  /**
+   * Type of the ParticleCell used by the underlying linked cells.
+   */
+  using ParticleCellType = FullParticleCell<Particle_T>;
 
  public:
   /**
@@ -54,16 +61,13 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
    * @param skin The skin radius per timestep.
-   * @param rebuildFrequency rebuild fequency.
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
    * @param cellSizeFactor cell size factor ralative to cutoff
    */
   VerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-              const double skin, const unsigned int rebuildFrequency,
-              const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
+              const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                          compatibleTraversals::allVLCompatibleTraversals(), cellSizeFactor),
+      : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, cellSizeFactor),
         _buildVerletListType(buildVerletListType) {}
 
   /**
@@ -73,13 +77,12 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
 
   void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<LinkedParticleCell> *>(traversal);
+    auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<ParticleCellType> *>(traversal);
     if (verletTraversalInterface) {
       verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
                                                          _soaNeighborLists);
     } else {
-      autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in VerletLists::computeInteractions");
+      utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
 
     traversal->initTraversal();
@@ -131,7 +134,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
                                          _buildVerletListType);
     }
     auto traversal =
-        LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
+        LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
             this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
             this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
     this->_linkedCells.computeInteractions(&traversal);
@@ -211,7 +214,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * verlet list for SoA:
    * For every Particle, identified via the _particlePtr2indexMap, a vector of its neighbor indices is stored.
    */
-  std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> _soaNeighborLists;
+  std::vector<std::vector<size_t, AlignedAllocator<size_t>>> _soaNeighborLists;
 
   /**
    * Shows if the SoA neighbor list is currently valid.

@@ -339,7 +339,7 @@ std::string MDFlexConfig::to_string() const {
         break;
       }
       case FunctorOption3B::at: {
-        os << "Axilrod-Teller" << endl;
+        os << "Axilrod-Teller-Muto" << endl;
         break;
       }
     }
@@ -595,7 +595,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   }
   // initialize AT parameters
   for (auto [siteTypeId, nu] : nuMap.value) {
-    _particlePropertiesLibrary->addATParametersToSite(siteTypeId, nu);
+    _particlePropertiesLibrary->addATMParametersToSite(siteTypeId, nu);
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level

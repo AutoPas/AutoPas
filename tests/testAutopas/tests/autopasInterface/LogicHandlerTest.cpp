@@ -73,6 +73,35 @@ TEST_F(LogicHandlerTest, testOneParticleForDynamicRebuild) {
   ASSERT_TRUE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
       << " Particle has moved more than half the skin, so dynamic rebuild is required. \n";
 }
+/**
+ * Tests that the Velocity Method correctly estimates the rebuild frequency using the formula skin/vmax/deltaT/2 + 1.
+ * First we test if the method works with one particle. We then add two more particles and test it again.
+ */
+TEST_F(LogicHandlerTest, testVelocityMethod) {
+  initLogicHandler();
+  Molecule p1({0.5, 1., 1.}, {0., 0.2, 0.}, 0, 0);
+  _logicHandler->addParticle(p1);
+  double skin = 2.;
+  double deltaT = 1.;
+  double velocityMethodRFEstimate = _logicHandler->getVelocityMethodRFEstimate(skin, deltaT);
+  // only one particle in the container --> vmax = 0.2
+  // set vmax according to the maximum velocity of the particles that were added to the container before
+  double vmax = 0.2;
+  EXPECT_NEAR(velocityMethodRFEstimate, skin / vmax / deltaT / 2, 5);
+
+  // test for multiple particles case
+  Molecule p2({1.5, 1., 1.}, {0., 0.4, 0.3}, 0, 0);
+  Molecule p3({1.5, 2., 2.}, {0., 0., 0.3}, 0, 0);
+  _logicHandler->addParticle(p2);
+  _logicHandler->addParticle(p3);
+  // test the method with different skin length
+  skin = 10.;
+  velocityMethodRFEstimate = _logicHandler->getVelocityMethodRFEstimate(skin, deltaT);
+  // 3 particles in the container --> vmax = (0.3*0.3 + 0.4*0.4)^0.5 = 0.5
+  // set vmax according to the maximum velocity of the particles that were added to the container before
+  vmax = 0.5;
+  EXPECT_NEAR(velocityMethodRFEstimate, skin / vmax / deltaT / 2, 10);
+}
 
 /**
  * Tests dynamic rebuild functionalities for one particle moving across the periodic boundary and added to the container

@@ -1,6 +1,8 @@
-//
-// Created by manish on 12/11/25.
-//
+/**
+ * @file GlobalVariableLogger.cpp
+ * @author Manish Mishra
+ * @date 12.11.2025
+ */
 
 #include "GlobalVariableLogger.h"
 
@@ -25,7 +27,6 @@ GlobalVariableLogger::GlobalVariableLogger(const std::string &outputSuffix)
   headerLogger->info(
       "Date, "
       "Iteration, "
-      "Average Virial, "
       "Virial Sum, "
       "Potential Energy ");
   spdlog::drop(headerLoggerName);
@@ -46,7 +47,6 @@ GlobalVariableLogger::~GlobalVariableLogger() {
 
 void GlobalVariableLogger::logGlobals(const size_t iteration, const double virial, const double potentialEnergy) {
 #ifdef MD_FLEXIBLE_CALC_GLOBALS
-double avg_virial = virial/iteration;
-  spdlog::get(_loggerName)->info("{},{},{},{}", iteration, avg_virial , virial, potentialEnergy);
+  spdlog::get(_loggerName)->info("{},{},{}", iteration, virial, potentialEnergy);
 #endif
 }

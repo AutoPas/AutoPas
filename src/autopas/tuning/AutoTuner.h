@@ -231,10 +231,17 @@ class AutoTuner {
   bool inFirstTuningIteration() const;
 
   /**
-   * Indicate if the tuner is in the last iteration of the tuning phase.
+   * Indicates if the tuner is in the last iteration of the tuning phase.
    * @return
    */
   bool inLastTuningIteration() const;
+
+  /**
+   * Indicates whether the tuner is in the iteration corresponding to the last sample of the first configuration in the
+   * current tuning phase.
+   * @return
+   */
+  bool inFirstConfigurationLastSample() const;
 
   /**
    * Getter for the internal evidence collection.
@@ -289,6 +296,13 @@ class AutoTuner {
    * @return true iff still in tuning phase.
    */
   bool tuneConfiguration();
+
+  /**
+   * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
+   * used until the next tuning phase, as well as setting other relevant class members (_endOfTuningPhase, _isTuning,
+   * _samplesRebuildingNeighborLists, _iterationBaseline)
+   */
+  void handleEndOfTuningPhaseIfRelevant();
 
   /**
    * Strategy how to reduce the sampled values to one value.

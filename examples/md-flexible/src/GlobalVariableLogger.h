@@ -1,6 +1,8 @@
-//
-// Created by manish on 12/11/25.
-//
+/**
+ * @file GlobalVariableLogger.h
+ * @author Manish Mishra
+ * @date 12.11.2025
+ */
 
 #pragma once
 
@@ -12,7 +14,7 @@
 #include <spdlog/spdlog.h>
 
 /**
- * Helper to global variables calculated by the Functor, eg. Virial, Potential Energy, etc.
+ * Helper to log global variables calculated by the Functor, eg. Virial, Potential Energy, etc.
  *
  * It uses an asynchronous spd logger to write a csv file named "MD_FLEXIBLE_GLOBAL_<dateStamp>.csv".
  *
