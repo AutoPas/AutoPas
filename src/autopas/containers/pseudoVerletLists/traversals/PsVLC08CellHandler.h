@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/baseFunctors/CellFunctorPsVL.h"
+#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
 
 namespace autopas {
@@ -89,7 +89,7 @@ class PsVLC08CellHandler {
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctorPsVL<ParticleCell, PairwiseFunctor,
+  internal::CellFunctor<ParticleCell, PairwiseFunctor,
                             /*bidirectional*/ true>
       _cellFunctor;
 

@@ -8,7 +8,6 @@
 
 #include "PsVLTraversalInterface.h"
 #include "autopas/baseFunctors/CellFunctor.h"
-#include "autopas/baseFunctors/CellFunctorPsVL.h"
 #include "autopas/containers/cellTraversals/C18BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayUtils.h"
@@ -90,7 +89,7 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctorPsVL<ParticleCell, PairwiseFunctor,
+  internal::CellFunctor<ParticleCell, PairwiseFunctor,
                             /*bidirectional*/ true>
       _cellFunctor;
 
