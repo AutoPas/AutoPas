@@ -260,8 +260,8 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
       }
       // append buffers
       for (size_t slice = midSlice; slice != currentSlice; ++slice %= cOffSize, ++i) {
-        for (auto offsetIndex = this->_cellOffsets[(i + 1) % cOffSize].size(); offsetIndex < this->_cellOffsets[i].size();
-             ++offsetIndex) {
+        for (auto offsetIndex = this->_cellOffsets[(i + 1) % cOffSize].size();
+             offsetIndex < this->_cellOffsets[i].size(); ++offsetIndex) {
           const unsigned long otherIndex = baseIndex + this->_cellOffsets[i][offsetIndex].first;
           ParticleCell &otherCell = cells[otherIndex];
           appendNeeded(combinationSlice[slice], otherCell,

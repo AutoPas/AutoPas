@@ -90,7 +90,7 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
   internal::CellFunctor<ParticleCell, PairwiseFunctor,
-                            /*bidirectional*/ true>
+                        /*bidirectional*/ true>
       _cellFunctor;
 
   /**

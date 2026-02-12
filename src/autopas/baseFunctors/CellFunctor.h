@@ -43,8 +43,8 @@ class CellFunctor {
    */
   void processCell(ParticleCell &cell);
   /**
-  * @param cellIndex All pairwise interactions of particles inside this cell are calculated.
-  */
+   * @param cellIndex All pairwise interactions of particles inside this cell are calculated.
+   */
   void processCell(unsigned long cellIndex);
 
   /**
@@ -54,13 +54,15 @@ class CellFunctor {
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2. If no parameter or {0, 0, 0} is
    * given, sorting will be disabled.
    */
-  void processCellPair(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection = {0., 0., 0.});
+  void processCellPair(ParticleCell &cell1, ParticleCell &cell2,
+                       const std::array<double, 3> &sortingDirection = {0., 0., 0.});
   /**
- * @param cell1Index
- * @param cell2Index
- * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
- */
-  void processCellPair(unsigned long cell1Index, unsigned long cell2Index, const std::array<double, 3> &sortingDirection);
+   * @param cell1Index
+   * @param cell2Index
+   * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
+   */
+  void processCellPair(unsigned long cell1Index, unsigned long cell2Index,
+                       const std::array<double, 3> &sortingDirection);
   /**
    * Getter
    * @return
@@ -88,9 +90,9 @@ class CellFunctor {
   void setSortingThreshold(size_t sortingThreshold);
 
   /**
- * Sets the orientationList.
- * @param list the orientationList
- */
+   * Sets the orientationList.
+   * @param list the orientationList
+   */
   void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &list);
 
  private:
@@ -107,8 +109,8 @@ class CellFunctor {
    */
   void processCellAoS(ParticleCell &cell);
   /**
- * @param cellIndex
- */
+   * @param cellIndex
+   */
   void processCellAoS(unsigned long cellIndex);
 
   void processCellPairAoSN3Util(SortedCellView<ParticleCell> &cell1Sorted, SortedCellView<ParticleCell> &cell2Sorted);
@@ -122,10 +124,10 @@ class CellFunctor {
    */
   void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
   /**
- * @param cell1Index
- * @param cell2Index
- * @param directionIndex Normalized vector connecting centers of cell1 and cell2.
- */
+   * @param cell1Index
+   * @param cell2Index
+   * @param directionIndex Normalized vector connecting centers of cell1 and cell2.
+   */
   void processCellPairAoSN3(unsigned long cell1Index, unsigned long cell2Index, signed long directionIndex);
 
   void processCellPairAoSNoN3Util(SortedCellView<ParticleCell> &cell1Sorted, SortedCellView<ParticleCell> &cell2Sorted);
@@ -157,10 +159,10 @@ class CellFunctor {
   void interactParticles(auto &p1, auto &p2);
 
   /**
- * Utilizes the threeToOneD mapping to calculate the directionIndex relative to the center of a 3x3 cube of cells.
- * @param sortingDirection
- * @return directionIndex
- */
+   * Utilizes the threeToOneD mapping to calculate the directionIndex relative to the center of a 3x3 cube of cells.
+   * @param sortingDirection
+   * @return directionIndex
+   */
   static signed long getDirectionIndex(const std::array<double, 3> &sortingDirection);
 
   /**
@@ -185,15 +187,14 @@ class CellFunctor {
   bool _useNewton3;
 
   /**
- * Orientation List: For each cell, 13 sortedCellViews are stored, each of which sorts in the direction of the
- * neighboring cell.
- */
+   * Orientation List: For each cell, 13 sortedCellViews are stored, each of which sorts in the direction of the
+   * neighboring cell.
+   */
   std::vector<std::vector<SortedCellView<ParticleCell>>> *_orientationList = nullptr;
 };
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-signed long CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::flipDirectionIndex(
-    signed long directionIndex) {
+signed long CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::flipDirectionIndex(signed long directionIndex) {
   return -(directionIndex + 2);
 }
 
@@ -201,14 +202,15 @@ template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 signed long CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::getDirectionIndex(
     const std::array<double, 3> &sortingDirection) {
   const auto &[x, y, z] = sortingDirection;
-  //each direction get values in {-1,0,1}, according to the sign of the direction in sortingDirection.
+  // each direction get values in {-1,0,1}, according to the sign of the direction in sortingDirection.
   int xDirection = (x > 0) - (x < 0);
   int yDirection = (y > 0) - (y < 0);
   int zDirection = (z > 0) - (z < 0);
-  
+
   constexpr std::array<int, 3> dims{3, 3, 3};
-  //subtract an offset of 14 so the direction with index 0 is the first vector in positive direction.
-  return autopas::utils::ThreeDimensionalMapping::threeToOneD(xDirection + 1, yDirection + 1, zDirection + 1, dims) - 14;
+  // subtract an offset of 14 so the direction with index 0 is the first vector in positive direction.
+  return autopas::utils::ThreeDimensionalMapping::threeToOneD(xDirection + 1, yDirection + 1, zDirection + 1, dims) -
+         14;
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
@@ -257,7 +259,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCell(unsi
       processCellAoS(cellIndex);
       break;
     case DataLayoutOption::soa:
-        AutoPasLog(ERROR, "PsVL don't support soa!");
+      AutoPasLog(ERROR, "PsVL don't support soa!");
       break;
   }
 }
@@ -315,14 +317,14 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
       }
       break;
     case DataLayoutOption::soa:
-        AutoPasLog(ERROR, "PsVL don't support soa!");
+      AutoPasLog(ERROR, "PsVL don't support soa!");
       break;
   }
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::interactParticles(auto &p1, auto &p2) {
-  //helper function
+  // helper function
   if (_useNewton3) {
     _functor->AoSFunctor(p1, p2, true);
   } else {
@@ -336,8 +338,8 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::interactParticle
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoSUtil(SortedCellView<ParticleCell> &cellSorted) {
-
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoSUtil(
+    SortedCellView<ParticleCell> &cellSorted) {
   for (auto cellIter1 = cellSorted._particles.begin(); cellIter1 != cellSorted._particles.end(); ++cellIter1) {
     auto &[p1Projection, p1Ptr] = *cellIter1;
     // start inner loop ahead of the outer loop
@@ -353,7 +355,6 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoSUt
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoS(ParticleCell &cell) {
-
   if (cell.size() > _sortingThreshold) {
     SortedCellView<ParticleCell> cellSorted(cell, utils::ArrayMath::normalize(cell.getCellLength()));
     processCellAoSUtil(cellSorted);
@@ -370,14 +371,13 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoS(P
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoS(unsigned long cellIndex) {
-
   auto &cellSorted = (*_orientationList)[cellIndex][6];  // Index 6 for the cell diagonal (direction {1,1,1})
   processCellAoSUtil(cellSorted);
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSN3Util(SortedCellView<ParticleCell> &cell1Sorted, SortedCellView<ParticleCell> &cell2Sorted) {
-
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSN3Util(
+    SortedCellView<ParticleCell> &cell1Sorted, SortedCellView<ParticleCell> &cell2Sorted) {
   for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
     for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
       if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
@@ -406,8 +406,8 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSN3(unsigned long cell1Index,
-                                                                                         unsigned long cell2Index,
-                                                                                         signed long directionIndex) {
+                                                                                     unsigned long cell2Index,
+                                                                                     signed long directionIndex) {
   bool reverseCell2View = false;
   if (directionIndex < 0) {
     reverseCell2View = true;
@@ -418,9 +418,8 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
 
   if (reverseCell2View == false) {
     processCellPairAoSN3Util(cell1Sorted, cell2Sorted);
-  }
-  else {
-  for (auto &[p1Proj, p1Ptr] : cell1Sorted._particles) {
+  } else {
+    for (auto &[p1Proj, p1Ptr] : cell1Sorted._particles) {
       for (auto it = cell2Sorted._particles.rbegin(); it != cell2Sorted._particles.rend(); ++it) {
         const auto &[p2Proj, p2Ptr] = *it;
         if (std::abs(p1Proj - p2Proj) > _sortingCutoff) {
@@ -434,7 +433,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::interactParticlesNoN3(auto &p1, auto &p2) {
-  //helper function
+  // helper function
   _functor->AoSFunctor(p1, p2, false);
   if constexpr (bidirectional) {
     _functor->AoSFunctor(p2, p1, false);
@@ -442,8 +441,8 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::interactParticle
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSNoN3Util(SortedCellView<ParticleCell> &cell1Sorted, SortedCellView<ParticleCell> &cell2Sorted) {
-
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSNoN3Util(
+    SortedCellView<ParticleCell> &cell1Sorted, SortedCellView<ParticleCell> &cell2Sorted) {
   for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
     for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
       if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
@@ -457,7 +456,6 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSNoN3(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-
   if ((cell1.size() + cell2.size() > _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
     SortedCellView<ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<ParticleCell> cell2Sorted(cell2, sortingDirection);
@@ -473,8 +471,9 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSNoN3(unsigned long cell1Index, unsigned long cell2Index, signed long directionIndex) {
-
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSNoN3(unsigned long cell1Index,
+                                                                                       unsigned long cell2Index,
+                                                                                       signed long directionIndex) {
   bool reverseCell2View = false;
   if (directionIndex < 0) {
     reverseCell2View = true;
@@ -486,16 +485,15 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
 
   if (reverseCell2View == false) {
     processCellPairAoSNoN3Util(cell1Sorted, cell2Sorted);
-  }
-  else {
+  } else {
     for (auto &[p1Proj, p1Ptr] : cell1Sorted._particles) {
-        for (auto it = cell2Sorted._particles.rbegin(); it != cell2Sorted._particles.rend(); ++it) {
-          const auto &[p2Proj, p2Ptr] = *it;
-          if (std::abs(p1Proj - p2Proj) > _sortingCutoff) {
-            break;
-          }
-          interactParticlesNoN3(*p1Ptr, *p2Ptr);
+      for (auto it = cell2Sorted._particles.rbegin(); it != cell2Sorted._particles.rend(); ++it) {
+        const auto &[p2Proj, p2Ptr] = *it;
+        if (std::abs(p1Proj - p2Proj) > _sortingCutoff) {
+          break;
         }
+        interactParticlesNoN3(*p1Ptr, *p2Ptr);
+      }
     }
   }
 }

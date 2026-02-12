@@ -37,7 +37,7 @@ class PsVLC01Traversal : public C01BasedTraversal<ParticleCell_T, PairwiseFuncto
                             const double interactionLength, const std::array<double, 3> &cellLength,
                             DataLayoutOption dataLayout, bool useNewton3)
       : C01BasedTraversal<ParticleCell_T, PairwiseFunctor_T, 3>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                            dataLayout, useNewton3),
+                                                                dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, interactionLength, dataLayout, useNewton3) {
     this->computeOffsets();
   }
@@ -90,7 +90,7 @@ class PsVLC01Traversal : public C01BasedTraversal<ParticleCell_T, PairwiseFuncto
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
   internal::CellFunctor<ParticleCell_T, PairwiseFunctor_T,
-                            /*bidirectional*/ false>
+                        /*bidirectional*/ false>
       _cellFunctor;
 };
 
@@ -103,13 +103,14 @@ void PsVLC01Traversal<ParticleCell_T, PairwiseFunctor_T>::setOrientationList(
 
 template <class ParticleCell_T, class PairwiseFunctor_T>
 inline void PsVLC01Traversal<ParticleCell_T, PairwiseFunctor_T>::processBaseCell(unsigned long x, unsigned long y,
-                                                                             unsigned long z) {
+                                                                                 unsigned long z) {
   processBaseCellPairwise(x, y, z);
 }
 
 template <class ParticleCell_T, class PairwiseFunctor_T>
-inline void PsVLC01Traversal<ParticleCell_T, PairwiseFunctor_T>::processBaseCellPairwise(unsigned long x, unsigned long y,
-                                                                                     unsigned long z) {
+inline void PsVLC01Traversal<ParticleCell_T, PairwiseFunctor_T>::processBaseCellPairwise(unsigned long x,
+                                                                                         unsigned long y,
+                                                                                         unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
 
   for (const auto &slice : this->_cellOffsets) {

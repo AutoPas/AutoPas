@@ -6,20 +6,20 @@
 
 #pragma once
 
-#include "ColorBasedTraversal.h"
-
 #include <algorithm>
 #include <array>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#include "ColorBasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "autopas/utils/checkFunctorType.h"
-#include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/utils/checkFunctorType.h"
 
 namespace autopas {
 
@@ -47,7 +47,7 @@ class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, coll
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor, double interactionLength,
-                            const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
+                             const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
       : ColorBasedTraversal<ParticleCell, Functor, collapseDepth>(dims, functor, interactionLength, cellLength,
                                                                   dataLayout, useNewton3) {}
 
@@ -80,8 +80,8 @@ class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, coll
   void computeTriwiseOffsets();
 
   using CellOffsetsType = std::conditional_t<decltype(utils::isPairwiseFunctor<Functor>())::value,
-                                            std::vector<std::vector<std::pair<long, std::array<double, 3>>>>,
-                                            std::vector<std::tuple<long, long, std::array<double, 3>>>>;
+                                             std::vector<std::vector<std::pair<long, std::array<double, 3>>>>,
+                                             std::vector<std::tuple<long, long, std::array<double, 3>>>>;
 
   /**
    * Pairs or triplets for processBaseCell().
