@@ -5,7 +5,7 @@
  * data analysis. It already creates some interesting views on the data. See README.md.
  */
 int main(int argc, char **argv) {
-  autopas::Logger::create();
+  autopas::Logger logger{};
 
   if (argc <= 1) {
     std::cerr << "Please provide the data files as arguments" << std::endl;
@@ -24,6 +24,4 @@ int main(int argc, char **argv) {
 
     writer.write(filename);
   }
-
-  autopas::Logger::unregister();
 }
