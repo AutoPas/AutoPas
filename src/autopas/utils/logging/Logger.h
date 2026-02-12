@@ -21,7 +21,17 @@
  * @param ... Formatting arguments
  * @note A ';' is enforced at the end of the macro.
  */
-#define AutoPasLog(lvl, fmt, ...) SPDLOG_LOGGER_##lvl(spdlog::get("AutoPasLog"), fmt, ##__VA_ARGS__)
+// #define AutoPasLog(lvl, fmt, ...) SPDLOG_LOGGER_##lvl(spdlog::get("AutoPasLog"), fmt, ##__VA_ARGS__)
+
+#define AutoPasLog(lvl, fmt, ...) \
+do { \
+auto _logger_ptr = spdlog::get("AutoPasLog"); \
+if (!_logger_ptr) { \
+fprintf(stderr, "CRASH PREVENTED: Null logger in %s:%d\n", __FILE__, __LINE__); \
+} else { \
+SPDLOG_LOGGER_##lvl(_logger_ptr, fmt, ##__VA_ARGS__); \
+} \
+} while (0)
 
 namespace autopas {
 /**
