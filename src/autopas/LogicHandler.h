@@ -1834,7 +1834,7 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
     const auto boxmax = pos + cutoff;
 
     auto p2Iter = container.getRegionIterator(
-        boxmin, boxmax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, nullptr);
+        boxmin, boxmax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, std::nullopt);
     for (; p2Iter.isValid(); ++p2Iter) {
       Particle_T &p2 = *p2Iter;
 
