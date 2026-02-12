@@ -47,6 +47,7 @@ template <std::floating_point FloatType>
 struct int_t_impl {
   static_assert(bit_size_v<FloatType> == 32 || bit_size_v<FloatType> == 64,
                 "int_t only supports 32-bit and 64-bit floating-point types.");
+  /** access the int data type */
   using type = std::conditional_t<bit_size_v<FloatType> == 32, std::int32_t, std::int64_t>;
 };
 
