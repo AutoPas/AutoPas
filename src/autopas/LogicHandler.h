@@ -570,7 +570,8 @@ class LogicHandler {
    * the current container and returns the traversal.
    *
    * This function uses
-   * - Configuration::hasCompatibleValues for checking configuration is compatible independent of the functor and domain.
+   * - Configuration::hasCompatibleValues for checking configuration is compatible independent of the functor and
+   * domain.
    * - TraversalInterface::isApplicableToDomain (via TraversalSelector::generateTraversalFromConfig) for checking
    * configuration (specifically traversal) is compatible with the domain.
    *
@@ -2046,14 +2047,15 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     const Configuration &config, Functor &functor) {
   // Check if the configuration is compatible, independent of domain or functor
   if (not config.hasCompatibleValues()) {
-    AutoPasLog(WARN, "A configuration was rejected by LogicHandler::isConfigurationApplicable, as it was incompatible"
-      " independently of domain or functor. This should not occur and implies illegal configurations are being added"
-      " to the configuration queue during simulation (potentially by a tuning strategy).");
+    AutoPasLog(
+        WARN,
+        "A configuration was rejected by LogicHandler::isConfigurationApplicable, as it was incompatible"
+        " independently of domain or functor. This should not occur and implies illegal configurations are being added"
+        " to the configuration queue during simulation (potentially by a tuning strategy).");
     AutoPasLog(WARN, "Configuration rejected: {}", config.toString());
     // Such illegal configurations should be filtered out in the generation of the search space.
     return {nullptr, /*rejectIndefinitely*/ false};
   }
-
 
   // Check if the functor supports the required Newton 3 mode
   if ((config.newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
