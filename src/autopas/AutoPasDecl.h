@@ -40,7 +40,6 @@ class LogicHandler;
  * The AutoPas class is intended to be the main point of Interaction for the user.
  * It acts as an interface from where all features of the library can be triggered and configured.
  * @tparam Particle_T Class for particles
- * @tparam ParticleCell Class for the particle cells
  */
 template <class Particle_T>
 class AutoPas {
@@ -75,10 +74,17 @@ class AutoPas {
   using RegionConstIteratorT = autopas::ContainerIterator<Particle_T, false, true>;
 
   /**
-   * Constructor for the autopas class.
+   * Constructor for the AutoPas class.
    * @param logOutputStream Stream where log output should go to. Default is std::out.
    */
   explicit AutoPas(std::ostream &logOutputStream = std::cout);
+
+  /**
+   * Constructor for the AutoPas class.
+   * This constructor can be used when the logging should be directed to a file.
+   * @param logFileName
+   */
+  explicit AutoPas(const std::string &logFileName);
 
   ~AutoPas();
 

@@ -471,8 +471,6 @@ TEST(FuzzyTuningTest, testMaxDefuzzification) {
  * The test uses a simple rule file with one rule and checks if the rule file can be parsed and interpreted correctly.
  */
 TEST(FuzzyTuningTest, testParseRuleFile) {
-  autopas::Logger::create();
-
   const std::string fileContent = R"(
 # Define the settings of the fuzzy control system
 FuzzySystemSettings:

@@ -6,13 +6,8 @@
 
 #pragma once
 
-#include <gtest/gtest.h>
-
 #include "AutoPasTestBase.h"
-#include "autopas/utils/ExceptionHandler.h"
 
 class ExceptionHandlerTest : public AutoPasTestBase {
-  void SetUp() override;
-
   void TearDown() override;
 };
