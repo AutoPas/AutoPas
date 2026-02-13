@@ -83,18 +83,15 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                        std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
-      _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr),
       _totalEnergySensor(configuration.energySensorOption.value) {
   _timers.total.start();
   _timers.initialization.start();
   _totalEnergySensor.startMeasurement();
 
   // only create the writer if necessary since this also creates the output dir
-  if (_createVtkFiles) {
-    _vtkWriter =
-        std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
-                                            std::to_string(_configuration.iterations.value).size());
+  if (not configuration.vtkFileName.value.empty()) {
+    _vtkWriter.emplace(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
+                       std::to_string(_configuration.iterations.value).size());
   }
 
   const auto rank = _domainDecomposition->getDomainIndex();
@@ -222,7 +219,7 @@ void Simulation::finalize() {
 void Simulation::run() {
   _timers.simulate.start();
   while (needsMoreIterations()) {
-    if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
+    if (_vtkWriter.has_value() and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
       _timers.vtk.stop();
@@ -337,7 +334,7 @@ void Simulation::run() {
   _timers.simulate.stop();
 
   // Record last state of simulation.
-  if (_createVtkFiles) {
+  if (_vtkWriter.has_value()) {
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
   }
 }
