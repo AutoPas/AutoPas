@@ -30,6 +30,10 @@ namespace autopas {
 template <typename Particle_T>
 class RemainderHandlerPairwise {
  public:
+  /**
+   * Constructor for RemainderHandlerPairwise
+   * @param spatialLocks Domain locks passed by LogicHandler
+   */
   explicit RemainderHandlerPairwise(std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> &spatialLocks)
       : _spatialLocks(spatialLocks) {}
 

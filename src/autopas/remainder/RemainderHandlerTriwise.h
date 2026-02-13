@@ -29,6 +29,10 @@ namespace autopas {
 template <typename Particle_T>
 class RemainderHandlerTriwise {
  public:
+  /**
+   * Constructor for RemainderHandlerTriwise
+   * @param spatialLocks  Domain locks passed by LogicHandler
+   */
   explicit RemainderHandlerTriwise(std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> &spatialLocks)
       : _spatialLocks(spatialLocks) {}
 
