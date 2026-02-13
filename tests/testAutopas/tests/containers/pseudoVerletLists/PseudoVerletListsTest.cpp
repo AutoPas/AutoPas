@@ -5,9 +5,10 @@
  */
 
 #include "PseudoVerletListsTest.h"
+
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/pseudoVerletLists/PseudoVerletLists.h"
 #include "autopas/particles/ParticleDefinitions.h"
-#include "autopas/cells/FullParticleCell.h"
 #include "autopas/utils/ArrayMath.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -141,7 +142,8 @@ TEST_F(PseudoVerletListsTest, ParticleAppearsOnlyInItsCellSortedViews) {
 }
 
 /**
- * This test verifies that the directions used in PseudoVerletLists have been set correctly assuming a cellSizeFactor of 1.
+ * This test verifies that the directions used in PseudoVerletLists have been set correctly assuming a cellSizeFactor
+ * of 1.
  */
 TEST_F(PseudoVerletListsTest, DirectionsAreCorrectAndNormalized) {
   constexpr double cutoff = 1.0;

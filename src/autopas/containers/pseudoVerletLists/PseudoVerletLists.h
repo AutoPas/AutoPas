@@ -118,7 +118,8 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
 
   /**
    * Getter.
-   * @return _sortingDirections stores normalized directions to a neighboring cells with an index greater than the base cell.
+   * @return _sortingDirections stores normalized directions to a neighboring cells with an index greater than the base
+   * cell.
    */
   [[nodiscard]] std::vector<std::array<double, 3>> getDirections() const { return _sortingDirections; }
 

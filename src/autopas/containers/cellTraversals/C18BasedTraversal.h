@@ -71,7 +71,6 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
    */
   using offsetArray_t = std::vector<std::pair<unsigned long, std::array<double, 3>>>;
 
-
   /**
    * Pairs for processBaseCell(). overlap[0] x overlap[1] offsetArray_t for each special case in x and y direction.
    */
