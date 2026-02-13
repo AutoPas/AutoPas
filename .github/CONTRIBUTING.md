@@ -14,7 +14,10 @@ Please keep in mind the following notes while working.
 * `constexpr` instead of `#define`. Use it wherever possible.
 * `const` wherever possible. 
 * `nullptr` instead of `NULL`.
-* Don't use pointers for non-owned optional variables, wherever possible, as these do not indicate that the variable is not owned by that scope or object. Use `utils::optRef` (short-hand alias for an optional reference `std::optional<std::reference_wrapper<T>>`) instead.
+* Use `utils::optRef` for non-owned optional references, wherever possible.
+  * This indicates better that the variable is not owned by that scope or object, and that the variable's lifetime should exceed the reference's.
+  * `utils::optRef` is a short-hand alias for `std::optional<std::reference_wrapper<T>>`.
+  * This may fail with Apple Clang for types `T` incomplete at the point of instantiation. In these cases simply, use a raw or shared pointer but indicate the intention in the documentation.
 * `using` instead of `typedef`.
 * Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Meaningful error message")` instead.
 
