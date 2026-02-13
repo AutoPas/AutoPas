@@ -14,7 +14,10 @@
 
 namespace autopas::utils {
 
-// Use steady_clock if high_resolution_clock is not monotonous in time.
+/**
+ * high_resolution_clock is not guaranteed to be monotonous in time, which can lead to negative duration times.
+ * Swap to steady_clock then, which is usually the same precision or precise enough.
+ */
 using bestSteadyClock = std::conditional_t<std::chrono::high_resolution_clock::is_steady,
                                            std::chrono::high_resolution_clock, std::chrono::steady_clock>;
 
