@@ -116,9 +116,6 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   if (containerOption == autopas::ContainerOption::directSum and dataLayout == autopas::DataLayoutOption::soa) {
     return;
   }
-  if (containerOption == autopas::ContainerOption::pseudoVerletLists and dataLayout == autopas::DataLayoutOption::soa) {
-    return;
-  }
   const autopas::ContainerSelectorInfo containerInfo(getBoxMin(), getBoxMax(), getCutoff(), getCellSizeFactor(),
                                                      getVerletSkin(), getClusterSize(), getSortingThreshold(),
                                                      autopas::LoadEstimatorOption::none);

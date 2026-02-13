@@ -21,6 +21,8 @@ namespace autopas {
  * By sorting the particles, the loop can be terminated earlier without needing to check
  * each particle to see if it is within the cutoff.
  * By introducing a skin, the sorted cell views do not have to be updated at each calculation step.
+ * Based on: https://doi.org/10.1080/08927022.2012.762097
+ * Currently only AoS and cell size factor >= 1 are supported
  * @tparam Particle_T type of the Particle
  */
 template <class Particle_T>

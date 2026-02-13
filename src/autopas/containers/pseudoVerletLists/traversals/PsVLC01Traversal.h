@@ -49,7 +49,8 @@ class PsVLC01Traversal : public C01BasedTraversal<ParticleCell_T, PairwiseFuncto
    * @return
    */
   [[nodiscard]] bool isApplicable() const override {
-    if (this->_useNewton3 == false && this->_dataLayout == DataLayoutOption::aos) {
+    if (this->_useNewton3 == false && this->_dataLayout == DataLayoutOption::aos && this->_overlap[0] == 1 &&
+        this->_overlap[1] == 1 && this->_overlap[2] == 1) {
       return true;
     }
     return false;
@@ -97,7 +98,6 @@ class PsVLC01Traversal : public C01BasedTraversal<ParticleCell_T, PairwiseFuncto
 template <class ParticleCell_T, class PairwiseFunctor_T>
 void PsVLC01Traversal<ParticleCell_T, PairwiseFunctor_T>::setOrientationList(
     std::vector<std::vector<SortedCellView<ParticleCell_T>>> &list) {
-  PsVLTraversalInterface<ParticleCell_T>::setOrientationList(list);
   _cellFunctor.setOrientationList(list);
 }
 

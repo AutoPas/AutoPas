@@ -79,6 +79,7 @@ class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, coll
    */
   void computeTriwiseOffsets();
 
+  // CelllOffsets type for either Pairwise or Triwise Functors.
   using CellOffsetsType = std::conditional_t<decltype(utils::isPairwiseFunctor<Functor>())::value,
                                              std::vector<std::vector<std::pair<long, std::array<double, 3>>>>,
                                              std::vector<std::tuple<long, long, std::array<double, 3>>>>;

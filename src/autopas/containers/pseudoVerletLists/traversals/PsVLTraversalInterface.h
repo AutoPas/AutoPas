@@ -26,16 +26,7 @@ class PsVLTraversalInterface {
    * Sets the orientationList.
    * @param orientationList
    */
-  virtual void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &orientationList) {
-    _orientationList = &orientationList;
-  }
-
- protected:
-  /**
-   * Orientation List: For each cell, 13 sortedCellViews are stored, each of which sorts in the direction of the
-   * neighboring cell.
-   */
-  std::vector<std::vector<SortedCellView<ParticleCell>>> *_orientationList = nullptr;
+  virtual void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &orientationList) = 0;
 };
 
 }  // namespace autopas

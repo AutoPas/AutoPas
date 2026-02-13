@@ -13,6 +13,7 @@
 
 /**
  *  This test verifies that for each cell, there is an entry with 13 sortedCellViews in OrientationList.
+ *  Assumes cellSizeFactor = 1.0
  */
 TEST_F(PseudoVerletListsTest, OrientationListsHaveCorrectSize) {
   constexpr double cutoff = 1.0;
@@ -46,7 +47,7 @@ TEST_F(PseudoVerletListsTest, OrientationListsAreSorted) {
   constexpr double skin = 0.2;
   constexpr double cellSizeFactor = 1.0;
 
-  autopas::PseudoVerletLists<ParticleFP64> container({0., 0., 0.}, {5., 5., 5.}, cutoff, skin, cellSizeFactor);
+  autopas::PseudoVerletLists<ParticleFP64> container({0., 0., 0.}, {2.5, 2.5, 2.5}, cutoff, skin, cellSizeFactor);
 
   container.addParticle(ParticleFP64({1.5, 1.0, 1.0}, {0., 0., 0.}, 0));
   container.addParticle(ParticleFP64({1.0, 1.5, 1.0}, {0., 0., 0.}, 1));

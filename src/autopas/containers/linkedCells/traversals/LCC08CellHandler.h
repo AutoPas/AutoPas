@@ -54,12 +54,23 @@ class LCC08CellHandler {
                                                                          interactionLength)} {}
 
   /**
+   * Sets the orientationList of the cellFunctor.
+   * @param list
+   */
+  void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &list);
+  /**
    * Computes one interaction for each spacial direction based on the lower left
    * frontal corner (=base index) of a 2x2x2 block of cells.
    * @param cells vector of all cells.
    * @param baseIndex Index respective to which box is constructed.
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
+
+  /**
+   * @param cells vector of all cells.
+   * @param baseIndex Index respective to which box is constructed.
+   */
+  void processBaseCell(unsigned long baseIndex);
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()
@@ -108,6 +119,12 @@ class LCC08CellHandler {
 };
 
 template <class ParticleCell, class PairwiseFunctor>
+void LCC08CellHandler<ParticleCell, PairwiseFunctor>::setOrientationList(
+    std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
+  _cellFunctor.setOrientationList(list);
+}
+
+template <class ParticleCell, class PairwiseFunctor>
 inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
                                                                              unsigned long baseIndex) {
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
@@ -121,6 +138,20 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std
       this->_cellFunctor.processCell(cell1);
     } else {
       this->_cellFunctor.processCellPair(cell1, cell2, r);
+    }
+  }
+}
+
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(unsigned long baseIndex) {
+  for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
+    const unsigned long cellIndex1 = baseIndex + offset1;
+    const unsigned long cellIndex2 = baseIndex + offset2;
+
+    if (cellIndex1 == cellIndex2) {
+      this->_cellFunctor.processCell(cellIndex1);
+    } else {
+      this->_cellFunctor.processCellPair(cellIndex1, cellIndex2, r);
     }
   }
 }

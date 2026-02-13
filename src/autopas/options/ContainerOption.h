@@ -69,11 +69,11 @@ class ContainerOption : public Option<ContainerOption> {
      */
     octree,
 
-    pseudoVerletLists,
     /**
      *  pseudoVerletLists : Built on top of LinkedCells. Uses particles that are projected on the cell pair axis to
      *  reduce spurious distance calculations.
      */
+    pseudoVerletLists,
   };
 
   /**
