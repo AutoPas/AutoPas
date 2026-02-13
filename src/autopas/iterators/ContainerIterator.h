@@ -242,7 +242,7 @@ class ContainerIterator {
   ContainerIterator(void * /*dummy*/, ContainerType &container, IteratorBehavior behavior,
                     utils::optRef<ParticleVecType> additionalVectorsToIterate, const std::array<double, 3> &regionMin,
                     const std::array<double, 3> &regionMax)
-      : _container(std::ref(container)),
+      : _container(&container),
         _behavior(behavior),
         _vectorIndexOffset((behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads()) {
     if (additionalVectorsToIterate.has_value()) {
@@ -324,10 +324,10 @@ class ContainerIterator {
       // getParticle either gives us a particle with the desired properties or a nullptr
       if constexpr (regionIter) {
         std::tie(_currentParticle, _currentVectorIndex, _currentParticleIndex) =
-            _container->get().getParticle(_currentVectorIndex, _currentParticleIndex, _behavior, _regionMin, _regionMax);
+            _container->getParticle(_currentVectorIndex, _currentParticleIndex, _behavior, _regionMin, _regionMax);
       } else {
         std::tie(_currentParticle, _currentVectorIndex, _currentParticleIndex) =
-            _container->get().getParticle(_currentVectorIndex, _currentParticleIndex, _behavior);
+            _container->getParticle(_currentVectorIndex, _currentParticleIndex, _behavior);
       }
       // if getParticle told us that the container doesn't have a particle in the first vector for our thread...
       if (_currentParticle == nullptr and not _additionalVectors.empty()) {
@@ -381,7 +381,7 @@ class ContainerIterator {
         this->operator++();
       }
     } else {
-      const auto indicesValid = _container->get().deleteParticle(_currentVectorIndex, _currentParticleIndex);
+      const auto indicesValid = _container->deleteParticle(_currentVectorIndex, _currentParticleIndex);
       // Edge cases:
       if (not indicesValid) {
         // CASE: the indices and thus the pointer are invalid now
@@ -397,10 +397,9 @@ class ContainerIterator {
   }
 
   /**
-   * Optional reference of the container that is iterated over (optional, because invalid Iterators don't need a
-   * reference)
+   * Pointer to container that is iterated.
    */
-  utils::optRef<ContainerType> _container = std::nullopt;
+  ContainerType *_container; // ToDo make optional reference
 
   /**
    * Index within the current vector.
