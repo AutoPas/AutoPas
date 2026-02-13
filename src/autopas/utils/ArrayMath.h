@@ -16,7 +16,6 @@
 #include "autopas/utils/Math.h"
 
 namespace autopas::utils::ArrayMath {
-
 /**
  * Adds two arrays, returns the result.
  * @tparam T floating point type
@@ -365,15 +364,14 @@ template <class target_T = int, class float_T, std::size_t SIZE>
  * @param lhs The left hand side floating point number to compare.
  * @param rhs The right hand side floating point number to compare.
  * @param ulpDistance The maximum acceptable ULP distance between the two floating points
- *      for which they would be considered near each other. This is optional and by default, it will be {@link
- * MAX_ULP_DISTANCE}.
+ *      for which they would be considered near each other. This is optional.
  * @return true if the UPL distance for all elements of lhs and rhs is less than or equal to the provided value
  */
 template <ContainerType Container>
 bool isInUlp(Container lhs, Container rhs, unsigned int ulpDistance = Math::MAX_ULP_DISTANCE) {
   return lhs.size() == rhs.size() && std::ranges::equal(lhs, rhs, [&ulpDistance](const auto &lhs, const auto &rhs) {
-           return Math::isInUlp(lhs, rhs, ulpDistance);
-         });
+    return Math::isInUlp(lhs, rhs, ulpDistance);
+  });
 }
 
 /**
@@ -455,7 +453,6 @@ template <typename new_T, typename old_T, std::size_t SIZE>
 
 // namespace for templated operators
 inline namespace literals {
-
 /**
  * Adds two arrays, returns the result.
  * @tparam T floating point type
@@ -684,8 +681,7 @@ constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, T s) {
   }
   return a;
 }
-
-}  // namespace literals
+} // namespace literals
 
 /**
  * Calculate the squared minimum distance between two boxes, which are aligned to the Cartesian grid.
@@ -708,4 +704,4 @@ double boxDistanceSquared(const std::array<T, SIZE> &aMin, const std::array<T, S
 
   return dot(aToB, aToB) + dot(bToA, bToA);
 }
-}  // namespace autopas::utils::ArrayMath
+} // namespace autopas::utils::ArrayMath

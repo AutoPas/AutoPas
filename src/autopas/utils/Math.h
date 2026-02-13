@@ -11,7 +11,6 @@
 #include <vector>
 
 namespace autopas::utils::Math {
-
 /**
  * Factor of PDF of standard normal distribution.
  */
@@ -224,8 +223,7 @@ double sigmoid(double x);
 constexpr double EPSILON_RELATIVE_EQUALITY = 1e-9;
 
 /**
- * The default maximal allowed ULP (Units in the Last Place) distance utilized for FloatingPoint comparisons using the
- * {@link almostEqualUlps} function.
+ * The default maximal allowed ULP (Units in the Last Place) distance utilized for FloatingPoint comparisons.
  *
  * This is also the value utilized in GoogleTest for their DoubleEq() and FloatEq() Matchers.
  *
@@ -254,8 +252,7 @@ struct int_t_impl {
   /** access the int data type */
   using type = std::conditional_t<bit_size_v<FloatType> == 32, std::int32_t, std::int64_t>;
 };
-
-}  // namespace internal
+} // namespace internal
 
 /**
  * Returns the correspondingly sized integer type for a given float. E.g. int_t of float would be int32_t.
@@ -270,8 +267,7 @@ using int_t = typename internal::int_t_impl<FloatType>::type;
  * @param lhs The left hand side floating point number to compare.
  * @param rhs The right hand side floating point number to compare.
  * @param ulpDistance The maximum acceptable ULP distance between the two floating points
- *      for which they would be considered near each other. This is optional and by default, it will be {@link
- * MAX_ULP_DISTANCE}.
+ *      for which they would be considered near each other.
  *
  * @return true if the ULP distance between lhs and rhs is less than or equal to the provided ulpDistance value,
  * otherwise, false. Returns true if both numbers are exactly the same. Returns false if the signs do not match.
@@ -352,5 +348,4 @@ Eigen::VectorXd makeVectorXd(const std::vector<double> &elements);
  * @return
  */
 Eigen::VectorXi makeVectorXi(const std::vector<int> &elements);
-
-}  // namespace autopas::utils::Math
+} // namespace autopas::utils::Math
