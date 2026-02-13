@@ -67,7 +67,6 @@ class LCC08CellHandler {
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
 
   /**
-   * @param cells vector of all cells.
    * @param baseIndex Index respective to which box is constructed.
    */
   void processBaseCell(unsigned long baseIndex);

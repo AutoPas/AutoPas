@@ -59,11 +59,30 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
   template <bool allCells, typename LoopBody>
   inline void c18Traversal(LoopBody &&loopBody);
 
+  /**
+   * Computes pairs used in processBaseCell()
+   */
   void computeOffsets();
 
+  /**
+   * Type of an array containing offsets relative to the base cell and correspondent normalized 3d relationship vectors.
+   * The vectors (aka std::array<double,3>) describe the imaginative line connecting the center of the base cell and the
+   * center of the cell defined by the offset. It is used for sorting.
+   */
   using offsetArray_t = std::vector<std::pair<unsigned long, std::array<double, 3>>>;
+
+
+  /**
+   * Pairs for processBaseCell(). overlap[0] x overlap[1] offsetArray_t for each special case in x and y direction.
+   */
   std::vector<std::vector<offsetArray_t>> _cellOffsets;
 
+  /**
+   * Returns the index in the offsets array for the given position.
+   * @param pos current position in dimension dim
+   * @param dim current dimension
+   * @return Index for the _cellOffsets Array.
+   */
   [[nodiscard]] unsigned long getIndex(unsigned long pos, unsigned int dim) const;
 };
 

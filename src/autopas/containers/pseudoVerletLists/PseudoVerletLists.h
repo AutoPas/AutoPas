@@ -22,7 +22,7 @@ namespace autopas {
  * each particle to see if it is within the cutoff.
  * By introducing a skin, the sorted cell views do not have to be updated at each calculation step.
  * Based on: https://doi.org/10.1080/08927022.2012.762097
- * Currently only AoS and cell size factor >= 1 are supported
+ * Currently only AoS and cell size factors >= 1 are supported
  * @tparam Particle_T type of the Particle
  */
 template <class Particle_T>
@@ -51,8 +51,8 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   PseudoVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                     const double skin, const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, cellSizeFactor) {
-    for (size_t i = 0; i < _directions.size(); ++i) {
-      _directions[i] = utils::ArrayMath::normalize(getDirectionFromIndex(i));
+    for (size_t i = 0; i < _sortingDirections.size(); ++i) {
+      _sortingDirections.push_back(utils::ArrayMath::normalize(getDirectionFromIndex(i)));
     }
   }
 
@@ -84,7 +84,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Rebuilds the orientationList.
    * \image html DirectionsForPseudoVerletLists.png "Indices of the directions for the orientationList"
-   * @param traversal
+   * @param traversal from ParticleContainerInterface, but is not used here.
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     auto numCells = this->_linkedCells.getCells().size();
@@ -92,7 +92,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
     _orientationList.resize(numCells);
 
     for (size_t i = 0; i < numCells; ++i) {
-      for (auto &_direction : _directions) {
+      for (auto &_direction : _sortingDirections) {
         _orientationList[i].emplace_back(SortedCellView{this->_linkedCells.getCells()[i], _direction});
       }
     }
@@ -118,21 +118,22 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
 
   /**
    * Getter.
-   * @return _directions
+   * @return _sortingDirections stores normalized directions to a neighboring cells with an index greater than the base cell.
    */
-  [[nodiscard]] std::array<std::array<double, 3>, 13> getDirections() const { return _directions; }
+  [[nodiscard]] std::vector<std::array<double, 3>> getDirections() const { return _sortingDirections; }
 
  protected:
   /**
-   * Orientation List: For each cell, 13 sortedCellViews are stored, each of which sorts in the direction of the
-   * neighboring cell.
+   * Orientation List: or each cell, for each direction, a sortedCellView is stored, sorted along a
+   * connecting vector between this cell center and the center of a neighboring cell.
+   * Only the sortedCellView with directions to neighboring cells with a greater Index than the base cell are stored.
    */
   std::vector<std::vector<SortedCellView<ParticleCellType>>> _orientationList;
 
   /**
-   * Stores the normalized directions to the neighboring cells.
+   * Stores the normalized directions to the neighboring cells with an index greater than the base cell.
    */
-  std::array<std::array<double, 3>, 13> _directions{};
+  std::vector<std::array<double, 3>> _sortingDirections{};
 };
 
 }  // namespace autopas

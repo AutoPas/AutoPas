@@ -12,9 +12,9 @@ namespace autopas {
 
 /**
  * This class provides the Traversal Interface for the pseudoVerletLists container.
- * The container only accepts traversals in its computeInteractions() method that implements this interface.
+ * The container only accepts traversals in its computeInteractions() method that implement this interface.
  */
-template <class ParticleCell>
+template <class ParticleCell_T>
 class PsVLTraversalInterface {
  public:
   /**
@@ -26,7 +26,7 @@ class PsVLTraversalInterface {
    * Sets the orientationList.
    * @param orientationList
    */
-  virtual void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &orientationList) = 0;
+  virtual void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell_T>>> &orientationList) = 0;
 };
 
 }  // namespace autopas

@@ -7,7 +7,5 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
-#include "autopas/containers/pseudoVerletLists/PseudoVerletLists.h"
-#include "autopas/particles/ParticleDefinitions.h"
 
 class PseudoVerletListsTest : public AutoPasTestBase, public ::testing::WithParamInterface<double> {};
