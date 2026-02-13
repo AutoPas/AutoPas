@@ -1,7 +1,9 @@
 # This file contains all possible options that a yaml input file for md-flexible can have. For the meaning of individual options ./md-flexible --help can be called, or MDFlexConfig.h can be looked up.
 container                            :  [DirectSum, LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
 # Configuration options for pairwise interactions
-functor                              :  Lennard-Jones (12-6) avx
+functor                              :  Lennard-Jones (12-6) highway
+# Also available: "lj-AVX", "lj-SVE" (which implement architecture-specific vector instructions)
+# and "lj" (which relies on auto-vectorization - often with limited success)
 traversal                            :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
 newton3                              :  [disabled, enabled]
 data-layout                          :  [AoS, SoA]
@@ -12,6 +14,9 @@ newton3-3b                           :  [enabled, disabled]
 data-layout-3b                       :  [AoS, SoA]
 
 # General options
+vectorization-pattern                :  [1xVectorLength, 2xVectorLengthDiv2, VectorLengthDiv2x2, VectorLengthx1]
+# Only the LJ-Highway functor implements patterns other than 1xVectorLength. If other patterns are provided in combination
+# with another functor, configurations with non-1xVecLen pattern will simply be rejected.
 verlet-rebuild-frequency             :  20
 verlet-skin-radius                   :  0.2
 verlet-cluster-size                  :  4

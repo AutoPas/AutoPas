@@ -13,14 +13,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
-  # Check that everything is formatted correctly. This does not apply any changes!
-  StyleCheck:
+  PreChecks:
+    name: Style and Custom Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Run the style check
-      - uses: DoozyX/clang-format-lint-action@v0.18.2
+
+      # Check that everything is formatted correctly. This does not apply any changes!
+      - name: Clang-Format Check
+        uses: DoozyX/clang-format-lint-action@v0.18.2
         with:
           source: 'src tests examples applicationLibrary tools'
           # exclude: 'none'
@@ -28,14 +29,9 @@ jobs:
           clangFormatVersion: 14
           style: file
 
-  # Make sure contribution guidelines are followed. This does not apply any changes!
-  CustomChecks:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Checks
-        # this exits immediately when any command returns != 0
+      # Make sure contribution guidelines are followed. This does not apply any changes!
+      - name: Custom Project Checks
+        shell: bash
         run: |
           # enable recursive globbing syntax
           shopt -s globstar
@@ -62,33 +58,49 @@ jobs:
       fail-fast: false
       matrix:
         part: [ 1, 2 ] # Split tests into two parts, to be run by separate runners
+        split: [ 2 ] # default test splitting
         md-flex-mode: [ singlesite, multisite ]
         config: [
-          #    0              1       2       3                   4        5       6     7      8
-          # container      , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan,  AVX
-          [ autopas-build-clang , clang, clang++, Ninja            , Debug  , ON     , ON  , OFF ,  ON ],
-          [ autopas-build-clang , clang, clang++, Ninja            , Release, OFF    , ON  , OFF ,  ON ],
-          [ autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ,  ON ],
-          [ autopas-build-clang , clang, clang++, Ninja            , Release, ON     , ON  , OFF ,  ON ],
-          [ autopas-build-gcc   , gcc  , g++    ,"'Unix Makefiles'", Release, ON     , OFF , OFF ,  ON ],
-          [ autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,  ON ],
+          # 0                     1      2        3                  4        5        6     7      8     9
+          # container           , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan,  AVX,  HWY
+          [ autopas-build-clang , clang, clang++, Ninja            , Release, OFF    , ON  , OFF ,  ON ,  ON],
+          [ autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ,  ON ,  ON],
+          [ autopas-build-clang , clang, clang++, Ninja            , Release, ON     , ON  , OFF ,  ON ,  ON],
+          [ autopas-build-gcc   , gcc  , g++    ,"'Unix Makefiles'", Release, ON     , OFF , OFF ,  ON ,  ON],
+          [ autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,  ON ,  ON],
         ]
         exclude:
           # Exclude multisite tests (to later be re-added for some configurations)
           - md-flex-mode: multisite
           # Exclude MPI configuration from part 2, as there are not many tests and so don't need to be split
-          - config: [ autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF   , ON ]
+          - config: [ autopas-build-gcc   , mpicc, mpic++ , "'Unix Makefiles'", Release, ON, ON , OFF, ON , ON]
             part: 2
-        # For two configurations, compile with Multi-Site Molecule support for md-flexible. There are not so many tests
-        # so we only add tests for part 1
+
         include:
-          - config: [ autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON    , OFF ]
+          # Extra matrix entry: third split ONLY for clang|Debug
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug  , ON, ON , OFF, ON , ON ]
+            md-flex-mode: singlesite
+            part: 1
+            split: 3
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug  , ON, ON , OFF, ON , ON ]
+            md-flex-mode: singlesite
+            part: 2
+            split: 3
+          - config: [ autopas-build-clang , clang, clang++, Ninja             , Debug  , ON, ON , OFF, ON , ON ]
+            md-flex-mode: singlesite
+            part: 3
+            split: 3
+          # For two configurations, compile with Multi-Site Molecule support for md-flexible. There are not so many tests
+          # so we only add tests for part 1
+          - config: [ autopas-build-archer, clang, clang++, Ninja             , Release, ON, OFF, ON , OFF, OFF]
             md-flex-mode: multisite
             part: 1
-          - config: [ autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF   , OFF ]
+            split: 1
+          - config: [ autopas-build-gcc   , mpicc, mpic++ , "'Unix Makefiles'", Release, ON, ON , OFF, OFF, OFF]
             md-flex-mode: multisite
             part: 1
-    name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|${{ matrix.md-flex-mode }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
+            split: 1
+    name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|${{ matrix.md-flex-mode }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/${{ matrix.split }})
     container: autopas/${{ matrix.config[0] }}
     env:
       TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
@@ -120,6 +132,7 @@ jobs:
             -DMD_FLEXIBLE_MODE=${{ matrix.md-flex-mode }} \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON \
             -DMD_FLEXIBLE_FUNCTOR_AVX=${{ matrix.config[8] }} \
+            -DMD_FLEXIBLE_FUNCTOR_HWY=${{ matrix.config[9] }} \
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DMD_FLEXIBLE_ENABLE_ALLLBL=${UseMPI} \
             -DAUTOPAS_ENABLE_HARMONY=ON \
@@ -128,43 +141,40 @@ jobs:
             -DAUTOPAS_ENABLE_DYNAMIC_CONTAINERS=ON \
             ..
           entrypoint.sh cmake --build . --parallel 8
-      - name: Run tests ${{ matrix.part }}/2
+      - name: Run tests ${{ matrix.part }}/${{ matrix.split }}
         run: |
           # If single-site & No MPI, run every other AutoPas and example tests
           if [[ "${{ matrix.md-flex-mode }}" = 'singlesite' ]] && [[ "${{ matrix.config[1] }}" != 'mpicc' ]]
           then
             cd build
-            # Start with test 0 or 1 and do every second test
-            ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
+            ctest --output-on-failure -I ${{ matrix.part }},,${{ matrix.split }} -j 2
+
             cd applicationLibrary
-            ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
+            ctest --output-on-failure -I ${{ matrix.part }},,${{ matrix.split }} -j 2
+
             cd ../examples
-            ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,2 -j 2
+            ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,${{ matrix.split }} -j 2
           fi
-          
+
           # If single-site & MPI, run MPI tests for AutoPas and example tests
           if [[ "${{ matrix.md-flex-mode }}" = 'singlesite' ]] && [[ "${{ matrix.config[1] }}" = 'mpicc' ]]
           then
             cd build
-            # Only run MPI tests.
-            # No `--oversubscribe`, as MPI in container doesn't need it.
             ctest --output-on-failure --tests-regex MPIParallelAutoPasTests
             cd examples
-            # exclude examples that do not support MPI 
             ctest --output-on-failure --build-config checkExamples --exclude-regex 'sph-((main.test)|(diagram.*))'
           fi
-          
+
           # If multi-site run every md-flexible test and multi site tests
           if [[ "${{ matrix.md-flex-mode }}" = 'multisite' ]]
           then
             cd build/applicationLibrary
-            # Only run multi-site tests for non-mpi case
-            if [[ "${{ matrix.config[1] }}" != 'mpicc' ]]
+            if [[ "${{ matrix.config[1] }}" != 'mpicc' ]]; 
             then
               ctest --output-on-failure --tests-regex '[mM]ulti[sS]ite'
             fi
             cd ../examples/md-flexible
-            ctest --output-on-failure --build-config mdFlexTests 
+            ctest --output-on-failure --build-config mdFlexTests
           fi
 
   macOSJob:
@@ -192,6 +202,7 @@ jobs:
             -DAUTOPAS_LOG_ITERATIONS=ON \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON \
             -DMD_FLEXIBLE_FUNCTOR_AVX=OFF \
+            -DMD_FLEXIBLE_FUNCTOR_HWY=OFF \
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=OFF
           cmake --build . --target md-flexible
