@@ -327,6 +327,10 @@ auto TraversalComparison::getTestParams() {
                         for (DeletionPosition particleDeletionPosition :
                              {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
                               DeletionPosition::beforeAndAfterLists}) {
+                          auto config = autopas::Configuration{
+                              containerOption,  cellSizeFactor, traversalOption, autopas::LoadEstimatorOption::none,
+                              dataLayoutOption, newton3Option,  interactionType};
+                          if (not config.hasCompatibleValues()) continue;
                           testParams.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option,
                                                   numParticles, numHalo, boxMax, cellSizeFactor, slightMove,
                                                   particleDeletionPosition, globals, interactionType);

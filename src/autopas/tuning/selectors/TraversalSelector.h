@@ -23,6 +23,9 @@
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
 #include "autopas/containers/octree/traversals/OTC01Traversal.h"
 #include "autopas/containers/octree/traversals/OTC18Traversal.h"
+#include "autopas/containers/pseudoVerletLists/traversals/PsVLC01Traversal.h"
+#include "autopas/containers/pseudoVerletLists/traversals/PsVLC08Traversal.h"
+#include "autopas/containers/pseudoVerletLists/traversals/PsVLC18Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
@@ -343,6 +346,25 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
           &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.interactionLength, dataLayout, useNewton3);
       break;
     }
+    case TraversalOption::psvl_c18: {
+      traversal = std::make_unique<PsVLC18Traversal<ParticleCell_T, PairwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
+      break;
+    }
+    case TraversalOption::psvl_c08: {
+      traversal = std::make_unique<PsVLC08Traversal<ParticleCell_T, PairwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
+      break;
+    }
+    case TraversalOption::psvl_c01: {
+      traversal = std::make_unique<PsVLC01Traversal<ParticleCell_T, PairwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
+      break;
+    }
+
     default: {
       utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",
                                          traversalType.to_string());
