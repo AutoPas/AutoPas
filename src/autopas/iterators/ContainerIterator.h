@@ -397,9 +397,10 @@ class ContainerIterator {
   }
 
   /**
-   * Pointer to container that is iterated.
+   * Pointer to container that is iterated. This is used as a non-owning optional reference but cannot be implemented
+   * as such as it fails with Apple Clang.
    */
-  ContainerType *_container; // ToDo make optional reference
+  ContainerType *_container = nullptr;
 
   /**
    * Index within the current vector.
