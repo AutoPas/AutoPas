@@ -536,7 +536,8 @@ class LogicHandler {
 
     auto additionalVectors =
         const_cast<LogicHandler *>(this)->gatherAdditionalVectors<ContainerIterator<Particle_T, false, true>>(behavior);
-    return std::as_const(_currentContainer)->getRegionIterator(lowerCorner, higherCorner, behavior, std::ref(additionalVectors));
+    return std::as_const(_currentContainer)
+        ->getRegionIterator(lowerCorner, higherCorner, behavior, std::ref(additionalVectors));
   }
 
   /**

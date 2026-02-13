@@ -8,12 +8,12 @@
 #pragma once
 
 #include <array>
+#include <functional>
 #include <limits>
+#include <optional>
 #include <tuple>
 #include <type_traits>
 #include <vector>
-#include <optional>
-#include <functional>
 
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options/IteratorBehavior.h"
@@ -126,8 +126,9 @@ class ContainerIterator {
    * @param regionMin Left Front Lower corner of the iterator's region.
    * @param regionMax Right Back Upper corner of the iterator's region.
    */
-  ContainerIterator(ContainerType &container, IteratorBehavior behavior, utils::optRef<ParticleVecType> additionalVectorsToIterate,
-                    const std::array<double, 3> &regionMin, const std::array<double, 3> &regionMax)
+  ContainerIterator(ContainerType &container, IteratorBehavior behavior,
+                    utils::optRef<ParticleVecType> additionalVectorsToIterate, const std::array<double, 3> &regionMin,
+                    const std::array<double, 3> &regionMax)
       : ContainerIterator(nullptr, container, behavior, additionalVectorsToIterate, regionMin, regionMax) {
     // sanity check
     static_assert(regionIter == true,
@@ -141,7 +142,8 @@ class ContainerIterator {
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated over.
    * @param additionalVectorsToIterate Thread buffers of additional Particle vector to iterate over.
    */
-  ContainerIterator(ContainerType &container, IteratorBehavior behavior, utils::optRef<ParticleVecType> additionalVectorsToIterate)
+  ContainerIterator(ContainerType &container, IteratorBehavior behavior,
+                    utils::optRef<ParticleVecType> additionalVectorsToIterate)
       : ContainerIterator(nullptr, container, behavior, additionalVectorsToIterate, {}, {}) {
     static_assert(regionIter == false,
                   "Constructor for non-Region iterator called but template argument regionIter is true");

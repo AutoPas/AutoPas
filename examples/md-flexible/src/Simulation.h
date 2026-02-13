@@ -265,7 +265,6 @@ class Simulation {
    */
   std::optional<ParallelVtkWriter> _vtkWriter;
 
-
  private:
   /**
    * Load particles from this object's config into this object's AutoPas container.

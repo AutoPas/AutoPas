@@ -91,7 +91,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   // only create the writer if necessary since this also creates the output dir
   if (not configuration.vtkFileName.value.empty()) {
     _vtkWriter.emplace(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
-                                            std::to_string(_configuration.iterations.value).size());
+                       std::to_string(_configuration.iterations.value).size());
   }
 
   const auto rank = _domainDecomposition->getDomainIndex();

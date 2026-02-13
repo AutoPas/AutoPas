@@ -194,7 +194,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      utils::optRef<typename ContainerIterator<Particle_T, true, false>::ParticleVecType> additionalVectors = std::nullopt) = 0;
+      utils::optRef<typename ContainerIterator<Particle_T, true, false>::ParticleVecType> additionalVectors =
+          std::nullopt) = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
@@ -202,7 +203,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors = std::nullopt) const = 0;
+      utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
+          std::nullopt) const = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
@@ -210,7 +212,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] ContainerIterator<Particle_T, false, false> cbegin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors = std::nullopt) const {
+      utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
+          std::nullopt) const {
     return begin(behavior, additionalVectors);
   }
 
@@ -225,7 +228,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      utils::optRef<typename ContainerIterator<Particle_T, true, true>::ParticleVecType> additionalVectors = std::nullopt) = 0;
+      utils::optRef<typename ContainerIterator<Particle_T, true, true>::ParticleVecType> additionalVectors =
+          std::nullopt) = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
@@ -233,7 +237,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      utils::optRef<typename ContainerIterator<Particle_T, false, true>::ParticleVecType> additionalVectors = std::nullopt) const = 0;
+      utils::optRef<typename ContainerIterator<Particle_T, false, true>::ParticleVecType> additionalVectors =
+          std::nullopt) const = 0;
 
   /**
    * @copydoc autopas::AutoPas::end()
