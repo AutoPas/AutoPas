@@ -56,6 +56,16 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      */
     predictiveTuning,
     /**
+     * Selects a collection of the best next Strategies based on a Temporal Difference Reinforcement Learning Algorithm
+     */
+    reinforcementLearning,
+    /**
+     * Select the best algorithm based on a deep reinforcement learning approach. This is done by simultaneously
+     * training a neural network in each tuning phase and predict the next tuning phase outcome using this neural
+     * network.
+     */
+    deepReinforcementLearning,
+    /**
      * Applies predefined rules to dynamically exclude configurations from tuning that are expected to perform worse
      * than others in the next tuning phase.
      */
@@ -123,6 +133,8 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::randomSearch, "random-Search"},
         {TuningStrategyOption::activeHarmony, "active-harmony"},
         {TuningStrategyOption::predictiveTuning, "predictive-tuning"},
+        {TuningStrategyOption::reinforcementLearning, "reinforcement-learning"},
+        {TuningStrategyOption::deepReinforcementLearning, "deep-reinforcement-learning"},
         {TuningStrategyOption::ruleBasedTuning, "rule-based-tuning"},
         {TuningStrategyOption::fuzzyTuning, "fuzzy-tuning"},
         {TuningStrategyOption::slowConfigFilter, "slow-config-filter"},
