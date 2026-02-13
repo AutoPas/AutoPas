@@ -94,6 +94,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    */
   bool updateHaloParticle(const Particle_T &haloParticle) override {
     auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
+#pragma code_align 32
     for (auto cellptr : cells) {
       bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
       if (updated) {

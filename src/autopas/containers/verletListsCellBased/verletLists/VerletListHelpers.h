@@ -297,7 +297,7 @@ class VerletListHelpers {
       thread_local std::vector<size_t> verletTemp;
       verletTemp.resize(numParticlesCell2);
       constexpr size_t vecSize = 48;
-      std::array<size_t, vecSize> maskArr;
+      alignas(64) std::array<size_t, vecSize> maskArr;
 
       for (size_t i = 0; i < numParticlesCell1; ++i) {
         size_t tempPos = 0;
@@ -311,6 +311,7 @@ class VerletListHelpers {
           const size_t traversalBlock = std::min(vecSize, numParticlesCell2 - jOff);
 
           #pragma omp simd
+          #pragma code_align 32
           for (size_t tempJ = 0; tempJ < traversalBlock; ++tempJ) {
             const size_t j = jOff + tempJ;
             const double drX = x1 - xPtr2[j];
@@ -320,6 +321,7 @@ class VerletListHelpers {
             maskArr[tempJ] = (dr2 < interactionLength2);
           }
 
+          #pragma code_align 32
           for (size_t tempJ = 0; tempJ < traversalBlock; ++tempJ) {
             verletTemp[tempPos] = startIndex2 + (jOff + tempJ);
             tempPos += maskArr[tempJ];

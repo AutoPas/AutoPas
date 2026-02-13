@@ -1132,7 +1132,7 @@ class LJFunctor
     }
   }
 
-#pragma code_align (64)
+#pragma code_align 32
   template <bool newton3>
   void SoAFunctorVerletOptimizedImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<autopas::SoAIndexIntType, autopas::AlignedAllocator<autopas::SoAIndexIntType>> &neighborList) {
@@ -1225,10 +1225,11 @@ class LJFunctor
       // in each iteration we calculate the interactions of particle i with
       // vecsize particles in the neighborlist of particle i starting at
       // particle joff
+      #pragma code_align 64
       for (; jOff < neighborListSize - vecSize + 1; jOff += vecSize) {
-        const auto *neighborListPtrWithOffset = neighborListPtr + jOff;
+        const auto *const __restrict neighborListPtrWithOffset = neighborListPtr + jOff;
         // gather position of particle j
-        #pragma omp simd safelen(vecSize)
+        #pragma omp simd
         for (size_t tmpJ = 0; tmpJ < vecSize; tmpJ++) {
           const autopas::SoAIndexIntType indexInSoAJ = neighborListPtrWithOffset[tmpJ];
           xArr[tmpJ] = xPtr[indexInSoAJ];
