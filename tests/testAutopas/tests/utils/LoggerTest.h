@@ -15,8 +15,9 @@
 
 class LoggerTest : public AutoPasTestBase {
  public:
+  void SetUp() override;
   int testLevel(autopas::Logger::LogLevel level, bool enabled);
 
  private:
-  std::stringstream stream;
+  std::stringstream _stream;
 };

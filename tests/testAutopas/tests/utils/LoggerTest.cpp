@@ -6,6 +6,9 @@
 
 #include "LoggerTest.h"
 
+// Create a logger that logs to _stream
+void LoggerTest::SetUp() { autopas::Logger::create(_stream); }
+
 /**
  * Counts how many log levels print when the logger is set to the given level.
  * @param level
@@ -16,8 +19,8 @@ int LoggerTest::testLevel(autopas::Logger::LogLevel level, bool enabled = true) 
   autopas::Logger::get()->set_level(level);
   if (not enabled) autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
 
-  stream.str("");
-  stream.clear();
+  _stream.str("");
+  _stream.clear();
 
   AutoPasLog(TRACE, "trace");
   AutoPasLog(DEBUG, "debug");
@@ -28,7 +31,7 @@ int LoggerTest::testLevel(autopas::Logger::LogLevel level, bool enabled = true) 
 
   int lineCount = 0;
   std::string str;
-  while (getline(stream, str)) ++lineCount;
+  while (getline(_stream, str)) ++lineCount;
 
   return lineCount;
 }
