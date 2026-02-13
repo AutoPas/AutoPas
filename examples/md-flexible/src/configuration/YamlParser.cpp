@@ -579,6 +579,70 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.vtkWriteFrequency.value < 1) {
           throw std::runtime_error("VTK write frequency has to be a positive integer >= 1!");
         }
+      } else if (key == config.rdfOutputFolder.name) {
+        expected = "String";
+        description = config.rdfOutputFolder.description;
+
+        config.rdfOutputFolder.value = node[key].as<std::string>();
+        if (config.rdfOutputFolder.value.empty()) {
+          throw std::runtime_error("Parsed RDF output folder name is empty");
+        }
+      } else if (key == config.rdfFileName.name) {
+        expected = "String";
+        description = config.rdfFileName.description;
+
+        config.rdfFileName.value = node[key].as<std::string>();
+        if (config.rdfFileName.value.empty()) {
+          throw std::runtime_error("Parsed RDF filename is empty!");
+        }
+      } else if (key == config.rdfNumBins.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.rdfNumBins.description;
+
+        config.rdfNumBins.value = node[key].as<size_t>();
+        if (config.rdfNumBins.value < 1) {
+          throw std::runtime_error("RDF num bins has to be a positive integer >= 1!");
+        }
+      } else if (key == config.rdfCaptureFreuency.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.rdfCaptureFreuency.description;
+
+        config.rdfCaptureFreuency.value = node[key].as<size_t>();
+        if (config.rdfCaptureFreuency.value < 1) {
+          throw std::runtime_error("RDF write frequency has to be a positive integer >= 1!");
+        }
+      } else if (key == config.rdfStartIteration.name) {
+        expected = "Unsigned Integer >= 0";
+        description = config.rdfStartIteration.description;
+
+        config.rdfStartIteration.value = node[key].as<size_t>();
+        if (config.rdfStartIteration.value < 0) {
+          throw std::runtime_error("RDF start iteration has to be a positive integer >= 0!");
+        }
+      } else if (key == config.rdfEndIteration.name) {
+        expected = "Unsigned Integer >= 0";
+        description = config.rdfEndIteration.description;
+
+        config.rdfEndIteration.value = node[key].as<size_t>();
+        if (config.rdfEndIteration.value < 0) {
+          throw std::runtime_error("RDF end iteration has to be a positive integer >= 0!");
+        }
+      } else if (key == config.rdfRadius.name) {
+        expected = "Positive floating-point value.";
+        description = config.rdfRadius.description;
+
+        config.rdfRadius.value = node[key].as<double>();
+        if (config.rdfRadius.value <= 0) {
+          throw std::runtime_error("RDF radius has to be a positive value > 0!");
+        }
+      } else if (key == config.rdfGuardArea.name) {
+        expected = "Positive floating-point value.";
+        description = config.rdfGuardArea.description;
+
+        config.rdfGuardArea.value = node[key].as<double>();
+        if (config.rdfGuardArea.value < 0) {
+          throw std::runtime_error("RDF guard area has to be a positive value >= 0!");
+        }
       } else if (key == config.useTuningLogger.name) {
         expected = "Boolean Value";
         description = config.useTuningLogger.description;
