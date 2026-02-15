@@ -51,8 +51,8 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   PseudoVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                     const double skin, const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, cellSizeFactor) {
-    for (size_t i = 0; i < _sortingDirections.size(); ++i) {
-      _sortingDirections.push_back(utils::ArrayMath::normalize(getDirectionFromIndex(i)));
+    for (size_t i = 0; i < _directions.size(); ++i) {
+      _directions[i] = utils::ArrayMath::normalize(getDirectionFromIndex(i));
     }
   }
 
@@ -92,7 +92,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
     _orientationList.resize(numCells);
 
     for (size_t i = 0; i < numCells; ++i) {
-      for (auto &_direction : _sortingDirections) {
+      for (auto &_direction : _directions) {
         _orientationList[i].emplace_back(SortedCellView{this->_linkedCells.getCells()[i], _direction});
       }
     }
@@ -118,10 +118,9 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
 
   /**
    * Getter.
-   * @return _sortingDirections stores normalized directions to a neighboring cells with an index greater than the base
-   * cell.
+   * @return _directions
    */
-  [[nodiscard]] std::vector<std::array<double, 3>> getDirections() const { return _sortingDirections; }
+  [[nodiscard]] std::array<std::array<double, 3>, 13> getDirections() const { return _directions; }
 
  protected:
   /**
@@ -132,9 +131,9 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   std::vector<std::vector<SortedCellView<ParticleCellType>>> _orientationList;
 
   /**
-   * Stores the normalized directions to the neighboring cells with an index greater than the base cell.
+   * Stores the normalized directions to the neighboring cells. With an index greater than the base cell.
    */
-  std::vector<std::array<double, 3>> _sortingDirections{};
+  std::array<std::array<double, 3>, 13> _directions{};
 };
 
 }  // namespace autopas
