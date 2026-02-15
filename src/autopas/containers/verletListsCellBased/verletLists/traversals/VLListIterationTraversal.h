@@ -131,17 +131,26 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         if (this->_useOptimizedLJFunctor) {
           if (not _useNewton3) {
             if (this->_useCompactAoS) {
-              AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
-              for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-                _functor->SoAFunctorVerletOptimizedCompactAoS(_compactAoS, particleIndex,
-                                                              soaNeighborLists[particleIndex], _useNewton3);
+              AUTOPAS_OPENMP(parallel for schedule(dynamic, 1))
+              for (size_t cellSlot = 0; cellSlot < _offsets.size() - 1; ++cellSlot) {
+                const size_t begin = _offsets[cellSlot];
+                const size_t end   = _offsets[cellSlot + 1];
+
+                for (size_t particleIndex = begin; particleIndex < end; ++particleIndex) {
+                  _functor->SoAFunctorVerletOptimizedCompactAoS(_compactAoS, particleIndex, soaNeighborLists[particleIndex], false);
+                }
               }
             } else {
               /// @todo find a sensible chunk size
               // LIKWID_MARKER_START("force calculation");
-              AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
-              for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-                _functor->SoAFunctorVerletOptimized(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+              AUTOPAS_OPENMP(parallel for schedule(dynamic, 1))
+              for (size_t cellSlot = 0; cellSlot < _offsets.size() - 1; ++cellSlot) {
+                const size_t begin = _offsets[cellSlot];
+                const size_t end   = _offsets[cellSlot + 1];
+
+                for (size_t particleIndex = begin; particleIndex < end; ++particleIndex) {
+                  _functor->SoAFunctorVerletOptimized(_soa, particleIndex, soaNeighborLists[particleIndex], false);
+                }
               }
             }
             // LIKWID_MARKER_STOP("force calculation");
