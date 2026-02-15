@@ -134,7 +134,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
               AUTOPAS_OPENMP(parallel for schedule(dynamic, 1))
               for (size_t cellSlot = 0; cellSlot < _offsets.size() - 1; ++cellSlot) {
                 const size_t begin = _offsets[cellSlot];
-                const size_t end   = _offsets[cellSlot + 1];
+                const size_t end = _offsets[cellSlot + 1];
 
                 for (size_t particleIndex = begin; particleIndex < end; ++particleIndex) {
                   _functor->SoAFunctorVerletOptimizedCompactAoS(_compactAoS, particleIndex, soaNeighborLists[particleIndex], false);
@@ -146,7 +146,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
               AUTOPAS_OPENMP(parallel for schedule(dynamic, 1))
               for (size_t cellSlot = 0; cellSlot < _offsets.size() - 1; ++cellSlot) {
                 const size_t begin = _offsets[cellSlot];
-                const size_t end   = _offsets[cellSlot + 1];
+                const size_t end = _offsets[cellSlot + 1];
 
                 for (size_t particleIndex = begin; particleIndex < end; ++particleIndex) {
                   _functor->SoAFunctorVerletOptimized(_soa, particleIndex, soaNeighborLists[particleIndex], false);
