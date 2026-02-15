@@ -141,24 +141,24 @@ public:
 
   size_t selectVLGenerationFunctionAtRuntime() {
     const uint8_t key =
-        (static_cast<uint8_t>(this->_bucketSortParticles)      << 0) |
+        (static_cast<uint8_t>(this->_reserveVLSizes)           << 2) |
         (static_cast<uint8_t>(this->_orderCellsByMortonIndex)  << 1) |
-        (static_cast<uint8_t>(this->_reserveVLSizes)           << 2);
+        (static_cast<uint8_t>(this->_bucketSortParticles)      << 0) ;
 
     switch (key) {
-      case 0: return generateVerletListsSoA_Options<false,false,false>();
-      case 1: return generateVerletListsSoA_Options< true,false,false>();
-      case 2: return generateVerletListsSoA_Options<false, true,false>();
-      case 3: return generateVerletListsSoA_Options< true, true,false>();
-      case 4: return generateVerletListsSoA_Options<false,false, true>();
-      case 5: return generateVerletListsSoA_Options< true,false, true>();
-      case 6: return generateVerletListsSoA_Options<false, true, true>();
-      case 7: return generateVerletListsSoA_Options< true, true, true>();
+      case 0: return generateVerletListsSoA_Options< 0, 0, 0 >();
+      case 1: return generateVerletListsSoA_Options< 0, 0, 1 >();
+      case 2: return generateVerletListsSoA_Options< 0, 1, 0 >();
+      case 3: return generateVerletListsSoA_Options< 0, 1, 1 >();
+      case 4: return generateVerletListsSoA_Options< 1, 0, 0 >();
+      case 5: return generateVerletListsSoA_Options< 1, 0, 1 >();
+      case 6: return generateVerletListsSoA_Options< 1, 1, 0 >();
+      case 7: return generateVerletListsSoA_Options< 1, 1, 1 >();
       default: __builtin_unreachable();
     }
   }
 
-  template<bool bucketSortParticles, bool orderCellsByMortonIndex, bool reserveVLSizes>
+  template<bool reserveVLSizes, bool orderCellsByMortonIndex, bool bucketSortParticles>
   size_t generateVerletListsSoA_Options() {
     size_t numParticles = 0;
     size_t index = 0;
