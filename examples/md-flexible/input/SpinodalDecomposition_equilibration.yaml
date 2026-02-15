@@ -6,7 +6,7 @@ verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  None
 data-layout                      :  [AoS, SoA]
-traversal                        :  [vcl_c01_balanced]
+traversal                        :  [vcl_sliced]
 newton3                          :  [disabled]
 functor                          :  Lennard-Jones (12-6) AVX
 cutoff                           :  2.5
