@@ -51,7 +51,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   PseudoVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                     const double skin, const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, cellSizeFactor) {
-    for (size_t i = 0; i < _sortingDirections.size(); ++i) {
+    for (size_t i = 0; i < 13; ++i) {
       _sortingDirections.emplace_back(utils::ArrayMath::normalize(getDirectionFromIndex(i)));
     }
   }
