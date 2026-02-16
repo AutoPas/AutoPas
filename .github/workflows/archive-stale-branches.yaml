@@ -24,7 +24,7 @@ jobs:
 
       - name: Install Python Dependencies
         run: |
-          python -m pip install --upgrade pip google-generativeai
+          python -m pip install --upgrade pip google-genai
 
       - name: Install GitHub CLI
         run: sudo apt-get install -y gh
