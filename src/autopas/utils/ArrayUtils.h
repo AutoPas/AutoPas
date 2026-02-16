@@ -16,7 +16,6 @@
 #include "autopas/utils/ContainerConcept.h"
 
 namespace autopas::utils::ArrayUtils {
-
 /**
  * Creates a new array by performing an element-wise static_cast<>.
  *
@@ -221,5 +220,4 @@ void balanceVectors(OuterContainerT &vecvec, F innerContainerToVec) {
     }
   }
 }
-
 }  // namespace autopas::utils::ArrayUtils

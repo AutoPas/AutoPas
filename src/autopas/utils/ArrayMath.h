@@ -370,8 +370,8 @@ template <class target_T = int, class float_T, std::size_t SIZE>
 template <ContainerType Container>
 bool isInUlp(Container lhs, Container rhs, unsigned int ulpDistance = Math::MAX_ULP_DISTANCE) {
   return lhs.size() == rhs.size() && std::ranges::equal(lhs, rhs, [&ulpDistance](const auto &lhs, const auto &rhs) {
-    return Math::isInUlp(lhs, rhs, ulpDistance);
-  });
+      return Math::isInUlp(lhs, rhs, ulpDistance);
+    });
 }
 
 /**

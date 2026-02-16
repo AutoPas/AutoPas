@@ -252,7 +252,7 @@ struct int_t_impl {
   /** access the int data type */
   using type = std::conditional_t<bit_size_v<FloatType> == 32, std::int32_t, std::int64_t>;
 };
-} // namespace internal
+}  // namespace internal
 
 /**
  * Returns the correspondingly sized integer type for a given float. E.g. int_t of float would be int32_t.
@@ -348,4 +348,4 @@ Eigen::VectorXd makeVectorXd(const std::vector<double> &elements);
  * @return
  */
 Eigen::VectorXi makeVectorXi(const std::vector<int> &elements);
-} // namespace autopas::utils::Math
+}  // namespace autopas::utils::Math
