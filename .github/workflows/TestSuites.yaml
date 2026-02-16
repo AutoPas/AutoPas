@@ -58,41 +58,48 @@ jobs:
 
   MatrixJob:
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
         part: [ 1, 2 ] # Split tests into two parts, to be run by separate runners
-        md-flex-mode: [ singlesite, multisite ]
-        config: [
-          #    0              1       2       3                   4        5       6     7      8
-          # container      , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan,  AVX
-          [ autopas-build-clang , clang, clang++, Ninja            , Debug  , ON     , ON  , OFF ,  ON ],
-          [ autopas-build-clang , clang, clang++, Ninja            , Release, OFF    , ON  , OFF ,  ON ],
-          [ autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ,  ON ],
-          [ autopas-build-clang , clang, clang++, Ninja            , Release, ON     , ON  , OFF ,  ON ],
-          [ autopas-build-gcc   , gcc  , g++    ,"'Unix Makefiles'", Release, ON     , OFF , OFF ,  ON ],
-          [ autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,  ON ],
-        ]
+        config:
+          # --- Standard Configurations ---
+          - { name: "Clang Release", container: "autopas-build-clang",  cc: "clang", cxx: "clang++", builder: "Ninja",             mode: "Release", omp: "OFF", asan: "ON",  tsan: "OFF", avx: "ON",  site: "singlesite" }
+          - { name: "Clang Debug",   container: "autopas-build-clang",  cc: "clang", cxx: "clang++", builder: "Ninja",             mode: "Debug",   omp: "ON",  asan: "ON",  tsan: "OFF", avx: "ON",  site: "singlesite" }
+          - { name: "Clang TSan",    container: "autopas-build-archer", cc: "clang", cxx: "clang++", builder: "Ninja",             mode: "Release", omp: "ON",  asan: "OFF", tsan: "ON",  avx: "ON",  site: "singlesite" }
+
+          # --- GCC & MPI ---
+          - { name: "GCC Release",   container: "autopas-build-gcc",    cc: "gcc",   cxx: "g++",     builder: "'Unix Makefiles'", mode: "Release", omp: "ON",  asan: "OFF", tsan: "OFF", avx: "ON",  site: "singlesite" }
+          - { name: "MPI Release",   container: "autopas-build-gcc",    cc: "mpicc", cxx: "mpic++",  builder: "'Unix Makefiles'", mode: "Release", omp: "ON",  asan: "ON",  tsan: "OFF", avx: "ON",  site: "singlesite" }
+
+          # --- Multi-Site ---
+          - { name: "MultiSite TSan", container: "autopas-build-archer", cc: "clang", cxx: "clang++", builder: "Ninja",             mode: "Release", omp: "ON",  asan: "OFF", tsan: "ON",  avx: "OFF", site: "multisite" }
+          - { name: "MultiSite MPI",  container: "autopas-build-gcc",    cc: "mpicc", cxx: "mpic++",  builder: "'Unix Makefiles'", mode: "Release", omp: "ON",  asan: "ON",  tsan: "OFF", avx: "OFF", site: "multisite" }
+
         exclude:
-          # Exclude multisite tests (to later be re-added for some configurations)
-          - md-flex-mode: multisite
-          # Exclude MPI configuration from part 2, as there are not many tests and so don't need to be split
-          - config: [ autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF   , ON ]
+          # Remove Part 2 for Debug as we only test compilation in debug mode.
+          - config: { mode: "Debug" }
             part: 2
-        # For two configurations, compile with Multi-Site Molecule support for md-flexible. There are not so many tests
-        # so we only add tests for part 1
-        include:
-          - config: [ autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON    , OFF ]
-            md-flex-mode: multisite
-            part: 1
-          - config: [ autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF   , OFF ]
-            md-flex-mode: multisite
-            part: 1
-    name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|${{ matrix.md-flex-mode }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
-    container: autopas/${{ matrix.config[0] }}
+          # Exclude multisite tests (to later be re-added for some configurations)
+          - cfg: { name: "MultiSite TSan" }
+            part: 2
+          - cfg: { name: "MultiSite MPI" }
+            part: 2
+          # Exclude MPI configuration from part 2, as there are not many tests and so don't need to be split
+          - cfg: { name: "MPI Release" }
+            part: 2
+
+    name: ${{ matrix.config.name }} (${{ matrix.part }}/2)
+    container: autopas/${{ matrix.config.container }}
+
     env:
       TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
       LSAN_OPTIONS: "verbosity=1:log_threads=1"
+      CCACHE_DIR: "${{ github.workspace }}/.ccache"
+      CCACHE_BASEDIR: "${{ github.workspace }}"
+      CCACHE_MAXSIZE: "500M"
+
     defaults:
       run:
         # make sure the scripts are executed with bash (needed for [[) and not sh.
@@ -101,25 +108,43 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare ccache
+        run: |
+          mkdir -p $CCACHE_DIR
+          # Permissions fix for act containers
+          chmod -R 777 $CCACHE_DIR
+
+      - name: Ccache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          # Key: Config Name + SHA. Shared between Part 1 and Part 2.
+          key: ccache-${{ matrix.config.name }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.config.name }}-
+
       - name: Build everything
         run: |
           # derive whether or not to compile with MPI options ON.
-          [ "${{ matrix.config[1] }}" = 'mpicc' ] && UseMPI=ON || UseMPI=OFF
+          [ "${{ matrix.config.cc }}" = 'mpicc' ] && UseMPI=ON || UseMPI=OFF          
           mkdir build && cd build
-          CC=${{ matrix.config[1] }} CXX=${{ matrix.config[2] }} cmake \
-            -G ${{ matrix.config[3] }} \
+
+          CC=${{ matrix.config.cc }} CXX=${{ matrix.config.cxx }} cmake \
+            -G "${{ matrix.config.builder }}" \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCCACHE=ON \
-            -DCMAKE_BUILD_TYPE=${{ matrix.config[4] }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.config.mode }} \
             -DAUTOPAS_LOG_ALL=ON \
             -DAUTOPAS_MIN_LOG_LVL:STRING=TRACE \
-            -DAUTOPAS_OPENMP=${{ matrix.config[5] }} \
-            -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config[6] }} \
-            -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config[7] }} \
+            -DAUTOPAS_OPENMP=${{ matrix.config.omp }} \
+            -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config.asan }} \
+            -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config.tsan }} \
             -DAUTOPAS_INTERNODE_TUNING=${UseMPI} \
             -DMD_FLEXIBLE_USE_MPI=${UseMPI} \
-            -DMD_FLEXIBLE_MODE=${{ matrix.md-flex-mode }} \
+            -DMD_FLEXIBLE_MODE=${{ matrix.config.site }} \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON \
-            -DMD_FLEXIBLE_FUNCTOR_AVX=${{ matrix.config[8] }} \
+            -DMD_FLEXIBLE_FUNCTOR_AVX=${{ matrix.config.avx }} \
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DMD_FLEXIBLE_ENABLE_ALLLBL=${UseMPI} \
             -DAUTOPAS_ENABLE_HARMONY=ON \
@@ -128,44 +153,55 @@ jobs:
             -DAUTOPAS_ENABLE_DYNAMIC_CONTAINERS=ON \
             ..
           entrypoint.sh cmake --build . --parallel 8
+
       - name: Run tests ${{ matrix.part }}/2
+        # Skip tests for Debug builds (compilation check only)
+        if: matrix.config.mode != 'Debug'
+
         run: |
-          # If single-site & No MPI, run every other AutoPas and example tests
-          if [[ "${{ matrix.md-flex-mode }}" = 'singlesite' ]] && [[ "${{ matrix.config[1] }}" != 'mpicc' ]]
-          then
-            cd build
-            # Start with test 0 or 1 and do every second test
-            ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
-            cd applicationLibrary
-            ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
-            cd ../examples
-            ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,2 -j 2
-          fi
+          # --- CASE 1: Single-Site (Standard) ---
+          if [[ "${{ matrix.config.site }}" == 'singlesite' ]]; then
           
-          # If single-site & MPI, run MPI tests for AutoPas and example tests
-          if [[ "${{ matrix.md-flex-mode }}" = 'singlesite' ]] && [[ "${{ matrix.config[1] }}" = 'mpicc' ]]
-          then
-            cd build
-            # Only run MPI tests.
-            # No `--oversubscribe`, as MPI in container doesn't need it.
-            ctest --output-on-failure --tests-regex MPIParallelAutoPasTests
-            cd examples
-            # exclude examples that do not support MPI 
-            ctest --output-on-failure --build-config checkExamples --exclude-regex 'sph-((main.test)|(diagram.*))'
-          fi
+            # Non-MPI: Run split tests
+            if [[ "${{ matrix.config.cc }}" != 'mpicc' ]]; then
+               # Use 'part' to split the load.
+               # If 'part' is 1, it runs tests 1,3,5...
+               # If 'part' is 2, it runs tests 2,4,6...
+               ctest --output-on-failure -I ${{ matrix.part }},,2 -j $(nproc)
           
-          # If multi-site run every md-flexible test and multi site tests
-          if [[ "${{ matrix.md-flex-mode }}" = 'multisite' ]]
-          then
-            cd build/applicationLibrary
-            # Only run multi-site tests for non-mpi case
-            if [[ "${{ matrix.config[1] }}" != 'mpicc' ]]
-            then
-              ctest --output-on-failure --tests-regex '[mM]ulti[sS]ite'
+               cd applicationLibrary
+               ctest --output-on-failure -I ${{ matrix.part }},,2 -j $(nproc)
+          
+               cd ../examples
+               ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,2 -j $(nproc)
+          
+            # MPI: Run all tests (Part 2 excluded in matrix)
+            else
+               ctest --output-on-failure --tests-regex MPIParallelAutoPasTests -j $(nproc)
+               cd examples
+               ctest --output-on-failure --build-config checkExamples --exclude-regex 'sph-((main.test)|(diagram.*))' -j $(nproc)
             fi
-            cd ../examples/md-flexible
-            ctest --output-on-failure --build-config mdFlexTests 
           fi
+          
+          # --- CASE 2: Multi-Site ---
+          if [[ "${{ matrix.config.site }}" == 'multisite' ]]; then
+            cd applicationLibrary
+            # Only run multisite tests for non-mpi case
+             if [[ "${{ matrix.config.cc }}" != 'mpicc' ]]; then
+             ctest --output-on-failure --tests-regex '[mM]ulti[sS]ite'
+             fi
+             cd ../examples/md-flexible
+             ctest --output-on-failure --build-config mdFlexTests
+          fi
+
+      - name: Check ccache stats
+        # Run this even if build fails so we see if cache was populated
+        if: always()
+        run: |
+          echo "Checking ccache statistics..."
+          ccache -s
+          echo "Contents of cache dir:"
+          ls -la $CCACHE_DIR
 
   macOSJob:
     runs-on: macos-latest
