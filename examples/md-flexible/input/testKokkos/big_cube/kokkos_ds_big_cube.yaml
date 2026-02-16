@@ -19,15 +19,15 @@ tuning-samples                       :  3
 use-LOESS-smoothening                :  false
 tuning-max-evidence                  :  10
 energy-sensor                        :  rapl  # alternatively: likwid
-cutoff                               :  1
-box-min                              :  [-50, -50, -50]
-box-max                              :  [50, 50, 50]
+cutoff                               :  3
+box-min                              :  [0, 0, 0]
+box-max                              :  [100, 100, 100]
 cell-size                            :  [1]
 deltaT                               :  0.0025
 pause-simulation-during-tuning       :  false
 sorting-threshold                    :  8
 tuning-phases                        :  0
-iterations                           :  10000
+iterations                           :  1000
 boundary-type                        :  [none, none, none]
 subdivide-dimension                  :  [true, true, true]
 load-balancing-interval              :  100
@@ -61,9 +61,9 @@ Sites:
 Objects:                         
   CubeClosestPacked:
     0:
-      box-length                     :  [20, 20, 20]
-      particle-spacing               :  1
-      bottomLeftCorner               :  [0, 0, 0]
+      box-length                     :  [30, 30, 30]
+      particle-spacing               :  1.5
+      bottomLeftCorner               :  [25, 25, 25]
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
 #thermostat:
@@ -73,10 +73,10 @@ Objects:
 #  thermostatInterval                 :  100000
 #  addBrownianMotion                  :  true
 log-level                            :  info
-no-end-config                        :  false
+no-end-config                        :  true
 no-progress-bar                      :  false
-vtk-filename                         :  big_cube_20
-vtk-output-folder                    :  kokkos_teams
+vtk-filename                         :  big_cube_30
+vtk-output-folder                    :  kokkos_ds
 vtk-write-frequency                  :  200
 #checkpoint                          : AllOptionsSim_10.vtk
 #log-file                            : log.txt

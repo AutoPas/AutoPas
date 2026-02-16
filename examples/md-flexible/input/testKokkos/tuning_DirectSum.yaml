@@ -1,8 +1,7 @@
 # This file contains all possible options that a yaml input file for md-flexible can have. For the meaning of individual options ./md-flexible --help can be called, or MDFlexConfig.h can be looked up.
-container                            :  [KokkosDirectSum]
+container                            :  [LinkedCells, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
 # Configuration options for pairwise interactions
-functor                              :  Lennard-Jones (12-6) kokkos
-traversal                            :  [ds_naive_parallel]
+functor                              :  Lennard-Jones (12-6)
 newton3                              :  [disabled]
 data-layout                          :  [SoA]
 container-layout                     :  [SoA]
@@ -20,8 +19,8 @@ use-LOESS-smoothening                :  false
 tuning-max-evidence                  :  10
 energy-sensor                        :  rapl  # alternatively: likwid
 cutoff                               :  1
-box-min                              :  [-50, -50, -50]
-box-max                              :  [50, 50, 50]
+box-min                              :  [-150, -150, -150]
+box-max                              :  [150, 150, 150]
 cell-size                            :  [1]
 deltaT                               :  0.0025
 pause-simulation-during-tuning       :  false
@@ -58,10 +57,10 @@ Sites:
 #    site-types                       : [ 0, 0, 0 ]
 #    relative-site-positions          : [ [ 0.74349607, 1.20300191, 0. ], [ 0.3249197, -1.37638192, 0. ], [-1.37638192, -0.3249197, 0. ] ]
 #    moment-of-inertia                : [ 5.23606798, 0.76393202, 6. ]
-Objects:                         
+Objects:
   CubeClosestPacked:
     0:
-      box-length                     :  [20, 20, 20]
+      box-length                     :  [50, 50, 50]
       particle-spacing               :  1
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
@@ -75,8 +74,8 @@ Objects:
 log-level                            :  info
 no-end-config                        :  false
 no-progress-bar                      :  false
-vtk-filename                         :  big_cube_20
-vtk-output-folder                    :  kokkos_teams
-vtk-write-frequency                  :  200
+vtk-filename                         :  big_cube
+vtk-output-folder                    :  kokkos_reference
+vtk-write-frequency                  :  2000
 #checkpoint                          : AllOptionsSim_10.vtk
 #log-file                            : log.txt

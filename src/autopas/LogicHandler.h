@@ -1202,7 +1202,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
-  const auto halfSkinSquare = skin * skin * 0.25;
+  const typename Particle_T::ParticleSoAFloatPrecision halfSkinSquare = skin * skin * 0.25;
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
@@ -1211,7 +1211,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
     AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
     for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
       const auto distance = iter->calculateDisplacementSinceRebuild();
-      const double distanceSquare = utils::ArrayMath::dot(distance, distance);
+      const auto distanceSquare = utils::ArrayMath::dot(distance, distance);
 
       _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
     }
@@ -1222,19 +1222,19 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 
     auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage, bool& local) {
 
-        const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, true, ForEachHostFlag>(i);
-        const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, true, ForEachHostFlag>(i);
-        const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, true, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision pX = storage.template operator()<Particle_T::AttributeNames::posX, true, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision pY = storage.template operator()<Particle_T::AttributeNames::posY, true, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision pZ = storage.template operator()<Particle_T::AttributeNames::posZ, true, ForEachHostFlag>(i);
 
-        const auto rebuildX = storage.template operator()<Particle_T::AttributeNames::rebuildX, true, ForEachHostFlag>(i);
-        const auto rebuildY = storage.template operator()<Particle_T::AttributeNames::rebuildY, true, ForEachHostFlag>(i);
-        const auto rebuildZ = storage.template operator()<Particle_T::AttributeNames::rebuildZ, true, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision rebuildX = storage.template operator()<Particle_T::AttributeNames::rebuildX, true, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision rebuildY = storage.template operator()<Particle_T::AttributeNames::rebuildY, true, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision rebuildZ = storage.template operator()<Particle_T::AttributeNames::rebuildZ, true, ForEachHostFlag>(i);
 
-        const auto dX = rebuildX - pX;
-        const auto dY = rebuildY - pY;
-        const auto dZ = rebuildZ - pZ;
+        const typename Particle_T::ParticleSoAFloatPrecision dX = rebuildX - pX;
+        const typename Particle_T::ParticleSoAFloatPrecision dY = rebuildY - pY;
+        const typename Particle_T::ParticleSoAFloatPrecision dZ = rebuildZ - pZ;
 
-        const auto dSquared = dX * dX + dY * dY + dZ * dZ;
+        const typename Particle_T::ParticleSoAFloatPrecision dSquared = dX * dX + dY * dY + dZ * dZ;
 
         local |= dSquared >= halfSkinSquare;
       };

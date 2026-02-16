@@ -59,7 +59,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   virtual void AoSFunctorKokkos(Particle_T &i, Particle_T &j, bool newton3) {
-    // TODO: implement
+    utils::ExceptionHandler::exception("{}::AoSFunctorKokkos: not implemented", this->getName());
   }
 
   /**
@@ -77,7 +77,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   virtual void SoAFunctorSingleKokkos(const Particle_T::KokkosSoAArraysType& soa, bool newton3) {
-    // No Op unless overridden
+    utils::ExceptionHandler::exception("{}::SoAFunctorSingleKokkos: not implemented", this->getName());
   }
 
   /**
@@ -113,7 +113,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   virtual void SoAFunctorPairKokkos(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, bool newton3) {
-    // No Op unless overridden
+    utils::ExceptionHandler::exception("{}::SoAFunctorPairKokkos: not implemented", this->getName());
   }
 };
 

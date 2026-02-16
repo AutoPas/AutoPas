@@ -29,15 +29,15 @@ public:
 
   /* Overrides for actual execution */
   void AoSFunctor(Particle_T& i, Particle_T& j, bool newton3) final {
-
+    // No Op, TODO: make sure this is never used (also not in remainder traversal)
   }
 
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-    // No-op as nothing should happen here
+    // No Op, TODO: make sure this is never used (also not in remainder traversal)
   }
 
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) final {
-    // No-op as nothing should happen here
+    // No Op, TODO: make sure this is never used (also not in remainder traversal)
   }
 
   void SoAFunctorSingleKokkos(const Particle_T::KokkosSoAArraysType& soa, bool newton3) final {
