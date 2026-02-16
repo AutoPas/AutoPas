@@ -82,12 +82,12 @@ jobs:
           - config: { mode: "Debug" }
             part: 2
           # Exclude multisite tests (to later be re-added for some configurations)
-          - cfg: { name: "MultiSite TSan" }
+          - config: { name: "MultiSite TSan" }
             part: 2
-          - cfg: { name: "MultiSite MPI" }
+          - config: { name: "MultiSite MPI" }
             part: 2
           # Exclude MPI configuration from part 2, as there are not many tests and so don't need to be split
-          - cfg: { name: "MPI Release" }
+          - config: { name: "MPI Release" }
             part: 2
 
     name: ${{ matrix.config.name }} (${{ matrix.part }}/2)
