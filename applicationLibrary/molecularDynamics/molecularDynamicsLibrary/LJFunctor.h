@@ -1602,8 +1602,7 @@ class LJFunctor
     // if the size of the verlet list is larger than the given size vecsize,
     // we will use a vectorized version.
     if (neighborListSize >= vecSize) {
-      if constexpr (!calculateGlobals && !countFLOPs) {
-        const __m256d xI_yI_zI_pad = _mm256_load_pd(&particleI.posX);
+        const __m256d xI_yI_zI_pad = _mm256_loadu_pd(&particleI.posX);
         const __m256d cutOffSquaredVector = _mm256_set1_pd(cutoffSquared);
         const __m256d oneVector = _mm256_set1_pd(1.);
         const __m256d twoVector = _mm256_set1_pd(2.);
@@ -1615,6 +1614,12 @@ class LJFunctor
         __m256d forceYAccVector = _mm256_setzero_pd();
         __m256d forceZAccVector = _mm256_setzero_pd();
 
+        __m256d potentialEnergyAccVector = _mm256_setzero_pd();
+        __m256d virialXAccVector = _mm256_setzero_pd();
+        __m256d virialYAccVector = _mm256_setzero_pd();
+        __m256d virialZAccVector = _mm256_setzero_pd();
+
+        #pragma code_align (64)
         for (; jOff + 4 <= neighborListSize; jOff += 4) {
           const auto j0 = neighborList[jOff + 0];
           const auto j1 = neighborList[jOff + 1];
@@ -1626,11 +1631,29 @@ class LJFunctor
           const __m256d x2_y2_z2_pad = _mm256_load_pd(&compactAoSDataPtr[j2].posX);
           const __m256d x3_y3_z3_pad = _mm256_load_pd(&compactAoSDataPtr[j3].posX);
 
-          const __m256i notADummyMaskIntegerVector = _mm256_setr_epi64x(
-              -(int64_t)(compactAoSDataPtr[j0].ownershipState != 0), -(int64_t)(compactAoSDataPtr[j1].ownershipState != 0),
-              -(int64_t)(compactAoSDataPtr[j2].ownershipState != 0), -(int64_t)(compactAoSDataPtr[j3].ownershipState != 0));
+          const __m256i notADummyMaskIntegerVector =
+              _mm256_setr_epi64x(-(int64_t)(compactAoSDataPtr[j0].ownershipState != 0),
+                                 -(int64_t)(compactAoSDataPtr[j1].ownershipState != 0),
+                                 -(int64_t)(compactAoSDataPtr[j2].ownershipState != 0),
+                                 -(int64_t)(compactAoSDataPtr[j3].ownershipState != 0));
 
           const __m256d notADummyMaskVector = _mm256_castsi256_pd(notADummyMaskIntegerVector);
+
+          if constexpr (useMixing) {
+            const uint32_t typeId0 = compactAoSDataPtr[j0].typeId;
+            const uint32_t typeId1 = compactAoSDataPtr[j1].typeId;
+            const uint32_t typeId2 = compactAoSDataPtr[j2].typeId;
+            const uint32_t typeId3 = compactAoSDataPtr[j3].typeId;
+
+            sigmaSquaredVector = _mm256_setr_pd(sigmaSquaredByTypesRow[typeId0], sigmaSquaredByTypesRow[typeId1],
+                                                sigmaSquaredByTypesRow[typeId2], sigmaSquaredByTypesRow[typeId3]);
+            epsilon24Vector = _mm256_setr_pd(epsilon24ByTypesRow[typeId0], epsilon24ByTypesRow[typeId1],
+                                             epsilon24ByTypesRow[typeId2], epsilon24ByTypesRow[typeId3]);
+            if constexpr (applyShift) {
+              shift6Vector = _mm256_setr_pd(shift6ByTypesRow[typeId0], shift6ByTypesRow[typeId1],
+                                            shift6ByTypesRow[typeId2], shift6ByTypesRow[typeId3]);
+            }
+          }
 
           const __m256d drX0_drY0_drZ0_pad = _mm256_sub_pd(xI_yI_zI_pad, x0_y0_z0_pad);
           const __m256d drX1_drY1_drZ1_pad = _mm256_sub_pd(xI_yI_zI_pad, x1_y1_z1_pad);
@@ -1655,31 +1678,14 @@ class LJFunctor
                                               _mm256_mul_pd(drZ0_drZ1_drZ2_drZ3, drZ0_drZ1_drZ2_drZ3)));
 
           const __m256d belowCutOffMaskVector = _mm256_cmp_pd(drSquaredVector, cutOffSquaredVector, _CMP_LE_OQ);
-
           const __m256d maskVector = _mm256_and_pd(belowCutOffMaskVector, notADummyMaskVector);
-
-          if constexpr (useMixing) {
-            const uint32_t typeId0 = compactAoSDataPtr[j0].typeId;
-            const uint32_t typeId1 = compactAoSDataPtr[j1].typeId;
-            const uint32_t typeId2 = compactAoSDataPtr[j2].typeId;
-            const uint32_t typeId3 = compactAoSDataPtr[j3].typeId;
-
-            sigmaSquaredVector = _mm256_setr_pd(sigmaSquaredByTypesRow[typeId0], sigmaSquaredByTypesRow[typeId1],
-                                                sigmaSquaredByTypesRow[typeId2], sigmaSquaredByTypesRow[typeId3]);
-            epsilon24Vector = _mm256_setr_pd(epsilon24ByTypesRow[typeId0], epsilon24ByTypesRow[typeId1],
-                                             epsilon24ByTypesRow[typeId2], epsilon24ByTypesRow[typeId3]);
-            if constexpr (applyShift) {
-              shift6Vector = _mm256_setr_pd(shift6ByTypesRow[typeId0], shift6ByTypesRow[typeId1],
-                                            shift6ByTypesRow[typeId2], shift6ByTypesRow[typeId3]);
-            }
-          }
 
           const __m256d inverseDrSquaredVector = _mm256_div_pd(oneVector, drSquaredVector);
           const __m256d sigmaByRSquaredVector = _mm256_mul_pd(sigmaSquaredVector, inverseDrSquaredVector);
-          const __m256d sigmaByR6Vector =
-              _mm256_mul_pd(sigmaByRSquaredVector, _mm256_mul_pd(sigmaByRSquaredVector, sigmaByRSquaredVector));
+          const __m256d sigmaByR4Vector = _mm256_mul_pd(sigmaByRSquaredVector, sigmaByRSquaredVector);
+          const __m256d sigmaByR6Vector = _mm256_mul_pd(sigmaByRSquaredVector, sigmaByR4Vector);
 
-          const __m256d bracketsVector = _mm256_fmsub_pd(twoVector, sigmaByRSquaredVector, oneVector);
+          const __m256d bracketsVector = _mm256_fmsub_pd(twoVector, sigmaByR6Vector, oneVector);
           __m256d facVector = _mm256_mul_pd(
               epsilon24Vector, _mm256_mul_pd(inverseDrSquaredVector, _mm256_mul_pd(sigmaByR6Vector, bracketsVector)));
 
@@ -1687,148 +1693,109 @@ class LJFunctor
           forceXAccVector = _mm256_fmadd_pd(drX0_drX1_drX2_drX3, facVector, forceXAccVector);
           forceYAccVector = _mm256_fmadd_pd(drY0_drY1_drY2_drY3, facVector, forceYAccVector);
           forceZAccVector = _mm256_fmadd_pd(drZ0_drZ1_drZ2_drZ3, facVector, forceZAccVector);
-        }
-        alignas(32) std::array<double, 4> tempForceXArr, tempForceYArr, tempForceZArr;
-        _mm256_store_pd(tempForceXArr.data(), forceXAccVector);
-        _mm256_store_pd(tempForceYArr.data(), forceYAccVector);
-        _mm256_store_pd(tempForceZArr.data(), forceZAccVector);
 
-        forceXAcc += tempForceXArr[0] + tempForceXArr[1] + tempForceXArr[2] + tempForceXArr[3];
-        forceYAcc += tempForceYArr[0] + tempForceYArr[1] + tempForceYArr[2] + tempForceYArr[3];
-        forceZAcc += tempForceZArr[0] + tempForceZArr[1] + tempForceZArr[2] + tempForceZArr[3];
-      } else {
-        alignas(64) std::array<SoAFloatPrecision, vecSize> xArr, yArr, zArr, forceXArr, forceYArr, forceZArr,
-            ownedStateArr;
+          if constexpr (newton3 || calculateGlobals || countFLOPs) {
+            const __m256d forceXTempVector = _mm256_mul_pd(drX0_drX1_drX2_drX3, facVector);
+            const __m256d forceYTempVector = _mm256_mul_pd(drY0_drY1_drY2_drY3, facVector);
+            const __m256d forceZTempVector = _mm256_mul_pd(drZ0_drZ1_drZ2_drZ3, facVector);
 
-        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> sigmaSquareds;
-        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> epsilon24s;
-        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> shift6s;
-
-        // loop over the verlet list from 0 to x*vecsize
-        // in each iteration we calculate the interactions of particle i with
-        // vecsize particles in the neighborlist of particle i starting at
-        // particle joff
-        for (; jOff < neighborListSize - vecSize + 1; jOff += vecSize) {
-          const auto *neighborListPtrWithOffset = neighborListPtr + jOff;
-          // gather position of particle j
-          #pragma omp simd safelen(vecSize)
-          for (size_t tmpJ = 0; tmpJ < vecSize; tmpJ++) {
-            const autopas::SoAIndexIntType indexInSoAJ = neighborListPtrWithOffset[tmpJ];
-            const auto particleJ = compactAoSDataPtr[indexInSoAJ];
-            /*const auto ownedStateAndTypeIdJ = ownedStateAndTypeIdPtr[indexInSoAJ];*/
-            /*xArr[tmpJ] = xPtr[indexInSoAJ];
-            yArr[tmpJ] = yPtr[indexInSoAJ];
-            zArr[tmpJ] = zPtr[indexInSoAJ];*/
-            xArr[tmpJ] = particleJ.posX;
-            yArr[tmpJ] = particleJ.posY;
-            zArr[tmpJ] = particleJ.posZ;
-            ownedStateArr[tmpJ] = particleJ.ownershipState == 0 ? SoAFloatPrecision{0} : SoAFloatPrecision{1.};
-
-            if constexpr (useMixing) {
-              const size_t typeIdJ = particleJ.typeId;
-              const PackedLJMixingData &mixingDataJ = computedLJMixingDataRow[typeIdJ];
-              sigmaSquareds[tmpJ] = mixingDataJ.sigmaSquared;
-              epsilon24s[tmpJ] = mixingDataJ.epsilon24;
-              if constexpr (applyShift) {
-                shift6s[tmpJ] = mixingDataJ.shift6;
-              }
-            }
-          }
-
-          #pragma omp simd reduction(+ : forceXAcc, forceYAcc, forceZAcc, potentialEnergySum, virialSumX, virialSumY,       \
-                               virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, \
-                               numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecSize)
-          for (size_t j = 0; j < vecSize; j++) {
-            if constexpr (useMixing) {
-              sigmaSquared = sigmaSquareds[j];
-              epsilon24 = epsilon24s[j];
-              if constexpr (applyShift) {
-                shift6 = shift6s[j];
-              }
-            }
-
-            const auto ownedStateJ = ownedStateArr[j];
-
-            const SoAFloatPrecision drX = xI - xArr[j];
-            const SoAFloatPrecision drY = yI - yArr[j];
-            const SoAFloatPrecision drZ = zI - zArr[j];
-
-            const SoAFloatPrecision drX2 = drX * drX;
-            const SoAFloatPrecision drY2 = drY * drY;
-            const SoAFloatPrecision drZ2 = drZ * drZ;
-
-            const SoAFloatPrecision dr2 = drX2 + drY2 + drZ2;
-
-            // Mask away if distance is too large or any particle is a dummy. ownedStateI was already checked
-            // previously.
-            const bool mask = dr2 <= cutoffSquared and ownedStateJ != 0;
-
-            const SoAFloatPrecision inverseDr2 = 1. / dr2;
-            const SoAFloatPrecision lj2 = sigmaSquared * inverseDr2;
-            const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
-            const SoAFloatPrecision lj12 = lj6 * lj6;
-            const SoAFloatPrecision lj12m6 = lj12 - lj6;
-            const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * inverseDr2;
-
-            const SoAFloatPrecision forceXIJ = drX * fac;
-            const SoAFloatPrecision forceYIJ = drY * fac;
-            const SoAFloatPrecision forceZIJ = drZ * fac;
-
-            forceXAcc += forceXIJ;
-            forceYAcc += forceYIJ;
-            forceZAcc += forceZIJ;
+            alignas(32) std::array<double, 4> forceXTempArr, forceYTempArr, forceZTempArr;
+            _mm256_store_pd(forceXTempArr.data(), forceXTempVector);
+            _mm256_store_pd(forceYTempArr.data(), forceYTempVector);
+            _mm256_store_pd(forceZTempArr.data(), forceZTempVector);
 
             if constexpr (newton3) {
-              forceXArr[j] = forceXIJ;
-              forceYArr[j] = forceYIJ;
-              forceZArr[j] = forceZIJ;
+              forceXPtr[j0] -= forceXTempArr[0];
+              forceYPtr[j1] -= forceXTempArr[1];
+              forceXPtr[j2] -= forceXTempArr[2];
+              forceXPtr[j3] -= forceXTempArr[3];
+
+              forceYPtr[j0] -= forceYTempArr[0];
+              forceYPtr[j1] -= forceYTempArr[1];
+              forceYPtr[j2] -= forceYTempArr[2];
+              forceYPtr[j3] -= forceYTempArr[3];
+
+              forceZPtr[j0] -= forceZTempArr[0];
+              forceZPtr[j1] -= forceZTempArr[1];
+              forceZPtr[j2] -= forceZTempArr[2];
+              forceZPtr[j3] -= forceZTempArr[3];
             }
 
             if constexpr (countFLOPs) {
-              numDistanceCalculationSum += ownedStateJ != 0 ? 1 : 0;
+              const auto notADummyMaksAsBits = _mm256_movemask_pd(notADummyMaskVector);
+              numDistanceCalculationSum += __builtin_popcount(notADummyMaksAsBits);
+              const auto relevantValuesAsBits = _mm256_movemask_pd(maskVector);
+
               if constexpr (newton3) {
-                numKernelCallsN3Sum += mask;
+                numKernelCallsN3Sum += __builtin_popcount(relevantValuesAsBits);
               } else {
-                numKernelCallsNoN3Sum += mask;
+                numKernelCallsNoN3Sum += __builtin_popcount(relevantValuesAsBits);
               }
             }
 
             if constexpr (calculateGlobals) {
-              SoAFloatPrecision virialx = drX * forceXIJ;
-              SoAFloatPrecision virialy = drY * forceYIJ;
-              SoAFloatPrecision virialz = drZ * forceZIJ;
-              SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
+              const __m256d virialXVector = _mm256_mul_pd(drX0_drX1_drX2_drX3, forceXTempVector);
+              const __m256d virialYVector = _mm256_mul_pd(drY0_drY1_drY2_drY3, forceYTempVector);
+              const __m256d virialZVector = _mm256_mul_pd(drZ0_drZ1_drZ2_drZ3, forceZTempVector);
 
-              // We add 6 times the potential energy for each owned particle. Correction of total sum in endTraversal().
-              const SoAFloatPrecision energyFactor =
-                  (ownedStateI == 1 ? 1. : 0.) + (newton3 ? (ownedStateJ == 1 ? 1. : 0.) : 0.);
-              potentialEnergySum += potentialEnergy6 * energyFactor;
-              virialSumX += virialx * energyFactor;
-              virialSumY += virialy * energyFactor;
-              virialSumZ += virialz * energyFactor;
+              const __m256d sigmaByR12Minus6Vector = _mm256_fmsub_pd(sigmaByR6Vector, sigmaByR6Vector, sigmaByR6Vector);
+              const __m256d unMaskedPotentialEnergy6Vector =
+                  _mm256_fmadd_pd(epsilon24Vector, sigmaByR12Minus6Vector, shift6Vector);
+              const __m256d potentialEnergy6Vector = _mm256_and_pd(unMaskedPotentialEnergy6Vector, maskVector);
+
+              const double isOwned = ownedStateI == 1 ? 1. : 0.;
+              __m256d energyFactorVector = _mm256_set1_pd(isOwned);
+
+              if constexpr (newton3) {
+                const __m256i isOwnedJIntegerVector =
+                    _mm256_setr_epi64x(-(int64_t)(compactAoSDataPtr[j0].ownershipState == 1),
+                                       -(int64_t)(compactAoSDataPtr[j1].ownershipState == 1),
+                                       -(int64_t)(compactAoSDataPtr[j2].ownershipState == 1),
+                                       -(int64_t)(compactAoSDataPtr[j3].ownershipState == 1));
+
+                const __m256d isOwnedVector = _mm256_castsi256_pd(isOwnedJIntegerVector);
+                energyFactorVector = _mm256_add_pd(energyFactorVector, _mm256_and_pd(oneVector, isOwnedVector));
+              }
+
+              potentialEnergyAccVector =
+                  _mm256_fmadd_pd(potentialEnergy6Vector, energyFactorVector, potentialEnergyAccVector);
+              virialXAccVector = _mm256_fmadd_pd(virialXVector, energyFactorVector, virialXAccVector);
+              virialYAccVector = _mm256_fmadd_pd(virialYVector, energyFactorVector, virialYAccVector);
+              virialZAccVector = _mm256_fmadd_pd(virialZVector, energyFactorVector, virialZAccVector);
 
               if constexpr (countFLOPs) {
+                const auto relevantValuesAsBits = _mm256_movemask_pd(maskVector);
+
                 if constexpr (newton3) {
-                  numGlobalCalcsN3Sum += mask;
+                  numGlobalCalcsN3Sum += __builtin_popcount(relevantValuesAsBits);
                 } else {
-                  numGlobalCalcsNoN3Sum += mask;
+                  numGlobalCalcsNoN3Sum += __builtin_popcount(relevantValuesAsBits);
                 }
               }
             }
           }
         }
 
-        // scatter the forces to where they belong, this is only needed for newton3
-        if constexpr (newton3) {
-#pragma omp simd safelen(vecSize)
-          for (size_t tmpj = 0; tmpj < vecSize; tmpj++) {
-            const size_t j = neighborListPtr[jOff + tmpj];
-            forceXPtr[j] -= forceXArr[tmpj];
-            forceYPtr[j] -= forceYArr[tmpj];
-            forceZPtr[j] -= forceZArr[tmpj];
-          }
+        alignas(32) std::array<double, 4> forceXTempArr, forceYTempArr, forceZTempArr, potentialEnergyTempArr, virialXTempArr, virialYTempArr, virialZTempArr;
+        _mm256_store_pd(forceXTempArr.data(), forceXAccVector);
+        _mm256_store_pd(forceYTempArr.data(), forceYAccVector);
+        _mm256_store_pd(forceZTempArr.data(), forceZAccVector);
+
+        forceXAcc += forceXTempArr[0] + forceXTempArr[1] + forceXTempArr[2] + forceXTempArr[3];
+        forceYAcc += forceYTempArr[0] + forceYTempArr[1] + forceYTempArr[2] + forceYTempArr[3];
+        forceZAcc += forceZTempArr[0] + forceZTempArr[1] + forceZTempArr[2] + forceZTempArr[3];
+
+        if constexpr (calculateGlobals) {
+          _mm256_store_pd(potentialEnergyTempArr.data(), potentialEnergyAccVector);
+          _mm256_store_pd(virialXTempArr.data(), virialXAccVector);
+          _mm256_store_pd(virialYTempArr.data(), virialYAccVector);
+          _mm256_store_pd(virialZTempArr.data(), virialZAccVector);
+
+          potentialEnergySum += potentialEnergyTempArr[0] + potentialEnergyTempArr[1] + potentialEnergyTempArr[2] + potentialEnergyTempArr[3];
+          virialSumX += virialXTempArr[0] + virialXTempArr[1] + virialXTempArr[2] + virialXTempArr[3];
+          virialSumY += virialYTempArr[0] + virialYTempArr[1] + virialYTempArr[2] + virialYTempArr[3];
+          virialSumZ += virialZTempArr[0] + virialZTempArr[1] + virialZTempArr[2] + virialZTempArr[3];
         }
-      }
     }
 
     // this loop goes over the remainder and uses no optimizations
