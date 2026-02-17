@@ -70,12 +70,12 @@ jobs:
           - { name: "Clang TSan",    container: "autopas-build-archer", cc: "clang", cxx: "clang++", builder: "Ninja",             mode: "Release", omp: "ON",  asan: "OFF", tsan: "ON",  avx: "ON",  site: "singlesite" }
 
           # --- GCC & MPI ---
-          - { name: "GCC Release",   container: "autopas-build-gcc",    cc: "gcc",   cxx: "g++",     builder: "'Unix Makefiles'", mode: "Release", omp: "ON",  asan: "OFF", tsan: "OFF", avx: "ON",  site: "singlesite" }
-          - { name: "MPI Release",   container: "autopas-build-gcc",    cc: "mpicc", cxx: "mpic++",  builder: "'Unix Makefiles'", mode: "Release", omp: "ON",  asan: "ON",  tsan: "OFF", avx: "ON",  site: "singlesite" }
+          - { name: "GCC Release",   container: "autopas-build-gcc",    cc: "gcc",   cxx: "g++",     builder: "Unix Makefiles", mode: "Release", omp: "ON",  asan: "OFF", tsan: "OFF", avx: "ON",  site: "singlesite" }
+          - { name: "MPI Release",   container: "autopas-build-gcc",    cc: "mpicc", cxx: "mpic++",  builder: "Unix Makefiles", mode: "Release", omp: "ON",  asan: "ON",  tsan: "OFF", avx: "ON",  site: "singlesite" }
 
           # --- Multi-Site ---
           - { name: "MultiSite TSan", container: "autopas-build-archer", cc: "clang", cxx: "clang++", builder: "Ninja",             mode: "Release", omp: "ON",  asan: "OFF", tsan: "ON",  avx: "OFF", site: "multisite" }
-          - { name: "MultiSite MPI",  container: "autopas-build-gcc",    cc: "mpicc", cxx: "mpic++",  builder: "'Unix Makefiles'", mode: "Release", omp: "ON",  asan: "ON",  tsan: "OFF", avx: "OFF", site: "multisite" }
+          - { name: "MultiSite MPI",  container: "autopas-build-gcc",    cc: "mpicc", cxx: "mpic++",  builder: "Unix Makefiles", mode: "Release", omp: "ON",  asan: "ON",  tsan: "OFF", avx: "OFF", site: "multisite" }
 
         exclude:
           # Remove Part 2 for Debug as we only test compilation in debug mode.
@@ -159,6 +159,8 @@ jobs:
         if: matrix.config.mode != 'Debug'
 
         run: |
+          cd build
+          
           # --- CASE 1: Single-Site (Standard) ---
           if [[ "${{ matrix.config.site }}" == 'singlesite' ]]; then
           
