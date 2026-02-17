@@ -22,8 +22,7 @@ autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, size_t rebuildFre
   // set the pattern to the message only
   headerLogger->set_pattern("%v");
   std::stringstream samplesHeader;
-  auto numRebuildSamples = static_cast<size_t>(std::ceil(numSamples * 1.0 / rebuildFrequency));
-  for (size_t i = 0; i < numRebuildSamples; ++i) {
+  for (size_t i = 0; i < numSamples; ++i) {
     samplesHeader << ",Rebuild sample " << i;
   }
   for (size_t i = 0; i < numSamples; ++i) {

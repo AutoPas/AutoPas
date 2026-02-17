@@ -304,12 +304,11 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleNonRebuild, bool n
     auto samplesRebuildingNeighborLists = _samplesRebuildingNeighborLists;
     auto samplesNotRebuildingNeighborLists = _samplesNotRebuildingNeighborLists;
 
+    // Pad the samplesRebuildingNeighborLists vectors  to the length _maxSamples as expected by the tuning data logger
+    samplesRebuildingNeighborLists.resize(_maxSamples, -1);
     if (_earlyStoppingOfResampling) {
-      // pad sample vectors to length expected by the tuning data logger
-      size_t numRebuildSamples =
-          (_maxSamples + _rebuildFrequency - 1) / _rebuildFrequency - _samplesRebuildingNeighborLists.size();
-      _samplesRebuildingNeighborLists.resize(numRebuildSamples, -1);
-      // pad sample vectors to length of maxSamples to ensure correct logging
+      // In case of early stopping, we need to pad the samplesRebuildingNeighborLists vectors to the length _maxSamples
+      // as expected by the tuning data logger
       samplesNotRebuildingNeighborLists.resize(_maxSamples - samplesRebuildingNeighborLists.size(), -1);
     }
 
