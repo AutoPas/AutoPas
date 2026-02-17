@@ -233,7 +233,7 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
   return {getCurrentConfig(), _isTuning};
 }
 
-void AutoTuner::addMeasurement(std::pair<long, long> sample, bool neighborListRebuilt) {
+void AutoTuner::addMeasurement(long sampleRebuild, long sampleNonRebuild, bool neighborListRebuilt) {
   const auto &currentConfig = _configQueue.back();
   // sanity check
   if (getCurrentNumSamples() >= _maxSamples) {
@@ -244,10 +244,12 @@ void AutoTuner::addMeasurement(std::pair<long, long> sample, bool neighborListRe
   }
   AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
   if (neighborListRebuilt) {
-    // Avoiding adding zeros so that we can apply different strategies (mean, median and min) to find the optimum value.
-    _samplesRebuildingNeighborLists.push_back(sample.first);
+    // We add samples to _samplesRebuildingNeighborLists only for iterations where a neighbor list rebuild took place.
+    // We do this to avoid essentially "zero" samples from the iterations without a neighbor list rebuild.
+    // This is done so that we can apply different strategies (mean, median and min) to find the optimum value.
+    _samplesRebuildingNeighborLists.push_back(sampleRebuild);
   }
-  _samplesNotRebuildingNeighborLists.push_back(sample.second);
+  _samplesNotRebuildingNeighborLists.push_back(sampleNonRebuild);
 
   checkEarlyStoppingCondition();
 
@@ -304,8 +306,8 @@ void AutoTuner::addMeasurement(std::pair<long, long> sample, bool neighborListRe
 
     if (_earlyStoppingOfResampling) {
       // pad sample vectors to length expected by the tuning data logger
-      auto numRebuildSamples = static_cast<size_t>(std::ceil(_maxSamples * 1.0 / _rebuildFrequency)) -
-                               _samplesRebuildingNeighborLists.size();
+      size_t numRebuildSamples =
+          (_maxSamples + _rebuildFrequency - 1) / _rebuildFrequency - _samplesRebuildingNeighborLists.size();
       _samplesRebuildingNeighborLists.resize(numRebuildSamples, -1);
       // pad sample vectors to length of maxSamples to ensure correct logging
       samplesNotRebuildingNeighborLists.resize(_maxSamples - samplesRebuildingNeighborLists.size(), -1);

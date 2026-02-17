@@ -2026,7 +2026,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
             return std::make_pair(0l, 0l);
         }
       }();
-      autoTuner.addMeasurement(measurement, rebuildIteration);
+      autoTuner.addMeasurement(measurement.first, measurement.second, rebuildIteration);
     }
   } else {
     AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
