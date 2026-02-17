@@ -98,8 +98,8 @@ jobs:
       LSAN_OPTIONS: "verbosity=1:log_threads=1"
       CCACHE_DIR: "${{ github.workspace }}/.ccache"
       CCACHE_BASEDIR: "${{ github.workspace }}"
-      # CCACHE_SLOPPINESS: "include_file_ctime,time_macros"
-      # CCACHE_COMPILERCHECK: "content"
+      CCACHE_SLOPPINESS: "include_file_ctime,time_macros"
+      CCACHE_COMPILERCHECK: "content"
       CCACHE_MAXSIZE: "500M"
 
       # TEMPORARY DEBUGGING
