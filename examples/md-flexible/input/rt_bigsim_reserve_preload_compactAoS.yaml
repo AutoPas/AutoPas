@@ -13,12 +13,12 @@ tuning-samples                    :  3
 tuning-max-evidence               :  10
 functor                           :  lj
 newton3                           :  [disabled]
-cutoff                            :  3.5
+cutoff                            :  3.0
 box-min                           :  [0, 0, 0]
 box-max                           :  [0,0,0]
 cell-size                         :  [1]
 deltaT                            :  0.0005
-iterations                        :  1000
+iterations                        :  500
 boundary-type                     :  [periodic, reflective, periodic]
 globalForce                       :  [0,-12.44,0]
 Sites:
@@ -52,11 +52,11 @@ thermostat:
   thermostatInterval              :  25
   addBrownianMotion               :  true
 
-order-cells-by-morton-id          :  true
-preload-lj-mixing-ptrs            :  true
-use-compact-soa                   :  true
+order-cells-by-morton-id          :  false
+use-optimized-lj-functor          :  true
+use-compact-aos                   :  true
 reserve-vl-sizes                  :  true
-bucket-sort-particles             :  true
+bucket-sort-particles             :  false
 sort-verlet-lists                 :  false
 sorting-frequency                 :  4
 

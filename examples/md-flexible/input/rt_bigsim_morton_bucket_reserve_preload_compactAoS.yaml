@@ -52,11 +52,11 @@ thermostat:
   thermostatInterval              :  25
   addBrownianMotion               :  true
 
-order-cells-by-morton-id          :  false
+order-cells-by-morton-id          :  true
 use-optimized-lj-functor          :  true
-use-compact-aos                   :  false
+use-compact-aos                   :  true
 reserve-vl-sizes                  :  true
-bucket-sort-particles             :  false
+bucket-sort-particles             :  true
 sort-verlet-lists                 :  false
 sorting-frequency                 :  4
 
