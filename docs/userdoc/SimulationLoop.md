@@ -83,7 +83,3 @@ It internally applies OpenMP parallelization, so do not use it in other thread-p
 This part encompasses everything else, like sampling particle data, computing macroscopic properties, statistical analysis, ...
 For performance reasons, it might be advisable to not do any pairwise particle measurements here, like, for example, pairwise distances for a radial distribution function.
 Such `O(N^2)` operations are better handled within or as a separate functor in step 2.
-
-## Related Files and Folders
-- AutoPasDecl.h
-- Simulation.cpp

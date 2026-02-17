@@ -54,7 +54,3 @@ Oftentimes, these are used additionally to standard pairwise interactions. For s
 Both AutoTuners will start their tuning phases at the same iterations by setting the start of the tuning interval when both AutoTuners finish tuning over their search space.  
 _Note: Performance may vary if the AutoTuners end up with configurations that use a different [container option](https://github.com/AutoPas/AutoPas/blob/tuningDoc/src/autopas/options/ContainerOption.h). 
 In this case, AutoPas has to rebuild neighbor lists every time the interaction type changes._
-
-## Related Files and Folders
-- AutoTuner.h
-- TuningStrategyInterface.h

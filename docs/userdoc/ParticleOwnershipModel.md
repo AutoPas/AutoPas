@@ -30,10 +30,3 @@ Particles in AutoPas have the property `ParticleBase::_ownershipState`, which in
   As explained in the respective classes, this is not easily possible for `dummy`.
 - Never change the ownership state of a particle if you do not know precisely what you are doing.
   Especially deletion should always be done through methods of the main interface to avoid confusing internal counters.
-
-## Related Files and Folders
-- IteratorBehavior.h
-- LogicHandler.h
-- markParticleAsDeleted.h
-- OwnershipState.h
-- ParticleBase.h
