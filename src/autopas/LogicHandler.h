@@ -1357,10 +1357,10 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
           energyMeasurementsPossible ? energyWatts : nanD,
           energyMeasurementsPossible ? energyJoules : nanD,
           energyMeasurementsPossible ? energyDeltaT : nanD,
-          energyMeasurementsPossible ? energyTotal : nanL,
           energyMeasurementsPossible ? energyTotalRebuild : nanL,
           energyMeasurementsPossible ? energyTotal - energyTotalRebuild
-                                     : nanL};  // ComputeInteractions + Remainder Traversal energy consumption
+                                     : nanL,  // ComputeInteractions + Remainder Traversal energy consumption
+          energyMeasurementsPossible ? energyTotal : nanL};
 }
 
 template <typename Particle_T>
