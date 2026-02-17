@@ -14,4 +14,4 @@ namespace autopas::utils {
  */
 template <typename T>
 using optRef = std::optional<std::reference_wrapper<T>>;
-}
+}  // namespace autopas::utils
