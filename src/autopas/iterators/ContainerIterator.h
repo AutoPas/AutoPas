@@ -249,8 +249,8 @@ class ContainerIterator {
         _vectorIndexOffset((behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads()) {
     if (additionalVectorsToIterate.has_value()) {
       // store pointers to all additional vectors
-      _additionalVectors.insert(_additionalVectors.end(), additionalVectorsToIterate->get().begin(),
-                                additionalVectorsToIterate->get().end());
+      _additionalVectors.insert(_additionalVectors.end(), autopas::utils::begin(additionalVectorsToIterate),
+                                autopas::utils::end(additionalVectorsToIterate));
     }
 
     if constexpr (regionIter) {

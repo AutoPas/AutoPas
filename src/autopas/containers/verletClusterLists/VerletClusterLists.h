@@ -10,6 +10,7 @@
 #include <cmath>
 #include <iterator>
 
+#include "../../utils/optRef.h"
 #include "ClusterTowerBlock2D.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
@@ -1274,8 +1275,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   template <class VecVec>
   void appendBuffersHelper(utils::optRef<VecVec> additionalVectors, VecVec &outVec) const {
     if (additionalVectors.has_value()) {
-      outVec.reserve(_particlesToAdd.size() + additionalVectors->get().size());
-      outVec.insert(outVec.end(), additionalVectors->get().begin(), additionalVectors->get().end());
+      outVec.reserve(_particlesToAdd.size() + autopas::utils::size(additionalVectors));
+      outVec.insert(outVec.end(), autopas::utils::begin(additionalVectors), autopas::utils::end(additionalVectors));
     } else {
       outVec.reserve(_particlesToAdd.size());
     }
