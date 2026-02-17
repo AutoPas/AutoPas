@@ -43,6 +43,7 @@ class CellFunctor {
    */
   void processCell(ParticleCell &cell);
   /**
+   * processCell method for PseudoVerletLists.
    * @param cellIndex All pairwise interactions of particles inside this cell are calculated.
    */
   void processCell(unsigned long cellIndex);
@@ -57,6 +58,7 @@ class CellFunctor {
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2,
                        const std::array<double, 3> &sortingDirection = {0., 0., 0.});
   /**
+   * processCellPair method for PseudoVerletLists.
    * @param cell1Index
    * @param cell2Index
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
@@ -90,7 +92,7 @@ class CellFunctor {
   void setSortingThreshold(size_t sortingThreshold);
 
   /**
-   * Sets the orientationList.
+   * Sets the orientationList used by PseudoVerletLists.
    * @param list the orientationList
    */
   void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell>>> &list);
@@ -108,7 +110,9 @@ class CellFunctor {
    * @param cell
    */
   void processCellAoS(ParticleCell &cell);
+
   /**
+   * processCellAoS for PseudoVerletLists.
    * @param cellIndex
    */
   void processCellAoS(unsigned long cellIndex);
@@ -123,7 +127,9 @@ class CellFunctor {
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
   void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
+
   /**
+   * processCellPairsAoSN3 for PseudoVerletLists.
    * @param cell1Index
    * @param cell2Index
    * @param directionIndex Normalized vector connecting centers of cell1 and cell2.
@@ -139,7 +145,9 @@ class CellFunctor {
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
   void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
+
   /**
+   * processCellPairAoSNoN3 for PseudoVerletLists.
    * @param cell1Index
    * @param cell2Index
    * @param directionIndex Normalized vector connecting centers of cell1 and cell2.
@@ -160,6 +168,7 @@ class CellFunctor {
 
   /**
    * Utilizes the threeToOneD mapping to calculate the directionIndex relative to the center of a 3x3 cube of cells.
+   * For PseudoVerletLists.
    * @param sortingDirection
    * @return directionIndex
    */
@@ -167,6 +176,7 @@ class CellFunctor {
 
   /**
    * Flips negative directionIndices for PsVL as only positive directions are stored in _orientationList.
+   * For PseudoVerletLists.
    * @param directionIndex
    * @return flipped directionIndex
    */
@@ -188,7 +198,7 @@ class CellFunctor {
 
   /**
    * Orientation List: For each cell, 13 sortedCellViews are stored, each of which sorts in the direction of the
-   * neighboring cell.
+   * neighboring cell. Used by PseudoVerletLists.
    */
   std::vector<std::vector<SortedCellView<ParticleCell>>> *_orientationList = nullptr;
 };
