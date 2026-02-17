@@ -17,6 +17,7 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include <immintrin.h>
 
 namespace mdLib {
 
@@ -1524,12 +1525,12 @@ class LJFunctor
     SoAFloatPrecision forceYAcc = 0;
     SoAFloatPrecision forceZAcc = 0;
 
-    const auto *const __restrict compactDataPtr = compactAoS._compactParticles.data();
+    const auto *const __restrict compactAoSDataPtr = compactAoS._compactParticles.data();
 
     const size_t neighborListSize = neighborList.size();
     const autopas::SoAIndexIntType *const __restrict neighborListPtr = neighborList.data();
 
-    const auto particleI = compactDataPtr[indexFirst];
+    const auto particleI = compactAoSDataPtr[indexFirst];
 
 
     const auto typeIdI = particleI.typeId;
@@ -1551,11 +1552,20 @@ class LJFunctor
     using PackedLJMixingData = ParticlePropertiesLibrary<SoAFloatPrecision, unsigned long>::PackedLJMixingData;
     size_t numRegisteredSiteTypes = 0;
     const PackedLJMixingData * __restrict computedLJMixingDataRow = nullptr;
+    const SoAFloatPrecision * __restrict sigmaSquaredByTypesRow = nullptr;
+    const SoAFloatPrecision * __restrict epsilon24ByTypesRow = nullptr;
+    const SoAFloatPrecision * __restrict shift6ByTypesRow = nullptr;
 
     if constexpr (useMixing) {
       const auto &computedLJMixingData = _PPLibrary->getComputedLJMixingData();
+      const auto &sigmaSquaredByTypes = _PPLibrary->getComputedLJSigmaData();
+      const auto &epsilon24ByTypes = _PPLibrary->getComputedLJEpsilonData();
+      const auto &shift6ByTypes = _PPLibrary->getComputedLJShift6Data();
       numRegisteredSiteTypes = _PPLibrary->getNumberRegisteredSiteTypes();
       computedLJMixingDataRow = computedLJMixingData.data() + typeIdI * numRegisteredSiteTypes;
+      sigmaSquaredByTypesRow =  sigmaSquaredByTypes.data() + typeIdI * numRegisteredSiteTypes;
+      epsilon24ByTypesRow = epsilon24ByTypes.data() + typeIdI * numRegisteredSiteTypes;
+      shift6ByTypesRow = shift6ByTypes.data() + typeIdI * numRegisteredSiteTypes;
     }
 
     SoAFloatPrecision potentialEnergySum = 0.;
@@ -1584,7 +1594,7 @@ class LJFunctor
     constexpr size_t vecSize = 16;
 #else
     // for everything else 12 is faster
-    constexpr size_t vecSize = 48;
+    constexpr size_t vecSize = 4;
 #endif
 
     size_t jOff = 0;
@@ -1592,93 +1602,141 @@ class LJFunctor
     // if the size of the verlet list is larger than the given size vecsize,
     // we will use a vectorized version.
     if (neighborListSize >= vecSize) {
-      alignas(64) std::array<SoAFloatPrecision, vecSize> xArr, yArr, zArr, forceXArr, forceYArr, forceZArr, ownedStateArr;
+      if constexpr (!calculateGlobals && !countFLOPs) {
+        const __m256d xI_yI_zI_pad = _mm256_load_pd(&particleI.posX);
+        const __m256d cutOffSquaredVector = _mm256_set1_pd(cutoffSquared);
+        const __m256d oneVector = _mm256_set1_pd(1.);
+        const __m256d twoVector = _mm256_set1_pd(2.);
+        __m256d sigmaSquaredVector = _mm256_set1_pd(sigmaSquared);
+        __m256d epsilon24Vector = _mm256_set1_pd(epsilon24);
+        __m256d shift6Vector = _mm256_set1_pd(shift6);
 
-      [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> sigmaSquareds;
-      [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> epsilon24s;
-      [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> shift6s;
-      // loop over the verlet list from 0 to x*vecsize
-      // in each iteration we calculate the interactions of particle i with
-      // vecsize particles in the neighborlist of particle i starting at
-      // particle joff
-      for (; jOff < neighborListSize - vecSize + 1; jOff += vecSize) {
-        const auto *neighborListPtrWithOffset = neighborListPtr + jOff;
-        // gather position of particle j
-        #pragma omp simd safelen(vecSize)
-        for (size_t tmpJ = 0; tmpJ < vecSize; tmpJ++) {
-          const autopas::SoAIndexIntType indexInSoAJ = neighborListPtrWithOffset[tmpJ];
-          const auto particleJ = compactDataPtr[indexInSoAJ];
-          /*const auto ownedStateAndTypeIdJ = ownedStateAndTypeIdPtr[indexInSoAJ];*/
-          /*xArr[tmpJ] = xPtr[indexInSoAJ];
-          yArr[tmpJ] = yPtr[indexInSoAJ];
-          zArr[tmpJ] = zPtr[indexInSoAJ];*/
-          xArr[tmpJ] = particleJ.posX;
-          yArr[tmpJ] = particleJ.posY;
-          zArr[tmpJ] = particleJ.posZ;
-          ownedStateArr[tmpJ] = particleJ.ownershipState == 0 ? SoAFloatPrecision{0} : SoAFloatPrecision{1.};
+        __m256d forceXAccVector = _mm256_setzero_pd();
+        __m256d forceYAccVector = _mm256_setzero_pd();
+        __m256d forceZAccVector = _mm256_setzero_pd();
+
+        for (; jOff + 4 <= neighborListSize; jOff += 4) {
+          const auto j0 = neighborList[jOff + 0];
+          const auto j1 = neighborList[jOff + 1];
+          const auto j2 = neighborList[jOff + 2];
+          const auto j3 = neighborList[jOff + 3];
+
+          const __m256d x0_y0_z0_pad = _mm256_load_pd(&compactAoSDataPtr[j0].posX);
+          const __m256d x1_y1_z1_pad = _mm256_load_pd(&compactAoSDataPtr[j1].posX);
+          const __m256d x2_y2_z2_pad = _mm256_load_pd(&compactAoSDataPtr[j2].posX);
+          const __m256d x3_y3_z3_pad = _mm256_load_pd(&compactAoSDataPtr[j3].posX);
+
+          const __m256i notADummyMaskIntegerVector = _mm256_setr_epi64x(
+              -(int64_t)(compactAoSDataPtr[j0].ownershipState != 0), -(int64_t)(compactAoSDataPtr[j1].ownershipState != 0),
+              -(int64_t)(compactAoSDataPtr[j2].ownershipState != 0), -(int64_t)(compactAoSDataPtr[j3].ownershipState != 0));
+
+          const __m256d notADummyMaskVector = _mm256_castsi256_pd(notADummyMaskIntegerVector);
+
+          const __m256d drX0_drY0_drZ0_pad = _mm256_sub_pd(xI_yI_zI_pad, x0_y0_z0_pad);
+          const __m256d drX1_drY1_drZ1_pad = _mm256_sub_pd(xI_yI_zI_pad, x1_y1_z1_pad);
+          const __m256d drX2_drY2_drZ2_pad = _mm256_sub_pd(xI_yI_zI_pad, x2_y2_z2_pad);
+          const __m256d drX3_drY3_drZ3_pad = _mm256_sub_pd(xI_yI_zI_pad, x3_y3_z3_pad);
+
+          const __m256d drX0_drX1_drZ0_drZ1 = _mm256_shuffle_pd(drX0_drY0_drZ0_pad, drX1_drY1_drZ1_pad, 0x0);
+          const __m256d drY0_drY1_pad_pad = _mm256_shuffle_pd(drX0_drY0_drZ0_pad, drX1_drY1_drZ1_pad, 0xF);
+          const __m256d drX2_drX3_drZ2_drZ3 = _mm256_shuffle_pd(drX2_drY2_drZ2_pad, drX3_drY3_drZ3_pad, 0x0);
+          const __m256d drY2_drY3_pad_pad = _mm256_shuffle_pd(drX2_drY2_drZ2_pad, drX3_drY3_drZ3_pad, 0xF);
+
+          // the immediate Byte is used to signal which half of which argument vector is going where in the result vector.
+          // simplified: first 4 bits are for the first half of the result vector, last 4 bits for the second half
+          // 0000 -> lower half first argument | 0001 -> upper half first argument | 0010 -> lower half second argument | 0011 -> upper half second argument
+          const __m256d drX0_drX1_drX2_drX3 = _mm256_permute2f128_pd(drX0_drX1_drZ0_drZ1, drX2_drX3_drZ2_drZ3, 0b00100000);
+          const __m256d drY0_drY1_drY2_drY3 = _mm256_permute2f128_pd(drY0_drY1_pad_pad, drY2_drY3_pad_pad, 0b00100000);
+          const __m256d drZ0_drZ1_drZ2_drZ3 = _mm256_permute2f128_pd(drX0_drX1_drZ0_drZ1, drX2_drX3_drZ2_drZ3, 0b00110001);
+
+          const __m256d drSquaredVector =
+              _mm256_fmadd_pd(drX0_drX1_drX2_drX3, drX0_drX1_drX2_drX3,
+                              _mm256_fmadd_pd(drY0_drY1_drY2_drY3, drY0_drY1_drY2_drY3,
+                                              _mm256_mul_pd(drZ0_drZ1_drZ2_drZ3, drZ0_drZ1_drZ2_drZ3)));
+
+          const __m256d belowCutOffMaskVector = _mm256_cmp_pd(drSquaredVector, cutOffSquaredVector, _CMP_LE_OQ);
+
+          const __m256d maskVector = _mm256_and_pd(belowCutOffMaskVector, notADummyMaskVector);
 
           if constexpr (useMixing) {
-            const size_t typeIdJ = particleJ.typeId;
-            const PackedLJMixingData &mixingDataJ = computedLJMixingDataRow[typeIdJ];
-            sigmaSquareds[tmpJ] = mixingDataJ.sigmaSquared;
-            epsilon24s[tmpJ] = mixingDataJ.epsilon24;
+            const uint32_t typeId0 = compactAoSDataPtr[j0].typeId;
+            const uint32_t typeId1 = compactAoSDataPtr[j1].typeId;
+            const uint32_t typeId2 = compactAoSDataPtr[j2].typeId;
+            const uint32_t typeId3 = compactAoSDataPtr[j3].typeId;
+
+            sigmaSquaredVector = _mm256_setr_pd(sigmaSquaredByTypesRow[typeId0], sigmaSquaredByTypesRow[typeId1],
+                                                sigmaSquaredByTypesRow[typeId2], sigmaSquaredByTypesRow[typeId3]);
+            epsilon24Vector = _mm256_setr_pd(epsilon24ByTypesRow[typeId0], epsilon24ByTypesRow[typeId1],
+                                             epsilon24ByTypesRow[typeId2], epsilon24ByTypesRow[typeId3]);
             if constexpr (applyShift) {
-              shift6s[tmpJ] = mixingDataJ.shift6;
+              shift6Vector = _mm256_setr_pd(shift6ByTypesRow[typeId0], shift6ByTypesRow[typeId1],
+                                            shift6ByTypesRow[typeId2], shift6ByTypesRow[typeId3]);
             }
           }
-        }
 
-        if constexpr (!calculateGlobals && !countFLOPs) {
-        #pragma omp simd reduction(+ : forceXAcc, forceYAcc, forceZAcc) safelen(vecSize)
-        #pragma code_align 64
-          for (size_t j = 0; j < vecSize; j++) {
+          const __m256d inverseDrSquaredVector = _mm256_div_pd(oneVector, drSquaredVector);
+          const __m256d sigmaByRSquaredVector = _mm256_mul_pd(sigmaSquaredVector, inverseDrSquaredVector);
+          const __m256d sigmaByR6Vector =
+              _mm256_mul_pd(sigmaByRSquaredVector, _mm256_mul_pd(sigmaByRSquaredVector, sigmaByRSquaredVector));
+
+          const __m256d bracketsVector = _mm256_fmsub_pd(twoVector, sigmaByRSquaredVector, oneVector);
+          __m256d facVector = _mm256_mul_pd(
+              epsilon24Vector, _mm256_mul_pd(inverseDrSquaredVector, _mm256_mul_pd(sigmaByR6Vector, bracketsVector)));
+
+          facVector = _mm256_and_pd(facVector, maskVector);
+          forceXAccVector = _mm256_fmadd_pd(drX0_drX1_drX2_drX3, facVector, forceXAccVector);
+          forceYAccVector = _mm256_fmadd_pd(drY0_drY1_drY2_drY3, facVector, forceYAccVector);
+          forceZAccVector = _mm256_fmadd_pd(drZ0_drZ1_drZ2_drZ3, facVector, forceZAccVector);
+        }
+        alignas(32) std::array<double, 4> tempForceXArr, tempForceYArr, tempForceZArr;
+        _mm256_store_pd(tempForceXArr.data(), forceXAccVector);
+        _mm256_store_pd(tempForceYArr.data(), forceYAccVector);
+        _mm256_store_pd(tempForceZArr.data(), forceZAccVector);
+
+        forceXAcc += tempForceXArr[0] + tempForceXArr[1] + tempForceXArr[2] + tempForceXArr[3];
+        forceYAcc += tempForceYArr[0] + tempForceYArr[1] + tempForceYArr[2] + tempForceYArr[3];
+        forceZAcc += tempForceZArr[0] + tempForceZArr[1] + tempForceZArr[2] + tempForceZArr[3];
+      } else {
+        alignas(64) std::array<SoAFloatPrecision, vecSize> xArr, yArr, zArr, forceXArr, forceYArr, forceZArr,
+            ownedStateArr;
+
+        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> sigmaSquareds;
+        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> epsilon24s;
+        [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecSize> shift6s;
+
+        // loop over the verlet list from 0 to x*vecsize
+        // in each iteration we calculate the interactions of particle i with
+        // vecsize particles in the neighborlist of particle i starting at
+        // particle joff
+        for (; jOff < neighborListSize - vecSize + 1; jOff += vecSize) {
+          const auto *neighborListPtrWithOffset = neighborListPtr + jOff;
+          // gather position of particle j
+          #pragma omp simd safelen(vecSize)
+          for (size_t tmpJ = 0; tmpJ < vecSize; tmpJ++) {
+            const autopas::SoAIndexIntType indexInSoAJ = neighborListPtrWithOffset[tmpJ];
+            const auto particleJ = compactAoSDataPtr[indexInSoAJ];
+            /*const auto ownedStateAndTypeIdJ = ownedStateAndTypeIdPtr[indexInSoAJ];*/
+            /*xArr[tmpJ] = xPtr[indexInSoAJ];
+            yArr[tmpJ] = yPtr[indexInSoAJ];
+            zArr[tmpJ] = zPtr[indexInSoAJ];*/
+            xArr[tmpJ] = particleJ.posX;
+            yArr[tmpJ] = particleJ.posY;
+            zArr[tmpJ] = particleJ.posZ;
+            ownedStateArr[tmpJ] = particleJ.ownershipState == 0 ? SoAFloatPrecision{0} : SoAFloatPrecision{1.};
+
             if constexpr (useMixing) {
-              sigmaSquared = sigmaSquareds[j];
-              epsilon24 = epsilon24s[j];
+              const size_t typeIdJ = particleJ.typeId;
+              const PackedLJMixingData &mixingDataJ = computedLJMixingDataRow[typeIdJ];
+              sigmaSquareds[tmpJ] = mixingDataJ.sigmaSquared;
+              epsilon24s[tmpJ] = mixingDataJ.epsilon24;
               if constexpr (applyShift) {
-                shift6 = shift6s[j];
+                shift6s[tmpJ] = mixingDataJ.shift6;
               }
             }
-
-            const SoAFloatPrecision drX = xI - xArr[j];
-            const SoAFloatPrecision drY = yI - yArr[j];
-            const SoAFloatPrecision drZ = zI - zArr[j];
-
-            const SoAFloatPrecision drX2 = drX * drX;
-            const SoAFloatPrecision drY2 = drY * drY;
-            const SoAFloatPrecision drZ2 = drZ * drZ;
-
-            const SoAFloatPrecision dr2 = drX2 + drY2 + drZ2;
-
-            // Mask away if distance is too large or any particle is a dummy. ownedStateI was already checked
-            // previously.
-            const SoAFloatPrecision belowCutOff = dr2 <= cutoffSquared ? SoAFloatPrecision{1.} : SoAFloatPrecision{0};
-            const SoAFloatPrecision mask = belowCutOff * ownedStateArr[j];
-
-            const SoAFloatPrecision inverseDr2 = 1. / dr2;
-            const SoAFloatPrecision lj2 = sigmaSquared * inverseDr2;
-            const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
-            const SoAFloatPrecision lj12 = lj6 * lj6;
-            const SoAFloatPrecision lj12m6 = lj12 - lj6;
-            const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * inverseDr2;
-
-            const SoAFloatPrecision forceXIJ = drX * fac;
-            const SoAFloatPrecision forceYIJ = drY * fac;
-            const SoAFloatPrecision forceZIJ = drZ * fac;
-
-            forceXAcc += forceXIJ;
-            forceYAcc += forceYIJ;
-            forceZAcc += forceZIJ;
-
-            if constexpr (newton3) {
-              forceXArr[j] = forceXIJ;
-              forceYArr[j] = forceYIJ;
-              forceZArr[j] = forceZIJ;
-            }
           }
-        } else {
-        #pragma omp simd reduction(+ : forceXAcc, forceYAcc, forceZAcc, potentialEnergySum, virialSumX, virialSumY,\
-                               virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,\
+
+          #pragma omp simd reduction(+ : forceXAcc, forceYAcc, forceZAcc, potentialEnergySum, virialSumX, virialSumY,       \
+                               virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, \
                                numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecSize)
           for (size_t j = 0; j < vecSize; j++) {
             if constexpr (useMixing) {
@@ -1743,8 +1801,7 @@ class LJFunctor
 
               // We add 6 times the potential energy for each owned particle. Correction of total sum in endTraversal().
               const SoAFloatPrecision energyFactor =
-                  (ownedStateI == 1 ? 1. : 0.) +
-                  (newton3 ? (ownedStateJ == 1 ? 1. : 0.) : 0.);
+                  (ownedStateI == 1 ? 1. : 0.) + (newton3 ? (ownedStateJ == 1 ? 1. : 0.) : 0.);
               potentialEnergySum += potentialEnergy6 * energyFactor;
               virialSumX += virialx * energyFactor;
               virialSumY += virialy * energyFactor;
@@ -1763,7 +1820,7 @@ class LJFunctor
 
         // scatter the forces to where they belong, this is only needed for newton3
         if constexpr (newton3) {
-        #pragma omp simd safelen(vecSize)
+#pragma omp simd safelen(vecSize)
           for (size_t tmpj = 0; tmpj < vecSize; tmpj++) {
             const size_t j = neighborListPtr[jOff + tmpj];
             forceXPtr[j] -= forceXArr[tmpj];
@@ -1782,21 +1839,21 @@ class LJFunctor
       }
 
       if constexpr (useMixing) {
-        sigmaSquared = _PPLibrary->getMixingSigmaSquared(compactDataPtr[indexFirst].typeId, compactDataPtr[j].typeId);
-        epsilon24 = _PPLibrary->getMixing24Epsilon(compactDataPtr[indexFirst].typeId, compactDataPtr[j].typeId);
+        sigmaSquared = _PPLibrary->getMixingSigmaSquared(compactAoSDataPtr[indexFirst].typeId, compactAoSDataPtr[j].typeId);
+        epsilon24 = _PPLibrary->getMixing24Epsilon(compactAoSDataPtr[indexFirst].typeId, compactAoSDataPtr[j].typeId);
         if constexpr (applyShift) {
-          shift6 = _PPLibrary->getMixingShift6(compactDataPtr[indexFirst].typeId, compactDataPtr[j].typeId);
+          shift6 = _PPLibrary->getMixingShift6(compactAoSDataPtr[indexFirst].typeId, compactAoSDataPtr[j].typeId);
         }
       }
 
-      const auto ownedStateJ = compactDataPtr[j].ownershipState;
+      const auto ownedStateJ = compactAoSDataPtr[j].ownershipState;
       if (ownedStateJ == 0) {
         continue;
       }
 
-      const SoAFloatPrecision drX = xI - compactDataPtr[j].posX;
-      const SoAFloatPrecision drY = yI - compactDataPtr[j].posY;
-      const SoAFloatPrecision drZ = zI - compactDataPtr[j].posZ;
+      const SoAFloatPrecision drX = xI - compactAoSDataPtr[j].posX;
+      const SoAFloatPrecision drY = yI - compactAoSDataPtr[j].posY;
+      const SoAFloatPrecision drZ = zI - compactAoSDataPtr[j].posZ;
 
       const SoAFloatPrecision drX2 = drX * drX;
       const SoAFloatPrecision drY2 = drY * drY;
