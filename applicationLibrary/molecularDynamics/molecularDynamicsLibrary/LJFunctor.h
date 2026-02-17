@@ -1275,7 +1275,7 @@ class LJFunctor
             const SoAFloatPrecision belowCutOff = dr2 <= cutoffSquared ? SoAFloatPrecision{1.} : SoAFloatPrecision{0};
             const SoAFloatPrecision mask = belowCutOff * ownedStateArr[j];
 
-            const SoAFloatPrecision inverseDr2 = 1. / dr2;
+            const SoAFloatPrecision inverseDr2 = SoAFloatPrecision{1} / dr2;
             const SoAFloatPrecision lj2 = sigmaSquared * inverseDr2;
             const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
             const SoAFloatPrecision lj12 = lj6 * lj6;
@@ -1300,6 +1300,7 @@ class LJFunctor
         #pragma omp simd reduction(+ : forceXAcc, forceYAcc, forceZAcc, potentialEnergySum, virialSumX, virialSumY,\
                                virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,\
                                numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecSize)
+#pragma code_align 64
           for (size_t j = 0; j < vecSize; j++) {
             if constexpr (useMixing) {
               sigmaSquared = sigmaSquareds[j];
@@ -1308,8 +1309,6 @@ class LJFunctor
                 shift6 = shift6s[j];
               }
             }
-
-            const auto ownedStateJ = ownedStateArr[j];
 
             const SoAFloatPrecision drX = xI - xArr[j];
             const SoAFloatPrecision drY = yI - yArr[j];
@@ -1323,9 +1322,10 @@ class LJFunctor
 
             // Mask away if distance is too large or any particle is a dummy. ownedStateI was already checked
             // previously.
-            const bool mask = dr2 <= cutoffSquared and ownedStateJ != 0;
+            const SoAFloatPrecision belowCutOff = dr2 <= cutoffSquared ? SoAFloatPrecision{1.} : SoAFloatPrecision{0};
+            const SoAFloatPrecision mask = belowCutOff * ownedStateArr[j];
 
-            const SoAFloatPrecision inverseDr2 = 1. / dr2;
+            const SoAFloatPrecision inverseDr2 = SoAFloatPrecision{1} / dr2;
             const SoAFloatPrecision lj2 = sigmaSquared * inverseDr2;
             const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
             const SoAFloatPrecision lj12 = lj6 * lj6;
@@ -1347,7 +1347,7 @@ class LJFunctor
             }
 
             if constexpr (countFLOPs) {
-              numDistanceCalculationSum += ownedStateJ != 0 ? 1 : 0;
+              numDistanceCalculationSum += ownedStateArr[j] != 0 ? 1 : 0;
               if constexpr (newton3) {
                 numKernelCallsN3Sum += mask;
               } else {
@@ -1364,7 +1364,7 @@ class LJFunctor
               // We add 6 times the potential energy for each owned particle. Correction of total sum in endTraversal().
               const SoAFloatPrecision energyFactor =
                   (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-                  (newton3 ? (ownedStateJ == 1. ? 1. : 0.) : 0.); // This is incorrect rn as 1 is set for both halo and owned but newton3 is not used here anyways... for I it is correct
+                  (newton3 ? (ownedStateArr[j] == 1. ? 1. : 0.) : 0.); // This is incorrect rn as 1 is set for both halo and owned but newton3 is not used here anyways... for I it is correct
               potentialEnergySum += potentialEnergy6 * energyFactor;
               virialSumX += virialx * energyFactor;
               virialSumY += virialy * energyFactor;
@@ -1502,7 +1502,7 @@ class LJFunctor
       _aosThreadDataFLOPs[threadNum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
     }
 
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       _aosThreadDataGlobals[threadNum].potentialEnergySum += potentialEnergySum;
       _aosThreadDataGlobals[threadNum].virialSum[0] += virialSumX;
       _aosThreadDataGlobals[threadNum].virialSum[1] += virialSumY;
