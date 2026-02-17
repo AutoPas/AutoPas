@@ -67,25 +67,25 @@ bool autopas::Configuration::hasCompatibleValues() const {
   // Check if any of the traversal's newton3 or data layout restrictions are violated.
   if (newton3 == Newton3Option::enabled) {
     const auto newton3DisabledOnlyTraversals = compatibleTraversals::allTraversalsSupportingOnlyNewton3Disabled();
-    if (not newton3DisabledOnlyTraversals.contains(traversal)) {
+    if (newton3DisabledOnlyTraversals.contains(traversal)) {
       return false;
     }
   }
   if (newton3 == Newton3Option::disabled) {
     const auto newton3EnabledOnlyTraversals = compatibleTraversals::allTraversalsSupportingOnlyNewton3Enabled();
-    if (not newton3EnabledOnlyTraversals.contains(traversal)) {
+    if (newton3EnabledOnlyTraversals.contains(traversal)) {
       return false;
     }
   }
   if (dataLayout == DataLayoutOption::aos) {
     const auto soaOnlyTraversals = compatibleTraversals::allTraversalsSupportingOnlySoA();
-    if (not soaOnlyTraversals.contains(traversal)) {
+    if (soaOnlyTraversals.contains(traversal)) {
       return false;
     }
   }
   if (dataLayout == DataLayoutOption::soa) {
     const auto aosOnlyTraversals = compatibleTraversals::allTraversalsSupportingOnlyAoS();
-    if (not aosOnlyTraversals.contains(traversal)) {
+    if (aosOnlyTraversals.contains(traversal)) {
       return false;
     }
   }
