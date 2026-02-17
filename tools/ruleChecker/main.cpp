@@ -19,8 +19,6 @@
  * @return 0 on success
  */
 int main(int argc, char **argv) {
-  autopas::Logger logger{};
-
   if (argc <= 2) {
     std::cerr
         << "Usage: ruleChecker tuningRules.rule tuningLog.txt...\n"
