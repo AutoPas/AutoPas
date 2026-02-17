@@ -10,7 +10,6 @@
 #include <cmath>
 #include <iterator>
 
-#include "../../utils/optRef.h"
 #include "ClusterTowerBlock2D.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
