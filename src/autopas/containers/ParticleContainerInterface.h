@@ -419,13 +419,13 @@ class ParticleContainerInterface {
 
   void setOrderCellsByMortonIndex(bool orderCellsByMortonIndex) { _orderCellsByMortonIndex = orderCellsByMortonIndex; }
 
-  [[nodiscard]] bool getPreloadMixingPtr() const { return _useOptimizedLJFunctor; }
+  [[nodiscard]] bool getUseOptimizedLJFunctor() const { return _useOptimizedLJFunctor; }
 
   void setUseOptimizedLJFunctor(bool useOptimizedLJFunctor) { _useOptimizedLJFunctor = useOptimizedLJFunctor; }
 
   [[nodiscard]] bool getUseCompactAoS() const { return _useCompactAoS; }
 
-  void setUseIndexInSoAId(bool useCompactAoS) { _useCompactAoS = useCompactAoS; }
+  void setUseCompactAoS(bool useCompactAoS) { _useCompactAoS = useCompactAoS; }
 
   [[nodiscard]] bool getReserveVLSizes() const { return _reserveVLSizes; }
 
