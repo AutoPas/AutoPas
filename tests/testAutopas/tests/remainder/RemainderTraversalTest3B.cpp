@@ -99,7 +99,6 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   using namespace autopas::utils::ArrayMath::literals;
   constexpr std::array<double, 3> drij{-1., 1., 0.};
   constexpr std::array<double, 3> drki{1., 0., -1.};
-  // constexpr std::array<double, 3> drjk{0., -1., 1.};
 
   constexpr double distSquared = 2.;  // Distance between every particle pair should be sqrt(2)
   constexpr double cosNum = -1.;      // e.g. dot(drij, drki)

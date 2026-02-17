@@ -1,5 +1,5 @@
 /**
- * @file RemainderHandlerPairwise.h
+ * @file RemainderPairwiseInteractionHandler.h
  * @author muehlhaeusser
  * @date 12.02.1997
  */
@@ -28,13 +28,14 @@ namespace autopas {
  * @tparam Particle_T
  */
 template <typename Particle_T>
-class RemainderHandlerPairwise {
+class RemainderPairwiseInteractionHandler {
  public:
   /**
-   * Constructor for RemainderHandlerPairwise
+   * Constructor for RemainderPairwiseInteractionHandler
    * @param spatialLocks Domain locks passed by LogicHandler
    */
-  explicit RemainderHandlerPairwise(std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> &spatialLocks)
+  explicit RemainderPairwiseInteractionHandler(
+      std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> &spatialLocks)
       : _spatialLocks(spatialLocks) {}
 
   /**
@@ -46,7 +47,7 @@ class RemainderHandlerPairwise {
    *  - particleBuffer    <-> particleBuffer
    *  - haloParticleBuffer -> particleBuffer
    *
-   * @note Buffers need to have at least one (empty) cell. They must not be empty.
+   * @note Buffers need to have at least one (potentially itself empty) cell. They must not be an empty vector of cells.
    *
    * @tparam newton3
    * @tparam ContainerType Type of the particle container.

@@ -1,5 +1,5 @@
 /**
- * @file RemainderHandlerTriwise.h
+ * @file RemainderTriwiseInteractionHandler.h
  * @author muehlhaeusser
  * @date 12.02.1997
  */
@@ -27,13 +27,14 @@ namespace autopas {
  * @tparam Particle_T
  */
 template <typename Particle_T>
-class RemainderHandlerTriwise {
+class RemainderTriwiseInteractionHandler {
  public:
   /**
-   * Constructor for RemainderHandlerTriwise
+   * Constructor for RemainderTriwiseInteractionHandler
    * @param spatialLocks  Domain locks passed by LogicHandler
    */
-  explicit RemainderHandlerTriwise(std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> &spatialLocks)
+  explicit RemainderTriwiseInteractionHandler(
+      std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> &spatialLocks)
       : _spatialLocks(spatialLocks) {}
 
   /**
@@ -45,7 +46,7 @@ class RemainderHandlerTriwise {
    *  - particleBuffer    <-> particleBuffer
    *  - haloParticleBuffer -> particleBuffer
    *
-   * @note Buffers need to have at least one (empty) cell. They must not be empty.
+   * @note Buffers need to have at least one (potentially itself empty) cell. They must not be an empty vector of cells.
    *
    * @tparam newton3
    * @tparam ContainerType Type of the particle container.

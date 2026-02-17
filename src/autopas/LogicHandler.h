@@ -18,8 +18,8 @@
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/IteratorBehavior.h"
-#include "autopas/remainder/RemainderHandlerPairwise.h"
-#include "autopas/remainder/RemainderHandlerTriwise.h"
+#include "autopas/remainder/RemainderPairwiseInteractionHandler.h"
+#include "autopas/remainder/RemainderTriwiseInteractionHandler.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
@@ -60,8 +60,8 @@ class LogicHandler {
         _neighborListRebuildFrequency{rebuildFrequency},
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()),
-        _remainderHandlerPairwise(_spatialLocks),
-        _remainderHandlerTriwise(_spatialLocks),
+        _remainderPairwiseInteractionHandler(_spatialLocks),
+        _remainderTriwiseInteractionHandler(_spatialLocks),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix, std::any_of(autotuners.begin(), autotuners.end(),
@@ -848,9 +848,15 @@ class LogicHandler {
    */
   ContainerSelectorInfo _currentContainerSelectorInfo;
 
-  RemainderHandlerPairwise<Particle_T> _remainderHandlerPairwise;
+  /**
+   * Handles pairwise interactions of buffer particles (the remainder).
+   */
+  RemainderPairwiseInteractionHandler<Particle_T> _remainderPairwiseInteractionHandler;
 
-  RemainderHandlerTriwise<Particle_T> _remainderHandlerTriwise;
+  /**
+   * Handles triwise interactions of buffer particles (the remainder).
+   */
+  RemainderTriwiseInteractionHandler<Particle_T> _remainderTriwiseInteractionHandler;
 
   /**
    * Set of interaction types AutoPas is initialized to, determined by the given AutoTuners.
@@ -1161,19 +1167,19 @@ void LogicHandler<Particle_T>::computeRemainderInteractions(Functor &functor, bo
   withStaticContainerType(*_currentContainer, [&](auto &actualContainerType) {
     if constexpr (utils::isPairwiseFunctor<Functor>()) {
       if (newton3) {
-        _remainderHandlerPairwise.template computeRemainderInteractions<true>(
+        _remainderPairwiseInteractionHandler.template computeRemainderInteractions<true>(
             &functor, actualContainerType, _particleBuffer, _haloParticleBuffer, useSoA);
       } else {
-        _remainderHandlerPairwise.template computeRemainderInteractions<false>(
+        _remainderPairwiseInteractionHandler.template computeRemainderInteractions<false>(
             &functor, actualContainerType, _particleBuffer, _haloParticleBuffer, useSoA);
       }
     } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
       if (newton3) {
-        _remainderHandlerTriwise.template computeRemainderInteractions<true>(&functor, actualContainerType,
-                                                                             _particleBuffer, _haloParticleBuffer);
+        _remainderTriwiseInteractionHandler.template computeRemainderInteractions<true>(
+            &functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
       } else {
-        _remainderHandlerTriwise.template computeRemainderInteractions<false>(&functor, actualContainerType,
-                                                                              _particleBuffer, _haloParticleBuffer);
+        _remainderTriwiseInteractionHandler.template computeRemainderInteractions<false>(
+            &functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
       }
     }
   });
