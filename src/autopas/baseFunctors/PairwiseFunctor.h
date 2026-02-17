@@ -36,6 +36,8 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    */
   using SoAArraysType = typename Particle_T::SoAArraysType;
 
+  using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
+
   /**
    * Constructor
    * @param cutoff
@@ -76,8 +78,10 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
     utils::ExceptionHandler::exception("{}::SoAFunctorSingle: not implemented", this->getName());
   }
 
-  virtual void SoAFunctorSingleKokkos(const Particle_T::KokkosSoAArraysType& soa, bool newton3) {
-    utils::ExceptionHandler::exception("{}::SoAFunctorSingleKokkos: not implemented", this->getName());
+  KOKKOS_INLINE_FUNCTION
+  virtual void SoAKernelKokkos(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2,
+      FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j ) {
+    utils::ExceptionHandler::exception("{}::SoAKernelKokkos: not implemented", this->getName());
   }
 
   /**
@@ -110,10 +114,6 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    */
   virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorPair: not implemented", this->getName());
-  }
-
-  virtual void SoAFunctorPairKokkos(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, bool newton3) {
-    utils::ExceptionHandler::exception("{}::SoAFunctorPairKokkos: not implemented", this->getName());
   }
 };
 

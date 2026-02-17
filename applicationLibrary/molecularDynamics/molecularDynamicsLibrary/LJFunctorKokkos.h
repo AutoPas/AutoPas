@@ -20,7 +20,7 @@ class LJFunctorKokkos : public autopas::PairwiseFunctor<Particle_T, LJFunctorKok
 
 public:
   using SoAArraysType = typename Particle_T::SoAArraysType;
-  using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
+  using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
   explicit LJFunctorKokkos(double cutoff, ParticlePropertiesLibrary<FloatPrecision, size_t> &)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos, MemSpace>(cutoff),
@@ -40,173 +40,57 @@ public:
     // No Op, TODO: make sure this is never used (also not in remainder traversal)
   }
 
-  void SoAFunctorSingleKokkos(const Particle_T::KokkosSoAArraysType& soa, bool newton3) final {
+  KOKKOS_INLINE_FUNCTION
+  void SoAKernelKokkos(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2,
+    FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j) final {
 
-    const size_t N = soa.size();
-    const FloatPrecision cutoffSquared = _cutoffSquared;
+    const auto owned1 = soa1.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(i);
 
-    Kokkos::parallel_for(Kokkos::TeamPolicy<typename MemSpace::execution_space>(N, Kokkos::AUTO()), KOKKOS_LAMBDA(auto teamHandle) {
-        int i = teamHandle.league_rank();
+    if (owned1 != autopas::OwnershipState::dummy) {
+      const auto x1 = soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
+      const auto y1 = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
+      const auto z1 = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
 
-        const auto owned1 = soa.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(i);
+      const auto owned2 = soa2.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(j);
 
-        if (owned1 != autopas::OwnershipState::dummy) {
-            FloatPrecision fxAcc = 0.;
-            FloatPrecision fyAcc = 0.;
-            FloatPrecision fzAcc = 0.;
+      if (owned2 != autopas::OwnershipState::dummy) {
+        const FloatPrecision x2 = soa2.template operator()<Particle_T::AttributeNames::posX, true, false>(j);
+        const FloatPrecision y2 = soa2.template operator()<Particle_T::AttributeNames::posY, true, false>(j);
+        const FloatPrecision z2 = soa2.template operator()<Particle_T::AttributeNames::posZ, true, false>(j);
 
-            const auto x1 = soa.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
-            const auto y1 = soa.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
-            const auto z1 = soa.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
+        const FloatPrecision drX = x1 - x2;
+        const FloatPrecision drY = y1 - y2;
+        const FloatPrecision drZ = z1 - z2;
 
-            Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamHandle, N), [&](int j,
-              FloatPrecision& localFxAcc,
-              FloatPrecision& localFyAcc,
-              FloatPrecision& localFzAcc) {
+        const FloatPrecision drX2 = drX * drX;
+        const FloatPrecision drY2 = drY * drY;
+        const FloatPrecision drZ2 = drZ * drZ;
 
-                if (i != j) {
-                  const auto owned2 = soa.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(j);
+        const FloatPrecision dr2 = drX2 + drY2 + drZ2;
 
-                  if (owned2 != autopas::OwnershipState::dummy) {
-                    const FloatPrecision x2 = soa.template operator()<Particle_T::AttributeNames::posX, true, false>(j);
-                    const FloatPrecision y2 = soa.template operator()<Particle_T::AttributeNames::posY, true, false>(j);
-                    const FloatPrecision z2 = soa.template operator()<Particle_T::AttributeNames::posZ, true, false>(j);
+        if (dr2 <= cutoffSquared) {
+          // TODO: consider mixing based on type or some sort of parameter injection
+          // TODO: soa will need to contain epsilon and sigma
+          const FloatPrecision sigmaSquared = 1.;
+          const FloatPrecision epsilon24 = 24.;
 
-                    const FloatPrecision drX = x1 - x2;
-                    const FloatPrecision drY = y1 - y2;
-                    const FloatPrecision drZ = z1 - z2;
+          const FloatPrecision invDr2 = 1.0 / dr2;
+          FloatPrecision lj6 = sigmaSquared * invDr2;
+          lj6 = lj6 * lj6 * lj6;
+          const FloatPrecision lj12 = lj6 * lj6;
+          const FloatPrecision lj12m6 = lj12 - lj6;
+          const FloatPrecision fac = epsilon24 * (lj12 + lj12m6) * invDr2;
 
-                    const FloatPrecision drX2 = drX * drX;
-                    const FloatPrecision drY2 = drY * drY;
-                    const FloatPrecision drZ2 = drZ * drZ;
+          const FloatPrecision fX = fac * drX;
+          const FloatPrecision fY = fac * drY;
+          const FloatPrecision fZ = fac * drZ;
 
-                    const FloatPrecision dr2 = drX2 + drY2 + drZ2;
-
-                    if (dr2 <= cutoffSquared) {
-                      // TODO: consider mixing based on type or some sort of parameter injection
-                      const FloatPrecision sigmaSquared = 1.;
-                      const FloatPrecision epsilon24 = 24.;
-
-                      const FloatPrecision invDr2 = 1.0 / dr2;
-                      FloatPrecision lj6 = sigmaSquared * invDr2;
-                      lj6 = lj6 * lj6 * lj6;
-                      const FloatPrecision lj12 = lj6 * lj6;
-                      const FloatPrecision lj12m6 = lj12 - lj6;
-                      const FloatPrecision fac = epsilon24 * (lj12 + lj12m6) * invDr2;
-
-                      const FloatPrecision fX = fac * drX;
-                      const FloatPrecision fY = fac * drY;
-                      const FloatPrecision fZ = fac * drZ;
-
-                      // TODO: consider newton3 if enabled
-                      localFxAcc += fX;
-                      localFyAcc += fY;
-                      localFzAcc += fZ;
-                    }
-                  }
-                }
-            }, fxAcc, fyAcc, fzAcc);
-
-          Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
-                  int index = teamHandle.league_rank();
-                  const FloatPrecision oldFx = soa.template operator()<Particle_T::AttributeNames::forceX, true, false>(index);
-                  const FloatPrecision oldFy = soa.template operator()<Particle_T::AttributeNames::forceY, true, false>(index);
-                  const FloatPrecision oldFz = soa.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index);
-
-                  const FloatPrecision newFx = oldFx + fxAcc;
-                  const FloatPrecision newFy = oldFy + fyAcc;
-                  const FloatPrecision newFz = oldFz + fzAcc;
-
-                  soa.template operator()<Particle_T::AttributeNames::forceX, true, false>(index) = newFx;
-                  soa.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) = newFy;
-                  soa.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) = newFz;
-              });
+          fxAcc += fX;
+          fyAcc += fY;
+          fzAcc += fZ;
         }
-    });
-  }
-
-  void SoAFunctorPairKokkos(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, bool newton3) final {
-    const size_t N = soa1.size();
-    const size_t M = soa2.size();
-
-    const FloatPrecision cutoffSquared = _cutoffSquared;
-
-    Kokkos::parallel_for(Kokkos::TeamPolicy<typename MemSpace::execution_space>(N, Kokkos::AUTO()), KOKKOS_LAMBDA(auto teamHandle) {
-
-      int i = teamHandle.league_rank();
-
-        const auto owned1 = soa1.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(i);
-
-        if (owned1 != autopas::OwnershipState::dummy) {
-            FloatPrecision fxAcc = 0.;
-            FloatPrecision fyAcc = 0.;
-            FloatPrecision fzAcc = 0.;
-
-            const auto x1 = soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
-            const auto y1 = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
-            const auto z1 = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
-
-            Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamHandle, M), [&](int j,
-              FloatPrecision& localFxAcc,
-              FloatPrecision& localFyAcc,
-              FloatPrecision& localFzAcc) {
-              const auto owned2 = soa2.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(j);
-
-                if (owned2 != autopas::OwnershipState::dummy) {
-                    const FloatPrecision x2 = soa2.template operator()<Particle_T::AttributeNames::posX, true, false>(j);
-                    const FloatPrecision y2 = soa2.template operator()<Particle_T::AttributeNames::posY, true, false>(j);
-                    const FloatPrecision z2 = soa2.template operator()<Particle_T::AttributeNames::posZ, true, false>(j);
-
-                    const FloatPrecision drX = x1 - x2;
-                    const FloatPrecision drY = y1 - y2;
-                    const FloatPrecision drZ = z1 - z2;
-
-                    const FloatPrecision drX2 = drX * drX;
-                    const FloatPrecision drY2 = drY * drY;
-                    const FloatPrecision drZ2 = drZ * drZ;
-
-                    const FloatPrecision dr2 = drX2 + drY2 + drZ2;
-
-                    if (dr2 <= cutoffSquared) {
-                        // TODO: consider mixing based on type or some sort of parameter injection
-                        const FloatPrecision sigmaSquared = 1.;
-                        const FloatPrecision epsilon24 = 24.;
-
-                        const FloatPrecision invDr2 = 1.0 / dr2;
-                        FloatPrecision lj6 = sigmaSquared * invDr2;
-                        lj6 = lj6 * lj6 * lj6;
-                        const FloatPrecision lj12 = lj6 * lj6;
-                        const FloatPrecision lj12m6 = lj12 - lj6;
-                        const FloatPrecision fac = epsilon24 * (lj12 + lj12m6) * invDr2;
-
-                        const FloatPrecision fX = fac * drX;
-                        const FloatPrecision fY = fac * drY;
-                        const FloatPrecision fZ = fac * drZ;
-
-                        // TODO: consider newton3 if enabled
-                        localFxAcc += fX;
-                        localFyAcc += fY;
-                        localFzAcc += fZ;
-                    }
-                }
-            }, fxAcc, fyAcc, fzAcc);
-
-          Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
-                int index = teamHandle.league_rank();
-                const FloatPrecision oldFx = soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index);
-                const FloatPrecision oldFy = soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index);
-                const FloatPrecision oldFz = soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index);
-
-                const FloatPrecision newFx = oldFx + fxAcc;
-                const FloatPrecision newFy = oldFy + fyAcc;
-                const FloatPrecision newFz = oldFz + fzAcc;
-
-                soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index) = newFx;
-                soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) = newFy;
-                soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) = newFz;
-            });
-        }
-    });
+      }
+    }
   }
 
   constexpr static auto getNeededAttr() {
