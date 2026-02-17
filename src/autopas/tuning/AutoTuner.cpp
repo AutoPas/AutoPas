@@ -242,7 +242,8 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleNonRebuild, bool n
         "for this configuration!\n"
         "tuneConfiguration() should have been called before to process and flush samples.");
   }
-  AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
+  AutoPasLog(TRACE, "Adding sampleRebuild and sampleNonRebuild {}, {} to configuration {}.", sampleRebuild,
+             sampleNonRebuild, currentConfig.toShortString());
   if (neighborListRebuilt) {
     // We add samples to _samplesRebuildingNeighborLists only for iterations where a neighbor list rebuild took place.
     // We do this to avoid essentially "zero" samples from the iterations without a neighbor list rebuild.
