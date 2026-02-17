@@ -99,7 +99,7 @@ jobs:
           
               # Create PR, close PR, and delete the branch
               echo "  Create PR for ${branch}..."
-              gh pr create --title "[Archive] Branch \"$branch\"" --body "$prBody" --base main --head $branch >/dev/null 2>&1 || true
+              gh pr create --title "[Archive] Branch \"$branch\"" --body "$prBody" --base $MAIN_BRANCH --head $branch >/dev/null 2>&1 || true
 
               # Wait for the PR to be created and close it
               maxRetries=5
