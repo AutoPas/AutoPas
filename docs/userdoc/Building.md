@@ -107,3 +107,7 @@ AutoPas offers easy access to compiler-based compile-time profiling for GCC and 
 This generates one `.json` file per compilation unit next to the generated object file deep in the build folder.
 Chrome has a built-in tool for viewing these files as flame graphs.
 It can be accessed through the URL `chrome://tracing`.
+
+## Related Files and Folders
+- cmake/
+- CMakeLists.txt

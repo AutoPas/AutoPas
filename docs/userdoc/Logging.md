@@ -54,3 +54,10 @@ As this is subjective, please refer to the documentation of the Functor you are 
 By hit rate, we mean the proportion of distance calculations that are within the cutoff.
 If a functor has not implemented `getNumFLOPs` or `getHitRate`, "Not Implemented" will be outputted instead.
 This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_FLOPS`.
+
+## Related Files and Folders
+- IteratorBehavior.h
+- LogicHandler.h
+- markParticleAsDeleted.h
+- OwnershipState.h
+- ParticleBase.h

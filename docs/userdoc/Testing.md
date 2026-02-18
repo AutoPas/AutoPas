@@ -94,3 +94,5 @@ make coverage
 ```
 
 After these commands have been executed, a folder named `$BUILD_DIR/coverage` can be found which contains the HTML output. This can be downloaded and viewed in a browser.
+
+## Related Files and Folders

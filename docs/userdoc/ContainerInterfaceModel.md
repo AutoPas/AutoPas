@@ -45,3 +45,8 @@ It is still possible that there is a dummy that is not updated, and a new partic
 - The particle's position changes to the halo region before a data structure update.
 - The particle is deleted (= turned `dummy`) by `AutoPas::updateContainer` because it left the domain.
 - The particle is immediately added as a halo again. Since halo particles are not allowed to exist in non-halo cells, the existing dummy is not updated, and a new halo particle is added to buffers.
+
+## Related Files and Folders
+- LeavingParticleCollector.h
+- LogicHandler.h
+- ParticleContainerInterface.h

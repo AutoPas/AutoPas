@@ -78,3 +78,7 @@ There exist some caveats that have to be considered when using multiple functors
 * Functors must be marked as (not) relevant for tuning by specifying `Functor::isRelevantForTuning()`.
   Functors marked as relevant should have a near-identical performance profile, otherwise, the sampling of configurations will be distorted.
   It is recommended, to only mark the most expensive functor as relevant.
+
+## Related Files and Folders
+- ContainerIterator.h
+- IteratorBehavior.h

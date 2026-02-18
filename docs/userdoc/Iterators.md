@@ -163,3 +163,6 @@ autoPas.reduceInRegionParallel([](auto &particle, auto &accumulator) {
   accumulator += particle.getID();
 }, result, lowCorner, highCorner, behavior);
 ```
+
+## Related Files and Folders
+- src/autopas/utils/logging/
