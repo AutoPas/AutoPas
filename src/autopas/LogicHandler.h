@@ -1890,6 +1890,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           "LogicHandler: Functor {} is not relevant for tuning but the given configuration is not applicable!",
           functor.getName());
     }
+    functor.setVecPattern(configuration.vecPattern);
     return {configuration, std::move(traversalPtr), false};
   }
 
@@ -1915,6 +1916,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     // applicability check also sets the container
     auto [traversalPtr, rejectIndefinitely] = isConfigurationApplicable(configuration, functor);
     if (traversalPtr) {
+      functor.setVecPattern(configuration.vecPattern);
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
       selectConfigurationTimer.stop();
       AutoPasLog(TRACE, "Select Configuration took {} ms. A total of {} configurations were rejected.",
@@ -2048,6 +2050,13 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   if ((config.newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
       (config.newton3 == Newton3Option::disabled and not functor.allowsNonNewton3())) {
     AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!", config.newton3);
+    return {nullptr, /*rejectIndefinitely*/ true};
+  }
+
+  // Check if the VectorizationPattern is supported by the functor
+  if (not functor.isVecPatternAllowed(config.vecPattern)) {
+    AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support the Vectorization Pattern {}!",
+               config.vecPattern);
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 

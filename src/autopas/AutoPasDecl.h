@@ -22,6 +22,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
@@ -955,6 +956,35 @@ class AutoPas {
   }
 
   /**
+   * Get the list of allowed vectorization pattern options.
+   * @param interactionType Get allowed vectorization pattern options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
+   * @return
+   */
+  [[nodiscard]] const std::set<VectorizationPatternOption> &getAllowedVecPatternOptions(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedVecPatternsOptions.at(interactionType);
+  }
+
+  /**
+   * Set the list of allowed vectorization pattern options
+   * For possible options, see options::VectorizationOption::Value
+   * @param allowedVecPatterns
+   * @param interactionType Set allowed vectorization pattern options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise
+   */
+  void setAllowedVecPatterns(const std::set<VectorizationPatternOption> &allowedVecPatterns,
+                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedVecPatternsOptions[iType] = allowedVecPatterns;
+      }
+    } else {
+      _allowedVecPatternsOptions[interactionType] = allowedVecPatterns;
+    }
+  }
+
+  /**
    * Set the list of allowed interaction types.
    * AutoPas will initialize AutoTuners for the allowed interaction types.
    * For possible newton 3 choices see options::interactionTypeOption::Value.
@@ -1168,6 +1198,14 @@ class AutoPas {
   std::unordered_map<InteractionTypeOption::Value, std::set<Newton3Option>> _allowedNewton3Options{
       {InteractionTypeOption::pairwise, Newton3Option::getMostOptions()},
       {InteractionTypeOption::triwise, Newton3Option::getMostOptions()}};
+  /**
+   * Vector Interaction Patterns
+   */
+  std::unordered_map<InteractionTypeOption::Value, std::set<VectorizationPatternOption>> _allowedVecPatternsOptions{
+      {InteractionTypeOption::pairwise, VectorizationPatternOption::getMostOptions()},
+      // Note: Currently Vectorization Patterns are not implemented for threebody interactions. p1xVec is used as
+      // default.
+      {InteractionTypeOption::triwise, std::set<VectorizationPatternOption>{VectorizationPatternOption::p1xVec}}};
   /**
    * What kind of interactions AutoPas should expect.
    * By default AutoPas is configured to only use pairwise interactions.

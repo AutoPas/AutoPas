@@ -29,6 +29,9 @@ namespace mdLib {
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
  * This Version is implemented using AVX intrinsics.
+ *
+ * This functor is applicable with the 1xVectorLength pattern only.
+ *
  * @tparam Particle_T The type of particle.
  * @tparam ParticleCell The type of particlecell.
  * @tparam applyShift Switch for the lj potential to be truncated shifted.

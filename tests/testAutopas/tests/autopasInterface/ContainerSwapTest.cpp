@@ -112,6 +112,7 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
   const auto firstContainerType = logicHandler.getContainer().getContainerType();
   const auto secondContainerType =
