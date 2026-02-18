@@ -65,7 +65,13 @@ jobs:
       - id: set-matrix
         shell: bash
         run: |
-          # 1. Define the FULL Matrix
+          # Define the FULL Matrix, which includes configurations for:
+          # 1:   Debug Mode  => Test for subtleties between Debug and Release
+          # 2/3: Clang with Address/Thread sanitizer
+          # 4:   GCC
+          # 5:   MPI
+          # 6:   Multisite
+          # 7:   Multisite + MPI
           read -r -d '' full_matrix << EOM || true
           [
             { "name": "Clang-Debug-CompileOnly", "container": "autopas-build-clang", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Debug", "omp": "ON", "asan": "OFF", "tsan": "OFF", "avx": "ON", "site": "singlesite" },
@@ -78,26 +84,26 @@ jobs:
           ]
           EOM
 
-          # 2. Define the LIGHT Matrix
-          # Just one representative config.
+          # Define the LIGHT Matrix
+          # Basic configuration without sanitizers
           read -r -d '' light_matrix << EOM || true
           [
-            { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "ON",  "tsan": "OFF", "avx": "ON",  "site": "singlesite" }
+            { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "avx": "ON",  "site": "singlesite" }
           ]
           EOM
           
-          # 1. Master always runs Full
+          # Master always runs Full
           if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
             echo "Trigger: Master branch. Using FULL matrix."
             matrix_json="$full_matrix"
 
-          # 2. If PR is NOT a Draft -> Run Full
+          # If PR is NOT a Draft -> Run Full
           # (github.event.pull_request.draft is 'false' when Ready for Review)
           elif [[ "${{ github.event.pull_request.draft }}" == "false" ]]; then
             echo "Trigger: PR is Ready (Not Draft). Using FULL matrix."
             matrix_json="$full_matrix"
 
-          # 3. If PR IS a Draft -> Run Light
+          # If PR IS a Draft -> Run Light
           else
             echo "Trigger: PR is Draft. Using LIGHT matrix."
             matrix_json="$light_matrix"
