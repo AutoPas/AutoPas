@@ -46,7 +46,7 @@ class TuningDataLogger {
    */
   void logTuningData(const autopas::Configuration &configuration,
                      const std::vector<long> &samplesRebuildingNeighborLists,
-                     const std::vector<long> &samplesNotRebuildingNeighborLists, size_t iteration, long reducedValue,
+                     const std::vector<long> &samplesTraverseInteractions, size_t iteration, long reducedValue,
                      long smoothedVale, double meanRebuildFrequency) const;
 
  private:

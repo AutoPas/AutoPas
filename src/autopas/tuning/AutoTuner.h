@@ -398,7 +398,7 @@ class AutoTuner {
    *
    * @note Initialized with size of _maxSamples to start tuning at start of simulation.
    */
-  std::vector<long> _samplesNotRebuildingNeighborLists;
+  std::vector<long> _samplesTraverseInteractions;
 
   /**
    * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists
