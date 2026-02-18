@@ -484,7 +484,7 @@ class LogicHandler {
    */
   ContainerIterator<Particle_T, true, false> begin(IteratorBehavior behavior) {
     auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle_T, true, false>>(behavior);
-    return _currentContainer->begin(behavior, &additionalVectors);
+    return _currentContainer->begin(behavior, std::ref(additionalVectors));
   }
 
   /**
@@ -494,7 +494,7 @@ class LogicHandler {
     auto additionalVectors =
         const_cast<LogicHandler *>(this)->gatherAdditionalVectors<ContainerIterator<Particle_T, false, false>>(
             behavior);
-    return _currentContainer->begin(behavior, &additionalVectors);
+    return _currentContainer->begin(behavior, std::ref(additionalVectors));
   }
 
   /**
@@ -515,7 +515,7 @@ class LogicHandler {
     }
 
     auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle_T, true, true>>(behavior);
-    return _currentContainer->getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
+    return _currentContainer->getRegionIterator(lowerCorner, higherCorner, behavior, std::ref(additionalVectors));
   }
 
   /**
@@ -537,7 +537,8 @@ class LogicHandler {
 
     auto additionalVectors =
         const_cast<LogicHandler *>(this)->gatherAdditionalVectors<ContainerIterator<Particle_T, false, true>>(behavior);
-    return std::as_const(_currentContainer)->getRegionIterator(lowerCorner, higherCorner, behavior, &additionalVectors);
+    return std::as_const(_currentContainer)
+        ->getRegionIterator(lowerCorner, higherCorner, behavior, std::ref(additionalVectors));
   }
 
   /**
@@ -1820,7 +1821,7 @@ void LogicHandler<Particle_T>::remainderHelper3bBufferContainerContainerAoS(
     const auto boxmax = pos + cutoff;
 
     auto p2Iter = container.getRegionIterator(
-        boxmin, boxmax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, nullptr);
+        boxmin, boxmax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, std::nullopt);
     for (; p2Iter.isValid(); ++p2Iter) {
       Particle_T &p2 = *p2Iter;
 
