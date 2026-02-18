@@ -251,7 +251,7 @@ class RemainderTriwiseInteractionHandler {
       const auto boxMax = p1.getR() + cutoff;
 
       auto p2Iter = container.getRegionIterator(
-          boxMin, boxMax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, nullptr);
+          boxMin, boxMax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, std::nullopt);
       for (; p2Iter.isValid(); ++p2Iter) {
         Particle_T &p2 = *p2Iter;
 
