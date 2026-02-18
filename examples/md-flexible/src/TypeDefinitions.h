@@ -38,6 +38,14 @@
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+#include "molecularDynamicsLibrary/KryptonExtendedATMFunctor.h"
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+#include "molecularDynamicsLibrary/KryptonPairFunctor.h"
+#endif
+
 #endif
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
@@ -145,6 +153,11 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
 
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+using KryptonPairwiseFunctorType =
+    mdLib::KryptonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals>;
+#endif
+
 #if defined(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
 /**
  * Type of ATMFunctor used in md-flexible.
@@ -154,6 +167,20 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
 #else
 using ATMFunctor = mdLib::AxilrodTellerMutoFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
                                                    mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+#endif
+
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+/**
+ * Type of FunctorTypeAT used in md-flexible.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "The Krypton functor does not have support for multisite molecules!"
+#else
+using KryptonTriwiseFunctorType =
+    mdLib::KryptonExtendedATMFunctor<ParticleType, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals,
+                                     mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
