@@ -176,6 +176,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
   _autoPasContainer->setDeltaT(_configuration.deltaT.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
+  _autoPasContainer->setLearningRate(_configuration.learningRate.value);
+  _autoPasContainer->setDiscountFactor(_configuration.discountFactor.value);
+  _autoPasContainer->setNumExplorationSamples(_configuration.numExplorationSamples.value);
+  _autoPasContainer->setDoReinforcementUpdates(_configuration.doReinforcementUpdates.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
   _autoPasContainer->setOutputSuffix(outputSuffix);

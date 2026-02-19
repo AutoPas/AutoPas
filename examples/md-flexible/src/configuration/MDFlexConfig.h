@@ -504,6 +504,37 @@ class MDFlexConfig {
       "configuration. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), " ", {"(", ")"})};
 
+  /**
+   * learningRate
+   */
+  MDFlexOption<double, __LINE__> learningRate{
+      0.8, "learning-rate", true,
+      "For the reinforcement learning tuning strategy: Learning rate for the reinforcement learning algorithm. This "
+      "value has to be between 0 and 1 (exclusive)."};
+
+  /**
+   * discountFactor
+   */
+  MDFlexOption<double, __LINE__> discountFactor{
+      0.8, "discount-factor", true,
+      "For the reinforcement learning tuning strategy: Discount factor for the "
+      "reinforcement learning algorithm. This value has to be between 0 and 1 (exclusive)."};
+
+  /**
+   * numExplorationSamples
+   */
+  MDFlexOption<unsigned int, __LINE__> numExplorationSamples{
+      4, "num-exploration-samples", true,
+      "For the deep reinforcement learning tuning strategy: Number of configurations to explore during the exploration "
+      "phase. This value has to be greater than one."};
+
+  /**
+   * doReinforcementUpdates
+   */
+  MDFlexOption<bool, __LINE__> doReinforcementUpdates{true, "do-reinforcement-update", true,
+                                                      "For the deep reinforcement learning tuning strategy: Whether to "
+                                                      "update the reinforcement learning model after each iteration."};
+
   // Simulation Options:
   /**
    * cutoff

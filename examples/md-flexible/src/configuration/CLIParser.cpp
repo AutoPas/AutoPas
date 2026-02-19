@@ -46,6 +46,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   static const auto relevantOptions{std::make_tuple(
       // clang-format off
       config.acquisitionFunctionOption,
+      config.learningRate,
+      config.discountFactor,
+      config.numExplorationSamples,
+      config.doReinforcementUpdates,
       config.boundaryOption,
       config.boxLength,
       config.cellSizeFactors,
@@ -177,6 +181,56 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         config.acquisitionFunctionOption.value = *parsedOptions.begin();
+        break;
+      }
+      case decltype(config.learningRate)::getoptChar: {
+        config.learningRate.value = stod(strArg);
+        try {
+          if (config.learningRate.value <= 0 || config.learningRate.value >= 1) {
+            cerr << "Learning rate has to be a number between 0 and 1 (exclusive)!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing the learning rate: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.discountFactor)::getoptChar: {
+        try {
+          config.discountFactor.value = stod(strArg);
+          if (config.discountFactor.value <= 0 || config.discountFactor.value >= 1) {
+            cerr << "Discount factor has to be a number between 0 and 1 (exclusive)!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing the discount factor: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.numExplorationSamples)::getoptChar: {
+        try {
+          config.numExplorationSamples.value = stoul(strArg);
+          if (config.numExplorationSamples.value < 2) {
+            cerr << "Exploration samples have to be greater than one!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing exploration samples: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.doReinforcementUpdates)::getoptChar: {
+        if (strArg == "true") {
+          config.doReinforcementUpdates.value = true;
+        } else if (strArg == "false") {
+          config.doReinforcementUpdates.value = false;
+        } else {
+          cerr << "do-reinforcement-update has to be either true or false!" << endl;
+          displayHelp = true;
+        }
         break;
       }
       case decltype(config.cellSizeFactors)::getoptChar: {
