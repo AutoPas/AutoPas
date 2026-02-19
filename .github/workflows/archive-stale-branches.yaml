@@ -1,0 +1,130 @@
+name: Archive Old Branches
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 1 */6 *' # At 04:00 on the 1st of every 3rd month.
+
+jobs:
+  ArchiveStaleBranches:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed for branch deletion
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Needed to retrieve full commit log
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip google-genai
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install -y gh
+
+      - name: Filter and Archive Stale Branches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          AGE_CUTOFF=800 # In days
+          MAIN_BRANCH=master
+          
+          # Fetch all branches
+          git branch -r | grep -v '\->' | sed 's/origin\///' > branches.txt
+
+          # Loop through branches
+          while read branch; do
+          
+            # Skip main branch
+            if [ "$branch" = "master" ] || [ "$branch" = "main" ]; then
+              echo "  Main branch: ${branch}. Skipping..."
+              continue
+            fi
+            
+            # Skip if open PR exists
+            open_prs=$(gh pr list --head "$branch" --json number --jq 'length')
+            if [ "$open_prs" -gt 0 ]; then
+              echo "There exists an open PR for branch $branch..."
+              continue
+            fi
+          
+          # Get last commit date
+          lastCommitDate=$(gh api repos/${{ github.repository }}/commits/$branch --jq '.commit.committer.date')
+
+          # Calculate branch age in days
+          branchAgeDays=$(( ($(date -u +%s) - $(date -u -d "$lastCommitDate" +%s)) / 86400 ))
+
+          # Check whether the branch is old enough
+          if [ $branchAgeDays -lt $AGE_CUTOFF ]; then
+            echo "  Branch $branch is still active. Last commit $branchAgeDays days ago. Skipping..."
+          else
+            echo "  Branch $branch is $branchAgeDays days old. Archiving..."
+
+            # Get number of new commits
+            commitCount=$(gh api repos/${{ github.repository }}/compare/$MAIN_BRANCH...$branch --jq '.commits | length')
+          
+            if [ $commitCount -gt 0 ]; then
+              # Format the last commit date
+              lastCommitDateF=$(date -u -d "$lastCommitDate" +"%B %d, %Y")
+
+              # Get the first commit date (index 0 is the oldest commit in the diff)
+              firstCommitDate=$(gh api repos/${{ github.repository }}/compare/$MAIN_BRANCH...$branch --jq '.commits[0].commit.committer.date')
+              firstCommitDateF=$(date -u -d "$firstCommitDate" +"%B %d, %Y")
+
+              # Get contributors to the branch
+              contributors=$(gh api repos/${{ github.repository }}/compare/$MAIN_BRANCH...$branch --jq '.commits[] | "  - \(.commit.author.name) (@\(.author.login))  "' | sort | uniq)
+
+              # Get a summary of the branch changes using Google's Gemini AI
+              diff=$(git diff origin/$MAIN_BRANCH...origin/$branch)
+              summary=$(python .github/workflows/create_pr_summary.py <<< "$diff")
+
+              # Create the PR body with contributors
+              prBody="## **Archiving branch \`$branch\`**
+            - **Last commit on:** $lastCommitDateF
+            - **First commit on:** $firstCommitDateF  
+            - **Total number of commits:** $commitCount  
+            - **Contributors:**  
+            $contributors  
+            ## Changes Summary  
+            *(Generated using Gemini AI)*  
+            $summary"
+          
+              # Create PR, close PR, and delete the branch
+              echo "  Create PR for ${branch}..."
+              gh pr create --title "[Archive] Branch \"$branch\"" --body "$prBody" --base $MAIN_BRANCH --head $branch >/dev/null 2>&1 || true
+
+              # Wait for the PR to be created and close it
+              maxRetries=5
+              retryInterval=5  # seconds
+              prURL=$(gh pr list --head "$branch" --state open --json url --jq '.[0].url')
+
+              for ((i=1; i <= $maxRetries; i++)); do
+                if gh pr view $prURL &>/dev/null; then
+                  echo "  Closing the PR..."
+                  gh pr close $prURL
+                  git push origin --delete $branch
+                  echo "  Branch $branch archived and deleted."
+                  break
+                fi
+                  echo "  Waiting for PR $prURL to be created. Retrying in $retryInterval seconds..."
+                  sleep $retryInterval
+              done
+          
+              if [[ -z "$prURL" ]]; then
+                echo "  Failed to find and close the PR after $maxRetries retries."
+              fi
+            else
+              echo "  No commits between $branch and $MAIN_BRANCH. Deleting branch directly..."
+              git push origin --delete $branch
+            fi
+          fi
+          
+          done < branches.txt
