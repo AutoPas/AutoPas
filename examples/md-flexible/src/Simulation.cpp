@@ -25,8 +25,8 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeSVE *);
 #endif
-#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
-extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
+#if defined(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATMFunctor *);
 #endif
 //! @endcond
 
@@ -873,12 +873,12 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption3B.value) {
     case MDFlexConfig::FunctorOption3B::at: {
-#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
+#if defined(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
       return f(ATMFunctor{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for AxilrodTellerMuto Functor. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
+          "-DMD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC=ON`.");
 #endif
     }
     default: {

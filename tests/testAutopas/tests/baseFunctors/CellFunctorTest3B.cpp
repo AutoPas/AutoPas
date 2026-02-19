@@ -70,11 +70,11 @@ struct CellFunctor_SoA_N3_Bi
 using CellFTestingTypes = ::testing::Types<CellFunctor_AoS_NoN3_NoBi,
                                            CellFunctor_AoS_NoN3_Bi,
                                            CellFunctor_AoS_N3_NoBi,
-                                           CellFunctor_AoS_N3_Bi>;
-                                           //CellFunctor_SoA_NoN3_NoBi,
-                                           //CellFunctor_SoA_NoN3_Bi,
-                                           //CellFunctor_SoA_N3_NoBi,
-                                           //CellFunctor_SoA_N3_Bi>;
+                                           CellFunctor_AoS_N3_Bi,
+                                           CellFunctor_SoA_NoN3_NoBi,
+                                           CellFunctor_SoA_NoN3_Bi,
+                                           CellFunctor_SoA_N3_NoBi,
+                                           CellFunctor_SoA_N3_Bi>;
 // clang-format on
 
 /**
