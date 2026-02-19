@@ -42,9 +42,11 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP32 {
     posX,
     posY,
     posZ,
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     rebuildX,
     rebuildY,
     rebuildZ,
+#endif
     velocityX,
     velocityY,
     velocityZ,
@@ -68,13 +70,17 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP32 {
    */
   using SoAArraysType =
       autopas::utils::SoAType<KokkosMoleculeLJ *, size_t /*id*/, ParticleSoAFloatPrecision /*x*/, ParticleSoAFloatPrecision /*y*/, ParticleSoAFloatPrecision /*z*/,
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
                                        ParticleSoAFloatPrecision /*rebuildX*/, ParticleSoAFloatPrecision /*rebuildY*/, ParticleSoAFloatPrecision /*rebuildZ*/,
+#endif
                                        ParticleSoAFloatPrecision /*vx*/, ParticleSoAFloatPrecision /*vy*/, ParticleSoAFloatPrecision /*vz*/, ParticleSoAFloatPrecision /*fx*/, ParticleSoAFloatPrecision /*fy*/,
                                        ParticleSoAFloatPrecision /*fz*/, ParticleSoAFloatPrecision /*oldFx*/, ParticleSoAFloatPrecision /*oldFy*/, ParticleSoAFloatPrecision /*oldFz*/,
                                        ParticleSoAFloatPrecision /*mass*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
   using KokkosSoAArraysType = autopas::utils::KokkosSoA<size_t* /*id*/, ParticleSoAFloatPrecision* /*x*/, ParticleSoAFloatPrecision* /*y*/, ParticleSoAFloatPrecision* /*z*/,
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
                                        ParticleSoAFloatPrecision* /*rebuildX*/, ParticleSoAFloatPrecision* /*rebuildY*/, ParticleSoAFloatPrecision* /*rebuildZ*/,
+#endif
                                        ParticleSoAFloatPrecision* /*vx*/, ParticleSoAFloatPrecision* /*vy*/, ParticleSoAFloatPrecision* /*vz*/, ParticleSoAFloatPrecision* /*fx*/, ParticleSoAFloatPrecision* /*fy*/,
                                        ParticleSoAFloatPrecision* /*fz*/, ParticleSoAFloatPrecision* /*oldFx*/, ParticleSoAFloatPrecision* /*oldFy*/, ParticleSoAFloatPrecision* /*oldFz*/,
                                        ParticleSoAFloatPrecision* /*mass*/, size_t* /*typeid*/, autopas::OwnershipState* /*ownershipState*/>;
@@ -112,13 +118,17 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP32 {
       return _r[1];
     } else if constexpr (attribute == posZ) {
       return _r[2];
-    } else if constexpr (attribute == rebuildX) {
+    }
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    else if constexpr (attribute == rebuildX) {
       return _rAtRebuild[0];
     } else if constexpr (attribute == rebuildY) {
       return _rAtRebuild[1];
     } else if constexpr (attribute == rebuildZ) {
       return _rAtRebuild[2];
-    } else if constexpr (attribute == velocityX) {
+    }
+#endif
+    else if constexpr (attribute == velocityX) {
       return _v[0];
     } else if constexpr (attribute == velocityY) {
       return _v[1];
@@ -157,13 +167,17 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP32 {
             return _r[1];
         } else if constexpr (attribute == posZ) {
             return _r[2];
-        } else if constexpr (attribute == rebuildX) {
+        }
+    #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+        else if constexpr (attribute == rebuildX) {
             return _rAtRebuild[0];
         } else if constexpr (attribute == rebuildY) {
             return _rAtRebuild[1];
         } else if constexpr (attribute == rebuildZ) {
             return _rAtRebuild[2];
-        } else if constexpr (attribute == velocityX) {
+        }
+#endif
+        else if constexpr (attribute == velocityX) {
             return _v[0];
         } else if constexpr (attribute == velocityY) {
             return _v[1];
@@ -202,13 +216,17 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP32 {
             _r[1] = value;
         } else if constexpr (attribute == posZ) {
             _r[2] = value;
-        } else if constexpr (attribute == rebuildX) {
+        }
+    #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+        else if constexpr (attribute == rebuildX) {
             _rAtRebuild[0] = value;
         } else if constexpr (attribute == rebuildY) {
             _rAtRebuild[1] = value;
         } else if constexpr (attribute == rebuildZ) {
             _rAtRebuild[2] = value;
-        } else if constexpr (attribute == velocityX) {
+        }
+#endif
+        else if constexpr (attribute == velocityX) {
             _v[0] = value;
         } else if constexpr (attribute == velocityY) {
             _v[1] = value;

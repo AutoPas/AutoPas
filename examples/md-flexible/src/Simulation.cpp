@@ -504,7 +504,7 @@ void Simulation::updateVelocities() {
   if (deltaT != 0) {
     _timers.velocityUpdate.start();
     TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                            deltaT);
+                                            static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.deltaT.value));
     _timers.velocityUpdate.stop();
   }
 }

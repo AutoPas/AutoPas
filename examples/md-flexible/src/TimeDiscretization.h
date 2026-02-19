@@ -67,7 +67,8 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
  * @param deltaT The time step width.
  */
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
-                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+                         const ParticlePropertiesLibraryType &particlePropertiesLibrary,
+                         const ParticleType::ParticleSoAFloatPrecision &deltaT);
 
 /**
  * Calculate and update the angular velocity for every particle.

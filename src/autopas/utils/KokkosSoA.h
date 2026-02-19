@@ -86,7 +86,7 @@ namespace autopas::utils {
 
     template <typename Target, std::size_t... I>
     void markAllModified(std::index_sequence<I...>) {
-      (std::get<I>(views).template modify<Target>(), ...);
+      (markModified<Target, I>(), ...);
     }
 
     template <typename Target, std::size_t I>
@@ -96,7 +96,7 @@ namespace autopas::utils {
 
     template <typename Target, std::size_t... I>
     void syncAll(std::index_sequence<I...>) {
-      (std::get<I>(views).template sync<Target>(), ...);
+      (sync<Target, I>(), ...);
     }
 
     template <typename Target, std::size_t I>
