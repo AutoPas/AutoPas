@@ -80,7 +80,5 @@ There exist some caveats that have to be considered when using multiple functors
   It is recommended, to only mark the most expensive functor as relevant.
 
 ## Related Files and Folders
-- Functor.h
-- PairwiseFunctor.h
-- TriwiseFunctor.h
-- ParticleBase.h
+- ContainerIterator.h
+- IteratorBehavior.h
