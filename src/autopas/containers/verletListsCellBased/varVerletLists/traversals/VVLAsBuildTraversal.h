@@ -75,9 +75,11 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
     }
   }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return _dataLayout == DataLayoutOption::soa || _dataLayout == DataLayoutOption::aos;
-  }
+  /**
+   * VVL As Build is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vvl_as_built; }
 

@@ -36,10 +36,12 @@ class TraversalInterface {
   [[nodiscard]] virtual TraversalOption getTraversalType() const = 0;
 
   /**
-   * Checks if the traversal is applicable to the current state of the domain.
-   * @return true iff the traversal can be applied.
+   * Checks if the traversal is applicable to the current state of the domain. This is designed to only return false if
+   * the traversal is inapplicable for domain-related issues. Domain-independent factors in a traversal being
+   * inapplicable should be handled by @link Configuration::hasCompatibleValues.
+   * @return true iff the traversal is applicable to the domain.
    */
-  [[nodiscard]] virtual bool isApplicable() const = 0;
+  [[nodiscard]] virtual bool isApplicableToDomain() const = 0;
 
   /**
    * Initializes the traversal. Should be called before traverse().

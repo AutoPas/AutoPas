@@ -350,7 +350,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
     }
   }
   // Check if the traversal is applicable.
-  if (not traversal->isApplicable()) {
+  if (not traversal->isApplicableToDomain()) {
     return nullptr;
   }
   // If applicable, return the traversal.
@@ -386,7 +386,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
     }
   }
   // Check if the traversal is applicable.
-  if (not traversal->isApplicable()) {
+  if (not traversal->isApplicableToDomain()) {
     return nullptr;
   }
   // If applicable, return the traversal.

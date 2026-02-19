@@ -65,9 +65,11 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c06; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (this->_dataLayout == DataLayoutOption::aos || this->_dataLayout == DataLayoutOption::soa);
-  }
+  /**
+   * VCL C06 is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     if (this->_dataLayout == DataLayoutOption::soa) {
