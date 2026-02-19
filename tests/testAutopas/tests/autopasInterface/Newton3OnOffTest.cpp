@@ -32,9 +32,6 @@ INSTANTIATE_TEST_SUITE_P(
     Generated, Newton3OnOffTest,
     ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption,
                                             autopas::DataLayoutOption, autopas::InteractionTypeOption>> {
-      // needed because CellBlock3D (called when building containers) logs always
-      autopas::Logger::create();
-
       std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption,
                              autopas::InteractionTypeOption>>
           applicableCombinations;
@@ -100,8 +97,6 @@ INSTANTIATE_TEST_SUITE_P(
           }
         }
       }
-
-      autopas::Logger::unregister();
 
       return applicableCombinations;
     }()),
