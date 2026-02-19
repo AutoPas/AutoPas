@@ -15,7 +15,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "autopas/utils/Timer.h"
+#include "autopas/utils/TraceTimer.h"
 #include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
@@ -67,35 +67,27 @@ class RemainderTriwiseInteractionHandler {
 
     // The following part performs the main remainder traversal.
 
-    // only activate time measurements if it will actually be logged
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-    autopas::utils::Timer timerBufferBufferBuffer;
-    autopas::utils::Timer timerBufferBufferContainer;
-    autopas::utils::Timer timerBufferContainerContainer;
+    // TraceTimers are only active with log level TRACE
+    autopas::utils::TraceTimer timerBufferBufferBuffer;
+    autopas::utils::TraceTimer timerBufferBufferContainer;
+    autopas::utils::TraceTimer timerBufferContainerContainer;
     timerBufferBufferBuffer.start();
-#endif
 
     // Step 1: Triwise interactions of all particles in the buffers (owned and halo)
     remainderHelper3bBufferBufferBufferAoS(bufferParticles, numOwnedBufferParticles, f);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     timerBufferBufferBuffer.stop();
     timerBufferBufferContainer.start();
-#endif
 
     // Step 2: Triwise interactions of 2 buffer particles with 1 container particle
     remainderHelper3bBufferBufferContainerAoS(bufferParticles, numOwnedBufferParticles, container, f);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     timerBufferBufferContainer.stop();
     timerBufferContainerContainer.start();
-#endif
 
     // Step 3: Triwise interactions of 1 buffer particle and 2 container particles
     remainderHelper3bBufferContainerContainerAoS<newton3>(bufferParticles, numOwnedBufferParticles, container, f);
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     timerBufferContainerContainer.stop();
-#endif
 
     AutoPasLog(TRACE, "Timer Buffer <-> Buffer <-> Buffer       : {}", timerBufferBufferBuffer.getTotalTime());
     AutoPasLog(TRACE, "Timer Buffer <-> Buffer <-> Container    : {}", timerBufferBufferContainer.getTotalTime());

@@ -28,6 +28,7 @@
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/TraceTimer.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/logging/FLOPLogger.h"
 #include "autopas/utils/logging/IterationLogger.h"
@@ -1227,10 +1228,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   }
 
   size_t numRejectedConfigs = 0;
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-  utils::Timer selectConfigurationTimer;
+  utils::TraceTimer selectConfigurationTimer;
   selectConfigurationTimer.start();
-#endif
+
   auto [configuration, stillTuning] = autoTuner.getNextConfig();
 
   // loop as long as we don't get a valid configuration
@@ -1238,11 +1238,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     // applicability check also sets the container
     auto [traversalPtr, rejectIndefinitely] = isConfigurationApplicable(configuration, functor);
     if (traversalPtr) {
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
       selectConfigurationTimer.stop();
       AutoPasLog(TRACE, "Select Configuration took {} ms. A total of {} configurations were rejected.",
                  selectConfigurationTimer.getTotalTime(), numRejectedConfigs);
-#endif
       return {configuration, std::move(traversalPtr), stillTuning};
     }
     // if no config is left after rejecting this one, an exception is thrown here.
