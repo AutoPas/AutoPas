@@ -370,8 +370,8 @@ template <class target_T = int, class float_T, std::size_t SIZE>
 template <ContainerType Container>
 bool isInUlp(Container lhs, Container rhs, unsigned int ulpDistance = Math::MAX_ULP_DISTANCE) {
   return lhs.size() == rhs.size() && std::ranges::equal(lhs, rhs, [&ulpDistance](const auto &lhs, const auto &rhs) {
-      return Math::isInUlp(lhs, rhs, ulpDistance);
-    });
+           return Math::isInUlp(lhs, rhs, ulpDistance);
+         });
 }
 
 /**
@@ -681,7 +681,7 @@ constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, T s) {
   }
   return a;
 }
-} // namespace literals
+}  // namespace literals
 
 /**
  * Calculate the squared minimum distance between two boxes, which are aligned to the Cartesian grid.
@@ -704,4 +704,4 @@ double boxDistanceSquared(const std::array<T, SIZE> &aMin, const std::array<T, S
 
   return dot(aToB, aToB) + dot(bToA, bToA);
 }
-} // namespace autopas::utils::ArrayMath
+}  // namespace autopas::utils::ArrayMath

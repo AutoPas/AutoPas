@@ -149,8 +149,7 @@ std::ostream &operator<<(std::ostream &os, const Container &container) {
  */
 template <class OuterContainerT>
 void balanceVectors(OuterContainerT &vecvec) {
-  balanceVectors(
-    vecvec, [](auto &innerContainer) -> auto & { return innerContainer; });
+  balanceVectors(vecvec, [](auto &innerContainer) -> auto & { return innerContainer; });
 }
 
 /**
