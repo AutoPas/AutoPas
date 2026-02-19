@@ -7,9 +7,9 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include <gtest/gtest.h>
 
 #include <array>
+#include <ranges>
 #include <vector>
 
 #include "AutoPasTestBase.h"
@@ -57,15 +57,42 @@ class LCC08CellHandlerUtilityTest : public AutoPasTestBase {
   template <autopas::LCC08CellHandlerUtility::C08OffsetMode Mode>
   static std::vector<unsigned long> transformAndSortOffsetPairs(
       const autopas::LCC08CellHandlerUtility::OffsetPairType<Mode> &offsetPairs) {
-    static_assert(Mode != autopas::LCC08CellHandlerUtility::C08OffsetMode::c04CellPairs,
+    static_assert(Mode != autopas::LCC08CellHandlerUtility::C08OffsetMode::c04NoSorting,
                   "A two dimensional vector is not supported!");
-    std::vector<unsigned long> pairOffsetsDiffercnes;
-    pairOffsetsDiffercnes.reserve(offsetPairs.size());
-    std::transform(offsetPairs.begin(), offsetPairs.end(), std::back_inserter(pairOffsetsDiffercnes),
+    std::vector<unsigned long> pairOffsetsDifferences;
+    pairOffsetsDifferences.reserve(offsetPairs.size());
+    std::transform(offsetPairs.begin(), offsetPairs.end(), std::back_inserter(pairOffsetsDifferences),
                    [](const auto &tuple) {
                      return std::abs(static_cast<int>(std::get<0>(tuple)) - static_cast<int>(std::get<1>(tuple)));
                    });
-    std::sort(pairOffsetsDiffercnes.begin(), pairOffsetsDiffercnes.end());
-    return pairOffsetsDiffercnes;
+    std::sort(pairOffsetsDifferences.begin(), pairOffsetsDifferences.end());
+    return pairOffsetsDifferences;
   }
+
+  /**
+   * Sorts a vector of cell offset triplets as well as the triplets themselves.
+   * @tparam Mode one of c08CellPairs modes (not c04CellPairs, as two-dimensional inputs aren't supported)
+   * @param offsetTriplets the vector of offsets triplets
+   * @return sorted vector of offset-triplets
+   */
+  template <autopas::LCC08CellHandlerUtility::C08OffsetMode Mode>
+  static std::vector<std::tuple<unsigned long, unsigned long, unsigned long>> sortOffsetTriplets(
+      const autopas::LCC08CellHandlerUtility::OffsetTripletType<Mode> &offsetTriplets) {
+    static_assert(Mode != autopas::LCC08CellHandlerUtility::C08OffsetMode::c04NoSorting,
+                  "A two dimensional vector is not supported!");
+
+    std::vector<std::tuple<unsigned long, unsigned long, unsigned long>> sortedTripletOffsets;
+    sortedTripletOffsets.reserve(offsetTriplets.size());
+
+    std::transform(
+        offsetTriplets.begin(), offsetTriplets.end(), std::back_inserter(sortedTripletOffsets), [](const auto &tuple) {
+          std::array<unsigned long, 3> tmpArray = {std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple)};
+          std::ranges::sort(tmpArray);
+          return std::make_tuple(tmpArray[0], tmpArray[1], tmpArray[2]);
+        });
+    std::ranges::sort(sortedTripletOffsets);
+    return sortedTripletOffsets;
+  }
+
+  static std::vector<std::tuple<long, long, long>> generateC18Triplets(long overlap, double interactionLength);
 };

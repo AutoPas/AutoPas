@@ -160,7 +160,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
           TraversalOption::vl_pair_list_iteration_3b,
           TraversalOption::vlc_c01,
           TraversalOption::vlp_c01};
-};
+}
 /**
  * Provides a set of all traversals that only support Newton3 mode enabled.
  * @return

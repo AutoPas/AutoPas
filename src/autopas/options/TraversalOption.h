@@ -264,7 +264,12 @@ class TraversalOption : public Option<TraversalOption> {
             Value::vl_list_iteration,
             Value::vl_list_intersection_sorted_3b,
             Value::vl_list_intersection_hashing_3b,
-            Value::vl_pair_list_iteration_3b};
+            Value::vl_pair_list_iteration_3b,
+            Value::lc_c04,
+            Value::lc_c08,
+            Value::lc_sliced,
+            Value::lc_sliced_c02
+    };
   }
 
   /**

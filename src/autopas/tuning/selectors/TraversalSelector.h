@@ -384,6 +384,30 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
           dataLayout, useNewton3);
       break;
     }
+    case TraversalOption::lc_c04: {
+      traversal = std::make_unique<LCC04Traversal<ParticleCell_T, TriwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
+      break;
+    }
+    case TraversalOption::lc_c08: {
+      traversal = std::make_unique<LCC08Traversal<ParticleCell_T, TriwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
+      break;
+    }
+    case TraversalOption::lc_sliced: {
+      traversal = std::make_unique<LCSlicedTraversal<ParticleCell_T, TriwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
+      break;
+    }
+    case TraversalOption::lc_sliced_c02: {
+      traversal = std::make_unique<LCSlicedC02Traversal<ParticleCell_T, TriwiseFunctor_T>>(
+          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
+      break;
+    }
     // VerletLists
     case TraversalOption::vl_list_iteration: {
       traversal = std::make_unique<VLListIterationTraversal<ParticleCell_T, TriwiseFunctor_T>>(&triwiseFunctor, dataLayout,
