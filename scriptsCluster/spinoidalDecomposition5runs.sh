@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J NoEarlyStoppingVCLBalanced
+#SBATCH -J NoEarlyStoppingVCLClusterIter
 #SBATCH -o %x.%j.%N.out
 #SBATCH -e %x.%j.%N.err
 #SBATCH --clusters=cm4
