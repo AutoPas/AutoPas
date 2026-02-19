@@ -26,6 +26,7 @@
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/logging/FLOPLogger.h"
 #include "autopas/utils/logging/IterationLogger.h"
@@ -1208,6 +1209,11 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 
     _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
   }
+#if (AUTOPAS_INCLUDE_MPI)
+  AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &_neighborListInvalidDoDynamicRebuild, 1, AUTOPAS_MPI_CXX_BOOL,
+                        AUTOPAS_MPI_LOR, AUTOPAS_MPI_COMM_WORLD);
+#endif
+
 #endif
 }
 
