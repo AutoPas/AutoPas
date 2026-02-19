@@ -82,7 +82,7 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLAoS) {
   // sanity check
   ASSERT_GT(moleculesPPL.size(), 0);
   // Molecules should be exactly the same
-  EXPECT_THAT(moleculesNoPPL, testing::ElementsAreArray(moleculesPPL));
+  EXPECT_THAT(moleculesNoPPL, ::testing::Pointwise(ParticleEq(), moleculesPPL));
 }
 
 REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA, testSetPropertiesVSPPLAoS);
