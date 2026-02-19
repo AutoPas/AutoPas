@@ -8,6 +8,7 @@
 
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLC08Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
 
