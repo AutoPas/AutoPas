@@ -8,7 +8,9 @@
 #pragma once
 
 #include <array>
+#include <functional>
 #include <limits>
+#include <optional>
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -124,8 +126,9 @@ class ContainerIterator {
    * @param regionMin Left Front Lower corner of the iterator's region.
    * @param regionMax Right Back Upper corner of the iterator's region.
    */
-  ContainerIterator(ContainerType &container, IteratorBehavior behavior, ParticleVecType *additionalVectorsToIterate,
-                    const std::array<double, 3> &regionMin, const std::array<double, 3> &regionMax)
+  ContainerIterator(ContainerType &container, IteratorBehavior behavior,
+                    utils::optRef<ParticleVecType> additionalVectorsToIterate, const std::array<double, 3> &regionMin,
+                    const std::array<double, 3> &regionMax)
       : ContainerIterator(nullptr, container, behavior, additionalVectorsToIterate, regionMin, regionMax) {
     // sanity check
     static_assert(regionIter == true,
@@ -139,7 +142,8 @@ class ContainerIterator {
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated over.
    * @param additionalVectorsToIterate Thread buffers of additional Particle vector to iterate over.
    */
-  ContainerIterator(ContainerType &container, IteratorBehavior behavior, ParticleVecType *additionalVectorsToIterate)
+  ContainerIterator(ContainerType &container, IteratorBehavior behavior,
+                    utils::optRef<ParticleVecType> additionalVectorsToIterate)
       : ContainerIterator(nullptr, container, behavior, additionalVectorsToIterate, {}, {}) {
     static_assert(regionIter == false,
                   "Constructor for non-Region iterator called but template argument regionIter is true");
@@ -233,20 +237,20 @@ class ContainerIterator {
    *
    * @param container Reference to the particle container to iterate.
    * @param behavior The IteratorBehavior that specifies which type of cells shall be iterated over.
-   * @param additionalVectorsToIterate Thread buffers of additional Particle vector to iterate over.
+   * @param additionalVectorsToIterate Thread buffers of additional Particle vector to iterate over. Optional Reference.
    * @param regionMin Left Front Lower corner of the iterator's region.
    * @param regionMax Right Back Upper corner of the iterator's region.
    */
   ContainerIterator(void * /*dummy*/, ContainerType &container, IteratorBehavior behavior,
-                    ParticleVecType *additionalVectorsToIterate, const std::array<double, 3> &regionMin,
+                    utils::optRef<ParticleVecType> additionalVectorsToIterate, const std::array<double, 3> &regionMin,
                     const std::array<double, 3> &regionMax)
       : _container(&container),
         _behavior(behavior),
         _vectorIndexOffset((behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads()) {
-    if (additionalVectorsToIterate) {
+    if (additionalVectorsToIterate.has_value()) {
       // store pointers to all additional vectors
-      _additionalVectors.insert(_additionalVectors.end(), additionalVectorsToIterate->begin(),
-                                additionalVectorsToIterate->end());
+      _additionalVectors.insert(_additionalVectors.end(), additionalVectorsToIterate->get().begin(),
+                                additionalVectorsToIterate->get().end());
     }
 
     if constexpr (regionIter) {
@@ -395,9 +399,10 @@ class ContainerIterator {
   }
 
   /**
-   * Pointer to container that is iterated.
+   * Pointer to container that is iterated. This is used as a non-owning optional reference but cannot be implemented
+   * as such as it fails with Apple Clang.
    */
-  ContainerType *_container;
+  ContainerType *_container = nullptr;
 
   /**
    * Index within the current vector.
