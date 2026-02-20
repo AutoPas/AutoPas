@@ -61,6 +61,8 @@ constexpr std::array<T, 3> oneToThreeD(T ind, const std::array<T, 3> &dims) {
   return pos;
 }
 
+// the implementations for the encoding and decoding of Morton indices are taken from this site:
+// https://www.forceflow.be/2013/10/07/morton-encodingdecoding-through-bit-interleaving-implementations/
 template<typename T>
 constexpr uint64_t threeDtoMortonIndex(T x, T y, T z){
   uint64_t mortonIndex = 0;

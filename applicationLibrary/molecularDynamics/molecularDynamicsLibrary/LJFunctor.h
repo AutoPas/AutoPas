@@ -1655,11 +1655,19 @@ class LJFunctor
             }
           }
 
+          // the seemingly complicated names are chosen for the vectors/register to show how the neighbor particle data
+          // is stored there. the pad part contains ownershipState and typeId as the particle object is
+          // sequentially loaded with an aligned load. since these attributes are cached when the particles are
+          // accessed, they are loaded separately for cleaner code and can be treated as garbage here
           const __m256d drX0_drY0_drZ0_pad = _mm256_sub_pd(xI_yI_zI_pad, x0_y0_z0_pad);
           const __m256d drX1_drY1_drZ1_pad = _mm256_sub_pd(xI_yI_zI_pad, x1_y1_z1_pad);
           const __m256d drX2_drY2_drZ2_pad = _mm256_sub_pd(xI_yI_zI_pad, x2_y2_z2_pad);
           const __m256d drX3_drY3_drZ3_pad = _mm256_sub_pd(xI_yI_zI_pad, x3_y3_z3_pad);
 
+          // the per particle vectors are transposed based on this implementation
+          // https://gist.github.com/nanaHa1003/b13b6d927b7997d5b7c9c72c0fc17a53
+          // the shuffle with 0x0 as immediate byte loads the lower half of both arguments. with 0xF the upper halves
+          // are loaded
           const __m256d drX0_drX1_drZ0_drZ1 = _mm256_shuffle_pd(drX0_drY0_drZ0_pad, drX1_drY1_drZ1_pad, 0x0);
           const __m256d drY0_drY1_pad_pad = _mm256_shuffle_pd(drX0_drY0_drZ0_pad, drX1_drY1_drZ1_pad, 0xF);
           const __m256d drX2_drX3_drZ2_drZ3 = _mm256_shuffle_pd(drX2_drY2_drZ2_pad, drX3_drY3_drZ3_pad, 0x0);
@@ -1672,6 +1680,7 @@ class LJFunctor
           const __m256d drY0_drY1_drY2_drY3 = _mm256_permute2f128_pd(drY0_drY1_pad_pad, drY2_drY3_pad_pad, 0b00100000);
           const __m256d drZ0_drZ1_drZ2_drZ3 = _mm256_permute2f128_pd(drX0_drX1_drZ0_drZ1, drX2_drX3_drZ2_drZ3, 0b00110001);
 
+          // dr2 = drX2 + drY2 + drZ2
           const __m256d drSquaredVector =
               _mm256_fmadd_pd(drX0_drX1_drX2_drX3, drX0_drX1_drX2_drX3,
                               _mm256_fmadd_pd(drY0_drY1_drY2_drY3, drY0_drY1_drY2_drY3,
@@ -1685,10 +1694,14 @@ class LJFunctor
           const __m256d sigmaByR4Vector = _mm256_mul_pd(sigmaByRSquaredVector, sigmaByRSquaredVector);
           const __m256d sigmaByR6Vector = _mm256_mul_pd(sigmaByRSquaredVector, sigmaByR4Vector);
 
+          // this uses the following form of the lennard jones force computation:
+          // 24 * epsilon_ij * (1/(r_ij)^2) * (sigma_ij/r_ij)^6 * (2 * (sigma_ij/r_ij)^6 - 1)
           const __m256d bracketsVector = _mm256_fmsub_pd(twoVector, sigmaByR6Vector, oneVector);
           __m256d facVector = _mm256_mul_pd(
               epsilon24Vector, _mm256_mul_pd(inverseDrSquaredVector, _mm256_mul_pd(sigmaByR6Vector, bracketsVector)));
 
+          // interactions to particles above the cutoff or marked for deletion are masked and don't contribute to the
+          // force vector
           facVector = _mm256_and_pd(facVector, maskVector);
           forceXAccVector = _mm256_fmadd_pd(drX0_drX1_drX2_drX3, facVector, forceXAccVector);
           forceYAccVector = _mm256_fmadd_pd(drY0_drY1_drY2_drY3, facVector, forceYAccVector);
