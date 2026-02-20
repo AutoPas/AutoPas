@@ -16,7 +16,7 @@ namespace autopas::internal {
 /**
  * A cell functor. This functor is built from the normal Functor of the template
  * type ParticleFunctor. It is an internal object to handle interactions between
- * two cells of particles.
+ * two cells of particles. Supports PsVL.
  * @tparam ParticleCell
  * @tparam ParticleFunctor the functor which
  * @tparam bidirectional if no newton3 is used processCellPair(cell1, cell2) should also handle processCellPair(cell2,
