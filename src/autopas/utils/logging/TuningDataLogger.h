@@ -23,9 +23,11 @@ class TuningDataLogger {
   /**
    * Constructor initializes the logger and sets the output file name.
    * @param numSamples Number of samples that are taken per configuration.
+   * @param rebuildFrequency Number of iterations at which the neighbor lists are updated. This is used here to evaluate
+   * how many rebuild samples we will collect.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
-  explicit TuningDataLogger(size_t numSamples, const std::string &outputSuffix = "");
+  explicit TuningDataLogger(size_t numSamples, size_t rebuildFrequency, const std::string &outputSuffix = "");
 
   /**
    * Destructor drops the logger from the spd registry.
@@ -36,7 +38,7 @@ class TuningDataLogger {
    * Log the result of a tuning phase.
    * @param configuration
    * @param samplesRebuildingNeighborLists
-   * @param samplesNotRebuildingNeighborLists
+   * @param samplesTraverseInteractions
    * @param iteration
    * @param reducedValue
    * @param smoothedVale
@@ -44,7 +46,7 @@ class TuningDataLogger {
    */
   void logTuningData(const autopas::Configuration &configuration,
                      const std::vector<long> &samplesRebuildingNeighborLists,
-                     const std::vector<long> &samplesNotRebuildingNeighborLists, size_t iteration, long reducedValue,
+                     const std::vector<long> &samplesTraverseInteractions, size_t iteration, long reducedValue,
                      long smoothedVale, double meanRebuildFrequency) const;
 
  private:
