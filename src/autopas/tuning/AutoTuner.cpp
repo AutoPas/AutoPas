@@ -85,9 +85,6 @@ void AutoTuner::forceRetune() {
 }
 
 bool AutoTuner::tuneConfiguration() {
-  utils::Timer tuningTimer;
-  tuningTimer.start();
-
   // We finished collection samples for this config so remove it from the queue
   _configQueue.pop_back();
 
@@ -155,7 +152,12 @@ bool AutoTuner::tuneConfiguration() {
     });
   }
 
-  // CASE: End of a tuning phase. This is not exclusive to the other cases!
+  handleEndOfTuningPhaseIfRelevant();
+
+  return _isTuning;
+}
+
+void AutoTuner::handleEndOfTuningPhaseIfRelevant() {
   if (_configQueue.empty()) {
     // If the queue is empty we are done tuning.
     _endOfTuningPhase = true;
@@ -166,9 +168,6 @@ bool AutoTuner::tuneConfiguration() {
     _samplesRebuildingNeighborLists.resize(_maxSamples);
     _iterationBaseline = 0;
   }
-  tuningTimer.stop();
-
-  return _isTuning;
 }
 
 const Configuration &AutoTuner::getCurrentConfig() const {
@@ -227,8 +226,10 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
                utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                             [](const auto &conf) { return conf.toShortString(false); }));
   });
-  const auto stillTuning = not _configQueue.empty();
-  return {getCurrentConfig(), stillTuning};
+
+  handleEndOfTuningPhaseIfRelevant();
+
+  return {getCurrentConfig(), _isTuning};
 }
 
 void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
@@ -432,6 +433,8 @@ bool AutoTuner::inTuningPhase() const {
 bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInterval == 0); }
 
 bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
+
+bool AutoTuner::inFirstConfigurationLastSample() const { return (_iteration % _tuningInterval == _maxSamples - 1); }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 

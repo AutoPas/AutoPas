@@ -83,18 +83,15 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                        std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
-      _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr),
       _totalEnergySensor(configuration.energySensorOption.value) {
   _timers.total.start();
   _timers.initialization.start();
   _totalEnergySensor.startMeasurement();
 
   // only create the writer if necessary since this also creates the output dir
-  if (_createVtkFiles) {
-    _vtkWriter =
-        std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
-                                            std::to_string(_configuration.iterations.value).size());
+  if (not configuration.vtkFileName.value.empty()) {
+    _vtkWriter.emplace(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
+                       std::to_string(_configuration.iterations.value).size());
   }
 
   const auto rank = _domainDecomposition->getDomainIndex();
@@ -104,6 +101,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.back() == '_' ? "" : "_";
   const auto outputSuffix =
       "Rank" + std::to_string(rank) + fillerBeforeSuffix + _configuration.outputSuffix.value + fillerAfterSuffix;
+
+  if (rank == 0) {
+    _globalLogger = std::make_unique<GlobalVariableLogger>(outputSuffix);
+  }
 
   if (_configuration.logFileName.value.empty()) {
     _outputStream = &std::cout;
@@ -173,6 +174,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
   _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
+  _autoPasContainer->setDeltaT(_configuration.deltaT.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
@@ -217,7 +219,7 @@ void Simulation::finalize() {
 void Simulation::run() {
   _timers.simulate.start();
   while (needsMoreIterations()) {
-    if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
+    if (_vtkWriter.has_value() and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
       _timers.vtk.stop();
@@ -300,7 +302,19 @@ void Simulation::run() {
       updateThermostat();
     }
     _timers.computationalLoad.stop();
-
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    // Summing the potential energy over all MPI ranks
+    double potentialEnergyOverMPIRanks{}, virialSumOverMPIRanks{};
+    autopas::AutoPas_MPI_Reduce(&_totalPotentialEnergy, &potentialEnergyOverMPIRanks, 1, AUTOPAS_MPI_DOUBLE,
+                                AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
+    autopas::AutoPas_MPI_Reduce(&_totalVirialSum, &virialSumOverMPIRanks, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM, 0,
+                                AUTOPAS_MPI_COMM_WORLD);
+    if (_domainDecomposition->getDomainIndex() == 0) {
+      _globalLogger->logGlobals(_iteration, potentialEnergyOverMPIRanks, virialSumOverMPIRanks);
+    }
+    _totalPotentialEnergy = 0.;
+    _totalVirialSum = 0.;
+#endif
     if (not _simulationIsPaused) {
       ++_iteration;
     }
@@ -320,7 +334,7 @@ void Simulation::run() {
   _timers.simulate.stop();
 
   // Record last state of simulation.
-  if (_createVtkFiles) {
+  if (_vtkWriter.has_value()) {
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
   }
 }
@@ -528,14 +542,26 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 bool Simulation::calculatePairwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+  const auto wasTuningIteration = applyWithChosenFunctor<bool>([&](auto &&functor) {
+    auto isTuningIteration = _autoPasContainer->computeInteractions(&functor);
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    _totalPotentialEnergy += functor.getPotentialEnergy();
+    _totalVirialSum += functor.getVirial();
+#endif
+    return isTuningIteration;
+  });
   return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor3B<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+  const auto wasTuningIteration = applyWithChosenFunctor3B<bool>([&](auto &&functor) {
+    auto isTuningIteration = _autoPasContainer->computeInteractions(&functor);
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    _totalPotentialEnergy += functor.getPotentialEnergy();
+    _totalVirialSum += functor.getVirial();
+#endif
+    return isTuningIteration;
+  });
   return wasTuningIteration;
 }
 
