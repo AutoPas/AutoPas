@@ -48,7 +48,7 @@ class P3M_container : public LinkedCells<Particle_T> {
         rs_grid = GridType(totalLength);
 
         ks_grid = ComplexGridType(totalLength);
-        optForceInfluence = ComplexGridType(totalLength);
+        optInfluence = ComplexGridType(totalLength);
 
         for(int i = 0; i < 3; i++){
             grid_dist[i] = (boxMax[i] - boxMin[i]) / N[i];
@@ -63,9 +63,10 @@ class P3M_container : public LinkedCells<Particle_T> {
         this->cao = cao;
         this->alpha = alpha;
         
+        // changes if the influence function is optimized for msq-error of forces or energy
         bool force = false;
         if(force){
-            computeInfluenceFunction();
+            computeInfluenceForce();
         }else{
             computeInfluenceEnergy();
         }
@@ -75,7 +76,7 @@ class P3M_container : public LinkedCells<Particle_T> {
             for(unsigned int y = 0; y < grid_dims[1]; y++){
                 for(unsigned int z = 0; z < grid_dims[2]; z++){
                     unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, grid_dims);
-                    std::cout << optForceInfluence[index1d] << ", ";
+                    std::cout << optInfluence[index1d] << ", ";
                 }
                 std::cout << std::endl;
             }
@@ -113,10 +114,12 @@ class P3M_container : public LinkedCells<Particle_T> {
         std::cout << "force interpolation total time: " << forceInterpolationTimer.getTotalTime() << " ns" << std::endl;
     }
 
-    /** can be done once at the start of the simulation/tuning, as it only depends on 
+    /** Computes the influence function optimized for msq-error of forces
+     * 
+     *  can be done once at the start of the simulation/tuning, as it only depends on 
      *  the number of gridpoints in every direction, alpha, grid_dist and the charge_assignment_function
      */
-    void computeInfluenceFunction(){
+    void computeInfluenceForce(){
         AUTOPAS_OPENMP(parallel)
         {
             std::vector<int> brillouinShiftedX = std::vector<int>(grid_dims[0]);
@@ -133,9 +136,9 @@ class P3M_container : public LinkedCells<Particle_T> {
                     for(unsigned int ix = 0; ix < grid_dims[0]; ix++){
                         unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(ix, iy, iz, grid_dims);
                         if(ix%(grid_dims[0]/2) == 0 and iy%(grid_dims[1]/2) == 0 and iz%(grid_dims[2]/2) == 0){
-                            optForceInfluence[index1d] = std::complex<double>(0.0);
+                            optInfluence[index1d] = std::complex<double>(0.0);
                         }else{
-                            optForceInfluence[index1d] = computeForceInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
+                            optInfluence[index1d] = computeForceInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
                         }
                     }
                 }
@@ -144,6 +147,10 @@ class P3M_container : public LinkedCells<Particle_T> {
         return;
     }
 
+    /**
+     * returns an array where index i gives the grid-position (as an index) in the first brillouin zone for 1-dimension, 
+     * which is centered on the lower left corner of the box, therefore indecies greater than gridSize/2 wrap arround to be negative 
+     */
     void computeBrillouinShift(std::vector<int> &shifts, int gridSize){
         shifts[0] = 0;
         for(int i = 1; i <= gridSize/2; i++){
@@ -164,7 +171,10 @@ class P3M_container : public LinkedCells<Particle_T> {
         }
     }
 
-    /*computes the Force Influence, should be combined with computation of energy influence if added*/
+    /**
+     * computes the Force Influence, could be combined with computation of energy influence
+     * from https://doi.org/10.1063/1.2932253
+    */
     std::complex<double> computeForceInfluenceAt(int brillouinX, int brillouinY, int brillouinZ){
         // the reciprocal positions are index/L * 2*pi
         double posX = 2*M_PI*brillouinX / (double)box_lengths[0];
@@ -176,6 +186,8 @@ class P3M_container : public LinkedCells<Particle_T> {
         double denom1 = 0.0;
         double denom2 = 0.0;
 
+        // adjusts over how many brillouin zones we sum, more zones means higher accuracy of the influence function, but also much more computations
+        // could be adjusted until a satisfying accuracy has been reached
         const int brillounZones = 1;
 
         for(int bx = -brillounZones; bx <= brillounZones; bx++){
@@ -218,11 +230,16 @@ class P3M_container : public LinkedCells<Particle_T> {
         return std::complex<double>(numerator/denominator);
     }
 
+    /**
+     * computes a denominator for the computation of the optimal energy influence function
+     */
     double denominatorG(double x, double y, double z){
         double shiftX = 2*M_PI* grid_dims[0] / box_lengths[0];
         double shiftY = 2*M_PI* grid_dims[1] / box_lengths[1];
         double shiftZ = 2*M_PI* grid_dims[2] / box_lengths[2];
 
+        // adjusts over how many brillouin zones we sum, more zones means higher accuracy of the influence function, but also much more computations
+        // could be adjusted until a satisfying accuracy has been reached
         int brillounZones = 2;
 
         double denom = 0;
@@ -281,9 +298,9 @@ class P3M_container : public LinkedCells<Particle_T> {
                     for(unsigned int ix = 0; ix < grid_dims[0]; ix++){
                         unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(ix, iy, iz, grid_dims);
                         if(ix == 0 and iy == 0 and iz == 0){
-                            optForceInfluence[index1d] = std::complex<double>(0.0);
+                            optInfluence[index1d] = std::complex<double>(0.0);
                         }else{
-                            optForceInfluence[index1d] = computeEnergyInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
+                            optInfluence[index1d] = computeEnergyInfluenceAt(brillouinShiftedX[ix], brillouinShiftedY[iy], brillouinShiftedZ[iz]);
                         }
                     }
                 }
@@ -292,6 +309,10 @@ class P3M_container : public LinkedCells<Particle_T> {
         return;
     }
 
+    /**
+     * computes the Energy Influence, could be combined with computation of force influence
+     * from https://doi.org/10.1063/1.2816570
+    */
     std::complex<double> computeEnergyInfluenceAt(int brillouinX, int brillouinY, int brillouinZ){
         // the reciprocal positions are index/L * 2*pi
         double posX = 2*M_PI*brillouinX / (double)box_lengths[0];
@@ -300,6 +321,8 @@ class P3M_container : public LinkedCells<Particle_T> {
 
         double numerator = 0.0;
 
+        // adjusts over how many brillouin zones we sum, more zones means higher accuracy of the influence function, but also much more computations
+        // could be adjusted until a satisfying accuracy has been reached
         const int brillounZones = 0;
 
         double pi = M_PI;
@@ -343,6 +366,9 @@ class P3M_container : public LinkedCells<Particle_T> {
         return std::complex<double>(numerator/denominator);
     }
 
+    /**
+     * potential calculation used in self force computation
+     */
     double Usum(int x, int y, int z, int shiftXextra, int shiftYextra, int shiftZextra){
         double shiftX = 2*M_PI* grid_dims[0] / box_lengths[0];
         double shiftY = 2*M_PI* grid_dims[1] / box_lengths[1];
@@ -383,7 +409,7 @@ class P3M_container : public LinkedCells<Particle_T> {
         return sum;
     }
 
-    // uses approximation of self foce described in "Removal of spurious self-interactions in particle–mesh methods" doi: 10.1016/j.cpc.2011.01.026
+    // uses approximation of self foce described in https://doi.org/10.1016/j.cpc.2011.01.026
     void computeSelfForceCoeff(){
         std::vector<int> brillouinShiftedX = std::vector<int>(grid_dims[0]);
         std::vector<int> brillouinShiftedY = std::vector<int>(grid_dims[1]);
@@ -423,7 +449,7 @@ class P3M_container : public LinkedCells<Particle_T> {
                                 break;
                             }
                             unsigned int index1d = utils::ThreeDimensionalMapping::threeToOneD(xind, yind, zind, grid_dims);
-                            selfForceCoeff += real(optForceInfluence[index1d]) * precoeff;
+                            selfForceCoeff += real(optInfluence[index1d]) * precoeff;
                         }
                     }   
                 }
@@ -460,6 +486,7 @@ class P3M_container : public LinkedCells<Particle_T> {
     }
 
     void computeInteractions(TraversalInterface *traversal) override {
+        // hard coding to use the P3M_shortRangeFunctor for the traversal
         P3M_shortRangeFunctor<Particle_T> f(alpha, this->getCutoff());
 
         auto shortRangeTraversal =
@@ -471,10 +498,6 @@ class P3M_container : public LinkedCells<Particle_T> {
         traversal->initTraversal();
         traversal->traverseParticles();
         traversal->endTraversal();
-
-        // do potential calc
-        auto *traversalP3M = dynamic_cast<P3MTraversalInterface<LinkedParticleCell> *>(traversal);
-        //std::cout << "electro-static potential: pair: " << f.getPotentialEnergy() << " long: " << traversalP3M->getPotential() << std::endl;
 
         /*for(auto iter = this->begin(); iter.isValid(); ++iter){
             if(iter->isOwned()){
@@ -498,9 +521,7 @@ class P3M_container : public LinkedCells<Particle_T> {
     //ComplexGridType ks_grid_shifted;
 
     // array for all ks_grid points
-    ComplexGridType optForceInfluence;
-    // array for all ks_grid points
-    ComplexGridType optEnergyInfluence;
+    ComplexGridType optInfluence;
 
 
     private:

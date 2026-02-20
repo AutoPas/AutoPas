@@ -42,7 +42,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
 
     //P3M_traversal()
     //    :cao(cao), grid_dims(grid_dims), grid_dist(grid_dist), rs_grid(rs_grid), rs_grid_shifted(rs_shifted),
-    //     ks_grid(ks_grid), ks_grid_shifted(ks_shifted), optForceInfluence(optForceInfluence){
+    //     ks_grid(ks_grid), ks_grid_shifted(ks_shifted), optInfluence(optInfluence){
 
     //        fft = FFT();
     //}
@@ -90,7 +90,10 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
     utils::Timer *chargeAssignmentTimer;
     utils::Timer *forceInterpolationTimer;
 
-    void lamdaFunc (std::vector<double> &caFractionsX, std::vector<double> &caFractionsY, std::vector<double> &caFractionsZ, std::array<int, 3> &closestGridpoint, ParticleType particle) {
+    /**
+     * charge assignment Lamda used in container iterators for charge assignment
+     */
+    void chargeAssignmentLamda (std::vector<double> &caFractionsX, std::vector<double> &caFractionsY, std::vector<double> &caFractionsZ, std::array<int, 3> &closestGridpoint, ParticleType particle) {
         double gridCellVolumeInv = (1./ (grid_dist[0]*grid_dist[1]*grid_dist[2]));
 
         std::array<double, 3> pPos = particle.getR();
@@ -139,10 +142,10 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
             upperCorner = container->getBoxMax();
         }
         
-        
+        // used to make mabda work
         using std::placeholders::_1;
         
-        std::function<void(ParticleType)> lambda = std::bind(&P3M_traversal::lamdaFunc, this, caFractionsX, caFractionsY, caFractionsZ, closestGridpoint, _1);
+        std::function<void(ParticleType)> lambda = std::bind(&P3M_traversal::chargeAssignmentLamda, this, caFractionsX, caFractionsY, caFractionsZ, closestGridpoint, _1);
             container->forEachInRegion(lambda , lowerCorner, upperCorner, autopas::IteratorBehavior::owned);
         }
 
@@ -153,9 +156,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
         /*if(x > 0.5 || x < -0.5){
             std::cout << "error in charge Fraction" << std::endl;
         }*/
-        // TODO remove assert
-        assert(x <= 0.5);
-        assert(x >= -0.5);
+        //assert(x <= 0.5);
+        //assert(x >= -0.5);
         switch(cao){
             case 1:
                 fractions[0] = 1.;
@@ -187,7 +189,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
         }
     }
 
-    // computes the derivatives of the charge Fractions
+    // computes the derivatives of the charge assignment function Fractions
     void cafDerivative(double x, std::vector<double> &fractions){
         //assert(x <= 0.5);
         //assert(x >= -0.5);
@@ -225,23 +227,15 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
 
     // multiplies the ks_grid with an influence function
     void applyInfluenceFunction(){
-        //compute potential energy
-        /*double inv = 1.0 / (grid_dims[0] * grid_dims[1] * grid_dims[2]);
-        potential = 0.0;
-        AUTOPAS_OPENMP(parallel for schedule(static) reduction(+: potential))
-        for(unsigned int i = 0; i < grid_dims[0] * grid_dims[1] * grid_dims[2]; i++){
-            potential += inv * inv * std::norm(container->ks_grid[i]) * std::real(container->optForceInfluence[i]);
-        }*/
-
-        // *inv is done automatically in the backtransform of the FFT implementation
-
         AUTOPAS_OPENMP(parallel for schedule(static))
         for(unsigned int i = 0; i < grid_dims[0] * grid_dims[1] * grid_dims[2]; i++){
-            container->ks_grid[i] *= container->optForceInfluence[i];
+            container->ks_grid[i] *= container->optInfluence[i];
         }
     }
 
-    // assigns parts of forces from the points in the rs_grid back to the particles according to the charge assignment fuction
+    /** assigns parts of forces from the points in the rs_grid back to the particles according to 
+     *  the charge assignment fuction and its derivative, also subtracts self forces
+    */
     void interpolateForces(){
         AUTOPAS_OPENMP(parallel)
         {
@@ -289,10 +283,6 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
             /*AUTOPAS_OPENMP(critical){
             std::cout << "Particle " << iter->getQ() << " long Range F: " << totalForce[0] << ", " << totalForce[1] << ", " << totalForce[2] << std::endl;
             }*/
-           //double scaling = 992.573;
-          /*totalForce[0] *= scaling;
-            totalForce[1] *= scaling;
-            totalForce[2] *= scaling;*/
             subtractSelfForce(*iter, totalForce);
             
             iter->addF(totalForce);
@@ -300,6 +290,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
     }
     }
 
+    // subtracts self froce from force according to https://doi.org/10.1016/j.cpc.2011.01.026
     void subtractSelfForce(ParticleType &p, std::array<double, 3> &force){
         //std::cout << " self Force: ";
         for(int dim = 0; dim < 3; dim++){
@@ -327,6 +318,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
         return closestGridPos;
     }
 
+    // computes the charge assignment fractions in every direction for particle at pPos
     void getChargeAssignmentFractions(std::array<double, 3> &pPos,std::array<int, 3> &closestGridpoint, std::vector<double> &caFractionsX, 
             std::vector<double> &caFractionsY, std::vector<double> &caFractionsZ){
         for(int i = 0; i < 3; i++){
@@ -347,6 +339,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
         }
     }
 
+    // computes the derivative of charge assignment fractions in every direction for particle at pPos
     void getCAFDeriveative(std::array<double, 3> &pPos,std::array<int, 3> &closestGridpoint, std::vector<double> &caFractionsDX, 
             std::vector<double> &caFractionsDY, std::vector<double> &caFractionsDZ){
         for(int i = 0; i < 3; i++){
@@ -367,11 +360,11 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
     }
 
     /**
-     * assigns charges to the rs_grid (2 different shifted grids)
-     * transforms the rs_grid
-     * applies an influence function to the transformed grid
-     * backtransformes the ks_grid
-     * interpolates the forces back to the particles (from 2 different girds)
+     * 1. assigns charges to the rs_grid
+     * 2. transforms the rs_grid
+     * 3. applies an influence function to the transformed grid
+     * 4. backtransformes the ks_grid
+     * 5. interpolates the forces back to the particles (from 2 different girds)
      * 
      * may not fulfill N3
      */
@@ -427,33 +420,6 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
         forceInterpolationTimer->stop();
     }
 
-    /**
-     * assigns charges to the rs_grid
-     * transforms the rs_grid
-     * applies an influence function to the transformed grid
-     * for all 3 dimensions:
-     * - does ik-differentiation to get forces out
-     * - backtransformes the ks_grid
-     * - interpolates the forces back to the particles
-     * 
-     * requires back-transform of vectorial quantities
-     */
-    /*void traversFarParticlesv2(){
-        assignChargeDensities();
-        fft.forward();
-        applyInfluenceFunction();
-        for(dim : dims){
-            ikDifferentiation(dim);
-            fft.backward();
-            interpolateForces(dim);
-        }
-             
-    }*/
-
-    // a speciffic multiplication in the ks_grid
-    //void ikDifferentiation();
-
-
     // calls normal traversal with modified potential-functor
     void traverseNearParticles(){
         if(shortRangeTraversal){
@@ -462,6 +428,8 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
             shortRangeTraversal->endTraversal();
         }
 
+        // the part below is only there for combination of a P3M Coulomb computation with another potential (i.e. Lennard Jones)
+        // only added for Rayleigh Taylor simulations and should probably be removed in the future
         auto LJTraversal =
         LCC08Traversal<ParticleCell, Functor>(
             container->getCellBlock().getCellsPerDimensionWithHalo(), functor, container->getCutoff(),
@@ -474,7 +442,6 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
         LJTraversal.traverseParticles();
         LJTraversal.endTraversal();
         // LJ functor einfügen
-        //TODO Thermostat.h addBrownianMotion() z-coordiante auf 0 setzen.
     }
 
     public:
@@ -489,7 +456,7 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
 
     [[nodiscard]] bool isApplicable() const override {
         //utils::isPairwiseFunctor<Functor>()
-        return true;//not this->_useNewton3 and this->_dataLayout != DataLayoutOption::soa;
+        return this->_dataLayout != DataLayoutOption::soa;
     }
 
     [[nodiscard]] TraversalOption getTraversalType() const override {
@@ -507,10 +474,6 @@ class P3M_traversal : public LCTraversalInterface, public TraversalInterface, pu
 
     void endTraversal() override {
         
-    }
-
-    double getPotential() override {
-        return potential;
     }
 };
 }

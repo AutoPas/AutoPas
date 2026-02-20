@@ -28,7 +28,5 @@ class P3MTraversalInterface {
 
   virtual void set_Timers(utils::Timer *fftTimer, utils::Timer *shortRangeTimer, utils::Timer *chargeAssignmentTimer, utils::Timer *forceInterpolationTimer) = 0;
 
-  virtual double getPotential();
-
   };
 }
