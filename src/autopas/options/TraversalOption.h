@@ -196,6 +196,22 @@ class TraversalOption : public Option<TraversalOption> {
      * fluctuations.
      */
     vvl_as_built,
+
+    // PseudoVerletLists Traversals:
+    /**
+     * PsVLC18Traversal : based on LCC18Traversal.
+     */
+    psvl_c18,
+
+    /**
+     * PsVLC08Traversal : based on LCC08Traversal.
+     */
+    psvl_c08,
+
+    /**
+     * PsVLC01Traversal : based on LCC01Traversal.
+     */
+    psvl_c01,
   };
 
   /**
@@ -331,6 +347,11 @@ class TraversalOption : public Option<TraversalOption> {
         // Octree Traversals:
         {TraversalOption::ot_c18, "ot_c18"},
         {TraversalOption::ot_c01, "ot_c01"},
+
+        // Pseudo Verlet Lists Traversals:
+        {TraversalOption::psvl_c18, "psvl_c18"},
+        {TraversalOption::psvl_c08, "psvl_c08"},
+        {TraversalOption::psvl_c01, "psvl_c01"},
     };
   };
 

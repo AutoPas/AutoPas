@@ -6,7 +6,13 @@
 
 #pragma once
 
+#include <array>
+#include <utility>
+#include <vector>
+
 #include "autopas/containers/cellTraversals/ColorBasedTraversal.h"
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -52,6 +58,31 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
    */
   template <bool allCells, typename LoopBody>
   inline void c18Traversal(LoopBody &&loopBody);
+
+  /**
+   * Computes pairs used in processBaseCell()
+   */
+  void computeOffsets();
+
+  /**
+   * Type of an array containing offsets relative to the base cell and correspondent normalized 3d relationship vectors.
+   * The vectors (aka std::array<double,3>) describe the imaginative line connecting the center of the base cell and the
+   * center of the cell defined by the offset. It is used for sorting.
+   */
+  using offsetArray_t = std::vector<std::pair<unsigned long, std::array<double, 3>>>;
+
+  /**
+   * Pairs for processBaseCell(). overlap[0] x overlap[1] offsetArray_t for each special case in x and y direction.
+   */
+  std::vector<std::vector<offsetArray_t>> _cellOffsets;
+
+  /**
+   * Returns the index in the offsets array for the given position.
+   * @param pos current position in dimension dim
+   * @param dim current dimension
+   * @return Index for the _cellOffsets Array.
+   */
+  [[nodiscard]] unsigned long getIndex(unsigned long pos, unsigned int dim) const;
 };
 
 template <class ParticleCell, class Functor>
@@ -67,6 +98,74 @@ inline void C18BasedTraversal<ParticleCell, Functor>::c18Traversal(LoopBody &&lo
     end[2] -= this->_overlap[2];
   }
   this->colorTraversal(std::forward<LoopBody>(loopBody), end, stride);
+}
+
+template <class ParticleCell, class Functor>
+inline void C18BasedTraversal<ParticleCell, Functor>::computeOffsets() {
+  _cellOffsets.resize(2 * this->_overlap[1] + 1, std::vector<offsetArray_t>(2 * this->_overlap[0] + 1));
+  const std::array<long, 3> _overlap_s = utils::ArrayUtils::static_cast_copy_array<long>(this->_overlap);
+
+  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
+
+  for (long z = 0l; z <= _overlap_s[2]; ++z) {
+    for (long y = -_overlap_s[1]; y <= _overlap_s[1]; ++y) {
+      for (long x = -_overlap_s[0]; x <= _overlap_s[0]; ++x) {
+        const long offset = utils::ThreeDimensionalMapping::threeToOneD(
+            x, y, z, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
+
+        if (offset < 0l) {
+          continue;
+        }
+        // add to each applicable special case
+        for (long yArray = -_overlap_s[1]; yArray <= _overlap_s[1]; ++yArray) {
+          if (std::abs(yArray + y) <= _overlap_s[1]) {
+            for (long xArray = -_overlap_s[0]; xArray <= _overlap_s[0]; ++xArray) {
+              if (std::abs(xArray + x) <= _overlap_s[0]) {
+                const std::array<double, 3> pos = {
+                    std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0],
+                    std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1],
+                    std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2],
+                };
+                // calculate distance between the borders of the base cell and the other cell
+                const double distSquare = utils::ArrayMath::dot(pos, pos);
+                // only add cell offset if cell is within cutoff radius
+                if (distSquare <= interactionLengthSquare) {
+                  // Calculate the sorting direction from the base cell and the other cell by use of the offset (x, y,
+                  // z).
+                  // Note: We have to calculate the sorting direction separately from pos, since pos is the offset
+                  // between the borders of cells. For neighbouring cells this would be 0 and the sorting direction
+                  // would be wrong.
+                  std::array<double, 3> sortingDir = {static_cast<double>(x) * this->_cellLength[0],
+                                                      static_cast<double>(y) * this->_cellLength[1],
+                                                      static_cast<double>(z) * this->_cellLength[2]};
+                  if (x == 0 and y == 0 and z == 0) {
+                    sortingDir = {1., 1., 1.};
+                  }
+
+                  _cellOffsets[yArray + _overlap_s[1]][xArray + _overlap_s[0]].push_back(
+                      std::make_pair(offset, utils::ArrayMath::normalize(sortingDir)));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+template <class ParticleCell, class Functor>
+unsigned long C18BasedTraversal<ParticleCell, Functor>::getIndex(const unsigned long pos,
+                                                                 const unsigned int dim) const {
+  unsigned long index;
+  if (pos < this->_overlap[dim]) {
+    index = pos;
+  } else if (pos < this->_cellsPerDimension[dim] - this->_overlap[dim]) {
+    index = this->_overlap[dim];
+  } else {
+    index = pos - this->_cellsPerDimension[dim] + 2 * this->_overlap[dim] + 1ul;
+  }
+  return index;
 }
 
 }  // namespace autopas

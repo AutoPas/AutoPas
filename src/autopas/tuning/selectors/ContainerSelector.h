@@ -10,6 +10,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
+#include "autopas/containers/pseudoVerletLists/PseudoVerletLists.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
@@ -100,6 +101,10 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
     case ContainerOption::octree: {
       container =
           std::make_unique<Octree<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, sortingThreshold);
+      break;
+    }
+    case ContainerOption::pseudoVerletLists: {
+      container = std::make_unique<PseudoVerletLists<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor);
       break;
     }
     default: {
