@@ -1,12 +1,12 @@
 # This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
 ## md-flexible compiled for multi-site molecules.
-container                        :  [VerletClusterLists]
+container                        :  [LinkedCells]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  None
 data-layout                      :  [AoS, SoA]
-traversal                        :  [vcl_cluster_iteration]
+traversal                        :  [LC_C08_SoA_N3]
 newton3                          :  [disabled]
 functor                          :  Lennard-Jones (12-6) AVX
 cutoff                           :  2.5
@@ -44,4 +44,6 @@ thermostat:
   addBrownianMotion              :  true
 
 no-progress-bar                      :  true
-
+vtk-filename                     :  fallingDropC06
+vtk-write-frequency              :  1000
+vtk-output-folder                :  vtkOutputFolder
