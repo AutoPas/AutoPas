@@ -366,7 +366,6 @@ class VerletClusterListsRebuilder {
   void calculateNeighborsBetweenTowers(internal::ClusterTower<Particle_T> &towerA,
                                        internal::ClusterTower<Particle_T> &towerB) {
     using autopas::utils::ArrayMath::boxDistanceSquared;
-
     const auto interactionLengthFracOfDomainZ =
         _towerBlock.getInteractionLength() / (_towerBlock.getHaloBoxMax()[2] - _towerBlock.getHaloBoxMin()[2]);
     const bool isSameTower = (&towerA == &towerB);
@@ -376,6 +375,7 @@ class VerletClusterListsRebuilder {
     const auto isHaloCluster = [](const auto &clusterIter, const auto &tower) {
       return clusterIter < tower.getFirstOwnedCluster() or clusterIter >= tower.getFirstTailHaloCluster();
     };
+    const double interactionLength = std::sqrt(_interactionLengthSqr);
     // iterate over all clusters from tower A. In newton3 mode go over all of them, otherwise only owned.
     for (auto clusterIterA = _newton3 ? towerA.getClusters().begin() : towerA.getFirstOwnedCluster();
          clusterIterA < (_newton3 ? towerA.getClusters().end() : towerA.getFirstTailHaloCluster()); ++clusterIterA) {
@@ -398,6 +398,10 @@ class VerletClusterListsRebuilder {
           if (not clusterIterB->empty()) {
             const auto [aMin, aMax] = clusterIterA->getBoundingBox();
             const auto [bMin, bMax] = clusterIterB->getBoundingBox();
+            // stop condition Early stopping
+            //if (bMin[2] > aMax[2] + interactionLength) {
+              //break;
+            //}
             const auto boxDistSquared = boxDistanceSquared(aMin, aMax, bMin, bMax);
             if (boxDistSquared <= _interactionLengthSqr) {
               clusterIterA->addNeighbor(*clusterIterB);

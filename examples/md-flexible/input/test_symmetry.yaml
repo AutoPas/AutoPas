@@ -1,0 +1,40 @@
+container                        : [DirectSum] #later change for vcl_08
+data-layout                      : [AoS]
+traversal                        : [ds_sequential]
+tuning-strategies                : []
+tuning-interval                  : 1000
+functor                          : Lennard-Jones
+newton3                          : [enabled]
+cutoff                           : 3.0
+
+box-min                          : [0, 0, 0]
+box-max                          : [10, 10, 10]
+
+deltaT                           : 0.0
+iterations                       : 1
+
+boundary-type                    : [reflective, reflective, reflective]
+
+Sites:
+  0:
+    epsilon                      : 1.0
+    sigma                        : 1.0
+    mass                         : 1.0
+
+Objects:
+  Particle:
+    0:
+      position                   : [4.0, 5.0, 5.0]
+      velocity                   : [0, 0, 0]
+      particle-type-id           : 0
+    1:
+      position                   : [6.0, 5.0, 5.0]
+      velocity                   : [0, 0, 0]
+      particle-type-id           : 0
+
+vtk-filename                     : symmetry
+vtk-write-frequency              : 1
+vtk-output-folder                : vtk_symmetry
+
+no-end-config                    : true
+log-level                        : info
