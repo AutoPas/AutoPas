@@ -410,8 +410,8 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
     }
     // VerletLists
     case TraversalOption::vl_list_iteration: {
-      traversal = std::make_unique<VLListIterationTraversal<ParticleCell_T, TriwiseFunctor_T>>(&triwiseFunctor, dataLayout,
-                                                                                          useNewton3);
+      traversal = std::make_unique<VLListIterationTraversal<ParticleCell_T, TriwiseFunctor_T>>(&triwiseFunctor,
+                                                                                               dataLayout, useNewton3);
       break;
     }
     case TraversalOption::vl_list_intersection_sorted_3b: {
@@ -425,8 +425,22 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
       break;
     }
     case TraversalOption::vl_pair_list_iteration_3b: {
-      traversal = std::make_unique<VLPairListIterationTraversal3B<ParticleCell_T, TriwiseFunctor_T>>(&triwiseFunctor,
-                                                                                                dataLayout, useNewton3);
+      traversal = std::make_unique<VLPairListIterationTraversal3B<ParticleCell_T, TriwiseFunctor_T>>(
+          &triwiseFunctor, dataLayout, useNewton3);
+      break;
+    }
+    case TraversalOption::vlc_c18: {
+      traversal = std::make_unique<VLCC18Traversal<ParticleCell_T, TriwiseFunctor_T,
+                                                   VLCAllCellsNeighborList<typename ParticleCell_T::ParticleType>>>(
+          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3, ContainerOption::verletListsCells);
+      break;
+    }
+    case TraversalOption::vlc_c08: {
+      traversal = std::make_unique<VLCC08Traversal<ParticleCell_T, TriwiseFunctor_T,
+                                                   VLCAllCellsNeighborList<typename ParticleCell_T::ParticleType>>>(
+          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
       break;
     }
     default: {

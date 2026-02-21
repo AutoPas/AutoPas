@@ -21,11 +21,11 @@ namespace autopas {
  * were built with newton3 the base step is c01 or c08
  *
  * @tparam ParticleCell the type of cells
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam Functor The functor that defines the interaction of two particles.
  * @tparam NeighborList type of the neighbor list
  */
-template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-class VLCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
+template <class ParticleCell, class Functor, class NeighborList>
+class VLCC08Traversal : public C08BasedTraversal<ParticleCell, Functor>,
                         public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
  public:
   /**
@@ -38,15 +38,17 @@ class VLCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLCC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                           double interactionLength, const std::array<double, 3> &cellLength,
-                           DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                         dataLayout, useNewton3),
+  explicit VLCC08Traversal(const std::array<unsigned long, 3> &dims, Functor *pairwiseFunctor, double interactionLength,
+                           const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
+      : C08BasedTraversal<ParticleCell, Functor>(dims, pairwiseFunctor, interactionLength, cellLength, dataLayout,
+                                                 useNewton3),
         VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(ContainerOption::verletListsCells),
         _functor(pairwiseFunctor) {}
 
   void traverseParticles() override;
+
+  void traverseParticlePairs();
+  void traverseParticleTriplets();
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlc_c08; }
 
@@ -65,19 +67,49 @@ class VLCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
   void setSortingThreshold(size_t sortingThreshold) override {}
 
  private:
-  PairwiseFunctor *_functor;
+  Functor *_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-inline void VLCC08Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticles() {
+template <class ParticleCell, class Functor, class NeighborList>
+inline void VLCC08Traversal<ParticleCell, Functor, NeighborList>::traverseParticles() {
+  if constexpr (utils::isPairwiseFunctor<Functor>()) {
+    traverseParticlePairs();
+  } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
+    traverseParticleTriplets();
+  } else {
+    utils::ExceptionHandler::exception(
+        "VLListIterationTraversal::traverseParticles(): Functor {} is not of type PairwiseFunctor or TriwiseFunctor.",
+        _functor->getName());
+  }
+}
+
+template <class ParticleCell, class Functor, class NeighborList>
+inline void VLCC08Traversal<ParticleCell, Functor, NeighborList>::traverseParticlePairs() {
   if (this->_dataLayout == DataLayoutOption::soa) {
     this->loadSoA(_functor, *(this->_verletList));
   }
 
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     const auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    this->template processCellLists<PairwiseFunctor>(*(this->_verletList), baseIndex, _functor, this->_dataLayout,
-                                                     this->_useNewton3);
+    this->template processCellLists<Functor>(*(this->_verletList), baseIndex, _functor, this->_dataLayout,
+                                             this->_useNewton3);
+  });
+
+  if (this->_dataLayout == DataLayoutOption::soa) {
+    this->extractSoA(_functor, *(this->_verletList));
+  }
+}
+
+template <class ParticleCell, class Functor, class NeighborList>
+inline void VLCC08Traversal<ParticleCell, Functor, NeighborList>::traverseParticleTriplets() {
+  if (this->_dataLayout == DataLayoutOption::soa) {
+    this->loadSoA(_functor, *(this->_verletList));
+  }
+
+  this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
+    const auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+    this->template processCellLists<Functor>(*(this->_verletList), baseIndex, _functor, this->_dataLayout,
+                                             this->_useNewton3);
   });
 
   if (this->_dataLayout == DataLayoutOption::soa) {

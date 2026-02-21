@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<VTKFile byte_order="LittleEndian" type="PUnstructuredGrid" version="0.1">
+  <PUnstructuredGrid GhostLevel="0">
+    <PPointData>
+      <PDataArray Name="velocities" NumberOfComponents="3" format="ascii" type="Float32"/>
+      <PDataArray Name="forces" NumberOfComponents="3" format="ascii" type="Float32"/>
+      <PDataArray Name="typeIds" NumberOfComponents="1" format="ascii" type="Int32"/>
+      <PDataArray Name="ids" NumberOfComponents="1" format="ascii" type="Int32"/>
+    </PPointData>
+    <PCellData/>
+    <PPoints>
+      <PDataArray Name="positions" NumberOfComponents="3" format="ascii" type="Float32"/>
+    </PPoints>
+    <PCells>
+      <PDataArray Name="types" NumberOfComponents="0" format="ascii" type="Float32"/>
+    </PCells>
+    <Piece Source="./data/3BodyTest_Particles_0_10000.vtu"/>
+  </PUnstructuredGrid>
+</VTKFile>

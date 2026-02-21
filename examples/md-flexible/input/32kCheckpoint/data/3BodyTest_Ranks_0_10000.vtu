@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<VTKFile byte_order="LittleEndian" type="UnstructuredGrid" version="0.1">
+  <UnstructuredGrid>
+    <Piece NumberOfPoints="8" NumberOfCells="1">
+      <CellData>
+        <DataArray type="Int32" Name="DomainId" format="ascii">
+          0
+        </DataArray>
+        <DataArray type="Float32" Name="CellSizeFactor" format="ascii">
+          1
+        </DataArray>
+        <DataArray type="Int32" Name="Container" format="ascii">
+          1
+        </DataArray>
+        <DataArray type="Int32" Name="DataLayout" format="ascii">
+          1
+        </DataArray>
+        <DataArray type="Int32" Name="LoadEstimator" format="ascii">
+          0
+        </DataArray>
+        <DataArray type="Int32" Name="Traversal" format="ascii">
+          6
+        </DataArray>
+        <DataArray type="Int32" Name="Newton3" format="ascii">
+          1
+        </DataArray>
+        <DataArray type="Int32" Name="Rank" format="ascii">
+          0
+        </DataArray>
+      </CellData>
+      <Points>
+        <DataArray type="Float32" NumberOfComponents="3" format="ascii">
+          0 0 0
+          0 0 36.6504
+          0 36.6504 0
+          0 36.6504 36.6504
+          36.6504 0 0
+          36.6504 0 36.6504
+          36.6504 36.6504 0
+          36.6504 36.6504 36.6504
+        </DataArray>
+      </Points>
+      <Cells>
+        <DataArray type="Int32" Name="connectivity" format="ascii">
+          0 1 2 3 4 5 6 7
+        </DataArray>
+        <DataArray type="Int32" Name="offsets" format="ascii">
+          8
+        </DataArray>
+        <DataArray type="UInt8" Name="types" format="ascii">
+          11
+        </DataArray>
+      </Cells>
+    </Piece>
+  </UnstructuredGrid>
+</VTKFile>

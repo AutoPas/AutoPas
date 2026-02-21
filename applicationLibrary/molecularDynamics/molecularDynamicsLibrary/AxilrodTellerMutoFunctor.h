@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <unordered_set>
+
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
@@ -501,6 +503,29 @@ class AxilrodTellerMutoFunctor
     }
   }
 
+  void SoAFunctorVerletPair(
+      autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+      const std::vector<std::pair<size_t, size_t>, autopas::AlignedAllocator<std::pair<size_t, size_t>>> &neighborList,
+      bool newton3) final {
+    if (soa.size() == 0 or neighborList.empty()) return;
+    if (newton3) {
+      SoAFunctorVerletPairImpl<true>(soa, indexFirst, neighborList);
+    } else {
+      SoAFunctorVerletPairImpl<false>(soa, indexFirst, neighborList);
+    }
+  }
+
+  void SoAFunctorVerletIntersection (
+      autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+      const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborLists, bool newton3) final {
+    if (soa.size() == 0 or neighborLists[indexFirst].empty()) return;
+    if (newton3) {
+      SoAFunctorVerletIntersectionImpl<true>(soa, indexFirst, neighborLists);
+    } else {
+      SoAFunctorVerletIntersectionImpl<false>(soa, indexFirst, neighborLists);
+    }
+  }
+
   /**
    * Sets the particle properties constants for this functor.
    *
@@ -568,7 +593,7 @@ class AxilrodTellerMutoFunctor
    */
   void endTraversal(bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
-
+    // std::cout << "interactions: " << count_interactions << std::endl;
     if (_postProcessed) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
@@ -1386,7 +1411,7 @@ class AxilrodTellerMutoFunctor
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
- // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
+    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
     SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
@@ -1430,7 +1455,6 @@ class AxilrodTellerMutoFunctor
     std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> ownershipNeighbors{};
     ownershipNeighbors.reserve(numNeighbors);
 
-
     for (size_t neighborIdx = 0; neighborIdx < neighborList.size(); ++neighborIdx) {
       const auto j = neighborList[neighborIdx];
       const auto distX = xPtr[j] - xPtr[i];
@@ -1447,6 +1471,9 @@ class AxilrodTellerMutoFunctor
         ownershipNeighbors.push_back(ownedStatePtr[j]);
       }
     }
+    SoAFloatPrecision fxAccJ = 0;
+    SoAFloatPrecision fyAccJ = 0;
+    SoAFloatPrecision fzAccJ = 0;
 
     const auto actualNeighborSize = idNeighbors.size();
     for (size_t j = 0; j < actualNeighborSize; ++j) {
@@ -1454,12 +1481,15 @@ class AxilrodTellerMutoFunctor
       const auto distYIJ = distYNeighbors[j];
       const auto distZIJ = distZNeighbors[j];
       const auto distSquaredIJ = distSquaredNeighbors[j];
+      const auto isOwnedJ = ownedStatePtr[j] == autopas::OwnershipState::owned ? 1.0 : 0.0;
 
-#pragma omp simd reduction (+: fxAccI, fyAccI, fzAccI, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#pragma omp simd reduction(+ : fxAccI, fyAccI, fzAccI, fxAccJ, fyAccJ, fzAccJ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
       for (size_t k = j + 1; k < actualNeighborSize; ++k) {
-        const auto distXKI = - distXNeighbors[k];
-        const auto distYKI = - distYNeighbors[k];
-        const auto distZKI = - distZNeighbors[k];
+        const auto isOwnedK = ownedStatePtr[k] == autopas::OwnershipState::owned ? 1.0 : 0.0;
+
+        const auto distXKI = -distXNeighbors[k];
+        const auto distYKI = -distYNeighbors[k];
+        const auto distZKI = -distZNeighbors[k];
         const auto distSquaredKI = distSquaredNeighbors[k];
 
         const auto IJDotKI = distXKI * distXIJ + distYKI * distYIJ + distZKI * distZIJ;
@@ -1474,11 +1504,406 @@ class AxilrodTellerMutoFunctor
           nu = _PPLibrary->getMixingNu(typePtr[i], typeNeighbors[j], typeNeighbors[k]);
         }
 
+        if constexpr (not newton3) {
+          SoAFloatPrecision forceIX, forceIY, forceIZ;
+          SoAFloatPrecision factor, allDotProducts, allDistsSquared;
+          SoAKernelNoN3Verlet(distXKI, distYKI, distZKI, distXIJ, distYIJ, distZIJ, distSquaredKI, distSquaredIJ,
+                              distSquaredJK, IJDotKI, nu, forceIX, forceIY, forceIZ, factor, allDotProducts,
+                              allDistsSquared);
+          fxAccI += forceIX;
+          fyAccI += forceIY;
+          fzAccI += forceIZ;
+
+          if constexpr (calculateGlobals) {
+            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
+            potentialEnergySum += potentialEnergy3 * isOwnedI;
+
+            virialSumX += forceIX * (distXKI - distXIJ) * isOwnedI;
+            virialSumY += forceIY * (distYKI - distYIJ) * isOwnedI;
+            virialSumZ += forceIZ * (distZKI - distZIJ) * isOwnedI;
+          }
+          // count_interactions++;
+        }
+        else {
+          SoAFloatPrecision forceIX, forceIY, forceIZ, forceJX, forceJY, forceJZ;
+          SoAFloatPrecision factor, allDotProducts, allDistsSquared;
+          SoAKernelN3Verlet(distXKI, distYKI, distZKI, distXIJ, distYIJ, distZIJ, distSquaredKI, distSquaredIJ,
+                              distSquaredJK, IJDotKI, nu, forceIX, forceIY, forceIZ, forceJX, forceJY, forceJZ,
+                              factor, allDotProducts, allDistsSquared);
+          fxAccI += forceIX;
+          fyAccI += forceIY;
+          fzAccI += forceIZ;
+
+          fxAccJ += forceJX;
+          fyAccJ += forceJY;
+          fzAccJ += forceJZ;
+
+          const auto forceKX = - (forceIX + forceJX);
+          const auto forceKY = - (forceIY + forceJY);
+          const auto forceKZ = - (forceIZ + forceJZ);
+
+          fxPtr[k] += forceKX;
+          fyPtr[k] += forceKY;
+          fzPtr[k] += forceKZ;
+
+          if constexpr (calculateGlobals) {
+            const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
+            potentialEnergySum += potentialEnergy3 * isOwnedI;
+
+            virialSumX += forceIX * (distXKI - distXIJ) * isOwnedI;
+            virialSumY += forceIY * (distYKI - distYIJ) * isOwnedI;
+            virialSumZ += forceIZ * (distZKI - distZIJ) * isOwnedI;
+
+            virialSumX += forceJX * (distXKI - distXIJ) * isOwnedJ;
+            virialSumY += forceJY * (distYKI - distYIJ) * isOwnedJ;
+            virialSumZ += forceJZ * (distZKI - distZIJ) * isOwnedJ;
+
+            virialSumX += forceKX * (distXKI - distXIJ) * isOwnedK;
+            virialSumY += forceKY * (distYKI - distYIJ) * isOwnedK;
+            virialSumZ += forceKZ * (distZKI - distZIJ) * isOwnedK;
+          }
+          // count_interactions++;
+        }
+      }
+      if constexpr (newton3) {
+        fxPtr[j] += fxAccJ;
+        fyPtr[j] += fyAccJ;
+        fzPtr[j] += fzAccJ;
+        fxAccJ = 0.0;
+        fyAccJ = 0.0;
+        fzAccJ = 0.0;
+      }
+    }
+
+    fxPtr[i] += fxAccI;
+    fyPtr[i] += fyAccI;
+    fzPtr[i] += fzAccI;
+
+    if constexpr (countFLOPs) {
+      const size_t numTriplets = countFLOPs ? soaSize * (soaSize - 1) * (soaSize - 2) / 6 : 0;
+      _aosThreadDataFLOPs[threadNum].numTripletsCount += numTriplets;
+      _aosThreadDataFLOPs[threadNum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadNum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadNum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadNum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _aosThreadDataFLOPs[threadNum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
+    }
+    if (calculateGlobals) {
+      _aosThreadDataGlobals[threadNum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadNum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadNum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadNum].virialSum[2] += virialSumZ;
+    }
+  }
+
+  template <bool newton3>
+  void SoAFunctorVerletPairImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                                const std::vector<std::pair<size_t, size_t>,
+                                                  autopas::AlignedAllocator<std::pair<size_t, size_t>>> &neighborList) {
+    const auto threadNum = autopas::autopas_get_thread_num();
+    const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
+
+    auto *const __restrict fxPtr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
+    [[maybe_unused]] auto *const __restrict typePtr = soa.template begin<Particle_T::AttributeNames::typeId>();
+
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
+    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+
+    SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
+    SoAFloatPrecision virialSumX = 0.;
+    SoAFloatPrecision virialSumY = 0.;
+    SoAFloatPrecision virialSumZ = 0.;
+
+    size_t numDistanceCalculationSum = 0;
+    size_t numKernelCallsN3Sum = 0;
+    size_t numKernelCallsNoN3Sum = 0;
+    size_t numGlobalCalcsN3Sum = 0;
+    size_t numGlobalCalcsNoN3Sum = 0;
+
+    SoAFloatPrecision fxAccI = 0;
+    SoAFloatPrecision fyAccI = 0;
+    SoAFloatPrecision fzAccI = 0;
+    auto i = indexFirst;
+
+    const SoAFloatPrecision const_nu = _nu;
+    const size_t soaSize = soa.size();
+
+    const auto ownedStateI = ownedStatePtr[i];
+    if (ownedStateI == autopas::OwnershipState::dummy) {
+      return;
+    }
+    const auto isOwnedI = ownedStatePtr[i] == autopas::OwnershipState::owned ? 1.0 : 0.0;
+
+    const auto numNeighbors = neighborList.size();
+    std::vector<int, autopas::AlignedAllocator<int>> idNeighbors1{};
+    idNeighbors1.reserve(numNeighbors);
+    std::vector<int, autopas::AlignedAllocator<int>> typeNeighbors1{};
+    typeNeighbors1.reserve(numNeighbors);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> distXNeighbors1{};
+    distXNeighbors1.reserve(numNeighbors);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> distYNeighbors1{};
+    distYNeighbors1.reserve(numNeighbors);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> distZNeighbors1{};
+    distZNeighbors1.reserve(numNeighbors);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> distSquaredNeighbors1{};
+    distSquaredNeighbors1.reserve(numNeighbors);
+    std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> ownershipNeighbors1{};
+    ownershipNeighbors1.reserve(numNeighbors);
+
+    std::vector<int, autopas::AlignedAllocator<int>> idNeighbors2{};
+    idNeighbors2.reserve(numNeighbors);
+    std::vector<int, autopas::AlignedAllocator<int>> typeNeighbors2{};
+    typeNeighbors2.reserve(numNeighbors);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> distXNeighbors2{};
+    distXNeighbors2.reserve(numNeighbors);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> distYNeighbors2{};
+    distYNeighbors2.reserve(numNeighbors);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> distZNeighbors2{};
+    distZNeighbors2.reserve(numNeighbors);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> distSquaredNeighbors2{};
+    distSquaredNeighbors2.reserve(numNeighbors);
+    std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> ownershipNeighbors2{};
+    ownershipNeighbors2.reserve(numNeighbors);
+
+    for (size_t neighborPairIdx = 0; neighborPairIdx < neighborList.size(); ++neighborPairIdx) {
+      const auto &[j, k] = neighborList[neighborPairIdx];
+      const auto distX1 = xPtr[j] - xPtr[i];
+      const auto distY1 = yPtr[j] - yPtr[i];
+      const auto distZ1 = zPtr[j] - zPtr[i];
+      const auto distSquared1 = distX1 * distX1 + distY1 * distY1 + distZ1 * distZ1;
+      const auto distX2 = xPtr[i] - xPtr[k];
+      const auto distY2 = yPtr[i] - yPtr[k];
+      const auto distZ2 = zPtr[i] - zPtr[k];
+      const auto distSquared2 = distX2 * distX2 + distY2 * distY2 + distZ2 * distZ2;
+      if (distSquared1 <= cutoffSquared and ownedStatePtr[j] != autopas::OwnershipState::dummy and i != j and
+          distSquared2 <= cutoffSquared and ownedStatePtr[k] != autopas::OwnershipState::dummy and i != k) {
+        idNeighbors1.push_back(j);
+        typeNeighbors1.push_back(typePtr[j]);
+        distXNeighbors1.push_back(distX1);
+        distYNeighbors1.push_back(distY1);
+        distZNeighbors1.push_back(distZ1);
+        distSquaredNeighbors1.push_back(distSquared1);
+        ownershipNeighbors1.push_back(ownedStatePtr[j]);
+
+        idNeighbors2.push_back(k);
+        typeNeighbors2.push_back(typePtr[k]);
+        distXNeighbors2.push_back(distX2);
+        distYNeighbors2.push_back(distY2);
+        distZNeighbors2.push_back(distZ2);
+        distSquaredNeighbors2.push_back(distSquared2);
+        ownershipNeighbors2.push_back(ownedStatePtr[k]);
+      }
+    }
+
+    const auto actualNeighborSize = idNeighbors1.size();
+
+#pragma omp simd reduction(+ : fxAccI, fyAccI, fzAccI, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+    for (size_t pair = 0; pair < actualNeighborSize; ++pair) {
+      const auto distXIJ = distXNeighbors1[pair];
+      const auto distYIJ = distYNeighbors1[pair];
+      const auto distZIJ = distZNeighbors1[pair];
+      const auto distSquaredIJ = distSquaredNeighbors1[pair];
+
+      const auto distXKI = distXNeighbors2[pair];
+      const auto distYKI = distYNeighbors2[pair];
+      const auto distZKI = distZNeighbors2[pair];
+      const auto distSquaredKI = distSquaredNeighbors2[pair];
+
+      const auto IJDotKI = distXKI * distXIJ + distYKI * distYIJ + distZKI * distZIJ;
+      const auto distSquaredJK = 2.0 * IJDotKI + distSquaredIJ + distSquaredKI;
+
+      if (distSquaredJK > cutoffSquared) {
+        continue;
+      }
+
+      SoAFloatPrecision nu = const_nu;
+      if constexpr (useMixing) {
+        nu = _PPLibrary->getMixingNu(typePtr[i], typeNeighbors1[pair], typeNeighbors2[pair]);
+      }
+
+      SoAFloatPrecision forceIX, forceIY, forceIZ;
+      SoAFloatPrecision factor, allDotProducts, allDistsSquared;
+      SoAKernelNoN3Verlet(distXKI, distYKI, distZKI, distXIJ, distYIJ, distZIJ, distSquaredKI, distSquaredIJ,
+                          distSquaredJK, IJDotKI, nu, forceIX, forceIY, forceIZ, factor, allDotProducts,
+                          allDistsSquared);
+      fxAccI += forceIX;
+      fyAccI += forceIY;
+      fzAccI += forceIZ;
+
+      if constexpr (calculateGlobals) {
+        const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
+        potentialEnergySum += potentialEnergy3 * isOwnedI;
+
+        virialSumX += forceIX * (distXKI - distXIJ) * isOwnedI;
+        virialSumY += forceIY * (distYKI - distYIJ) * isOwnedI;
+        virialSumZ += forceIZ * (distZKI - distZIJ) * isOwnedI;
+      }
+    }
+
+    fxPtr[i] += fxAccI;
+    fyPtr[i] += fyAccI;
+    fzPtr[i] += fzAccI;
+
+    if constexpr (countFLOPs) {
+      const size_t numTriplets = countFLOPs ? soaSize * (soaSize - 1) * (soaSize - 2) / 6 : 0;
+      _aosThreadDataFLOPs[threadNum].numTripletsCount += numTriplets;
+      _aosThreadDataFLOPs[threadNum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadNum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadNum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadNum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _aosThreadDataFLOPs[threadNum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
+    }
+    if (calculateGlobals) {
+      _aosThreadDataGlobals[threadNum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadNum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadNum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadNum].virialSum[2] += virialSumZ;
+    }
+  }
+
+  template <bool newton3>
+  void SoAFunctorVerletIntersectionImpl(
+      autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+      const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborLists) {
+    const auto threadNum = autopas::autopas_get_thread_num();
+    const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
+
+    auto *const __restrict fxPtr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
+    [[maybe_unused]] auto *const __restrict typePtr = soa.template begin<Particle_T::AttributeNames::typeId>();
+
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
+    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+
+    SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
+    SoAFloatPrecision virialSumX = 0.;
+    SoAFloatPrecision virialSumY = 0.;
+    SoAFloatPrecision virialSumZ = 0.;
+
+    size_t numDistanceCalculationSum = 0;
+    size_t numKernelCallsN3Sum = 0;
+    size_t numKernelCallsNoN3Sum = 0;
+    size_t numGlobalCalcsN3Sum = 0;
+    size_t numGlobalCalcsNoN3Sum = 0;
+
+    SoAFloatPrecision fxAccI = 0;
+    SoAFloatPrecision fyAccI = 0;
+    SoAFloatPrecision fzAccI = 0;
+    auto i = indexFirst;
+
+    const SoAFloatPrecision const_nu = _nu;
+    const size_t soaSize = soa.size();
+
+    const auto ownedStateI = ownedStatePtr[i];
+    if (ownedStateI == autopas::OwnershipState::dummy) {
+      return;
+    }
+    const auto isOwnedI = ownedStatePtr[i] == autopas::OwnershipState::owned ? 1.0 : 0.0;
+
+    const auto numNeighbors = neighborLists.size();
+    std::vector<int, autopas::AlignedAllocator<int>> idNeighbors{};
+    idNeighbors.reserve(numNeighbors);
+    std::vector<int, autopas::AlignedAllocator<int>> typeNeighbors{};
+    typeNeighbors.reserve(numNeighbors);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> distXNeighbors{};
+    distXNeighbors.reserve(numNeighbors);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> distYNeighbors{};
+    distYNeighbors.reserve(numNeighbors);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> distZNeighbors{};
+    distZNeighbors.reserve(numNeighbors);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> distSquaredNeighbors{};
+    distSquaredNeighbors.reserve(numNeighbors);
+    std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> ownershipNeighbors{};
+    ownershipNeighbors.reserve(numNeighbors);
+
+    const auto &iNeighbors = neighborLists[i];
+
+    for (size_t neighborIdx = 0; neighborIdx < iNeighbors.size(); ++neighborIdx) {
+      const auto j = iNeighbors[neighborIdx];
+      const auto distX = xPtr[j] - xPtr[i];
+      const auto distY = yPtr[j] - yPtr[i];
+      const auto distZ = zPtr[j] - zPtr[i];
+      const auto distSquared = distX * distX + distY * distY + distZ * distZ;
+      if (distSquared <= cutoffSquared and ownedStatePtr[j] != autopas::OwnershipState::dummy and i != j) {
+        idNeighbors.push_back(j);
+        typeNeighbors.push_back(typePtr[j]);
+        distXNeighbors.push_back(distX);
+        distYNeighbors.push_back(distY);
+        distZNeighbors.push_back(distZ);
+        distSquaredNeighbors.push_back(distSquared);
+        ownershipNeighbors.push_back(ownedStatePtr[j]);
+      }
+    }
+
+    const auto actualNeighborSize = idNeighbors.size();
+    std::unordered_set<size_t> iNeighborsHashed;
+    iNeighborsHashed.reserve(actualNeighborSize);
+    iNeighborsHashed.insert(idNeighbors.begin(), idNeighbors.end());
+
+    std::vector<double> kX;
+    kX.reserve(actualNeighborSize);
+    std::vector<double> kY;
+    kY.reserve(actualNeighborSize);
+    std::vector<double> kZ;
+    kZ.reserve(actualNeighborSize);
+    std::vector<int> kType;
+    kType.reserve(actualNeighborSize);
+
+    for (size_t j = 0; j < actualNeighborSize; ++j) {
+      const auto jID = idNeighbors[j];
+      const auto &jNeighbors = neighborLists[jID];
+
+      std::vector<size_t> result;
+      result.reserve(iNeighborsHashed.size());
+      for (auto kID : jNeighbors) {
+        if (iNeighborsHashed.contains(kID)) {
+          kX.push_back(xPtr[kID]);
+          kY.push_back(yPtr[kID]);
+          kZ.push_back(zPtr[kID]);
+          kType.push_back(typePtr[kID]);
+        }
+      }
+
+      const auto distXIJ = distXNeighbors[j];
+      const auto distYIJ = distYNeighbors[j];
+      const auto distZIJ = distZNeighbors[j];
+      const auto distSquaredIJ = distSquaredNeighbors[j];
+
+#pragma omp simd reduction(+ : fxAccI, fyAccI, fzAccI, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+      for (size_t k = 0; k < kType.size(); ++k) {
+        const auto distXKI = xPtr[i] - kX[k];
+        const auto distYKI = yPtr[i] - kY[k];
+        const auto distZKI = zPtr[i] - kZ[k];
+        const auto distSquaredKI = distXKI * distXKI + distYKI * distYKI + distZKI * distZKI;
+
+        const auto IJDotKI = distXKI * distXIJ + distYKI * distYIJ + distZKI * distZIJ;
+        const auto distSquaredJK = 2.0 * IJDotKI + distSquaredIJ + distSquaredKI;
+
+        if (distSquaredJK > cutoffSquared) {
+          continue;
+        }
+
+        SoAFloatPrecision nu = const_nu;
+        if constexpr (useMixing) {
+          nu = _PPLibrary->getMixingNu(typePtr[i], typeNeighbors[j], kType[k]);
+        }
+
         SoAFloatPrecision forceIX, forceIY, forceIZ;
         SoAFloatPrecision factor, allDotProducts, allDistsSquared;
         SoAKernelNoN3Verlet(distXKI, distYKI, distZKI, distXIJ, distYIJ, distZIJ, distSquaredKI, distSquaredIJ,
-                                distSquaredJK, IJDotKI, nu, forceIX, forceIY, forceIZ, factor, allDotProducts,
-                                allDistsSquared);
+                            distSquaredJK, IJDotKI, nu, forceIX, forceIY, forceIZ, factor, allDotProducts,
+                            allDistsSquared);
         fxAccI += forceIX;
         fyAccI += forceIY;
         fzAccI += forceIZ;
@@ -1492,76 +1917,13 @@ class AxilrodTellerMutoFunctor
           virialSumZ += forceIZ * (distZKI - distZIJ) * isOwnedI;
         }
       }
+      kX.clear();
+      kY.clear();
+      kZ.clear();
+      kType.clear();
+
+      iNeighborsHashed.erase(jID);
     }
-
-
-    // for (size_t jNeighborIdx = 0; jNeighborIdx < neighborList.size(); ++jNeighborIdx) {
-    //   size_t j = neighborList[jNeighborIdx];
-    //   if (i == j) continue;
-    //
-    //   const auto ownedStateJ = ownedStatePtr[j];
-    //   if (ownedStateJ == autopas::OwnershipState::dummy) {
-    //     continue;
-    //   }
-    //
-    //   const SoAFloatPrecision distXIJ = xPtr[j] - xPtr[i];
-    //   const SoAFloatPrecision distYIJ = yPtr[j] - yPtr[i];
-    //   const SoAFloatPrecision distZIJ = zPtr[j] - zPtr[i];
-    //   const SoAFloatPrecision distSquaredIJ = distXIJ * distXIJ + distYIJ * distYIJ + distZIJ * distZIJ;
-    //
-    //   if (distSquaredIJ > cutoffSquared) {
-    //     continue;
-    //   }
-    //
-    //   for (size_t kNeighborIdx = jNeighborIdx + 1; kNeighborIdx < neighborList.size(); ++kNeighborIdx) {
-    //     size_t k = neighborList[kNeighborIdx];
-    //     if (i == k) continue;
-    //
-    //     const auto ownedStateK = ownedStatePtr[k];
-    //     if (ownedStateK == autopas::OwnershipState::dummy) {
-    //       continue;
-    //     }
-    //
-    //     const SoAFloatPrecision distXJK = xPtr[k] - xPtr[j];
-    //     const SoAFloatPrecision distYJK = yPtr[k] - yPtr[j];
-    //     const SoAFloatPrecision distZJK = zPtr[k] - zPtr[j];
-    //     const SoAFloatPrecision distSquaredJK = distXJK * distXJK + distYJK * distYJK + distZJK * distZJK;
-    //
-    //     if (distSquaredJK > cutoffSquared) {
-    //       continue;
-    //     }
-    //
-    //     const auto IJDotJK = distXIJ * distXJK + distYIJ * distYJK + distZIJ * distZJK;
-    //     const auto distSquaredKI = 2.0 * IJDotJK + distSquaredIJ + distSquaredJK;
-    //
-    //     if (distSquaredKI > cutoffSquared) {
-    //       continue;
-    //     }
-    //
-    //     SoAFloatPrecision nu = const_nu;
-    //     if constexpr (useMixing) {
-    //       nu = _PPLibrary->getMixingNu(typePtr[i], typePtr[j], typePtr[k]);
-    //     }
-    //
-    //     SoAFloatPrecision forceIX, forceIY, forceIZ;
-    //     SoAFloatPrecision factor, allDotProducts, allDistsSquared;
-    //     SoAKernelNoN3Refactored(distXIJ, distYIJ, distZIJ, distXJK, distYJK, distZJK, distSquaredIJ, distSquaredJK,
-    //                             distSquaredKI, IJDotJK, nu, forceIX, forceIY, forceIZ, factor, allDotProducts,
-    //                             allDistsSquared);
-    //     fxAccI += forceIX;
-    //     fyAccI += forceIY;
-    //     fzAccI += forceIZ;
-    //
-    //     if constexpr (calculateGlobals) {
-    //       const SoAFloatPrecision potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
-    //       potentialEnergySum += potentialEnergy3 * isOwnedI;
-    //
-    //       virialSumX -= forceIX * (distXJK + 2.0 * distXIJ) * isOwnedI;
-    //       virialSumY -= forceIY * (distYJK + 2.0 * distYIJ) * isOwnedI;
-    //       virialSumZ -= forceIZ * (distZJK + 2.0 * distZIJ) * isOwnedI;
-    //     }
-    //   }
-    // }
 
     fxPtr[i] += fxAccI;
     fyPtr[i] += fyAccI;
@@ -1585,12 +1947,12 @@ class AxilrodTellerMutoFunctor
   }
 
   __attribute__((always_inline)) inline void SoAKernelNoN3Verlet(
-    const SoAFloatPrecision &distXKI, const SoAFloatPrecision &distYKI, const SoAFloatPrecision &distZKI,
-    const SoAFloatPrecision &distXIJ, const SoAFloatPrecision &distYIJ, const SoAFloatPrecision &distZIJ,
-    const SoAFloatPrecision &distSquaredKI, const SoAFloatPrecision &distSquaredIJ,
-    const SoAFloatPrecision &distSquaredJK, const SoAFloatPrecision &IJDotKI, const SoAFloatPrecision &nu,
-    SoAFloatPrecision &forceIX, SoAFloatPrecision &forceIY, SoAFloatPrecision &forceIZ, SoAFloatPrecision &factor,
-    SoAFloatPrecision &allDotProducts, SoAFloatPrecision &allDistsSquared) const {
+      const SoAFloatPrecision &distXKI, const SoAFloatPrecision &distYKI, const SoAFloatPrecision &distZKI,
+      const SoAFloatPrecision &distXIJ, const SoAFloatPrecision &distYIJ, const SoAFloatPrecision &distZIJ,
+      const SoAFloatPrecision &distSquaredKI, const SoAFloatPrecision &distSquaredIJ,
+      const SoAFloatPrecision &distSquaredJK, const SoAFloatPrecision &IJDotKI, const SoAFloatPrecision &nu,
+      SoAFloatPrecision &forceIX, SoAFloatPrecision &forceIY, SoAFloatPrecision &forceIZ, SoAFloatPrecision &factor,
+      SoAFloatPrecision &allDotProducts, SoAFloatPrecision &allDistsSquared) const {
     // Calculate prefactor
     allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
 
@@ -1613,9 +1975,58 @@ class AxilrodTellerMutoFunctor
     const SoAFloatPrecision finalFactorIJ = factor * (factorIDirectionIJ + factorIDirectionJK);
     const SoAFloatPrecision finalFactorKI = factor * (factorIDirectionKI + factorIDirectionJK);
 
-    forceIX = - distXKI * finalFactorKI - distXIJ * finalFactorIJ;
-    forceIY = - distYKI * finalFactorKI - distYIJ * finalFactorIJ;
-    forceIZ = - distZKI * finalFactorKI - distZIJ * finalFactorIJ;
+    forceIX = -distXKI * finalFactorKI - distXIJ * finalFactorIJ;
+    forceIY = -distYKI * finalFactorKI - distYIJ * finalFactorIJ;
+    forceIZ = -distZKI * finalFactorKI - distZIJ * finalFactorIJ;
+  }
+
+  __attribute__((always_inline)) inline void SoAKernelN3Verlet(
+    const SoAFloatPrecision &distXKI, const SoAFloatPrecision &distYKI, const SoAFloatPrecision &distZKI,
+    const SoAFloatPrecision &distXIJ, const SoAFloatPrecision &distYIJ, const SoAFloatPrecision &distZIJ,
+    const SoAFloatPrecision &distSquaredKI, const SoAFloatPrecision &distSquaredIJ,
+    const SoAFloatPrecision &distSquaredJK, const SoAFloatPrecision &IJDotKI, const SoAFloatPrecision &nu,
+    SoAFloatPrecision &forceIX, SoAFloatPrecision &forceIY, SoAFloatPrecision &forceIZ, SoAFloatPrecision &forceJX,
+    SoAFloatPrecision &forceJY, SoAFloatPrecision &forceJZ, SoAFloatPrecision &factor,
+    SoAFloatPrecision &allDotProducts, SoAFloatPrecision &allDistsSquared) const {
+    // Calculate prefactor
+    allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+
+    const SoAFloatPrecision allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
+    factor = 3.0 * nu / allDistsTo5;
+
+    // Dot products
+    const SoAFloatPrecision IJDotJK = -(distSquaredIJ + IJDotKI);
+    const SoAFloatPrecision JKDotKI = -(IJDotKI + distSquaredKI);
+    const SoAFloatPrecision IJdotJKdotKI = IJDotJK * JKDotKI;
+    allDotProducts = IJDotKI * IJdotJKdotKI;
+    const SoAFloatPrecision allDots5 = allDotProducts * 5.0;
+
+    // Force I components
+    const SoAFloatPrecision factorIDirectionJK = IJDotKI * (IJDotJK - JKDotKI);
+    const SoAFloatPrecision factorIDirectionIJ =
+        (-IJdotJKdotKI * distSquaredIJ + allDistsSquared - allDots5) / distSquaredIJ;
+    const SoAFloatPrecision factorIDirectionKI =
+        (IJdotJKdotKI * distSquaredKI - allDistsSquared + allDots5) / distSquaredKI;
+
+    const SoAFloatPrecision finalFactorIJ = factor * (factorIDirectionIJ + factorIDirectionJK);
+    const SoAFloatPrecision finalFactorKI = factor * (factorIDirectionKI + factorIDirectionJK);
+
+    forceIX = -distXKI * finalFactorKI - distXIJ * finalFactorIJ;
+    forceIY = -distYKI * finalFactorKI - distYIJ * finalFactorIJ;
+    forceIZ = -distZKI * finalFactorKI - distZIJ * finalFactorIJ;
+
+    const SoAFloatPrecision factorJDirectionKI = IJDotJK * (JKDotKI - IJDotKI);
+    const SoAFloatPrecision factorJDirectionIJ =
+        (-IJDotKI * JKDotKI * distSquaredIJ + allDistsSquared - allDots5) / distSquaredIJ;
+    const SoAFloatPrecision factorJDirectionJK =
+        (IJDotKI * JKDotKI * distSquaredJK - allDistsSquared + allDots5) / distSquaredJK;
+
+    const SoAFloatPrecision finalFactorIJOnJ = factor * (factorJDirectionIJ - factorJDirectionKI);
+    const SoAFloatPrecision finalFactorKIOnJ = factor * (factorJDirectionJK - factorJDirectionKI);
+
+    forceJX = distXKI * finalFactorKIOnJ + distXIJ * finalFactorIJOnJ;
+    forceJY = distYKI * finalFactorKIOnJ + distYIJ * finalFactorIJOnJ;
+    forceJZ = distZKI * finalFactorKIOnJ + distZIJ * finalFactorIJOnJ;
   }
 
   __attribute__((always_inline)) inline void SoAKernelNoN3Refactored(
@@ -1871,6 +2282,7 @@ class AxilrodTellerMutoFunctor
   // make sure of the size of AoSThreadDataGlobals
   static_assert(sizeof(AoSThreadDataGlobals) % 64 == 0, "AoSThreadDataGlobals has wrong size");
   static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
+  size_t count_interactions = 0;
 
   const double _cutoffSquared;
 

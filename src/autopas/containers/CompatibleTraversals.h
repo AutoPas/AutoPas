@@ -118,6 +118,15 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
+ * Lists all triwise traversal options applicable for the Verlet Lists container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allVLCCompatibleTraversals3B() {
+  static const auto s = filterAllOptions("vlc_", InteractionTypeOption::triwise);
+  return s;
+}
+
+/**
  * Lists all traversal options applicable for the Var Verlet Lists As Build container.
  * @return set of all applicable traversal options.
  */
@@ -154,7 +163,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
           TraversalOption::ot_c01,
           TraversalOption::vcl_c01_balanced,
           TraversalOption::vcl_cluster_iteration,
-          TraversalOption::vl_list_iteration,
+          // TraversalOption::vl_list_iteration,
           TraversalOption::vl_list_intersection_sorted_3b,
           TraversalOption::vl_list_intersection_hashing_3b,
           TraversalOption::vl_pair_list_iteration_3b,
@@ -176,9 +185,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  */
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
   return {
-      TraversalOption::vl_pair_list_iteration_3b,
       TraversalOption::vl_list_intersection_sorted_3b,
-      TraversalOption::vl_list_intersection_hashing_3b,
   };
 };
 /**
@@ -244,6 +251,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
         case ContainerOption::verletLists: {
           return allVLCompatibleTraversals3B();
+        }
+        case ContainerOption::verletListsCells: {
+          return allVLCCompatibleTraversals3B();
         }
         default: {
           static const std::set<TraversalOption> s{};

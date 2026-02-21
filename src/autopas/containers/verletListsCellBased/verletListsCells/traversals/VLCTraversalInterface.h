@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "autopas/utils/checkFunctorType.h"
 #include "autopas/options/ContainerOption.h"
 
 namespace autopas {
@@ -17,7 +18,7 @@ namespace autopas {
 /**
  *
  * Forward declaration of the neighbor list types used in this interface.
- * This avoid circular dependencies in the header files.
+ * This avoids circular dependencies in the header files.
  * VLCAllCellsNeighborList.h/VLCCellPairNeighborList.h -> VLCTraversalInterface.h (This file)
  */
 template <class Particle_T>
@@ -61,10 +62,18 @@ class VLCTraversalInterface {
    * @param dataLayout
    * @param useNewton3
    */
-  template <class PairwiseFunctor>
-  void processCellLists(NeighborList &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor,
+  template <class Functor>
+  void processCellLists(NeighborList &neighborLists, unsigned long cellIndex, Functor *functor,
                         DataLayoutOption dataLayout, bool useNewton3) {
-    processCellListsImpl<PairwiseFunctor>(neighborLists, cellIndex, pairwiseFunctor, dataLayout, useNewton3);
+    if constexpr (utils::isPairwiseFunctor<Functor>()) {
+      processCellListsPairwiseImpl<Functor>(neighborLists, cellIndex, functor, dataLayout, useNewton3);
+    } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
+      processCellListsTriwiseImpl<Functor>(neighborLists, cellIndex, functor, dataLayout, useNewton3);
+    } else {
+      utils::ExceptionHandler::exception(
+          "VLCTraversalInterface::processCellLists(): Functor {} is not of type PairwiseFunctor or TriwiseFunctor.",
+          functor->getName());
+    }
   }
 
   /**
@@ -118,7 +127,7 @@ class VLCTraversalInterface {
    * @param useNewton3
    */
   template <class PairwiseFunctor>
-  void processCellListsImpl(VLCAllCellsNeighborList<Particle_T> &neighborList, unsigned long cellIndex,
+  void processCellListsPairwiseImpl(VLCAllCellsNeighborList<Particle_T> &neighborList, unsigned long cellIndex,
                             PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3) {
     if (dataLayout == DataLayoutOption::aos) {
       auto &aosList = neighborList.getAoSNeighborList();
@@ -141,6 +150,33 @@ class VLCTraversalInterface {
     }
   }
 
+  template <class TriwiseFunctor>
+void processCellListsTriwiseImpl(VLCAllCellsNeighborList<Particle_T> &neighborList, unsigned long cellIndex,
+                          TriwiseFunctor *triwiseFunctor, DataLayoutOption dataLayout, bool useNewton3) {
+    if (dataLayout == DataLayoutOption::aos) {
+      auto &aosList = neighborList.getAoSNeighborList();
+      for (auto &[particlePtr, neighbors] : aosList[cellIndex]) {
+        Particle_T &particle = *particlePtr;
+        for (auto neighborPtr1 = neighbors.begin(); neighborPtr1 != neighbors.end(); ++neighborPtr1) {
+          Particle_T &neighbor1 = **neighborPtr1;
+            for (auto neighborPtr2 = std::next(neighborPtr1); neighborPtr2 != neighbors.end(); ++neighborPtr2) {
+              Particle_T &neighbor2 = **neighborPtr2;
+              triwiseFunctor->AoSFunctor(particle, neighbor1, neighbor2, useNewton3);
+            }
+        }
+      }
+    }
+
+    else if (dataLayout == DataLayoutOption::soa) {
+      auto &soaList = neighborList.getSoANeighborList();
+      for (auto &[particleIndex, neighbors] : soaList[cellIndex]) {
+        if (not neighbors.empty()) {
+          triwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);
+        }
+      }
+    }
+  }
+
   /**
    * Processing of the pairwise Verlet type of neighbor list (neighbor list for every pair of neighboring cells).
    * @tparam PairwiseFunctor
@@ -151,7 +187,7 @@ class VLCTraversalInterface {
    * @param useNewton3
    */
   template <class PairwiseFunctor>
-  void processCellListsImpl(VLCCellPairNeighborList<Particle_T> &neighborList, unsigned long cellIndex,
+  void processCellListsPairwiseImpl(VLCCellPairNeighborList<Particle_T> &neighborList, unsigned long cellIndex,
                             PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3) {
     if (dataLayout == DataLayoutOption::aos) {
       auto &aosList = neighborList.getAoSNeighborList();

@@ -40,25 +40,35 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface, public V
     return TraversalOption::vl_list_intersection_hashing_3b;
   }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (not _useNewton3) and _dataLayout == DataLayoutOption::aos;
-  }
+  [[nodiscard]] bool isApplicable() const override { return (not _useNewton3); }
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
-      utils::ExceptionHandler::exception(
-          "VLListIntersectionTraversalHashing3B::initTraversal(): SoA dataLayout not implemented yet for "
-          "VLListIntersectionTraversalHashing3B.");
+      // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
+      // SoALoader.
+      std::vector<size_t> offsets(cells.size() + 1);
+      std::inclusive_scan(
+          cells.begin(), cells.end(), offsets.begin() + 1,
+          [](const size_t &partialSum, const auto &cell) { return partialSum + cell.size(); }, 0);
+
+      _soa.resizeArrays(offsets.back());
+
+      AUTOPAS_OPENMP(parallel for)
+      for (size_t i = 0; i < cells.size(); ++i) {
+        _functor->SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
+      }
     }
   }
 
   void endTraversal() override {
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
-      utils::ExceptionHandler::exception(
-          "VLListIntersectionTraversalHashing3B::endTraversal(): SoA dataLayout not implemented yet for "
-          "VLListIntersectionTraversalHashing3B.");
+      size_t offset = 0;
+      for (auto &cell : cells) {
+        _functor->SoAExtractor(cell, _soa, offset);
+        offset += cell.size();
+      }
     }
   }
 
@@ -110,9 +120,13 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface, public V
       }
 
       case DataLayoutOption::soa: {
-        utils::ExceptionHandler::exception(
-            "VLListIntersectionTraversalHashing3B::traverseParticles(): SoA dataLayout not implemented yet for "
-            "VLListIntersectionTraversalHashing3B.");
+        if (not _useNewton3) {
+          /// @todo find a sensible chunk size
+          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
+          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+            _functor->SoAFunctorVerletIntersection(_soa, particleIndex, soaNeighborLists, _useNewton3);
+          }
+        }
         return;
       }
       default: {

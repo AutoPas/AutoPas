@@ -37,7 +37,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 
   [[nodiscard]] bool isApplicable() const override {
     // No parallel version with N3 and no data races is available, hence no N3 is completely disabled.
-    return (not _useNewton3) and (_dataLayout == DataLayoutOption::aos or _dataLayout == DataLayoutOption::soa);
+    return true;
   }
 
   void initTraversal() override {
@@ -188,7 +188,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       case DataLayoutOption::soa: {
         if (not _useNewton3) {
           /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
+          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 100), 1ul)))
           for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
             _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
           }

@@ -117,6 +117,16 @@ class TriwiseFunctor : public Functor<Particle_T, CRTP_T> {
                                 const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorVerlet: not implemented", this->getName());
   }
+
+  virtual void SoAFunctorVerletIntersection(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                              const std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &neighborLists, bool newton3) {
+    utils::ExceptionHandler::exception("{}::SoAFunctorVerlet: not implemented", this->getName());
+  }
+
+  virtual void SoAFunctorVerletPair(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                              const std::vector<std::pair<size_t, size_t>, autopas::AlignedAllocator<std::pair<size_t, size_t>>> &neighborList, bool newton3) {
+    utils::ExceptionHandler::exception("{}::SoAFunctorVerlet: not implemented", this->getName());
+  }
 };
 
 }  // namespace autopas

@@ -16,6 +16,17 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
 target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
+# Add vectorization reporting to the executable that uses the Functor
+#if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+#    target_compile_options(md-flexible PRIVATE -fopt-info-vec-all)
+#elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+#    # Clang is excellent for templated code diagnostics
+#    target_compile_options(md-flexible PRIVATE
+#            -Rpass=loop-vectorize
+#            -Rpass-missed=loop-vectorize
+#            -Rpass-analysis=loop-vectorize)
+#endif()
+
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." ON)

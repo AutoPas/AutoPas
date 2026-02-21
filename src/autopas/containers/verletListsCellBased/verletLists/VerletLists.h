@@ -80,7 +80,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<ParticleCellType> *>(traversal);
     if (verletTraversalInterface) {
       verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
-                                                         _soaNeighborLists, _aosNeighborPairsLists);
+                                                         _soaNeighborLists, _aosNeighborPairsLists,
+                                                         _soaNeighborPairLists);
     } else {
       utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
@@ -131,6 +132,10 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       case TraversalOption::vl_pair_list_iteration_3b: {
         // build 3Body verletLists through VLIteration traversal
         this->updatePairVerletListsAoS3B(traversal->getUseNewton3());
+
+        if (not _soaListIsValid and traversal->getDataLayout() == DataLayoutOption::soa) {
+          generateSoAPairListFromAoSVerletLists();
+        }
         break;
       }
       // Default builds normal neighbor lists including halo particles.
@@ -283,6 +288,43 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     _soaListIsValid = true;
   }
 
+  void generateSoAPairListFromAoSVerletLists() {
+    // resize the list to the size of the aos neighborlist
+    _soaNeighborPairLists.resize(_aosNeighborPairsLists.size());
+    // clear the aos 2 soa map
+    _particlePtr2indexMap.clear();
+
+    _particlePtr2indexMap.reserve(_aosNeighborPairsLists.size());
+    size_t index = 0;
+
+    // Here we have to iterate over all particles, as particles might be later on marked for deletion, and we cannot
+    // differentiate them from particles already marked for deletion.
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
+      // set the map
+      _particlePtr2indexMap[&(*iter)] = index;
+    }
+    size_t accumulatedListSize = 0;
+    for (const auto &[particlePtr, neighborPairPtrVector] : _aosNeighborPairsLists) {
+      accumulatedListSize += neighborPairPtrVector.size();
+      size_t i_id = _particlePtr2indexMap[particlePtr];
+      // each soa neighbor list should be of the same size as for aos
+      _soaNeighborPairLists[i_id].resize(neighborPairPtrVector.size());
+      size_t j = 0;
+      for (auto &neighborPairPtr : neighborPairPtrVector) {
+        auto p1Index = _particlePtr2indexMap[neighborPairPtr.first];
+        auto p2Index = _particlePtr2indexMap[neighborPairPtr.second];
+        _soaNeighborPairLists[i_id][j] = std::make_pair(p1Index, p2Index);
+        j++;
+      }
+    }
+
+    AutoPasLog(DEBUG,
+               "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
+               "size is {}",
+               static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());
+    _soaListIsValid = true;
+  }
+
  private:
   /**
    * Neighbor Lists: Map of particle pointers to vector of particle pointers.
@@ -305,6 +347,9 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * For every Particle, identified via the _particlePtr2indexMap, a vector of its neighbor indices is stored.
    */
   std::vector<std::vector<size_t, AlignedAllocator<size_t>>> _soaNeighborLists;
+
+  std::vector<std::vector<std::pair<size_t, size_t>, AlignedAllocator<std::pair<size_t, size_t>>>>
+      _soaNeighborPairLists;
 
   /**
    * Shows if the SoA neighbor list is currently valid.

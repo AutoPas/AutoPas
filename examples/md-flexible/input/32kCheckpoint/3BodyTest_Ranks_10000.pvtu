@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<VTKFile byte_order="LittleEndian" type="PUnstructuredGrid" version="0.1">
+  <PUnstructuredGrid GhostLevel="0">
+    <PPointData/>
+    <PCellData>
+      <PDataArray type="Int32" Name="DomainId" />
+      <PDataArray type="Float32" Name="CellSizeFactor" />
+      <PDataArray type="Int32" Name="Container" />
+      <PDataArray type="Int32" Name="DataLayout" />
+      <PDataArray type="Int32" Name="LoadEstimator" />
+      <PDataArray type="Int32" Name="Traversal" />
+      <PDataArray type="Int32" Name="Newton3" />
+      <PDataArray type="Int32" Name="Rank" />
+    </PCellData>
+    <PPoints>
+      <DataArray NumberOfComponents="3" format="ascii" type="Float32">
+        0 0 0
+        36.6504 0 0
+        0 36.6504 0
+        36.6504 36.6504 0
+        0 0 44.05
+        36.6504 0 44.05
+        0 36.6504 44.05
+        36.6504 36.6504 44.05
+      </DataArray>
+    </PPoints>
+    <Piece Source="./data/3BodyTest_Ranks_0_10000.vtu"/>
+  </PUnstructuredGrid>
+</VTKFile>
