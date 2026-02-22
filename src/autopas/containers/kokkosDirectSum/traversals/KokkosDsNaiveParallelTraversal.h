@@ -101,14 +101,14 @@ private:
     auto func = _functor;
     FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
 
-    Kokkos::parallel_for("traversal", Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, Kokkos::AUTO()), KOKKOS_LAMBDA(auto teamHandle) {
+    Kokkos::parallel_for("traversal", Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, Kokkos::AUTO(), Kokkos::AUTO()), KOKKOS_LAMBDA(auto teamHandle) {
       int i = teamHandle.league_rank();
 
       FloatPrecision fxAcc = 0.;
       FloatPrecision fyAcc = 0.;
       FloatPrecision fzAcc = 0.;
 
-      Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamHandle, M), [&](int j,
+      Kokkos::parallel_reduce(Kokkos::TeamVectorRange(teamHandle, M), [&](int j,
         FloatPrecision& localFxAcc,
         FloatPrecision& localFyAcc,
         FloatPrecision& localFzAcc) {
