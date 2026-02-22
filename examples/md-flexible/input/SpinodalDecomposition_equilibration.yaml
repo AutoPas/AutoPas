@@ -5,8 +5,8 @@ verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  None
-data-layout                      :  [AoS, SoA]
-traversal                        :  [LC_C08_SoA_N3]
+data-layout                      :  [SoA]
+traversal                        :  [lc_c08]
 newton3                          :  [disabled]
 functor                          :  Lennard-Jones (12-6) AVX
 cutoff                           :  2.5
