@@ -364,7 +364,7 @@ template <class target_T = int, class float_T, std::size_t SIZE>
  * @param lhs The left hand side floating point number to compare.
  * @param rhs The right hand side floating point number to compare.
  * @param ulpDistance The maximum acceptable ULP distance between the two floating points
- *      for which they would be considered near each other. This is optional.
+ *      for which they would be considered near each other. This is optional and defaults to {@link autopas::utils::Math::MAX_ULP_DISTANCE}
  * @return true if the UPL distance for all elements of lhs and rhs is less than or equal to the provided value
  */
 template <ContainerType Container>
@@ -379,7 +379,7 @@ bool isInUlp(Container lhs, Container rhs, unsigned int ulpDistance = Math::MAX_
  * @tparam Container the container type
  * @param lhs input array
  * @param rhs input array
- * @param maxRelativeDifference
+ * @param maxRelativeDifference and defaults to {@link autopas::utils::Math::EPSILON_RELATIVE_EQUALITY}
  * @return
  */
 template <ContainerType Container>

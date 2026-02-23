@@ -241,14 +241,14 @@ constexpr size_t bit_size_v = sizeof(T) * 8;
 
 /**
  * Helper struct to get the correspondingly sized integer for a given floating type.
- * As 128-bit type floating points are not yet available in C++20, we ensure it will fail to be instantiated - so that
- * the necessary code changes in the conditional can happen.
+ * As 128-bit type floating points are not yet available in C++20, we ensure it will fail to be instantiated with
+ * a hint to extend the functionality (since installation with 128-bit implies these types being then in the standard)
  * @tparam FloatType floating point type
  */
 template <std::floating_point FloatType>
 struct int_t_impl {
   static_assert(bit_size_v<FloatType> == 32 || bit_size_v<FloatType> == 64,
-                "int_t only supports 32-bit and 64-bit floating-point types.");
+                "int_t only supports 32-bit and 64-bit floating-point types yet. Please extend to 128-bit types");
   /** access the int data type */
   using type = std::conditional_t<bit_size_v<FloatType> == 32, std::int32_t, std::int64_t>;
 };
@@ -263,11 +263,11 @@ using int_t = typename internal::int_t_impl<FloatType>::type;
 /**
  * Function for comparing closeness of two floating point numbers using ULP (Units in the Last Place) method.
  *
- * @tparam FloatType must be either double or float (ensured by static assertion)
+ * @tparam FloatType must be either double or float
  * @param lhs The left hand side floating point number to compare.
  * @param rhs The right hand side floating point number to compare.
  * @param ulpDistance The maximum acceptable ULP distance between the two floating points
- *      for which they would be considered near each other.
+ *      for which they would be considered near each other, defaults to {@link autopas::utils::Math::MAX_ULP_DISTANCE}
  *
  * @return true if the ULP distance between lhs and rhs is less than or equal to the provided ulpDistance value,
  * otherwise, false. Returns true if both numbers are exactly the same. Returns false if the signs do not match.
@@ -296,7 +296,7 @@ bool isInUlp(FloatType lhs, FloatType rhs, unsigned int ulpDistance = MAX_ULP_DI
  * Determines if two doubles are near each other. This function should be preferred to comparing with ==.
  * @param a
  * @param b
- * @param maxRelativeDifference inclusive, relative to max(|a|, |b|).
+ * @param maxRelativeDifference inclusive, relative to max(|a|, |b|), defaults to {@link autopas::utils::Math::EPSILON_RELATIVE_EQUALITY}
  * @return
  */
 template <std::floating_point FloatType>
