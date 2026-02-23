@@ -233,7 +233,7 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
   return {getCurrentConfig(), _isTuning};
 }
 
-void AutoTuner::addMeasurement(long sampleRebuild, long sampleNonRebuild, bool neighborListRebuilt) {
+void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt) {
   const auto &currentConfig = _configQueue.back();
   // sanity check
   if (getCurrentNumSamples() >= _maxSamples) {
@@ -243,14 +243,14 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleNonRebuild, bool n
         "tuneConfiguration() should have been called before to process and flush samples.");
   }
   AutoPasLog(TRACE, "Adding sampleRebuild and sampleNonRebuild {}, {} to configuration {}.", sampleRebuild,
-             sampleNonRebuild, currentConfig.toShortString());
+             sampleTraverseParticles, currentConfig.toShortString());
   if (neighborListRebuilt) {
     // We add samples to _samplesRebuildingNeighborLists only for iterations where a neighbor list rebuild took place.
     // We do this to avoid essentially "zero" samples from the iterations without a neighbor list rebuild.
     // This is done so that we can apply different strategies (mean, median and min) to find the optimum value.
     _samplesRebuildingNeighborLists.push_back(sampleRebuild);
   }
-  _samplesTraverseInteractions.push_back(sampleNonRebuild);
+  _samplesTraverseInteractions.push_back(sampleTraverseParticles);
 
   checkEarlyStoppingCondition();
 

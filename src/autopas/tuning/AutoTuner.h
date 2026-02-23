@@ -193,11 +193,11 @@ class AutoTuner {
    * The sample argument is a long because std::chrono::duration::count returns a long.
    *
    * @param sampleRebuild time or energy sample for rebuild part of the iteration.
-   * @param sampleNonRebuild time or energy sample for non-rebuild part of the iteration. This includes
+   * @param sampleTraverseParticles time or energy sample for non-rebuild part of the iteration. This includes
    * computeInteraction and remainderTraversal call.
    * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
    */
-  void addMeasurement(long sampleRebuild, long sampleNonRebuild, bool neighborListRebuilt);
+  void addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt);
 
   /**
    * Adds domain similarity statistics to a vector of measurements, which can be smoothed for use in MPI Tuning to find
