@@ -14,12 +14,12 @@
 namespace demLib {
 
 /**
- * Granular class for the DEMFunctor.
+ * Granular Particle class for the DEMFunctor.
  */
 
-class GranularDEM : public autopas::ParticleBaseFP64 {
+class GranularDEMParticle : public autopas::ParticleBaseFP64 {
  public:
-  GranularDEM() = default;
+  GranularDEMParticle() = default;
 
   /**
    * Constructor of granular particle with initialization of typeID.
@@ -29,10 +29,11 @@ class GranularDEM : public autopas::ParticleBaseFP64 {
    * @param particleId Unique Id of the particle.
    * @param typeId TypeId of the particle.
    */
-  GranularDEM(const std::array<double, 3> &pos, const std::array<double, 3> &v, const std::array<double, 3> angularVel,
-              unsigned long particleId, unsigned long typeId = 0, const double temperature = 0.);
+  GranularDEMParticle(const std::array<double, 3> &pos, const std::array<double, 3> &v,
+                      const std::array<double, 3> angularVel, unsigned long particleId, unsigned long typeId = 0,
+                      const double temperature = 0.);
 
-  ~GranularDEM() override = default;
+  ~GranularDEMParticle() override = default;
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -73,7 +74,7 @@ class GranularDEM : public autopas::ParticleBaseFP64 {
    */
   // clang-format off
   using SoAArraysType = typename autopas::utils::SoAType<
-      GranularDEM *,
+      GranularDEMParticle *,
       size_t, // id
       double, // x
       double, // y
@@ -302,8 +303,16 @@ class GranularDEM : public autopas::ParticleBaseFP64 {
    */
   [[nodiscard]] double getTemperature() const;
 
+  /**
+   * Set the temperature
+   * @param temperature
+   */
   void setTemperature(double temperature);
 
+  /**
+   * Adds given temperature to the particle's temperature.
+   * @param temperature
+   */
   void addTemperature(double temperature);
 
   /**
@@ -357,8 +366,14 @@ class GranularDEM : public autopas::ParticleBaseFP64 {
    */
   std::array<double, 3> _torque{};
 
-  double _temperature;
+  /**
+   * Temperature of the particle.
+   */
+  double _temperature{};
 
-  double _heatFlux;
+  /**
+   * Heatflux (flow of heat energy) of the particle.
+   */
+  double _heatFlux{};
 };
 }  // namespace demLib

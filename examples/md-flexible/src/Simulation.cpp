@@ -221,8 +221,7 @@ void Simulation::run() {
   while (needsMoreIterations()) {
     if (_vtkWriter.has_value() and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
-      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition,
-                                 *_configuration.getParticlePropertiesLibrary());
+      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
       _timers.vtk.stop();
     }
 

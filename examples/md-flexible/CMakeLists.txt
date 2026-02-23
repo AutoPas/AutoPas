@@ -14,8 +14,7 @@ include(autopas_all)
 
 option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
-target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
-target_link_libraries(md-flexible PUBLIC autopas autopasTools demLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
+target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary demLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." ON)

@@ -321,6 +321,16 @@ class ParticlePropertiesLibrary {
                                   k];
   }
 
+  /**
+   * Returns the precomputed geometric mean radius for one pair of site types, i.e. sqrt(r_i * r_j).
+   * @param i
+   * @param j
+   * @return sqrt(r_i * r_j)
+   */
+  floatType getMixingGeometricMeanRadius(intType i, intType j) const {
+    return _computedDEMMixingData[i * _numRegisteredSiteTypes + j].geometricMeanRadius;
+  }
+
  private:
   intType _numRegisteredSiteTypes{0};
   intType _numRegisteredMolTypes{0};
@@ -358,8 +368,13 @@ class ParticlePropertiesLibrary {
     floatType nu;
   };
 
+  struct PackedDEMMixingData {
+    floatType geometricMeanRadius;
+  };
+
   std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> _computedLJMixingData;
-  std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMMixingData;
+  std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMixingData;
+  std::vector<PackedDEMMixingData, autopas::AlignedAllocator<PackedDEMMixingData>> _computedDEMMixingData;
 };
 
 template <typename floatType, typename intType>
@@ -531,6 +546,19 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
           const floatType mixedNu = cbrt(_nus[firstIndex] * _nus[secondIndex] * _nus[thirdIndex]);
           _computedATMMixingData[globalIndex3B].nu = mixedNu;
         }
+      }
+    }
+  }
+
+  if (_storeDEMData) {
+    _computedDEMMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
+    for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
+      for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
+        const auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
+
+        // geometric mean radius
+        const floatType geometricMeanRadius = std::sqrt(_siteRadii[firstIndex] * _siteRadii[secondIndex]);
+        _computedDEMMixingData[globalIndex].geometricMeanRadius = geometricMeanRadius;
       }
     }
   }

@@ -121,6 +121,35 @@ if (AUTOPAS_BUILD_TESTS)
             PROPERTIES
             ENVIRONMENT "${LSAN_OPTIONS_STR}"
     )
+# --- DEM ---
+
+    file(
+            GLOB_RECURSE
+            DEM_TEST_SRC
+            "dem/tests/*.cpp"
+            "dem/tests/*.h"
+    )
+
+    add_executable(demLibTests ${DEM_TEST_SRC} demLibTests.cpp)
+
+    target_include_directories(
+            demLibTests PUBLIC
+            ${PROJECT_SOURCE_DIR}/tests/testAutopas dem
+    )
+
+    target_link_libraries(
+            demLibTests PUBLIC
+            autopas autopasTools molecularDynamicsLibrary demLibrary gmock
+    )
+
+    # this cmake module was only introduced in 3.10
+    include(GoogleTest)
+    # more robust, queries the compiled executable
+    gtest_discover_tests(
+            demLibTests TEST_PREFIX "demLibTests/"
+            PROPERTIES
+            ENVIRONMENT "${LSAN_OPTIONS_STR}"
+    )
 
 # --- SPH ---
     file(
