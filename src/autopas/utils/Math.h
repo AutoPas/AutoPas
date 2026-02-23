@@ -296,7 +296,8 @@ bool isInUlp(FloatType lhs, FloatType rhs, unsigned int ulpDistance = MAX_ULP_DI
  * Determines if two doubles are near each other. This function should be preferred to comparing with ==.
  * @param a
  * @param b
- * @param maxRelativeDifference inclusive, relative to max(|a|, |b|), defaults to {@link autopas::utils::Math::EPSILON_RELATIVE_EQUALITY}
+ * @param maxRelativeDifference inclusive, relative to max(|a|, |b|), defaults to {@link
+ *      autopas::utils::Math::EPSILON_RELATIVE_EQUALITY}
  * @return
  */
 template <std::floating_point FloatType>
