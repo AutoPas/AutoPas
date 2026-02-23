@@ -50,8 +50,8 @@ if (AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
         ExternalProject_Add(
             utf8cpp_bundled
             PREFIX          ${CMAKE_CURRENT_BINARY_DIR}/utf8cpp
-            URL             ${PROJECT_SOURCE_DIR}/libs/utfcpp-3.1.1.zip
-            URL_HASH        MD5=a2cf6db2ee03ccdcf5308793400acfe1
+            URL             ${PROJECT_SOURCE_DIR}/libs/utfcpp-4.0.6.zip
+            URL_HASH        MD5=352a44ae1d2c655872774369b4b649bb
             BUILD_IN_SOURCE TRUE
             INSTALL_DIR     "install"
             CMAKE_ARGS      -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${UTFCPP_DIR}/install -DUTF8_TESTS=off -DUTF8_SAMPLES=off
@@ -67,23 +67,20 @@ if (AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
     # location where antlr will install its static library
     set(staticLibInstallLocation ${antlr4cpp_prefix}/install/lib/libantlr4-runtime.a)
 
+    # The latest ANTLR runtimes can be found at https://www.antlr.org/download.html
     ExternalProject_ADD(
             antlr4cpp_bundled
             PREFIX           ${antlr4cpp_prefix}
-            URL              ${PROJECT_SOURCE_DIR}/libs/antlr4-cpp-runtime-4.9.3-source.zip
-            URL_HASH         MD5=eafa4fef583e12e963062882773461be
+            URL              ${PROJECT_SOURCE_DIR}/libs/antlr4-cpp-runtime-4.13.2-source.zip
+            URL_HASH         MD5=bac8aef215ffd7b23a1dde2fcfe3c842
             BUILD_BYPRODUCTS ${staticLibInstallLocation}
             # pass PKG_CONFIG_PATH as a environment variable to cmake so find_package() in antlr4cpp's CMakeLists.txt can find uuid-dev if using the bundled version
             CMAKE_COMMAND    ${CMAKE_COMMAND} -E env PKG_CONFIG_PATH=${LIBUUID_PKGCONFIG_DIR} ${CMAKE_COMMAND}
             BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp/install/lib/libantlr4-runtime.a
             # point antlr4cpp to utf8cpp install dir
-            CMAKE_ARGS       -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${antlr4cpp_prefix}/install -DCMAKE_CXX_FLAGS=-w -DCMAKE_PREFIX_PATH=${UTFCPP_DIR}/install
-            # make sure UUID and UTF8CPP is installed before antlr is installed
+            CMAKE_ARGS       -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${antlr4cpp_prefix}/install -DCMAKE_CXX_FLAGS=-w -DCMAKE_PREFIX_PATH=${UTFCPP_DIR}/install -DANTLR_BUILD_CPP_TESTS=OFF -DANTLR_BUILD_SHARED=OFF
+            # make sure UUID and UTF8CPP are installed before antlr is installed
             DEPENDS          uuid_bundled utf8cpp_bundled
-            # Patch away the shared library target
-            PATCH_COMMAND    sed --in-place -e /install.*shared/,+2d               runtime/CMakeLists.txt  &&
-                             sed --in-place -e /set_target_properties.*shared/,+9d runtime/CMakeLists.txt  &&
-                             sed --in-place -e /shared/d                           runtime/CMakeLists.txt
     )
 
     # create dummy target that contains all information to easily link against

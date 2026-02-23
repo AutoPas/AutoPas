@@ -1,8 +1,9 @@
 
-// Generated from AutoPas/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleLanguage.g4
-// by ANTLR 4.9.1
+// Generated from RuleLanguage.g4 by ANTLR 4.13.2
 
 #pragma once
+
+#include <any>
 
 #include "RuleLanguageParser.h"
 #include "antlr4-runtime.h"
@@ -18,29 +19,29 @@ class RuleLanguageVisitor : public antlr4::tree::AbstractParseTreeVisitor {
   /**
    * Visit parse trees produced by RuleLanguageParser.
    */
-  virtual antlrcpp::Any visitProgram(RuleLanguageParser::ProgramContext *context) = 0;
+  virtual std::any visitProgram(RuleLanguageParser::ProgramContext *context) = 0;
 
-  virtual antlrcpp::Any visitUnsigned_val(RuleLanguageParser::Unsigned_valContext *context) = 0;
+  virtual std::any visitUnsigned_val(RuleLanguageParser::Unsigned_valContext *context) = 0;
 
-  virtual antlrcpp::Any visitLiteral(RuleLanguageParser::LiteralContext *context) = 0;
+  virtual std::any visitLiteral(RuleLanguageParser::LiteralContext *context) = 0;
 
-  virtual antlrcpp::Any visitDefine_list(RuleLanguageParser::Define_listContext *context) = 0;
+  virtual std::any visitDefine_list(RuleLanguageParser::Define_listContext *context) = 0;
 
-  virtual antlrcpp::Any visitVariable(RuleLanguageParser::VariableContext *context) = 0;
+  virtual std::any visitVariable(RuleLanguageParser::VariableContext *context) = 0;
 
-  virtual antlrcpp::Any visitExpression(RuleLanguageParser::ExpressionContext *context) = 0;
+  virtual std::any visitExpression(RuleLanguageParser::ExpressionContext *context) = 0;
 
-  virtual antlrcpp::Any visitDefine(RuleLanguageParser::DefineContext *context) = 0;
+  virtual std::any visitDefine(RuleLanguageParser::DefineContext *context) = 0;
 
-  virtual antlrcpp::Any visitProperty_value(RuleLanguageParser::Property_valueContext *context) = 0;
+  virtual std::any visitProperty_value(RuleLanguageParser::Property_valueContext *context) = 0;
 
-  virtual antlrcpp::Any visitConfiguration_pattern(RuleLanguageParser::Configuration_patternContext *context) = 0;
+  virtual std::any visitConfiguration_pattern(RuleLanguageParser::Configuration_patternContext *context) = 0;
 
-  virtual antlrcpp::Any visitConfiguration_order(RuleLanguageParser::Configuration_orderContext *context) = 0;
+  virtual std::any visitConfiguration_order(RuleLanguageParser::Configuration_orderContext *context) = 0;
 
-  virtual antlrcpp::Any visitStatement(RuleLanguageParser::StatementContext *context) = 0;
+  virtual std::any visitStatement(RuleLanguageParser::StatementContext *context) = 0;
 
-  virtual antlrcpp::Any visitIf_statement(RuleLanguageParser::If_statementContext *context) = 0;
+  virtual std::any visitIf_statement(RuleLanguageParser::If_statementContext *context) = 0;
 };
 
 }  // namespace AutopasGeneratedRuleSyntax

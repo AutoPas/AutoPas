@@ -165,5 +165,4 @@ autoPas.reduceInRegionParallel([](auto &particle, auto &accumulator) {
 ```
 
 ## Related Files and Folders
-- ContainerIterator.h
-- IteratorBehavior.h
+- src/autopas/utils/logging/

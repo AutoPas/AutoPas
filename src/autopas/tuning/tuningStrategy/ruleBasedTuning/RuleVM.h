@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #include <variant>
 
 #include "autopas/tuning/Configuration.h"

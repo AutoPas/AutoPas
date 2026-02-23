@@ -1,7 +1,5 @@
 #pragma once
 
-#include <any>
-
 #include "RuleBasedProgramTree.h"
 
 namespace autopas::RuleSyntax {

@@ -57,7 +57,7 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Functo
    * @return true iff the traversal can be applied.
    */
   [[nodiscard]] bool isApplicable() const override {
-    return this->_cellsPerDimension[this->_dimsPerLength[0]] >= this->_overlapLongestAxis;
+    return this->_cellsPerDimension[this->_dimsSortedByLength[0]] >= this->_overlapLongestAxis;
   }
 
   /**
@@ -79,7 +79,8 @@ void SlicedC02BasedTraversal<ParticleCell, Functor>::cSlicedTraversal(LoopBody &
   auto numSlices = this->_sliceThickness.size();
   // check if applicable
 
-  std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
+  std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsSortedByLength[1]],
+                                    this->_overlap[this->_dimsSortedByLength[2]]};
 
   if (not this->_spaciallyForward) {
     overLapps23 = {0ul, 0ul};
@@ -91,19 +92,19 @@ void SlicedC02BasedTraversal<ParticleCell, Functor>::cSlicedTraversal(LoopBody &
     for (size_t slice = offset; slice < numSlices; slice += 2) {
       array<unsigned long, 3> myStartArray{0, 0, 0};
       for (size_t i = 0; i < slice; ++i) {
-        myStartArray[this->_dimsPerLength[0]] += this->_sliceThickness[i];
+        myStartArray[this->_dimsSortedByLength[0]] += this->_sliceThickness[i];
       }
 
-      const auto lastLayer = myStartArray[this->_dimsPerLength[0]] + this->_sliceThickness[slice];
-      for (unsigned long dimSlice = myStartArray[this->_dimsPerLength[0]]; dimSlice < lastLayer; ++dimSlice) {
+      const auto lastLayer = myStartArray[this->_dimsSortedByLength[0]] + this->_sliceThickness[slice];
+      for (unsigned long dimSlice = myStartArray[this->_dimsSortedByLength[0]]; dimSlice < lastLayer; ++dimSlice) {
         for (unsigned long dimMedium = 0;
-             dimMedium < this->_cellsPerDimension[this->_dimsPerLength[1]] - overLapps23[0]; ++dimMedium) {
+             dimMedium < this->_cellsPerDimension[this->_dimsSortedByLength[1]] - overLapps23[0]; ++dimMedium) {
           for (unsigned long dimShort = 0;
-               dimShort < this->_cellsPerDimension[this->_dimsPerLength[2]] - overLapps23[1]; ++dimShort) {
+               dimShort < this->_cellsPerDimension[this->_dimsSortedByLength[2]] - overLapps23[1]; ++dimShort) {
             array<unsigned long, 3> idArray = {};
-            idArray[this->_dimsPerLength[0]] = dimSlice;
-            idArray[this->_dimsPerLength[1]] = dimMedium;
-            idArray[this->_dimsPerLength[2]] = dimShort;
+            idArray[this->_dimsSortedByLength[0]] = dimSlice;
+            idArray[this->_dimsSortedByLength[1]] = dimMedium;
+            idArray[this->_dimsSortedByLength[2]] = dimShort;
             loopBody(idArray[0], idArray[1], idArray[2]);
           }
         }

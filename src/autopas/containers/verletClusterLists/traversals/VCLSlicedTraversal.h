@@ -72,6 +72,11 @@ class VCLSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
     }
   }
 
+  void initTraversal() override {
+    SlicedBasedTraversal<ParticleCell, PairwiseFunctor>::reinitForVCL(this->_verletClusterLists);
+    SlicedBasedTraversal<ParticleCell, PairwiseFunctor>::initTraversal();
+  }
+
   void endTraversal() override {
     if (this->_dataLayout == DataLayoutOption::soa) {
       VCLTraversalInterface<ParticleType>::_verletClusterLists->extractParticlesFromSoAs(_functor);

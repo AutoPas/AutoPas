@@ -6,7 +6,7 @@ Please keep in mind the following notes while working.
 
 ## C++
 ### General Notes
-* Cpp standard: C++17. If there is a piece of code, which could be done better using a newer standard, please add a comment like `@todo C++20` including the alternative version of the code.
+* Cpp standard: C++20. If there is a piece of code, which could be done better using a newer standard, please add a comment like `@todo C++23` including the alternative version of the code.
 * Pointers: Always use smart pointers when you are managing memory. Don't use `new` or `delete`.
 * OpenMP: Use AutoPas wrapper functions and macros for OpenMP from [`WrapOpenMP.h`](/src/autopas/utils/WrapOpenMP.h) instead of native OpenMP to allow clean building without OpenMP.
 * `#pragma once` instead of header guards.
@@ -14,6 +14,10 @@ Please keep in mind the following notes while working.
 * `constexpr` instead of `#define`. Use it wherever possible.
 * `const` wherever possible. 
 * `nullptr` instead of `NULL`.
+* Use `utils::optRef` for non-owned optional references, wherever possible.
+  * This indicates better that the variable is not owned by that scope or object, and that the variable's lifetime should exceed the reference's.
+  * `utils::optRef` is a short-hand alias for `std::optional<std::reference_wrapper<T>>`.
+  * This may fail with Apple Clang for types `T` incomplete at the point of instantiation. In these cases simply, use a raw or shared pointer but indicate the intention in the documentation.
 * `using` instead of `typedef`.
 * Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Meaningful error message")` instead.
 

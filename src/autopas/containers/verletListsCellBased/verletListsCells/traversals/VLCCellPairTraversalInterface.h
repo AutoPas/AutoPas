@@ -5,7 +5,12 @@
  */
 
 #pragma once
+
 namespace autopas {
+
+template <class Particle_T>
+class VLCCellPairNeighborList;
+
 /**
  * Interface for traversals used with VLCCellPairNeighborList.
  * Allows the distinction of traversals that are only usable for VLCCellPairNeighborList

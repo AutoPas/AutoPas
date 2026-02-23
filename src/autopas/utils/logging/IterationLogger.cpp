@@ -38,7 +38,7 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
         "energyJoules[J],"
         "energyDeltaT[s]");
   }
-  headerLogger->info(csvHeader, Configuration().getCSVHeader());
+  headerLogger->info(fmt::runtime(csvHeader), Configuration().getCSVHeader());
   spdlog::drop(headerLoggerName);
   // End of workaround
 

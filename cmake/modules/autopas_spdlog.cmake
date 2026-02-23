@@ -2,7 +2,7 @@ option(spdlog_ForceBundled "Do not look for an installed version, always use bun
 
 if (NOT ${spdlog_ForceBundled})
     # first try: check if we find any installed version
-    set(expectedVersion 1.3.1)
+    set(expectedVersion 1.4.3)
     find_package(spdlog ${expectedVersion} QUIET)
     if (spdlog_FOUND)
         message(STATUS "spdlog - using installed system version ${spdlog_VERSION}")

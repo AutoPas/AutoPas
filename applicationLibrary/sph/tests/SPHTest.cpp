@@ -697,8 +697,8 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
   double cutoff = 1.;
   using sphLib::SPHParticle;
 
-  autopas::VerletLists<SPHParticle> verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 1);
-  autopas::LinkedCells<sphLib::SPHParticle> linkedCells({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 1., 1);
+  autopas::VerletLists<SPHParticle> verletLists({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5);
+  autopas::LinkedCells<sphLib::SPHParticle> linkedCells({0., 0., 0.}, {5., 5., 5.}, cutoff, 0.5, 1.);
 
   sphLib::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5,
                                          cutoff / sphLib::SPHKernels::getKernelSupportRadius(), 0.6);
