@@ -193,7 +193,7 @@ class AutoTuner {
    * The sample argument is a long because std::chrono::duration::count returns a long.
    *
    * @param sampleRebuild time or energy sample for rebuild part of the iteration.
-   * @param sampleTraverseParticles time or energy sample for non-rebuild part of the iteration. This includes
+   * @param sampleTraverseParticles time or energy sample for traverse interaction part of the iteration. This includes
    * computeInteraction and remainderTraversal call.
    * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
    */
