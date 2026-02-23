@@ -373,7 +373,7 @@ class ParticlePropertiesLibrary {
   };
 
   std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> _computedLJMixingData;
-  std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMixingData;
+  std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMMixingData;
   std::vector<PackedDEMMixingData, autopas::AlignedAllocator<PackedDEMMixingData>> _computedDEMMixingData;
 };
 

@@ -343,8 +343,7 @@ void Simulation::run() {
 
   // Record last state of simulation.
   if (_vtkWriter.has_value()) {
-    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition,
-                               *_configuration.getParticlePropertiesLibrary());
+    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
   }
 }
 
