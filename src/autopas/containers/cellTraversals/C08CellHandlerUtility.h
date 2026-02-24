@@ -49,7 +49,7 @@ using OffsetPairVector = std::vector<OffsetPair>;
  * Compile Time Modes for the function autopas::C08CellHandlerUtility::computePairwiseCellOffsetsC08
  *
  * @note In case of a new mode, this also requires the explciit instantation of the new template
- * in C08CellHandlerUtility.cpp and a modificaqtion to {@link OffsetPairType}
+ * in C08CellHandlerUtility.cpp and a modificaqtion to {@link OffsetPair}
  */
 enum class C08OffsetMode {
   /** Returns the C08 base step cell pairs without sorting */
