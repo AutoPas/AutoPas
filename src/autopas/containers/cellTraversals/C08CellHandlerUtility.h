@@ -46,10 +46,10 @@ using OffsetPair = std::pair<unsigned long, unsigned long>;
 using OffsetPairVector = std::vector<OffsetPair>;
 
 /**
- * Compile Time Modes for the function autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08
+ * Compile Time Modes for the function autopas::C08CellHandlerUtility::computePairwiseCellOffsetsC08
  *
  * @note In case of a new mode, this also requires the explciit instantation of the new template
- * in LCC08CellHandlerUtility.cpp and a modificaqtion to {@link OffsetPairType}
+ * in C08CellHandlerUtility.cpp and a modificaqtion to {@link OffsetPairType}
  */
 enum class C08OffsetMode {
   /** Returns the C08 base step cell pairs without sorting */
@@ -100,7 +100,7 @@ constexpr inline char ENUM_EXTENSION_EXCEPTION[]{
     "Enum C08CellDirection was extended, but its assciated switch-case statements was not!"};
 
 /**
- * Helper function for autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08.
+ * Helper function for autopas::C08CellHandlerUtility::computePairwiseCellOffsetsC08.
  * This function basically translates a direction, like backLeft to the corresponding vector pointing
  * towards this cell relativly starting from the base cell. We treat frontLeft as base cell
  * So, e.g. frontLeft --> (0, 0) since we are good
