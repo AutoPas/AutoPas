@@ -1,5 +1,5 @@
 /**
- * @file LCC08CellHandler.h
+ * @file C08CellHandler.h
  * @author S. Seckler
  * @date 10.01.2019
  */
@@ -8,7 +8,7 @@
 
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
-#include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
+#include "autopas/containers/cellTraversals/C08CellHandlerUtility.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -25,7 +25,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC08CellHandler {
+class C08CellHandler {
  public:
   /**
    * Constructor of the LCC08CellHandler.
@@ -39,7 +39,7 @@ class LCC08CellHandler {
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
-  explicit LCC08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
+  explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                             double interactionLength, const std::array<double, 3> &cellLength,
                             const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
       : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
@@ -49,8 +49,8 @@ class LCC08CellHandler {
         _overlap(overlap),
         _dataLayout(dataLayout),
         _useNewton3(useNewton3),
-        _cellPairOffsets{LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<
-            LCC08CellHandlerUtility::C08OffsetMode::c08CellPairsSorting>(cellsPerDimension, cellLength,
+        _cellPairOffsets{C08CellHandlerUtility::computePairwiseCellOffsetsC08<
+            C08CellHandlerUtility::C08OffsetMode::c08CellPairsSorting>(cellsPerDimension, cellLength,
                                                                          interactionLength)} {}
 
   /**
@@ -83,7 +83,7 @@ class LCC08CellHandler {
    * Pair sets for processBaseCell().
    * Values are: offset of first cell, offset of second cell, sorting direction.
    */
-  std::vector<LCC08CellHandlerUtility::OffsetPairSorting> _cellPairOffsets;
+  std::vector<C08CellHandlerUtility::OffsetPairSorting> _cellPairOffsets;
 
   /**
    * Overlap of interacting cells. Array allows asymmetric cell sizes.
@@ -120,13 +120,13 @@ class LCC08CellHandler {
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-void LCC08CellHandler<ParticleCell, PairwiseFunctor>::setOrientationList(
+void C08CellHandler<ParticleCell, PairwiseFunctor>::setOrientationList(
     std::vector<std::vector<SortedCellView<ParticleCell>>> &list) {
   _cellFunctor.setOrientationList(list);
 }
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
+inline void C08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
                                                                              unsigned long baseIndex) {
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
@@ -144,7 +144,7 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std
 }
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCellPsVL(unsigned long baseIndex) {
+inline void C08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCellPsVL(unsigned long baseIndex) {
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
     const unsigned long cellIndex2 = baseIndex + offset2;

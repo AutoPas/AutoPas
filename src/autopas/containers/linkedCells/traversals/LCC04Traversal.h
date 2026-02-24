@@ -8,7 +8,7 @@
 #pragma once
 
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
-#include "autopas/containers/linkedCells/traversals/LCC08CellHandler.h"
+#include "autopas/containers/cellTraversals/C08CellHandler.h"
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -81,7 +81,7 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, 
 
   std::array<std::array<long, 3>, 32> _cellOffsets32Pack;
 
-  LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
+  C08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
 
   std::array<long, 3> _end;
 };

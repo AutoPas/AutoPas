@@ -8,7 +8,7 @@
 
 #include "PsVLTraversalInterface.h"
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
-#include "autopas/containers/linkedCells/traversals/LCC08CellHandler.h"
+#include "autopas/containers/cellTraversals/C08CellHandler.h"
 
 namespace autopas {
 
@@ -74,7 +74,7 @@ class PsVLC08Traversal : public C08BasedTraversal<ParticleCell_T, PairwiseFuncto
   void setOrientationList(std::vector<std::vector<SortedCellView<ParticleCell_T>>> &list) override;
 
  private:
-  LCC08CellHandler<ParticleCell_T, PairwiseFunctor_T> _cellHandler;
+  C08CellHandler<ParticleCell_T, PairwiseFunctor_T> _cellHandler;
 };
 
 template <class ParticleCell_T, class PairwiseFunctor_T>

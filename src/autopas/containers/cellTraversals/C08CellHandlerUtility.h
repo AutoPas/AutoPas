@@ -1,5 +1,5 @@
 /**
- * @file LCC08CellHandlerUtility.h
+ * @file C08CellHandlerUtility.h
  * @author J. Schuhmacher
  * @date 11.07.2024
  */
@@ -18,7 +18,7 @@
 #include "autopas/utils/Math.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
-namespace autopas::LCC08CellHandlerUtility {
+namespace autopas::C08CellHandlerUtility {
 
 /**
  * Type Alias for the C08 base step containg cell offsets. An offset is the distance from a base cell to another cell
