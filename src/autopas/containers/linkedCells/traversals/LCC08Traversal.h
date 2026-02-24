@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "autopas/containers/cellTraversals/C08CellHandler.h"
 #include "LCTraversalInterface.h"
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
+#include "autopas/containers/cellTraversals/C08CellHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {

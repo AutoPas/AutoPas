@@ -157,4 +157,4 @@ template <C08OffsetMode Mode>
 OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
                                                    const std::array<double, 3> &cellLength, double interactionLength);
 
-}  // namespace autopas::LCC08CellHandlerUtility
+}  // namespace autopas::C08CellHandlerUtility

@@ -7,8 +7,8 @@
 #pragma once
 
 #include "autopas/baseFunctors/CellFunctor.h"
-#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/cellTraversals/C08CellHandlerUtility.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -40,8 +40,8 @@ class C08CellHandler {
    * in that case the interactionLength is needed!
    */
   explicit C08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
-                            double interactionLength, const std::array<double, 3> &cellLength,
-                            const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
+                          double interactionLength, const std::array<double, 3> &cellLength,
+                          const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
       : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3),
         _interactionLength(interactionLength),
@@ -51,7 +51,7 @@ class C08CellHandler {
         _useNewton3(useNewton3),
         _cellPairOffsets{C08CellHandlerUtility::computePairwiseCellOffsetsC08<
             C08CellHandlerUtility::C08OffsetMode::c08CellPairsSorting>(cellsPerDimension, cellLength,
-                                                                         interactionLength)} {}
+                                                                       interactionLength)} {}
 
   /**
    * Sets the orientationList of the cellFunctor.
@@ -127,7 +127,7 @@ void C08CellHandler<ParticleCell, PairwiseFunctor>::setOrientationList(
 
 template <class ParticleCell, class PairwiseFunctor>
 inline void C08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
-                                                                             unsigned long baseIndex) {
+                                                                           unsigned long baseIndex) {
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
     const unsigned long cellIndex2 = baseIndex + offset2;

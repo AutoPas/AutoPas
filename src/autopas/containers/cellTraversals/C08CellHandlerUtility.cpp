@@ -170,4 +170,4 @@ template std::vector<OffsetPairVector> computePairwiseCellOffsetsC08<C08OffsetMo
     double interactionLength);
 //! @endcond
 
-}  // namespace autopas::LCC08CellHandlerUtility
+}  // namespace autopas::C08CellHandlerUtility

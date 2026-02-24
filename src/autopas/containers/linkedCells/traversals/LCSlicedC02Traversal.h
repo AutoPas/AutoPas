@@ -10,8 +10,8 @@
 #include <algorithm>
 
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellTraversals/SlicedC02BasedTraversal.h"
 #include "autopas/containers/cellTraversals/C08CellHandler.h"
+#include "autopas/containers/cellTraversals/SlicedC02BasedTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 

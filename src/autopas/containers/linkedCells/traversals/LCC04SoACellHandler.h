@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/cellTraversals/C08CellHandlerUtility.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
