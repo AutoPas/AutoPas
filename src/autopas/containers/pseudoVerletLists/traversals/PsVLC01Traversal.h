@@ -45,12 +45,12 @@ class PsVLC01Traversal : public C01BasedTraversal<ParticleCell_T, PairwiseFuncto
   void traverseParticles() override;
 
   /**
-   * C01 traversals are only usable if useNewton3 is disabled.
+   * PsVL C01 traversals only support AoS, cell size factors >= 1 and useNewton3 disabled.
    * @return
    */
   [[nodiscard]] bool isApplicable() const override {
-    if (this->_useNewton3 == false && this->_dataLayout == DataLayoutOption::aos && this->_overlap[0] == 1 &&
-        this->_overlap[1] == 1 && this->_overlap[2] == 1) {
+    if (this->_useNewton3 == false and this->_dataLayout == DataLayoutOption::aos and this->_overlap[0] == 1 and
+        this->_overlap[1] == 1 and this->_overlap[2] == 1) {
       return true;
     }
     return false;

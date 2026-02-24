@@ -67,9 +67,11 @@ class LCC08CellHandler {
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
 
   /**
+   * Computes one interaction for each spacial direction based on the lower left
+   * frontal corner (=base index) of a 2x2x2 block of cells.
    * @param baseIndex Index respective to which box is constructed.
    */
-  void processBaseCell(unsigned long baseIndex);
+  void processBaseCellPsVL(unsigned long baseIndex);
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()
@@ -142,7 +144,7 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std
 }
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(unsigned long baseIndex) {
+inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCellPsVL(unsigned long baseIndex) {
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
     const unsigned long cellIndex2 = baseIndex + offset2;

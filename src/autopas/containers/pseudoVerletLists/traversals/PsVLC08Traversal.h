@@ -51,11 +51,11 @@ class PsVLC08Traversal : public C08BasedTraversal<ParticleCell_T, PairwiseFuncto
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c08; }
 
   /**
-   * C08 traversals are always usable. Supports only AoS.
+   * PsVL C08 traversals only support AoS and cell size factors >= 1.
    * @return
    */
   [[nodiscard]] bool isApplicable() const override {
-    if (this->_dataLayout == DataLayoutOption::aos && this->_overlap[0] == 1 && this->_overlap[1] == 1 &&
+    if (this->_dataLayout == DataLayoutOption::aos and this->_overlap[0] == 1 and this->_overlap[1] == 1 and
         this->_overlap[2] == 1) {
       return true;
     }
@@ -87,7 +87,7 @@ template <class ParticleCell_T, class PairwiseFunctor_T>
 inline void PsVLC08Traversal<ParticleCell_T, PairwiseFunctor_T>::traverseParticles() {
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    _cellHandler.processBaseCell(baseIndex);
+    _cellHandler.processBaseCellPsVL(baseIndex);
   });
 }
 

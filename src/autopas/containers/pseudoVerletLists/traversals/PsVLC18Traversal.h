@@ -61,11 +61,11 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell_T, PairwiseFuncto
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c18; }
 
   /**
-   * C18 traversal is always usable. Supports only AoS.
+   * PsVL C18 traversals only support AoS and cell size factors >= 1.
    * @return
    */
   [[nodiscard]] bool isApplicable() const override {
-    if (this->_dataLayout == DataLayoutOption::aos && this->_overlap[0] == 1 && this->_overlap[1] == 1 &&
+    if (this->_dataLayout == DataLayoutOption::aos and this->_overlap[0] == 1 and this->_overlap[1] == 1 and
         this->_overlap[2] == 1) {
       return true;
     }

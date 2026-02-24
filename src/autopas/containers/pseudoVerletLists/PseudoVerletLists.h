@@ -51,8 +51,9 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   PseudoVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                     const double skin, const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, cellSizeFactor) {
-    for (size_t i = 0; i < 13; ++i) {
-      _sortingDirections.emplace_back(utils::ArrayMath::normalize(getDirectionFromIndex(i)));
+    _sortingDirections.resize(13);
+    for (size_t i = 0; i < _sortingDirections.size(); ++i) {
+      _sortingDirections[i] = utils::ArrayMath::normalize(getDirectionFromIndex(i));
     }
   }
 
@@ -131,7 +132,7 @@ class PseudoVerletLists : public VerletListsLinkedBase<Particle_T> {
   std::vector<std::vector<SortedCellView<ParticleCellType>>> _orientationList;
 
   /**
-   * Stores the normalized directions to the neighboring cells. With an index greater than the base cell.
+   * Stores the normalized directions to the neighboring cells with an index greater than the base cell.
    */
   std::vector<std::array<double, 3>> _sortingDirections;
 };
