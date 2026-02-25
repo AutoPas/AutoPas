@@ -41,15 +41,15 @@ public:
   }
 
   KOKKOS_INLINE_FUNCTION
-  void SoAKernelKokkos(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2,
+  void SoAKernelKokkos(Kokkos::View<FloatPrecision*, typename MemSpace::execution_space::scratch_memory_space>& positions1, const Particle_T::KokkosSoAArraysType& soa2,
     FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j) final {
 
     // const auto owned1 = soa1.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(i);
 
     //if (owned1 != autopas::OwnershipState::dummy) {
-      const auto x1 = soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
-      const auto y1 = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
-      const auto z1 = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
+      // const auto x1 = soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
+      // const auto y1 = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
+      // const auto z1 = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
 
       // const auto owned2 = soa2.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(j);
 
@@ -58,9 +58,9 @@ public:
         const FloatPrecision y2 = soa2.template operator()<Particle_T::AttributeNames::posY, true, false>(j);
         const FloatPrecision z2 = soa2.template operator()<Particle_T::AttributeNames::posZ, true, false>(j);
 
-        const FloatPrecision drX = x1 - x2;
-        const FloatPrecision drY = y1 - y2;
-        const FloatPrecision drZ = z1 - z2;
+        const FloatPrecision drX = positions1(0) - x2;
+        const FloatPrecision drY = positions1(1) - y2;
+        const FloatPrecision drZ = positions1(2) - z2;
 
         const FloatPrecision drX2 = drX * drX;
         const FloatPrecision drY2 = drY * drY;

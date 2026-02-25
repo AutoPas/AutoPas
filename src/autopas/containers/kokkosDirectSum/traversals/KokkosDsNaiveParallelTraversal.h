@@ -101,13 +101,13 @@ private:
     auto func = _functor;
     FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
 
-    //using ScratchViewType = Kokkos::View<FloatPrecision*, typename DeviceSpace::execution_space::scratch_memory_space>;
-    //int perTeamBytes = ScratchViewType::shmem_size(3); // For the 3 position values
-    //int perThreadBytes = ScratchViewType::shmem_size(3); // For the 3 position values
+    using ScratchViewType = Kokkos::View<FloatPrecision*, typename DeviceSpace::execution_space::scratch_memory_space>;
+    int perTeamBytes = ScratchViewType::shmem_size(3); // For the 3 position values
+    int perThreadBytes = ScratchViewType::shmem_size(3); // For the 3 position values
 
     auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, Kokkos::AUTO(), Kokkos::AUTO());
-    //teamPolicy.set_scratch_size(0, Kokkos::PerTeam(perTeamBytes));
-    //teamPolicy.set_scratch_size(0, Kokkos::PerThread(perThreadBytes));
+    teamPolicy.set_scratch_size(0, Kokkos::PerTeam(perTeamBytes));
+    teamPolicy.set_scratch_size(0, Kokkos::PerThread(perThreadBytes));
 
     Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(auto teamHandle) {
       int i = teamHandle.league_rank();
@@ -116,13 +116,17 @@ private:
       FloatPrecision fyAcc = 0.;
       FloatPrecision fzAcc = 0.;
 
-      // ScratchViewType positions1 (teamHandle.team_scratch(0), 3);
+      ScratchViewType positions1 (teamHandle.team_scratch(0), 3);
+
+      positions1(0) = soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
+      positions1(1) = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
+      positions1(2) = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
 
       Kokkos::parallel_reduce(Kokkos::TeamVectorRange(teamHandle, M), [&](int j,
         FloatPrecision& localFxAcc,
         FloatPrecision& localFyAcc,
         FloatPrecision& localFzAcc) {
-          func->SoAKernelKokkos(soa1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
+          func->SoAKernelKokkos(positions1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
       }, fxAcc, fyAcc, fzAcc);
 
       Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
