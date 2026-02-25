@@ -49,7 +49,7 @@ using OffsetPairVector = std::vector<OffsetPair>;
  * Compile Time Modes for the function autopas::C08CellHandlerUtility::computePairwiseCellOffsetsC08
  *
  * @note In case of a new mode, this also requires the explciit instantation of the new template
- * in C08CellHandlerUtility.cpp and a modificaqtion to {\ref autopas::c08CellHandlerUtility::OffsetPair}
+ * in C08CellHandlerUtility.cpp and a modificaqtion to {@ref OffsetPair}
  */
 enum class C08OffsetMode {
   /** Returns the C08 base step cell pairs without sorting */
@@ -86,7 +86,7 @@ enum class C08CellDirection : int {
 };
 
 /**
- * Array containing all four enum values of {\ref autopas::c08CellHandlerUtility::C08CellDirection}.
+ * Array containing all four enum values of {@ref C08CellDirection}.
  */
 constexpr inline std::array<C08CellDirection, 4> ALL_DIRECTIONS{
     {C08CellDirection::frontLeft, C08CellDirection::backLeft, C08CellDirection::frontRight,
@@ -144,7 +144,7 @@ std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offse
 /**
  * Computes the cell pair offsets for the C08 base step and the normalized vector between pair of cell-centers,
  * which is later used for early stopping the evaluation of the pairwise cell interactions due to being out-of-reach.
- * @tparam Mode Determines the concret return type (see {\ref autopas::c08CellHandlerUtility::C08OffsetMode}
+ * @tparam Mode Determines the concret return type (see {@ref C08OffsetMode}
  * @param cellsPerDimension the number of cells per dimension
  * @param cellLength the length of a cell in CellBlock3D.
  * @param interactionLength the interaction length consisting of cutoff + skin
