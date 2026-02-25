@@ -106,10 +106,23 @@ private:
     const int TEAM_SIZE = 128;
 
     auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, TEAM_SIZE, Kokkos::AUTO);
-    int perTeamBytes = ScratchViewType::shmem_size(3*TEAM_SIZE); // For the 3 position values teamPolicy.team_size();
-    teamPolicy.set_scratch_size(0, Kokkos::PerTeam(perTeamBytes));
+    int hardwareMax0 = teamPolicy.scratch_size_max(0);
+    int hardwareMax1 = teamPolicy.scratch_size_max(1);
+    int perTeamBytes = ScratchViewType::shmem_size(3*M); // For the 3 position values teamPolicy.team_size();
 
-    int teamRuns = M / TEAM_SIZE;
+    int level = -1;
+    if (perTeamBytes <= hardwareMax0) {
+      level = 0;
+    } else if (perTeamBytes <= hardwareMax1) {
+      level = 1;
+    } else {
+      // TODO: error
+      autopas::utils::ExceptionHandler::exception("No suitable scratch memory level available");
+    }
+
+    teamPolicy.set_scratch_size(level, Kokkos::PerTeam(perTeamBytes));
+
+    // int teamRuns = M / TEAM_SIZE;
 
     using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
     Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
@@ -119,25 +132,25 @@ private:
       FloatPrecision fyAcc = 0.;
       FloatPrecision fzAcc = 0.;
 
-      ScratchViewType xPositions2 (teamHandle.team_scratch(0), TEAM_SIZE);
-      ScratchViewType yPositions2 (teamHandle.team_scratch(0), TEAM_SIZE);
-      ScratchViewType zPositions2 (teamHandle.team_scratch(0), TEAM_SIZE);
+      ScratchViewType xPositions2 (teamHandle.team_scratch(level), M);
+      ScratchViewType yPositions2 (teamHandle.team_scratch(level), M);
+      ScratchViewType zPositions2 (teamHandle.team_scratch(level), M);
 
-      for (int k = 0; k < teamRuns+1; ++k) {
+      // for (int k = 0; k < teamRuns+1; ++k) {
 
-        const int offset = TEAM_SIZE * k;
-        const int rest = M - offset;
-        const int upperBoundary = std::min(rest, TEAM_SIZE);
+        // const int offset = TEAM_SIZE * k;
+        // const int rest = M - offset;
+        // const int upperBoundary = std::min(rest, TEAM_SIZE);
 
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, upperBoundary), [&](int j) {
-          xPositions2(j) = soa2.template operator()<Particle_T::AttributeNames::posX, true, false>(j + offset);
-          yPositions2(j) = soa2.template operator()<Particle_T::AttributeNames::posY, true, false>(j + offset);
-          zPositions2(j) = soa2.template operator()<Particle_T::AttributeNames::posZ, true, false>(j + offset);
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, M), [&](int j) {
+          xPositions2(j) = soa2.template operator()<Particle_T::AttributeNames::posX, true, false>(j);
+          yPositions2(j) = soa2.template operator()<Particle_T::AttributeNames::posY, true, false>(j);
+          zPositions2(j) = soa2.template operator()<Particle_T::AttributeNames::posZ, true, false>(j);
         });
 
         teamHandle.team_barrier();
 
-        Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamHandle, upperBoundary), [&](int j,
+        Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamHandle, M), [&](int j,
           FloatPrecision& localFxAcc,
           FloatPrecision& localFyAcc,
           FloatPrecision& localFzAcc) {
@@ -159,7 +172,7 @@ private:
           soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) = newFz;
         });
         teamHandle.team_barrier();
-      }
+      // }
     });
   }
 
