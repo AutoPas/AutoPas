@@ -117,8 +117,6 @@ class CellFunctor {
    */
   void processCellAoS(unsigned long cellIndex);
 
-  void processCellPairAoSN3Util(SortedCellView<ParticleCell> &cell1Sorted, SortedCellView<ParticleCell> &cell2Sorted);
-
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
    * exploiting newtons third law of motion.
@@ -126,7 +124,8 @@ class CellFunctor {
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
-  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
+  template <bool newton3>
+  void processCellPairAoS(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
 
   /**
    * processCellPairsAoSN3 for PseudoVerletLists.
@@ -134,25 +133,11 @@ class CellFunctor {
    * @param cell2Index
    * @param directionIndex Normalized vector connecting centers of cell1 and cell2.
    */
-  void processCellPairAoSN3(unsigned long cell1Index, unsigned long cell2Index, signed long directionIndex);
+  template <bool newton3>
+  void processCellPairAoS(unsigned long cell1Index, unsigned long cell2Index, signed long directionIndex);
 
-  void processCellPairAoSNoN3Util(SortedCellView<ParticleCell> &cell1Sorted, SortedCellView<ParticleCell> &cell2Sorted);
-  /**
-   * Applies the functor to all particle pairs between cell1 and cell2
-   * without exploiting newtons third law of motion.
-   * @param cell1
-   * @param cell2
-   * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
-   */
-  void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
-
-  /**
-   * processCellPairAoSNoN3 for PseudoVerletLists.
-   * @param cell1Index
-   * @param cell2Index
-   * @param directionIndex Normalized vector connecting centers of cell1 and cell2.
-   */
-  void processCellPairAoSNoN3(unsigned long cell1Index, unsigned long cell2Index, signed long directionIndex);
+  template <bool newton3>
+  void processCellPairAoSUtil(SortedCellView<ParticleCell> &cell1Sorted, SortedCellView<ParticleCell> &cell2Sorted);
 
   void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2);
 
@@ -162,7 +147,8 @@ class CellFunctor {
 
   void processCellSoANoN3(ParticleCell &cell);
 
-  void interactParticlesNoN3(auto &p1, auto &p2);
+  template <bool newton3>
+  void interactParticlesForCellPair(auto &p1, auto &p2);
 
   void interactParticles(auto &p1, auto &p2);
 
@@ -297,9 +283,9 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
   switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
       if (_useNewton3) {
-        processCellPairAoSN3(cell1, cell2, sortingDirection);
+        processCellPairAoS<true>(cell1, cell2, sortingDirection);
       } else {
-        processCellPairAoSNoN3(cell1, cell2, sortingDirection);
+        processCellPairAoS<false>(cell1, cell2, sortingDirection);
       }
       break;
     case DataLayoutOption::soa:
@@ -321,9 +307,9 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
   switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
       if (_useNewton3) {
-        processCellPairAoSN3(cell1Index, cell2Index, directionIndex);
+        processCellPairAoS<true>(cell1Index, cell2Index, directionIndex);
       } else {
-        processCellPairAoSNoN3(cell1Index, cell2Index, directionIndex);
+        processCellPairAoS<false>(cell1Index, cell2Index, directionIndex);
       }
       break;
     case DataLayoutOption::soa:
@@ -386,38 +372,27 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoS(u
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSN3Util(
-    SortedCellView<ParticleCell> &cell1Sorted, SortedCellView<ParticleCell> &cell2Sorted) {
-  for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
-    for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
-      if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
-        break;
-      }
-      _functor->AoSFunctor(*p1Ptr, *p2Ptr, true);
-    }
-  }
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSN3(
+template <bool newton3>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoS(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   if ((cell1.size() + cell2.size() > _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
     SortedCellView<ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<ParticleCell> cell2Sorted(cell2, sortingDirection);
-    processCellPairAoSN3Util(cell1Sorted, cell2Sorted);
+    processCellPairAoSUtil<newton3>(cell1Sorted, cell2Sorted);
   } else {
     for (auto &p1 : cell1) {
       for (auto &p2 : cell2) {
-        _functor->AoSFunctor(p1, p2, true);
+        interactParticlesForCellPair<newton3>(p1, p2);
       }
     }
   }
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSN3(unsigned long cell1Index,
-                                                                                     unsigned long cell2Index,
-                                                                                     signed long directionIndex) {
+template <bool newton3>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoS(unsigned long cell1Index,
+                                                                                   unsigned long cell2Index,
+                                                                                   signed long directionIndex) {
   bool reverseCell2View = false;
   if (directionIndex < 0) {
     reverseCell2View = true;
@@ -427,7 +402,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
   auto &cell2Sorted = (*_orientationList)[cell2Index][directionIndex];
 
   if (reverseCell2View == false) {
-    processCellPairAoSN3Util(cell1Sorted, cell2Sorted);
+    processCellPairAoSUtil<newton3>(cell1Sorted, cell2Sorted);
   } else {
     for (auto &[p1Proj, p1Ptr] : cell1Sorted._particles) {
       for (auto it = cell2Sorted._particles.rbegin(); it != cell2Sorted._particles.rend(); ++it) {
@@ -435,75 +410,36 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
         if (std::abs(p1Proj - p2Proj) > _sortingCutoff) {
           break;
         }
-        _functor->AoSFunctor(*p1Ptr, *p2Ptr, true);
+        interactParticlesForCellPair<newton3>(*p1Ptr, *p2Ptr);
       }
     }
   }
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::interactParticlesNoN3(auto &p1, auto &p2) {
-  // helper function
-  _functor->AoSFunctor(p1, p2, false);
-  if constexpr (bidirectional) {
-    _functor->AoSFunctor(p2, p1, false);
+template <bool newton3>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::interactParticlesForCellPair(auto &p1, auto &p2) {
+  if constexpr (newton3) {
+    _functor->AoSFunctor(p1, p2, true);
+  } else {
+    // helper function
+    _functor->AoSFunctor(p1, p2, false);
+    if constexpr (bidirectional) {
+      _functor->AoSFunctor(p2, p1, false);
+    }
   }
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSNoN3Util(
+template <bool newton3>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSUtil(
     SortedCellView<ParticleCell> &cell1Sorted, SortedCellView<ParticleCell> &cell2Sorted) {
   for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
     for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
       if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
         break;
       }
-      interactParticlesNoN3(*p1Ptr, *p2Ptr);
-    }
-  }
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSNoN3(
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  if ((cell1.size() + cell2.size() > _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
-    SortedCellView<ParticleCell> cell1Sorted(cell1, sortingDirection);
-    SortedCellView<ParticleCell> cell2Sorted(cell2, sortingDirection);
-    processCellPairAoSNoN3Util(cell1Sorted, cell2Sorted);
-
-  } else {
-    for (auto &p1 : cell1) {
-      for (auto &p2 : cell2) {
-        interactParticlesNoN3(p1, p2);
-      }
-    }
-  }
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSNoN3(unsigned long cell1Index,
-                                                                                       unsigned long cell2Index,
-                                                                                       signed long directionIndex) {
-  bool reverseCell2View = false;
-  if (directionIndex < 0) {
-    reverseCell2View = true;
-    directionIndex = flipDirectionIndex(directionIndex);
-  }
-
-  auto &cell1Sorted = (*_orientationList)[cell1Index][directionIndex];
-  auto &cell2Sorted = (*_orientationList)[cell2Index][directionIndex];
-
-  if (reverseCell2View == false) {
-    processCellPairAoSNoN3Util(cell1Sorted, cell2Sorted);
-  } else {
-    for (auto &[p1Proj, p1Ptr] : cell1Sorted._particles) {
-      for (auto it = cell2Sorted._particles.rbegin(); it != cell2Sorted._particles.rend(); ++it) {
-        const auto &[p2Proj, p2Ptr] = *it;
-        if (std::abs(p1Proj - p2Proj) > _sortingCutoff) {
-          break;
-        }
-        interactParticlesNoN3(*p1Ptr, *p2Ptr);
-      }
+      interactParticlesForCellPair<newton3>(*p1Ptr, *p2Ptr);
     }
   }
 }
