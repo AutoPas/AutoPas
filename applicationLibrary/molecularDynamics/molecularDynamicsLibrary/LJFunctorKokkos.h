@@ -44,16 +44,16 @@ public:
   void SoAKernelKokkos(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2,
     FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j) final {
 
-    const auto owned1 = soa1.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(i);
+    // const auto owned1 = soa1.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(i);
 
-    if (owned1 != autopas::OwnershipState::dummy) {
+    //if (owned1 != autopas::OwnershipState::dummy) {
       const auto x1 = soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
       const auto y1 = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
       const auto z1 = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
 
-      const auto owned2 = soa2.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(j);
+      // const auto owned2 = soa2.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(j);
 
-      if (owned2 != autopas::OwnershipState::dummy) {
+      // if (owned2 != autopas::OwnershipState::dummy) {
         const FloatPrecision x2 = soa2.template operator()<Particle_T::AttributeNames::posX, true, false>(j);
         const FloatPrecision y2 = soa2.template operator()<Particle_T::AttributeNames::posY, true, false>(j);
         const FloatPrecision z2 = soa2.template operator()<Particle_T::AttributeNames::posZ, true, false>(j);
@@ -68,7 +68,7 @@ public:
 
         const FloatPrecision dr2 = drX2 + drY2 + drZ2;
 
-        if (dr2 <= cutoffSquared) {
+        if (dr2 <= cutoffSquared && dr2 > 0) {
           // TODO: consider mixing based on type or some sort of parameter injection
           // TODO: soa will need to contain epsilon and sigma
           const FloatPrecision sigmaSquared = 1.;
@@ -89,8 +89,8 @@ public:
           fyAcc += fY;
           fzAcc += fZ;
         }
-      }
-    }
+      // } // owned 2 != dummy
+    // } // owned 1 != dummy
   }
 
   constexpr static auto getNeededAttr() {

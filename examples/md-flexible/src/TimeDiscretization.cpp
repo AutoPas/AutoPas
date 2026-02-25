@@ -24,6 +24,10 @@ namespace TimeDiscretization {
   using DeviceSpace = Kokkos::HostSpace;
   constexpr bool ForEachHostFlag = true;
 #endif
+/*
+using DeviceSpace = Kokkos::HostSpace;
+constexpr bool ForEachHostFlag = true;
+*/
 
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
@@ -90,13 +94,13 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     ParticleType::ParticleSoAFloatPrecision fY = storage.template operator()<ParticleType::AttributeNames::forceY, true, ForEachHostFlag>(i);
     ParticleType::ParticleSoAFloatPrecision fZ = storage.template operator()<ParticleType::AttributeNames::forceZ, true, ForEachHostFlag>(i);
 
-    storage.template operator()<ParticleType::AttributeNames::oldForceX, true>(i) = fX;
-    storage.template operator()<ParticleType::AttributeNames::oldForceY, true>(i) = fY;
-    storage.template operator()<ParticleType::AttributeNames::oldForceZ, true>(i) = fZ;
+    storage.template operator()<ParticleType::AttributeNames::oldForceX, true, ForEachHostFlag>(i) = fX;
+    storage.template operator()<ParticleType::AttributeNames::oldForceY, true, ForEachHostFlag>(i) = fY;
+    storage.template operator()<ParticleType::AttributeNames::oldForceZ, true, ForEachHostFlag>(i) = fZ;
 
-    storage.template operator()<ParticleType::AttributeNames::forceX, true>(i) = globalForce[0];
-    storage.template operator()<ParticleType::AttributeNames::forceY, true>(i) = globalForce[1];
-    storage.template operator()<ParticleType::AttributeNames::forceZ, true>(i) = globalForce[2];
+    storage.template operator()<ParticleType::AttributeNames::forceX, true, ForEachHostFlag>(i) = globalForce[0];
+    storage.template operator()<ParticleType::AttributeNames::forceY, true, ForEachHostFlag>(i) = globalForce[1];
+    storage.template operator()<ParticleType::AttributeNames::forceZ, true, ForEachHostFlag>(i) = globalForce[2];
 
     vX *= deltaT;
     vY *= deltaT;
