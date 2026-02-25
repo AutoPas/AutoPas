@@ -21,6 +21,8 @@ class LJFunctorKokkos : public autopas::PairwiseFunctor<Particle_T, LJFunctorKok
 public:
   using SoAArraysType = typename Particle_T::SoAArraysType;
   using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
+  using MemberType = typename Kokkos::TeamPolicy<typename MemSpace::execution_space>::member_type;
+  using ScratchViewType = typename Kokkos::View<FloatPrecision*, typename MemSpace::execution_space::scratch_memory_space>;
 
   explicit LJFunctorKokkos(double cutoff, ParticlePropertiesLibrary<FloatPrecision, size_t> &)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos, MemSpace>(cutoff),
@@ -41,7 +43,7 @@ public:
   }
 
   KOKKOS_INLINE_FUNCTION
-  void SoAKernelKokkos(Kokkos::View<FloatPrecision*, typename MemSpace::execution_space::scratch_memory_space>& positions1, const Particle_T::KokkosSoAArraysType& soa2,
+  void SoAKernelKokkos(MemberType teamHandle, ScratchViewType& positions1, const Particle_T::KokkosSoAArraysType& soa2,
     FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j) final {
 
     // const auto owned1 = soa1.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(i);
@@ -54,13 +56,15 @@ public:
       // const auto owned2 = soa2.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(j);
 
       // if (owned2 != autopas::OwnershipState::dummy) {
-        const FloatPrecision x2 = soa2.template operator()<Particle_T::AttributeNames::posX, true, false>(j);
-        const FloatPrecision y2 = soa2.template operator()<Particle_T::AttributeNames::posY, true, false>(j);
-        const FloatPrecision z2 = soa2.template operator()<Particle_T::AttributeNames::posZ, true, false>(j);
 
-        const FloatPrecision drX = positions1(0) - x2;
-        const FloatPrecision drY = positions1(1) - y2;
-        const FloatPrecision drZ = positions1(2) - z2;
+        ScratchViewType positions2 (teamHandle.thread_scratch(0), 3);
+        positions2(0) = soa2.template operator()<Particle_T::AttributeNames::posX, true, false>(j);
+        positions2(1) = soa2.template operator()<Particle_T::AttributeNames::posY, true, false>(j);
+        positions2(2) = soa2.template operator()<Particle_T::AttributeNames::posZ, true, false>(j);
+
+        const FloatPrecision drX = positions1(0) - positions2(0);
+        const FloatPrecision drY = positions1(1) - positions2(1);
+        const FloatPrecision drZ = positions1(2) - positions2(2);
 
         const FloatPrecision drX2 = drX * drX;
         const FloatPrecision drY2 = drY * drY;

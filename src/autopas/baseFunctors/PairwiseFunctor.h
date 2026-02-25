@@ -38,6 +38,10 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
 
   using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
+  using MemberType = typename Kokkos::TeamPolicy<typename MemSpace::execution_space>::member_type;
+
+  using ScratchViewType = typename Kokkos::View<FloatPrecision*, typename MemSpace::execution_space::scratch_memory_space>;
+
   /**
    * Constructor
    * @param cutoff
@@ -79,7 +83,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   KOKKOS_INLINE_FUNCTION
-  virtual void SoAKernelKokkos(Kokkos::View<FloatPrecision*, typename MemSpace::execution_space::scratch_memory_space>& positions1, const Particle_T::KokkosSoAArraysType& soa2,
+  virtual void SoAKernelKokkos(MemberType teamHandle, Kokkos::View<FloatPrecision*, typename MemSpace::execution_space::scratch_memory_space>& positions1, const Particle_T::KokkosSoAArraysType& soa2,
       FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j ) {
     utils::ExceptionHandler::exception("{}::SoAKernelKokkos: not implemented", this->getName());
   }

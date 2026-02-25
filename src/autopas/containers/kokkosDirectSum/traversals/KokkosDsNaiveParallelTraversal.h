@@ -109,7 +109,8 @@ private:
     teamPolicy.set_scratch_size(0, Kokkos::PerTeam(perTeamBytes));
     teamPolicy.set_scratch_size(0, Kokkos::PerThread(perThreadBytes));
 
-    Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(auto teamHandle) {
+    using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
+    Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(MemberType teamHandle) {
       int i = teamHandle.league_rank();
 
       FloatPrecision fxAcc = 0.;
@@ -126,7 +127,7 @@ private:
         FloatPrecision& localFxAcc,
         FloatPrecision& localFyAcc,
         FloatPrecision& localFzAcc) {
-          func->SoAKernelKokkos(positions1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
+          func->SoAKernelKokkos(teamHandle, positions1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
       }, fxAcc, fyAcc, fzAcc);
 
       Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
