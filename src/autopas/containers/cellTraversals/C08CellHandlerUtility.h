@@ -144,7 +144,8 @@ std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offse
 /**
  * Computes the cell pair offsets for the C08 base step and the normalized vector between pair of cell-centers,
  * which is later used for early stopping the evaluation of the pairwise cell interactions due to being out-of-reach.
- * @tparam Mode Determines the concret return type (see {@ref autopas::C08CellHandlerUtility::internal::C08CellDirection}
+ * @tparam Mode Determines the concret return type (see {@ref
+ * autopas::C08CellHandlerUtility::internal::C08CellDirection}
  * @param cellsPerDimension the number of cells per dimension
  * @param cellLength the length of a cell in CellBlock3D.
  * @param interactionLength the interaction length consisting of cutoff + skin
