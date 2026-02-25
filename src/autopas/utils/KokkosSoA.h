@@ -60,10 +60,15 @@ namespace autopas::utils {
       addParticleImpl(position, p, I);
     }
 
-    template <size_t attribute>
+    template <size_t attribute, bool offset, bool host = false>
     KOKKOS_INLINE_FUNCTION
     constexpr auto& getView() const {
-      return std::get<attribute>(views);
+      if constexpr (host) {
+        return std::get<attribute - (offset ? 1 : 0)>(views).view_host();
+      }
+      else {
+        return std::get<attribute - (offset ? 1 : 0)>(views).view_device();
+      }
     }
 
     /* Meta Data */
