@@ -101,10 +101,6 @@ private:
     auto func = _functor;
     FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
 
-    using ScratchViewType = Kokkos::View<FloatPrecision*, typename DeviceSpace::execution_space::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
-
-    // const int TEAM_SIZE = 128;
-
     auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, Kokkos::AUTO, Kokkos::AUTO);
 
     using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
@@ -128,17 +124,9 @@ private:
 
         Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
           int index = teamHandle.league_rank();
-          const FloatPrecision oldFx = soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index);
-          const FloatPrecision oldFy = soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index);
-          const FloatPrecision oldFz = soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index);
-
-          const FloatPrecision newFx = oldFx + fxAcc;
-          const FloatPrecision newFy = oldFy + fyAcc;
-          const FloatPrecision newFz = oldFz + fzAcc;
-
-          soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index) = newFx;
-          soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) = newFy;
-          soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) = newFz;
+          soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index) += fxAcc;
+          soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) += fyAcc;
+          soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) += fzAcc;
         });
     });
   }
