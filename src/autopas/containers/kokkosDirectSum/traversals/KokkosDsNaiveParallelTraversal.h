@@ -102,9 +102,14 @@ private:
     FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
 
     int CHUNK_SIZE=128;
+    int TEAM_SIZE=128;
     int numChunks = N / CHUNK_SIZE;
 
-    auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(numChunks+1, Kokkos::AUTO, Kokkos::AUTO);
+    auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(numChunks+1, TEAM_SIZE, Kokkos::AUTO);
+
+    using ScratchView = Kokkos::View<FloatPrecision*, typename DeviceSpace::execution_space::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+    int size = ScratchView::shmem_size(CHUNK_SIZE*3);
+    teamPolicy.set_scratch_size(0, Kokkos::PerTeam(size));
 
     using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
     Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
@@ -113,6 +118,8 @@ private:
       int offset = k*CHUNK_SIZE;
       int rest = N - offset;
       int upper = std::min(rest, CHUNK_SIZE);
+
+      ScratchView forceStorage (teamHandle.team_scratch(0), 3*CHUNK_SIZE);
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, upper), [&](int i) {
 
@@ -128,20 +135,26 @@ private:
           func->SoAKernelKokkos(x1, y1, z1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
         }, fxAcc, fyAcc, fzAcc);
 
-        Kokkos::single(Kokkos::PerThread(teamHandle), [&]() {
-          int index = teamHandle.team_rank() + offset;
-          const FloatPrecision oldFx = soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index);
-          const FloatPrecision oldFy = soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index);
-          const FloatPrecision oldFz = soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index);
+        forceStorage(i*3) = fxAcc;
+        forceStorage(i*3+1) = fyAcc;
+        forceStorage(i*3+2) = fzAcc;
+      });
 
-          const FloatPrecision newFx = oldFx + fxAcc;
-          const FloatPrecision newFy = oldFy + fyAcc;
-          const FloatPrecision newFz = oldFz + fzAcc;
+      teamHandle.team_barrier();
 
-          soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index) = newFx;
-          soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) = newFy;
-          soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) = newFz;
-        });
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, CHUNK_SIZE), [&](int i) {
+        int index = i + offset;
+        const FloatPrecision oldFx = soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index);
+        const FloatPrecision oldFy = soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index);
+        const FloatPrecision oldFz = soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index);
+
+        const FloatPrecision newFx = oldFx + forceStorage(i*3);
+        const FloatPrecision newFy = oldFy + forceStorage(i*3+1);
+        const FloatPrecision newFz = oldFz + forceStorage(i*3+2);
+
+        soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index) = newFx;
+        soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) = newFy;
+        soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) = newFz;
       });
     });
   }
