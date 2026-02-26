@@ -118,9 +118,9 @@ inline void PsVLC01Traversal<ParticleCell_T, PairwiseFunctor_T>::processBaseCell
       const unsigned long otherIndex = baseIndex + offset;
 
       if (baseIndex == otherIndex) {
-        this->_cellFunctor.processCell(baseIndex);
+        this->_cellFunctor.processCellPsVL(baseIndex);
       } else {
-        this->_cellFunctor.processCellPair(baseIndex, otherIndex, r);
+        this->_cellFunctor.processCellPairPsVL(baseIndex, otherIndex, r);
       }
     }
   }

@@ -150,9 +150,9 @@ inline void C08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCellPsVL(u
     const unsigned long cellIndex2 = baseIndex + offset2;
 
     if (cellIndex1 == cellIndex2) {
-      this->_cellFunctor.processCell(cellIndex1);
+      this->_cellFunctor.processCellPsVL(cellIndex1);
     } else {
-      this->_cellFunctor.processCellPair(cellIndex1, cellIndex2, r);
+      this->_cellFunctor.processCellPairPsVL(cellIndex1, cellIndex2, r);
     }
   }
 }
