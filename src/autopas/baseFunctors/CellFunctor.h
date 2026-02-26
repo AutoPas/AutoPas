@@ -137,7 +137,7 @@ class CellFunctor {
    * @param cell1
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
-   * @tparam newton3 determines if Newton3 is used or not.
+   * @tparam newton3 determines if Newton3 is used or not. Matches _useNewton3.
    */
   template <bool newton3>
   void processCellPairAoS(ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection);
@@ -148,7 +148,7 @@ class CellFunctor {
    * @param cell1Index
    * @param cell2Index
    * @param directionIndex Normalized vector connecting centers of cell1 and cell2.
-   * @tparam newton3 determines if Newton3 is used or not.
+   * @tparam newton3 determines if Newton3 is used or not. Matches _useNewton3.
    */
   template <bool newton3>
   void processCellPairAoSPsVL(unsigned long cell1Index, unsigned long cell2Index, signed long directionIndex);
@@ -156,7 +156,7 @@ class CellFunctor {
   /**
    * Utilizes the SortedCellViews to reduce the calculations needed by processCellPairAoS in certain cases.
    * Used for PseudoVerletLists or if the number of Particles in the cells are above the sortingThreshold.
-   * @tparam newton3 determines if Newton3 is used or not.
+   * @tparam newton3 determines if Newton3 is used or not. Matches _useNewton3.
    * @param cell1Sorted SortedCellView of cell1
    * @param cell2Sorted SortedCellView of cell2
    */
@@ -192,7 +192,7 @@ class CellFunctor {
 
   /**
    * Calculates the interatctions of two particles in different cells.
-   * @tparam newton3 determines if the newton3 optimization is used.
+   * @tparam newton3 determines if the newton3 optimization is used. Matches _useNewton3.
    * @param p1 particle in cell1
    * @param p2 particle in cell2
    */
