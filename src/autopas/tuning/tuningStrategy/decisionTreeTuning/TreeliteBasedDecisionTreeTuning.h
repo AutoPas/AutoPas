@@ -36,14 +36,11 @@ class TreeliteBasedDecisionTreeTuning : public TuningStrategyInterface {
   /**
    * Constructor of TreeliteBasedDecisionTreeTuning.
    * @param searchSpace Set of configurations to be considered.
-   * @param modelPairwiseFileName Name of the file containing the pairwise decision tree model.
-   * @param modelTriwiseFileName Name of the file containing the triwise decision tree model.
+   * @param treeliteModelFileName Name of the file containing the treelite decision tree model.
    * @param confidenceThreshold Minimum confidence threshold for accepting predictions.
-   * @param interactionType The interaction type (used to select the appropriate pairwise/triwise model).
    */
-  TreeliteBasedDecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelPairwiseFileName,
-                                  const std::string &modelTriwiseFileName, double confidenceThreshold,
-                                  InteractionTypeOption interactionType);
+  TreeliteBasedDecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &treeliteModelFileName,
+                                  double confidenceThreshold);
 
   ~TreeliteBasedDecisionTreeTuning() override;
 
@@ -81,24 +78,14 @@ class TreeliteBasedDecisionTreeTuning : public TuningStrategyInterface {
   std::set<Configuration> _configurations;
 
   /**
-   * Name of the file containing the pairwise decision tree model.
+   * Name of the file containing the decision tree model.
    */
-  std::string _modelPairwiseFileName;
-
-  /**
-   * Name of the file containing the triwise decision tree model.
-   */
-  std::string _modelTriwiseFileName;
+  std::string _modelFileName;
 
   /**
    * Confidence threshold for the prediction.
    */
   double _confidenceThreshold;
-
-  /**
-   * The interaction type for which this tuning strategy predicts.
-   */
-  InteractionTypeOption _interactionType;
 
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   /**

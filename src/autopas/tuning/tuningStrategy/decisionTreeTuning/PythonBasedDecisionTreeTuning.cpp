@@ -22,11 +22,11 @@ namespace py = pybind11;
 #endif
 
 PythonBasedDecisionTreeTuning::PythonBasedDecisionTreeTuning(const std::set<Configuration> &searchSpace,
-                                                             const std::string &modelFileName,
+                                                             const std::string &pythonModelFileName,
                                                              double confidenceThreshold,
                                                              InteractionTypeOption interactionType)
     : _configurations(searchSpace),
-      _modelFileName(modelFileName),
+      _modelFileName(pythonModelFileName),
       _confidenceThreshold(confidenceThreshold),
       _interactionType(interactionType) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING

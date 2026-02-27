@@ -7,61 +7,87 @@
 #include "TreeliteBasedDecisionTreeTuning.h"
 
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
+#include <algorithm>
 #include <filesystem>
 #include <json.hpp>
-#include <type_traits>
+#include <string_view>
 #endif
+#include <type_traits>
 
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
 TreeliteBasedDecisionTreeTuning::TreeliteBasedDecisionTreeTuning(const std::set<Configuration> &searchSpace,
-                                                                 const std::string &modelPairwiseFileName,
-                                                                 const std::string &modelTriwiseFileName,
-                                                                 double confidenceThreshold,
-                                                                 InteractionTypeOption interactionType)
-    : _configurations(searchSpace),
-      _modelPairwiseFileName(modelPairwiseFileName),
-      _modelTriwiseFileName(modelTriwiseFileName),
-      _confidenceThreshold(confidenceThreshold),
-      _interactionType(interactionType) {
+                                                                 const std::string &treeliteModelFileName,
+                                                                 double confidenceThreshold)
+    : _configurations(searchSpace), _modelFileName(treeliteModelFileName), _confidenceThreshold(confidenceThreshold) {
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   try {
     namespace fs = std::filesystem;
 
-    // Select model based on interaction type.
-    const std::string &modelFile =
-        (_interactionType == InteractionTypeOption::pairwise) ? _modelPairwiseFileName : _modelTriwiseFileName;
-
-    if (modelFile.empty()) {
-      utils::ExceptionHandler::exception(
-          "TreeliteBasedDecisionTreeTuning: model file path is empty for interaction type '{}'.",
-          _interactionType.to_string());
+    if (_modelFileName.empty()) {
+      utils::ExceptionHandler::exception("TreeliteBasedDecisionTreeTuning: model file path is empty: {}.",
+                                         _modelFileName);
     }
 
-    if (!modelFile.ends_with(".tl")) {
+    if (not _modelFileName.ends_with(".tl")) {
       utils::ExceptionHandler::exception(
-          "TreeliteBasedDecisionTreeTuning expects a '.tl' Treelite model file. Got '{}'.", modelFile);
+          "TreeliteBasedDecisionTreeTuning expects a '.tl' Treelite model file, but it received '{}'.", _modelFileName);
     }
+
+    // In next steps, files containing classes and features must be derived from the model file.
+
+    // Files naming conventions:
+    //   <model-prefix>_pairwise.tl / <model-prefix>_triwise.tl
+    //   <model-prefix>_pairwise_classes.txt / <model-prefix>_triwise_classes.txt
+    //   <model-prefix>_features.json
 
     // Resolve paths relative to current working directory.
-    const fs::path modelPath(modelFile);
-    const fs::path basePath = modelPath.parent_path();
-    const std::string baseStem = modelPath.stem().string();
+    const fs::path modelPath(_modelFileName);           // full path to the .tl file
+    const fs::path basePath = modelPath.parent_path();  // path to the parent directory
 
-    const fs::path classesPath = basePath / (baseStem + "_classes.txt");
-    const fs::path featuresPath = basePath / "features.json";
+    const std::string modelStem = modelPath.stem().string();  // model filename without the .tl extension, e.g.
+                                                              // my_model_pairwise part of my_model_pairwise.tl file
 
-    // Fail fast if anything is missing.
-    if (!fs::exists(modelPath)) {
-      utils::ExceptionHandler::exception("Treelite model file not found: {}", modelPath.string());
+    // Get interaction type of the model.
+    std::string_view interactionSuffix;
+    if (modelStem.ends_with("_pairwise")) {
+      interactionSuffix = "_pairwise";
+    } else if (modelStem.ends_with("_triwise")) {
+      interactionSuffix = "_triwise";
+    } else {
+      utils::ExceptionHandler::exception("Treelite model file '{}' must end with '_pairwise.tl' or '_triwise.tl'.",
+                                         _modelFileName);
     }
-    if (!fs::exists(classesPath)) {
-      utils::ExceptionHandler::exception("Treelite classes file not found: {}", classesPath.string());
+
+    const std::string modelPrefix = modelStem.substr(
+        0, modelStem.size() - interactionSuffix.size());  // e.g. model prefix of my_model_pairwise.tl is my_model
+
+    const fs::path classesPath = basePath / (modelPrefix + std::string(interactionSuffix) +
+                                             "_classes.txt");                   // e.g. my_model_pairwise_classes.txt
+    const fs::path featuresPath = basePath / (modelPrefix + "_features.json");  // e.g. my_model_features.json
+
+    // Accumulate missing file errors and throw once with all missing paths.
+    std::vector<std::string> missingFiles;
+    if (not fs::exists(modelPath)) {
+      missingFiles.emplace_back(modelPath.string());
     }
-    if (!fs::exists(featuresPath)) {
-      utils::ExceptionHandler::exception("Treelite features file not found: {}", featuresPath.string());
+    if (not fs::exists(classesPath)) {
+      missingFiles.emplace_back(classesPath.string());
+    }
+    if (not fs::exists(featuresPath)) {
+      missingFiles.emplace_back(featuresPath.string());
+    }
+    if (not missingFiles.empty()) {
+      std::string missingFilesError{"Missing required Treelite files: "};
+      for (size_t i = 0; i < missingFiles.size(); ++i) {
+        missingFilesError += missingFiles[i];
+        if (i + 1 < missingFiles.size()) {
+          missingFilesError += ", ";
+        }
+      }
+      utils::ExceptionHandler::exception("{}", missingFilesError);
     }
 
     // Construct Treelite predictor.
@@ -121,7 +147,7 @@ std::string TreeliteBasedDecisionTreeTuning::getPredictionFromTreelite() {
     timer.start();
 #endif
 
-    if (!_treeliteModel) {
+    if (not _treeliteModel) {
       utils::ExceptionHandler::exception("Treelite model not initialized.");
       return {};
     }
@@ -138,6 +164,10 @@ std::string TreeliteBasedDecisionTreeTuning::getPredictionFromTreelite() {
     utils::ExceptionHandler::exception("Error during Treelite prediction: {}", e.what());
     return {};
   }
+#else
+  utils::ExceptionHandler::exception(
+      "getPredictionFromTreelite() called but AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF.");
+  return {};
 #endif
 }
 
@@ -167,7 +197,6 @@ void TreeliteBasedDecisionTreeTuning::updateConfigQueue(std::vector<Configuratio
     }
 
     config.loadEstimator = LoadEstimatorOption::parseOptionExact(predictionJson["Load Estimator"]);
-    config.interactionType = _interactionType;
 
     configQueue.clear();
     configQueue.push_back(config);

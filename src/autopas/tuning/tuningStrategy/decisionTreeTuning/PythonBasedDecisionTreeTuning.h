@@ -34,11 +34,11 @@ class PythonBasedDecisionTreeTuning : public TuningStrategyInterface {
   /**
    * Constructor of PythonBasedDecisionTreeTuning.
    * @param searchSpace Set of configurations to be considered.
-   * @param modelFileName Name of the file containing the random forest models.
+   * @param pythonModelFileName Name of the file containing the random forest models.
    * @param confidenceThreshold Minimum confidence threshold for accepting predictions.
    * @param interactionType The interaction type (used to select the appropriate pairwise/triwise model).
    */
-  PythonBasedDecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
+  PythonBasedDecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &pythonModelFileName,
                                 double confidenceThreshold, InteractionTypeOption interactionType);
 
   ~PythonBasedDecisionTreeTuning() override;

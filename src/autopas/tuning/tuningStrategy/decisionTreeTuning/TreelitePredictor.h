@@ -6,7 +6,6 @@
 
 #pragma once
 
-#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
 #include <treelite/c_api.h>
 
 #include <map>
@@ -26,9 +25,11 @@ namespace autopas {
  * A Treelite-based predictor for decision-tree tuning.
  *
  * The predictor loads:
- *  - A Treelite checkpoint (*.tl).
- *  - A classes file (*_classes.txt) mapping class index -> combined label string.
- *  - A features file (features.json) storing the feature order used during training.
+ *  - A Treelite checkpoint (.tl).
+ *  - A classes file (.txt) mapping class index -> combined label string.
+ *  - A features file (.json) storing the feature order used during training.
+ *
+ * To get predictions, Treelite's General Tree Inference Library (GTIL) is used.
  *
  * The predict() method returns a JSON string compatible with updateConfigQueue().
  *
@@ -38,9 +39,9 @@ class TreelitePredictor {
  public:
   /**
    * Constructor of the TreelitePredictor.
-   * @param modelPath Path to model checkpoint (*.tl).
-   * @param classesPath Path to classes file (*_classes.txt).
-   * @param featuresPath Path to features.json (JSON array of strings).
+   * @param modelPath Path to model checkpoint.
+   * @param classesPath Path to classes file.
+   * @param featuresPath Path to a features file (JSON array of strings).
    */
   TreelitePredictor(const std::string &modelPath, const std::string &classesPath, const std::string &featuresPath);
 
@@ -61,8 +62,8 @@ class TreelitePredictor {
 
  private:
   /**
-   * Loads features from features.json.
-   * @param featuresPath Path to features.json.
+   * Loads features from a features JSON file.
+   * @param featuresPath Path to a features JSON file.
    */
   void loadFeatures(const std::string &featuresPath);
 
@@ -183,4 +184,3 @@ class TreelitePredictor {
 };
 
 }  // namespace autopas
-#endif

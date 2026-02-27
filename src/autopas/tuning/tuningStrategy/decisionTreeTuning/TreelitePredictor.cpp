@@ -4,7 +4,6 @@
  * @date 18.12.25
  */
 
-#ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
 #include "autopas/tuning/tuningStrategy/decisionTreeTuning/TreelitePredictor.h"
 
 #include <cmath>
@@ -73,8 +72,8 @@ TreelitePredictor::TreelitePredictor(const std::string &modelPath, const std::st
   tlCheck(TreeliteQueryNumFeature(_model.get(), &numFeature), "TreeliteQueryNumFeature failed.");
 
   if (numFeature != static_cast<int>(_features.size())) {
-    autopas::utils::ExceptionHandler::exception("Treelite model expects {} features, but features.json provides {}. ",
-                                                numFeature, _features.size());
+    autopas::utils::ExceptionHandler::exception(
+        "Treelite model expects {} features, but the features file provides {}.", numFeature, _features.size());
   }
 
   initGtilConfig();
@@ -88,35 +87,35 @@ TreelitePredictor::~TreelitePredictor() = default;
 void TreelitePredictor::loadFeatures(const std::string &featuresPath) {
   std::ifstream file(featuresPath);
   if (!file.is_open()) {
-    autopas::utils::ExceptionHandler::exception("Failed to open features.json: '{}'.", featuresPath);
+    autopas::utils::ExceptionHandler::exception("Failed to open features file: '{}'.", featuresPath);
   }
 
   nlohmann::json featuresJson;
   file >> featuresJson;
 
   if (!featuresJson.is_array()) {
-    autopas::utils::ExceptionHandler::exception("features.json must be a JSON array: '{}'.", featuresPath);
+    autopas::utils::ExceptionHandler::exception("Features file must be a JSON array: '{}'.", featuresPath);
   }
 
   _features.clear();
   _features.reserve(featuresJson.size());
   for (const auto &feature : featuresJson) {
     if (!feature.is_string()) {
-      autopas::utils::ExceptionHandler::exception("features.json must contain only strings: '{}'.", featuresPath);
+      autopas::utils::ExceptionHandler::exception("Features file must contain only strings: '{}'.", featuresPath);
     }
     // Preserve order of features.
     _features.emplace_back(feature.get<std::string>());
   }
 
   if (_features.empty()) {
-    autopas::utils::ExceptionHandler::exception("features.json is empty: '{}'.", featuresPath);
+    autopas::utils::ExceptionHandler::exception("Features file is empty: '{}'.", featuresPath);
   }
 
   // Enforce exact feature list to prevent silent mismatch.
   if (_features != _expectedFeatures) {
     std::ostringstream oss;
     for (const auto &f : _expectedFeatures) oss << f << ' ';
-    autopas::utils::ExceptionHandler::exception("features.json does not match expected list of features: {}",
+    autopas::utils::ExceptionHandler::exception("Features file does not match expected list of features: {}",
                                                 oss.str());
   }
 }
@@ -147,8 +146,8 @@ void TreelitePredictor::loadClasses(const std::string &classesPath) {
     const auto labels = split(cls, ';');
 
     if (labels.size() != _numLabels) {
-      autopas::utils::ExceptionHandler::exception("TreelitePredictor expected {} labels, but got {}: '{}'.", _numLabels,
-                                                  labels.size(), cls);
+      autopas::utils::ExceptionHandler::exception("TreelitePredictor expects {} labels, but it received {}: '{}'.",
+                                                  _numLabels, labels.size(), cls);
     }
 
     try {
@@ -291,4 +290,3 @@ std::string TreelitePredictor::predict(const std::map<std::string, double> &live
 }
 
 }  // namespace autopas
-#endif

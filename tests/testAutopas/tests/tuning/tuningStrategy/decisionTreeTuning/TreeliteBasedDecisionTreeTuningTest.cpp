@@ -1,5 +1,5 @@
 /**
- * @file TreeliteBasedDecisionTreeTuningTest.h
+ * @file TreeliteBasedDecisionTreeTuningTest.cpp
  * @author Elizaveta Polysaeva
  * @date 24.01.2026
  */
@@ -30,10 +30,12 @@ std::filesystem::path getTestDir() {
 }
 
 /**
- * Register spdlog logger "AutoPasLog".
+ * Register spdlog null logger "AutoPasLog".
+ *
+ * The null logger drops all logging data that would otherwise cause a test to fail.
  */
 void ensureNullLogger() {
-  if (!spdlog::get("AutoPasLog")) {
+  if (not spdlog::get("AutoPasLog")) {
     auto null_logger = std::make_shared<spdlog::logger>("AutoPasLog", std::make_shared<spdlog::sinks::null_sink_mt>());
     spdlog::register_logger(null_logger);
   }
@@ -52,12 +54,8 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingModelFile) {
   const auto baseDir = getTestDir();
   const std::string missingModelPath = (baseDir / "nonexistent_pairwise.tl").string();
 
-  EXPECT_THROW(
-      {
-        TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, missingModelPath, "" /*triwise*/, 0.0,
-                                                       InteractionTypeOption::pairwise);
-      },
-      autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW({ TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, missingModelPath, 0.0); },
+               autopas::utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
 #endif
@@ -72,12 +70,8 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestEmptyModelPath) {
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   std::set<Configuration> searchSpace;
 
-  EXPECT_THROW(
-      {
-        TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, "" /*pairwise*/, "" /*triwise*/, 0.0,
-                                                       InteractionTypeOption::pairwise);
-      },
-      autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW({ TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, "", 0.0); },
+               autopas::utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
 #endif
@@ -95,12 +89,8 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestModelWrongExtension) {
   const auto baseDir = getTestDir();
   const std::string pklModelPath = (baseDir / "test_model.pkl").string();
 
-  EXPECT_THROW(
-      {
-        TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, pklModelPath, "" /*triwise*/, 0.0,
-                                                       InteractionTypeOption::pairwise);
-      },
-      autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW({ TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, pklModelPath, 0.0); },
+               autopas::utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
 #endif
@@ -109,8 +99,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestModelWrongExtension) {
 /**
  * @test TestMissingClassesFile
  *
- * Tests that if the derived classes file (modelStem + "_classes.txt") is missing,
- * the constructor throws.
+ * Tests that if the derived classes file is missing, the constructor throws.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingClassesFile) {
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
@@ -118,19 +107,15 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingClassesFile) {
 
   const auto baseDir = getTestDir() / "treelite_missing_classes_test";
   const auto modelPath = baseDir / "test_model_pairwise.tl";
-  const auto featuresPath = baseDir / "features.json";
   const auto classesPath = baseDir / "test_model_pairwise_classes.txt";
+  const auto featuresPath = baseDir / "test_model_features.json";
 
   ASSERT_TRUE(std::filesystem::exists(modelPath)) << "Missing model file for test.";
-  ASSERT_TRUE(std::filesystem::exists(featuresPath)) << "Missing features.json for test.";
   ASSERT_FALSE(std::filesystem::exists(classesPath)) << "Classes file should be missing for this test.";
+  ASSERT_TRUE(std::filesystem::exists(featuresPath)) << "Missing features file for test.";
 
-  EXPECT_THROW(
-      {
-        TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), "" /*triwise*/, 0.8,
-                                                       InteractionTypeOption::pairwise);
-      },
-      autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW({ TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), 0.8); },
+               autopas::utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
 #endif
@@ -139,8 +124,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingClassesFile) {
 /**
  * @test TestMissingFeaturesFile
  *
- * Tests that if features.json is missing next to the model,
- * the constructor throws.
+ * Tests that if the derived features JSON file is missing, the constructor throws.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingFeaturesFile) {
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
@@ -149,18 +133,14 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestMissingFeaturesFile) {
   const auto baseDir = getTestDir() / "treelite_missing_features_test";
   const auto modelPath = baseDir / "test_model_pairwise.tl";
   const auto classesPath = baseDir / "test_model_pairwise_classes.txt";
-  const auto featuresPath = baseDir / "features.json";
+  const auto featuresPath = baseDir / "test_model_features.json";
 
   ASSERT_TRUE(std::filesystem::exists(modelPath)) << "Missing model file for test.";
   ASSERT_TRUE(std::filesystem::exists(classesPath)) << "Missing classes file for test.";
-  ASSERT_FALSE(std::filesystem::exists(featuresPath)) << "features.json should be missing for this test.";
+  ASSERT_FALSE(std::filesystem::exists(featuresPath)) << "Features file should be missing for this test.";
 
-  EXPECT_THROW(
-      {
-        TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), "" /*triwise*/, 0.0,
-                                                       InteractionTypeOption::pairwise);
-      },
-      autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW({ TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), 0.0); },
+               autopas::utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
 #endif
@@ -182,14 +162,13 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestValidPrediction) {
   const auto baseDir = getTestDir();
   const auto modelPath = baseDir / "test_model_pairwise.tl";
   const auto classesPath = baseDir / "test_model_pairwise_classes.txt";
-  const auto featuresPath = baseDir / "features.json";
+  const auto featuresPath = baseDir / "test_model_features.json";
 
   ASSERT_TRUE(std::filesystem::exists(modelPath)) << "Test model file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(classesPath)) << "Test classes file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(featuresPath)) << "Test features file does not exist.";
 
-  TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), "" /*triwise*/, 0.0,
-                                                 InteractionTypeOption::pairwise);
+  TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), 0.0);
 
   double meanParticlesPerCell = 1.8148148;
   double medianParticlesPerCell = 0.0;
@@ -251,14 +230,13 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestConfidenceThresholdSkipsUpdate) {
   const auto baseDir = getTestDir();
   const auto modelPath = baseDir / "test_model_pairwise.tl";
   const auto classesPath = baseDir / "test_model_pairwise_classes.txt";
-  const auto featuresPath = baseDir / "features.json";
+  const auto featuresPath = baseDir / "test_model_features.json";
 
   ASSERT_TRUE(std::filesystem::exists(modelPath)) << "Test model file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(classesPath)) << "Test classes file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(featuresPath)) << "Test features file does not exist.";
 
-  TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), "" /*triwise*/, 1.1,
-                                                 InteractionTypeOption::pairwise);
+  TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), 1.1);
 
   double meanParticlesPerCell = 1.8148148;
   double medianParticlesPerCell = 0.0;
@@ -315,18 +293,14 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidModelFile) {
   const auto baseDir = getTestDir() / "treelite_invalid_model_test";
   const auto modelPath = baseDir / "test_model_pairwise.tl";
   const auto classesPath = baseDir / "test_model_pairwise_classes.txt";
-  const auto featuresPath = baseDir / "features.json";
+  const auto featuresPath = baseDir / "test_model_features.json";
 
-  ASSERT_TRUE(std::filesystem::exists(modelPath)) << "Invalid test model file does not exist.";
-  ASSERT_TRUE(std::filesystem::exists(classesPath)) << "Invalid test classes file does not exist.";
+  ASSERT_TRUE(std::filesystem::exists(modelPath)) << "Test model file does not exist.";
+  ASSERT_TRUE(std::filesystem::exists(classesPath)) << "Test classes file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(featuresPath)) << "Test features file does not exist.";
 
-  EXPECT_THROW(
-      {
-        TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), "" /*triwise*/, 0.8,
-                                                       InteractionTypeOption::pairwise);
-      },
-      autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW({ TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), 0.8); },
+               autopas::utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
 #endif
@@ -335,7 +309,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidModelFile) {
 /**
  * @test TestInvalidClassSize
  *
- * Tests that the constructor throws when the number of lables in a class is not as expected.
+ * Tests that the constructor throws when the number of tokens in a class is not as expected.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidClassSize) {
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
@@ -344,47 +318,39 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidClassSize) {
   const auto baseDir = getTestDir() / "treelite_invalid_classes_test" / "treelite_invalid_class_size_test";
   const auto modelPath = baseDir / "test_model_pairwise.tl";
   const auto classesPath = baseDir / "test_model_pairwise_classes.txt";
-  const auto featuresPath = baseDir / "features.json";
+  const auto featuresPath = baseDir / "test_model_features.json";
 
   ASSERT_TRUE(std::filesystem::exists(modelPath)) << "Test model file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(classesPath)) << "Test classes file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(featuresPath)) << "Test features file does not exist.";
 
-  EXPECT_THROW(
-      {
-        TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), "" /*triwise*/, 0.0,
-                                                       InteractionTypeOption::pairwise);
-      },
-      autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW({ TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), 0.0); },
+               autopas::utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
 #endif
 }
 
 /**
- * @test TestInvalidLabelInClass
+ * @test TestInvalidClassConfig
  *
- * Tests that the constructor throws when an invalid label is detected in a class.
+ * Tests that the constructor throws when a class is an invalid configuration.
  */
-TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidLabelInClass) {
+TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidClassConfig) {
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
   std::set<Configuration> searchSpace;
 
-  const auto baseDir = getTestDir() / "treelite_invalid_classes_test" / "treelite_invalid_label_test";
+  const auto baseDir = getTestDir() / "treelite_invalid_classes_test" / "treelite_invalid_class_config_test";
   const auto modelPath = baseDir / "test_model_pairwise.tl";
   const auto classesPairwise = baseDir / "test_model_pairwise_classes.txt";
-  const auto featuresPath = baseDir / "features.json";
+  const auto featuresPath = baseDir / "test_model_features.json";
 
   ASSERT_TRUE(std::filesystem::exists(modelPath)) << "Test model file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(classesPairwise)) << "Test classes file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(featuresPath)) << "Test features file does not exist.";
 
-  EXPECT_THROW(
-      {
-        TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), "" /*triwise*/, 0.0,
-                                                       InteractionTypeOption::pairwise);
-      },
-      autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW({ TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), 0.0); },
+               autopas::utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
 #endif
@@ -402,18 +368,14 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidFeaturesSize) {
   const auto baseDir = getTestDir() / "treelite_invalid_features_test" / "treelite_invalid_feature_list_size_test";
   const auto modelPath = baseDir / "test_model_pairwise.tl";
   const auto classesPairwise = baseDir / "test_model_pairwise_classes.txt";
-  const auto featuresPath = baseDir / "features.json";
+  const auto featuresPath = baseDir / "test_model_features.json";
 
   ASSERT_TRUE(std::filesystem::exists(modelPath)) << "Test model file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(classesPairwise)) << "Test classes file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(featuresPath)) << "Test features file does not exist.";
 
-  EXPECT_THROW(
-      {
-        TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), "" /*triwise*/, 0.0,
-                                                       InteractionTypeOption::pairwise);
-      },
-      autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW({ TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), 0.0); },
+               autopas::utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
 #endif
@@ -422,7 +384,7 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidFeaturesSize) {
 /**
  * @test TestInvalidFeatures
  *
- * Tests that the constructor throws when features.json doesn't match with known list of features.
+ * Tests that the constructor throws when features in the provided file don't match with known list of features.
  */
 TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidFeatures) {
 #ifdef AUTOPAS_ENABLE_TREELITE_BASED_TUNING
@@ -431,18 +393,14 @@ TEST(TreeliteBasedDecisionTreeTuningTest, TestInvalidFeatures) {
   const auto baseDir = getTestDir() / "treelite_invalid_features_test" / "treelite_invalid_feature_list_test";
   const auto modelPath = baseDir / "test_model_pairwise.tl";
   const auto classesPairwise = baseDir / "test_model_pairwise_classes.txt";
-  const auto featuresPath = baseDir / "features.json";
+  const auto featuresPath = baseDir / "test_model_features.json";
 
   ASSERT_TRUE(std::filesystem::exists(modelPath)) << "Test model file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(classesPairwise)) << "Test classes file does not exist.";
   ASSERT_TRUE(std::filesystem::exists(featuresPath)) << "Test features file does not exist.";
 
-  EXPECT_THROW(
-      {
-        TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), "" /*triwise*/, 0.0,
-                                                       InteractionTypeOption::pairwise);
-      },
-      autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW({ TreeliteBasedDecisionTreeTuning tuningStrategy(searchSpace, modelPath.string(), 0.0); },
+               autopas::utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_TREELITE_BASED_TUNING=OFF";
 #endif

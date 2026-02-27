@@ -227,17 +227,17 @@ def train_model(X: pd.DataFrame, y: pd.DataFrame, test_size: float, n_estimators
 
 def save_models_and_encoders(pairwise_model: RandomForestClassifier, triwise_model: RandomForestClassifier,
                              pairwise_label_encoder: dict, triwise_label_encoder: dict, features: list,
-                             output_files: list) -> None:
+                             model_prefix: str, save_python: bool, save_treelite: bool) -> None:
     """
-    Save the trained models, LabelEncoder, and feature list to a file.
+    Save training artifacts for Python and/or Treelite-based prediction.
 
-    This function saves the trained RandomForestClassifier models and LabelEncoders for both pairwise and triwise
-    interactions, as well as the list of features used, as a dictionary in a pickle file so they can be loaded together
-    later for making predictions.
+    When Python output is enabled, this function saves the trained RandomForestClassifier models and LabelEncoders
+    for both pairwise and triwise interactions, together with the list of features, into a single pickle bundle.
+    This bundle is loaded later for making predictions.
 
-    Additionally, it attempts to export Treelite (.tl) models for pairwise and/or triwise interactions. For each successful
-    export, a matching '<model>_classes.txt' file with label encoder's class mapping is created. If at least one Treelite 
-    model is successfully created, the feature list is written once to `features.json`.
+    When Treelite output is enabled, this function exports Treelite checkpoint files, classes files, and one
+    features file. These files are later loaded separately: the model checkpoint for inference,
+    the classes file for decoding class ids to labels, and the features file for consistent input order.
 
     Args:
         pairwise_model (RandomForestClassifier): The trained RandomForestClassifier model for pairwise interactions.
@@ -247,26 +247,41 @@ def save_models_and_encoders(pairwise_model: RandomForestClassifier, triwise_mod
         triwise_label_encoder (LabelEncoder): The LabelEncoder used for encoding the target variable (i.e. alg.
         config.).
         features (list): The list of feature column names.
-        output_file (list): The list of paths to save the models, encoders, and features.
+        model_prefix (str): Base name/prefix used for generated output files.
+        save_python (bool): If True, writes '<model-prefix>.pkl'.
+        save_treelite (bool): If True, writes Treelite outputs:
+            - '<model-prefix>_pairwise.tl' and '<model-prefix>_pairwise_classes.txt' (if pairwise model exists),
+            - '<model-prefix>_triwise.tl' and '<model-prefix>_triwise_classes.txt' (if triwise model exists),
+            - '<model-prefix>_features.json' (if at least one Treelite model exists).
     """
-
-    def _is_ext(name: str, ext: str) -> bool:
-        return name.lower().endswith(ext)
-
-    def _strip_ext(name: str, ext: str) -> str:
-        return name[:-len(ext)] if _is_ext(name, ext) else name
-
     def _treelite_skip_reason(model, encoder) -> str | None:
+        """
+        Return the reason why Treelite export should be skipped for a model.
+
+        Treelite export is skipped if no model/encoder exists for an interaction type, or if the trained
+        classifier has less than two classes.
+
+        Args:
+            model: Trained classifier model for one interaction type.
+            encoder: LabelEncoder fitted for the same interaction type.
+
+        Returns:
+            str | None: Human-readable skip reason, or None if export may proceed.
+        """
         if model is None or encoder is None:
             return "no tuning results found"
+        
+        # Treelite import for sklearn classifiers requires at least two classes.
+        # A single-class model can still be used in the Python/pickle path, but it will always
+        # predict the same label and is therefore not useful for tuning decisions.
+        # Such models cannot be exported to Treelite (.tl).
         if getattr(model, "n_classes_", 0) < 2:
-            return "trained model has < 2 classes"
+            return ("trained model has < 2 classes; Treelite export requires at least 2 classes. "
+                    "Collect more training data for this interaction type.")
 
     # Save to .pkl
-    for output_file in output_files:
-        if not _is_ext(output_file, ".pkl"):
-            continue
-        
+    if save_python:
+        output_file = f"{model_prefix}.pkl"
         combined_data = {
             'pairwise_model': pairwise_model,
             'triwise_model': triwise_model,
@@ -277,57 +292,47 @@ def save_models_and_encoders(pairwise_model: RandomForestClassifier, triwise_mod
         print(combined_data)
         with open(output_file, 'wb') as f:
             pickle.dump(combined_data, f)
+        print(f"Saved pickle bundle: {output_file}")
 
     tl_created = False
 
-    # Save to .tl and .txt
-    for output_file in output_files:
-        if not _is_ext(output_file, ".tl"):
-            continue
+    if save_treelite:
+        # Save Treelite pairwise model and classes using shared model prefix.
+        pairwise_output_file = f"{model_prefix}_pairwise.tl"
+        pairwise_classes_file = f"{model_prefix}_pairwise_classes.txt"
 
-        base = _strip_ext(output_file, ".tl")
-        classes_file = f"{base}_classes.txt"
-
-        if "pairwise" in base.lower():
-            reason = _treelite_skip_reason(pairwise_model, pairwise_label_encoder)
-            if reason is not None:
-                print(f"Skipping {output_file}: {reason}")
-                continue
-
-            tl_model = treelite.sklearn.import_model(pairwise_model)
-            tl_model.serialize(output_file)
-
-            np.savetxt(classes_file, pairwise_label_encoder.classes_, fmt="%s")
-            
-            print(f"Saved model: {output_file}")
-            print(f"Saved classes: {classes_file}")
-
-            tl_created = True
-
-        elif "triwise" in base.lower():
-            reason = _treelite_skip_reason(triwise_model, triwise_label_encoder)
-            if reason is not None:
-                print(f"Skipping {output_file}: {reason}")
-                continue
-
-            tl_model = treelite.sklearn.import_model(triwise_model)
-            tl_model.serialize(output_file)
-
-            np.savetxt(classes_file, triwise_label_encoder.classes_, fmt="%s")
-            
-            print(f"Saved model: {output_file}")
-            print(f"Saved classes: {classes_file}")
-
-            tl_created = True
-
+        reason = _treelite_skip_reason(pairwise_model, pairwise_label_encoder)
+        if reason is not None:
+            print(f"Skipping {pairwise_output_file}: {reason}")
         else:
-            print(f"Skipping .tl output '{output_file}': filename must contain 'pairwise' or 'triwise'.")
+            tl_model = treelite.sklearn.import_model(pairwise_model)
+            tl_model.serialize(pairwise_output_file)
+            np.savetxt(pairwise_classes_file, pairwise_label_encoder.classes_, fmt="%s")
+            print(f"Saved Treelite model: {pairwise_output_file}")
+            print(f"Saved classes: {pairwise_classes_file}")
+            tl_created = True
 
-    # Dump features.json only if at least one treelite model was created
+        # Save Treelite triwise model and classes using shared model prefix.
+        triwise_output_file = f"{model_prefix}_triwise.tl"
+        triwise_classes_file = f"{model_prefix}_triwise_classes.txt"
+
+        reason = _treelite_skip_reason(triwise_model, triwise_label_encoder)
+        if reason is not None:
+            print(f"Skipping {triwise_output_file}: {reason}")
+        else:
+            tl_model = treelite.sklearn.import_model(triwise_model)
+            tl_model.serialize(triwise_output_file)
+            np.savetxt(triwise_classes_file, triwise_label_encoder.classes_, fmt="%s")
+            print(f"Saved Treelite model: {triwise_output_file}")
+            print(f"Saved classes: {triwise_classes_file}")
+            tl_created = True
+
+    # Dump <model-prefix>_features.json only if at least one treelite model was created
     if tl_created:
-        with open("features.json", "w") as f:
+        features_file = f"{model_prefix}_features.json"
+        with open(features_file, "w") as f:
             json.dump(list(features), f)
-        print("Saved features: features.json")
+        print(f"Saved features: {features_file}")
 
 
 def main():
@@ -335,7 +340,8 @@ def main():
     Main execution function.
 
     This function loads the live info and tuning result data from directories, preprocesses it, trains the model,
-    and saves both the model and label encoder in a single file. It prints completion messages after training and saving.
+    and saves the trained outputs in Python pickle and/or Treelite format depending on the selected options.
+    It prints completion messages after training and saving.
     """
     parser = argparse.ArgumentParser(description="Train a RandomForestClassifier on merged AutoPas data.")
     parser.add_argument('--results-dir', type=str, required=True, help="Directory containing live info and tuning"
@@ -347,10 +353,24 @@ def main():
     parser.add_argument('--test-size', type=float, default=0.1, help="Test set size as a fraction (default: 0.1).")
     parser.add_argument('--n-estimators', type=int, default=100,
                         help="Number of estimators (trees) in the RandomForest (default: 100).")
-    parser.add_argument('--output-files', type=str, nargs='+', 
-                        default=['model.pkl', 'model_pairwise.tl', 'model_triwise.tl'], 
-                        help="Output file to save models and encoders. Supported: .pkl and .tl files.")
+    parser.add_argument('--model-prefix', type=str, default='model',
+                        help="Base name/prefix for outputs. Produces '<model-prefix>.pkl' (Python) and Treelite related files like '<model-prefix>_pairwise.tl'.")
+    parser.add_argument('--save-python', action=argparse.BooleanOptionalAction, default=True,
+                        help="Enable or disable writing '<model-prefix>.pkl' via '--save-python' / '--no-save-python' "
+                             "(default: enabled).")
+    parser.add_argument('--save-treelite', action=argparse.BooleanOptionalAction, default=True,
+                        help="Enable or disable Treelite outputs via '--save-treelite' / '--no-save-treelite' "
+                             "using '<model-prefix>' (default: enabled).")
     args = parser.parse_args()
+
+    # Use one prefix for all output files.
+    model_prefix = args.model_prefix
+    if not model_prefix:
+        parser.error("--model-prefix must not be empty.")
+
+    # Check that at least one output target is enabled.
+    if not args.save_python and not args.save_treelite:
+        parser.error("At least one output target must be enabled: --save-python and/or --save-treelite.")
 
     print("Loading and merging data...")
     merged_df_pairwise, merged_df_triwise = load_data_from_directory(args.results_dir)
@@ -377,9 +397,10 @@ def main():
         print("Training triwise model...")
         model_triwise = train_model(X, y, args.test_size, args.n_estimators)
 
-
-    print(f"Saving models and encoders to {args.output_files}...")
-    save_models_and_encoders(model_pairwise, model_triwise, label_encoder_pairwise, label_encoder_triwise, args.features, args.output_files)
+    print(f"Saving model outputs with prefix '{model_prefix}' "
+          f"(save-python={args.save_python}, save-treelite={args.save_treelite})...")
+    save_models_and_encoders(model_pairwise, model_triwise, label_encoder_pairwise, label_encoder_triwise,
+                             args.features, model_prefix, args.save_python, args.save_treelite)
 
     print("Model training and saving complete.")
 

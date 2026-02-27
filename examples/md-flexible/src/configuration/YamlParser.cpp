@@ -528,29 +528,29 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.fuzzyRuleFilename.value.empty()) {
           throw std::runtime_error("Parsed rule filename is empty!");
         }
-      } else if (key == config.modelFilename.name) {
+      } else if (key == config.pythonModelFilename.name) {
         expected = "String";
-        description = config.modelFilename.description;
+        description = config.pythonModelFilename.description;
 
-        config.modelFilename.value = node[key].as<std::string>();
-        if (config.modelFilename.value.empty()) {
-          throw std::runtime_error("Parsed rule filename is empty!");
+        config.pythonModelFilename.value = node[key].as<std::string>();
+        if (config.pythonModelFilename.value.empty()) {
+          throw std::runtime_error("Parsed model filename is empty!");
         }
-      } else if (key == config.modelPairwiseFilename.name) {
+      } else if (key == config.treeliteModelPairwiseFilename.name) {
         expected = "String";
-        description = config.modelPairwiseFilename.description;
+        description = config.treeliteModelPairwiseFilename.description;
 
-        config.modelPairwiseFilename.value = node[key].as<std::string>();
-        if (config.modelPairwiseFilename.value.empty()) {
-          throw std::runtime_error("Parsed rule filename is empty!");
+        config.treeliteModelPairwiseFilename.value = node[key].as<std::string>();
+        if (config.treeliteModelPairwiseFilename.value.empty()) {
+          throw std::runtime_error("Parsed pairwise model filename is empty!");
         }
-      } else if (key == config.modelTriwiseFilename.name) {
+      } else if (key == config.treeliteModelTriwiseFilename.name) {
         expected = "String";
-        description = config.modelTriwiseFilename.description;
+        description = config.treeliteModelTriwiseFilename.description;
 
-        config.modelTriwiseFilename.value = node[key].as<std::string>();
-        if (config.modelTriwiseFilename.value.empty()) {
-          throw std::runtime_error("Parsed rule filename is empty!");
+        config.treeliteModelTriwiseFilename.value = node[key].as<std::string>();
+        if (config.treeliteModelTriwiseFilename.value.empty()) {
+          throw std::runtime_error("Parsed triwise model filename is empty!");
         }
       } else if (key == config.confidenceThreshold.name) {
         expected = "Floating-point Value between 0 and 1";

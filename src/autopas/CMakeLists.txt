@@ -21,6 +21,11 @@ if (NOT AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
     list(FILTER MY_SRC EXCLUDE REGEX ".*RuleBasedProgramParser.*")
 endif ()
 
+# If Treelite-based tuning is disabled, we must exclude Treelite implementation files.
+if (NOT AUTOPAS_ENABLE_TREELITE_BASED_TUNING)
+    list(FILTER MY_SRC EXCLUDE REGEX ".*TreelitePredictor.*")
+endif ()
+
 add_library(autopas STATIC ${MY_SRC})
 
 if (AUTOPAS_ENABLE_PYTHON_BASED_TUNING OR AUTOPAS_ENABLE_TREELITE_BASED_TUNING)

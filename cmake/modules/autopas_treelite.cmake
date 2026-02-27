@@ -1,7 +1,7 @@
 set(AUTOPAS_ENABLE_TREELITE_BASED_TUNING
     OFF
     CACHE
-    BOOL "Enables tuning strategies that use Treelite. If enabled, Treelite will be built (bundled) and linked."
+    BOOL "Enables tuning strategies that use Treelite. If enabled, Treelite will be built and linked."
 )
 
 if (AUTOPAS_ENABLE_TREELITE_BASED_TUNING)
@@ -22,8 +22,8 @@ if (AUTOPAS_ENABLE_TREELITE_BASED_TUNING)
     endif()
   endif()
 
-  # System version not found -> install bundled version
-  message(STATUS "Treelite - using bundled version ${expectedVersion} (commit ${bundledCommit})")
+  # ForceBundled=ON or System version not found -> install bundled patched version
+  message(STATUS "Treelite - using bundled version ${expectedVersion} (commit ${bundledCommit}, AutoPas patch)")
 
   # Enable FetchContent CMake module
   include(FetchContent)
@@ -31,21 +31,34 @@ if (AUTOPAS_ENABLE_TREELITE_BASED_TUNING)
   # Build treelite and make the cmake targets available
   FetchContent_Declare(
     treelite
-    URL ${AUTOPAS_SOURCE_DIR}/libs/treelite-${expectedVersion}.zip
-    URL_HASH MD5=b414be3a875a35de981723cbd01fce09
+    # treelite-4.6.1-patched.zip contains commit b3930088a2b9d9385009ae95b96fd7fb55841d62
+    # with patch from libs/patches/patch-file-treelite-for-autopas.patch applied
+    # The patch adds the prefix TREELITE_* to Treelite CMake options to prevent accidental name
+    # collision with other options, and gets local archived Treelite dependencies
+    URL ${AUTOPAS_SOURCE_DIR}/libs/treelite-${expectedVersion}-patched.zip
+    URL_HASH MD5=60945421f670da753257f1bbf3eb1cd5
     EXCLUDE_FROM_ALL
   )
 
-  # Configure Treelite build options before MakeAvailable
-  set(BUILD_CPP_TEST OFF CACHE BOOL "" FORCE)
-  set(BUILD_DOXYGEN OFF CACHE BOOL "" FORCE)
-  set(TEST_COVERAGE OFF CACHE BOOL "" FORCE)
-  set(ENABLE_ALL_WARNINGS OFF CACHE BOOL "" FORCE)
-  set(USE_SANITIZER OFF CACHE BOOL "" FORCE)
-  set(HIDE_CXX_SYMBOLS OFF CACHE BOOL "" FORCE)
+  # Tell patched Treelite where AutoPas stores offline dependency archives
+  # (rapidjson-ab1842a2.zip, json-3.11.3.tar.xz, mdspan-0.6.0.zip).
+  set(TREELITE_LOCAL_DEPS_DIR "${AUTOPAS_SOURCE_DIR}/libs" CACHE PATH "" FORCE)
 
-  # Enabling this may result in oversubscription when AutoPas already uses OpenMP
-  set(USE_OPENMP ON CACHE BOOL "" FORCE)
+  # Configure Treelite build options before MakeAvailable
+  set(TREELITE_BUILD_CPP_TEST OFF CACHE BOOL "" FORCE)
+  set(TREELITE_BUILD_DOXYGEN OFF CACHE BOOL "" FORCE)
+  set(TREELITE_TEST_COVERAGE OFF CACHE BOOL "" FORCE)
+  set(TREELITE_ENABLE_ALL_WARNINGS OFF CACHE BOOL "" FORCE)
+  set(TREELITE_USE_SANITIZER OFF CACHE BOOL "" FORCE)
+  set(TREELITE_HIDE_CXX_SYMBOLS OFF CACHE BOOL "" FORCE)
+  set(TREELITE_DETECT_CONDA_ENV OFF CACHE BOOL "" FORCE)
+
+  # Enabling OpenMP for Treelite may result in oversubscription if Treelite's GTIL predictor is configured to use more than 1 threads AND the predictor is used inside a parallelised region.
+  if (AUTOPAS_OPENMP)
+    set(TREELITE_USE_OPENMP ON CACHE BOOL "" FORCE)
+  else ()
+    set(TREELITE_USE_OPENMP OFF CACHE BOOL "" FORCE)
+  endif()
   
   FetchContent_MakeAvailable(treelite)
 

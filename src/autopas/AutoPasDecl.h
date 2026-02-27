@@ -1101,43 +1101,49 @@ class AutoPas {
 
   /**
    * Set the name / path of the model file for the PythonBasedDecisionTreeTuning.
-   * @param modelFileName The name of the model file to use during decision tree tuning.
+   * @param pythonModelFileName The name of the model file to use during decision tree tuning.
    */
-  void setModelFileName(const std::string &modelFileName) { _tuningStrategyFactoryInfo.modelFileName = modelFileName; }
+  void setPythonModelFileName(const std::string &pythonModelFileName) {
+    _tuningStrategyFactoryInfo.pythonModelFileName = pythonModelFileName;
+  }
 
   /**
    * Get the name / path of the model file for the PythonBasedDecisionTreeTuning.
    * @return
    */
-  const std::string &getModelFileName() const { return _tuningStrategyFactoryInfo.modelFileName; }
+  const std::string &getPythonModelFileName() const { return _tuningStrategyFactoryInfo.pythonModelFileName; }
 
   /**
    * Set the name / path of the pairwise model file for the TreeliteBasedDecisionTreeTuning.
-   * @param modelPairwiseFileName The name of the model file to use during decision tree tuning.
+   * @param treeliteModelPairwiseFileName The name of the model file to use during decision tree tuning.
    */
-  void setModelPairwiseFileName(const std::string &modelPairwiseFileName) {
-    _tuningStrategyFactoryInfo.modelPairwiseFileName = modelPairwiseFileName;
+  void setTreeliteModelPairwiseFileName(const std::string &treeliteModelPairwiseFileName) {
+    _tuningStrategyFactoryInfo.treeliteModelPairwiseFileName = treeliteModelPairwiseFileName;
   }
 
   /**
    * Get the name / path of the pairwise model file for the TreeliteBasedDecisionTreeTuning.
    * @return
    */
-  const std::string &getModelPairwiseFileName() const { return _tuningStrategyFactoryInfo.modelPairwiseFileName; }
+  const std::string &getTreeliteModelPairwiseFileName() const {
+    return _tuningStrategyFactoryInfo.treeliteModelPairwiseFileName;
+  }
 
   /**
    * Set the name / path of the triwise model file for the TreeliteBasedDecisionTreeTuning.
-   * @param modelTriwiseFileName The name of the model file to use during decision tree tuning.
+   * @param treeliteModelTriwiseFileName The name of the model file to use during decision tree tuning.
    */
-  void setModelTriwiseFileName(const std::string &modelTriwiseFileName) {
-    _tuningStrategyFactoryInfo.modelTriwiseFileName = modelTriwiseFileName;
+  void setTreeliteModelTriwiseFileName(const std::string &treeliteModelTriwiseFileName) {
+    _tuningStrategyFactoryInfo.treeliteModelTriwiseFileName = treeliteModelTriwiseFileName;
   }
 
   /**
    * Get the name / path of the triwise model file for the TreeliteBasedDecisionTreeTuning.
    * @return
    */
-  const std::string &getModelTriwiseFileName() const { return _tuningStrategyFactoryInfo.modelTriwiseFileName; }
+  const std::string &getTreeliteModelTriwiseFileName() const {
+    return _tuningStrategyFactoryInfo.treeliteModelTriwiseFileName;
+  }
 
   /**
    * Set the confidence threshold for the PythonBasedDecisionTreeTuning and TreeliteBasedDecisionTreeTuning.

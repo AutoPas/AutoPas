@@ -1,0 +1,122 @@
+diff --git a/treelite/CMakeLists.txt b/treelite/CMakeLists.txt
+index 7a99f2cf8..d807bff59 100644
+--- a/treelite/CMakeLists.txt
++++ b/treelite/CMakeLists.txt
+@@ -35,17 +35,27 @@ option(Treelite_USE_DYNAMIC_MSVC_RUNTIME
+     OFF)
+ 
+ # Developer options
+-option(TEST_COVERAGE "C++ test coverage" OFF)
+-option(USE_OPENMP "Use OpenMP" ON)
+-option(BUILD_DOXYGEN "Build documentation for C/C++ functions using Doxygen." OFF)
+-option(BUILD_CPP_TEST "Build C++ tests" OFF)
+-option(DETECT_CONDA_ENV "Enable detection of conda environment for dependencies" ON)
+-option(HIDE_CXX_SYMBOLS "Hide all C++ symbols. Useful when building Pip package" OFF)
+-option(ENABLE_ALL_WARNINGS "Enable all compiler warnings. Only effective for GCC/Clang" OFF)
+-option(USE_SANITIZER "Use sanitizer flags" OFF)
+-SET(ENABLED_SANITIZERS "address" "leak" "undefined" CACHE STRING
++option(TREELITE_TEST_COVERAGE "C++ test coverage" OFF)
++option(TREELITE_USE_OPENMP "Use OpenMP" ON)
++option(TREELITE_BUILD_DOXYGEN "Build documentation for C/C++ functions using Doxygen." OFF)
++option(TREELITE_BUILD_CPP_TEST "Build C++ tests" OFF)
++option(TREELITE_DETECT_CONDA_ENV "Enable detection of conda environment for dependencies" ON)
++option(TREELITE_HIDE_CXX_SYMBOLS "Hide all C++ symbols. Useful when building Pip package" OFF)
++option(TREELITE_ENABLE_ALL_WARNINGS "Enable all compiler warnings. Only effective for GCC/Clang" OFF)
++option(TREELITE_USE_SANITIZER "Use sanitizer flags" OFF)
++SET(TREELITE_ENABLED_SANITIZERS "address" "leak" "undefined" CACHE STRING
+     "Semicolon separated list of sanitizer names. E.g 'address;leak'.")
+ 
++set(TEST_COVERAGE ${TREELITE_TEST_COVERAGE})
++set(USE_OPENMP ${TREELITE_USE_OPENMP})
++set(BUILD_DOXYGEN ${TREELITE_BUILD_DOXYGEN})
++set(BUILD_CPP_TEST ${TREELITE_BUILD_CPP_TEST})
++set(DETECT_CONDA_ENV ${TREELITE_DETECT_CONDA_ENV})
++set(HIDE_CXX_SYMBOLS ${TREELITE_HIDE_CXX_SYMBOLS})
++set(ENABLE_ALL_WARNINGS ${TREELITE_ENABLE_ALL_WARNINGS})
++set(USE_SANITIZER ${TREELITE_USE_SANITIZER})
++set(ENABLED_SANITIZERS ${TREELITE_ENABLED_SANITIZERS})
++
+ if(MSVC)
+   if(Treelite_USE_DYNAMIC_MSVC_RUNTIME)
+     message(STATUS "Using dynamically linked MSVC runtime...")
+diff --git a/treelite/cmake/ExternalLibs.cmake b/treelite/cmake/ExternalLibs.cmake
+index 4b4a40834..41c1d8407 100644
+--- a/treelite/cmake/ExternalLibs.cmake
++++ b/treelite/cmake/ExternalLibs.cmake
+@@ -1,4 +1,17 @@
+ include(FetchContent)
++set(TREELITE_LOCAL_DEPS_DIR "" CACHE PATH
++    "Directory containing offline dependency archives (rapidjson, nlohmann_json, mdspan)")
++
++function(_treelite_require_local_archive out_var filename)
++  if(NOT TREELITE_LOCAL_DEPS_DIR)
++    message(FATAL_ERROR "TREELITE_LOCAL_DEPS_DIR is not set")
++  endif()
++  set(_path "${TREELITE_LOCAL_DEPS_DIR}/${filename}")
++  if(NOT EXISTS "${_path}")
++    message(FATAL_ERROR "Required local archive not found: ${_path}")
++  endif()
++  set(${out_var} "${_path}" PARENT_SCOPE)
++endfunction()
+ 
+ # RapidJSON (header-only library)
+ add_library(rapidjson INTERFACE)
+@@ -15,14 +28,15 @@ if(RapidJSON_FOUND)
+   target_include_directories(rapidjson INTERFACE ${RapidJSON_include_dir})
+   message(STATUS "Found RapidJSON: ${RapidJSON_include_dir}")
+ else()
+-  message(STATUS "Did not find RapidJSON in the system root. Fetching RapidJSON now...")
++  message(STATUS "Did not find RapidJSON in system root. Using local archive...")
++  _treelite_require_local_archive(_rapidjson_zip rapidjson-ab1842a2.zip)
+   FetchContent_Declare(
+     RapidJSON
+-    GIT_REPOSITORY      https://github.com/Tencent/rapidjson
+-    GIT_TAG             ab1842a2dae061284c0a62dca1cc6d5e7e37e346
++    URL      "${_rapidjson_zip}"
++    URL_HASH SHA256=14c801db8ea30eaaa8314c1d801e17fbf6cb12ddc5295d8288e5fc415f3a5c83
+   )
+   FetchContent_Populate(RapidJSON)
+-  message(STATUS "RapidJSON was downloaded at ${rapidjson_SOURCE_DIR}.")
++  message(STATUS "RapidJSON source was populated at ${rapidjson_SOURCE_DIR}.")
+   target_include_directories(rapidjson INTERFACE $<BUILD_INTERFACE:${rapidjson_SOURCE_DIR}/include>)
+ endif()
+ add_library(RapidJSON::rapidjson ALIAS rapidjson)
+@@ -30,29 +44,31 @@ add_library(RapidJSON::rapidjson ALIAS rapidjson)
+ # nlohmann/json (header-only library), to parse UBJSON
+ find_package(nlohmann_json 3.11.3)
+ if(NOT nlohmann_json_FOUND)
+-  message(STATUS "Did not find nlohmann/json in the system root. Fetching nlohmann/json now...")
++  message(STATUS "Did not find nlohmann/json in system root. Using local archive...")
++  _treelite_require_local_archive(_nlohmann_tar json-3.11.3.tar.xz)
+   FetchContent_Declare(
+     nlohmann_json
+-    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
++    URL      "${_nlohmann_tar}"
+     URL_HASH SHA256=d6c65aca6b1ed68e7a182f4757257b107ae403032760ed6ef121c9d55e81757d
+   )
+   FetchContent_MakeAvailable(nlohmann_json)
+-  message(STATUS "nlohmann/json was downloaded at ${nlohmann_json_SOURCE_DIR}.")
++  message(STATUS "nlohmann/json source was populated at ${nlohmann_json_SOURCE_DIR}.")
+ endif()
+ 
+ # mdspan (header-only library)
+-message(STATUS "Fetching mdspan...")
++message(STATUS "Preparing mdspan...")
+ set(MDSPAN_CXX_STANDARD 17 CACHE STRING "")
++_treelite_require_local_archive(_mdspan_zip mdspan-0.6.0.zip)
+ FetchContent_Declare(
+   mdspan
+-  GIT_REPOSITORY https://github.com/kokkos/mdspan.git
+-  GIT_TAG        mdspan-0.6.0
++  URL      "${_mdspan_zip}"
++  URL_HASH SHA256=5ab011e53a9b335f985f920561402388695a2a1d56931610c71e5f0d531e0936
+ )
+ FetchContent_GetProperties(mdspan)
+ if(NOT mdspan_POPULATED)
+   FetchContent_Populate(mdspan)
+   add_subdirectory(${mdspan_SOURCE_DIR} ${mdspan_BINARY_DIR} EXCLUDE_FROM_ALL)
+-  message(STATUS "mdspan was downloaded at ${mdspan_SOURCE_DIR}.")
++  message(STATUS "mdspan source was populated at ${mdspan_SOURCE_DIR}.")
+ endif()
+ if(MSVC)  # workaround for MSVC 19.x: https://github.com/kokkos/mdspan/issues/276
+   target_compile_options(mdspan INTERFACE "/permissive-")

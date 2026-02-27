@@ -78,10 +78,13 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      */
     sortByName,
     /**
-     * Decision tree based tuning strategy
+     * Python-based decision tree tuning strategy.
      */
     pythonBasedDecisionTreeTuning,
-
+    /**
+     * Treelite-based decision tree tuning strategy. Predicts a configuration by running inference on a tree-based model
+     * using Treelite library.
+     */
     treeliteBasedDecisionTreeTuning,
   };
 

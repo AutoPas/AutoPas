@@ -350,28 +350,28 @@ class MDFlexConfig {
       "", "fuzzy-rule-filename", true, "Path to a .frule file containing rules for the fuzzy-based tuning method."};
 
   /**
-   * modelFilename
+   * pythonModelFilename
    */
-  MDFlexOption<std::string, __LINE__> modelFilename{
+  MDFlexOption<std::string, __LINE__> pythonModelFilename{
       "", "model-filename", true,
       "Path to a .pkl file containing the model for the Python based decision-tree tuning method. "
-      "The path is relative to AUTOPAS_SOURCE_DIR"};
+      "The path is relative to the current working directory"};
 
   /**
-   * modelPairwiseFilename
+   * treeliteModelPairwiseFilename
    */
-  MDFlexOption<std::string, __LINE__> modelPairwiseFilename{
+  MDFlexOption<std::string, __LINE__> treeliteModelPairwiseFilename{
       "", "model-pairwise-filename", true,
       "Path to a .tl file containing the pairwise model for the Treelite based decision-tree tuning method. "
-      "The path is relative to AUTOPAS_SOURCE_DIR"};
+      "The path is relative to the current working directory"};
 
   /**
-   * modelTriwiseFilename
+   * treeliteModelTriwiseFilename
    */
-  MDFlexOption<std::string, __LINE__> modelTriwiseFilename{
+  MDFlexOption<std::string, __LINE__> treeliteModelTriwiseFilename{
       "", "model-triwise-filename", true,
       "Path to a .tl file containing the triwise model for the Treelite based decision-tree tuning method. "
-      "The path is relative to AUTOPAS_SOURCE_DIR"};
+      "The path is relative to the current working directory"};
 
   /**
    * confidenceThreshold
