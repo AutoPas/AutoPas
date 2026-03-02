@@ -55,6 +55,26 @@ struct TuningStrategyFactoryInfo {
    */
   AcquisitionFunctionOption acquisitionFunctionOption{AcquisitionFunctionOption::upperConfidenceBound};
 
+  // Reinforcement Learning Options
+  /**
+   * Learning rate for the reinforcement learning algorithm.
+   */
+  double learningRate{0.8};
+  /**
+   * Discount factor for the reinforcement learning algorithm.
+   */
+  double discountFactor{0.8};
+  // Deep Reinforcement Learning Options
+  /**
+   * Number of exploration samples for deep reinforcement learning.
+   */
+  unsigned int numExplorationSamples{4};
+
+  /**
+   * If reinforcement training updates are enabled for deep reinforcement learning.
+   */
+  bool doReinforcementUpdates{true};
+
   // Rule Based Tuning Options
   /**
    * The name and path of the file where the rules are stored.
