@@ -70,7 +70,15 @@ struct TuningStrategyFactoryInfo {
   /**
    * The name and path of the file where the model is stored for decision tree tuning.
    */
-  std::string modelFileName{"model.pkl"};
+  std::string pythonModelFileName{"model.pkl"};
+  /**
+   * The name and path of the file where the pairwise model is stored for decision tree tuning.
+   */
+  std::string treeliteModelPairwiseFileName{"model_pairwise.tl"};
+  /**
+   * The name and path of the file where the triwise model is stored for decision tree tuning.
+   */
+  std::string treeliteModelTriwiseFileName{"model_triwise.tl"};
   /**
    * Confidence threshold for decision tree tuning.
    */

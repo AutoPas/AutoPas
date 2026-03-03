@@ -166,7 +166,9 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
   _autoPasContainer->setRuleFileName(_configuration.ruleFilename.value);
   _autoPasContainer->setFuzzyRuleFileName(_configuration.fuzzyRuleFilename.value);
-  _autoPasContainer->setModelFileName(_configuration.modelFilename.value);
+  _autoPasContainer->setPythonModelFileName(_configuration.pythonModelFilename.value);
+  _autoPasContainer->setTreeliteModelPairwiseFileName(_configuration.treeliteModelPairwiseFilename.value);
+  _autoPasContainer->setTreeliteModelTriwiseFileName(_configuration.treeliteModelTriwiseFilename.value);
   _autoPasContainer->setConfidenceThreshold(_configuration.confidenceThreshold.value);
   _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
   _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);

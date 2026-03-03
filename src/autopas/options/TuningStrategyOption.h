@@ -78,9 +78,14 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      */
     sortByName,
     /**
-     * Decision tree based tuning strategy
+     * Python-based decision tree tuning strategy.
      */
-    decisionTreeTuning,
+    pythonBasedDecisionTreeTuning,
+    /**
+     * Treelite-based decision tree tuning strategy. Predicts a configuration by running inference on a tree-based model
+     * using Treelite library.
+     */
+    treeliteBasedDecisionTreeTuning,
   };
 
   /**
@@ -133,7 +138,8 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::tuningStrategyLogger, "tuning-strategy-logger"},
         {TuningStrategyOption::sortByName, "sort-by-name"},
         {TuningStrategyOption::mpiDivideAndConquer, "mpi-divide-and-conquer"},
-        {TuningStrategyOption::decisionTreeTuning, "decision-tree-tuning"},
+        {TuningStrategyOption::pythonBasedDecisionTreeTuning, "python-based-decision-tree-tuning"},
+        {TuningStrategyOption::treeliteBasedDecisionTreeTuning, "treelite-based-decision-tree-tuning"},
     };
   }
 

@@ -16,7 +16,8 @@
 #include "autopas/tuning/tuningStrategy/SlowConfigFilter.h"
 #include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
-#include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
+#include "autopas/tuning/tuningStrategy/decisionTreeTuning/PythonBasedDecisionTreeTuning.h"
+#include "autopas/tuning/tuningStrategy/decisionTreeTuning/TreeliteBasedDecisionTreeTuning.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/FuzzyTuning.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
@@ -112,10 +113,28 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
       break;
     }
 
-    case TuningStrategyOption::decisionTreeTuning: {
-      tuningStrategy =
-          std::make_unique<DecisionTreeTuning>(searchSpace, info.modelFileName, info.confidenceThreshold,
-            interactionType);
+    case TuningStrategyOption::pythonBasedDecisionTreeTuning: {
+      tuningStrategy = std::make_unique<PythonBasedDecisionTreeTuning>(searchSpace, info.pythonModelFileName,
+                                                                       info.confidenceThreshold, interactionType);
+      break;
+    }
+
+    case TuningStrategyOption::treeliteBasedDecisionTreeTuning: {
+      std::string treeliteModelFileName{};
+      switch (interactionType) {
+        case InteractionTypeOption::pairwise:
+          treeliteModelFileName = info.treeliteModelPairwiseFileName;
+          break;
+        case InteractionTypeOption::triwise:
+          treeliteModelFileName = info.treeliteModelTriwiseFileName;
+          break;
+        default:
+          utils::ExceptionHandler::exception(
+              "TreeliteBasedDecisionTreeTuning requires a concrete interaction type, received {}.",
+              interactionType.to_string());
+      }
+      tuningStrategy = std::make_unique<TreeliteBasedDecisionTreeTuning>(searchSpace, treeliteModelFileName,
+                                                                         info.confidenceThreshold);
       break;
     }
 

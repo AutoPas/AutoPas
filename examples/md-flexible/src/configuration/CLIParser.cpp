@@ -87,7 +87,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.relativeOptimumRange,
       config.ruleFilename,
       config.fuzzyRuleFilename,
-      config.modelFilename,
+      config.pythonModelFilename,
+      config.treeliteModelPairwiseFilename,
+      config.treeliteModelTriwiseFilename,
       config.confidenceThreshold,
       config.selectorStrategy,
       config.traversalOptions,
@@ -609,10 +611,27 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.modelFilename)::getoptChar: {
-        config.modelFilename.value = optarg;
+      case decltype(config.pythonModelFilename)::getoptChar: {
+        config.pythonModelFilename.value = optarg;
         if (not checkFileExists(optarg)) {
-          throw std::runtime_error("CLIParser::parse(): model-Filename " + config.modelFilename.value + " not found!");
+          throw std::runtime_error("CLIParser::parse(): model-Filename " + config.pythonModelFilename.value +
+                                   " not found!");
+        }
+        break;
+      }
+      case decltype(config.treeliteModelPairwiseFilename)::getoptChar: {
+        config.treeliteModelPairwiseFilename.value = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::parse(): model-pairwise-filename " +
+                                   config.treeliteModelPairwiseFilename.value + " not found!");
+        }
+        break;
+      }
+      case decltype(config.treeliteModelTriwiseFilename)::getoptChar: {
+        config.treeliteModelTriwiseFilename.value = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::parse(): model-triwise-filename " +
+                                   config.treeliteModelTriwiseFilename.value + " not found!");
         }
         break;
       }
