@@ -25,8 +25,8 @@ namespace autopas {
  * A Treelite-based predictor for decision-tree tuning.
  *
  * The predictor loads:
- *  - A Treelite checkpoint (.tl).
- *  - A classes file (.txt) mapping class index -> combined label string.
+ *  - A Treelite model checkpoint (.tl).
+ *  - A classes file (.txt) containing a list of configuration classes.
  *  - A features file (.json) storing the feature order used during training.
  *
  * To get predictions, Treelite's General Tree Inference Library (GTIL) is used.
@@ -51,11 +51,11 @@ class TreelitePredictor {
   ~TreelitePredictor();
 
   /**
-   * Predicts and returns a JSON string compatible with updateConfigQueue().
+   * Predicts a configuration and returns it as a JSON string together with confidence.
    * The JSON contains:
    *  - Container, Traversal, Load Estimator, Data Layout, Newton 3, CellSizeFactor
    *  - confidence
-   * @param liveInfo Map of live info feature name -> numeric value.
+   * @param liveInfo Live Information for one iteration.
    * @return JSON string.
    */
   std::string predict(const std::map<std::string, double> &liveInfo);
@@ -75,7 +75,7 @@ class TreelitePredictor {
 
   /**
    * Loads the Treelite model checkpoint.
-   * @param modelPath Path to the model checkpoint (*.tl).
+   * @param modelPath Path to the model checkpoint.
    */
   void loadModel(const std::string &modelPath);
 
@@ -91,17 +91,10 @@ class TreelitePredictor {
   void runInference(const std::map<std::string, double> &liveInfo);
 
   /**
-   * Finds argmax in output buffer (confidence).
-   * @return Pair of index and confidence.
+   * Finds the largest value in the current output buffer and maps it back to the corresponding configuration class.
+   * @return Pair of configuration class and its normalized confidence.
    */
-  std::pair<int, double> getConfidence() const;
-
-  /**
-   * Predicts a class with highest confidence.
-   * @param liveInfo Map of live info feature name to numeric value.
-   * @return Pair of class and its confidence.
-   */
-  std::pair<std::string, double> getClassAndConfidence(const std::map<std::string, double> &liveInfo);
+  std::pair<std::string, double> decodeClass() const;
 
   /**
    * Custom deleter for TreeliteModelHandle used by std::unique_ptr.
@@ -151,7 +144,7 @@ class TreelitePredictor {
   std::vector<std::string> _features;
 
   /**
-   * Combined class labels as read from the classes file.
+   * Configuration class strings as read from the classes file.
    */
   std::vector<std::string> _classes;
 
@@ -162,15 +155,15 @@ class TreelitePredictor {
   std::vector<float> _row;
 
   /**
-   * Buffer for probabilities / confidence.
+   * Buffer for model output scores.
    * Output of TreeliteGTILPredict.
    */
   std::vector<float> _out;
 
   /**
-   * The number of labels expected per class string.
+   * The number of fields expected per configuration class string.
    */
-  inline static constexpr std::size_t _numLabels = 6;
+  inline static constexpr std::size_t _numClassFields = 6;
 
   /**
    * The expected feature list in the training order.

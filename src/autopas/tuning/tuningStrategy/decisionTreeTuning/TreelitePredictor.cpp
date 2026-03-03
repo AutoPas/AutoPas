@@ -141,30 +141,31 @@ void TreelitePredictor::loadClasses(const std::string &classesPath) {
     autopas::utils::ExceptionHandler::exception("Classes file is empty: '{}'.", classesPath);
   }
 
-  // Check that each class label can be parsed into a valid AutoPas option.
+  // Check that each configuration class string contains valid fields.
   for (const auto &cls : _classes) {
-    const auto labels = split(cls, ';');
+    const auto fields = split(cls, ';');
 
-    if (labels.size() != _numLabels) {
-      autopas::utils::ExceptionHandler::exception("TreelitePredictor expects {} labels, but it received {}: '{}'.",
-                                                  _numLabels, labels.size(), cls);
+    if (fields.size() != _numClassFields) {
+      autopas::utils::ExceptionHandler::exception(
+          "TreelitePredictor expects {} configuration fields, but it received {}: '{}'.", _numClassFields,
+          fields.size(), cls);
     }
 
     try {
-      (void)ContainerOption::parseOptionExact(labels[0]);
-      (void)TraversalOption::parseOptionExact(labels[1]);
-      (void)LoadEstimatorOption::parseOptionExact(labels[2]);
-      (void)DataLayoutOption::parseOptionExact(labels[3]);
-      (void)Newton3Option::parseOptionExact(labels[4]);
+      (void)ContainerOption::parseOptionExact(fields[0]);
+      (void)TraversalOption::parseOptionExact(fields[1]);
+      (void)LoadEstimatorOption::parseOptionExact(fields[2]);
+      (void)DataLayoutOption::parseOptionExact(fields[3]);
+      (void)Newton3Option::parseOptionExact(fields[4]);
 
       // CellSizeFactor must be numeric.
       size_t pos = 0;
-      const double csf = std::stod(labels[5], &pos);
-      if (pos != labels[5].size() || !std::isfinite(csf)) {
-        autopas::utils::ExceptionHandler::exception("Invalid CellSizeFactor token '{}', class='{}'.", labels[5], cls);
+      const double csf = std::stod(fields[5], &pos);
+      if (pos != fields[5].size() || !std::isfinite(csf)) {
+        autopas::utils::ExceptionHandler::exception("Invalid CellSizeFactor field '{}', class='{}'.", fields[5], cls);
       }
     } catch (const std::exception &e) {
-      autopas::utils::ExceptionHandler::exception("Invalid label(s) in classes file. class='{}' error='{}'.", cls,
+      autopas::utils::ExceptionHandler::exception("Invalid field(s) in classes file. class='{}' error='{}'.", cls,
                                                   e.what());
     }
   }
@@ -230,7 +231,7 @@ void TreelitePredictor::runInference(const std::map<std::string, double> &liveIn
   }
 }
 
-std::pair<int, double> TreelitePredictor::getConfidence() const {
+std::pair<std::string, double> TreelitePredictor::decodeClass() const {
   if (_out.empty()) {
     autopas::utils::ExceptionHandler::exception("Treelite predictor output buffer is empty.");
   }
@@ -239,7 +240,7 @@ std::pair<int, double> TreelitePredictor::getConfidence() const {
   float bestVal = _out[0];
   double sum = 0.0;
 
-  // Find argmax in output buffer and compute sum of all buffer values.
+  // Find the largest output score and compute the sum of all output scores.
   for (int i = 0; i < static_cast<int>(_out.size()); ++i) {
     const float val = _out[i];
     sum += static_cast<double>(val);
@@ -249,20 +250,11 @@ std::pair<int, double> TreelitePredictor::getConfidence() const {
     }
   }
 
-  // Normalize.
+  // Normalize the largest score by the sum of all output scores.
   if (sum <= 0.0) {
     autopas::utils::ExceptionHandler::exception("Treelite predictor output sum is non-positive.");
   }
-  double confidence = static_cast<double>(bestVal) / sum;
-
-  return {bestIdx, confidence};
-}
-
-std::pair<std::string, double> TreelitePredictor::getClassAndConfidence(const std::map<std::string, double> &liveInfo) {
-  // Run inference on given live information.
-  runInference(liveInfo);
-
-  const auto [bestIdx, confidence] = getConfidence();
+  const double confidence = static_cast<double>(bestVal) / sum;
 
   if (bestIdx < 0 || bestIdx >= static_cast<int>(_classes.size())) {
     autopas::utils::ExceptionHandler::exception("Predicted class index {} is out of bounds.", bestIdx);
@@ -272,18 +264,22 @@ std::pair<std::string, double> TreelitePredictor::getClassAndConfidence(const st
 }
 
 std::string TreelitePredictor::predict(const std::map<std::string, double> &liveInfo) {
-  const auto [combined, confidence] = getClassAndConfidence(liveInfo);
+  // Run inference on given live information.
+  runInference(liveInfo);
 
-  // Get lables from a class string.
-  const auto labels = split(combined, ';');
+  // Decode the predicted configuration class and its normalized confidence.
+  const auto [combined, confidence] = decodeClass();
+
+  // Get configuration fields from a class string.
+  const auto fields = split(combined, ';');
 
   nlohmann::json j;
-  j["Container"] = labels[0];
-  j["Traversal"] = labels[1];
-  j["Load Estimator"] = labels[2];
-  j["Data Layout"] = labels[3];
-  j["Newton 3"] = labels[4];
-  j["CellSizeFactor"] = labels[5];
+  j["Container"] = fields[0];
+  j["Traversal"] = fields[1];
+  j["Load Estimator"] = fields[2];
+  j["Data Layout"] = fields[3];
+  j["Newton 3"] = fields[4];
+  j["CellSizeFactor"] = fields[5];
   j["confidence"] = confidence;
 
   return j.dump();

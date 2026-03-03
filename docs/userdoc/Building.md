@@ -74,6 +74,28 @@ cmake -DAUTOPAS_ENABLE_PYTHON_BASED_TUNING=ON ..
 
 The python version you wish to use should be findable before enabling this option. This is particularly relevant on HPC systems where the default python version is unsuitable, and a modern version should be loaded.
 
+### Enabling Treelite-Based Tuning
+
+Treelite-based decision tree tuning requires [Treelite](https://github.com/dmlc/treelite).
+By default, AutoPas builds a bundled patched Treelite version instead of downloading dependencies during configuration.
+The bundled Treelite archive contains the AutoPas patch from `AutoPas/libs/patches/patch-file-treelite-for-autopas.patch`.
+This patch adapts Treelite's CMake options to use the `TREELITE_*` prefix and makes Treelite use the local dependency archives shipped in `AutoPas/libs/` (currently RapidJSON, nlohmann/json, and mdspan).
+Enabling this option can increase compilation time. As such, this is disabled by default.
+
+This tuning strategy can be enabled via the CMake option:
+```bash
+cmake -DAUTOPAS_ENABLE_TREELITE_BASED_TUNING=ON ..
+```
+
+To use a compatible system installation instead, disable the bundled build:
+```bash
+cmake -DAUTOPAS_ENABLE_TREELITE_BASED_TUNING=ON -Dtreelite_ForceBundled=OFF ..
+```
+
+If no compatible system version is found, AutoPas falls back to the bundled Treelite version automatically.
+
+For the exact Treelite build configuration, see `AutoPas/cmake/modules/autopas_treelite.cmake`.
+
 ### Energy Measurements and Tuning
 
 By default, AutoPas tunes for the best configuration according to runtime. For all Linux based systems, it is also possible to tune for the algorithm that consumes the least energy.

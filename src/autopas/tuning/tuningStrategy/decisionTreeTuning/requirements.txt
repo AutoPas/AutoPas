@@ -6,3 +6,4 @@ scikit-learn==1.8.0
 scipy==1.17.0
 six==1.17.0
 threadpoolctl==3.6.0
+treelite==4.6.1

@@ -33,6 +33,8 @@ They are all applied in every decision process in the order they are specified i
 
 If using a python-based machine learning tuning strategy, consult [Python-based Machine Learning Tuning Strategies](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/PythonBasedMachineLearningTuning.md).
 
+If using a Treelite-based machine learning tuning strategy, consult [Treelite-based Machine Learning Tuning Strategy](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/TreeliteBasedMachineLearningTuning.md).
+
 ### Sampling, Selecting, and Smoothing
 For each evidence, AutoPas combines multiple subsequent measurements, called samples.
 This is necessary for two reasons.
