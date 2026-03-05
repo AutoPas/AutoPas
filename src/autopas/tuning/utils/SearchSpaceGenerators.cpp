@@ -19,7 +19,8 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<DataLayoutOption> &allowedContainerLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
-    const NumberSet<double> *allowedCellSizeFactors, const InteractionTypeOption &interactionType, size_t kokkosChunkSize, size_t kokkosTeamSize) {
+    const NumberSet<double> *allowedCellSizeFactors, const InteractionTypeOption &interactionType,
+    const std::set<size_t>& kokkosChunkSize, const std::set<size_t>& kokkosTeamSize) {
   if (allowedCellSizeFactors->isInterval()) {
     utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
   }
@@ -45,10 +46,14 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
           for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
             for (const auto &containerLayoutOption : allowedContainerLayoutOptions) {
               for (const auto &newton3Option : allowedNewton3Options) {
-                const Configuration configuration{containerOption,  csf,           traversalOption, loadEstimatorOption,
-                                                  dataLayoutOption, containerLayoutOption, newton3Option, interactionType, kokkosChunkSize, kokkosTeamSize};
-                if (configuration.hasCompatibleValues()) {
-                  searchSet.insert(configuration);
+                for (const auto& chunkSize : kokkosChunkSize) {
+                  for (const auto& teamSize : kokkosTeamSize) {
+                    const Configuration configuration{containerOption,  csf,           traversalOption, loadEstimatorOption,
+                                                  dataLayoutOption, containerLayoutOption, newton3Option, interactionType, chunkSize, teamSize};
+                    if (configuration.hasCompatibleValues()) {
+                      searchSet.insert(configuration);
+                    }
+                  }
                 }
               }
             }

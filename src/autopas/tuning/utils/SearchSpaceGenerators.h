@@ -81,8 +81,8 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
                                          const InteractionTypeOption &interactionType,
-                                         size_t kokkosChunkSize,
-                                         size_t kokkosTeamSize);
+                                         const std::set<size_t>& kokkosChunkSize,
+                                         const std::set<size_t>& kokkosTeamSize);
 
 /**
  * Crudely trying to reconstruct the dimensions of the search space from a given set of options.
