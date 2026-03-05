@@ -6,11 +6,12 @@
 
 #pragma once
 
+#include <Kokkos_Core.hpp>
+
+#include "../../../../../cmake-build-debug/_deps/kokkos-src/containers/src/Kokkos_ScatterView.hpp"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/kokkosDirectSum/traversals/DSKokkosTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
-
-#include <Kokkos_Core.hpp>
 
 namespace autopas {
 
@@ -106,8 +107,8 @@ private:
 
     auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(numChunks+1, _teamSize, Kokkos::AUTO);
 
-    using ScratchView = Kokkos::View<FloatPrecision*, typename DeviceSpace::execution_space::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
-    int size = ScratchView::shmem_size(chunkSize*3);
+    using ScratchView = Kokkos::View<FloatPrecision*, typename DeviceSpace::execution_space::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Atomic>>;
+    int size = 3 * ScratchView::shmem_size(chunkSize);
     teamPolicy.set_scratch_size(0, Kokkos::PerTeam(size));
 
     using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
@@ -118,25 +119,23 @@ private:
       size_t rest = N - offset;
       size_t upper = std::min(rest, chunkSize);
 
-      ScratchView forceStorage (teamHandle.team_scratch(0), 3*chunkSize);
+      ScratchView fX (teamHandle.team_scratch((0)), upper);
+      ScratchView fY (teamHandle.team_scratch((0)), upper);
+      ScratchView fZ (teamHandle.team_scratch((0)), upper);
 
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, upper), [&](int i) {
-
-        FloatPrecision fxAcc = 0.;
-        FloatPrecision fyAcc = 0.;
-        FloatPrecision fzAcc = 0.;
-
+      Kokkos::parallel_for(Kokkos::TeamThreadMDRange(teamHandle, upper, M), [&](int i, int j) {
         const auto x1 = soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i+offset);
         const auto y1 = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i+offset);
         const auto z1 = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i+offset);
 
-        Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(teamHandle, M), [&](int j, FloatPrecision& localFxAcc, FloatPrecision& localFyAcc, FloatPrecision& localFzAcc) {
-          func->SoAKernelKokkos(x1, y1, z1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
-        }, fxAcc, fyAcc, fzAcc);
+        FloatPrecision localFxAcc = 0;
+        FloatPrecision localFyAcc = 0;
+        FloatPrecision localFzAcc = 0;
+        func->SoAKernelKokkos(x1, y1, z1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
 
-        forceStorage(i*3) = fxAcc;
-        forceStorage(i*3+1) = fyAcc;
-        forceStorage(i*3+2) = fzAcc;
+        fX(i) += localFxAcc;
+        fY(i) += localFyAcc;
+        fZ(i) += localFzAcc;
       });
 
       teamHandle.team_barrier();
@@ -147,9 +146,9 @@ private:
         const FloatPrecision oldFy = soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index);
         const FloatPrecision oldFz = soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index);
 
-        const FloatPrecision newFx = oldFx + forceStorage(i*3);
-        const FloatPrecision newFy = oldFy + forceStorage(i*3+1);
-        const FloatPrecision newFz = oldFz + forceStorage(i*3+2);
+        const FloatPrecision newFx = oldFx + fX(i);
+        const FloatPrecision newFy = oldFy + fY(i);
+        const FloatPrecision newFz = oldFz + fZ(i);
 
         soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index) = newFx;
         soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) = newFy;
