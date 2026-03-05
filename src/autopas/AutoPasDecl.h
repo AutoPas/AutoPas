@@ -576,9 +576,9 @@ class AutoPas {
    */
   void setBoxMax(const std::array<double, 3> &boxMax) { _logicHandlerInfo.boxMax = boxMax; }
 
-  void setKokkosChunkSize(const size_t kokkosChunkSize) { _kokkosChunkSize = kokkosChunkSize; }
+  void setKokkosChunkSize(const std::set<size_t>& kokkosChunkSize) { _allowedKokkosChunkSize = kokkosChunkSize; }
 
-  void setKokkosTeamSize(const size_t kokkosTeamSize) { _kokkosTeamSize = kokkosTeamSize; }
+  void setKokkosTeamSize(const std::set<size_t>& kokkosTeamSize) { _allowedKokkosTeamSize = kokkosTeamSize; }
 
   /**
    * Get cutoff radius.
@@ -1215,9 +1215,9 @@ class AutoPas {
    */
   size_t _sortingThreshold{8};
 
-  size_t _kokkosChunkSize{0};
+  std::set<size_t> _allowedKokkosChunkSize{0};
 
-  size_t _kokkosTeamSize{0};
+  std::set<size_t> _allowedKokkosTeamSize{0};
 
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.

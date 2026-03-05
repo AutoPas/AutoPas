@@ -842,9 +842,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "unsigned integer > 0";
         description = config.kokkosTeamSize.description;
         try {
-          config.kokkosTeamSize.value = node[key].as<size_t>();
-          if (config.kokkosTeamSize.value < 1) {
-            throw std::runtime_error("kokkos-team-size has to be > 0");
+          auto intermediate = autopas::utils::StringUtils::parseNumberSet(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))->getAll();
+          for (auto& item : intermediate) {
+            config.kokkosTeamSize.value.emplace(static_cast<size_t>(item));
           }
         } catch (const std::exception &e) {
           errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
@@ -853,9 +854,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "unsigned integer > 0";
         description = config.kokkosChunkSize.description;
         try {
-          config.kokkosChunkSize.value = node[key].as<size_t>();
-          if (config.kokkosChunkSize.value < 1) {
-            throw std::runtime_error("kokkos-chunk-size has to be > 0");
+          auto intermediate = autopas::utils::StringUtils::parseNumberSet(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))->getAll();
+          for (auto& item : intermediate) {
+            config.kokkosChunkSize.value.emplace(static_cast<size_t>(item));
           }
         } catch (const std::exception &e) {
           errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));

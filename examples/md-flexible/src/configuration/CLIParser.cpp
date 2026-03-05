@@ -659,7 +659,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.kokkosChunkSize)::getoptChar: {
         try {
-          config.kokkosChunkSize.value = (size_t)stoul(strArg);
+          auto intermediate = autopas::utils::StringUtils::parseNumberSet(strArg)->getAll();
+          for (auto& item : intermediate) {
+            config.kokkosChunkSize.value.emplace(static_cast<size_t>(item));
+          }
         } catch (const exception &) {
           cerr << "Error parsing kokkos chunk size: " << optarg << endl;
           displayHelp = true;
@@ -668,7 +671,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.kokkosTeamSize)::getoptChar: {
         try {
-          config.kokkosTeamSize.value = (size_t)stoul(strArg);
+          auto intermediate = autopas::utils::StringUtils::parseNumberSet(strArg)->getAll();
+          for (auto& item : intermediate) {
+            config.kokkosTeamSize.value.emplace(static_cast<size_t>(item));
+          }
         } catch (const exception &) {
           cerr << "Error parsing kokkos team size: " << optarg << endl;
           displayHelp = true;
