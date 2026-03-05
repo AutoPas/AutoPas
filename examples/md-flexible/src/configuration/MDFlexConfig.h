@@ -460,12 +460,12 @@ class MDFlexConfig {
   /**
    * kokkosTeamSize
    */
-  MDFlexOption<size_t, __LINE__> kokkosTeamSize{128, "kokkos-team-size", true, "Kokkos team size for hierarchical parallelism"};
+  MDFlexOption<std::set<size_t>, __LINE__> kokkosTeamSize{{128}, "kokkos-team-size", true, "Kokkos team size for hierarchical parallelism"};
 
   /**
    * kokkosChunkSize
    */
-  MDFlexOption<size_t, __LINE__> kokkosChunkSize{32, "kokkos-chunk-size", true, "Kokkos chunk size for outer traversal loop"};
+  MDFlexOption<std::set<size_t>, __LINE__> kokkosChunkSize{{32}, "kokkos-chunk-size", true, "Kokkos chunk size for outer traversal loop"};
 
   /**
    * verletRebuildFrequency
