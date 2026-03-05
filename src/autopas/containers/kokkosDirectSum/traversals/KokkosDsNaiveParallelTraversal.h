@@ -103,9 +103,8 @@ private:
 
     using ScratchViewType = Kokkos::View<FloatPrecision*, typename DeviceSpace::execution_space::scratch_memory_space, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
-    // const int TEAM_SIZE = 128;
-
-    auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, Kokkos::AUTO, Kokkos::AUTO);
+    auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, _teamSize, Kokkos::AUTO);
+    teamPolicy.set_chunk_size(_chunkSize);
 
     using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
     Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
