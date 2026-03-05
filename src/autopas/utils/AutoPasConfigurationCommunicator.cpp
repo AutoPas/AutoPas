@@ -215,7 +215,7 @@ Configuration deserializeConfiguration(SerializedConfiguration config) {
       static_cast<TraversalOption::Value>(config[1]),       static_cast<LoadEstimatorOption::Value>(config[2]),
       static_cast<DataLayoutOption::Value>(config[3]),      static_cast<DataLayoutOption::Value>(config[4]),
       static_cast<Newton3Option::Value>(config[5]),
-      static_cast<InteractionTypeOption::Value>(config[6]),
+      static_cast<InteractionTypeOption::Value>(config[6]), 0, 0, // TODO: remove when default provided in config
   };
 }
 

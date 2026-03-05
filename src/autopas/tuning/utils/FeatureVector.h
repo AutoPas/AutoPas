@@ -46,11 +46,13 @@ class FeatureVector : public Configuration {
    * @param newton3
    * @param cellSizeFactor
    * @param interactionType
+   * @param kokkosChunkSize
+   * @param kokkosTeamSize
    */
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
                 LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, DataLayoutOption containerLayout, Newton3Option newton3,
-                InteractionTypeOption interactionType)
-      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, containerLayout, newton3, interactionType) {}
+                InteractionTypeOption interactionType, size_t kokkosChunkSize, size_t kokkosTeamSize)
+      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, containerLayout, newton3, interactionType, kokkosChunkSize, kokkosTeamSize) {}
 
   /**
    * Construct from Configuration.

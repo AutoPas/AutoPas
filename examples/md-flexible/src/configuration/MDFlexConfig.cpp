@@ -474,6 +474,8 @@ std::string MDFlexConfig::to_string() const {
   printOption(loadBalancingInterval);
   printOption(subdivideDimension);
   printOption(energySensorOption);
+  printOption(kokkosTeamSize);
+  printOption(kokkosChunkSize);
   return os.str();
 }
 

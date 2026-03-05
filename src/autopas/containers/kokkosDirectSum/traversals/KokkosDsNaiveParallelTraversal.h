@@ -19,8 +19,8 @@ class KokkosDsNaiveParallelTraversal : public TraversalInterface, public DSKokko
 
 public:
 
-    explicit KokkosDsNaiveParallelTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3)
-        : TraversalInterface(dataLayout, useNewton3), DSKokkosTraversalInterface<Particle_T>(), _functor{functor} {}
+    explicit KokkosDsNaiveParallelTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3, size_t teamSize, size_t chunkSize)
+        : TraversalInterface(dataLayout, useNewton3), DSKokkosTraversalInterface<Particle_T>(), _functor{functor}, _teamSize(teamSize), _chunkSize(chunkSize) {}
 
     [[nodiscard]] TraversalOption getTraversalType() const final { return TraversalOption::kokkos_ds_naive_parallel; }
 
@@ -105,6 +105,7 @@ private:
     //using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
 
     auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+    rangePolicy.set_chunk_size(_chunkSize);
     // Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
     // const int i = teamHandle.league_rank();
 
@@ -150,6 +151,9 @@ private:
 
   Functor *_functor;
 
+  const size_t _teamSize {0};
+
+  const size_t _chunkSize {0};
 };
 
 }

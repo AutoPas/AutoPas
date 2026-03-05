@@ -89,6 +89,8 @@ bool autopas::Configuration::hasCompatibleValues() const {
     }
   }
 
+  /* TODO: check for team size (have a look at kokkos contraints again) */
+
   return true;
 }
 
@@ -98,7 +100,8 @@ std::ostream &autopas::operator<<(std::ostream &os, const autopas::Configuration
 
 bool autopas::Configuration::equalsDiscreteOptions(const autopas::Configuration &rhs) const {
   return container == rhs.container and traversal == rhs.traversal and loadEstimator == rhs.loadEstimator and
-         dataLayout == rhs.dataLayout and newton3 == rhs.newton3 and interactionType == rhs.interactionType;
+         dataLayout == rhs.dataLayout and newton3 == rhs.newton3 and interactionType == rhs.interactionType and
+         kokkosChunkSize == rhs.kokkosChunkSize and kokkosTeamSize == rhs.kokkosTeamSize;
 }
 
 bool autopas::Configuration::equalsContinuousOptions(const autopas::Configuration &rhs, double epsilon) const {
@@ -115,8 +118,8 @@ bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Confi
 
 bool autopas::operator<(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
   return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3,
-                  lhs.interactionType) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator,
-                                                  rhs.dataLayout, rhs.newton3, rhs.interactionType);
+                  lhs.interactionType, lhs.kokkosChunkSize, lhs.kokkosTeamSize) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator,
+                                                  rhs.dataLayout, rhs.newton3, rhs.interactionType, rhs.kokkosChunkSize, rhs.kokkosTeamSize);
 }
 
 std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &configuration) {
@@ -135,5 +138,9 @@ std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &conf
   in >> configuration.dataLayout;
   in.ignore(max, ':');
   in >> configuration.newton3;
+  in.ignore(max, ':');
+  in >> configuration.kokkosChunkSize;
+  in.ignore(max, ':');
+  in >> configuration.kokkosTeamSize;
   return in;
 }

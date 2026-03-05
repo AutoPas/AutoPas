@@ -576,6 +576,10 @@ class AutoPas {
    */
   void setBoxMax(const std::array<double, 3> &boxMax) { _logicHandlerInfo.boxMax = boxMax; }
 
+  void setKokkosChunkSize(const size_t kokkosChunkSize) { _kokkosChunkSize = kokkosChunkSize; }
+
+  void setKokkosTeamSize(const size_t kokkosTeamSize) { _kokkosTeamSize = kokkosTeamSize; }
+
   /**
    * Get cutoff radius.
    * @return
@@ -1210,6 +1214,11 @@ class AutoPas {
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
   size_t _sortingThreshold{8};
+
+  size_t _kokkosChunkSize{0};
+
+  size_t _kokkosTeamSize{0};
+
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
    * Triggers reserve() and provides a parallel loop with deliberate scheduling.
