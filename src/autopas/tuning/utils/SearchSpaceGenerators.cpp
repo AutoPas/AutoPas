@@ -19,7 +19,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<DataLayoutOption> &allowedContainerLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
-    const NumberSet<double> *allowedCellSizeFactors, const InteractionTypeOption &interactionType) {
+    const NumberSet<double> *allowedCellSizeFactors, const InteractionTypeOption &interactionType, size_t kokkosChunkSize, size_t kokkosTeamSize) {
   if (allowedCellSizeFactors->isInterval()) {
     utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
   }
@@ -46,7 +46,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
             for (const auto &containerLayoutOption : allowedContainerLayoutOptions) {
               for (const auto &newton3Option : allowedNewton3Options) {
                 const Configuration configuration{containerOption,  csf,           traversalOption, loadEstimatorOption,
-                                                  dataLayoutOption, containerLayoutOption, newton3Option, interactionType};
+                                                  dataLayoutOption, containerLayoutOption, newton3Option, interactionType, kokkosChunkSize, kokkosTeamSize};
                 if (configuration.hasCompatibleValues()) {
                   searchSet.insert(configuration);
                 }
@@ -67,7 +67,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
 SearchSpaceGenerators::OptionSpace SearchSpaceGenerators::inferOptionDimensions(
     const std::set<Configuration> &searchSet) {
   OptionSpace optionSpace;
-  for (const auto &[container, traversal, loadEst, dataLayout, containerLayout, newton3, csf, interactT] : searchSet) {
+  for (const auto &[container, traversal, loadEst, dataLayout, containerLayout, newton3, csf, interactT, kokkosChunkSize, kokkosTeamSize] : searchSet) {
     optionSpace.containerOptions.insert(container);
     optionSpace.traversalOptions.insert(traversal);
     optionSpace.loadEstimatorOptions.insert(loadEst);

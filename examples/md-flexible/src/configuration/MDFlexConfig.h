@@ -458,6 +458,16 @@ class MDFlexConfig {
   MDFlexOption<unsigned int, __LINE__> verletClusterSize{4, "verlet-cluster-size", true,
                                                          "Number of particles in Verlet clusters."};
   /**
+   * kokkosTeamSize
+   */
+  MDFlexOption<size_t, __LINE__> kokkosTeamSize{128, "kokkos-team-size", true, "Kokkos team size for hierarchical parallelism"};
+
+  /**
+   * kokkosChunkSize
+   */
+  MDFlexOption<size_t, __LINE__> kokkosChunkSize{32, "kokkos-chunk-size", true, "Kokkos chunk size for outer traversal loop"};
+
+  /**
    * verletRebuildFrequency
    */
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{

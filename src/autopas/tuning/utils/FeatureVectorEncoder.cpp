@@ -285,5 +285,5 @@ autopas::FeatureVector autopas::FeatureVectorEncoder::convertFromTunable(
 
   auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
 
-  return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, containerLayout, newton3, _interactionType);
+  return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, containerLayout, newton3, _interactionType, 0, 0); // TODO: remove when default provided
 }

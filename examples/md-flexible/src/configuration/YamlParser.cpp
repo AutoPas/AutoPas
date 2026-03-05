@@ -838,6 +838,28 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                         expected, description));
         }
 #endif
+      } else if (key == config.kokkosTeamSize.name) {
+        expected = "unsigned integer > 0";
+        description = config.kokkosTeamSize.description;
+        try {
+          config.kokkosTeamSize.value = node[key].as<size_t>();
+          if (config.kokkosTeamSize.value < 1) {
+            throw std::runtime_error("kokkos-team-size has to be > 0");
+          }
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
+      } else if (key == config.kokkosChunkSize.name) {
+        expected = "unsigned integer > 0";
+        description = config.kokkosChunkSize.description;
+        try {
+          config.kokkosChunkSize.value = node[key].as<size_t>();
+          if (config.kokkosChunkSize.value < 1) {
+            throw std::runtime_error("kokkos-chunk-size has to be > 0");
+          }
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;
