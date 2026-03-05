@@ -106,6 +106,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.vtkOutputFolder,
       config.vtkWriteFrequency,
       config.yamlFilename,
+      config.kokkosChunkSize,
+      config.kokkosTeamSize,
       zshCompletionsOption,
       helpOption)};
   // clang-format on
@@ -651,6 +653,24 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.vtkWriteFrequency.value = (size_t)stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing vtk write frequency: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.kokkosChunkSize)::getoptChar: {
+        try {
+          config.kokkosChunkSize.value = (size_t)stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing kokkos chunk size: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.kokkosTeamSize)::getoptChar: {
+        try {
+          config.kokkosTeamSize.value = (size_t)stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing kokkos team size: " << optarg << endl;
           displayHelp = true;
         }
         break;
