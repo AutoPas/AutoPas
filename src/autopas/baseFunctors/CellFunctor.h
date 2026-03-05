@@ -124,9 +124,8 @@ class CellFunctor {
    * The value of _useNewton3 defines whether or whether not to apply the aos version functor in a newton3 fashion or
    * not:
    * - if _useNewton3 is true: the aos functor will be applied once for each pair (only i,j), passing newton3=true.
-   * - if _useNewton3 is false: the aos functor will be applied twice for each pair (i,j and j,i), passing
-   * newton3=false.
-   * For PseudoVerletLists.
+   * - if _useNewton3 is false: the aos functor will be applied twice for each pair (i,j and j,i), if both are non halo
+   * particles, passing newton3=false. For PseudoVerletLists.
    * @param cellIndex
    */
   void processCellAoSPsVL(unsigned long cellIndex);
@@ -137,26 +136,30 @@ class CellFunctor {
    * @param cell1
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
-   * @tparam newton3 determines if Newton3 is used or not. Matches _useNewton3.
+   * @tparam newton3 determines if Newton3 is used or not. The version of this function actually run must match
+   * _useNewton3.
    */
   template <bool newton3>
   void processCellPairAoS(ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection);
 
   /**
-   * Applies the functor to all particle pairs between cell1 and cell2
-   * exploiting newtons third law of motion. For PseudoVerletLists.
+   * Applies the functor to all particle pairs between cell1 and cell2.
+   * For PseudoVerletLists.
    * @param cell1Index
    * @param cell2Index
    * @param directionIndex Normalized vector connecting centers of cell1 and cell2.
-   * @tparam newton3 determines if Newton3 is used or not. Matches _useNewton3.
+   * @tparam newton3 determines if Newton3 is used or not. The version of this function actually run must match
+   * _useNewton3.
    */
   template <bool newton3>
   void processCellPairAoSPsVL(unsigned long cell1Index, unsigned long cell2Index, signed long directionIndex);
 
   /**
-   * Utilizes the SortedCellViews to reduce the calculations needed by processCellPairAoS in certain cases.
-   * Used for PseudoVerletLists or if the number of Particles in the cells are above the sortingThreshold.
-   * @tparam newton3 determines if Newton3 is used or not. Matches _useNewton3.
+   * Utilizes the SortedCellViews to reduce the calculations needed by processCellPairAoS.
+   * Used for PseudoVerletLists or for linked cells if the number of particles in the cells are above the
+   * sortingThreshold.
+   * @tparam newton3 determines if Newton3 is used or not. The version of this function actually run must match
+   * _useNewton3.
    * @param cell1Sorted SortedCellView of cell1
    * @param cell2Sorted SortedCellView of cell2
    */
@@ -191,8 +194,9 @@ class CellFunctor {
   void processCellSoANoN3(ParticleCell_T &cell);
 
   /**
-   * Calculates the interatctions of two particles in different cells.
-   * @tparam newton3 determines if the newton3 optimization is used. Matches _useNewton3.
+   * Calculates the interactions of two particles in different cells.
+   * @tparam newton3 determines if the newton3 optimization is used. The version of this function actually run must
+   * match _useNewton3.
    * @param p1 particle in cell1
    * @param p2 particle in cell2
    */
@@ -313,7 +317,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(
       }
       break;
     default:
-      utils::ExceptionHandler::exception("CellFunctor only Supports AoS or SoA");
+      utils::ExceptionHandler::exception("CellFunctor only supports AoS or SoA datalayouts. Data layout used: {}",
+                                         _dataLayout);
       break;
   }
 }
@@ -325,10 +330,11 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
       processCellAoSPsVL(cellIndex);
       break;
     case DataLayoutOption::soa:
-      utils::ExceptionHandler::exception("PsVL don't support SoA!");
+      utils::ExceptionHandler::exception("PsVL currently don't support SoA!");
       break;
     default:
-      utils::ExceptionHandler::exception("CellFunctor only Supports AoS or SoA");
+      utils::ExceptionHandler::exception("CellFunctor only supports AoS or SoA datalayouts. Data layout used: {}",
+                                         _dataLayout);
       break;
   }
 }
@@ -369,7 +375,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
       }
       break;
     default:
-      utils::ExceptionHandler::exception("CellFunctor only Supports AoS or SoA");
+      utils::ExceptionHandler::exception("CellFunctor only supports AoS or SoA datalayouts. Data layout used: {}",
+                                         _dataLayout);
       break;
   }
 }
@@ -389,10 +396,11 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
       }
       break;
     case DataLayoutOption::soa:
-      AutoPasLog(ERROR, "PsVL don't support soa!");
+      utils::ExceptionHandler::exception("PsVL currently don't support SoA!");
       break;
     default:
-      utils::ExceptionHandler::exception("CellFunctor only Supports AoS or SoA");
+      utils::ExceptionHandler::exception("CellFunctor only supports AoS or SoA datalayouts. Data layout used: {}",
+                                         _dataLayout);
       break;
   }
 }
