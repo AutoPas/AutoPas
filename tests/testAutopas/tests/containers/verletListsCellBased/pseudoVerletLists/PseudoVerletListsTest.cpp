@@ -7,7 +7,7 @@
 #include "PseudoVerletListsTest.h"
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/containers/pseudoVerletLists/PseudoVerletLists.h"
+#include "autopas/containers/verletListsCellBased/pseudoVerletLists/PseudoVerletLists.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utils/ArrayMath.h"
 #include "testingHelpers/commonTypedefs.h"
