@@ -192,10 +192,12 @@ class AutoTuner {
    * on to the tuning strategy. This function expects that samples of the same configuration are taken consecutively.
    * The sample argument is a long because std::chrono::duration::count returns a long.
    *
-   * @param sample
+   * @param sampleRebuild time or energy sample for rebuild part of the iteration.
+   * @param sampleTraverseParticles time or energy sample for traverse interaction part of the iteration. This includes
+   * computeInteraction and remainderTraversal call.
    * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
    */
-  void addMeasurement(long sample, bool neighborListRebuilt);
+  void addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt);
 
   /**
    * Adds domain similarity statistics to a vector of measurements, which can be smoothed for use in MPI Tuning to find
@@ -298,6 +300,13 @@ class AutoTuner {
   bool tuneConfiguration();
 
   /**
+   * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
+   * used until the next tuning phase, as well as setting other relevant class members (_endOfTuningPhase, _isTuning,
+   * _samplesRebuildingNeighborLists, _iterationBaseline)
+   */
+  void handleEndOfTuningPhaseIfRelevant();
+
+  /**
    * Strategy how to reduce the sampled values to one value.
    */
   SelectorStrategyOption _selectorStrategy;
@@ -389,7 +398,7 @@ class AutoTuner {
    *
    * @note Initialized with size of _maxSamples to start tuning at start of simulation.
    */
-  std::vector<long> _samplesNotRebuildingNeighborLists;
+  std::vector<long> _samplesTraverseInteractions;
 
   /**
    * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists

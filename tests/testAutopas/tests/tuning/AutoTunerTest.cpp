@@ -736,13 +736,13 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   // Iteration 0, Config 0, Rebuilding Neighbor List
   const auto [config0a, stillTuning0a] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(40000, true);
+  autoTuner.addMeasurement(200000, 25000, true);
   // Sanity check that autoTuner is still tuning
   EXPECT_EQ(stillTuning0a, true);
 
   // Iteration 1, Config 0, Not Rebuilding
   const auto [config0b, stillTuning0b] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(30000, false);
+  autoTuner.addMeasurement(0, 30000, false);
   // Sanity check that configuration didn't change
   ASSERT_EQ(config0a, config0b);
   // Sanity check that autoTuner is still tuning
@@ -750,7 +750,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   // Iteration 2, Config 0, Not Rebuilding
   const auto [config0c, stillTuning0c] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(35000, false);
+  autoTuner.addMeasurement(0, 35000, false);
   // Sanity check that configuration didn't change
   ASSERT_EQ(config0a, config0c);
   // Sanity check that autoTuner is still tuning
@@ -758,7 +758,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   // Iteration 3, Config 1, Rebuilding Neighbor List
   const auto [config1a, stillTuning1a] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(300000, true);
+  autoTuner.addMeasurement(5500000, 25000, true);
   // Sanity check that configuration did change
   ASSERT_NE(config0a, config1a);
   // Sanity check that autoTuner is still tuning
@@ -766,7 +766,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   // Iteration 4, Config 1, Not Rebuilding
   const auto [config1b, stillTuning1b] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(25000, false);
+  autoTuner.addMeasurement(0, 25000, false);
   // Sanity check that configuration didn't change
   ASSERT_EQ(config1a, config1b);
   // Sanity check that autoTuner is still tuning
@@ -774,7 +774,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   // Iteration 5, Config 1, Not Rebuilding
   const auto [config1c, stillTuning1c] = autoTuner.getNextConfig();
-  autoTuner.addMeasurement(15000, false);
+  autoTuner.addMeasurement(0, 15000, false);
   // Sanity check that configuration didn't change
   ASSERT_EQ(config1a, config1c);
   // Sanity check that autoTuner is no longer tuning
@@ -783,8 +783,8 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   const auto [config, stillTuning] = autoTuner.getNextConfig();
 
   // Expected Weighted Averages
-  // Config 1: ( 40000*1 + (30000+35000)/2. * 19) / 20 = 32875
-  // Config 2: (300000*1 + (25000+15000)/2. * 19) / 20 = 34000
+  // Config 1: (200000 + 0 + 0) / 3 / 20 + (25000 + 30000 + 35000) / 3 = 40000
+  // Config 2: (5500000 + 0 + 0) / 3 / 20 + (25000 + 25000 + 15000) / 3  = 113333.33
   // => Config 1 is optimal
   EXPECT_EQ(autoTuner.getCurrentConfig(), config0a);
   EXPECT_NE(autoTuner.getCurrentConfig(), config1a);
@@ -804,14 +804,13 @@ TEST_F(AutoTunerTest, testSampleWeightingOneRebuild) {
 
   const auto [config, _] = autoTuner.getNextConfig();
 
-  constexpr long sampleWithRebuild = 10;
-  constexpr long sampleWithoutRebuild = 2;
-  autoTuner.addMeasurement(sampleWithRebuild, true);
-  autoTuner.addMeasurement(sampleWithoutRebuild, false);
-  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  constexpr long sampleRebuild = 10;
+  constexpr long sampleNonRebuild = 2;
+  autoTuner.addMeasurement(sampleRebuild, sampleNonRebuild, true);
+  autoTuner.addMeasurement(0, sampleNonRebuild, false);
+  autoTuner.addMeasurement(0, sampleNonRebuild, false);
 
-  constexpr long expectedEvidence =
-      (sampleWithRebuild + (rebuildFrequency - 1) * sampleWithoutRebuild) / rebuildFrequency;
+  constexpr long expectedEvidence = sampleRebuild / rebuildFrequency + sampleNonRebuild;
   EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().value);
 }
 
@@ -830,16 +829,15 @@ TEST_F(AutoTunerTest, testSampleWeightingTwoRebuild) {
 
   const auto [config, _] = autoTuner.getNextConfig();
 
-  constexpr long sampleWithRebuild = 10;
-  constexpr long sampleWithoutRebuild = 2;
-  autoTuner.addMeasurement(sampleWithRebuild, true);
-  autoTuner.addMeasurement(sampleWithoutRebuild, false);
-  autoTuner.addMeasurement(sampleWithoutRebuild, false);
-  autoTuner.addMeasurement(sampleWithRebuild, true);
-  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  constexpr long sampleRebuild = 8;
+  constexpr long sampleNonRebuild = 2;
+  autoTuner.addMeasurement(sampleRebuild, sampleNonRebuild, true);
+  autoTuner.addMeasurement(0, sampleNonRebuild, false);
+  autoTuner.addMeasurement(0, sampleNonRebuild, false);
+  autoTuner.addMeasurement(sampleRebuild, sampleNonRebuild, true);
+  autoTuner.addMeasurement(0, sampleNonRebuild, false);
 
-  constexpr long expectedEvidence =
-      (sampleWithRebuild + (rebuildFrequency - 1) * sampleWithoutRebuild) / rebuildFrequency;
+  constexpr long expectedEvidence = sampleRebuild / rebuildFrequency + sampleNonRebuild;
   EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().value);
 }
 
@@ -865,7 +863,7 @@ TEST_F(AutoTunerTest, testRestoreAfterWipe) {
   // Fill the search space with random data so the slow config filter can work
   for (const auto conf : searchSpace) {
     const auto iDontCare = autoTuner.getNextConfig();
-    autoTuner.addMeasurement(42, true);
+    autoTuner.addMeasurement(30, 12, true);
     autoTuner.bumpIterationCounters();
   }
 
@@ -962,4 +960,64 @@ TEST_F(AutoTunerTest, testMultipleTuners) {
     EXPECT_TRUE(logicHandler.computeInteractionsPipeline(&pairFunctor, autopas::InteractionTypeOption::pairwise));
     EXPECT_TRUE(logicHandler.computeInteractionsPipeline(&triFunctor, autopas::InteractionTypeOption::triwise));
   }
+}
+
+void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinitely) const {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+
+  constexpr autopas::AutoTunerInfo autoTunerInfo{.tuningInterval = 100, .maxSamples = 1};
+  constexpr unsigned int rebuildFrequency = 1;
+
+  const autopas::AutoTuner::SearchSpaceType searchSpace{
+      _confDs_seq_noN3,
+      _confDs_seq_N3,
+      _confLc_c08_N3,
+      _confLc_c18_N3,
+  };
+
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  // 1) Sample first config (accepted).
+  const auto [config1, stillTuning1] = autoTuner.getNextConfig();
+  EXPECT_TRUE(stillTuning1);
+  autoTuner.addMeasurement(180, 20, /*neighborListRebuilt*/ true);
+  autoTuner.bumpIterationCounters();
+
+  // 2) Second config is rejected, should immediately get the next one.
+  const auto [config2, stillTuning2] = autoTuner.getNextConfig();
+  EXPECT_TRUE(stillTuning2);
+  const auto [configAfterReject2, stillTuningAfterReject2] =
+      autoTuner.rejectConfig(config2, /*indefinitely*/ rejectIndefinitely);
+  EXPECT_TRUE(stillTuningAfterReject2);
+
+  // 3) Sample third config (accepted). Make it faster than config1 so it becomes the optimum.
+  autoTuner.addMeasurement(90, 10, /*neighborListRebuilt*/ true);
+  autoTuner.bumpIterationCounters();
+
+  // 4) Final config is rejected.
+  const auto [config4, stillTuning4] = autoTuner.getNextConfig();
+  EXPECT_TRUE(stillTuning4);
+  const auto [configAfterReject4, stillTuningAfterReject4] =
+      autoTuner.rejectConfig(config4, /*indefinitely*/ rejectIndefinitely);
+  EXPECT_FALSE(stillTuningAfterReject4);
+
+  const auto expectedBest = _confLc_c08_N3;
+  EXPECT_EQ(configAfterReject4, expectedBest);
+
+  // We should be able to later call getCurrentConfig and receive the expectedBest
+  EXPECT_EQ(autoTuner.getCurrentConfig(), expectedBest);
+
+  // Similarly with getNextConfig during non-tuning phase
+  EXPECT_EQ(std::get<0>(autoTuner.getNextConfig()), expectedBest);
+}
+
+/**
+ * Tests that ending a tuning phase with a reject configuration is handled correctly.
+ *
+ * Mimics an AutoTuner trialling four configurations. The second and the final configurations will be rejected. After
+ * the tuning phase is completed, the test should get the correct configuration upon calling `getNextConfig`
+ */
+TEST_F(AutoTunerTest, testEndingTuningPhaseWithRejectedConfig) {
+  testEndingTuningPhaseWithRejectedConfig(true);
+  testEndingTuningPhaseWithRejectedConfig(false);
 }
