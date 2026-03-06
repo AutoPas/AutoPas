@@ -11,7 +11,7 @@
 std::string autopas::Configuration::toString() const {
   return "{Interaction Type: " + interactionType.to_string() + " , Container: " + container.to_string() +
          " , CellSizeFactor: " + std::to_string(cellSizeFactor) + " , Traversal: " + traversal.to_string() +
-         ",  Kokkos Team Size: " + std::to_string(kokkosTeamSize)  + " , Kokkos Chunk Size: " + std::to_string(kokkosChunkSize) +
+         " ,  Kokkos Team Size: " + std::to_string(kokkosTeamSize)  + " , Kokkos Chunk Size: " + std::to_string(kokkosChunkSize) +
          " , Load Estimator: " + loadEstimator.to_string() + " , Data Layout: " + dataLayout.to_string() +
          " , Newton 3: " + newton3.to_string() + "}";
 }
