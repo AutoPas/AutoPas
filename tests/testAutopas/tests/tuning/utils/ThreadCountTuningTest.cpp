@@ -25,9 +25,7 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
   const std::set<autopas::Newton3Option> newton3Options({autopas::Newton3Option::disabled});
   const autopas::NumberSetFinite<double> cellSizeFactors({1});
   const autopas::NumberSetFinite<int> threadCounts(threadCountOptions);
-  const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 20;
-  const unsigned int verletClusterSize = 64;
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
       .boxMax{static_cast<double>(boxMax), static_cast<double>(boxMax), static_cast<double>(boxMax)},
@@ -71,10 +69,7 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
   EXPECT_EQ(numInsertedMolecules, logicHandler.getContainer().size()); // Should not have any leaving molecules in this test
   // NOTE: currentConfig.threadCount does not return the actual number of threads when thread count tuning is turned off
   // Instead, check the actual number of threads to be used as set by the current configuration
-  EXPECT_EQ(
-    expectedSelectedThreadCount,
-    autopas::autopas_get_preferred_num_threads()
-  );
+  EXPECT_EQ(expectedSelectedThreadCount, autopas::autopas_get_preferred_num_threads());
 }
 
 /**

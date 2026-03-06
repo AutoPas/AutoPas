@@ -10,8 +10,6 @@
 
 class ThreadCountTuningTest : public AutoPasTestBase {
  public:
-  ThreadCountTuningTest() = default;
-  ~ThreadCountTuningTest() override = default;
   /**
    * Tests if thread count tuning selected the expected number of threads for a given simulation size
    * 
