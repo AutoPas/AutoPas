@@ -25,7 +25,7 @@
 #include "autopas/containers/octree/traversals/OTC18Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
-#include "autopas/containers/verletClusterLists/traversals/VCLC08Traversal.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLC04Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedBalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedC02Traversal.h"
@@ -286,8 +286,8 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
           &pairwiseFunctor, traversalInfo.clusterSize, dataLayout, useNewton3);
       break;
     }
-    case TraversalOption::vcl_c08: {
-      return std::make_unique<VCLC08Traversal<ParticleCell_T, PairwiseFunctor_T>>(
+    case TraversalOption::vcl_c04: {
+      return std::make_unique<VCLC04Traversal<ParticleCell_T, PairwiseFunctor_T>>(
           &pairwiseFunctor, traversalInfo.clusterSize, dataLayout, useNewton3);
     }
     // Pairwise Verlet Lists

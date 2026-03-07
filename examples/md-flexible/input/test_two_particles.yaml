@@ -3,7 +3,7 @@ verlet-rebuild-frequency         : 1
 verlet-skin-radius               : 0.0
 verlet-cluster-size              : 2
 data-layout                      : [AoS]
-traversal                        : [vcl_c08]
+traversal                        : [vcl_c04]
 newton3                          : [enabled]
 cutoff                           : 3.0
 box-min                          : [0, 0, 0]
