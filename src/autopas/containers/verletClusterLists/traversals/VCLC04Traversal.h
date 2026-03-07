@@ -1,5 +1,5 @@
 /**
- * @file VCLC08Traversal.h
+ * @file VCLC04Traversal.h
  * @author stagrz
  * @date 30.11.2025
  */
@@ -24,7 +24,7 @@ namespace autopas {
  * @tparam PairwiseFunctor
  */
 template <class ParticleCell, class PairwiseFunctor>
-class VCLC08Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor>,
+class VCLC04Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor>,
                         public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using ParticleType = typename ParticleCell::ParticleType;
@@ -57,13 +57,13 @@ class VCLC08Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit VCLC08Traversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize, DataLayoutOption dataLayout,
+  explicit VCLC04Traversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize, DataLayoutOption dataLayout,
                            bool useNewton3)
       : ColorBasedTraversal<ParticleCell, PairwiseFunctor>({0, 0, 0}, pairwiseFunctor, 0, {}, dataLayout, useNewton3),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c08; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c04; }
 
   [[nodiscard]] bool isApplicable() const override {
     return (this->_dataLayout == DataLayoutOption::aos || this->_dataLayout == DataLayoutOption::soa);
@@ -113,7 +113,7 @@ class VCLC08Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-void VCLC08Traversal<ParticleCell, PairwiseFunctor>::processColorCell(unsigned long xColorCell,
+void VCLC04Traversal<ParticleCell, PairwiseFunctor>::processColorCell(unsigned long xColorCell,
                                                                       unsigned long yColorCell,
                                                                       unsigned long zColorCell,
                                                                       int towersPerColoringCell) {
