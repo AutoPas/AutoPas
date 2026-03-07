@@ -1003,7 +1003,9 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild) num_threads(autopas_get_preferred_num_threads()))
+  AUTOPAS_OPENMP(parallel reduction(or
+                                    : _neighborListInvalidDoDynamicRebuild)
+                     num_threads(autopas_get_preferred_num_threads()))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);

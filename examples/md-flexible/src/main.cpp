@@ -35,7 +35,8 @@ int main(int argc, char **argv) {
     if (domainDecomposition->getDomainIndex() == 0) {
       std::cout << configuration.to_string() << std::endl;
       std::cout << std::endl << "Using ";
-      if(configuration.threadCounts.value.get()->getAll() != std::set<int>{autopas::Configuration::ThreadCountNoTuning}) {
+      if (configuration.threadCounts.value.get()->getAll() !=
+          std::set<int>{autopas::Configuration::ThreadCountNoTuning}) {
         std::cout << "(up to) ";
       }
       std::cout << autopas::autopas_get_max_threads() << " Threads" << std::endl;

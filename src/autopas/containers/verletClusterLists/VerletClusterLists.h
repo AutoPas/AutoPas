@@ -384,7 +384,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
     AUTOPAS_OPENMP(declare reduction(
         vecMergeParticle : std::vector<Particle_T> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
-    AUTOPAS_OPENMP(parallel reduction(vecMergeParticle : invalidParticles) num_threads(autopas_get_preferred_num_threads())) {
+    AUTOPAS_OPENMP(parallel reduction(vecMergeParticle
+                                      : invalidParticles) num_threads(autopas_get_preferred_num_threads())) {
       for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
         if (not utils::inBox(iter->getR(), this->getBoxMin(), this->getBoxMax())) {
           invalidParticles.push_back(*iter);

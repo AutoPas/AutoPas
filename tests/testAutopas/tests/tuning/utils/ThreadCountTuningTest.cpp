@@ -17,7 +17,9 @@
 
 using ::testing::_;
 
-void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax, const std::set<int> &threadCountOptions, const size_t expectedSelectedThreadCount) const {
+void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
+                                                            const std::set<int> &threadCountOptions,
+                                                            const size_t expectedSelectedThreadCount) const {
   const std::set<autopas::ContainerOption> containerOptions({autopas::ContainerOption::linkedCells});
   const std::set<autopas::TraversalOption> traversalOptions({autopas::TraversalOption::lc_c01});
   const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions({autopas::LoadEstimatorOption::none});
@@ -34,15 +36,14 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
   };
   const autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
-      .maxSamples = 10, // Ensure results are not too flaky
+      .maxSamples = 10,  // Ensure results are not too flaky
   };
 
   mdLib::LJFunctor<Molecule> functor(logicHandlerInfo.cutoff);
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
-      &cellSizeFactors, autopas::InteractionTypeOption::pairwise,
-      &threadCounts);
+      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
+      autopas::InteractionTypeOption::pairwise, &threadCounts);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
@@ -53,8 +54,8 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
   autopas::Configuration currentConfig;
-  autopasTools::generators::GridGenerator::fillWithParticles(
-      logicHandler.getContainer(), { boxMax, boxMax, boxMax }, Molecule());
+  autopasTools::generators::GridGenerator::fillWithParticles(logicHandler.getContainer(), {boxMax, boxMax, boxMax},
+                                                             Molecule());
   const size_t numInsertedMolecules = logicHandler.getContainer().size();
 
   int iterationsAfterTuning = 0;
@@ -66,7 +67,8 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
     if (!stillTuning) iterationsAfterTuning++;
   }
 
-  EXPECT_EQ(numInsertedMolecules, logicHandler.getContainer().size()); // Should not have any leaving molecules in this test
+  EXPECT_EQ(numInsertedMolecules,
+            logicHandler.getContainer().size());  // Should not have any leaving molecules in this test
   // NOTE: currentConfig.threadCount does not return the actual number of threads when thread count tuning is turned off
   // Instead, check the actual number of threads to be used as set by the current configuration
   EXPECT_EQ(expectedSelectedThreadCount, autopas::autopas_get_preferred_num_threads());

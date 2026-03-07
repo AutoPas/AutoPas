@@ -198,7 +198,8 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 #endif
   }
 
-  AUTOPAS_OPENMP(parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale) num_threads(autopas::autopas_get_preferred_num_threads())) {
+  AUTOPAS_OPENMP(parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)
+                     num_threads(autopas::autopas_get_preferred_num_threads())) {
     // we use a constant seed for repeatability.
     // we need one random engine and distribution per thread
     std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
@@ -260,7 +261,8 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
   }
 
   // Scale velocities (and angular velocities) with the scaling map
-  AUTOPAS_OPENMP(parallel default(none) shared(autopas, scalingMap) num_threads(autopas::autopas_get_preferred_num_threads()))
+  AUTOPAS_OPENMP(parallel default(none) shared(autopas, scalingMap)
+                     num_threads(autopas::autopas_get_preferred_num_threads()))
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     iter->setV(iter->getV() * scalingMap[iter->getTypeId()]);
 #if MD_FLEXIBLE_MODE == MULTISITE

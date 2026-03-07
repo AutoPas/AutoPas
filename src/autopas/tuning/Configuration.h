@@ -24,6 +24,9 @@ namespace autopas {
  */
 class Configuration {
  public:
+  /**
+   * When using this value as a thread count tuning option, thread count tuning is disabled.
+   */
   static constexpr int ThreadCountNoTuning = 0;
 
   /**

@@ -14,7 +14,8 @@ autopas::FeatureVectorEncoder::FeatureVectorEncoder(
     const autopas::NumberSet<double> &cellSizeFactors, const InteractionTypeOption &interactionType,
     const NumberSetFinite<int> &threadCounts)
     : _interactionType(interactionType) {
-  setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors, threadCounts);
+  setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors,
+                    threadCounts);
 }
 
 autopas::FeatureVectorEncoder::~FeatureVectorEncoder() = default;
@@ -29,8 +30,8 @@ void autopas::FeatureVectorEncoder::setAllowedOptions(
   const auto threadCountsSet = threadCounts.getAll();
   _threadCounts = {threadCountsSet.begin(), threadCountsSet.end()};
 
-  _oneHotDims = _containerTraversalEstimatorOptions.size() + _dataLayoutOptions.size() + _newton3Options.size() + _threadCounts.size() +
-                tunableContinuousDims;
+  _oneHotDims = _containerTraversalEstimatorOptions.size() + _dataLayoutOptions.size() + _newton3Options.size() +
+                _threadCounts.size() + tunableContinuousDims;
 
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::containerTraversalEstimator)] =
       _containerTraversalEstimatorOptions.size();

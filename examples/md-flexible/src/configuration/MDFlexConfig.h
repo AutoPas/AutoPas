@@ -298,8 +298,8 @@ class MDFlexConfig {
    * threadCounts
    */
   MDFlexOption<std::shared_ptr<autopas::NumberSetFinite<int>>, __LINE__> threadCounts{
-      std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{autopas::Configuration::ThreadCountNoTuning}), "thread-count",
-      true, "OpenMP thread counts."};
+      std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{autopas::Configuration::ThreadCountNoTuning}),
+      "thread-count", true, "OpenMP thread counts."};
   /**
    * logFileName
    */

@@ -63,7 +63,8 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
           interactionType, searchSpaceDimensions.containerOptions,
           NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
           searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
-          searchSpaceDimensions.newton3Options, NumberSetFinite<int>{searchSpaceDimensions.threadCounts}, info.maxEvidence, info.acquisitionFunctionOption);
+          searchSpaceDimensions.newton3Options, NumberSetFinite<int>{searchSpaceDimensions.threadCounts},
+          info.maxEvidence, info.acquisitionFunctionOption);
       break;
     }
 
@@ -73,14 +74,16 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
           interactionType, searchSpaceDimensions.containerOptions,
           NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
           searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
-          searchSpaceDimensions.newton3Options, NumberSetFinite<int>{searchSpaceDimensions.threadCounts}, info.maxEvidence, info.acquisitionFunctionOption, outputSuffix);
+          searchSpaceDimensions.newton3Options, NumberSetFinite<int>{searchSpaceDimensions.threadCounts},
+          info.maxEvidence, info.acquisitionFunctionOption, outputSuffix);
       break;
     }
 
     case TuningStrategyOption::activeHarmony: {
       const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
-      if (searchSpaceDimensions.threadCounts != std::set<int>{ autopas::Configuration::ThreadCountNoTuning }) {
-        utils::ExceptionHandler::exception("AutoPas::generateTuningStrategy: Thread tuning is not supported by ActiveHarmony!");
+      if (searchSpaceDimensions.threadCounts != std::set<int>{autopas::Configuration::ThreadCountNoTuning}) {
+        utils::ExceptionHandler::exception(
+            "AutoPas::generateTuningStrategy: Thread tuning is not supported by ActiveHarmony!");
       }
       // If a AH-server is provided, but MPI is disallowed, we have to ignore the server.
       if (std::getenv("HARMONY_HOST") != nullptr and not info.mpiDivideAndConquer) {

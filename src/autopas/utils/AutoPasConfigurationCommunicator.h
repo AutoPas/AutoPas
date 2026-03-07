@@ -70,8 +70,8 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
  * @param loadEstimatorOptions
  * @param dataLayoutOptions
  * @param newton3Options
- * @param interactionTypeOption
  * @param threadCounts
+ * @param interactionTypeOption
  * @param rank
  * @param commSize
  */

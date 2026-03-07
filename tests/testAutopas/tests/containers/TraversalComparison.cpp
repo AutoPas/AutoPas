@@ -214,13 +214,13 @@ void TraversalComparison::generateReference(mykey_t key) {
   // tests and compared against the reference, sorting is enabled.
   if (_forcesReference.count(key) == 0) {
     if (interactionType == autopas::InteractionTypeOption::pairwise) {
-      std::tie(calculatedForces, calculatedGlobals) =
-          calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
-                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, 1., autopas::Configuration::ThreadCountNoTuning, key, false);
+      std::tie(calculatedForces, calculatedGlobals) = calculateForces<globals>(
+          autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
+          autopas::Newton3Option::enabled, 1., autopas::Configuration::ThreadCountNoTuning, key, false);
     } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-      std::tie(calculatedForces, calculatedGlobals) =
-          calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c01,
-                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 1., autopas::Configuration::ThreadCountNoTuning, key, false);
+      std::tie(calculatedForces, calculatedGlobals) = calculateForces<globals>(
+          autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c01, autopas::DataLayoutOption::aos,
+          autopas::Newton3Option::disabled, 1., autopas::Configuration::ThreadCountNoTuning, key, false);
     }
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
@@ -251,12 +251,14 @@ TEST_P(TraversalComparison, traversalTest) {
   std::vector<std::array<double, 3>> calculatedForces;
   Globals calculatedGlobals;
   if (globals) {
-    std::tie(calculatedForces, calculatedGlobals) = calculateForces<true>(
-        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, autopas::Configuration::ThreadCountNoTuning, key, true);
+    std::tie(calculatedForces, calculatedGlobals) =
+        calculateForces<true>(containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor,
+                              autopas::Configuration::ThreadCountNoTuning, key, true);
     generateReference<true>(key);
   } else {
-    std::tie(calculatedForces, calculatedGlobals) = calculateForces<false>(
-        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, autopas::Configuration::ThreadCountNoTuning, key, true);
+    std::tie(calculatedForces, calculatedGlobals) =
+        calculateForces<false>(containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor,
+                               autopas::Configuration::ThreadCountNoTuning, key, true);
     generateReference<false>(key);
   }
 

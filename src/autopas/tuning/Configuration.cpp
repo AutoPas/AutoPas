@@ -99,7 +99,8 @@ std::ostream &autopas::operator<<(std::ostream &os, const autopas::Configuration
 
 bool autopas::Configuration::equalsDiscreteOptions(const autopas::Configuration &rhs) const {
   return container == rhs.container and traversal == rhs.traversal and loadEstimator == rhs.loadEstimator and
-         dataLayout == rhs.dataLayout and newton3 == rhs.newton3 and interactionType == rhs.interactionType and threadCount == rhs.threadCount;
+         dataLayout == rhs.dataLayout and newton3 == rhs.newton3 and interactionType == rhs.interactionType and
+         threadCount == rhs.threadCount;
 }
 
 bool autopas::Configuration::equalsContinuousOptions(const autopas::Configuration &rhs, double epsilon) const {
