@@ -194,20 +194,13 @@ class CellFunctor {
   void processCellSoANoN3(ParticleCell_T &cell);
 
   /**
-   * Calculates the interactions of two particles in different cells.
+   * Calculates the interactions of two particles.
    * @tparam newton3 determines if the newton3 optimization is used. The version of this function actually run must
    * match _useNewton3.
    * @param p1 particle in cell1
    * @param p2 particle in cell2
    */
   template <bool newton3>
-  void interactParticlesForCellPair(auto &p1, auto &p2);
-
-  /**
-   * Calculates the interatctions of two particles in the same cell.
-   * @param p1
-   * @param p2
-   */
   void interactParticles(auto &p1, auto &p2);
 
   /**
@@ -406,21 +399,6 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::interactParticles(auto &p1, auto &p2) {
-  // helper function
-  if (_useNewton3) {
-    _functor->AoSFunctor(p1, p2, true);
-  } else {
-    if (not p1.isHalo()) {
-      _functor->AoSFunctor(p1, p2, false);
-    }
-    if (not p2.isHalo()) {
-      _functor->AoSFunctor(p2, p1, false);
-    }
-  }
-}
-
-template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellAoSSorted(
     SortedCellView<ParticleCell_T> &cellSorted) {
   for (auto cellIter1 = cellSorted._particles.begin(); cellIter1 != cellSorted._particles.end(); ++cellIter1) {
@@ -431,7 +409,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
       if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
         break;
       }
-      interactParticles(*p1Ptr, *p2Ptr);
+      interactParticles<true>(*p1Ptr, *p2Ptr);
     }
   }
 }
@@ -446,7 +424,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
       auto p2Ptr = p1Ptr;
       ++p2Ptr;
       for (; p2Ptr != cell.end(); ++p2Ptr) {
-        interactParticles(*p1Ptr, *p2Ptr);
+        interactParticles<true>(*p1Ptr, *p2Ptr);
       }
     }
   }
@@ -469,7 +447,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
   } else {
     for (auto &p1 : cell1) {
       for (auto &p2 : cell2) {
-        interactParticlesForCellPair<newton3>(p1, p2);
+        interactParticles<newton3>(p1, p2);
       }
     }
   }
@@ -497,7 +475,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
         if (std::abs(p1Proj - p2Proj) > _sortingCutoff) {
           break;
         }
-        interactParticlesForCellPair<newton3>(*p1Ptr, *p2Ptr);
+        interactParticles<newton3>(*p1Ptr, *p2Ptr);
       }
     }
   }
@@ -505,14 +483,20 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 template <bool newton3>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::interactParticlesForCellPair(auto &p1, auto &p2) {
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::interactParticles(auto &p1, auto &p2) {
   if constexpr (newton3) {
     _functor->AoSFunctor(p1, p2, true);
   } else {
     // helper function
-    _functor->AoSFunctor(p1, p2, false);
+    if (not p1.isHalo()) {
+      _functor->AoSFunctor(p1, p2, false);
+    }
+    //_functor->AoSFunctor(p1, p2, false);
     if constexpr (bidirectional) {
-      _functor->AoSFunctor(p2, p1, false);
+      if (not p2.isHalo()) {
+        _functor->AoSFunctor(p2, p1, false);
+      }
+      //_functor->AoSFunctor(p2, p1, false);
     }
   }
 }
@@ -526,7 +510,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
       if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
         break;
       }
-      interactParticlesForCellPair<newton3>(*p1Ptr, *p2Ptr);
+      interactParticles<newton3>(*p1Ptr, *p2Ptr);
     }
   }
 }
