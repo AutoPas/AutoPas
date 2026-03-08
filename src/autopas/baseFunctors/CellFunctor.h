@@ -411,9 +411,9 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
         break;
       }
       if (_useNewton3) {
-        interactParticlesForCellPair<true,true>(*p1Ptr, *p2Ptr);
-      }else {
-        interactParticlesForCellPair<false,true>(*p1Ptr, *p2Ptr);
+        interactParticlesForCellPair<true, true>(*p1Ptr, *p2Ptr);
+      } else {
+        interactParticlesForCellPair<false, true>(*p1Ptr, *p2Ptr);
       }
     }
   }
@@ -430,9 +430,9 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
       ++p2Ptr;
       for (; p2Ptr != cell.end(); ++p2Ptr) {
         if (_useNewton3) {
-          interactParticlesForCellPair<true,true>(*p1Ptr, *p2Ptr);
-        }else {
-          interactParticlesForCellPair<false,true>(*p1Ptr, *p2Ptr);
+          interactParticlesForCellPair<true, true>(*p1Ptr, *p2Ptr);
+        } else {
+          interactParticlesForCellPair<false, true>(*p1Ptr, *p2Ptr);
         }
       }
     }
@@ -456,7 +456,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
   } else {
     for (auto &p1 : cell1) {
       for (auto &p2 : cell2) {
-        interactParticlesForCellPair<newton3,false>(p1, p2);
+        interactParticlesForCellPair<newton3, false>(p1, p2);
       }
     }
   }
@@ -484,7 +484,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
         if (std::abs(p1Proj - p2Proj) > _sortingCutoff) {
           break;
         }
-        interactParticlesForCellPair<newton3,false>(*p1Ptr, *p2Ptr);
+        interactParticlesForCellPair<newton3, false>(*p1Ptr, *p2Ptr);
       }
     }
   }
@@ -503,8 +503,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::interactPart
       if (not p2.isHalo()) {
         _functor->AoSFunctor(p2, p1, false);
       }
-    }
-    else {
+    } else {
       _functor->AoSFunctor(p1, p2, false);
       if constexpr (bidirectional) {
         _functor->AoSFunctor(p2, p1, false);
@@ -522,7 +521,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
       if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
         break;
       }
-      interactParticlesForCellPair<newton3,false>(*p1Ptr, *p2Ptr);
+      interactParticlesForCellPair<newton3, false>(*p1Ptr, *p2Ptr);
     }
   }
 }
