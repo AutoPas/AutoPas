@@ -194,15 +194,15 @@ class CellFunctor {
   void processCellSoANoN3(ParticleCell_T &cell);
 
   /**
-   * Calculates the interactions of two particles in different cells.
+   * Calculates the interactions of two particles.
    * @tparam newton3 determines if the newton3 optimization is used. The version of this function actually run must
    * match _useNewton3.
-   * @tparam oneCell determines if the interactions happen within one cell
+   * @tparam oneCell determines if the particles interact within one cell
    * @param p1 particle in cell1
    * @param p2 particle in cell2
    */
   template <bool newton3, bool oneCell>
-  void interactParticlesForCellPair(auto &p1, auto &p2);
+  void interactParticles(auto &p1, auto &p2);
 
   /**
    * Utilizes the threeToOneD mapping to calculate the directionIndex relative to the center of a 3x3 cube of cells.
@@ -411,9 +411,9 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
         break;
       }
       if (_useNewton3) {
-        interactParticlesForCellPair<true, true>(*p1Ptr, *p2Ptr);
+        interactParticles<true, true>(*p1Ptr, *p2Ptr);
       } else {
-        interactParticlesForCellPair<false, true>(*p1Ptr, *p2Ptr);
+        interactParticles<false, true>(*p1Ptr, *p2Ptr);
       }
     }
   }
@@ -430,9 +430,9 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
       ++p2Ptr;
       for (; p2Ptr != cell.end(); ++p2Ptr) {
         if (_useNewton3) {
-          interactParticlesForCellPair<true, true>(*p1Ptr, *p2Ptr);
+          interactParticles<true, true>(*p1Ptr, *p2Ptr);
         } else {
-          interactParticlesForCellPair<false, true>(*p1Ptr, *p2Ptr);
+          interactParticles<false, true>(*p1Ptr, *p2Ptr);
         }
       }
     }
@@ -456,7 +456,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
   } else {
     for (auto &p1 : cell1) {
       for (auto &p2 : cell2) {
-        interactParticlesForCellPair<newton3, false>(p1, p2);
+        interactParticles<newton3, false>(p1, p2);
       }
     }
   }
@@ -484,7 +484,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
         if (std::abs(p1Proj - p2Proj) > _sortingCutoff) {
           break;
         }
-        interactParticlesForCellPair<newton3, false>(*p1Ptr, *p2Ptr);
+        interactParticles<newton3, false>(*p1Ptr, *p2Ptr);
       }
     }
   }
@@ -492,7 +492,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 template <bool newton3, bool oneCell>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::interactParticlesForCellPair(auto &p1, auto &p2) {
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::interactParticles(auto &p1, auto &p2) {
   if constexpr (newton3) {
     _functor->AoSFunctor(p1, p2, true);
   } else {
@@ -521,7 +521,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
       if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
         break;
       }
-      interactParticlesForCellPair<newton3, false>(*p1Ptr, *p2Ptr);
+      interactParticles<newton3, false>(*p1Ptr, *p2Ptr);
     }
   }
 }
