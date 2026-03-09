@@ -8,7 +8,7 @@
 
 #include "utils/Timer.h"
 
-autopas::TuningResultLogger::TuningResultLogger(const std::string &outputSuffix)
+autopas::TuningResultLogger::TuningResultLogger(const std::string &outputSuffix, TuningMetricOption tuningMetric)
     : _loggerName("TuningResultLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_TUNINGRESULTS
   const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
@@ -21,7 +21,11 @@ autopas::TuningResultLogger::TuningResultLogger(const std::string &outputSuffix)
   // set the pattern to the message only
   logger->set_pattern("%v");
   // print csv header
-  logger->info("Date,Iteration,{},tuning[ns],optimumPerformance[ns]", Configuration().getCSVHeader());
+  if (tuningMetric == TuningMetricOption::time) {
+    logger->info("Date,Iteration,{},tuning[ns],optimumPerformance[ns]", Configuration().getCSVHeader());
+  } else {
+    logger->info("Date,Iteration,{},tuning[nJ],optimumPerformance[nJ]", Configuration().getCSVHeader());
+  }
   // set pattern to provide date
   logger->set_pattern("%Y-%m-%d %T,%v");
 #endif

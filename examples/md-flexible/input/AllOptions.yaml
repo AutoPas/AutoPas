@@ -20,6 +20,7 @@ tuning-metric                        :  time # alternatively: energy
 tuning-strategies                    :  [slow-config-filter, rule-based-tuning, predictive-tuning]
 tuning-interval                      :  5000
 tuning-samples                       :  3
+output-suffix                        :  usefulNameForLogFiles
 use-LOESS-smoothening                :  false
 tuning-max-evidence                  :  10
 energy-sensor                        :  rapl  # alternatively: likwid
