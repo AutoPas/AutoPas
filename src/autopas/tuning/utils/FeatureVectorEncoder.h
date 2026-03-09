@@ -66,6 +66,7 @@ class FeatureVectorEncoder {
    * @param newton3Options
    * @param cellSizeFactors
    * @param interactionType
+   * @param threadCounts
    */
   FeatureVectorEncoder(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
