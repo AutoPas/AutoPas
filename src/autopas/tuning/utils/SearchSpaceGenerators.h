@@ -70,6 +70,7 @@ struct OptionSpace {
  * @param allowedNewton3Options
  * @param allowedCellSizeFactors
  * @param interactionType
+ * @param allowedThreadCounts
  * @return A set containing all valid configurations.
  */
 std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowedContainerOptions,

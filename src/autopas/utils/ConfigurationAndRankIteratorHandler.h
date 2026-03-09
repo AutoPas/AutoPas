@@ -155,6 +155,10 @@ class ConfigurationAndRankIteratorHandler {
    */
   [[nodiscard]] inline std::set<Newton3Option>::iterator getNewton3Iterator() const { return _newton3It; }
 
+  /**
+   * Getter for the ThreadCountIterator.
+   * @return
+   */
   [[nodiscard]] inline std::set<int>::iterator getThreadCountIterator() const { return _threadCountIt; }
 
  private:
