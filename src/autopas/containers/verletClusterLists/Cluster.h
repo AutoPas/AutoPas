@@ -132,7 +132,7 @@ class Cluster {
   }
 
   /**
-   * Get the bounding box of this cluster
+   * Get the bounding box of this cluster from pre-computed values.
    * @return tuple<lowerCorner, upperCorner>
    */
   [[nodiscard]] std::tuple<std::array<double, 3>, std::array<double, 3>> getBoundingBox() const {

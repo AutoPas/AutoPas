@@ -16,6 +16,8 @@ namespace autopas {
 /**
  * A traversal for VerletClusterLists that uses a coloring over the grids of the container.
  *
+ * The code is based on VCLC06Traversal.h code.
+ *
  * The traversal uses a 3D coloring with a stride of x=2, y=2, z=1 so 2*2*1=4 colors.
  *
  * When disabling newton 3, interactions inside a cluster are still calculated using newton 3.
@@ -31,11 +33,11 @@ class VCLC04Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
 
   /**
    * Each base step looks like this:
-   *     C N  Colors:  1 2
-   *     N N           3 4
-   * Where C is the current cell, N are the neighbor cells that is worked on, and X is not worked on. The neighbor list
+   *     N N  Colors:  1 2
+   *     C N           3 4
+   * Where C is the current cell, N are the neighbor cells that is worked on. The neighbor list
    * with newton 3 of the VerletClusterLists container is build in a way that the neighbor lists already contain only
-   * the neighbor clusters of these cells.s
+   * the neighbor clusters of these cells
    */
   static constexpr std::array<unsigned long, 3> _stride{2ul, 2ul, 1ul};
 
@@ -127,7 +129,6 @@ void VCLC04Traversal<ParticleCell, PairwiseFunctor>::processColorCell(unsigned l
       const auto y = yColorCell * towersPerColoringCell + yInner;
       const auto x = xColorCell * towersPerColoringCell + xInner;
 
-      // Not every coloring cell has to have gridsPerColoringCell grids in every direction.
       if (x >= towersPerDim[0] || y >= towersPerDim[1]) {
         continue;
       }

@@ -432,12 +432,16 @@ class VerletClusterListsRebuilder {
           if (isHaloCluster(clusterIterA, towerA) && bIsHalo[i]) continue;
 
           if (!bValid[i]) continue;
+
+          // Condition for early stopping
+          if (bMinZ[i] > aMax[2] + interactionLength) {
+            break;
+          }
+          // autovectorization feature
           dx = std::max(0.0, aMin[0] - bMaxX[i]) + std::max(0.0, bMinX[i] - aMax[0]);
           dy = std::max(0.0, aMin[1] - bMaxY[i]) + std::max(0.0, bMinY[i] - aMax[1]);
           dz = std::max(0.0, aMin[2] - bMaxZ[i]) + std::max(0.0, bMinZ[i] - aMax[2]);
-          //  if (bmin[2] > aMax[2] + interactionLength) {
-          //   break;
-          //  }
+
           const auto boxDistSquared = dx * dx + dy * dy + dz * dz;
           if (boxDistSquared <= _interactionLengthSqr) {
             clusterIterA->addNeighbor(clustersB[i]);
