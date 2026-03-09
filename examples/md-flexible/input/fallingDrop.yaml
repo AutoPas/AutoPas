@@ -55,9 +55,9 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  fallingDropC06test
-vtk-write-frequency              :  1000
-vtk-output-folder                :  vtkOutputFoldertest
+#vtk-filename                     :  fallingDropC06
+#vtk-write-frequency              :  1000
+#vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  debug
 no-end-config                        :  false

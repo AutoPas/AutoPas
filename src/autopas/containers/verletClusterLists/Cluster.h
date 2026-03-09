@@ -126,29 +126,43 @@ class Cluster {
    *
    * @param firstParticle
    */
-  void reset(Particle_T *firstParticle) { _firstParticle = firstParticle; }
+  void reset(Particle_T *firstParticle) {
+    _firstParticle = firstParticle;
+    recomputeBoundingBox();
+  }
 
   /**
    * Get the bounding box of this cluster
    * @return tuple<lowerCorner, upperCorner>
    */
   [[nodiscard]] std::tuple<std::array<double, 3>, std::array<double, 3>> getBoundingBox() const {
+    return {_bboxMin, _bboxMax};
+  }
+
+ private:
+  /**
+   * Recompute the Clusters Bounding Box
+   */
+
+  void recomputeBoundingBox() {
+    assert(_firstParticle != nullptr);
+    assert(_clusterSize > 0);
     auto lowerCorner = _firstParticle->getR();
     auto upperCorner = _firstParticle[_clusterSize - 1].getR();
 
     for (size_t i = 0; i < _clusterSize; ++i) {
       const auto &pos = _firstParticle[i].getR();
-      // no need to check z direction, this is already correct by initialization thanks to the particles being sorted in
-      // z dimension.
+      // z is already sorted
       for (size_t dim = 0; dim < 2; ++dim) {
         lowerCorner[dim] = std::min(lowerCorner[dim], pos[dim]);
         upperCorner[dim] = std::max(upperCorner[dim], pos[dim]);
       }
     }
-    return {lowerCorner, upperCorner};
+
+    _bboxMin = lowerCorner;
+    _bboxMax = upperCorner;
   }
 
- private:
   /**
    * The number of particles in a full cluster.
    */
@@ -166,6 +180,10 @@ class Cluster {
    * The list of neighbor clusters of this cluster.
    */
   std::vector<Cluster *> *_neighborClusters = nullptr;
+  /**
+   * The maximum and minimum coordinates of bounding box of this cluster.
+   */
+  std::array<double, 3> _bboxMin, _bboxMax;
 };
 
 }  // namespace autopas::internal
