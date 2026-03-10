@@ -10,6 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/verletClusterLists/traversals/VCLC04Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utils/WrapOpenMP.h"
