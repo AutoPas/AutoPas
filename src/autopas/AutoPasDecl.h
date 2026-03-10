@@ -807,6 +807,60 @@ class AutoPas {
   }
 
   /**
+   * Get the learning rate for reinforcement learning tuning.
+   * @return The learning rate.
+   */
+  [[nodiscard]] double getLearningRate() const { return _tuningStrategyFactoryInfo.learningRate; }
+
+  /**
+   * Set the learning rate for reinforcement learning tuning.
+   * @param learningRate The learning rate.
+   */
+  void setLearningRate(double learningRate) { _tuningStrategyFactoryInfo.learningRate = learningRate; }
+
+  /**
+   * Get the discount factor for reinforcement learning tuning.
+   * @return The discount factor.
+   */
+  [[nodiscard]] double getDiscountFactor() const { return _tuningStrategyFactoryInfo.discountFactor; }
+
+  /**
+   * Set the discount factor for reinforcement learning tuning.
+   * @param discountFactor The discount factor.
+   */
+  void setDiscountFactor(double discountFactor) { _tuningStrategyFactoryInfo.discountFactor = discountFactor; }
+
+  /**
+   * Get the number of exploration samples for deep reinforcement learning.
+   * @return The number of exploration samples.
+   */
+  [[nodiscard]] unsigned int getNumExplorationSamples() const {
+    return _tuningStrategyFactoryInfo.numExplorationSamples;
+  }
+
+  /**
+   * Set the number of exploration samples for deep reinforcement learning.
+   * @param numExplorationSamples The number of exploration samples.
+   */
+  void setNumExplorationSamples(unsigned int numExplorationSamples) {
+    _tuningStrategyFactoryInfo.numExplorationSamples = numExplorationSamples;
+  }
+
+  /**
+   * Get if reinforcement training updates are being used for deep reinforcement learning.
+   * @return If reinforcement training updates are enabled.
+   */
+  [[nodiscard]] bool getDoReinforcementUpdates() const { return _tuningStrategyFactoryInfo.doReinforcementUpdates; }
+
+  /**
+   * Set if reinforcement training updates are being used for deep reinforcement learning.
+   * @param doReinforcementUpdates If reinforcement training updates are enabled.
+   */
+  void setDoReinforcementUpdates(bool doReinforcementUpdates) {
+    _tuningStrategyFactoryInfo.doReinforcementUpdates = doReinforcementUpdates;
+  }
+
+  /**
    * Get extrapolation method for the prediction of the configuration performance.
    * @return
    */
