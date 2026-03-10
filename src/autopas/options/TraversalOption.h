@@ -102,6 +102,10 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vcl_c06,
     /**
+     * VCLC04Traversal : Four-way coloring of the 2D ClusterTower grid in the c08 base step style.
+     */
+    vcl_c04,
+    /**
      * VCLClusterIterationTraversal : Dynamically schedule ClusterTower to threads.
      * Does not support Newton3.
      */
@@ -301,6 +305,7 @@ class TraversalOption : public Option<TraversalOption> {
         // VerletClusterLists Traversals:
         {TraversalOption::vcl_cluster_iteration, "vcl_cluster_iteration"},
         {TraversalOption::vcl_c06, "vcl_c06"},
+        {TraversalOption::vcl_c04, "vcl_c04"},
         {TraversalOption::vcl_c01_balanced, "vcl_c01_balanced"},
         {TraversalOption::vcl_sliced, "vcl_sliced"},
         {TraversalOption::vcl_sliced_c02, "vcl_sliced_c02"},
