@@ -18,6 +18,7 @@
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
+#include "autopas/tuning/Configuration.h"
 
 enum DeletionPosition {
   // We have chosen the values explicitly, s.t., this enum can be used using bit manipulation, i.e., beforeAndAfterLists
@@ -29,10 +30,8 @@ enum DeletionPosition {
 };
 
 using TestingTuple =
-    std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption, autopas::Newton3Option,
-               size_t /*numParticles*/, size_t /*numHaloParticles*/, std::array<double, 3> /*boxMaxVec*/,
-               double /*cellSizeFactor*/, bool /*doSlightShift*/, DeletionPosition /*particleDeletionPosition*/,
-               bool /*globals*/, autopas::InteractionTypeOption>;
+    std::tuple<autopas::Configuration, size_t /*numParticles*/, size_t /*numHaloParticles*/, std::array<double, 3> /*boxMaxVec*/,
+               bool /*doSlightShift*/, DeletionPosition /*particleDeletionPosition*/, bool /*globals*/, autopas::InteractionTypeOption>;
 
 /**
  * The tests in this class compare the calculated forces from all aos and soa traversals with a reference result.
@@ -83,15 +82,11 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
 
   template <bool globals>
   static std::tuple<std::vector<std::array<double, 3>>, Globals> calculateForces(
-      autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
-      autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
-      mykey_t key, bool useSorting);
+      autopas::Configuration config, mykey_t key, bool useSorting);
 
   template <typename Functor, bool globals>
   static std::tuple<std::vector<std::array<double, 3>>, Globals> calculateForcesImpl(
-      Functor functor, autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
-      autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
-      mykey_t key, bool useSorting);
+      Functor functor, autopas::Configuration config, mykey_t key, bool useSorting);
 
   static constexpr std::array<double, 3> _boxMin{0, 0, 0};
   static constexpr double _cutoff{1.};
