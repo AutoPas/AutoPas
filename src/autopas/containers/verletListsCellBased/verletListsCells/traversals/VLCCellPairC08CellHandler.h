@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
+#include "autopas/containers/cellTraversals/C08CellHandlerUtility.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/options/DataLayoutOption.h"
 
@@ -27,8 +27,8 @@ class VLCCellPairC08CellHandler {
    */
   VLCCellPairC08CellHandler(const std::array<unsigned long, 3> &dims, double interactionLength,
                             const std::array<double, 3> &cellLength)
-      : _cellPairOffsets{LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<
-            LCC08CellHandlerUtility::C08OffsetMode::c08CellPairs>(dims, cellLength, interactionLength)},
+      : _cellPairOffsets{C08CellHandlerUtility::computePairwiseCellOffsetsC08<
+            C08CellHandlerUtility::C08OffsetMode::c08CellPairs>(dims, cellLength, interactionLength)},
         _dims{dims} {}
 
   /**
@@ -125,7 +125,7 @@ class VLCCellPairC08CellHandler {
   /**
    * Member containng the cell pair offsets for processCellListsC08
    */
-  std::vector<LCC08CellHandlerUtility::OffsetPair> _cellPairOffsets;
+  std::vector<C08CellHandlerUtility::OffsetPair> _cellPairOffsets;
 
   std::array<unsigned long, 3> _dims;
 };

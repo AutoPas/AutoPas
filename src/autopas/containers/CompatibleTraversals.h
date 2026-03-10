@@ -136,6 +136,15 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
+ * Lists all traversal options applicable for the PseudoVerletLists container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allPsVLCompatibleTraversals() {
+  static const auto s = filterAllOptions("psvl_", InteractionTypeOption::pairwise);
+  return s;
+}
+
+/**
  * Provides a set of all traversals that only support Newton3 mode disabled.
  * @return
  */
@@ -147,7 +156,8 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
           TraversalOption::vcl_cluster_iteration,
           TraversalOption::vl_list_iteration,
           TraversalOption::vlc_c01,
-          TraversalOption::vlp_c01};
+          TraversalOption::vlp_c01,
+          TraversalOption::psvl_c01};
 };
 /**
  * Provides a set of all traversals that only support Newton3 mode enabled.
@@ -162,7 +172,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  * Provides a set of all traversals that only support DataLayout AoS.
  * @return
  */
-[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() { return {}; };
+[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
+  return {TraversalOption::psvl_c01, TraversalOption::psvl_c08, TraversalOption::psvl_c18};
+};
 /**
  * Provides a set of all traversals that only support DataLayout SoA.
  * @return
@@ -212,6 +224,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
         case ContainerOption::octree: {
           return allOTCompatibleTraversals();
+        }
+        case ContainerOption::pseudoVerletLists: {
+          return allPsVLCompatibleTraversals();
         }
       }
     }

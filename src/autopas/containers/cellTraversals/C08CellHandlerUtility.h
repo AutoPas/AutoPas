@@ -1,5 +1,5 @@
 /**
- * @file LCC08CellHandlerUtility.h
+ * @file C08CellHandlerUtility.h
  * @author J. Schuhmacher
  * @date 11.07.2024
  */
@@ -18,7 +18,7 @@
 #include "autopas/utils/Math.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
-namespace autopas::LCC08CellHandlerUtility {
+namespace autopas::C08CellHandlerUtility {
 
 /**
  * Type Alias for the C08 base step containg cell offsets. An offset is the distance from a base cell to another cell
@@ -46,10 +46,10 @@ using OffsetPair = std::pair<unsigned long, unsigned long>;
 using OffsetPairVector = std::vector<OffsetPair>;
 
 /**
- * Compile Time Modes for the function autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08
+ * Compile Time Modes for the function autopas::C08CellHandlerUtility::computePairwiseCellOffsetsC08
  *
  * @note In case of a new mode, this also requires the explciit instantation of the new template
- * in LCC08CellHandlerUtility.cpp and a modificaqtion to {@link OffsetPairType}
+ * in C08CellHandlerUtility.cpp and a modificaqtion to {@ref autopas::C08CellHandlerUtility::OffsetPair}
  */
 enum class C08OffsetMode {
   /** Returns the C08 base step cell pairs without sorting */
@@ -86,7 +86,7 @@ enum class C08CellDirection : int {
 };
 
 /**
- * Array containing all four enum values of {@link C08CellDirection}.
+ * Array containing all four enum values of {@ref autopas::C08CellHandlerUtility::C08OffsetMode}.
  */
 constexpr inline std::array<C08CellDirection, 4> ALL_DIRECTIONS{
     {C08CellDirection::frontLeft, C08CellDirection::backLeft, C08CellDirection::frontRight,
@@ -100,7 +100,7 @@ constexpr inline char ENUM_EXTENSION_EXCEPTION[]{
     "Enum C08CellDirection was extended, but its assciated switch-case statements was not!"};
 
 /**
- * Helper function for autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08.
+ * Helper function for autopas::C08CellHandlerUtility::computePairwiseCellOffsetsC08.
  * This function basically translates a direction, like backLeft to the corresponding vector pointing
  * towards this cell relativly starting from the base cell. We treat frontLeft as base cell
  * So, e.g. frontLeft --> (0, 0) since we are good
@@ -144,7 +144,8 @@ std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offse
 /**
  * Computes the cell pair offsets for the C08 base step and the normalized vector between pair of cell-centers,
  * which is later used for early stopping the evaluation of the pairwise cell interactions due to being out-of-reach.
- * @tparam Mode Determines the concret return type (see {@link C08OffsetMode}
+ * @tparam Mode Determines the concret return type (see {@ref
+ * autopas::C08CellHandlerUtility::internal::C08CellDirection}
  * @param cellsPerDimension the number of cells per dimension
  * @param cellLength the length of a cell in CellBlock3D.
  * @param interactionLength the interaction length consisting of cutoff + skin
@@ -157,4 +158,4 @@ template <C08OffsetMode Mode>
 OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
                                                    const std::array<double, 3> &cellLength, double interactionLength);
 
-}  // namespace autopas::LCC08CellHandlerUtility
+}  // namespace autopas::C08CellHandlerUtility

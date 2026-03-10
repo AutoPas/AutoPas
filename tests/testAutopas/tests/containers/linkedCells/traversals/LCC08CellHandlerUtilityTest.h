@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "AutoPasTestBase.h"
-#include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
+#include "autopas/containers/cellTraversals/C08CellHandlerUtility.h"
 
 /**
  * Test cases checking the C08 cell offset generation and interaction-cell pair generation
@@ -54,10 +54,10 @@ class LCC08CellHandlerUtilityTest : public AutoPasTestBase {
    * @param offsetPairs the vector of offsets pairs/ triplets
    * @return vector of offset-differences
    */
-  template <autopas::LCC08CellHandlerUtility::C08OffsetMode Mode>
+  template <autopas::C08CellHandlerUtility::C08OffsetMode Mode>
   static std::vector<unsigned long> transformAndSortOffsetPairs(
-      const autopas::LCC08CellHandlerUtility::OffsetPairType<Mode> &offsetPairs) {
-    static_assert(Mode != autopas::LCC08CellHandlerUtility::C08OffsetMode::c04CellPairs,
+      const autopas::C08CellHandlerUtility::OffsetPairType<Mode> &offsetPairs) {
+    static_assert(Mode != autopas::C08CellHandlerUtility::C08OffsetMode::c04CellPairs,
                   "A two dimensional vector is not supported!");
     std::vector<unsigned long> pairOffsetsDiffercnes;
     pairOffsetsDiffercnes.reserve(offsetPairs.size());
