@@ -54,6 +54,10 @@ struct OptionSpace {
    * Available discrete cellSizeFactors options.
    */
   std::set<double> cellSizeFactors;
+  /**
+   * Available OpenMP thread counts.
+   */
+  std::set<int> threadCounts;
 };
 
 /**
@@ -66,6 +70,7 @@ struct OptionSpace {
  * @param allowedNewton3Options
  * @param allowedCellSizeFactors
  * @param interactionType
+ * @param allowedThreadCounts
  * @return A set containing all valid configurations.
  */
 std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowedContainerOptions,
@@ -74,7 +79,8 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
-                                         const InteractionTypeOption &interactionType);
+                                         const InteractionTypeOption &interactionType,
+                                         const NumberSetFinite<int> *allowedThreadCounts);
 
 /**
  * Crudely trying to reconstruct the dimensions of the search space from a given set of options.

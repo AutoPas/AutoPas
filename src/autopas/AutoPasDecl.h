@@ -28,6 +28,7 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -1026,6 +1027,35 @@ class AutoPas {
   }
 
   /**
+   * Setter for the thread counts
+   * @param allowedThreadCounts
+   */
+  void setAllowedThreadCounts(const NumberSet<int> &allowedThreadCounts) {
+    if (!allowedThreadCounts.isFinite()) {
+      utils::ExceptionHandler::exception("Error: thread count options must be finite!", allowedThreadCounts.getMin());
+    }
+    if (allowedThreadCounts.getMin() == Configuration::ThreadCountNoTuning and allowedThreadCounts.size() != 1) {
+      utils::ExceptionHandler::exception(
+          "Error: when thread counts contain {} (no thread tuning), no other values may be provided!",
+          Configuration::ThreadCountNoTuning);
+    }
+    if (allowedThreadCounts.getMin() < 0) {
+      utils::ExceptionHandler::exception("Error: minimum thread count must be positive {} < 0!",
+                                         allowedThreadCounts.getMin());
+    }
+    const int maxThreadCount = autopas_get_max_threads();
+    if (allowedThreadCounts.getMax() > maxThreadCount) {
+      AutoPasLog(WARN, "Warning: thread count options exceeding {} will be discarded!", maxThreadCount);
+    }
+    std::set<int> values = allowedThreadCounts.getAll();
+    values.erase(values.upper_bound(maxThreadCount), values.end());
+    if (values.size() == 0) {
+      utils::ExceptionHandler::exception("Error: no thread count option remaining!");
+    }
+    _allowedThreadCounts->resetValues(values);
+  }
+
+  /**
    * Setter for the maximal Difference for the bucket distribution.
    * @param MPITuningMaxDifferenceForBucket
    */
@@ -1183,6 +1213,11 @@ class AutoPas {
    * VLCSlicedBalancedTraversal).
    */
   std::set<LoadEstimatorOption> _allowedLoadEstimators{LoadEstimatorOption::getAllOptions()};
+  /**
+   * Thread counts to be used by OpenMP
+   */
+  std::unique_ptr<NumberSet<int>> _allowedThreadCounts{
+      std::make_unique<NumberSetFinite<int>>(std::set<int>({Configuration::ThreadCountNoTuning}))};
   /**
    * LogicHandler of autopas.
    */

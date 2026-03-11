@@ -92,7 +92,7 @@ template <bool globals>
 std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> TraversalComparison::calculateForces(
     autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
-    mykey_t key, bool useSorting) {
+    int threadCount, mykey_t key, bool useSorting) {
   auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, _ /*globals*/,
         interactionType] = key;
   std::vector<std::array<double, 3>> calculatedForces;
@@ -103,15 +103,17 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
                      globals /*calculateGlobals*/>
         functor{_cutoff};
     functor.setParticleProperties(_eps * 24, _sig * _sig);
-    std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
-        functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
+    std::tie(calculatedForces, calculatedGlobals) =
+        calculateForcesImpl<decltype(functor), globals>(functor, containerOption, traversalOption, dataLayoutOption,
+                                                        newton3Option, cellSizeFactor, threadCount, key, useSorting);
   } else if (interactionType == autopas::InteractionTypeOption::triwise) {
     mdLib::AxilrodTellerMutoFunctor<Molecule, false /*useMixing*/, autopas::FunctorN3Modes::Both,
                                     globals /*calculateGlobals*/>
         functor{_cutoff};
     functor.setParticleProperties(_nu);
-    std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
-        functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
+    std::tie(calculatedForces, calculatedGlobals) =
+        calculateForcesImpl<decltype(functor), globals>(functor, containerOption, traversalOption, dataLayoutOption,
+                                                        newton3Option, cellSizeFactor, threadCount, key, useSorting);
   }
 
   return {calculatedForces, calculatedGlobals};
@@ -135,7 +137,7 @@ template <typename Functor, bool globals>
 std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> TraversalComparison::calculateForcesImpl(
     Functor functor, autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
-    mykey_t key, bool useSorting) {
+    int threadCount, mykey_t key, bool useSorting) {
   auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, _ /*globals*/,
         interactionType] = key;
 
@@ -212,13 +214,13 @@ void TraversalComparison::generateReference(mykey_t key) {
   // tests and compared against the reference, sorting is enabled.
   if (_forcesReference.count(key) == 0) {
     if (interactionType == autopas::InteractionTypeOption::pairwise) {
-      std::tie(calculatedForces, calculatedGlobals) =
-          calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
-                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, 1., key, false);
+      std::tie(calculatedForces, calculatedGlobals) = calculateForces<globals>(
+          autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
+          autopas::Newton3Option::enabled, 1., autopas::Configuration::ThreadCountNoTuning, key, false);
     } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-      std::tie(calculatedForces, calculatedGlobals) =
-          calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c01,
-                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 1., key, false);
+      std::tie(calculatedForces, calculatedGlobals) = calculateForces<globals>(
+          autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c01, autopas::DataLayoutOption::aos,
+          autopas::Newton3Option::disabled, 1., autopas::Configuration::ThreadCountNoTuning, key, false);
     }
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
@@ -249,12 +251,14 @@ TEST_P(TraversalComparison, traversalTest) {
   std::vector<std::array<double, 3>> calculatedForces;
   Globals calculatedGlobals;
   if (globals) {
-    std::tie(calculatedForces, calculatedGlobals) = calculateForces<true>(
-        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, true);
+    std::tie(calculatedForces, calculatedGlobals) =
+        calculateForces<true>(containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor,
+                              autopas::Configuration::ThreadCountNoTuning, key, true);
     generateReference<true>(key);
   } else {
-    std::tie(calculatedForces, calculatedGlobals) = calculateForces<false>(
-        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, true);
+    std::tie(calculatedForces, calculatedGlobals) =
+        calculateForces<false>(containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor,
+                               autopas::Configuration::ThreadCountNoTuning, key, true);
     generateReference<false>(key);
   }
 

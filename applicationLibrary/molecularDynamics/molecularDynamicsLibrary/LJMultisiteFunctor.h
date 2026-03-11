@@ -475,7 +475,8 @@ class LJMultisiteFunctor
         SoAFloatPrecision torqueSumY = 0.;
         SoAFloatPrecision torqueSumZ = 0.;
 
-#pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#pragma omp simd reduction(+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, \
+                               potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
           const size_t globalSiteBIndex = siteB + siteIndexMolB;
 
@@ -1016,7 +1017,8 @@ class LJMultisiteFunctor
         const auto exactSitePositionAy = rotatedSitePositionAy + yAptr[molA];
         const auto exactSitePositionAz = rotatedSitePositionAz + zAptr[molA];
 
-#pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#pragma omp simd reduction(+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, \
+                               potentialEnergySum, virialSumX, virialSumY, virialSumZ)
         for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
           const SoAFloatPrecision sigmaSquared = useMixing ? sigmaSquareds[siteB] : const_sigmaSquared;
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;

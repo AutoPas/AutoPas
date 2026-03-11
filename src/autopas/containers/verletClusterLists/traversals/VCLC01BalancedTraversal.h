@@ -59,10 +59,11 @@ class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalIn
     auto &clusterList = *VCLTraversalInterface<Particle_T>::_verletClusterLists;
     auto &clusterThreadPartition = clusterList.getClusterThreadPartition();
 
-    auto numThreads = clusterThreadPartition.size();
-    AUTOPAS_OPENMP(parallel num_threads(numThreads)) {
-      auto threadNum = autopas_get_thread_num();
-      const auto &clusterRange = clusterThreadPartition[threadNum];
+    const auto maxThreads = clusterThreadPartition.size();
+    const auto numThreads = std::clamp(maxThreads, 1ul, static_cast<size_t>(autopas_get_preferred_num_threads()));
+    AUTOPAS_OPENMP(parallel for num_threads(numThreads))
+    for (auto i = 0; i < maxThreads; i++) {
+      const auto &clusterRange = clusterThreadPartition[i];
       auto &towers = *VCLTraversalInterface<Particle_T>::_towers;
       size_t clusterCount = 0;
       for (size_t towerIndex = clusterRange.startTowerIndex;
