@@ -118,7 +118,7 @@ private:
       size_t rest = N - offset;
       size_t upper = std::min(rest, chunkSize);
 
-      ScratchView forceStorage (teamHandle.team_scratch(0), 3*chunkSize);
+      // ScratchView forceStorage (teamHandle.team_scratch(0), 3*chunkSize);
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, upper), [&](int i) {
 
@@ -134,11 +134,15 @@ private:
           func->SoAKernelKokkos(x1, y1, z1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
         }, fxAcc, fyAcc, fzAcc);
 
-        forceStorage(i*3) = fxAcc;
-        forceStorage(i*3+1) = fyAcc;
-        forceStorage(i*3+2) = fzAcc;
+        // forceStorage(i*3) = fxAcc;
+        // forceStorage(i*3+1) = fyAcc;
+        // forceStorage(i*3+2) = fzAcc;
+        soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(i+offset) += fxAcc;
+        soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(i+offset) += fyAcc;
+        soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(i+offset) += fzAcc;
       });
 
+      /*
       teamHandle.team_barrier();
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, chunkSize), [&](int i) {
@@ -155,6 +159,7 @@ private:
         soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) = newFy;
         soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) = newFz;
       });
+      */
     });
   }
 
