@@ -844,6 +844,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         try {
           auto intermediate = autopas::utils::StringUtils::parseNumberSet(
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))->getAll();
+          config.kokkosTeamSize.value.clear();
           for (auto& item : intermediate) {
             config.kokkosTeamSize.value.emplace(static_cast<size_t>(item));
           }
@@ -856,6 +857,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         try {
           auto intermediate = autopas::utils::StringUtils::parseNumberSet(
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))->getAll();
+          config.kokkosChunkSize.value.clear();
           for (auto& item : intermediate) {
             config.kokkosChunkSize.value.emplace(static_cast<size_t>(item));
           }

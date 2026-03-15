@@ -104,8 +104,7 @@ private:
     //auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, Kokkos::AUTO, Kokkos::AUTO);
     //using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
 
-    auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
-    rangePolicy.set_chunk_size(_chunkSize);
+    auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N, Kokkos::ChunkSize(_chunkSize));
     // Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
     // const int i = teamHandle.league_rank();
 
