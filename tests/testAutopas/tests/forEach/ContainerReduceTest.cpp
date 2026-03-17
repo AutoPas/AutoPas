@@ -4,6 +4,7 @@
  * @date 25.08.2021
  */
 #include "ContainerReduceTest.h"
+#include "autopas/containers/CompatibleCellSizeFactors.h"
 
 #include "ForEachTestHelper.h"
 #include "autopas/AutoPasDecl.h"
@@ -305,17 +306,36 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-static inline auto getTestableContainerOptions() {
-#ifdef AUTOPAS_CUDA
-  return autopas::ContainerOption::getAllOptions();
-#else
-  auto containerOptions = autopas::ContainerOption::getAllOptions();
-  return containerOptions;
-#endif
+/**
+ * Generates parameter combinations for ContainerReduceTest, excluding container / cell-size-factor combinations that are incompatible.
+ * @return Compatible test parameters.
+ */
+std::vector<testingTuple> generateCompatibleTestParams() {
+  std::vector<testingTuple> params{};
+
+  for (const auto containerOption : autopas::ContainerOption::getAllOptions()) {
+    for (const double cellSizeFactor : {0.5, 1., 1.5}) {
+      const bool supportsOnlyCSF1 =
+          autopas::compatibleCSFs::allContainersOnlySupportingCSF1().contains(containerOption);
+      const bool supportsSub1CSF =
+          autopas::compatibleCSFs::allContainersSupportingSub1CSF().contains(containerOption);
+
+      if ((supportsOnlyCSF1 and cellSizeFactor != 1.) or (cellSizeFactor < 1. and not supportsSub1CSF)) {
+        continue;
+      }
+
+      for (const bool useConstIterator : {true, false}) {
+        for (const bool priorForceCalc : {true, false}) {
+          for (const auto behavior : autopas::IteratorBehavior::getMostOptions()) {
+            params.emplace_back(containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior);
+          }
+        }
+      }
+    }
+  }
+
+  return params;
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, ContainerReduceTest,
-                         Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
-                                 /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
-                                 ValuesIn(autopas::IteratorBehavior::getMostOptions())),
+INSTANTIATE_TEST_SUITE_P(Generated, ContainerReduceTest, ValuesIn(generateCompatibleTestParams()),
                          ContainerReduceTest::PrintToStringParamName());
