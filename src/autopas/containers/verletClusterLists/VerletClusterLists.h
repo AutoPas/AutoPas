@@ -197,7 +197,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     const auto &haloPos = haloParticle.getR();
     // this might be called from a parallel region so force this iterator to be sequential
     for (auto it = getRegionIterator(haloPos - (this->getVerletSkin() / 2.), haloPos + (this->getVerletSkin() / 2.),
-                                     IteratorBehavior::halo | IteratorBehavior::forceSequential, nullptr);
+                                     IteratorBehavior::halo | IteratorBehavior::forceSequential, std::nullopt);
          it.isValid(); ++it) {
       if (haloParticle.getID() == it->getID()) {
         // don't simply copy haloParticle over iter. This would trigger a dataRace with other regionIterators that
@@ -413,7 +413,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    */
   [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+      utils::optRef<typename ContainerIterator<Particle_T, true, false>::ParticleVecType> additionalVectors =
+          std::nullopt) override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from it without race conditions.
     if (_isValid != ValidityState::invalid) {
@@ -431,7 +432,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
       typename ContainerIterator<Particle_T, true, false>::ParticleVecType additionalVectorsToPass;
       appendBuffersHelper(additionalVectors, additionalVectorsToPass);
-      return ContainerIterator<Particle_T, true, false>(*this, behavior, &additionalVectorsToPass);
+      return ContainerIterator<Particle_T, true, false>(*this, behavior, std::ref(additionalVectorsToPass));
     }
   }
 
@@ -441,8 +442,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    */
   [[nodiscard]] ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
-          nullptr) const override {
+      utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
+          std::nullopt) const override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
     if (_isValid != ValidityState::invalid) {
@@ -460,7 +461,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
       typename ContainerIterator<Particle_T, false, false>::ParticleVecType additionalVectorsToPass;
       appendBuffersHelper(additionalVectors, additionalVectorsToPass);
-      return ContainerIterator<Particle_T, false, false>(*this, behavior, &additionalVectorsToPass);
+      return ContainerIterator<Particle_T, false, false>(*this, behavior, std::ref(additionalVectorsToPass));
     }
   }
 
@@ -567,7 +568,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    */
   [[nodiscard]] ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
+      utils::optRef<typename ContainerIterator<Particle_T, true, true>::ParticleVecType> additionalVectors =
+          std::nullopt) override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
     if (_isValid != ValidityState::invalid) {
@@ -585,7 +587,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
       typename ContainerIterator<Particle_T, true, true>::ParticleVecType additionalVectorsToPass;
       appendBuffersHelper(additionalVectors, additionalVectorsToPass);
-      return ContainerIterator<Particle_T, true, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
+      return ContainerIterator<Particle_T, true, true>(*this, behavior, std::ref(additionalVectorsToPass), lowerCorner,
                                                        higherCorner);
     }
   }
@@ -596,8 +598,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    */
   [[nodiscard]] ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors =
-          nullptr) const override {
+      utils::optRef<typename ContainerIterator<Particle_T, false, true>::ParticleVecType> additionalVectors =
+          std::nullopt) const override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
     if (_isValid != ValidityState::invalid) {
@@ -616,7 +618,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
       typename ContainerIterator<Particle_T, false, true>::ParticleVecType additionalVectorsToPass;
       appendBuffersHelper(additionalVectors, additionalVectorsToPass);
-      return ContainerIterator<Particle_T, false, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
+      return ContainerIterator<Particle_T, false, true>(*this, behavior, std::ref(additionalVectorsToPass), lowerCorner,
                                                         higherCorner);
     }
   }
@@ -1270,10 +1272,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @param outVec The buffer where additionalVectors + _particlesToAdd will be stored.
    */
   template <class VecVec>
-  void appendBuffersHelper(VecVec *additionalVectors, VecVec &outVec) const {
-    if (additionalVectors) {
-      outVec.reserve(_particlesToAdd.size() + additionalVectors->size());
-      outVec.insert(outVec.end(), additionalVectors->begin(), additionalVectors->end());
+  void appendBuffersHelper(utils::optRef<VecVec> additionalVectors, VecVec &outVec) const {
+    if (additionalVectors.has_value()) {
+      outVec.reserve(_particlesToAdd.size() + additionalVectors->get().size());
+      outVec.insert(outVec.end(), additionalVectors->get().begin(), additionalVectors->get().end());
     } else {
       outVec.reserve(_particlesToAdd.size());
     }
