@@ -38,7 +38,7 @@ namespace autopas {
  * The VerletClusterLists class uses neighborhood lists for each cluster to calculate pairwise interactions of
  * particles. It is optimized for a constant, i.e. particle independent, cutoff radius of the interaction.
  *
- * This Container does (currently?) not make use of the cellSizeFactor.
+ * This Container only works with values greater than 1 for cellSizeFactor.
  *
  * The _particlesToAdd buffer structure is (currently) still necessary, even if the LogicHandler basically holds
  * the same buffer structure. In principle, moving the particles directly into one of the towers would be possible,
@@ -91,19 +91,24 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
    * @param skin The skin radius.
+   * @param cellSizeFactor the cellSizeFactor, only values greater than 1 are currently allowed.
    * @param clusterSize Number of particles per cluster.
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
   VerletClusterLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
-                     double skin, size_t clusterSize, LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
+                     double skin, const double cellSizeFactor, size_t clusterSize,
+                     LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
       : ParticleContainerInterface<Particle_T>(skin),
-        _towerBlock{boxMin, boxMax, cutoff + skin},
+        _towerBlock{boxMin, boxMax, std::max(1.0, cellSizeFactor) * (cutoff + skin)},
         _clusterSize{clusterSize},
         _particlesToAdd(autopas_get_max_threads()),
         _cutoff{cutoff},
         _loadEstimator(loadEstimator) {
     // always have at least one tower.
     _towerBlock.addTower(_clusterSize);
+    if (cellSizeFactor < 1.0) {
+      AutoPasLog(DEBUG, "VerletClusterList: CellSizeFactor smaller than 1 detected. Set to 1.");
+    }
   }
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
