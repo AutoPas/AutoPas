@@ -24,6 +24,7 @@ echo "#==================================================#"
 # The data collection only needs one rank, so this is not strictly necessary even if running MPI simulations
 # with the trained model.
 #module load openmp
+module load slurm_setup
 
 # Below is a common method for assigning the SLURM job array's ID to a particular directory, as created by
 # the input_generator.py.
@@ -63,11 +64,11 @@ unset I_MPI_PMI_LIBRARY
 export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=0
 
 #sequentially loop over each run
-for run in `seq 0 4`
+for run in `seq 0 2`
 do
     cd run_${run}
     # If not running an mpi executable, change mpirun to whatever is recommended for your machine (e.g. srun)
 	# Override MD_FLEXIBLE_BIN if your executable is in a different location.
-	srun -np 1 "${MD_FLEXIBLE_BIN}" --yaml-filename input.yaml > logOutput_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.out 2>&1
+    srun -n 1 "${MD_FLEXIBLE_BIN}" --yaml-filename input.yaml > logOutput_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.out 2>&1
     cd ..
 done

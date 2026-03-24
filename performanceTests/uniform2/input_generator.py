@@ -32,7 +32,7 @@ def format_ratio(value: float) -> str:
     return f"{value:.2f}".replace(".", "p")
 
 
-def split_particles(total_particles: int, count_ratio: float) -> tuple[int, int]:
+def split_particles(total_particles, count_ratio):
     """Split total particles into n0 and n1 for the given n1 / n0 ratio."""
     n1 = max(1, int(round(total_particles / (1.0 + count_ratio))))
     n0 = total_particles - n1
