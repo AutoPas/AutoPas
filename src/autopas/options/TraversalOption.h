@@ -209,6 +209,8 @@ class TraversalOption : public Option<TraversalOption> {
      */
     hgrid_block4,
     hgrid_block8,
+    // HGMatching Traversal
+    hgrid_matching,
   };
 
   /**
@@ -348,6 +350,9 @@ class TraversalOption : public Option<TraversalOption> {
         // HierarchicalGrid Traversals:
         {TraversalOption::hgrid_block4, "hgrid_block4"},
         {TraversalOption::hgrid_block8, "hgrid_block8"},
+        // HierarchicalGridMatching Traversals:
+        {TraversalOption::hgrid_matching, "hgrid_matching"},
+
     };
   };
 

@@ -319,7 +319,7 @@ using ::testing::Values;
 using ::testing::ValuesIn;
 
 INSTANTIATE_TEST_SUITE_P(Generated, HGridIteratorTest,
-                         Combine(Values(autopas::ContainerOption::hierarchicalGrid),
+                         Combine(Values(autopas::ContainerOption::hierarchicalGridMatching),
                                  /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use region iter*/ Values(true, false),
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
@@ -327,7 +327,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, HGridIteratorTest,
                          HGridIteratorTestBase::PrintToStringParamName());
 
 INSTANTIATE_TEST_SUITE_P(Generated, HGridIteratorTestNonConst,
-                         Combine(Values(autopas::ContainerOption::hierarchicalGrid),
+                         Combine(Values(autopas::ContainerOption::hierarchicalGridMatching),
                                  /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use region iter*/ Values(true, false),
                                  /*use const*/ Values(false), /*prior force calc*/ Values(true, false),
@@ -335,7 +335,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, HGridIteratorTestNonConst,
                          HGridIteratorTestBase::PrintToStringParamName());
 
 INSTANTIATE_TEST_SUITE_P(Generated, HGridIteratorTestNonConstOwned,
-                         Combine(Values(autopas::ContainerOption::hierarchicalGrid),
+                         Combine(Values(autopas::ContainerOption::hierarchicalGridMatching),
                                  /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use region iter*/ Values(true, false),
                                  /*use const*/ Values(false), /*prior force calc*/ Values(true, false),

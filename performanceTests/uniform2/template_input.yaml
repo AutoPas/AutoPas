@@ -1,0 +1,41 @@
+functor                          :  Lennard-Jones (12-6) AVX # This maybe should be changed depending on your hardware
+cutoff                           :  $maxCutoff
+cutoffs                          :  [$cutoff0, $cutoff1]
+verlet-skin-radius               :  0.1
+verlet-rebuild-frequency         :  10
+deltaT                           :  0
+iterations                       :  20
+boundary-type                    : [none, none, none]
+globalForce                      :  [0, 0, 0]
+data-layout                      :  [$dataLayout]
+traversal                            :  [hgrid_matching]
+container                            :  [HierarchicalGridMatching]
+newton3                          : [enabled]
+cell-size                        : [1]
+tuning-phases                        :  0
+Sites:
+  0:
+    epsilon                      :  1.
+    sigma                        :  $sigma0
+    mass                         :  1.
+  1:
+    epsilon                      :  1.
+    sigma                        :  $sigma1
+    mass                         :  1.
+Objects:
+  CubeUniform:
+    0:
+      numberOfParticles              :  $numParticles0
+      box-length                     :  [20, 20, 20]
+      bottomLeftCorner               :  [0, 0, 0]
+      velocity                       :  [0, 0, 0]
+      particle-type-id               :  0
+    1:
+      numberOfParticles              :  $numParticles1
+      box-length                     :  [20, 20, 20]
+      bottomLeftCorner               :  [0, 0, 0]
+      velocity                       :  [0, 0, 0]
+      particle-type-id               :  1
+
+no-progress-bar                  :  true
+fastParticlesThrow               :  true

@@ -7,10 +7,27 @@ file(
 
 add_executable(runTests ${MY_SRC})
 
+add_executable(
+        runHGridTraversalComparisonMatching
+        allTests.cpp
+        tests/containers/linkedCells/HGridTraversalComparisonMatching.cpp
+)
+
 target_compile_definitions(runTests PRIVATE)
 
 target_link_libraries(
         runTests
+        $<$<BOOL:${AUTOPAS_ENABLE_COVERAGE}>:gcov>
+        autopas
+        autopasTools
+        molecularDynamicsLibrary
+        gmock # gmock includes the gtest target, so we don't need it here.
+        Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
+        $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony> # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
+)
+
+target_link_libraries(
+        runHGridTraversalComparisonMatching
         $<$<BOOL:${AUTOPAS_ENABLE_COVERAGE}>:gcov>
         autopas
         autopasTools
@@ -26,5 +43,10 @@ include(GoogleTest)
 gtest_discover_tests(
         runTests TEST_PREFIX "testAutopas/"
         # increase the discovery timeout for `runTests --gtest_list_tests`
+        DISCOVERY_TIMEOUT 60
+)
+
+gtest_discover_tests(
+        runHGridTraversalComparisonMatching TEST_PREFIX "testAutopas/isolated/"
         DISCOVERY_TIMEOUT 60
 )

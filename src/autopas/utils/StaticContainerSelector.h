@@ -10,6 +10,7 @@
 
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/HierarchicalGrid.h"
+#include "autopas/containers/linkedCells/HierarchicalGridMatching.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
@@ -57,6 +58,8 @@ decltype(auto) withStaticContainerType(autopas::ParticleContainerInterface<Parti
       return function(dynamic_cast<autopas::Octree<Particle_T> &>(container));
     case ContainerOption::hierarchicalGrid:
       return function(dynamic_cast<autopas::HierarchicalGrid<Particle_T> &>(container));
+    case ContainerOption::hierarchicalGridMatching:
+      return function(dynamic_cast<autopas::HierarchicalGridMatching<Particle_T> &>(container));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container.getContainerType());

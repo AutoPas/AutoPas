@@ -39,7 +39,9 @@ class HGTraversalBase : public TraversalInterface {
    * @param rebuildFrequency frequency of rebuild
    */
   void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>> *levels, std::vector<double> &cutoffs, double skin,
-                 double maxDisplacement, unsigned int stepsSinceLastRebuild, const unsigned int rebuildFrequency) {
+                 double maxDisplacement, unsigned int stepsSinceLastRebuild, const unsigned int rebuildFrequency,
+                 bool fittedGrids = false) {
+    // Todo: adapt, e.g. cutoffs size
     _numLevels = cutoffs.size();
     _cutoffs = cutoffs;
     _levels = levels;
@@ -47,6 +49,7 @@ class HGTraversalBase : public TraversalInterface {
     _maxDisplacement = maxDisplacement;
     _stepsSinceLastRebuild = stepsSinceLastRebuild;
     _rebuildFrequency = rebuildFrequency;
+    _fittedGrids = fittedGrids;
   }
 
  protected:
@@ -57,6 +60,7 @@ class HGTraversalBase : public TraversalInterface {
   double _maxDisplacement;
   unsigned int _stepsSinceLastRebuild;
   unsigned int _rebuildFrequency;
+  bool _fittedGrids;
   // the ratio between cutoffs of levels from which point distance should be checked before checking distance of
   // particles can do particle to level specific instead of level to level specific in the future
   const double distCheckRatio = 0.2;
@@ -80,6 +84,7 @@ class HGTraversalBase : public TraversalInterface {
    * @return The interaction length for the given level pair.
    */
   [[nodiscard]] double getInteractionLength(const size_t lowerLevel, const size_t upperLevel) const {
+    // TODO: here _cellSizeFactor would be handy
     const double cutoff = (this->_cutoffs[upperLevel] + this->_cutoffs[lowerLevel]) / 2;
     return cutoff + currentSkin();
   }
@@ -94,14 +99,16 @@ class HGTraversalBase : public TraversalInterface {
   [[nodiscard]] bool checkDistance(const size_t upperLevel, const size_t lowerLevel) const {
     // size of the lower level cell divided by interactionLength
     // We don't use cellLength because cellSizeFactor might have influenced it
+    // Todo: actuall cutoff wanted? question, because I think not
     return (_cutoffs[lowerLevel] + _skin) / getInteractionLength(lowerLevel, upperLevel) <= distCheckRatio;
   }
 
   [[nodiscard]] double currentSkin() const {
-    // We only need to check at most distance cutoff + max displacement of any particle in the container if dynamic
-    // containers are used.
-    // NOTE: if in the future, if Hgrid will be used as a base container to a verlet list, interactionLength should be
-    // always cutoff + _skin.
+// : bit uclear
+// We only need to check at most distance cutoff + max displacement of any particle in the container if dynamic
+// containers are used.
+// NOTE: if in the future, if Hgrid will be used as a base container to a verlet list, interactionLength should be
+// always cutoff + _skin.
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     return std::min(this->_maxDisplacement * 2 + 1e-9, this->_skin);
 #else
@@ -115,6 +122,7 @@ class HGTraversalBase : public TraversalInterface {
    * @param level The hierarchy level to compute the stride for.
    * @return The stride for each dimension.
    */
+  // TODO: useless for me I think
   std::array<size_t, 3> computeStride(const size_t level, const bool topDown = true) {
     const std::array<double, 3> levelLength = this->_levels->at(level)->getTraversalSelectorInfo().cellLength;
     std::array<size_t, 3> stride{1, 1, 1};
@@ -215,6 +223,7 @@ class HGTraversalBase : public TraversalInterface {
     }
     // return traversal info of hierarchy with biggest interactionLength
     const auto temp = _levels->at(level)->getTraversalSelectorInfo();
+    // todo: again not sure what this does
     // adjust interactionLength to actual value
     // _overlap will be smaller than needed, because smaller levels have big halo regions compared to their actual
     // interactionlength so cells past _overlap can also be halo cells, resulting in unnecessary iteration of those halo
@@ -234,6 +243,7 @@ class HGTraversalBase : public TraversalInterface {
       TraversalInterface *temp = this->_traversals[level].get();
       // set actual halo region length of the traversal
       // this will let traversal skip going through unnecessary halo cells
+      // Todo: Should be fine,probably cutoff without factor wanted and back() anyways unchanged
       const double haloRegionLength = _cutoffs.back() + _skin;
       temp->setHaloRegionLength(haloRegionLength);
       this->_levels->at(level)->prepareTraversal(temp);
@@ -288,6 +298,7 @@ class HGTraversalBase : public TraversalInterface {
     if (isHalo && !this->_useNewton3) {
       return;
     }
+    // todo: would need adaptation for changed cutoff
     const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
     const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
     size_t cellIndex1D;
@@ -427,6 +438,7 @@ class HGTraversalBase : public TraversalInterface {
    * @param end The end coordinates for each dimension.
    * @return The best group size for the given target number of blocks per color.
    */
+  // Todo, I think useless for me
   static std::array<size_t, 3> findBestGroupSizeForTargetBlocksPerColor(int targetBlocksPerColor,
                                                                         const std::array<size_t, 3> &stride,
                                                                         const std::array<unsigned long, 3> &end) {

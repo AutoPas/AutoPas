@@ -12,6 +12,7 @@
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/HierarchicalGrid.h"
+#include "autopas/containers/linkedCells/HierarchicalGridMatching.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
@@ -183,61 +184,72 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
                                                                  containerInfo.cellSizeFactor);
       break;
     }
-    default: {
-      utils::ExceptionHandler::exception("ContainerSelector: Container type {} is not a known type!",
-                                         containerChoice.to_string());
-    }
-  }
-
-  // copy particles so they do not get lost when container is switched
-  if (_currentContainer != nullptr) {
-    // with these assumptions slightly more space is reserved as numParticlesTotal already includes halos
-    const auto numParticlesTotal = _currentContainer->size();
-    const auto numParticlesHalo = autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(
-        numParticlesTotal, _currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
-        _currentContainer->getInteractionLength());
-
-    container->reserve(numParticlesTotal, numParticlesHalo);
-    for (auto particleIter = _currentContainer->begin(IteratorBehavior::ownedOrHalo); particleIter.isValid();
-         ++particleIter) {
-      // add particle as inner if it is owned
-      if (particleIter->isOwned()) {
-        container->addParticle(*particleIter);
-      } else {
-        container->addHaloParticle(*particleIter);
+      case ContainerOption::hierarchicalGridMatching: {
+        if (_cutoffs.empty()) {
+          // if cutoffs for levels are not provided, set cutoff levels to a single level with value _cutoff
+          // this way, Hgrid will behave same as LinkedCells
+          _cutoffs = {_cutoff};
+        }
+        container = std::make_unique<HierarchicalGridMatching<Particle_T>>(
+            _boxMin, _boxMax, _cutoffs, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
+            containerInfo.cellSizeFactor);
+        break;
+      }
+      default: {
+        utils::ExceptionHandler::exception("ContainerSelector: Container type {} is not a known type!",
+                                           containerChoice.to_string());
       }
     }
+
+      // copy particles so they do not get lost when container is switched
+      if (_currentContainer != nullptr) {
+        // with these assumptions slightly more space is reserved as numParticlesTotal already includes halos
+        const auto numParticlesTotal = _currentContainer->size();
+        const auto numParticlesHalo = autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(
+            numParticlesTotal, _currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
+            _currentContainer->getInteractionLength());
+
+        container->reserve(numParticlesTotal, numParticlesHalo);
+        for (auto particleIter = _currentContainer->begin(IteratorBehavior::ownedOrHalo); particleIter.isValid();
+             ++particleIter) {
+          // add particle as inner if it is owned
+          if (particleIter->isOwned()) {
+            container->addParticle(*particleIter);
+          } else {
+            container->addHaloParticle(*particleIter);
+          }
+        }
+      }
+
+      return container;
   }
 
-  return container;
-}
-
-template <class Particle_T>
-autopas::ParticleContainerInterface<Particle_T> &ContainerSelector<Particle_T>::getCurrentContainer() {
-  if (_currentContainer == nullptr) {
-    autopas::utils::ExceptionHandler::exception(
-        "ContainerSelector: getCurrentContainer() called before any container was selected!");
+  template <class Particle_T>
+  autopas::ParticleContainerInterface<Particle_T> &ContainerSelector<Particle_T>::getCurrentContainer() {
+    if (_currentContainer == nullptr) {
+      autopas::utils::ExceptionHandler::exception(
+          "ContainerSelector: getCurrentContainer() called before any container was selected!");
+    }
+    return *_currentContainer;
   }
-  return *_currentContainer;
-}
 
-template <class Particle_T>
-const autopas::ParticleContainerInterface<Particle_T> &ContainerSelector<Particle_T>::getCurrentContainer() const {
-  if (_currentContainer == nullptr) {
-    autopas::utils::ExceptionHandler::exception(
-        "ContainerSelector: getCurrentContainer() called before any container was selected!");
+  template <class Particle_T>
+  const autopas::ParticleContainerInterface<Particle_T> &ContainerSelector<Particle_T>::getCurrentContainer() const {
+    if (_currentContainer == nullptr) {
+      autopas::utils::ExceptionHandler::exception(
+          "ContainerSelector: getCurrentContainer() called before any container was selected!");
+    }
+    return *_currentContainer;
   }
-  return *_currentContainer;
-}
 
-template <class Particle_T>
-void ContainerSelector<Particle_T>::selectContainer(ContainerOption containerOption,
-                                                    ContainerSelectorInfo containerInfo) {
-  // Only do something if we have no container, a new type is required, or the info changed
-  if (_currentContainer == nullptr or _currentContainer->getContainerType() != containerOption or
-      _currentInfo != containerInfo) {
-    _currentContainer = std::move(generateContainer(containerOption, containerInfo));
-    _currentInfo = containerInfo;
+  template <class Particle_T>
+  void ContainerSelector<Particle_T>::selectContainer(ContainerOption containerOption,
+                                                      ContainerSelectorInfo containerInfo) {
+    // Only do something if we have no container, a new type is required, or the info changed
+    if (_currentContainer == nullptr or _currentContainer->getContainerType() != containerOption or
+        _currentInfo != containerInfo) {
+      _currentContainer = std::move(generateContainer(containerOption, containerInfo));
+      _currentInfo = containerInfo;
+    }
   }
-}
 }  // namespace autopas

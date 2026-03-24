@@ -515,6 +515,11 @@ class MDFlexConfig {
    */
   MDFlexOption<std::vector<double>, __LINE__> cutoffs{
       {}, "cutoffs", true, "Lennard-Jones force cutoffs for Hierarchical Grid container."};
+        /**
+   * Fit the Hierarchical Grid container levels @todo
+   */
+  MDFlexOption<bool, __LINE__> fitGrids{
+      false, "fit-grids", true, "Perfectly fit the grids of a Hierarchical Grid container into one another."};
   /**
    * functorOption
    */
