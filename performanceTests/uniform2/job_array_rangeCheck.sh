@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=Uni_2_Job_Array
+#SBATCH --job-name=Uni_2_RangeCheck_Job_Array
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --clusters=cm4
@@ -7,9 +7,10 @@
 #SBATCH --cpus-per-task=56 # ! This should be the maximum number of CPUs you wish to use per single MPI rank !
 #SBATCH --time=01:00:00
 #SBATCH --output=/dev/null
-#SBATCH --array=0-35
+#SBATCH --array=0-11
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=END,FAIL  # Send email on end and failure
+
 
 # !! Modify the above as relevant for your computer !!
 # !! The ones most likely needing changes are highlighted, but check all of them !!
@@ -29,7 +30,7 @@ echo "#==================================================#"
 module load slurm_setup
 
 # Below is a common method for assigning the SLURM job array's ID to a particular directory, as created by
-# the input_generator.py.
+# the input_generator_rangeCheck.py.
 
 # In batch mode, SLURM_SUBMIT_DIR points to the directory from which sbatch was called.
 SCRIPT_DIR="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
@@ -48,7 +49,7 @@ declare -a data_layout
 index=0
 for sigma_ratio_iter in 0p05 0p15 0p25 0p35 0p45 0p55
 do
-    for count_ratio_iter in 0p50 1p00 2p00
+    for count_ratio_iter in 2p00
     do
         for data_layout_iter in AoS SoA
         do
@@ -59,12 +60,12 @@ do
         done
     done
 done
-     
+
 # Go to directory of experiment for this job ID
-TARGET_DIR="${SCRIPT_DIR}/generated_inputs/sigmaRatio_${sigma_ratio[${SLURM_ARRAY_TASK_ID}]}/countRatio_${count_ratio[${SLURM_ARRAY_TASK_ID}]}/dataLayout_${data_layout[${SLURM_ARRAY_TASK_ID}]}"
+TARGET_DIR="${SCRIPT_DIR}/generated_inputs_rangeCheck/sigmaRatio_${sigma_ratio[${SLURM_ARRAY_TASK_ID}]}/countRatio_${count_ratio[${SLURM_ARRAY_TASK_ID}]}/dataLayout_${data_layout[${SLURM_ARRAY_TASK_ID}]}"
 if [ ! -d "${TARGET_DIR}" ]; then
     echo "ERROR: Input directory not found: ${TARGET_DIR}" >&2
-    echo "Hint: Generate inputs with input_generator.py before submitting." >&2
+    echo "Hint: Generate inputs with input_generator_rangeCheck.py before submitting." >&2
     exit 2
 fi
 cd "${TARGET_DIR}"
@@ -78,12 +79,11 @@ export OMP_PROC_BIND=true
 unset I_MPI_PMI_LIBRARY
 export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=0
 
-#sequentially loop over each run
+# Sequentially loop over each run
 for run in `seq 0 2`
 do
     cd run_${run}
-    # If not running an mpi executable, change mpirun to whatever is recommended for your machine (e.g. srun)
-	# Override MD_FLEXIBLE_BIN if your executable is in a different location.
+    # Override MD_FLEXIBLE_BIN if your executable is in a different location.
     srun -n 1 "${MD_FLEXIBLE_BIN}" --yaml-filename input.yaml > logOutput_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.out 2>&1
     cd ..
 done

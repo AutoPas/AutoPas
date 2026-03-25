@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 from pathlib import Path
-from string import Template 
+from string import Template
 import numpy as np
 
 
@@ -9,21 +9,21 @@ import numpy as np
 #
 # This sweep varies:
 # - sigma ratio: sigma1 / sigma0
-# - particle-count ratio: n1 / n0
 # - data layout: AoS or SoA
 #
-# For each scenario, 5 repeat runs are generated.
+# The particle-count ratio n1 / n0 is fixed to 2.0.
+# For each scenario, 3 repeat runs are generated.
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 TEMPLATE_FILE = SCRIPT_DIR / "template_input.yaml"
-OUTPUT_ROOT = SCRIPT_DIR / "generated_inputs"
+OUTPUT_ROOT = SCRIPT_DIR / "generated_inputs_rangeCheck"
 
 NUM_REPEATS = 3
-TOTAL_PARTICLES = 100_000
+TOTAL_PARTICLES = 25600
 SIGMAMAX = 1.0
 
 SIGMA_RATIOS = np.linspace(0.05, 0.55, 6)
-COUNT_RATIOS = [0.5, 1.0, 2.0]
+COUNT_RATIOS = [2.0]
 DATA_LAYOUTS = ["AoS", "SoA"]
 
 
@@ -44,7 +44,7 @@ input_template = Template(TEMPLATE_FILE.read_text(encoding="utf-8"))
 OUTPUT_ROOT.mkdir(exist_ok=True)
 
 # Create directory structure:
-# generated_inputs/sigmaRatio_<sigma1_over_sigma0>/countRatio_<n1_over_n0>/dataLayout_<AoS|SoA>/run_<run>
+# generated_inputs_rangeCheck/sigmaRatio_<sigma1_over_sigma0>/countRatio_<n1_over_n0>/dataLayout_<AoS|SoA>/run_<run>
 for sigma_ratio in SIGMA_RATIOS:
     sigma0 = SIGMAMAX * sigma_ratio
     sigma1 = SIGMAMAX
@@ -82,4 +82,3 @@ for sigma_ratio in SIGMA_RATIOS:
                 (run_dir / "input.yaml").write_text(
                     input_template.substitute(substitutions), encoding="utf-8"
                 )
-

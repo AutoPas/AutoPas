@@ -1,2 +1,0 @@
-slurmstepd: error: execve(): /var/slurmd-cm4/job155118/../../build/examples/md-flexible/md-flexible: No such file or directory
-srun: error: cm4r13c01s02: task 0: Exited with exit code 2

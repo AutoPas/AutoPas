@@ -7,9 +7,9 @@
 #SBATCH --time=05:00:00
 #SBATCH --output=/dev/null
 #SBATCH --array=0-107
+#SBATCH --mail-user=alexander.glas@tum.de  
+#SBATCH --mail-type=ALL              
 
-# !! Modify the above as relevant for your computer !!
-# !! The ones most likely needing changes are highlighted, but check all of them !!
 
 echo "#==================================================#"
 echo " num nodes: " $SLURM_JOB_NUM_NODES
