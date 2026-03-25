@@ -71,7 +71,6 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> 
   const std::vector<double> &_interactionLengthsSquared;
   std::array<double, 3> _shiftLength;
   void decompose2AndProcessCells(ParticleCell &cell1, const size_t cellIndex1, const size_t cellIndex2);
-
 };
 
 template <class ParticleCell, class PairwiseFunctor>
@@ -177,6 +176,7 @@ inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::decompose2AndProces
 */
           if (!_fittedGrids && (x == stopIndex3D[0] || y == stopIndex3D[1] || z == stopIndex3D[2] ||
                                 x == startIndex3D[0] || y == startIndex3D[1] || z == startIndex3D[2])) {
+            auto [low, high] = _cellBlocks[lowerLevel]->getCellBoundingBox({x, y, z});
             // Canonical ownership for non-fitted grids:
             // assign lower cell only to the upper cell that contains its center.
             std::array<double, 3> lowerCenter{0.5 * (low[0] + high[0]), 0.5 * (low[1] + high[1]),
