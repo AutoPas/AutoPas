@@ -176,13 +176,13 @@ inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::decompose2AndProces
         for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
           using autopas::utils::ArrayMath::boxDistanceSquared;
           // check if number is in range
-          auto [low, high] = _cellBlocks[lowerLevel]->getCellBoundingBox({x, y, z});
+          /*          auto [low, high] = _cellBlocks[lowerLevel]->getCellBoundingBox({x, y, z});
           if (lowerLevel < _interactionLengthsSquared.size()) {
             if (boxDistanceSquared(low, high, lowCell1, highCell1) > _interactionLengthsSquared[lowerLevel]) {
               continue;
             }
           }
-
+*/
           if (!_fittedGrids && (x == stopIndex3D[0] || y == stopIndex3D[1] || z == stopIndex3D[2] ||
                                 x == startIndex3D[0] || y == startIndex3D[1] || z == startIndex3D[2])) {
             // Canonical ownership for non-fitted grids:

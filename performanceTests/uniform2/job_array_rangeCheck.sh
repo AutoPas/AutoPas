@@ -48,7 +48,7 @@ declare -a sigma_ratio
 declare -a count_ratio
 declare -a data_layout
 index=0
-for total_particles_iter in 001000 050000 100000
+for total_particles_iter in 001000 050000 100000 300000
 do
     for sigma_ratio_iter in 0p05 0p15 0p25 0p35 0p45 0p55
     do
