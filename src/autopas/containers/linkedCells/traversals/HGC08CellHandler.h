@@ -71,16 +71,7 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> 
   const std::vector<double> &_interactionLengthsSquared;
   std::array<double, 3> _shiftLength;
   void decompose2AndProcessCells(ParticleCell &cell1, const size_t cellIndex1, const size_t cellIndex2);
-
-  bool isInside(const std::array<double, 3> &upper3dIndex, const std::array<double, 3> &lower3dIndex,
-                const size_t lowerDim);
 };
-template <class ParticleCell, class PairwiseFunctor>
-inline bool HGC08CellHandler<ParticleCell, PairwiseFunctor>::isInside(const std::array<double, 3> &upper3dIndex,
-                                                                      const std::array<double, 3> &lower3dIndex,
-                                                                      const size_t lowerDim) {
-  // @todo test to see if improving this is worth
-}
 
 template <class ParticleCell, class PairwiseFunctor>
 inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::decompose2AndProcessCells(ParticleCell &cell1,
