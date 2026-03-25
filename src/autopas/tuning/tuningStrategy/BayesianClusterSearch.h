@@ -81,7 +81,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
-      const NumberSet<int> &allowedThreadCounts = NumberSetFinite<int>({autopas::Configuration::ThreadCountNoTuning}),
+      const NumberSet<int> &allowedThreadCounts = NumberSetFinite<int>({autopas_get_max_threads()}),
       size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()());

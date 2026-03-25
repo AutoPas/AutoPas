@@ -63,7 +63,7 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
 
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
-        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3,
+        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3, autopas::autopas_get_max_threads(),
         autopas::InteractionTypeOption::triwise}});
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
@@ -452,7 +452,7 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-        autopas::InteractionTypeOption::triwise}});
+        autopas::autopas_get_max_threads(), autopas::InteractionTypeOption::triwise}});
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
       autopas::InteractionTypeOption::triwise,

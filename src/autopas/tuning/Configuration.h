@@ -25,11 +25,6 @@ namespace autopas {
 class Configuration {
  public:
   /**
-   * When using this value as a thread count tuning option, thread count tuning is disabled.
-   */
-  static constexpr int ThreadCountNoTuning = 0;
-
-  /**
    * Constructor
    * @param _container
    * @param _traversal
@@ -44,15 +39,15 @@ class Configuration {
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
-                          InteractionTypeOption _interactionType, int _threadCount = ThreadCountNoTuning)
+                          int _threadCount, InteractionTypeOption _interactionType)
       : container(_container),
         traversal(_traversal),
         loadEstimator(_loadEstimator),
         dataLayout(_dataLayout),
         newton3(_newton3),
         cellSizeFactor(_cellSizeFactor),
-        interactionType(_interactionType),
-        threadCount(_threadCount) {}
+        threadCount(_threadCount),
+        interactionType(_interactionType) {}
 
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
@@ -65,8 +60,8 @@ class Configuration {
         dataLayout(),
         newton3(),
         cellSizeFactor(-1.),
-        interactionType(),
-        threadCount(ThreadCountNoTuning) {}
+        threadCount(1),
+        interactionType() {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
@@ -152,13 +147,14 @@ class Configuration {
    */
   double cellSizeFactor;
   /**
+   * Preferred OpenMP thread count.
+   * (Must be between 1 and the number of hardware threads.)
+   */
+  int threadCount;
+  /**
    * Interaction type of the configuration.
    */
   InteractionTypeOption interactionType;
-  /**
-   * OpenMP thread count
-   */
-  int threadCount;
 
  private:
   /**

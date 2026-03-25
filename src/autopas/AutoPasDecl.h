@@ -1031,16 +1031,11 @@ class AutoPas {
    * @param allowedThreadCounts
    */
   void setAllowedThreadCounts(const NumberSet<int> &allowedThreadCounts) {
-    if (!allowedThreadCounts.isFinite()) {
-      utils::ExceptionHandler::exception("Error: thread count options must be finite!", allowedThreadCounts.getMin());
+    if (not allowedThreadCounts.isFinite()) {
+      utils::ExceptionHandler::exception("Error: thread count options must be finite!");
     }
-    if (allowedThreadCounts.getMin() == Configuration::ThreadCountNoTuning and allowedThreadCounts.size() != 1) {
-      utils::ExceptionHandler::exception(
-          "Error: when thread counts contain {} (no thread tuning), no other values may be provided!",
-          Configuration::ThreadCountNoTuning);
-    }
-    if (allowedThreadCounts.getMin() < 0) {
-      utils::ExceptionHandler::exception("Error: minimum thread count must be positive {} < 0!",
+    if (allowedThreadCounts.getMin() < 1) {
+      utils::ExceptionHandler::exception("Error: minimum thread count must be positive {} < 1!",
                                          allowedThreadCounts.getMin());
     }
     const int maxThreadCount = autopas_get_max_threads();
@@ -1050,7 +1045,8 @@ class AutoPas {
     std::set<int> values = allowedThreadCounts.getAll();
     values.erase(values.upper_bound(maxThreadCount), values.end());
     if (values.size() == 0) {
-      utils::ExceptionHandler::exception("Error: no thread count option remaining!");
+      AutoPasLog(WARN, "Warning: no thread count option remaining! (Defaulting to {} threads)", maxThreadCount);
+      values.emplace(maxThreadCount);
     }
     _allowedThreadCounts->resetValues(values);
   }
@@ -1217,7 +1213,7 @@ class AutoPas {
    * Thread counts to be used by OpenMP
    */
   std::unique_ptr<NumberSet<int>> _allowedThreadCounts{
-      std::make_unique<NumberSetFinite<int>>(std::set<int>({Configuration::ThreadCountNoTuning}))};
+      std::make_unique<NumberSetFinite<int>>(std::set<int>({autopas_get_max_threads()}))};
   /**
    * LogicHandler of autopas.
    */

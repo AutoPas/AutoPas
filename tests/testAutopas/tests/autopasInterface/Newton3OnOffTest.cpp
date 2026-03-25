@@ -54,14 +54,15 @@ INSTANTIATE_TEST_SUITE_P(
             for (auto traversalOption : containerPtr->getAllTraversals(interactionType)) {
               bool configOk = false;
 
+              const int numThreads = autopas::autopas_get_max_threads();
               autopas::Configuration configN3 = {containerOption,  Newton3OnOffTest::getCellSizeFactor(),
                                                  traversalOption,  autopas::LoadEstimatorOption::none,
                                                  dataLayoutOption, autopas::Newton3Option::enabled,
-                                                 interactionType};
+                                                 numThreads,       interactionType};
               autopas::Configuration configNoN3 = {containerOption,  Newton3OnOffTest::getCellSizeFactor(),
                                                    traversalOption,  autopas::LoadEstimatorOption::none,
                                                    dataLayoutOption, autopas::Newton3Option::disabled,
-                                                   interactionType};
+                                                   numThreads,       interactionType};
 
               if (interactionType == autopas::InteractionTypeOption::pairwise) {
                 MockPairwiseFunctor<ParticleFP64> functor;
@@ -302,13 +303,9 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOpt
       useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled;
 
   auto traversalSelectorInfo = container.getTraversalSelectorInfo();
-  autopas::Configuration config = {container.getContainerType(),
-                                   getCellSizeFactor(),
-                                   traversalOption,
-                                   autopas::LoadEstimatorOption::none,
-                                   dataLayout,
-                                   n3Option,
-                                   interactionType};
+  autopas::Configuration config = {container.getContainerType(),       getCellSizeFactor(), traversalOption,
+                                   autopas::LoadEstimatorOption::none, dataLayout,          n3Option,
+                                   autopas::autopas_get_max_threads(), interactionType};
 
   // simulate iteration
   iterate(container, autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64, Functor>(

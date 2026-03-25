@@ -1304,9 +1304,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
 
   /// Computing the particle interactions
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
-  if (autoTuner.getCurrentConfig().threadCount != 0) {
-    autopas_set_preferred_num_threads(autoTuner.getCurrentConfig().threadCount);
-  }
+  autopas_set_preferred_num_threads(autoTuner.getCurrentConfig().threadCount);
   const IterationMeasurements measurements = computeInteractions(*functor, *traversalPtr);
 
   /// Debug Output
@@ -1379,6 +1377,14 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   if ((config.newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
       (config.newton3 == Newton3Option::disabled and not functor.allowsNonNewton3())) {
     AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!", config.newton3);
+    return {nullptr, /*rejectIndefinitely*/ true};
+  }
+
+  // Check if the thread count is valid
+  int maxThreads = autopas_get_max_threads();
+  if (config.threadCount < 1 or config.threadCount > maxThreads) {
+    AutoPasLog(DEBUG, "Configuration rejected: The requested thread count of {} is not in [1,{}]!", config.threadCount,
+               maxThreads);
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 

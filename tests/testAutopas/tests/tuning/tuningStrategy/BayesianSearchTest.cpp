@@ -21,11 +21,11 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
                                                               autopas::DataLayoutOption::soa};
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1};
-  const autopas::NumberSetFinite<int> threadCounts{autopas::Configuration::ThreadCountNoTuning};
+  const autopas::NumberSetFinite<int> threadCounts({autopas::autopas_get_max_threads()});
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise, &threadCounts);
+      &threadCounts, autopas::InteractionTypeOption::pairwise);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
                                       traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
                                       threadCounts, maxEvidence);
@@ -68,10 +68,10 @@ TEST_F(BayesianSearchTest, testFindBest) {
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
 
   const auto threadCounts =
-      std::make_unique<autopas::NumberSetFinite<int>>(std::set<int>{autopas::Configuration::ThreadCountNoTuning}).get();
+      std::make_unique<autopas::NumberSetFinite<int>>(std::set<int>{autopas::autopas_get_max_threads()}).get();
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise, threadCounts);
+      threadCounts, autopas::InteractionTypeOption::pairwise);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
                                       traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
                                       *threadCounts, maxEvidence,

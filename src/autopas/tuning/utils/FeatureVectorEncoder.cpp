@@ -11,8 +11,8 @@ autopas::FeatureVectorEncoder::FeatureVectorEncoder() = default;
 autopas::FeatureVectorEncoder::FeatureVectorEncoder(
     const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
     const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-    const autopas::NumberSet<double> &cellSizeFactors, const InteractionTypeOption &interactionType,
-    const NumberSetFinite<int> &threadCounts)
+    const autopas::NumberSet<double> &cellSizeFactors, const NumberSetFinite<int> &threadCounts,
+    const InteractionTypeOption &interactionType)
     : _interactionType(interactionType) {
   setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors,
                     threadCounts);

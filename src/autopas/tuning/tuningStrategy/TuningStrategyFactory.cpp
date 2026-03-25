@@ -81,7 +81,7 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
 
     case TuningStrategyOption::activeHarmony: {
       const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
-      if (searchSpaceDimensions.threadCounts != std::set<int>{autopas::Configuration::ThreadCountNoTuning}) {
+      if (searchSpaceDimensions.threadCounts != std::set<int>{autopas_get_max_threads()}) {
         utils::ExceptionHandler::exception(
             "AutoPas::generateTuningStrategy: Thread tuning is not supported by ActiveHarmony!");
       }

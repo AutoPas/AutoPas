@@ -19,8 +19,8 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
-    const NumberSet<double> *allowedCellSizeFactors, const InteractionTypeOption &interactionType,
-    const NumberSetFinite<int> *allowedThreadCounts) {
+    const NumberSet<double> *allowedCellSizeFactors, const NumberSetFinite<int> *allowedThreadCounts,
+    const InteractionTypeOption &interactionType) {
   if (allowedCellSizeFactors->isInterval()) {
     utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
   }
@@ -47,8 +47,9 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
           for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
             for (const auto &newton3Option : allowedNewton3Options) {
               for (const auto &threadCountOption : threadCounts) {
-                const Configuration configuration{containerOption,  csf,           traversalOption, loadEstimatorOption,
-                                                  dataLayoutOption, newton3Option, interactionType, threadCountOption};
+                const Configuration configuration{
+                    containerOption,  csf,           traversalOption,   loadEstimatorOption,
+                    dataLayoutOption, newton3Option, threadCountOption, interactionType};
                 if (configuration.hasCompatibleValues()) {
                   searchSet.insert(configuration);
                 }

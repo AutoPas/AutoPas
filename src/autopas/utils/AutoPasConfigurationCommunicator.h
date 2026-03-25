@@ -57,8 +57,8 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<TraversalOption> &traversalOptions,
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
-                          const std::set<Newton3Option> &newton3Options,
-                          const InteractionTypeOption &interactionTypeOption, const NumberSetFinite<int> &threadCounts);
+                          const std::set<Newton3Option> &newton3Options, const NumberSetFinite<int> &threadCounts,
+                          const InteractionTypeOption &interactionTypeOption);
 
 /**
  * Distributes the provided configurations globally for equal work loads.

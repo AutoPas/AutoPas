@@ -43,7 +43,7 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise, &threadCounts);
+      &threadCounts, autopas::InteractionTypeOption::pairwise);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
@@ -59,12 +59,12 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
   const size_t numInsertedMolecules = logicHandler.getContainer().size();
 
   int iterationsAfterTuning = 0;
-  while (stillTuning && iterationsAfterTuning < 1) {
+  while (stillTuning and iterationsAfterTuning < 1) {
     // Should not have any leaving molecules in this test
     auto dummyMoleculesVec = logicHandler.updateContainer();
     stillTuning = logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
     currentConfig = tunerMap[autopas::InteractionTypeOption::pairwise]->getCurrentConfig();
-    if (!stillTuning) iterationsAfterTuning++;
+    if (not stillTuning) iterationsAfterTuning++;
   }
 
   EXPECT_EQ(numInsertedMolecules,
@@ -76,19 +76,11 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
 
 /**
  * Tests thread count tuning:
- * vary small scenario (N=8) -> lowest number of threads
- * larger scenario (N=33k)   -> highest number of threads
+ * vary small scenario (8 particles) -> lowest number of threads
+ * larger scenario (33k particles)   -> highest number of threads
  */
 TEST_F(ThreadCountTuningTest, testThreadCountTuning) {
   const int maxThreads = std::min(autopas::autopas_get_max_threads(), 4);
   testThreadCountTuningWithBoxMax(2, {1, maxThreads}, 1);
   testThreadCountTuningWithBoxMax(32, {1, maxThreads}, maxThreads);
-}
-
-/**
- * Tests disabling thread count tuning -> maximum number of threads
- */
-TEST_F(ThreadCountTuningTest, testThreadCountTuningDisabled) {
-  const int maxThreads = autopas::autopas_get_max_threads();
-  testThreadCountTuningWithBoxMax(32, {autopas::Configuration::ThreadCountNoTuning}, maxThreads);
 }

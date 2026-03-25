@@ -68,13 +68,10 @@ bool MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &co
 
 Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::set<Configuration> &searchSpace,
                                                                    const InteractionTypeOption &interactionType) {
-  Configuration fallBackConfig{ContainerOption::linkedCells,
-                               1.,
-                               TraversalOption::lc_c08,
-                               LoadEstimatorOption::none,
-                               DataLayoutOption::aos,
-                               Newton3Option::disabled,
-                               interactionType};
+  Configuration fallBackConfig{ContainerOption::linkedCells, 1.,
+                               TraversalOption::lc_c08,      LoadEstimatorOption::none,
+                               DataLayoutOption::aos,        Newton3Option::disabled,
+                               autopas_get_max_threads(),    interactionType};
 
   if (interactionType == InteractionTypeOption::triwise) {
     fallBackConfig.traversal = TraversalOption::lc_c01;

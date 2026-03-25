@@ -25,6 +25,7 @@
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
 #include "src/configuration/objects/CubeGauss.h"
@@ -298,7 +299,7 @@ class MDFlexConfig {
    * threadCounts
    */
   MDFlexOption<std::shared_ptr<autopas::NumberSetFinite<int>>, __LINE__> threadCounts{
-      std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{autopas::Configuration::ThreadCountNoTuning}),
+      std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{autopas::autopas_get_max_threads()}),
       "thread-count", true, "OpenMP thread counts."};
   /**
    * logFileName

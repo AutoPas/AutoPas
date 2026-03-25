@@ -18,9 +18,8 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<TraversalOption> &traversalOptions,
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
-                          const std::set<Newton3Option> &newton3Options,
-                          const InteractionTypeOption &interactionTypeOption,
-                          const NumberSetFinite<int> &threadCounts) {
+                          const std::set<Newton3Option> &newton3Options, const NumberSetFinite<int> &threadCounts,
+                          const InteractionTypeOption &interactionTypeOption) {
   // only take into account finite sets of cellSizeFactors.
   const size_t cellSizeFactorArraySize = cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1;
 
@@ -90,7 +89,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
 
   ConfigurationAndRankIteratorHandler iteratorHandler(containerOptions, finiteCellSizeFactors, traversalOptions,
                                                       loadEstimatorOptions, dataLayoutOptions, newton3Options,
-                                                      interactionType, threadCounts.getAll(), numConfigs, commSize);
+                                                      threadCounts.getAll(), interactionType, numConfigs, commSize);
 
   while (iteratorHandler.getRankIterator() < rank) {
     iteratorHandler.advanceIterators(numConfigs, commSize);
@@ -140,7 +139,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               const int commSize) {
   const auto numConfigs =
       static_cast<int>(getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                          dataLayoutOptions, newton3Options, interactionType, threadCounts));
+                                          dataLayoutOptions, newton3Options, threadCounts, interactionType));
 
   if (numConfigs == 0) {
     utils::ExceptionHandler::exception("Could not generate valid configurations, aborting");
@@ -159,7 +158,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
              containerOptions.size(), /*cellSizeFactorsSize*/ (cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1),
              traversalOptions.size(), dataLayoutOptions.size(), newton3Options.size(), threadCounts.size(),
              getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                dataLayoutOptions, newton3Options, interactionType, threadCounts));
+                                dataLayoutOptions, newton3Options, threadCounts, interactionType));
 }
 
 Configuration findGloballyBestConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig,
@@ -219,10 +218,14 @@ Configuration deserializeConfiguration(SerializedConfiguration config) {
   std::memcpy(&cellSizeFactor, &config[6], sizeof(double));
   int threadCount(autopas_get_max_threads());
   std::memcpy(&threadCount, &config[6 + sizeof(double)], sizeof(int));
-  return {static_cast<ContainerOption::Value>(config[0]),       cellSizeFactor,
-          static_cast<TraversalOption::Value>(config[1]),       static_cast<LoadEstimatorOption::Value>(config[2]),
-          static_cast<DataLayoutOption::Value>(config[3]),      static_cast<Newton3Option::Value>(config[4]),
-          static_cast<InteractionTypeOption::Value>(config[5]), threadCount};
+  return {static_cast<ContainerOption::Value>(config[0]),
+          cellSizeFactor,
+          static_cast<TraversalOption::Value>(config[1]),
+          static_cast<LoadEstimatorOption::Value>(config[2]),
+          static_cast<DataLayoutOption::Value>(config[3]),
+          static_cast<Newton3Option::Value>(config[4]),
+          threadCount,
+          static_cast<InteractionTypeOption::Value>(config[5])};
 }
 
 std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte> &configurationsSerialized) {

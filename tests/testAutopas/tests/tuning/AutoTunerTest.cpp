@@ -33,7 +33,10 @@ using ::testing::_;
 
 TEST_F(AutoTunerTest, testAllConfigurations) {
   const autopas::NumberSetFinite<double> cellSizeFactors({1});
-  const autopas::NumberSetFinite<int> threadCounts{autopas::Configuration::ThreadCountNoTuning};
+  std::set<int> threadCountValues;
+  const int maxThreads = std::max(autopas::autopas_get_max_threads(), 4);
+  for (int i = 1; i <= maxThreads; i *= 2) threadCountValues.emplace(i);
+  const autopas::NumberSetFinite<int> threadCounts(threadCountValues);
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 20;
   const unsigned int verletClusterSize = 64;
@@ -65,8 +68,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::InteractionTypeOption::pairwise,
-      &threadCounts);
+      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, &threadCounts,
+      autopas::InteractionTypeOption::pairwise);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
@@ -128,6 +131,9 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // Octree:                ot_c01                      (AoS <=> SoA, noNewton3)                             = 2
   //                        ot_c18                      (AoS <=> SoA, newton3)                               = 2
   configsPerContainer[autopas::ContainerOption::octree] = 4;
+
+  // Each option per number of threads
+  for (auto &entry : configsPerContainer) entry.second *= threadCounts.size();
 
   // check that there is an entry for every container.
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size());

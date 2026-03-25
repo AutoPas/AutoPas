@@ -101,8 +101,8 @@ void AutoPas<Particle_T>::init() {
   for (const auto &interactionType : _allowedInteractionTypeOptions) {
     const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
         _allowedContainers, _allowedTraversals[interactionType], _allowedLoadEstimators,
-        _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors,
-        interactionType, &threadCounts);
+        _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors, &threadCounts,
+        interactionType);
 
     AutoTuner::TuningStrategiesListType tuningStrategies;
     tuningStrategies.reserve(_tuningStrategyOptions.size());

@@ -31,8 +31,8 @@ class ConfigurationAndRankIteratorHandler {
    * @param loadEstimatorOptions
    * @param dataLayoutOptions
    * @param newton3Options
-   * @param interactionType
    * @param threadCounts
+   * @param interactionType
    * @param numConfigs
    * @param commSize
    */
@@ -41,17 +41,17 @@ class ConfigurationAndRankIteratorHandler {
                                       const std::set<TraversalOption> &traversalOptions,
                                       const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                                       const std::set<DataLayoutOption> &dataLayoutOptions,
-                                      const std::set<Newton3Option> &newton3Options,
-                                      const InteractionTypeOption &interactionType, const std::set<int> &threadCounts,
-                                      const int numConfigs, const int commSize)
+                                      const std::set<Newton3Option> &newton3Options, const std::set<int> &threadCounts,
+                                      const InteractionTypeOption &interactionType, const int numConfigs,
+                                      const int commSize)
       : _containers(containerOptions),
         _cellSizeFactors(cellSizeFactors),
         _allowedTraversalOptions(traversalOptions),
         _allowedLoadEstimatorOptions(loadEstimatorOptions),
         _dataLayoutOptions(dataLayoutOptions),
         _newton3Options(newton3Options),
-        _interactionType(interactionType),
-        _threadCounts(threadCounts) {
+        _threadCounts(threadCounts),
+        _interactionType(interactionType) {
     reset(numConfigs, commSize);
   }
 
@@ -184,8 +184,8 @@ class ConfigurationAndRankIteratorHandler {
   const std::set<LoadEstimatorOption> &_allowedLoadEstimatorOptions;
   const std::set<DataLayoutOption> &_dataLayoutOptions;
   const std::set<Newton3Option> &_newton3Options;
-  const InteractionTypeOption &_interactionType;
   const std::set<int> &_threadCounts;
+  const InteractionTypeOption &_interactionType;
   std::set<TraversalOption> _allowedAndApplicableTraversalOptions;
   std::set<LoadEstimatorOption> _allowedAndApplicableLoadEstimatorOptions;
   std::set<ContainerOption>::iterator _containerIt;
