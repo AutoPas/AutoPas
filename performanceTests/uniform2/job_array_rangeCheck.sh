@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=56 # ! This should be the maximum number of CPUs you wish to use per single MPI rank !
 #SBATCH --time=01:00:00
 #SBATCH --output=/dev/null
-#SBATCH --array=24-35
+#SBATCH --array=36-47
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=ALL  # Send email on end and failure
 
