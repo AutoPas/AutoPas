@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=56 # ! This should be the maximum number of CPUs you wish to use per single MPI rank !
 #SBATCH --time=01:00:00
 #SBATCH --output=/dev/null
-#SBATCH --array=0-11
+#SBATCH --array=0-35
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=END,FAIL  # Send email on end and failure
 
@@ -43,26 +43,31 @@ if [ ! -x "${MD_FLEXIBLE_BIN}" ]; then
 fi
 
 # Generate arrays of parameters indexed by job ID.
+declare -a total_particles
 declare -a sigma_ratio
 declare -a count_ratio
 declare -a data_layout
 index=0
-for sigma_ratio_iter in 0p05 0p15 0p25 0p35 0p45 0p55
+for total_particles_iter in 001000 050000 100000
 do
-    for count_ratio_iter in 2p00
+    for sigma_ratio_iter in 0p05 0p15 0p25 0p35 0p45 0p55
     do
-        for data_layout_iter in AoS SoA
+        for count_ratio_iter in 2p00
         do
-            sigma_ratio[$index]="$sigma_ratio_iter"
-            count_ratio[$index]="$count_ratio_iter"
-            data_layout[$index]="$data_layout_iter"
-            index=$((index + 1))
+            for data_layout_iter in AoS SoA
+            do
+                total_particles[$index]="$total_particles_iter"
+                sigma_ratio[$index]="$sigma_ratio_iter"
+                count_ratio[$index]="$count_ratio_iter"
+                data_layout[$index]="$data_layout_iter"
+                index=$((index + 1))
+            done
         done
     done
 done
 
 # Go to directory of experiment for this job ID
-TARGET_DIR="${SCRIPT_DIR}/generated_inputs_rangeCheck/sigmaRatio_${sigma_ratio[${SLURM_ARRAY_TASK_ID}]}/countRatio_${count_ratio[${SLURM_ARRAY_TASK_ID}]}/dataLayout_${data_layout[${SLURM_ARRAY_TASK_ID}]}"
+TARGET_DIR="${SCRIPT_DIR}/generated_inputs_rangeCheck/totalParticles_${total_particles[${SLURM_ARRAY_TASK_ID}]}/sigmaRatio_${sigma_ratio[${SLURM_ARRAY_TASK_ID}]}/countRatio_${count_ratio[${SLURM_ARRAY_TASK_ID}]}/dataLayout_${data_layout[${SLURM_ARRAY_TASK_ID}]}"
 if [ ! -d "${TARGET_DIR}" ]; then
     echo "ERROR: Input directory not found: ${TARGET_DIR}" >&2
     echo "Hint: Generate inputs with input_generator_rangeCheck.py before submitting." >&2
