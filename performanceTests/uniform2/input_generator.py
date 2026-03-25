@@ -19,7 +19,7 @@ TEMPLATE_FILE = SCRIPT_DIR / "template_input.yaml"
 OUTPUT_ROOT = SCRIPT_DIR / "generated_inputs"
 
 NUM_REPEATS = 3
-TOTAL_PARTICLES = 100_000
+TOTAL_PARTICLES = 120_000
 SIGMAMAX = 1.0
 
 SIGMA_RATIOS = np.linspace(0.05, 0.55, 6)
