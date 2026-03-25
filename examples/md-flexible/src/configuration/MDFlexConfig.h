@@ -25,6 +25,7 @@
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
 #include "src/configuration/objects/CubeGauss.h"
@@ -294,6 +295,12 @@ class MDFlexConfig {
   MDFlexOption<std::shared_ptr<autopas::NumberSet<double>>, __LINE__> cellSizeFactors{
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.}), "cell-size", true,
       "Factor for the interaction length to determine the cell size."};
+  /**
+   * threadCounts
+   */
+  MDFlexOption<std::shared_ptr<autopas::NumberSetFinite<int>>, __LINE__> threadCounts{
+      std::make_shared<autopas::NumberSetFinite<int>>(std::set<int>{autopas::autopas_get_max_threads()}),
+      "thread-count", true, "OpenMP thread counts."};
   /**
    * logFileName
    */

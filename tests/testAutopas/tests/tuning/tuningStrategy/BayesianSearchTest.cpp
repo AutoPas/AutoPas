@@ -21,13 +21,14 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
                                                               autopas::DataLayoutOption::soa};
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1};
+  const autopas::NumberSetFinite<int> threadCounts({autopas::autopas_get_max_threads()});
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+      &threadCounts, autopas::InteractionTypeOption::pairwise);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
                                       traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
-                                      maxEvidence);
+                                      threadCounts, maxEvidence);
 
   std::vector<autopas::Configuration> configQueue{searchSpace.begin(), searchSpace.end()};
   autopas::EvidenceCollection evidenceCollection{};
@@ -65,21 +66,24 @@ TEST_F(BayesianSearchTest, testFindBest) {
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
                                                         autopas::Newton3Option::enabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
+  const auto threadCount = autopas::autopas_get_max_threads();
+  const autopas::NumberSetFinite<int> threadCounts(std::set<int>{threadCount});
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      autopas::InteractionTypeOption::pairwise);
+      &threadCounts, autopas::InteractionTypeOption::pairwise);
   autopas::BayesianSearch bayesSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors,
                                       traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
-                                      maxEvidence, autopas::AcquisitionFunctionOption::upperConfidenceBound,
-                                      predNumLHSamples, seed);
+                                      threadCounts, maxEvidence,
+                                      autopas::AcquisitionFunctionOption::upperConfidenceBound, predNumLHSamples, seed);
   std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
   autopas::EvidenceCollection evidenceCollection{};
 
   // configuration to find
   const autopas::FeatureVector best(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
                                     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                                    autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise);
+                                    autopas::Newton3Option::enabled, threadCount,
+                                    autopas::InteractionTypeOption::pairwise);
 
   // artificial time skip
   size_t iteration = 0;

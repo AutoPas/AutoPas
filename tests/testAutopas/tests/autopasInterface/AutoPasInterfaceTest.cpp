@@ -498,13 +498,14 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
-                         ::testing::ValuesIn(autopas::SearchSpaceGenerators::cartesianProduct(
-                             autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
-                             autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-                             autopas::Newton3Option::getAllOptions(),
-                             std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get(),
-                             autopas::InteractionTypeOption::pairwise)),
+auto container = autopas::SearchSpaceGenerators::cartesianProduct(
+    autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
+    autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
+    autopas::Newton3Option::getAllOptions(),
+    std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get() /* cell size factors */,
+    std::make_unique<autopas::NumberSetFinite<int>>(std::set<int>{1}).get() /* thread counts */,
+    autopas::InteractionTypeOption::pairwise);
+INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest, ::testing::ValuesIn(container),
                          AutoPasInterfaceTest::PrintToStringParamName());
 
 ////////////////////////////////////////////// FOR EVERY SINGLE CONTAINER //////////////////////////////////////////////

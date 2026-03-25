@@ -24,6 +24,7 @@ output-suffix                        :  usefulNameForLogFiles
 use-LOESS-smoothening                :  false
 tuning-max-evidence                  :  10
 energy-sensor                        :  rapl  # alternatively: likwid
+thread-count                         :  [1,2,4,8] # defaults to just using all threads
 cutoff                               :  1
 box-min                              :  [-1.75, -1.75, -1.75]
 box-max                              :  [7.25, 7.25, 7.25]
