@@ -29,5 +29,5 @@ venv/
 *.out
 *.log
 
-# Keep my Testresults
-!performanceTests/*
+# Keep my testresults
+!performanceTests/**/*.out
