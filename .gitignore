@@ -28,3 +28,6 @@ venv/
 *.csv
 *.out
 *.log
+
+# Keep my Testresults
+!performanceTests/*
