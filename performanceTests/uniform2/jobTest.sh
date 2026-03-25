@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=56 # ! This should be the maximum number of CPUs you wish to use per single MPI rank !
 #SBATCH --time=01:00:00
 #SBATCH --output=/dev/null
-#SBATCH --array=0-6
+#SBATCH --array=0-1
 
 # !! Modify the above as relevant for your computer !!
 # !! The ones most likely needing changes are highlighted, but check all of them !!
@@ -29,8 +29,15 @@ module load slurm_setup
 # Below is a common method for assigning the SLURM job array's ID to a particular directory, as created by
 # the input_generator.py.
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# In batch mode, SLURM_SUBMIT_DIR points to the directory from which sbatch was called.
+SCRIPT_DIR="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 MD_FLEXIBLE_BIN="${MD_FLEXIBLE_BIN:-${SCRIPT_DIR}/../../build/examples/md-flexible/md-flexible}"
+
+if [ ! -x "${MD_FLEXIBLE_BIN}" ]; then
+    echo "ERROR: md-flexible executable not found or not executable: ${MD_FLEXIBLE_BIN}" >&2
+    echo "Hint: export MD_FLEXIBLE_BIN=/absolute/path/to/md-flexible before sbatch." >&2
+    exit 2
+fi
 
 # Generate arrays of parameters indexed by job ID.
 declare -a sigma_ratio
@@ -52,7 +59,13 @@ do
 done
      
 # Go to directory of experiment for this job ID
-cd "${SCRIPT_DIR}/generated_inputs/sigmaRatio_${sigma_ratio[${SLURM_ARRAY_TASK_ID}]}/countRatio_${count_ratio[${SLURM_ARRAY_TASK_ID}]}/dataLayout_${data_layout[${SLURM_ARRAY_TASK_ID}]}"
+TARGET_DIR="${SCRIPT_DIR}/generated_inputs/sigmaRatio_${sigma_ratio[${SLURM_ARRAY_TASK_ID}]}/countRatio_${count_ratio[${SLURM_ARRAY_TASK_ID}]}/dataLayout_${data_layout[${SLURM_ARRAY_TASK_ID}]}"
+if [ ! -d "${TARGET_DIR}" ]; then
+    echo "ERROR: Input directory not found: ${TARGET_DIR}" >&2
+    echo "Hint: Generate inputs with input_generator.py before submitting." >&2
+    exit 2
+fi
+cd "${TARGET_DIR}"
 
 # Set up environment variables
 # Check your machine to see what is recommended here
