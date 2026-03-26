@@ -9,7 +9,7 @@
 #SBATCH --output=/dev/null
 # 3 containers with traversals: 1 + 2 + 3 = 6 traversal combinations
 # 6 (container/traversal) * 5 sigma ratios * 6 count ratios = 180 jobs (SoA only)
-#SBATCH --array=0-20 # 0-179
+#SBATCH --array=130-149 # 0-179 todo: 21-149 
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=END,FAIL  # Send email on end and failure
 
