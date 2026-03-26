@@ -52,7 +52,11 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c01; }
 
-  [[nodiscard]] bool isApplicable() const override { return not this->_useNewton3; }
+  /**
+   * OT C01 is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     // Preprocess all leaves

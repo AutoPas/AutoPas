@@ -50,14 +50,13 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
 
   /**
    * lc_c04_combined_SoA traversals are only usable with dataLayout SoA.
-   * @todo Currently there is a bug when cellsize factor is smaller than 1:
+   * @todo Currently there is a bug when there is an overlap of more than one cell (typically due to CSF<1.0):
    * https://github.com/AutoPas/AutoPas/issues/354
    * once this bug is fixed, reenable this traversal again for arbitrary `_overlap`s.
    * @return
    */
-  [[nodiscard]] bool isApplicable() const override {
-    return this->_dataLayout == DataLayoutOption::soa and
-           (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1);
+  [[nodiscard]] bool isApplicableToDomain() const override {
+    return this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1;
   }
 
   /**
