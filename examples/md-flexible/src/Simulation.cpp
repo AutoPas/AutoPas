@@ -125,12 +125,17 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   if (_configuration.getInteractionTypes().empty()) {
     std::string functorName{};
     std::tie(_configuration.functorOption.value, functorName) =
-#if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+        std::make_pair(MDFlexConfig::FunctorOption::lj12_6_HWY, "Lennard-Jones HWY Functor.");
+#elif defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6_AVX, "Lennard-Jones AVX Functor.");
 #elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6_SVE, "Lennard-Jones SVE Functor.");
-#else
+#elif defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6, "Lennard-Jones AutoVec Functor.");
+#else
+        std::make_pair(MDFlexConfig::FunctorOption::none, "");
+        std::cerr << "No functor specified and no valid fall-back LJ functor available!" <<std::endl;
 #endif
     _configuration.addInteractionType(autopas::InteractionTypeOption::pairwise);
     std::cout << "WARNING: No functor was specified. Defaulting to " << functorName << std::endl;
