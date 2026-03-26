@@ -18,108 +18,50 @@ using ::testing::ValuesIn;
 
 // Parse combination strings and call actual test function
 TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
-  auto [containerOption, traversalOption, dataLayoutOption, interactionTypeOption] = GetParam();
+  auto config = GetParam();
 
-  if (interactionTypeOption == autopas::InteractionTypeOption::pairwise) {
-    countFunctorCalls<MPairwiseFunctor>(containerOption, traversalOption, dataLayoutOption);
-  } else if (interactionTypeOption == autopas::InteractionTypeOption::triwise) {
-    countFunctorCalls<MTriwiseFunctor>(containerOption, traversalOption, dataLayoutOption);
+  if (config.interactionType == autopas::InteractionTypeOption::pairwise) {
+    countFunctorCalls<MPairwiseFunctor>(config);
+  } else if (config.interactionType == autopas::InteractionTypeOption::triwise) {
+    countFunctorCalls<MTriwiseFunctor>(config);
   }
 }
 
 // Generate Unittests for all Configurations that support both Newton3 modes
 INSTANTIATE_TEST_SUITE_P(
     Generated, Newton3OnOffTest,
-    ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption,
-                                            autopas::DataLayoutOption, autopas::InteractionTypeOption>> {
-      // needed because CellBlock3D (called when building containers) logs always
-      autopas::Logger::create();
+    ValuesIn([]() -> std::set<autopas::Configuration> {
+      // Start with all valid configurations
+      auto configs = generateAllValidConfigurations(autopas::InteractionTypeOption::all);
 
-      std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption,
-                             autopas::InteractionTypeOption>>
-          applicableCombinations;
+      // Remove all configs that do not support both Newton3 modes
+      std::erase_if(configs, [&](const autopas::Configuration &config) {
+        const auto configsSupportingN3EnabledOnly = autopas::compatibleTraversals::allTraversalsSupportingOnlyNewton3Enabled();
+        const auto configsSupportingN3DisabledOnly = autopas::compatibleTraversals::allTraversalsSupportingOnlyNewton3Disabled();
+        return configsSupportingN3EnabledOnly.contains(config.traversal) or
+               configsSupportingN3DisabledOnly.contains(config.traversal);
+      });
 
-      // container factory info
-      autopas::ContainerSelectorInfo containerInfo(
-          Newton3OnOffTest::getBoxMin(), Newton3OnOffTest::getBoxMax(), Newton3OnOffTest::getCutoff(),
-          Newton3OnOffTest::getCellSizeFactor(), Newton3OnOffTest::getVerletSkin(), Newton3OnOffTest::getClusterSize(),
-          Newton3OnOffTest::getSortingThreshold(), autopas::LoadEstimatorOption::none);
+      // Remove all newton3 enabled configurations so that for each config-N3 enabled/disabled pair, only one config
+      // is provided, from which the other can be generated.
+      std::erase_if(configs, [&](auto &config) {
+        return config.newton3 == autopas::Newton3Option::enabled;
+      });
 
-      // generate for all containers
-      for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
-        auto containerPtr = autopas::ContainerSelector<ParticleFP64>::generateContainer(containerOption, containerInfo);
-
-        for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
-          for (auto interactionType : autopas::InteractionTypeOption::getMostOptions()) {
-            for (auto traversalOption : containerPtr->getAllTraversals(interactionType)) {
-              bool configOk = false;
-
-              autopas::Configuration configN3 = {containerOption,  Newton3OnOffTest::getCellSizeFactor(),
-                                                 traversalOption,  autopas::LoadEstimatorOption::none,
-                                                 dataLayoutOption, autopas::Newton3Option::enabled,
-                                                 interactionType};
-              autopas::Configuration configNoN3 = {containerOption,  Newton3OnOffTest::getCellSizeFactor(),
-                                                   traversalOption,  autopas::LoadEstimatorOption::none,
-                                                   dataLayoutOption, autopas::Newton3Option::disabled,
-                                                   interactionType};
-
-              if (interactionType == autopas::InteractionTypeOption::pairwise) {
-                MockPairwiseFunctor<ParticleFP64> functor;
-                // generate both newton3 versions of the same traversal and check that both are applicable
-                auto traversalWithN3 =
-                    autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64,
-                                                                            MockPairwiseFunctor<ParticleFP64>>(
-                        configN3, functor, containerPtr->getTraversalSelectorInfo());
-
-                auto traversalWithoutN3 =
-                    autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64,
-                                                                            MockPairwiseFunctor<ParticleFP64>>(
-                        configNoN3, functor, containerPtr->getTraversalSelectorInfo());
-
-                configOk = (traversalWithN3 and traversalWithoutN3);
-              } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-                MockTriwiseFunctor<ParticleFP64> functor;
-                // generate both newton3 versions of the same traversal and check that both are applicable
-                auto traversalWithN3 =
-                    autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64,
-                                                                            MockTriwiseFunctor<ParticleFP64>>(
-                        configN3, functor, containerPtr->getTraversalSelectorInfo());
-
-                auto traversalWithoutN3 =
-                    autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64,
-                                                                            MockTriwiseFunctor<ParticleFP64>>(
-                        configNoN3, functor, containerPtr->getTraversalSelectorInfo());
-
-                configOk = (traversalWithN3 and traversalWithoutN3);
-              }
-              if (configOk) {
-                applicableCombinations.emplace_back(containerOption, traversalOption, dataLayoutOption,
-                                                    interactionType);
-              }
-            }
-          }
-        }
-      }
-
-      autopas::Logger::unregister();
-
-      return applicableCombinations;
+      return configs;
     }()),
     Newton3OnOffTest::PrintToStringParamName());
 
-// Count number of Functor calls with and without newton 3 and compare
-template <typename FunctorType>
-void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
-                                         autopas::TraversalOption traversalOption,
-                                         autopas::DataLayoutOption dataLayout) {
+template <typename Functor_T>
+void Newton3OnOffTest::countFunctorCalls(autopas::Configuration config) {
   // TODO: Make test possible for direct sum SoA
-  if (containerOption == autopas::ContainerOption::directSum and dataLayout == autopas::DataLayoutOption::soa) {
+  if (config.container == autopas::ContainerOption::directSum and config.dataLayout == autopas::DataLayoutOption::soa) {
     return;
   }
-  const autopas::ContainerSelectorInfo containerInfo(getBoxMin(), getBoxMax(), getCutoff(), getCellSizeFactor(),
+  const autopas::ContainerSelectorInfo containerInfo(getBoxMin(), getBoxMax(), getCutoff(), config.cellSizeFactor,
                                                      getVerletSkin(), getClusterSize(), getSortingThreshold(),
-                                                     autopas::LoadEstimatorOption::none);
-  auto container = autopas::ContainerSelector<ParticleFP64>::generateContainer(containerOption, containerInfo);
+                                                     config.loadEstimator);
+  auto container = autopas::ContainerSelector<ParticleFP64>::generateContainer(config.container, containerInfo);
 
   const ParticleFP64 defaultParticle{};
   autopasTools::generators::UniformGenerator::fillWithParticles(*container, defaultParticle, container->getBoxMin(),
@@ -132,12 +74,12 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   // is not trivially to calculate.
 
   // Create the functor
-  FunctorType mockFunctor{};
+  Functor_T mockFunctor{};
 
   EXPECT_CALL(mockFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
 
-  if (dataLayout == autopas::DataLayoutOption::soa) {
-    if (containerOption == autopas::ContainerOption::linkedCellsReferences) {
+  if (config.dataLayout == autopas::DataLayoutOption::soa) {
+    if (config.container == autopas::ContainerOption::linkedCellsReferences) {
       // loader and extractor will be called, we don't care how often.
       auto *expectation =
           &EXPECT_CALL(mockFunctor,
@@ -167,61 +109,60 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   // "SC" = single cell
   const auto [callsNewton3SC, callsNewton3Pair, callsNewton3Triple] =
-      eval(dataLayout, /*useNewton3*/ true, *container, traversalOption, mockFunctor);
+      eval(config, /*useNewton3*/ true, *container, mockFunctor);
   const auto [callsNonNewton3SC, callsNonNewton3Pair, callsNonNewton3Triple] =
-      eval(dataLayout, /*useNewton3*/ false, *container, traversalOption, mockFunctor);
+      eval(config, /*useNewton3*/ false, *container, mockFunctor);
 
   EXPECT_GT(callsNewton3Triple + callsNewton3Pair + callsNewton3SC, 0)
       << "No interactions were found WITH Newton3. Are the generated particles too far apart?";
   EXPECT_GT(callsNonNewton3Triple + callsNonNewton3Pair + callsNonNewton3SC, 0)
       << "No interactions were found WITHOUT Newton3. Are the generated particles too far apart?";
 
-  if (dataLayout == autopas::DataLayoutOption::soa) {
+  if (config.dataLayout == autopas::DataLayoutOption::soa) {
     // within one cell no N3 optimization
     EXPECT_EQ(callsNewton3SC, callsNonNewton3SC)
-        << "Mismatch in number of interactions within cells for container option: " << containerOption;
+        << "Mismatch in number of interactions within cells for container option: " << config.container;
     // two times the calls for no N3, once for each "owning" cell
     EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair)
-        << "Mismatch in number of interactions between cell pairs for container option: " << containerOption;
+        << "Mismatch in number of interactions between cell pairs for container option: " << config.container;
     // three times the calls for no N3, once for each "owning" cell
     EXPECT_EQ(callsNewton3Triple * 3, callsNonNewton3Triple)
-        << "Mismatch in number of interactions between cell triplets for container option: " << containerOption;
+        << "Mismatch in number of interactions between cell triplets for container option: " << config.container;
 
   } else {  // aos
     // should be called exactly two times
     EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair)
-        << "Mismatch in number of interactions between cell pairs for container option: " << containerOption;
+        << "Mismatch in number of interactions between cell pairs for container option: " << config.container;
     // should be called exactly three times
-    EXPECT_EQ(callsNewton3Triple * 3, callsNonNewton3Triple) << "for container option: " << containerOption;
+    EXPECT_EQ(callsNewton3Triple * 3, callsNonNewton3Triple) << "for container option: " << config.container;
   }
 
   if (HasFailure()) {
-    std::cerr << "Failures for Container: " << containerOption.to_string()
-              << ", Traversal: " << traversalOption.to_string() << ", Data Layout: " << dataLayout.to_string()
+    std::cerr << "Failures for Container: " << config.container.to_string()
+              << ", Traversal: " << config.traversal.to_string() << ", Data Layout: " << config.dataLayout.to_string()
               << std::endl;
   }
 }
 
-template <class Container, class Traversal>
-void Newton3OnOffTest::iterate(Container &container, Traversal traversal) {
+template <class Container_T, class Traversal_T>
+void Newton3OnOffTest::iterate(Container_T &container, Traversal_T traversal) {
   container.rebuildNeighborLists(traversal.get());
   container.computeInteractions(traversal.get());
 }
 
-template <class Functor, class Container>
-std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataLayout, bool useNewton3,
-                                                          Container &container,
-                                                          autopas::TraversalOption traversalOption,
-                                                          Functor &mockFunctor) {
+template <class Functor_T, class Container_T>
+std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::Configuration config, bool useNewton3,
+                                                          Container_T &container,
+                                                          Functor_T &mockFunctor) {
   // set up counters for particle interactions
   std::atomic<unsigned int> callsSC(0ul);
   std::atomic<unsigned int> callsPair(0ul);
   std::atomic<unsigned int> callsTriple(0ul);
 
   auto getInteractionTypeFromFunctor = [&]() {
-    if constexpr (autopas::utils::isPairwiseFunctor<Functor>()) {
+    if constexpr (autopas::utils::isPairwiseFunctor<Functor_T>()) {
       return autopas::InteractionTypeOption::pairwise;
-    } else if constexpr (autopas::utils::isTriwiseFunctor<Functor>()) {
+    } else if constexpr (autopas::utils::isTriwiseFunctor<Functor_T>()) {
       return autopas::InteractionTypeOption::triwise;
     }
   };
@@ -231,7 +172,7 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOpt
   EXPECT_CALL(mockFunctor, allowsNonNewton3()).WillRepeatedly(Return(not useNewton3));
 
   // depending on the layout, set up some expectations on what Functors are called
-  switch (dataLayout) {
+  switch (config.dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // some containers actually use different SoA functor calls so expect them instead of the regular ones
       if (container.getContainerType() == autopas::ContainerOption::varVerletListsAsBuild ||
@@ -294,24 +235,20 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOpt
       break;
     }
     default: {
-      ADD_FAILURE() << "This test does not support data layout : " << dataLayout.to_string();
+      ADD_FAILURE() << "This test does not support data layout : " << config.dataLayout.to_string();
     }
   }
 
-  const autopas::Newton3Option n3Option =
-      useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled;
+  // We expect a newton3 disabled configuration, from which we need to generate a newton3 enabled one if useNewton3 is
+  // true
+  if (useNewton3) {
+    config.newton3 = autopas::Newton3Option::enabled;
+  }
 
   auto traversalSelectorInfo = container.getTraversalSelectorInfo();
-  autopas::Configuration config = {container.getContainerType(),
-                                   getCellSizeFactor(),
-                                   traversalOption,
-                                   autopas::LoadEstimatorOption::none,
-                                   dataLayout,
-                                   n3Option,
-                                   interactionType};
 
   // simulate iteration
-  iterate(container, autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64, Functor>(
+  iterate(container, autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64, Functor_T>(
                          config, mockFunctor, traversalSelectorInfo));
 
   return std::make_tuple(callsSC.load(), callsPair.load(), callsTriple.load());

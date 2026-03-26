@@ -15,14 +15,12 @@
 #include "autopas/options/TraversalOption.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
 
 /**
  * Test to check if newton3 and non-newton3 work as expected
  */
-class Newton3OnOffTest
-    : public AutoPasTestBase,
-      public ::testing::WithParamInterface<std::tuple<autopas::ContainerOption, autopas::TraversalOption,
-                                                      autopas::DataLayoutOption, autopas::InteractionTypeOption>> {
+class Newton3OnOffTest : public AutoPasTestBase, public ::testing::WithParamInterface<autopas::Configuration> {
  public:
   Newton3OnOffTest() {}
 
@@ -32,44 +30,58 @@ class Newton3OnOffTest
   static std::array<double, 3> getBoxMax() { return {10.0, 10.0, 10.0}; }
 
   static double getCutoff() { return 1.0; }
-  static double getCellSizeFactor() { return 1.0; }
   static double getVerletSkin() { return 0.0; }
   static int getClusterSize() { return 4; }
   static int getSortingThreshold() { return 8; }
 
-  template <typename FunctorType>
-  void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
-                         autopas::DataLayoutOption dataLayout);
+  /**
+   * Count the number of Functor calls with and without newton 3 and compare.
+   *
+   * For AoS,
+   * - for pairwise, there should be twice as many functor calls without newton3 as with
+   * - for triwise, there should be thrice as many functor calls without newton3 as with
+   *
+   * For SoA, regardless of interaction type,
+   * - for SoASingle, there should be the same number of functor calls with and without newton3
+   * - for SoAPair, there should be twice as many functor calls without newton3 as with
+   * - for SoATriplet, there should be thrice as many functor calls without newton3 as with
+   *
+   * @tparam Functor_T (Mock) functor type
+   * @param config
+   */
+  template <typename Functor_T>
+  void countFunctorCalls(autopas::Configuration config);
 
-  template <class Container, class Traversal>
-  void iterate(Container &container, Traversal traversal);
+  /**
+   * Mimics a simulation iteration (rebuilds neighbor lists, the computes interactions)
+   * @tparam Container_T container type
+   * @tparam Traversal_T traversal type
+   * @param container the actual container.
+   * @param traversal the actual traversal.
+   */
+  template <class Container_T, class Traversal_T>
+  void iterate(Container_T &container, Traversal_T traversal);
 
   /**
    * Determines how often the functor is called for single cells and pairs of cells und run additional checks.
-   * @tparam Functor Type of functor.
-   * @tparam Container Type of container.
-   * @param dataLayout Data layout.
-   * @param useNewton3
-   * @param container Container.
-   * @param traversalOption Traversal option.
+   * @tparam Functor_T Type of functor.
+   * @tparam Container_T Type of container.
+   * @param config Configuration. Should include newton3 disabled, regardless of useNewton3.
+   * @param useNewton3 If true, a newton3 enabled configuration is created.
+   * @param container The actual container.
    * @param mockFunctor Functor that is used for evaluation.
    * @return [#calls single cell, #calls pair of cells, #calls triplet of cells (in case of 3b)]
    */
-  template <class Functor, class Container>
-  std::tuple<size_t, size_t, size_t> eval(autopas::DataLayoutOption dataLayout, bool useNewton3, Container &container,
-                                          autopas::TraversalOption traversalOption, Functor &mockFunctor);
+  template <class Functor_T, class Container_T>
+  std::tuple<size_t, size_t, size_t> eval(autopas::Configuration config, bool useNewton3, Container_T &container,
+                                          Functor_T &mockFunctor);
 
   struct PrintToStringParamName {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
-      auto inputTuple = static_cast<ParamType>(info.param);
+      auto config = info.param;
 
-      auto [containerOption, traversalOption, dataLayoutOption, interactionType] = inputTuple;
-
-      auto retStr = containerOption.to_string() + "_" + traversalOption.to_string() + "_" +
-                    dataLayoutOption.to_string() + "_" + interactionType.to_string();
-      // replace all '-' with '_', otherwise the test name is invalid
-      std::replace(retStr.begin(), retStr.end(), '-', '_');
+      auto retStr = config.toShortString(false, true);
       return retStr;
     }
   };

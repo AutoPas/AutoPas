@@ -12,6 +12,8 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopasTools/generators/UniformGenerator.h"
+#include "testingHelpers/commonTypedefs.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
 
 /**
  * Generates a random 3d shift with the given magnitude. The shift is uniformly distributed on a sphere with radius
@@ -279,8 +281,7 @@ TEST_P(TraversalComparison, traversalTest) {
  * Lambda to generate a readable string out of the parameters of this test.
  */
 static auto toString = [](const auto &info) {
-  auto [config, numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals,
-    interactionType] = info.param;
+  auto [config, numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals, interactionType] = info.param;
   std::stringstream resStream;
   resStream << config.container.to_string() << "_" << config.traversal.to_string()
             << (interactionType == autopas::InteractionTypeOption::triwise ? "_3B" : "") << "_"
@@ -305,33 +306,19 @@ static auto toString = [](const auto &info) {
  */
 auto TraversalComparison::getTestParams() {
   std::vector<TestingTuple> testParams{};
-  for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
-    for (auto interactionType : autopas::InteractionTypeOption::getMostOptions()) {
-      for (auto traversalOption :
-           autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType)) {
-        for (auto loadEstimatorOption : autopas::LoadEstimatorOption::getAllOptions()) {
-          for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
-            for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
-              for (auto numParticles : params[interactionType].numParticles) {
-                for (auto boxMax : params[interactionType].boxMax) {
-                  for (double cellSizeFactor : params[interactionType].cellSizeFactors) {
-                    for (auto numHalo : params[interactionType].numHaloParticles) {
-                      for (bool slightMove : {true, false}) {
-                        for (bool globals : {true, /*false*/}) {
-                          for (DeletionPosition particleDeletionPosition :
-                               {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
-                                DeletionPosition::beforeAndAfterLists}) {
-                            autopas::Configuration config(containerOption, cellSizeFactor, traversalOption, loadEstimatorOption,
-                              dataLayoutOption, newton3Option, interactionType);
-                            if (config.hasCompatibleValues()) {
-                              testParams.emplace_back(config, numParticles, numHalo, boxMax, slightMove,
-                              particleDeletionPosition, globals, interactionType);
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
+  for (auto interactionType : autopas::InteractionTypeOption::getMostOptions()) {
+    const auto allConfigs = generateAllValidConfigurations(interactionType);
+    for (const auto &config : allConfigs) {
+      for (auto numParticles : params[interactionType].numParticles) {
+        for (auto boxMax : params[interactionType].boxMax) {
+          for (auto numHalo : params[interactionType].numHaloParticles) {
+            for (bool slightMove : {true, false}) {
+              for (bool globals : {true, /*false*/}) {
+                for (DeletionPosition particleDeletionPosition :
+                     {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
+                      DeletionPosition::beforeAndAfterLists}) {
+                  testParams.emplace_back(config, numParticles, numHalo, boxMax, slightMove,
+                                          particleDeletionPosition, globals, interactionType);
                 }
               }
             }
@@ -344,18 +331,21 @@ auto TraversalComparison::getTestParams() {
 }
 
 std::unordered_map<autopas::InteractionTypeOption::Value, TraversalComparison::TraversalTestParams>
-    TraversalComparison::params = {{autopas::InteractionTypeOption::pairwise,
-                                    {30.,                              // deletionPercentage
-                                     {100, 2000},                      // numParticles
-                                     {200},                            // numHaloParticles
-                                     {{3., 3., 3.}, {10., 10., 10.}},  // boxMax
-                                     {0.5, 1., 2.}}},                  // cellSizeFactor
-                                   {autopas::InteractionTypeOption::triwise,
-                                    {10.,                           // deletionPercentage
-                                     {100, 400},                    // numParticles
-                                     {200},                         // numHaloParticles
-                                     {{3., 3., 3.}, {6., 6., 6.}},  // boxMax
-                                     {0.5, 1., 1.5}}}};             // cellSizeFactor
+    TraversalComparison::params = {
+  {
+    autopas::InteractionTypeOption::pairwise,
+    {30.,                              // deletionPercentage
+     {100, 2000},                      // numParticles
+     {200},                            // numHaloParticles
+     {{3., 3., 3.}, {10., 10., 10.}}} // boxMax
+  },
+   {autopas::InteractionTypeOption::triwise,
+    {10.,                           // deletionPercentage
+     {100, 400},                    // numParticles
+     {200},                         // numHaloParticles
+     {{3., 3., 3.}, {6., 6., 6.}}}} // boxMax
+  };
+
 
 INSTANTIATE_TEST_SUITE_P(Generated, TraversalComparison, ::testing::ValuesIn(TraversalComparison::getTestParams()),
                          toString);

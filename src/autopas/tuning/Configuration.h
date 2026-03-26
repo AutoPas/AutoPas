@@ -60,15 +60,25 @@ class Configuration {
   [[nodiscard]] std::string toString() const;
 
   /**
-   * Returns a short string representation of the configuration object, suitable for tabular output.
+   * Returns a short string representation of the configuration object, suitable for tabular output or test name.
    * @param fixedLength See Option::to_string().
-   * @return A short string representation.
+   * @param forParameterizedTestName if true, creates a string representation that is safe for use as a test name.
    */
-  [[nodiscard]] std::string toShortString(bool fixedLength = true) const {
-    return "{" + interactionType.to_string(interactionType) + " , " + container.to_string(fixedLength) + " , " +
-           std::to_string(cellSizeFactor) + " , " + traversal.to_string(fixedLength) + " , " +
-           loadEstimator.to_string(fixedLength) + " , " + dataLayout.to_string(fixedLength) + " , " +
-           newton3.to_string(fixedLength) + "}";
+  [[nodiscard]] std::string toShortString(bool fixedLength = true, bool forParameterizedTestName = false) const {
+    const std::string delimiter = forParameterizedTestName ? "_" : " , ";
+    auto result = (forParameterizedTestName ? "" : "{") + interactionType.to_string() + delimiter +
+                  container.to_string(fixedLength) + delimiter + std::to_string(cellSizeFactor) + delimiter +
+                  traversal.to_string(fixedLength) + delimiter + loadEstimator.to_string(fixedLength) + delimiter +
+                  dataLayout.to_string(fixedLength) + delimiter + newton3.to_string(fixedLength) +
+                  (forParameterizedTestName ? "" : "}");
+
+    // For parameterized test names, no punctuation is allowed except "_"
+    if (forParameterizedTestName) {
+      std::ranges::replace(result, '.', '_');
+      std::ranges::replace(result, '-', '_');
+    }
+
+    return result;
   }
 
   /**

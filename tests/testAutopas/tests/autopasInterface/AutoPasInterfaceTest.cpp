@@ -467,12 +467,7 @@ using ::testing::Values;
 using ::testing::ValuesIn;
 
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
-                         ::testing::ValuesIn(autopas::SearchSpaceGenerators::cartesianProduct(
-                             autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
-                             autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-                             autopas::Newton3Option::getAllOptions(),
-                             std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get(),
-                             autopas::InteractionTypeOption::pairwise)),
+                         ::testing::ValuesIn(generateAllValidConfigurations(autopas::InteractionTypeOption::pairwise)),
                          AutoPasInterfaceTest::PrintToStringParamName());
 
 ////////////////////////////////////////////// FOR EVERY SINGLE CONTAINER //////////////////////////////////////////////
@@ -485,10 +480,12 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
   autoPas.setCutoff(1);
   autoPas.setVerletSkin(0.4);
 
-  const auto &containerOp = GetParam();
-  autoPas.setAllowedContainers({containerOp});
+  const auto &config = GetParam();
+  autoPas.setAllowedContainers({config.container});
+  autoPas.setCellSizeFactor(config.cellSizeFactor);
+  // Arbitrarily allow all valid traversals, so AutoPas can be initialized.
   autoPas.setAllowedTraversals(
-      autopas::compatibleTraversals::allCompatibleTraversals(containerOp, autopas::InteractionTypeOption::pairwise));
+      autopas::compatibleTraversals::allCompatibleTraversals(config.container, autopas::InteractionTypeOption::pairwise));
 
   autoPas.init();
 
@@ -532,25 +529,29 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
   EXPECT_THAT(particlesInsideAfterResize, ::testing::UnorderedPointwise(ParticleEq(), expectedParticles));
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface1ContainersTest, ValuesIn(getTestableContainerOptions()),
+INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface1ContainersTest, ValuesIn(generateAllValidContainerConfigurations()),
                          AutoPasInterface1ContainersTest::PrintToStringParamName());
 
 /////////////////////////////////////// FOR EVERY COMBINATION OF TWO CONTAINERS ////////////////////////////////////////
 
-void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::ContainerOption containerOption2,
+void testSimulationLoop(ContainerConfiguration containerConfig1, ContainerConfiguration containerConfig2,
                         size_t autoPasDirection) {
   using namespace autopas::utils::ArrayMath::literals;
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas1;
   autoPas1.setOutputSuffix("1_");
-  autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption1});
+  autoPas1.setAllowedContainers(std::set<autopas::ContainerOption>{containerConfig1.container});
+  autoPas1.setCellSizeFactor(containerConfig1.cellSizeFactor);
+  // Arbitrarily allow all valid traversals, so AutoPas can be initialized.
   autoPas1.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(
-      containerOption1, autopas::InteractionTypeOption::pairwise));
+      containerConfig1.container, autopas::InteractionTypeOption::pairwise));
   autopas::AutoPas<Molecule> autoPas2;
   autoPas2.setOutputSuffix("2_");
-  autoPas2.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption2});
+  autoPas2.setAllowedContainers(std::set<autopas::ContainerOption>{containerConfig2.container});
+  autoPas2.setCellSizeFactor(containerConfig2.cellSizeFactor);
+  // Arbitrarily allow all valid traversals, so AutoPas can be initialized.
   autoPas2.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(
-      containerOption2, autopas::InteractionTypeOption::pairwise));
+      containerConfig2.container, autopas::InteractionTypeOption::pairwise));
 
   defaultInit(autoPas1, autoPas2, autoPasDirection);
 
@@ -634,8 +635,8 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
 TEST_P(AutoPasInterface2ContainersTest, SimulationLoopTest) {
   // this test checks the correct behavior of the autopas interface.
-  auto containerOptionTuple = GetParam();
-  testSimulationLoop(std::get<0>(containerOptionTuple), std::get<1>(containerOptionTuple), 0);
+  auto containerConfigTuple = GetParam();
+  testSimulationLoop(std::get<0>(containerConfigTuple), std::get<1>(containerConfigTuple), 0);
 }
 
 using ::testing::Combine;
@@ -643,5 +644,6 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
 
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface2ContainersTest,
-                         Combine(ValuesIn(getTestableContainerOptions()), ValuesIn(getTestableContainerOptions())),
+                         Combine(ValuesIn(generateAllValidContainerConfigurations()),
+                                 ValuesIn(generateAllValidContainerConfigurations())),
                          AutoPasInterface2ContainersTest::PrintToStringParamName());

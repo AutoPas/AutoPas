@@ -12,9 +12,8 @@
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
 
-template <typename AutoPasT>
-auto ContainerForEachTest::defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption,
-                                       double cellSizeFactor) {
+template <typename AutoPas_T>
+auto ContainerForEachTest::defaultInit(AutoPas_T &autoPas, const ContainerConfiguration &containerConfig) {
   using namespace autopas::utils::ArrayMath::literals;
 
   autoPas.setBoxMin({0., 0., 0.});
@@ -23,10 +22,11 @@ auto ContainerForEachTest::defaultInit(AutoPasT &autoPas, const autopas::Contain
   autoPas.setVerletSkin(0.2);
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
-  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerConfig.container});
+  // Arbitrarily allow all valid traversals, so AutoPas can be initialized.
   autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(
-      containerOption, autopas::InteractionTypeOption::pairwise));
-  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
+      containerConfig.container, autopas::InteractionTypeOption::pairwise));
+  autoPas.setCellSizeFactor(containerConfig.cellSizeFactor);
 
   autoPas.init();
 
@@ -36,8 +36,17 @@ auto ContainerForEachTest::defaultInit(AutoPasT &autoPas, const autopas::Contain
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }
 
-template <typename Ids>
-std::vector<size_t> getExpectedIds(autopas::IteratorBehavior behavior, Ids owned, Ids halo) {
+/**
+ * Returns the expected particle IDs for a given iterator behavior.
+ *
+ * @param behavior Iterator behavior that determines which IDs are selected. For `owned`, only the owned IDs are returned. For `halo`, only the halo IDs are returned.
+ * For `ownedOrHalo`, the owned IDs are returned first, followed by the halo IDs. Any other behavior yields an empty result.
+ * @param owned IDs of particles owned by the current rank / container.
+ * @param halo IDs of halo particles.
+ * @return IDs expected to be visited for the given behavior.
+ */
+std::vector<size_t> getExpectedIds(autopas::IteratorBehavior behavior, const std::vector<size_t> &owned,
+                                   const std::vector<size_t> &halo) {
   std::vector<size_t> expectedIDs;
   switch (behavior) {
     case autopas::IteratorBehavior::owned: {
@@ -61,17 +70,17 @@ std::vector<size_t> getExpectedIds(autopas::IteratorBehavior behavior, Ids owned
 }
 
 /**
- * Test forEachInRegionSequential for every possible combination of [containerOption, cellSizeFactor, useConstIterator,
+ * Test forEachInRegionSequential for every possible combination of [containerConfig, useConstIterator,
  * priorForceCalc, behavior] by adding found particles indices to list and comparing with 'handmade' expectedIndices.
  */
 TEST_P(ContainerForEachTest, testForEachInRegionSequential) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
+  auto [containerConfig, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
-  defaultInit(autoPas, containerOption, cellSizeFactor);
+  defaultInit(autoPas, containerConfig);
 
   auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
@@ -109,17 +118,17 @@ TEST_P(ContainerForEachTest, testForEachInRegionSequential) {
 }
 
 /**
- * Test forEachSequential for every possible combination of [containerOption, cellSizeFactor, useConstIterator,
+ * Test forEachSequential for every possible combination of [containerConfig, useConstIterator,
  * priorForceCalc, behavior] by adding found particles indices to list and comparing with 'handmade' expectedIndices.
  */
 TEST_P(ContainerForEachTest, testForEachSequential) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
+  auto [containerConfig, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
-  defaultInit(autoPas, containerOption, cellSizeFactor);
+  defaultInit(autoPas, containerConfig);
 
   auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
@@ -155,17 +164,17 @@ TEST_P(ContainerForEachTest, testForEachSequential) {
 }
 
 /**
- * Test forEachInRegionParallel for every possible combination of [containerOption, cellSizeFactor, useConstIterator,
+ * Test forEachInRegionParallel for every possible combination of [containerConfig, useConstIterator,
  * priorForceCalc, behavior] by adding found particles indices to list and comparing with 'handmade' expectedIndices.
  */
 TEST_P(ContainerForEachTest, testForEachInRegionParallel) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
+  auto [containerConfig, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
-  defaultInit(autoPas, containerOption, cellSizeFactor);
+  defaultInit(autoPas, containerConfig);
 
   auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
@@ -203,17 +212,17 @@ TEST_P(ContainerForEachTest, testForEachInRegionParallel) {
 }
 
 /**
- * Test forEachParallel for every possible combination of [containerOption, cellSizeFactor, useConstIterator,
+ * Test forEachParallel for every possible combination of [containerConfig, useConstIterator,
  * priorForceCalc, behavior] by adding found particles indices to list and comparing with 'handmade' expectedIndices.
  */
 TEST_P(ContainerForEachTest, testForEachParallel) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
+  auto [containerConfig, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
-  defaultInit(autoPas, containerOption, cellSizeFactor);
+  defaultInit(autoPas, containerConfig);
 
   auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
@@ -253,17 +262,8 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-static inline auto getTestableContainerOptions() {
-#ifdef AUTOPAS_CUDA
-  return autopas::ContainerOption::getAllOptions();
-#else
-  auto containerOptions = autopas::ContainerOption::getAllOptions();
-  return containerOptions;
-#endif
-}
-
 INSTANTIATE_TEST_SUITE_P(Generated, ContainerForEachTest,
-                         Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
+                         Combine(ValuesIn(generateAllValidContainerConfigurations()),
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          ContainerForEachTest::PrintToStringParamName());

@@ -11,13 +11,9 @@
 #include <cstdlib>
 
 #include "AutoPasTestBase.h"
-#include "autopas/options/ContainerOption.h"
-#include "autopas/options/Newton3Option.h"
-#include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "testingHelpers/commonTypedefs.h"
 #include "autopas/tuning/Configuration.h"
 
 enum DeletionPosition {
@@ -62,7 +58,6 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
     std::vector<unsigned long> numParticles;
     std::vector<unsigned long> numHaloParticles;
     std::vector<std::array<double, 3>> boxMax;
-    std::vector<double> cellSizeFactors;
   };
 
   template <bool globals>

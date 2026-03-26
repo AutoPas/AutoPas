@@ -14,8 +14,7 @@ extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
 
 template <typename AutoPasT>
-auto ContainerReduceTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
-                                      double cellSizeFactor) {
+auto ContainerReduceTest::defaultInit(AutoPasT &autoPas, const ContainerConfiguration &containerConfig) {
   using namespace autopas::utils::ArrayMath::literals;
 
   autoPas.setBoxMin({0., 0., 0.});
@@ -24,10 +23,10 @@ auto ContainerReduceTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOptio
   autoPas.setVerletSkin(0.4);
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
-  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerConfig.container});
   autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(
-      containerOption, autopas::InteractionTypeOption::pairwise));
-  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
+      containerConfig.container, autopas::InteractionTypeOption::pairwise));
+  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({containerConfig.cellSizeFactor})));
 
   autoPas.init();
 
@@ -69,11 +68,11 @@ std::vector<size_t> getExpectedIds(autopas::IteratorBehavior behavior, Ids owned
 TEST_P(ContainerReduceTest, testReduceInRegion) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
+  auto [containerConfig, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
-  defaultInit(autoPas, containerOption, cellSizeFactor);
+  defaultInit(autoPas, containerConfig);
 
   auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
@@ -129,11 +128,11 @@ TEST_P(ContainerReduceTest, testReduceInRegion) {
 TEST_P(ContainerReduceTest, testReduce) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
+  auto [containerConfig, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
-  defaultInit(autoPas, containerOption, cellSizeFactor);
+  defaultInit(autoPas, containerConfig);
 
   auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
@@ -189,11 +188,11 @@ TEST_P(ContainerReduceTest, testReduce) {
 TEST_P(ContainerReduceTest, testReduceInRegionParallel) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
+  auto [containerConfig, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
-  defaultInit(autoPas, containerOption, cellSizeFactor);
+  defaultInit(autoPas, containerConfig);
 
   auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
@@ -249,11 +248,11 @@ TEST_P(ContainerReduceTest, testReduceInRegionParallel) {
 TEST_P(ContainerReduceTest, testReduceParallel) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
+  auto [containerConfig, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
-  defaultInit(autoPas, containerOption, cellSizeFactor);
+  defaultInit(autoPas, containerConfig);
 
   auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
@@ -313,22 +312,11 @@ using ::testing::ValuesIn;
 std::vector<testingTuple> generateCompatibleTestParams() {
   std::vector<testingTuple> params{};
 
-  for (const auto containerOption : autopas::ContainerOption::getAllOptions()) {
-    for (const double cellSizeFactor : {0.5, 1., 1.5}) {
-      const bool supportsOnlyCSF1 =
-          autopas::compatibleCSFs::allContainersOnlySupportingCSF1().contains(containerOption);
-      const bool supportsSub1CSF =
-          autopas::compatibleCSFs::allContainersSupportingSub1CSF().contains(containerOption);
-
-      if ((supportsOnlyCSF1 and cellSizeFactor != 1.) or (cellSizeFactor < 1. and not supportsSub1CSF)) {
-        continue;
-      }
-
-      for (const bool useConstIterator : {true, false}) {
-        for (const bool priorForceCalc : {true, false}) {
-          for (const auto behavior : autopas::IteratorBehavior::getMostOptions()) {
-            params.emplace_back(containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior);
-          }
+  for (const auto &containerConfig : generateAllValidContainerConfigurations()) {
+    for (const bool useConstIterator : {true, false}) {
+      for (const bool priorForceCalc : {true, false}) {
+        for (const auto behavior : autopas::IteratorBehavior::getMostOptions()) {
+          params.emplace_back(containerConfig, useConstIterator, priorForceCalc, behavior);
         }
       }
     }

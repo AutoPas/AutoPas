@@ -11,6 +11,7 @@
 #include <tuple>
 
 #include "AutoPasTestBase.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
@@ -40,30 +41,36 @@ class AutoPasInterfaceTest : public AutoPasTestBase, public ::testing::WithParam
 };
 
 class AutoPasInterface1ContainersTest : public testing::Test,
-                                        public ::testing::WithParamInterface<autopas::ContainerOption> {
+                                        public ::testing::WithParamInterface<ContainerConfiguration> {
  public:
   struct PrintToStringParamName {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
-      const auto &option = static_cast<ParamType>(info.param);
-      return option.to_string();
+      const auto &config = static_cast<ParamType>(info.param);
+      std::string str = config.container.to_string() + "_" + std::to_string(config.cellSizeFactor);
+      std::replace(str.begin(), str.end(), '-', '_');
+      std::replace(str.begin(), str.end(), '.', '_');
+      return str;
     }
   };
 };
 
 class AutoPasInterface2ContainersTest
     : public testing::Test,
-      public ::testing::WithParamInterface<std::tuple<autopas::ContainerOption, autopas::ContainerOption>> {
+      public ::testing::WithParamInterface<std::tuple<ContainerConfiguration, ContainerConfiguration>> {
  public:
   struct PrintToStringParamName {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       auto inputTuple = static_cast<ParamType>(info.param);
-      std::string fromStr(std::get<0>(inputTuple).to_string());
-      std::string toStr(std::get<1>(inputTuple).to_string());
-      // replace all '-' with '_', otherwise the test name is invalid
-      // std::replace(traversal.begin(), traversal.end(), '-', '_');
-      return fromStr + "And" + toStr;
+      auto config1 = std::get<0>(inputTuple);
+      auto config2 = std::get<1>(inputTuple);
+      std::string fromStr(config1.container.to_string() + "_" + std::to_string(config1.cellSizeFactor));
+      std::string toStr(config2.container.to_string() + "_" + std::to_string(config2.cellSizeFactor));
+      std::string res = fromStr + "And" + toStr;
+      std::replace(res.begin(), res.end(), '-', '_');
+      std::replace(res.begin(), res.end(), '.', '_');
+      return res;
     }
   };
 };
