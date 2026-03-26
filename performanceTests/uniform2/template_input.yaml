@@ -11,7 +11,7 @@ data-layout                      :  [SoA]
 traversal                            :  [$traversal]
 container                            :  [$container]
 newton3                          : [enabled]
-cell-size                        : [1]
+cell-size                        : [$cellSize]
 tuning-phases                        :  0
 Sites:
   0:

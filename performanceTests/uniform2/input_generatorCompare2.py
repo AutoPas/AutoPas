@@ -10,6 +10,7 @@ from string import Template
 # - container / traversal combinations
 # - sigma ratio: sigma0 / sigmaMax
 # - particle-count ratio: n1 / n0
+# - cell size
 #
 # For each scenario, NUM_REPEATS repeat runs are generated.
 
@@ -23,6 +24,7 @@ SIGMAMAX = 0.8
 
 SIGMA_RATIOS = [0.1, 0.2, 0.3, 0.4, 0.48]
 COUNT_RATIOS = [0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
+CELL_SIZES = [0.5, 1.0]
 
 # Container -> traversals to sweep.
 CONTAINER_TRAVERSALS = {
@@ -48,7 +50,7 @@ input_template = Template(TEMPLATE_FILE.read_text(encoding="utf-8"))
 OUTPUT_ROOT.mkdir(exist_ok=True)
 
 # Create directory structure:
-# generated_inputs/container_<container>/traversal_<traversal>/sigmaRatio_<...>/countRatio_<...>/run_<...>
+# generated_inputs/container_<container>/traversal_<traversal>/sigmaRatio_<...>/cellSize_<...>/countRatio_<...>/run_<...>
 for container, traversals in CONTAINER_TRAVERSALS.items():
     container_dir = OUTPUT_ROOT / f"container_{container}"
     container_dir.mkdir(exist_ok=True)
@@ -67,28 +69,33 @@ for container, traversals in CONTAINER_TRAVERSALS.items():
             sigma_dir = traversal_dir / f"sigmaRatio_{format_ratio(sigma_ratio)}"
             sigma_dir.mkdir(exist_ok=True)
 
-            for count_ratio in COUNT_RATIOS:
-                num_particles0, num_particles1 = split_particles(TOTAL_PARTICLES, count_ratio)
-                count_dir = sigma_dir / f"countRatio_{format_ratio(count_ratio)}"
-                count_dir.mkdir(exist_ok=True)
+            for cell_size in CELL_SIZES:
+                cell_size_dir = sigma_dir / f"cellSize_{format_ratio(cell_size)}"
+                cell_size_dir.mkdir(exist_ok=True)
 
-                for run in range(NUM_REPEATS):
-                    run_dir = count_dir / f"run_{run}"
-                    run_dir.mkdir(exist_ok=True)
+                for count_ratio in COUNT_RATIOS:
+                    num_particles0, num_particles1 = split_particles(TOTAL_PARTICLES, count_ratio)
+                    count_dir = cell_size_dir / f"countRatio_{format_ratio(count_ratio)}"
+                    count_dir.mkdir(exist_ok=True)
 
-                    substitutions = {
-                        "sigma0": f"{sigma0:.6f}",
-                        "sigma1": f"{sigma1:.6f}",
-                        "cutoff0": f"{cutoff0:.6f}",
-                        "cutoff1": f"{cutoff1:.6f}",
-                        "maxCutoff": f"{max_cutoff:.6f}",
-                        "numParticles0": str(num_particles0),
-                        "numParticles1": str(num_particles1),
-                        "container": container,
-                        "traversal": traversal,
-                    }
+                    for run in range(NUM_REPEATS):
+                        run_dir = count_dir / f"run_{run}"
+                        run_dir.mkdir(exist_ok=True)
 
-                    (run_dir / "input.yaml").write_text(
-                        input_template.substitute(substitutions), encoding="utf-8"
-                    )
+                        substitutions = {
+                            "sigma0": f"{sigma0:.6f}",
+                            "sigma1": f"{sigma1:.6f}",
+                            "cutoff0": f"{cutoff0:.6f}",
+                            "cutoff1": f"{cutoff1:.6f}",
+                            "maxCutoff": f"{max_cutoff:.6f}",
+                            "numParticles0": str(num_particles0),
+                            "numParticles1": str(num_particles1),
+                            "container": container,
+                            "traversal": traversal,
+                            "cellSize": f"{cell_size}",
+                        }
+
+                        (run_dir / "input.yaml").write_text(
+                            input_template.substitute(substitutions), encoding="utf-8"
+                        )
 

@@ -8,8 +8,10 @@
 #SBATCH --time=01:00:00
 #SBATCH --output=/dev/null
 # 3 containers with traversals: 1 + 2 + 2 = 5 traversal combinations
-# 5 (container/traversal) * 5 sigma ratios * 6 count ratios = 150 jobs (SoA only)
-#SBATCH --array=0-149
+# Index only container/traversal, sigma ratio and cell size.
+# The count-ratio sweep and 3 repeat runs are executed inside each array job.
+# 5 (container/traversal) * 5 sigma ratios * 2 cell sizes = 50 jobs
+#SBATCH --array=0-49
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=END,FAIL  # Send email on end and failure
 
@@ -47,7 +49,7 @@ fi
 declare -a container
 declare -a traversal
 declare -a sigma_ratio
-declare -a count_ratio
+declare -a cell_size
 index=0
 for container_iter in HierarchicalGridMatching HierarchicalGrid LinkedCells
 do
@@ -71,12 +73,12 @@ do
     do
         for sigma_ratio_iter in 0p10 0p20 0p30 0p40 0p48
         do
-            for count_ratio_iter in 0p50 1p00 2p00 4p00 8p00 16p00
+            for cell_size_iter in 0p50 1p00
             do
                 container[$index]="$container_iter"
                 traversal[$index]="$traversal_iter"
                 sigma_ratio[$index]="$sigma_ratio_iter"
-                count_ratio[$index]="$count_ratio_iter"
+                cell_size[$index]="$cell_size_iter"
                 index=$((index + 1))
             done
         done
@@ -88,14 +90,13 @@ if [ "${SLURM_ARRAY_TASK_ID}" -ge "${index}" ]; then
     exit 2
 fi
      
-# Go to directory of experiment for this job ID
-TARGET_DIR="${SCRIPT_DIR}/generated_inputs/container_${container[${SLURM_ARRAY_TASK_ID}]}/traversal_${traversal[${SLURM_ARRAY_TASK_ID}]}/sigmaRatio_${sigma_ratio[${SLURM_ARRAY_TASK_ID}]}/countRatio_${count_ratio[${SLURM_ARRAY_TASK_ID}]}"
-if [ ! -d "${TARGET_DIR}" ]; then
-    echo "ERROR: Input directory not found: ${TARGET_DIR}" >&2
-    echo "Hint: Generate inputs with input_generator.py before submitting." >&2
+# Go to base directory of experiment for this job ID.
+TARGET_BASE_DIR="${SCRIPT_DIR}/generated_inputs/container_${container[${SLURM_ARRAY_TASK_ID}]}/traversal_${traversal[${SLURM_ARRAY_TASK_ID}]}/sigmaRatio_${sigma_ratio[${SLURM_ARRAY_TASK_ID}]}/cellSize_${cell_size[${SLURM_ARRAY_TASK_ID}]}"
+if [ ! -d "${TARGET_BASE_DIR}" ]; then
+    echo "ERROR: Input base directory not found: ${TARGET_BASE_DIR}" >&2
+    echo "Hint: Generate inputs with input_generatorCompare2.py before submitting." >&2
     exit 2
 fi
-cd "${TARGET_DIR}"
 
 # Set up environment variables
 # Check your machine to see what is recommended here
@@ -106,12 +107,23 @@ export OMP_PROC_BIND=true
 unset I_MPI_PMI_LIBRARY
 export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=0
 
-#sequentially loop over each run
-for run in `seq 0 2`
+# Sequentially loop over innermost sweep (count ratio) and over each repeat run.
+for count_ratio_iter in 0p50 1p00 2p00 4p00 8p00 16p00
 do
-    cd run_${run}
-    # If not running an mpi executable, change mpirun to whatever is recommended for your machine (e.g. srun)
-	# Override MD_FLEXIBLE_BIN if your executable is in a different location.
-    srun -n 1 "${MD_FLEXIBLE_BIN}" --yaml-filename input.yaml > logOutput_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.out 2>&1
-    cd ..
+    COUNT_DIR="${TARGET_BASE_DIR}/countRatio_${count_ratio_iter}"
+    if [ ! -d "${COUNT_DIR}" ]; then
+        echo "ERROR: Input count-ratio directory not found: ${COUNT_DIR}" >&2
+        exit 2
+    fi
+
+    cd "${COUNT_DIR}"
+    for run in `seq 0 2`
+    do
+        cd "run_${run}"
+        # If not running an mpi executable, change srun to whatever is recommended for your machine.
+        # Override MD_FLEXIBLE_BIN if your executable is in a different location.
+        srun -n 1 "${MD_FLEXIBLE_BIN}" --yaml-filename input.yaml > logOutput_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.out 2>&1
+        cd ..
+    done
+    cd "${TARGET_BASE_DIR}"
 done
