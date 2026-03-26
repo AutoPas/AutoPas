@@ -90,18 +90,18 @@ inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::decompose2AndProces
     lowCornerCell2 = {lowCornerCell2[0] + _shiftLength[0], lowCornerCell2[1] + _shiftLength[1],
                       lowCornerCell2[2] + _shiftLength[2]};
   } else {
-    highCornerCell2 = {std::nextafter(highCornerCell2[0], -std::numeric_limits<double>::infinity()),
-                       std::nextafter(highCornerCell2[1], -std::numeric_limits<double>::infinity()),
-                       std::nextafter(highCornerCell2[2], -std::numeric_limits<double>::infinity())};
+    // get the lower corner of the diagonally higher corner. Otherwise we might get ambigious boundaries, because high
+    // and next low corner dont always give the same result, because of floating point errors
+    auto upperIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(
+        cellIndex2, _cellBlocks[_upperLevel]->getCellsPerDimensionWithHalo());
+    upperIndex3D = {upperIndex3D[0] + 1, upperIndex3D[1] + 1, upperIndex3D[2] + 1};
+    highCornerCell2 = _cellBlocks[_upperLevel]->getCellBoundingBox(upperIndex3D).first;
   }
 
   const auto [lowCell1, highCell1] = _cellBlocks[_upperLevel]->getCellBoundingBox(cellIndex1);
-  auto upperIndex3D =
-      utils::ThreeDimensionalMapping::oneToThreeD(cellIndex2, _cellBlocks[_upperLevel]->getCellsPerDimensionWithHalo());
 
   // decompose for every level below upperLevel
   for (size_t lowerLevel = 0; lowerLevel < _upperLevel; lowerLevel++) {
-    // see if all of this is worth it
     auto startIndex3D = _cellBlocks[lowerLevel]->get3DIndexOfPosition(lowCornerCell2);
     auto stopIndex3D = _cellBlocks[lowerLevel]->get3DIndexOfPosition(highCornerCell2);
 
@@ -114,30 +114,28 @@ inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::decompose2AndProces
       const auto [stopLow, stopHigh] = _cellBlocks[lowerLevel]->getCellBoundingBox(stopIndex3D);
       std::array<double, 3> stopCellCenter = {0.5 * (stopLow[0] + stopHigh[0]), 0.5 * (stopLow[1] + stopHigh[1]),
                                               0.5 * (stopLow[2] + stopHigh[2])};
-      startCellCenter = {0.5 * (lowCornerCell2[0] + highCornerCell2[0]), 0.5 * (lowCornerCell2[1] + highCornerCell2[1]),
-                         0.5 * (lowCornerCell2[2] + highCornerCell2[2])};
       // do pretty conservative checks here, so we dont miss anything
       // double checks are prevented by ownership checks in the loop
-      if (startCellCenter[0] + _shiftLength[0] < lowCornerCell2[0] &&
+      if (startCellCenter[0] < lowCornerCell2[0] &&
           startIndex3D[0] < _cellBlocks[lowerLevel]->getCellsPerDimensionWithHalo()[0] - 1) {
         startIndex3D[0]++;
       }
-      if (startCellCenter[1] + _shiftLength[1] < lowCornerCell2[1] &&
+      if (startCellCenter[1] < lowCornerCell2[1] &&
           startIndex3D[1] < _cellBlocks[lowerLevel]->getCellsPerDimensionWithHalo()[1] - 1) {
         startIndex3D[1]++;
       }
-      if (startCellCenter[2] + _shiftLength[2] < lowCornerCell2[2] &&
+      if (startCellCenter[2] < lowCornerCell2[2] &&
           startIndex3D[2] < _cellBlocks[lowerLevel]->getCellsPerDimensionWithHalo()[2] - 1) {
         startIndex3D[2]++;
       }
       // I think 0 checks are not necessary, but eh
-      if (stopCellCenter[0] - _shiftLength[0] > highCornerCell2[0] && stopIndex3D[0] > 0) {
+      if (stopCellCenter[0] >= highCornerCell2[0] && stopIndex3D[0] > 0) {
         stopIndex3D[0]--;
       }
-      if (stopCellCenter[1] - _shiftLength[1] > highCornerCell2[1] && stopIndex3D[1] > 0) {
+      if (stopCellCenter[1] >= highCornerCell2[1] && stopIndex3D[1] > 0) {
         stopIndex3D[1]--;
       }
-      if (stopCellCenter[2] - _shiftLength[2] > highCornerCell2[2] && stopIndex3D[2] > 0) {
+      if (stopCellCenter[2] >= highCornerCell2[2] && stopIndex3D[2] > 0) {
         stopIndex3D[2]--;
       }
     }
@@ -173,21 +171,21 @@ inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::decompose2AndProces
               continue;
             }
           }
-
-          if (!_fittedGrids && (x == stopIndex3D[0] || y == stopIndex3D[1] || z == stopIndex3D[2] ||
-                                x == startIndex3D[0] || y == startIndex3D[1] || z == startIndex3D[2])) {
-            // Canonical ownership for non-fitted grids:
-            // assign lower cell only to the upper cell that contains its center.
-            std::array<double, 3> lowerCenter{0.5 * (low[0] + high[0]), 0.5 * (low[1] + high[1]),
-                                              0.5 * (low[2] + high[2])};
-            lowerCenter = {std::nextafter(lowerCenter[0], std::numeric_limits<double>::infinity()),
-                           std::nextafter(lowerCenter[1], std::numeric_limits<double>::infinity()),
-                           std::nextafter(lowerCenter[2], std::numeric_limits<double>::infinity())};
-            auto ownerUpperIndex3D = _cellBlocks[_upperLevel]->get3DIndexOfPosition(lowerCenter);
-            if (ownerUpperIndex3D != upperIndex3D) {
-              continue;
-            }
-          }
+          /*   if (false && !_fittedGrids && (x == stopIndex3D[0] || y == stopIndex3D[1] || z == stopIndex3D[2] ||
+                                          x == startIndex3D[0] || y == startIndex3D[1] || z == startIndex3D[2])) {
+                      // Canonical ownership for non-fitted grids:
+                      // assign lower cell only to the upper cell that contains its center.
+                      std::array<double, 3> lowerCenter{0.5 * (low[0] + high[0]), 0.5 * (low[1] + high[1]),
+                                                        0.5 * (low[2] + high[2])};
+                      lowerCenter = {std::nextafter(lowerCenter[0], std::numeric_limits<double>::infinity()),
+                                     std::nextafter(lowerCenter[1], std::numeric_limits<double>::infinity()),
+                                     std::nextafter(lowerCenter[2], std::numeric_limits<double>::infinity())};
+                      auto ownerUpperIndex3D = _cellBlocks[_upperLevel]->get3DIndexOfPosition(lowerCenter);
+                      if (ownerUpperIndex3D != upperIndex3D) {
+                        continue;
+                      }
+                    }
+          */
 
           // Could potentially calculate and use sorting direction in the future
           auto &lowerCell = _cellBlocks[lowerLevel]->getCell({x, y, z});
