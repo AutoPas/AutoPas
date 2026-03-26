@@ -10,7 +10,6 @@ from string import Template
 # - container / traversal combinations
 # - sigma ratio: sigma0 / sigmaMax
 # - particle-count ratio: n1 / n0
-# - data layout: AoS or SoA
 #
 # For each scenario, NUM_REPEATS repeat runs are generated.
 
@@ -24,7 +23,6 @@ SIGMAMAX = 0.5
 
 SIGMA_RATIOS = [0.1, 0.2, 0.3, 0.4, 0.48]
 COUNT_RATIOS = [0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-DATA_LAYOUTS = ["AoS", "SoA"]
 
 # Container -> traversals to sweep.
 CONTAINER_TRAVERSALS = {
@@ -50,7 +48,7 @@ input_template = Template(TEMPLATE_FILE.read_text(encoding="utf-8"))
 OUTPUT_ROOT.mkdir(exist_ok=True)
 
 # Create directory structure:
-# generated_inputs/container_<container>/traversal_<traversal>/sigmaRatio_<...>/countRatio_<...>/dataLayout_<...>/run_<...>
+# generated_inputs/container_<container>/traversal_<traversal>/sigmaRatio_<...>/countRatio_<...>/run_<...>
 for container, traversals in CONTAINER_TRAVERSALS.items():
     container_dir = OUTPUT_ROOT / f"container_{container}"
     container_dir.mkdir(exist_ok=True)
@@ -74,28 +72,23 @@ for container, traversals in CONTAINER_TRAVERSALS.items():
                 count_dir = sigma_dir / f"countRatio_{format_ratio(count_ratio)}"
                 count_dir.mkdir(exist_ok=True)
 
-                for data_layout in DATA_LAYOUTS:
-                    layout_dir = count_dir / f"dataLayout_{data_layout}"
-                    layout_dir.mkdir(exist_ok=True)
+                for run in range(NUM_REPEATS):
+                    run_dir = count_dir / f"run_{run}"
+                    run_dir.mkdir(exist_ok=True)
 
-                    for run in range(NUM_REPEATS):
-                        run_dir = layout_dir / f"run_{run}"
-                        run_dir.mkdir(exist_ok=True)
+                    substitutions = {
+                        "sigma0": f"{sigma0:.6f}",
+                        "sigma1": f"{sigma1:.6f}",
+                        "cutoff0": f"{cutoff0:.6f}",
+                        "cutoff1": f"{cutoff1:.6f}",
+                        "maxCutoff": f"{max_cutoff:.6f}",
+                        "numParticles0": str(num_particles0),
+                        "numParticles1": str(num_particles1),
+                        "container": container,
+                        "traversal": traversal,
+                    }
 
-                        substitutions = {
-                            "sigma0": f"{sigma0:.6f}",
-                            "sigma1": f"{sigma1:.6f}",
-                            "cutoff0": f"{cutoff0:.6f}",
-                            "cutoff1": f"{cutoff1:.6f}",
-                            "maxCutoff": f"{max_cutoff:.6f}",
-                            "numParticles0": str(num_particles0),
-                            "numParticles1": str(num_particles1),
-                            "dataLayout": data_layout,
-                            "container": container,
-                            "traversal": traversal,
-                        }
-
-                        (run_dir / "input.yaml").write_text(
-                            input_template.substitute(substitutions), encoding="utf-8"
-                        )
+                    (run_dir / "input.yaml").write_text(
+                        input_template.substitute(substitutions), encoding="utf-8"
+                    )
 
