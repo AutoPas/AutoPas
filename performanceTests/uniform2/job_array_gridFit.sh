@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=56 # ! This should be the maximum number of CPUs you wish to use per single MPI rank !
 #SBATCH --time=01:00:00
 #SBATCH --output=/dev/null
-#SBATCH --array=40-59 # 0-59
+#SBATCH --array=0-20 # 0-59
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=ALL  # Send email on end and failure
 
@@ -50,7 +50,7 @@ declare -a data_layout
 index=0
 for total_particles_iter in 050000 100000 300000
 do
-    for sigma_ratio_iter in 0p05 0p1 0p15 0p2 0p25 0p3 0p35 0p4 0p45 0p5
+    for sigma_ratio_iter in 0p24 0p268889 0p297778 0p326667 0p355556 0p384444 0p413333 0p442222 0p471111 0p5
     do
         for count_ratio_iter in 2
         do

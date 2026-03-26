@@ -22,9 +22,8 @@ NUM_REPEATS = 3
 TOTAL_PARTICLE_COUNTS = [50_000, 100_000, 300_000]
 SIGMAMAX = 1.0
 
-# Keep at least three values that produce perfectly fitting grids for fittedGrids=false.
-# These values come from the analytical family sigma = ((10 / (3k)) - 0.1) / 3 with k in {3,4,6}.
-SIGMA_RATIOS = np.linspace(0.05, 0.50, 10)
+# Sweep sigma ratios in [0.24, 0.50] with 10 evenly spaced values.
+SIGMA_RATIOS = np.linspace(0.24, 0.50, 10)
 COUNT_RATIOS = [2.0]
 DATA_LAYOUTS = ["AoS", "SoA"]
 

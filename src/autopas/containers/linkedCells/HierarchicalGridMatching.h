@@ -59,7 +59,7 @@ class HierarchicalGridMatching : public ParticleContainerInterface<Particle> {
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(size_t)),
         _rebuildFrequency(rebuildFrequency),
         _cutoffs(cutoffs),
-        _fittedGrids(true) {
+        _fittedGrids(false) {
     /*
      * NOTE: In the future add auto cutoff? We need to know particles sizes beforehand.
      * Not relevant for md simulations but can be useful for DEM simulations.
