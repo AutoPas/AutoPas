@@ -360,8 +360,8 @@ auto HGridTraversalComparisonMatching::getTestParams() {
             for (auto numParticles : params[interactionType].numParticles) {
               for (auto boxMaxBase : params[interactionType].boxMax) {
                 // Vary x and y independently for each base box while keeping z unchanged.
-                for (double boxX = boxMaxBase[0]; boxX <= boxMaxBase[0] * 2.0; boxX += boxMaxBase[0]*5) {
-                  for (double boxY = boxMaxBase[1]; boxY <= boxMaxBase[1] * 2.0; boxY += boxMaxBase[1]*5) {
+                for (double boxX = boxMaxBase[0]; boxX <= boxMaxBase[0] * 2.0; boxX += boxMaxBase[0]*0.13) {
+                  for (double boxY = boxMaxBase[1]; boxY <= boxMaxBase[1] * 2.0; boxY += boxMaxBase[1]*0.22) {
                     std::array<double, 3> boxMax{boxX, boxY, boxMaxBase[2]};
                     for (double cellSizeFactor : params[interactionType].cellSizeFactors) {
                       for (auto numHalo : params[interactionType].numHaloParticles) {
