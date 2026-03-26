@@ -7,7 +7,9 @@
 #SBATCH --cpus-per-task=56 # ! This should be the maximum number of CPUs you wish to use per single MPI rank !
 #SBATCH --time=01:00:00
 #SBATCH --output=/dev/null
-#SBATCH --array=0-35
+# 3 containers with traversals: 1 + 2 + 3 = 6 traversal combinations
+# 6 (container/traversal) * 5 sigma ratios * 6 count ratios * 2 layouts = 360 jobs
+#SBATCH --array=0-4 # 0-359
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=END,FAIL  # Send email on end and failure
 
@@ -42,26 +44,57 @@ if [ ! -x "${MD_FLEXIBLE_BIN}" ]; then
 fi
 
 # Generate arrays of parameters indexed by job ID.
+declare -a container
+declare -a traversal
 declare -a sigma_ratio
 declare -a count_ratio
 declare -a data_layout
 index=0
-for sigma_ratio_iter in 0p05 0p15 0p25 0p35 0p45 0p55
+for container_iter in HierarchicalGridMatching HierarchicalGrid LinkedCells
 do
-    for count_ratio_iter in 0p50 1p00 2p00
+    case "${container_iter}" in
+        HierarchicalGridMatching)
+            traversals=(hgrid_matching)
+            ;;
+        HierarchicalGrid)
+            traversals=(hgrid_block4 hgrid_block8)
+            ;;
+        LinkedCells)
+            traversals=(lc_c08 lc_c04_HCP lc_sliced)
+            ;;
+        *)
+            echo "ERROR: Unknown container '${container_iter}'" >&2
+            exit 2
+            ;;
+    esac
+
+    for traversal_iter in "${traversals[@]}"
     do
-        for data_layout_iter in AoS SoA
+        for sigma_ratio_iter in 0p10 0p20 0p30 0p40 0p48
         do
-            sigma_ratio[$index]="$sigma_ratio_iter"
-            count_ratio[$index]="$count_ratio_iter"
-            data_layout[$index]="$data_layout_iter"
-            index=$((index + 1))
+            for count_ratio_iter in 0p50 1p00 2p00 4p00 8p00 16p00
+            do
+                for data_layout_iter in AoS SoA
+                do
+                    container[$index]="$container_iter"
+                    traversal[$index]="$traversal_iter"
+                    sigma_ratio[$index]="$sigma_ratio_iter"
+                    count_ratio[$index]="$count_ratio_iter"
+                    data_layout[$index]="$data_layout_iter"
+                    index=$((index + 1))
+                done
+            done
         done
     done
 done
+
+if [ "${SLURM_ARRAY_TASK_ID}" -ge "${index}" ]; then
+    echo "ERROR: SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID} out of range [0,$((index - 1))]." >&2
+    exit 2
+fi
      
 # Go to directory of experiment for this job ID
-TARGET_DIR="${SCRIPT_DIR}/generated_inputs/sigmaRatio_${sigma_ratio[${SLURM_ARRAY_TASK_ID}]}/countRatio_${count_ratio[${SLURM_ARRAY_TASK_ID}]}/dataLayout_${data_layout[${SLURM_ARRAY_TASK_ID}]}"
+TARGET_DIR="${SCRIPT_DIR}/generated_inputs/container_${container[${SLURM_ARRAY_TASK_ID}]}/traversal_${traversal[${SLURM_ARRAY_TASK_ID}]}/sigmaRatio_${sigma_ratio[${SLURM_ARRAY_TASK_ID}]}/countRatio_${count_ratio[${SLURM_ARRAY_TASK_ID}]}/dataLayout_${data_layout[${SLURM_ARRAY_TASK_ID}]}"
 if [ ! -d "${TARGET_DIR}" ]; then
     echo "ERROR: Input directory not found: ${TARGET_DIR}" >&2
     echo "Hint: Generate inputs with input_generator.py before submitting." >&2
