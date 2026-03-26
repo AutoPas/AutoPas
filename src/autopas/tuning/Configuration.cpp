@@ -6,8 +6,8 @@
 
 #include "Configuration.h"
 
-#include "autopas/utils/StringUtils.h"
 #include "autopas/containers/CompatibleCellSizeFactors.h"
+#include "autopas/utils/StringUtils.h"
 
 std::string autopas::Configuration::toString() const {
   return "{Interaction Type: " + interactionType.to_string() + " , Container: " + container.to_string() +

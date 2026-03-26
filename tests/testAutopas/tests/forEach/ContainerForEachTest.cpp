@@ -39,8 +39,9 @@ auto ContainerForEachTest::defaultInit(AutoPas_T &autoPas, const ContainerConfig
 /**
  * Returns the expected particle IDs for a given iterator behavior.
  *
- * @param behavior Iterator behavior that determines which IDs are selected. For `owned`, only the owned IDs are returned. For `halo`, only the halo IDs are returned.
- * For `ownedOrHalo`, the owned IDs are returned first, followed by the halo IDs. Any other behavior yields an empty result.
+ * @param behavior Iterator behavior that determines which IDs are selected. For `owned`, only the owned IDs are
+ * returned. For `halo`, only the halo IDs are returned. For `ownedOrHalo`, the owned IDs are returned first, followed
+ * by the halo IDs. Any other behavior yields an empty result.
  * @param owned IDs of particles owned by the current rank / container.
  * @param halo IDs of halo particles.
  * @return IDs expected to be visited for the given behavior.

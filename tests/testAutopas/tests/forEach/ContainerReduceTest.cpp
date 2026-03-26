@@ -4,10 +4,10 @@
  * @date 25.08.2021
  */
 #include "ContainerReduceTest.h"
-#include "autopas/containers/CompatibleCellSizeFactors.h"
 
 #include "ForEachTestHelper.h"
 #include "autopas/AutoPasDecl.h"
+#include "autopas/containers/CompatibleCellSizeFactors.h"
 #include "testingHelpers/EmptyPairwiseFunctor.h"
 
 extern template class autopas::AutoPas<Molecule>;
@@ -26,7 +26,8 @@ auto ContainerReduceTest::defaultInit(AutoPasT &autoPas, const ContainerConfigur
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerConfig.container});
   autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(
       containerConfig.container, autopas::InteractionTypeOption::pairwise));
-  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({containerConfig.cellSizeFactor})));
+  autoPas.setAllowedCellSizeFactors(
+      autopas::NumberSetFinite<double>(std::set<double>({containerConfig.cellSizeFactor})));
 
   autoPas.init();
 
@@ -306,7 +307,8 @@ using ::testing::Values;
 using ::testing::ValuesIn;
 
 /**
- * Generates parameter combinations for ContainerReduceTest, excluding container / cell-size-factor combinations that are incompatible.
+ * Generates parameter combinations for ContainerReduceTest, excluding container / cell-size-factor combinations that
+ * are incompatible.
  * @return Compatible test parameters.
  */
 std::vector<testingTuple> generateCompatibleTestParams() {

@@ -49,7 +49,9 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
       : ParticleContainerInterface<Particle_T>(skin),
         _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
-      utils::ExceptionHandler::exception("Trying to construct a VerletListsLinkedBase with CSF < 1.0! Such configurations should not be allowed (they should return false with Configuration::hasCompatibleValues).");
+      utils::ExceptionHandler::exception(
+          "Trying to construct a VerletListsLinkedBase with CSF < 1.0! Such configurations should not be allowed (they "
+          "should return false with Configuration::hasCompatibleValues).");
     }
   }
 

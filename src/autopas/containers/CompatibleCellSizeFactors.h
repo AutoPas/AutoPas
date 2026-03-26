@@ -10,7 +10,6 @@
 
 #include "autopas/options/ContainerOption.h"
 
-
 namespace autopas::compatibleCSFs {
 /**
  * Lists all containers only supporting CSF 1 (or ignore CSF).

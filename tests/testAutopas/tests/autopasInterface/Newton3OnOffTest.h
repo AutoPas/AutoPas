@@ -14,8 +14,8 @@
 #include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "mocks/MockPairwiseFunctor.h"
-#include "testingHelpers/commonTypedefs.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
+#include "testingHelpers/commonTypedefs.h"
 
 /**
  * Test to check if newton3 and non-newton3 work as expected

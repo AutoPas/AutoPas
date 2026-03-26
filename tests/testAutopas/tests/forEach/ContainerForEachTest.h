@@ -12,8 +12,8 @@
 #include "autopas/options/IteratorBehavior.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
 
-using testingTuple = std::tuple<ContainerConfiguration, bool /*testConstIterators*/, bool /*priorForceCalc*/,
-                                autopas::IteratorBehavior>;
+using testingTuple =
+    std::tuple<ContainerConfiguration, bool /*testConstIterators*/, bool /*priorForceCalc*/, autopas::IteratorBehavior>;
 
 class ContainerForEachTest : public AutoPasTestBase, public ::testing::WithParamInterface<testingTuple> {
  public:

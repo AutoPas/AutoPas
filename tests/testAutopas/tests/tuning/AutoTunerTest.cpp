@@ -152,34 +152,29 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   for (const auto &container : autopas::ContainerOption::getAllOptions()) {
     const auto expectedNumConfigs = configsPerContainer.at(container);
     const auto actualNumConfigs =
-        std::ranges::count_if(searchSpace, [container](const auto &config) {
-          return config.container == container;
-        });
+        std::ranges::count_if(searchSpace, [container](const auto &config) { return config.container == container; });
 
     auto detailedConfigsPerTraversal = [&]() {
       // Filter configs for this container and group by traversal
-      auto containerConfigs = searchSpace | std::views::filter([container](const auto &config) {
-                                return config.container == container;
-                              });
+      auto containerConfigs =
+          searchSpace | std::views::filter([container](const auto &config) { return config.container == container; });
 
       // Count configurations per traversal
       std::map<autopas::TraversalOption, size_t> traversalCounts;
-      std::ranges::for_each(containerConfigs, [&traversalCounts](const auto &config) {
-        ++traversalCounts[config.traversal];
-      });
+      std::ranges::for_each(containerConfigs,
+                            [&traversalCounts](const auto &config) { ++traversalCounts[config.traversal]; });
 
       // Build error message
       std::ostringstream oss;
       oss << "\n Number of configurations per traversal for this container:";
-      std::ranges::for_each(traversalCounts, [&](const auto &pair) {
-        oss << "\n  " << pair.first.to_string() << ": " << pair.second;
-      });
+      std::ranges::for_each(traversalCounts,
+                            [&](const auto &pair) { oss << "\n  " << pair.first.to_string() << ": " << pair.second; });
       return oss.str();
     };
 
     EXPECT_EQ(actualNumConfigs, expectedNumConfigs)
         << "Unexpected number of configurations for container " << container.to_string()
-        <<".\n Check that the manually determined values in AutoTunerTest::testAllConfigurations are correct!"
+        << ".\n Check that the manually determined values in AutoTunerTest::testAllConfigurations are correct!"
         << detailedConfigsPerTraversal();
   }
 
@@ -200,7 +195,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
 
   const size_t numConfigsExpectedNotApplicable{20};
 
-  const size_t expectedNumberOfIterations = (numberOfConfigs - numConfigsExpectedNotApplicable) * autoTunerInfo.maxSamples + 1;
+  const size_t expectedNumberOfIterations =
+      (numberOfConfigs - numConfigsExpectedNotApplicable) * autoTunerInfo.maxSamples + 1;
 
   int collectedSamples = 0;
   int iterations = 0;
@@ -212,7 +208,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
 
     // Should not have any leaving particles in this test
     auto leavingParticlesVec = logicHandler.updateContainer();
-    EXPECT_EQ(leavingParticlesVec.size(), 0) << "A non-zero number of particles have left the container when none should!";
+    EXPECT_EQ(leavingParticlesVec.size(), 0)
+        << "A non-zero number of particles have left the container when none should!";
     stillTuning = logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
     ++iterations;
     ++collectedSamples;

@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <set>
+
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/InteractionTypeOption.h"
@@ -15,8 +17,6 @@
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/NumberSetFinite.h"
-
-#include <set>
 
 /**
  * Struct to hold a container and a cell size factor.
@@ -72,7 +72,8 @@ inline std::ostream &operator<<(std::ostream &os, const ContainerConfiguration &
 /**
  * Generates all valid configurations for a given interaction type or all interaction types.
  *
- * Intended to be used with the default arguments. If one is overridden, make sure you have a good reason and write down why.
+ * Intended to be used with the default arguments. If one is overridden, make sure you have a good reason and write down
+ * why.
  *
  * @param interactionType The interaction type. If provided with "all", all valid configurations for all interaction
  * types are returned.
@@ -106,14 +107,15 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
   } else {
     const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);
     return autopas::SearchSpaceGenerators::cartesianProduct(allowedContainerOptions, allowedTraversalOptions,
-                                                           allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-                                                           allowedNewton3Options, &csfs, interactionType);
+                                                            allowedLoadEstimatorOptions, allowedDataLayoutOptions,
+                                                            allowedNewton3Options, &csfs, interactionType);
   }
 }
 
 /**
  * Generates all valid container configurations.
- * Intended to be used with the default arguments. If one is overridden, make sure you have a good reason and write down why.
+ * Intended to be used with the default arguments. If one is overridden, make sure you have a good reason and write down
+ * why.
  * @param allowedContainerOptions By default, all options.
  * @param allowedCellSizeFactors By default, {0.5, 1.0, 1.5}
  * @return

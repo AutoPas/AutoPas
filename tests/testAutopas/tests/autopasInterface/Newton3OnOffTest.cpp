@@ -28,29 +28,29 @@ TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
 }
 
 // Generate Unittests for all Configurations that support both Newton3 modes
-INSTANTIATE_TEST_SUITE_P(
-    Generated, Newton3OnOffTest,
-    ValuesIn([]() -> std::set<autopas::Configuration> {
-      // Start with all valid configurations
-      auto configs = generateAllValidConfigurations(autopas::InteractionTypeOption::all);
+INSTANTIATE_TEST_SUITE_P(Generated, Newton3OnOffTest, ValuesIn([]() -> std::set<autopas::Configuration> {
+                           // Start with all valid configurations
+                           auto configs = generateAllValidConfigurations(autopas::InteractionTypeOption::all);
 
-      // Remove all configs that do not support both Newton3 modes
-      std::erase_if(configs, [&](const autopas::Configuration &config) {
-        const auto configsSupportingN3EnabledOnly = autopas::compatibleTraversals::allTraversalsSupportingOnlyNewton3Enabled();
-        const auto configsSupportingN3DisabledOnly = autopas::compatibleTraversals::allTraversalsSupportingOnlyNewton3Disabled();
-        return configsSupportingN3EnabledOnly.contains(config.traversal) or
-               configsSupportingN3DisabledOnly.contains(config.traversal);
-      });
+                           // Remove all configs that do not support both Newton3 modes
+                           std::erase_if(configs, [&](const autopas::Configuration &config) {
+                             const auto configsSupportingN3EnabledOnly =
+                                 autopas::compatibleTraversals::allTraversalsSupportingOnlyNewton3Enabled();
+                             const auto configsSupportingN3DisabledOnly =
+                                 autopas::compatibleTraversals::allTraversalsSupportingOnlyNewton3Disabled();
+                             return configsSupportingN3EnabledOnly.contains(config.traversal) or
+                                    configsSupportingN3DisabledOnly.contains(config.traversal);
+                           });
 
-      // Remove all newton3 enabled configurations so that for each config-N3 enabled/disabled pair, only one config
-      // is provided, from which the other can be generated.
-      std::erase_if(configs, [&](auto &config) {
-        return config.newton3 == autopas::Newton3Option::enabled;
-      });
+                           // Remove all newton3 enabled configurations so that for each config-N3 enabled/disabled
+                           // pair, only one config is provided, from which the other can be generated.
+                           std::erase_if(configs, [&](auto &config) {
+                             return config.newton3 == autopas::Newton3Option::enabled;
+                           });
 
-      return configs;
-    }()),
-    Newton3OnOffTest::PrintToStringParamName());
+                           return configs;
+                         }()),
+                         Newton3OnOffTest::PrintToStringParamName());
 
 template <typename Functor_T>
 void Newton3OnOffTest::countFunctorCalls(autopas::Configuration config) {
@@ -152,8 +152,7 @@ void Newton3OnOffTest::iterate(Container_T &container, Traversal_T traversal) {
 
 template <class Functor_T, class Container_T>
 std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::Configuration config, bool useNewton3,
-                                                          Container_T &container,
-                                                          Functor_T &mockFunctor) {
+                                                          Container_T &container, Functor_T &mockFunctor) {
   // set up counters for particle interactions
   std::atomic<unsigned int> callsSC(0ul);
   std::atomic<unsigned int> callsPair(0ul);

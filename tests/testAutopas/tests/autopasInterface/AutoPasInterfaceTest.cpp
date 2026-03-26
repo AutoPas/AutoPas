@@ -484,8 +484,8 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
   autoPas.setAllowedContainers({config.container});
   autoPas.setCellSizeFactor(config.cellSizeFactor);
   // Arbitrarily allow all valid traversals, so AutoPas can be initialized.
-  autoPas.setAllowedTraversals(
-      autopas::compatibleTraversals::allCompatibleTraversals(config.container, autopas::InteractionTypeOption::pairwise));
+  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(
+      config.container, autopas::InteractionTypeOption::pairwise));
 
   autoPas.init();
 
@@ -529,7 +529,8 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
   EXPECT_THAT(particlesInsideAfterResize, ::testing::UnorderedPointwise(ParticleEq(), expectedParticles));
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface1ContainersTest, ValuesIn(generateAllValidContainerConfigurations()),
+INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface1ContainersTest,
+                         ValuesIn(generateAllValidContainerConfigurations()),
                          AutoPasInterface1ContainersTest::PrintToStringParamName());
 
 /////////////////////////////////////// FOR EVERY COMBINATION OF TWO CONTAINERS ////////////////////////////////////////

@@ -11,7 +11,6 @@
 #include <tuple>
 
 #include "AutoPasTestBase.h"
-#include "testingHelpers/GenerateValidConfigurations.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
@@ -19,6 +18,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/utils/ArrayMath.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
 
 class AutoPasInterfaceTest : public AutoPasTestBase, public ::testing::WithParamInterface<autopas::Configuration> {
  public:
