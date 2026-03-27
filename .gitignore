@@ -31,3 +31,5 @@ venv/
 
 # Keep my testresults
 !performanceTests/**/*.out
+
+linkedCellsCopyForSafety/**/*
