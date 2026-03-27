@@ -135,7 +135,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6, "Lennard-Jones AutoVec Functor.");
 #else
         std::make_pair(MDFlexConfig::FunctorOption::none, "");
-        std::cerr << "No functor specified and no valid fall-back LJ functor available!" <<std::endl;
+    std::cerr << "No functor specified and no valid fall-back LJ functor available!" << std::endl;
 #endif
     _configuration.addInteractionType(autopas::InteractionTypeOption::pairwise);
     std::cout << "WARNING: No functor was specified. Defaulting to " << functorName << std::endl;
