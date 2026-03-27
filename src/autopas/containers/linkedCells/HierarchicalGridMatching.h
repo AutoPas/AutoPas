@@ -104,11 +104,21 @@ class HierarchicalGridMatching : public ParticleContainerInterface<Particle> {
 
     interactionLengths[_numLevels - 1] = _cutoffs.back() + _skin;
 
+    // Assure at least 2 levels
+    double highLevelRatio = 1.0;
+    interactionLengths[0] = _cutoffs[0] + _skin;
+
+    if (2.0 * interactionLengths[0] <= interactionLengths.back()) {
+      // Smallest representable value above the exact threshold that still guarantees >=2 lower cells per upper cell.
+      const double minimumSafeRatio = 2.0 * interactionLengths[0] / interactionLengths.back();
+      highLevelRatio = std::nextafter(minimumSafeRatio, std::numeric_limits<double>::infinity());
+    }
+
     _levels.resize(_numLevels);
 
     // construct last level first, so we can fit other levels to it
-    _levels[_numLevels - 1] = std::make_unique<autopas::LinkedCells<Particle>>(_boxMin, _boxMax, _cutoffs.back(), skin,
-                                                                               rebuildFrequency, cellSizeFactor);
+    _levels[_numLevels - 1] = std::make_unique<autopas::LinkedCells<Particle>>(
+        _boxMin, _boxMax, _cutoffs.back(), skin, rebuildFrequency, cellSizeFactor * highLevelRatio);
 
     auto tmp = _levels[_numLevels - 1]->getCellBlock().getCellLength();
     std::array<size_t, 3> cellsPerDimensionHigher = {
