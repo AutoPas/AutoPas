@@ -32,6 +32,9 @@ gtest_discover_tests(
     runMPITests TEST_PREFIX "MPIParallelAutoPasTests/"
     # increase the discovery timeout for `runTests --gtest_list_tests`
     DISCOVERY_TIMEOUT 60
+    # Use PRE_TEST discovery mode to avoid running MPI executable during build
+    # This prevents SIGPIPE errors in CI when sanitizers are enabled
+    DISCOVERY_MODE PRE_TEST
     PROPERTIES
         ENVIRONMENT "${LSAN_OPTIONS_STR}"
 )
