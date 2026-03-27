@@ -30,7 +30,7 @@ CELL_SIZES = [0.5, 1.0]
 CONTAINER_TRAVERSALS = {
     "HierarchicalGridMatching": ["hgrid_matching"],
     "HierarchicalGrid": ["hgrid_block4", "hgrid_block8"],
-    "LinkedCells": ["lc_c08", "lc_c04_HCP"],
+    "LinkedCells": ["lc_c08"],
 }
 
 def format_ratio(value: float) -> str:
