@@ -23,8 +23,11 @@ target_link_libraries(
     MPI::MPI_CXX
 )
 set(AUTOPAS_TESTS_NUM_MPI_RANKS 3 CACHE STRING "Number of MPI Ranks to run AutoPas tests with.")
-set_property(TARGET runMPITests PROPERTY CROSSCOMPILING_EMULATOR '${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${AUTOPAS_TESTS_NUM_MPI_RANKS}')
-
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.29)
+    set_property(TARGET ${TEST_NAME} PROPERTY TEST_LAUNCHER ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${RESHUFFLE_TESTS_NUM_MPI_RANKS} ${MPIEXEC_PREFLAGS})
+else ()
+    set_property(TARGET ${TEST_NAME} PROPERTY CROSSCOMPILING_EMULATOR ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${RESHUFFLE_TESTS_NUM_MPI_RANKS} ${MPIEXEC_PREFLAGS})
+endif ()
 include(GoogleTest)
 # queries the compiled executable for tests, this requires the executable to be runnable. if you are
 # cross compiling, make sure to properly set CMAKE_CROSSCOMPILING_EMULATOR.
@@ -32,6 +35,9 @@ gtest_discover_tests(
     runMPITests TEST_PREFIX "MPIParallelAutoPasTests/"
     # increase the discovery timeout for `runTests --gtest_list_tests`
     DISCOVERY_TIMEOUT 60
+    # Use PRE_TEST discovery mode to avoid running MPI executable during build
+    # This prevents SIGPIPE errors in CI when sanitizers are enabled
+    DISCOVERY_MODE PRE_TEST
     PROPERTIES
         ENVIRONMENT "${LSAN_OPTIONS_STR}"
 )
