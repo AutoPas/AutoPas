@@ -11,7 +11,7 @@
 # Index only container/traversal, sigma ratio and cell size.
 # The count-ratio sweep and 3 repeat runs are executed inside each array job.
 # 5 (container/traversal) * 5 sigma ratios * 2 cell sizes = 50 jobs
-#SBATCH --array=49-49
+#SBATCH --array=40-49
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=END,FAIL  # Send email on end and failure
 
