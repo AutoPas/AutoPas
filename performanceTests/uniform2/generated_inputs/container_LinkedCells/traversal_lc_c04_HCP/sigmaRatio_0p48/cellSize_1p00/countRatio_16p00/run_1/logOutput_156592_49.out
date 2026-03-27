@@ -64,8 +64,8 @@ energy-sensor                    :  rapl
 
 Using 56 Threads
 MPI is disabled.
-[2026-03-27 14:10:46.981] [AutoPasLog] [info] [AutoPasImpl.h:70] AutoPas Version: 3.0.0-4aa8aa3-dirty
-[2026-03-27 14:10:46.981] [AutoPasLog] [info] [AutoPasImpl.h:71] Compiled with  : GCC 13.2.0
+[2026-03-27 14:15:21.351] [AutoPasLog] [info] [AutoPasImpl.h:70] AutoPas Version: 3.0.0-4aa8aa3-dirty
+[2026-03-27 14:15:21.352] [AutoPasLog] [info] [AutoPasImpl.h:71] Compiled with  : GCC 13.2.0
 Number of particles at initialization on rank 0: 1000000
 Number of particles at initialization globally : 1000000
 
@@ -74,14 +74,14 @@ Total number of particles at the end of Simulation: 1000000
 Owned: 1000000
 Halo : 0
 Measurements:
-Total accumulated                  : 273981566490 ns (273.982s)
-  Initialization                   :     72393692 ns (  0.072s) =  0.026%
-  Simulate                         : 273909171723 ns (273.909s) = 99.974%
-    ForceUpdateTotal               : 273908979095 ns (273.909s) =100.000%
-      ForceUpdateNonTuning         : 273908886889 ns (273.909s) =100.000%
-  One iteration                  :   2739091717 ns (  2.739s) =  1.000%
-Total wall-clock time              : 273981566490 ns (273.982s) =100.000%
+Total accumulated                  : 272735966409 ns (272.736s)
+  Initialization                   :     70897610 ns (  0.071s) =  0.026%
+  Simulate                         : 272665067835 ns (272.665s) = 99.974%
+    ForceUpdateTotal               : 272664880607 ns (272.665s) =100.000%
+      ForceUpdateNonTuning         : 272664787430 ns (272.665s) =100.000%
+  One iteration                  :   2726650678 ns (  2.727s) =  1.000%
+Total wall-clock time              : 272735966409 ns (272.736s) =100.000%
 
 Tuning iterations                  : 0 / 100 = 0%
-MFUPs/sec                          : 0.365085
+MFUPs/sec                          : 0.366751
 Mean Rebuild Frequency               : 1
