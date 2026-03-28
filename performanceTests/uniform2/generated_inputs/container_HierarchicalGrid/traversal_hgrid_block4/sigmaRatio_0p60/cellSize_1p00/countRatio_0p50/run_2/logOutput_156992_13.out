@@ -1,0 +1,87 @@
+WARNING: Simulation box increased due to particles being too close to the boundaries.
+# Running single-site MD simulation.
+
+container                        :  [HierarchicalGrid]
+verlet-rebuild-frequency         :  10
+verlet-skin-radius               :  0.1
+tuning-strategies                :  []
+tuning-metric                    :  time
+tuning-interval                  :  5000
+tuning-samples                   :  3
+early-stopping-factor            :  inf
+use-LOESS-smoothening            :  false
+PairwiseInteraction:             
+  functor                        :  Lennard-Jones (12-6) AVX intrinsics
+  traversal                      :  [hgrid_block4]
+  data-layout                    :  [SoA]
+  newton3                        :  [enabled]
+cutoff                           :  2.4
+cutoffs                          :  [1.44, 2.4]
+box-min                          :  [0, 0, 0]
+box-max                          :  [20, 20, 20]
+cell-size                        :  [1]
+deltaT                           :  0
+pause-simulation-during-tuning   :  false
+sorting-threshold                :  8
+iterations                       :  100
+boundary-type                    :  [none, none, none]
+Sites:                           
+  0:
+    epsilon                      :  1
+    sigma                        :  0.48
+    nu                           :  0
+    mass                         :  1
+  1:
+    epsilon                      :  1
+    sigma                        :  0.8
+    nu                           :  0
+    mass                         :  1
+Objects:                         
+  CubeUniform:
+    0:  
+      numberOfParticles          :  333333
+      box-length                 :  [20, 20, 20]
+      bottomLeftCorner           :  [0, 0, 0]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  0
+  CubeUniform:
+    1:  
+      numberOfParticles          :  666667
+      box-length                 :  [20, 20, 20]
+      bottomLeftCorner           :  [0, 0, 0]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  1
+use-tuning-logger                :  false
+output-suffix                    :  
+log-level                        :  info
+no-end-config                    :  false
+no-progress-bar                  :  true
+load-balancer                    :  InvertedPressure
+load-balancing-interval          :  100
+subdivide-dimension              :  [true, true, true]
+energy-sensor                    :  rapl
+
+
+Using 56 Threads
+MPI is disabled.
+[2026-03-28 15:25:51.846] [AutoPasLog] [info] [AutoPasImpl.h:70] AutoPas Version: 3.0.0-4aa8aa3-dirty
+[2026-03-28 15:25:51.846] [AutoPasLog] [info] [AutoPasImpl.h:71] Compiled with  : GCC 13.2.0
+Number of particles at initialization on rank 0: 1000000
+Number of particles at initialization globally : 1000000
+
+
+Total number of particles at the end of Simulation: 1000000
+Owned: 1000000
+Halo : 0
+Measurements:
+Total accumulated                  : 230338523285 ns (230.339s)
+  Initialization                   :     88095850 ns (  0.088s) =  0.038%
+  Simulate                         : 230250425874 ns (230.250s) = 99.962%
+    ForceUpdateTotal               : 230250097784 ns (230.250s) =100.000%
+      ForceUpdateNonTuning         : 230249957192 ns (230.250s) =100.000%
+  One iteration                  :   2302504258 ns (  2.303s) =  1.000%
+Total wall-clock time              : 230338523285 ns (230.339s) =100.000%
+
+Tuning iterations                  : 0 / 100 = 0%
+MFUPs/sec                          : 0.43431
+Mean Rebuild Frequency               : 1

@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --clusters=cm4
 #SBATCH --partition=cm4_tiny  # ! This probably needs to change !
-#SBATCH --cpus-per-task=1 # ! ${in 1 2 4 8 14 28 56 112}
+#SBATCH --cpus-per-task=112 # ! ${in 1 2 4 8 14 28 56 112}
 #SBATCH --hint=nomultithread
 #SBATCH --time=03:00:00
 #SBATCH --output=/dev/null
@@ -125,7 +125,7 @@ unset I_MPI_PMI_LIBRARY
 export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=0
 
 # Sequentially loop over thread counts and over each repeat run.
-for num_threads in ${SLURM_CPUS_PER_TASK}
+for num_threads in 28 56 112
 do
     if [ "${num_threads}" -gt "${SLURM_CPUS_PER_TASK}" ]; then
         echo "ERROR: Requested ${num_threads} threads but only ${SLURM_CPUS_PER_TASK} CPUs allocated." >&2
