@@ -5,13 +5,13 @@
 #SBATCH --clusters=cm4
 #SBATCH --partition=cm4_tiny  # ! This probably needs to change !
 #SBATCH --cpus-per-task=56 # ! This should be the maximum number of CPUs you wish to use per single MPI rank !
-#SBATCH --time=04:00:00
+#SBATCH --time=03:00:00
 #SBATCH --output=/dev/null
-# 3 containers with traversals: 1 + 2 + 1 = 5 traversal combinations
+# 3 containers with traversals: 1 + 2 + 1 = 4 traversal combinations
 # Index only container/traversal, sigma ratio and cell size.
 # The count-ratio sweep and 3 repeat runs are executed inside each array job.
 # 4 (container/traversal) * 5 sigma ratios * 2 cell sizes = 40 jobs
-#SBATCH --array=7,11,13,17 # 0-39
+#SBATCH --array=20-39 #0-39
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=END,FAIL  # Send email on end and failure
 
@@ -117,20 +117,9 @@ do
     fi
 
     cd "${COUNT_DIR}"
-    for run in $(seq 0 2)
+    for run in `seq 0 2`
     do
         cd "run_${run}"
-
-        # Skip completed runs that already produced MDFlex_end*.
-        if compgen -G "MDFlex_end*" > /dev/null; then
-            echo "Skipping ${COUNT_DIR}/run_${run}: found MDFlex_end*."
-            cd ..
-            continue
-        fi
-
-        # Clean stale output logs before rerun.
-        rm -f -- *.out
-
         # If not running an mpi executable, change srun to whatever is recommended for your machine.
         # Override MD_FLEXIBLE_BIN if your executable is in a different location.
         srun -n 1 "${MD_FLEXIBLE_BIN}" --yaml-filename input.yaml > logOutput_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.out 2>&1
