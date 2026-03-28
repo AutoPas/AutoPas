@@ -5,13 +5,13 @@
 #SBATCH --clusters=cm4
 #SBATCH --partition=cm4_tiny  # ! This probably needs to change !
 #SBATCH --cpus-per-task=56 # ! This should be the maximum number of CPUs you wish to use per single MPI rank !
-#SBATCH --time=03:00:00
+#SBATCH --time=04:00:00
 #SBATCH --output=/dev/null
-# 3 containers with traversals: 1 + 2 + 2 = 5 traversal combinations
+# 3 containers with traversals: 1 + 2 + 1 = 5 traversal combinations
 # Index only container/traversal, sigma ratio and cell size.
 # The count-ratio sweep and 3 repeat runs are executed inside each array job.
-# 5 (container/traversal) * 5 sigma ratios * 2 cell sizes = 50 jobs
-#SBATCH --array=40-49
+# 4 (container/traversal) * 5 sigma ratios * 2 cell sizes = 40 jobs
+#SBATCH --array=7,11,13,17 # 0-39
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=END,FAIL  # Send email on end and failure
 
@@ -61,7 +61,7 @@ do
             traversals=(hgrid_block4 hgrid_block8)
             ;;
         LinkedCells)
-            traversals=(lc_c08 lc_c04_HCP)
+            traversals=(lc_c08)
             ;;
         *)
             echo "ERROR: Unknown container '${container_iter}'" >&2

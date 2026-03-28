@@ -5,13 +5,13 @@
 #SBATCH --clusters=cm4
 #SBATCH --partition=cm4_tiny  # ! This probably needs to change !
 #SBATCH --cpus-per-task=56 # ! This should be the maximum number of CPUs you wish to use per single MPI rank !
-#SBATCH --time=01:00:00
+#SBATCH --time=03:00:00
 #SBATCH --output=/dev/null
 # 3 containers with traversals: 1 + 2 + 1 = 4 traversal combinations
 # Index only container/traversal, sigma ratio and cell size.
 # The count-ratio sweep and 3 repeat runs are executed inside each array job.
 # 4 (container/traversal) * 5 sigma ratios * 2 cell sizes = 40 jobs
-#SBATCH --array=0-39
+#SBATCH --array=20-39 #0-39
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=END,FAIL  # Send email on end and failure
 
