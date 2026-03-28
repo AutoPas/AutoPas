@@ -44,6 +44,8 @@ def split_particles(total_particles, count_ratio):
     n0 = total_particles - n1
     return n0, n1
 
+CONTAINER_TRAVERSALS = {
+    "HierarchicalGridMatching": ["hgrid_matching"],}
 
 input_template = Template(TEMPLATE_FILE.read_text(encoding="utf-8"))
 

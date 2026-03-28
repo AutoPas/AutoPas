@@ -108,7 +108,7 @@ class HierarchicalGridMatching : public ParticleContainerInterface<Particle> {
     double highLevelRatio = 1.0;
     interactionLengths[0] = _cutoffs[0] + _skin;
 
-    if (2.0 * interactionLengths[0] <= interactionLengths.back()) {
+    if (2.0 * interactionLengths[0] >= interactionLengths.back()) {
       // Smallest representable value above the exact threshold that still guarantees >=2 lower cells per upper cell.
       const double minimumSafeRatio = 2.0 * interactionLengths[0] / interactionLengths.back();
       highLevelRatio = std::nextafter(minimumSafeRatio, std::numeric_limits<double>::infinity());
