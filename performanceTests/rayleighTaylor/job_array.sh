@@ -5,7 +5,7 @@
 #SBATCH --clusters=cm4
 #SBATCH --partition=cm4_tiny  # ! This probably needs to change !
 #SBATCH --cpus-per-task=112 # ! This should be the maximum number of CPUs you wish to use per single MPI rank !
-#SBATCH --time=01:00:00
+#SBATCH --time=10:00:00
 #SBATCH --output=/dev/null
 # 4 traversals * 2 cell sizes = 8 jobs.
 #SBATCH --array=0-7
@@ -47,9 +47,9 @@ fi
 declare -a traversal
 declare -a cell_size
 index=0
-for traversal_iter in hgrid_matching hgrid_block4 hgrid_block8 lc_c08
+for cell_size_iter in 1p00 0p50
 do
-    for cell_size_iter in 0p50 1p00
+    for traversal_iter in hgrid_matching hgrid_block4 lc_c08 hgrid_block8
     do
         traversal[$index]="$traversal_iter"
         cell_size[$index]="$cell_size_iter"
