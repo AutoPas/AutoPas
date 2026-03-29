@@ -247,8 +247,9 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
 
 #ifdef AUTOPAS_ENABLE_FAST_PARTICLE_BUFFER_LIN
 /**
- * Tests dynamic rebuild functionalities for one particle case.
- * Dynamic rebuild should be triggered only when particle moves more than skin/2
+ * Tests dynamic rebuild functionality based on buffer filling for one particle case.
+ * A dynamic rebuild is triggered to obtain the first rebuild time estimate when the particle moves more than skin/2,
+ * causing it to be moved into the buffer.
  */
 TEST_F(LogicHandlerTest, testOneParticleForDynamicRebuild) {
   initLogicHandler();
@@ -261,17 +262,22 @@ TEST_F(LogicHandlerTest, testOneParticleForDynamicRebuild) {
   // 0 ITERATION
   EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1) << "Only one particle has been added \n";
 
-  // sample tuning is 3
-  ASSERT_FALSE(_logicHandler->isTuningInNeedOfRebuild());
+  // Test method isTuningInNeedOfRebuild, which should return false in iteration 0
+  ASSERT_FALSE(_logicHandler->isTuningInNeedOfRebuild()) << "No tuning rebuild in iteration 0 \n";
 
+  // The particle should stay in the container
   auto leavingParticles = _logicHandler->updateContainer();
-  EXPECT_EQ(leavingParticles.size(), 0);
+  EXPECT_EQ(leavingParticles.size(), 0) << "The particle stays in the container in iteration 0 \n";
 
-  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 0);
+  // Buffer should remain empty because the particle has not moved
+  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 0)
+      << "No particles in the buffer in iteration 0 because there was no movement \n";
 
-  // In the beginning, dynamic build is not required, so we expect false
-  ASSERT_FALSE(_logicHandler->neighborListsAreValidBuf()) << " First Iteration rebuild is required. \n";
-  ASSERT_FALSE(_logicHandler->getDoDynamicRebuild()) << " No decision was triggered initial value false. \n";
+  ASSERT_FALSE(_logicHandler->neighborListsAreValidBuf()) << "Iteration 0 requires a rebuild. \n";
+
+  // At the beginning, dynamic rebuild is not required, so false is expected
+  ASSERT_FALSE(_logicHandler->getDoDynamicRebuild())
+      << "No particles in the buffer => decision was not triggered, initial value is false. \n";
 
   for (auto iter = _logicHandler->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     iter->addR(moveVec);
@@ -283,58 +289,68 @@ TEST_F(LogicHandlerTest, testOneParticleForDynamicRebuild) {
   _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
   // 1 ITERATION
-  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1);
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1)
+      << "The particle stays in the container in iteration 1 \n";
 
-  // sample tuning is 3
-  ASSERT_FALSE(_logicHandler->isTuningInNeedOfRebuild());
+  // Sample tuning count is 3
+  ASSERT_FALSE(_logicHandler->isTuningInNeedOfRebuild())
+      << "No tuning rebuild in iteration 1 because 3 tuning samples are required \n";
 
   leavingParticles = _logicHandler->updateContainer();
-  EXPECT_EQ(leavingParticles.size(), 0);
+  EXPECT_EQ(leavingParticles.size(), 0) << "The particle stays in the container in iteration 1 \n";
 
-  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 0);
+  // Buffer should remain empty because the particle has not moved far enough
+  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 0)
+      << "No particles in the buffer in iteration 1 because the particle has not moved far enough \n";
 
-  // In the beginning, dynamic build is not required, so we expect false
-  ASSERT_TRUE(_logicHandler->neighborListsAreValidBuf());
+  ASSERT_TRUE(_logicHandler->neighborListsAreValidBuf()) << "No rebuild is required in iteration 1 \n";
   ASSERT_FALSE(_logicHandler->getDoDynamicRebuild())
-      << " No particles in buffer => decision wasn't triggered initial value false. \n";
+      << "No particles in the buffer => decision was not triggered, initial value is false. \n";
 
   // no rebuild
   _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
   // 2 ITERATION
+  // Particle moves more than half the skin
   for (auto iter = _logicHandler->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     iter->addR(moveVec_half);
   }
-  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1);
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1) << "Only one particle has been added \n";
 
-  // sample tuning is 3
-  ASSERT_FALSE(_logicHandler->isTuningInNeedOfRebuild());
+  // Sample tuning count is 3
+  ASSERT_FALSE(_logicHandler->isTuningInNeedOfRebuild())
+      << "No tuning rebuild in iteration 2 because 3 tuning samples are required \n";
 
+  // The particle has moved more than half a skin and enters the buffer, then gets immediately readded
+  // because a rebuild is triggered.
   leavingParticles = _logicHandler->updateContainer();
-  EXPECT_EQ(leavingParticles.size(), 0) << "Exactly one particle has left the container \n";
+  EXPECT_EQ(leavingParticles.size(), 0) << "The particle stays in the container in iteration 2 \n";
 
-  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 0);
-  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1);
+  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 0)
+      << "Buffer is emptied into the container because a rebuild is triggered \n";
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1)
+      << "Particle is added from the buffer into the container because a rebuild is triggered \n";
 
-  ASSERT_TRUE(_logicHandler->getDoDynamicRebuild()) << " Need for first rebuild time estimate triggers rebuild. \n";
-  ASSERT_FALSE(_logicHandler->neighborListsAreValidBuf());
+  ASSERT_TRUE(_logicHandler->getDoDynamicRebuild()) << "Need for first rebuild time estimate triggers rebuild. \n";
+  ASSERT_FALSE(_logicHandler->neighborListsAreValidBuf())
+      << "Need for first rebuild time estimate triggers rebuild. \n";
 
   // rebuild
   _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
   // 3 ITERATION
 
-  // sample tuning is 3, so here starts tuning iteration
-  ASSERT_TRUE(_logicHandler->neighborListsAreValidBuf());
-  ASSERT_TRUE(_logicHandler->isTuningInNeedOfRebuild());
-  ASSERT_FALSE(_logicHandler->neighborListsAreValidBuf());
-  ASSERT_FALSE(_logicHandler->getDoDynamicRebuild());
+  // Sample tuning count is 3, so tuning starts here
+  ASSERT_TRUE(_logicHandler->isTuningInNeedOfRebuild()) << "Rebuild because of tuning after 3 samples \n";
+  ASSERT_FALSE(_logicHandler->neighborListsAreValidBuf()) << "Invalid because tuning triggers rebuild \n";
+  ASSERT_FALSE(_logicHandler->getDoDynamicRebuild())
+      << "Dynamic rebuild is false by default, because rebuild happens because of tuning \n";
 }
 
 /**
- * Tests dynamic rebuild functionalities for one particle moving across the periodic boundary and added to the container
- * when entering from other side. Particle is added to the container when rebuild is expected and hence should not
- * affect simulation pipeline anyway.
+ * Tests dynamic rebuild functionality for one particle moving across the periodic boundary and being added back to the
+ * buffer. A rebuild is triggered because an initial estimate of the rebuild time is required. Additionally, the
+ * estimation method for predicting particles in the buffer due to migrating particles is tested.
  */
 TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDynamicRebuild) {
   initLogicHandler();
@@ -350,8 +366,7 @@ TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDyn
   _logicHandler->addParticle(p1);
   EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1) << "Only one particle has been added \n";
 
-  // In the first step, neighborListsAreValid is false
-  ASSERT_FALSE(_logicHandler->neighborListsAreValid()) << "In the first iteration, neighbor lists are invalid.";
+  ASSERT_FALSE(_logicHandler->neighborListsAreValid()) << "Iteration 0 requires a rebuild. \n";
   auto leavingParticles = _logicHandler->updateContainer();
 
   constexpr double cutoff = 1.1;
@@ -360,7 +375,7 @@ TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDyn
 
   _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
-  ASSERT_TRUE(_logicHandler->neighborListsAreValid());
+  ASSERT_TRUE(_logicHandler->neighborListsAreValid()) << "No rebuild in iteration 1 \n";
 
   // 0.3 skin + (boxMaxY - 0.15 skin) = boxMaxY + 0.15 skim -> particle is outside the boundary
   for (auto iter = _logicHandler->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
@@ -376,19 +391,29 @@ TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDyn
     _logicHandler->addParticle(particle);
   }
 
-  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 1);
-  ASSERT_TRUE(_logicHandler->neighborListsAreValid());
+  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 1) << "Migrating particle in the buffer";
+
   _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
-  // iterate once so that neighbor lists are valid
   leavingParticles = _logicHandler->updateContainer();
-  EXPECT_EQ(leavingParticles.size(), 0);
-  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 0);
-  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1);
-  // no particles in the buffer
-  ASSERT_FALSE(_logicHandler->neighborListsAreValid());
 
-  EXPECT_EQ(_logicHandler->getNumParticlesBufferEstimate(), 2);
+  // Buffer contains one migrating particle, so a rebuild is triggered because the first rebuild time estimate
+  // is needed for further decisions
+  ASSERT_TRUE(_logicHandler->getDoDynamicRebuild()) << "Need for first rebuild time estimate triggers rebuild. \n";
+
+  ASSERT_FALSE(_logicHandler->neighborListsAreValid()) << "Need for first rebuild time estimate triggers rebuild. \n";
+
+  EXPECT_EQ(leavingParticles.size(), 0);
+  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 0)
+      << "Buffer is emptied into the container because a rebuild is triggered \n";
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1)
+      << "Particle is added from the buffer into the container because a rebuild is triggered \n";
+
+  // The estimated number of particles in the buffer is 2 because, at the point of decision-making, the buffer contains
+  // 1 particle, and we expect the buffer filling to increase by one additional particle due to migration, as observed in
+  // the previous iteration.
+  EXPECT_EQ(_logicHandler->getNumParticlesBufferEstimate(), 2)
+      << "The expected estimate of particles in the buffer is 2 \n";
 }
 
 #endif
