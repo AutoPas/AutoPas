@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --clusters=cm4
 #SBATCH --partition=cm4_tiny  # ! This probably needs to change !
-#SBATCH --cpus-per-task=112 # ! ${in 1 2 4 8 14 28 56 112}
+#SBATCH --cpus-per-task=17 # ! ${in 1 2 4 8 14 28 56 112}
 #SBATCH --hint=nomultithread
 #SBATCH --time=03:00:00
 #SBATCH --output=/dev/null
@@ -12,7 +12,7 @@
 # Index only container/traversal and cell size.
 # The thread sweep and 3 repeat runs are executed inside each array job.
 # 4 (container/traversal) * 2 cell sizes = 8 jobs
-#SBATCH --array=0-7
+#SBATCH --array=0-1 # 0-7
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=END,FAIL  # Send email on end and failure
 
@@ -125,7 +125,7 @@ unset I_MPI_PMI_LIBRARY
 export I_MPI_JOB_RESPECT_PROCESS_PLACEMENT=0
 
 # Sequentially loop over thread counts and over each repeat run.
-for num_threads in 28 56 112
+for num_threads in 1 2 4 8 14
 do
     if [ "${num_threads}" -gt "${SLURM_CPUS_PER_TASK}" ]; then
         echo "ERROR: Requested ${num_threads} threads but only ${SLURM_CPUS_PER_TASK} CPUs allocated." >&2
