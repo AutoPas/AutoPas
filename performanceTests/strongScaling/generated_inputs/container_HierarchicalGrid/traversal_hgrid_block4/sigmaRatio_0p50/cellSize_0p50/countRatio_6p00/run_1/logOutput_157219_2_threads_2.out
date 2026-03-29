@@ -19,7 +19,7 @@ cutoff                           :  2.4
 cutoffs                          :  [1.2, 2.4]
 box-min                          :  [0, 0, 0]
 box-max                          :  [20, 20, 20]
-cell-size                        :  [1]
+cell-size                        :  [0.5]
 deltaT                           :  0
 pause-simulation-during-tuning   :  false
 sorting-threshold                :  8
@@ -62,10 +62,10 @@ subdivide-dimension              :  [true, true, true]
 energy-sensor                    :  rapl
 
 
-Using 1 Threads
+Using 2 Threads
 MPI is disabled.
-[2026-03-29 01:57:37.714] [AutoPasLog] [info] [AutoPasImpl.h:70] AutoPas Version: 3.0.0-4aa8aa3-dirty
-[2026-03-29 01:57:37.715] [AutoPasLog] [info] [AutoPasImpl.h:71] Compiled with  : GCC 13.2.0
+[2026-03-29 03:03:18.564] [AutoPasLog] [info] [AutoPasImpl.h:70] AutoPas Version: 3.0.0-4aa8aa3-dirty
+[2026-03-29 03:03:18.564] [AutoPasLog] [info] [AutoPasImpl.h:71] Compiled with  : GCC 13.2.0
 Number of particles at initialization on rank 0: 500000
 Number of particles at initialization globally : 500000
 
@@ -74,14 +74,14 @@ Total number of particles at the end of Simulation: 500000
 Owned: 500000
 Halo : 0
 Measurements:
-Total accumulated                  : 207415611202 ns (207.416s)
-  Initialization                   :    114730880 ns (  0.115s) =  0.055%
-  Simulate                         : 207300879166 ns (207.301s) = 99.945%
-    ForceUpdateTotal               : 207300758599 ns (207.301s) =100.000%
-      ForceUpdateNonTuning         : 207300723280 ns (207.301s) =100.000%
-  One iteration                  :   2073008791 ns (  2.073s) =  0.999%
-Total wall-clock time              : 207415611202 ns (207.416s) =100.000%
+Total accumulated                  : 109264028866 ns (109.264s)
+  Initialization                   :    157104584 ns (  0.157s) =  0.144%
+  Simulate                         : 109106923096 ns (109.107s) = 99.856%
+    ForceUpdateTotal               : 109106761204 ns (109.107s) =100.000%
+      ForceUpdateNonTuning         : 109106682467 ns (109.107s) =100.000%
+  One iteration                  :   1091069230 ns (  1.091s) =  0.999%
+Total wall-clock time              : 109264028866 ns (109.264s) =100.000%
 
 Tuning iterations                  : 0 / 100 = 0%
-MFUPs/sec                          : 0.241195
+MFUPs/sec                          : 0.458267
 Mean Rebuild Frequency               : 1

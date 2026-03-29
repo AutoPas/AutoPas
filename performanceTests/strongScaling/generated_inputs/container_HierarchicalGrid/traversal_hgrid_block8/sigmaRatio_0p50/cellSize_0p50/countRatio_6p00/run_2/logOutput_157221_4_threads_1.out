@@ -64,3 +64,24 @@ energy-sensor                    :  rapl
 
 Using 1 Threads
 MPI is disabled.
+[2026-03-29 01:57:41.807] [AutoPasLog] [info] [AutoPasImpl.h:70] AutoPas Version: 3.0.0-4aa8aa3-dirty
+[2026-03-29 01:57:41.807] [AutoPasLog] [info] [AutoPasImpl.h:71] Compiled with  : GCC 13.2.0
+Number of particles at initialization on rank 0: 500000
+Number of particles at initialization globally : 500000
+
+
+Total number of particles at the end of Simulation: 500000
+Owned: 500000
+Halo : 0
+Measurements:
+Total accumulated                  : 210019347983 ns (210.019s)
+  Initialization                   :    149128711 ns (  0.149s) =  0.071%
+  Simulate                         : 209870217964 ns (209.870s) = 99.929%
+    ForceUpdateTotal               : 209870068912 ns (209.870s) =100.000%
+      ForceUpdateNonTuning         : 209870017309 ns (209.870s) =100.000%
+  One iteration                  :   2098702179 ns (  2.099s) =  0.999%
+Total wall-clock time              : 210019347983 ns (210.019s) =100.000%
+
+Tuning iterations                  : 0 / 100 = 0%
+MFUPs/sec                          : 0.238243
+Mean Rebuild Frequency               : 1
