@@ -39,14 +39,14 @@ Sites:
 Objects:                         
   CubeUniform:
     0:  
-      numberOfParticles          :  888889
+      numberOfParticles          :  941176
       box-length                 :  [20, 20, 20]
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
   CubeUniform:
     1:  
-      numberOfParticles          :  111111
+      numberOfParticles          :  58824
       box-length                 :  [20, 20, 20]
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
@@ -64,8 +64,8 @@ energy-sensor                    :  rapl
 
 Using 56 Threads
 MPI is disabled.
-[2026-03-29 01:25:02.861] [AutoPasLog] [info] [AutoPasImpl.h:70] AutoPas Version: 3.0.0-4aa8aa3-dirty
-[2026-03-29 01:25:02.862] [AutoPasLog] [info] [AutoPasImpl.h:71] Compiled with  : GCC 13.2.0
+[2026-03-29 01:28:21.279] [AutoPasLog] [info] [AutoPasImpl.h:70] AutoPas Version: 3.0.0-4aa8aa3-dirty
+[2026-03-29 01:28:21.279] [AutoPasLog] [info] [AutoPasImpl.h:71] Compiled with  : GCC 13.2.0
 Number of particles at initialization on rank 0: 1000000
 Number of particles at initialization globally : 1000000
 
@@ -74,14 +74,14 @@ Total number of particles at the end of Simulation: 1000000
 Owned: 1000000
 Halo : 0
 Measurements:
-Total accumulated                  : 198034705535 ns (198.035s)
-  Initialization                   :     93957826 ns (  0.094s) =  0.047%
-  Simulate                         : 197940746478 ns (197.941s) = 99.953%
-    ForceUpdateTotal               : 197940456798 ns (197.940s) =100.000%
-      ForceUpdateNonTuning         : 197940344166 ns (197.940s) =100.000%
-  One iteration                  :   1979407464 ns (  1.979s) =  1.000%
-Total wall-clock time              : 198034705535 ns (198.035s) =100.000%
+Total accumulated                  : 145999146868 ns (145.999s)
+  Initialization                   :     99045487 ns (  0.099s) =  0.068%
+  Simulate                         : 145900100003 ns (145.900s) = 99.932%
+    ForceUpdateTotal               : 145899826169 ns (145.900s) =100.000%
+      ForceUpdateNonTuning         : 145899700084 ns (145.900s) =100.000%
+  One iteration                  :   1459001000 ns (  1.459s) =  0.999%
+Total wall-clock time              : 145999146868 ns (145.999s) =100.000%
 
 Tuning iterations                  : 0 / 100 = 0%
-MFUPs/sec                          : 0.505202
+MFUPs/sec                          : 0.685402
 Mean Rebuild Frequency               : 1

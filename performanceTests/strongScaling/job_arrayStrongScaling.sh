@@ -12,7 +12,7 @@
 # Index only container/traversal and cell size.
 # The thread sweep and 3 repeat runs are executed inside each array job.
 # 4 (container/traversal) * 2 cell sizes = 8 jobs
-#SBATCH --array=0-1 # 0-7
+#SBATCH --array=2-5 # 0-7
 #SBATCH --mail-user=alexander.glas@tum.de
 #SBATCH --mail-type=END,FAIL  # Send email on end and failure
 

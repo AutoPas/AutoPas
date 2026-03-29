@@ -1,7 +1,7 @@
 WARNING: Simulation box increased due to particles being too close to the boundaries.
 # Running single-site MD simulation.
 
-container                        :  [HierarchicalGridMatching]
+container                        :  [HierarchicalGrid]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  0.1
 tuning-strategies                :  []
@@ -12,11 +12,11 @@ early-stopping-factor            :  inf
 use-LOESS-smoothening            :  false
 PairwiseInteraction:             
   functor                        :  Lennard-Jones (12-6) AVX intrinsics
-  traversal                      :  [hgrid_matching]
+  traversal                      :  [hgrid_block4]
   data-layout                    :  [SoA]
   newton3                        :  [enabled]
 cutoff                           :  2.4
-cutoffs                          :  [1.68, 2.4]
+cutoffs                          :  [1.2, 2.4]
 box-min                          :  [0, 0, 0]
 box-max                          :  [20, 20, 20]
 cell-size                        :  [1]
@@ -28,7 +28,7 @@ boundary-type                    :  [none, none, none]
 Sites:                           
   0:
     epsilon                      :  1
-    sigma                        :  0.56
+    sigma                        :  0.4
     nu                           :  0
     mass                         :  1
   1:
@@ -39,14 +39,14 @@ Sites:
 Objects:                         
   CubeUniform:
     0:  
-      numberOfParticles          :  888889
+      numberOfParticles          :  428571
       box-length                 :  [20, 20, 20]
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
   CubeUniform:
     1:  
-      numberOfParticles          :  111111
+      numberOfParticles          :  71429
       box-length                 :  [20, 20, 20]
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
@@ -62,26 +62,26 @@ subdivide-dimension              :  [true, true, true]
 energy-sensor                    :  rapl
 
 
-Using 56 Threads
+Using 1 Threads
 MPI is disabled.
-[2026-03-29 01:25:02.861] [AutoPasLog] [info] [AutoPasImpl.h:70] AutoPas Version: 3.0.0-4aa8aa3-dirty
-[2026-03-29 01:25:02.862] [AutoPasLog] [info] [AutoPasImpl.h:71] Compiled with  : GCC 13.2.0
-Number of particles at initialization on rank 0: 1000000
-Number of particles at initialization globally : 1000000
+[2026-03-29 01:54:09.570] [AutoPasLog] [info] [AutoPasImpl.h:70] AutoPas Version: 3.0.0-4aa8aa3-dirty
+[2026-03-29 01:54:09.570] [AutoPasLog] [info] [AutoPasImpl.h:71] Compiled with  : GCC 13.2.0
+Number of particles at initialization on rank 0: 500000
+Number of particles at initialization globally : 500000
 
 
-Total number of particles at the end of Simulation: 1000000
-Owned: 1000000
+Total number of particles at the end of Simulation: 500000
+Owned: 500000
 Halo : 0
 Measurements:
-Total accumulated                  : 198034705535 ns (198.035s)
-  Initialization                   :     93957826 ns (  0.094s) =  0.047%
-  Simulate                         : 197940746478 ns (197.941s) = 99.953%
-    ForceUpdateTotal               : 197940456798 ns (197.940s) =100.000%
-      ForceUpdateNonTuning         : 197940344166 ns (197.940s) =100.000%
-  One iteration                  :   1979407464 ns (  1.979s) =  1.000%
-Total wall-clock time              : 198034705535 ns (198.035s) =100.000%
+Total accumulated                  : 207858557451 ns (207.859s)
+  Initialization                   :    121050878 ns (  0.121s) =  0.058%
+  Simulate                         : 207737505478 ns (207.738s) = 99.942%
+    ForceUpdateTotal               : 207737382516 ns (207.737s) =100.000%
+      ForceUpdateNonTuning         : 207737346545 ns (207.737s) =100.000%
+  One iteration                  :   2077375054 ns (  2.077s) =  0.999%
+Total wall-clock time              : 207858557451 ns (207.859s) =100.000%
 
 Tuning iterations                  : 0 / 100 = 0%
-MFUPs/sec                          : 0.505202
+MFUPs/sec                          : 0.240689
 Mean Rebuild Frequency               : 1
