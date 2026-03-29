@@ -1,0 +1,107 @@
+WARNING: Simulation box increased due to particles being too close to the boundaries.
+# Running single-site MD simulation.
+
+container                        :  [LinkedCells, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists, HierarchicalGrid, HierarchicalGridMatching]
+verlet-rebuild-frequency         :  30
+verlet-skin-radius               :  0.01
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Mean-Value
+tuning-strategies                :  []
+tuning-metric                    :  time
+tuning-interval                  :  5000
+tuning-samples                   :  30
+early-stopping-factor            :  inf
+use-LOESS-smoothening            :  false
+PairwiseInteraction:             
+  functor                        :  Lennard-Jones (12-6) AVX intrinsics
+  traversal                      :  [hgrid_block8]
+  data-layout                    :  [SoA]
+  newton3                        :  [enabled]
+cutoff                           :  3
+cutoffs                          :  [1.5, 3]
+box-min                          :  [-0.561, -0.561, -0.561]
+box-max                          :  [30.561, 30.561, 40.5]
+cell-size                        :  [0.5]
+deltaT                           :  5e-05
+pause-simulation-during-tuning   :  false
+sorting-threshold                :  8
+iterations                       :  300000
+boundary-type                    :  [periodic, periodic, reflective]
+Sites:                           
+  0:
+    epsilon                      :  0.5
+    sigma                        :  0.5
+    nu                           :  0
+    mass                         :  2
+  1:
+    epsilon                      :  1
+    sigma                        :  1
+    nu                           :  0
+    mass                         :  1
+Objects:                         
+  CubeClosestPacked:
+    0:  
+      particle-spacing           :  1.122
+      box-length                 :  [30, 30, 15]
+      bottomLeftCorner           :  [0, 0, 0]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  1
+  CubeClosestPacked:
+    1:  
+      particle-spacing           :  0.6
+      box-length                 :  [30, 30, 15]
+      bottomLeftCorner           :  [0, 0, 15.1]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  0
+globalForce                      :  [0, 0, -12.44]
+thermostat:
+  initialTemperature             :  40
+  targetTemperature              :  40
+  deltaTemperature               :  10
+  thermostatInterval             :  100
+  addBrownianMotion              :  true
+use-tuning-logger                :  false
+output-suffix                    :  
+log-level                        :  info
+no-end-config                    :  false
+no-progress-bar                  :  true
+load-balancer                    :  InvertedPressure
+load-balancing-interval          :  5000
+subdivide-dimension              :  [true, true, true]
+energy-sensor                    :  rapl
+
+
+Using 112 Threads
+MPI is disabled.
+[2026-03-29 14:00:18.066] [AutoPasLog] [info] [AutoPasImpl.h:70] AutoPas Version: 3.0.0-4aa8aa3-dirty
+[2026-03-29 14:00:18.066] [AutoPasLog] [info] [AutoPasImpl.h:71] Compiled with  : GCC 13.2.0
+Number of particles at initialization on rank 0: 104129
+Number of particles at initialization globally : 104129
+
+
+Total number of particles at the end of Simulation: 151589
+Owned: 104129
+Halo : 47460
+Measurements:
+Total accumulated                  : 15895093652616 ns (15895.094s)
+  Initialization                   :       55197823 ns (    0.055s) =  0.000%
+  Simulate                         : 15895038454102 ns (15895.038s) =100.000%
+    PositionUpdate                 :    55301007755 ns (   55.301s) =  0.348%
+    UpdateContainer                :   391508122054 ns (  391.508s) =  2.463%
+    Boundaries                     :  7264948757741 ns ( 7264.949s) = 45.706%
+      HaloParticleExchange         :  7048352028153 ns ( 7048.352s) = 95.229%
+      ReflectParticlesAtBoundaries :   136547961727 ns (  136.548s) =  1.845%
+      MigratingParticleExchange    :   216596729588 ns (  216.597s) =  2.926%
+    ForceUpdateTotal               :  7973016937855 ns ( 7973.017s) = 50.160%
+      Tuning                       :   120915151674 ns (  120.915s) =  1.517%
+      ForceUpdateTuning            :   120915151674 ns (  120.915s) =  1.517%
+      ForceUpdateNonTuning         :  7851875274303 ns ( 7851.875s) = 98.481%
+    VelocityUpdate                 :    68432803452 ns (   68.433s) =  0.431%
+    Thermostat                     :     2250773970 ns (    2.251s) =  0.014%
+    LoadBalancing                  :       60454475 ns (    0.060s) =  0.000%
+  One iteration                  :       52983461 ns (    0.053s) =  0.000%
+Total wall-clock time              : 15895093652616 ns (15895.094s) =100.000%
+
+Tuning iterations                  : 3600 / 300000 = 1.2%
+MFUPs/sec                          : 3.91805
+Mean Rebuild Frequency               : 3.7338
