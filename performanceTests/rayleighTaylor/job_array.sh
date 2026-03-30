@@ -1,16 +1,16 @@
 #!/bin/bash
-#SBATCH --job-name=Uni_2_Job_Array
+#SBATCH --job-name=rayleighTaylor
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --clusters=cm4
 #SBATCH --partition=cm4_tiny  # ! This probably needs to change !
 #SBATCH --cpus-per-task=112 # ! This should be the maximum number of CPUs you wish to use per single MPI rank !
-#SBATCH --time=10:00:00
+#SBATCH --time=12:00:00
 #SBATCH --output=/dev/null
 # 4 traversals * 2 cell sizes = 8 jobs.
-#SBATCH --array=0-7
+#SBATCH --array=1-4
 #SBATCH --mail-user=alexander.glas@tum.de
-#SBATCH --mail-type=END,FAIL  # Send email on end and failure
+#SBATCH --mail-type=ALL  # Send email on end and failure
 #SBATCH --hint=nomultithread
 
 # !! Modify the above as relevant for your computer !!
