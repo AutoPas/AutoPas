@@ -19,6 +19,7 @@
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/optRef.h"
 
 namespace autopas {
 
@@ -193,7 +194,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) = 0;
+      utils::optRef<typename ContainerIterator<Particle_T, true, false>::ParticleVecType> additionalVectors =
+          std::nullopt) = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
@@ -201,7 +203,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const = 0;
+      utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
+          std::nullopt) const = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
@@ -209,7 +212,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] ContainerIterator<Particle_T, false, false> cbegin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const {
+      utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
+          std::nullopt) const {
     return begin(behavior, additionalVectors);
   }
 
@@ -219,12 +223,13 @@ class ParticleContainerInterface {
    * @param lowerCorner Lower corner of the region
    * @param higherCorner Higher corner of the region
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
-   * @param additionalVectors Vectors that should be included besides the container.
+   * @param additionalVectors Vectors that should be included besides the container. Optional reference.
    * @return Iterator to iterate over all particles in a specific region.
    */
   [[nodiscard]] virtual ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) = 0;
+      utils::optRef<typename ContainerIterator<Particle_T, true, true>::ParticleVecType> additionalVectors =
+          std::nullopt) = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
@@ -232,7 +237,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors = nullptr) const = 0;
+      utils::optRef<typename ContainerIterator<Particle_T, false, true>::ParticleVecType> additionalVectors =
+          std::nullopt) const = 0;
 
   /**
    * @copydoc autopas::AutoPas::end()
