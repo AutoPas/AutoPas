@@ -84,12 +84,13 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     // Dummy value which makes the code simpler in case the cellSizeFactors are not a finite set.
     finiteCellSizeFactors = std::set<double>{-1};
   }
+  std::set<int> threadCountsSet = threadCounts.getAll();
 
   // ============== main computation ===========================================
 
   ConfigurationAndRankIteratorHandler iteratorHandler(containerOptions, finiteCellSizeFactors, traversalOptions,
                                                       loadEstimatorOptions, dataLayoutOptions, newton3Options,
-                                                      threadCounts.getAll(), interactionType, numConfigs, commSize);
+                                                      threadCountsSet, interactionType, numConfigs, commSize);
 
   while (iteratorHandler.getRankIterator() < rank) {
     iteratorHandler.advanceIterators(numConfigs, commSize);
