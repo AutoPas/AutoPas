@@ -6,11 +6,12 @@
 
 #pragma once
 
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
 #include <boost/math/statistics/linear_regression.hpp>
 
 #include "autopas/utils/Math.h"
 
-namespace autopas::utils {
+namespace autopas::utils::RegressionModels {
 
 /**
  * Base class for estimators that predict a long-valued response variable y
@@ -22,14 +23,27 @@ namespace autopas::utils {
  */
 class RegressionBase {
  public:
-  // TODO: minN < maxN
+  // TODO: minN < maxN & minN > 0
+  /**
+   * @param minN Lower limit for the number of points considered for prediction.
+   * @param maxN Upper limit for the number of points considered for prediction.
+   */
   RegressionBase(const size_t minN, const size_t maxN) : _minN(minN), _maxN(maxN) {}
-  enum class ReturnCode { OK, NOT_ENOUGH_POINTS, EXCEEDED_MAX_POINTS, OVERFLOW, DIVIDE_BY_ZERO, UNKNOWN_ERROR };
+
+  /// Return codes for prediction status.
+  enum class ReturnCode { OK_REG, NOT_ENOUGH_POINTS_REG, EXCEEDED_MAX_POINTS_REG, OVERFLOW_REG, UNKNOWN_ERROR_REG };
+
+  /**
+   * Output type for the predict method, used to capture whether an error occurred during prediction, e.g., a division
+   * by zero.
+   */
   struct Result {
     double _value;
     ReturnCode _returnCode;
     bool _isOk;
   };
+
+  /// Reset to initial values.
   void reset() {
     _n = 0;
     _sumY = 0.0;
@@ -42,19 +56,14 @@ class RegressionBase {
   ReturnCode addNewPoint(long const y) {
     _sumY = Math::safeAdd(_sumY, y);
     if (isOverflown(_sumY)) {
-      return ReturnCode::OVERFLOW;
+      return ReturnCode::OVERFLOW_REG;
     }
     incrementN();
-    return ReturnCode::OK;
+    return ReturnCode::OK_REG;
   }
 
+  /// Increment counter n when adding a new point.
   void incrementN() { _n++; }
-  static bool isOk(const ReturnCode return_code) {
-    if (return_code == ReturnCode::OK) {
-      return true;
-    }
-    return false;
-  }
 
   /// Checks whether a value indicates an arithmetic overflow based on sentinel limits.
   static bool isOverflown(const long x) {
@@ -64,31 +73,32 @@ class RegressionBase {
     return false;
   }
 
+  /// Checks whether at least _minN points have been gathered, the minimum number required for prediction.
   [[nodiscard]] bool hasEnoughPoints() const { return _n >= _minN; }
+  /// Checks whether _maxN points have already been gathered.
   [[nodiscard]] bool reachedMaxPoints() const { return _n >= _maxN; }
+  /// Checks whether more than _maxN points have already been gathered.
   [[nodiscard]] bool exceedsMaxPoints() const { return _n > _maxN; }
-  [[nodiscard]] bool isWithinPointsLimits() const { return _n <= _maxN && _n >= _minN; }
-  [[nodiscard]] size_t getN() const { return _n; }
-  [[nodiscard]] long getSumY() const { return _sumY; }
 
-  // for tuning minN and maxN through YAML parameters
-  void setMinMax(const size_t minN, const size_t maxN) {
-    _minN = minN;
-    _maxN = maxN;
-  }
-  void setMaxN(const size_t maxN) { _maxN = maxN; }
+  /// Returns the number of points currently added.
+  [[nodiscard]] size_t getN() const { return _n; }
+
+  /// Returns the sum of all added y values.
+  [[nodiscard]] long getSumY() const { return _sumY; }
 
  protected:
   /// Number of data points currently stored
   size_t _n = 0;
 
+  /// Sum of all y values collected so far.
   long _sumY = 0;
 
-  /// Amount of considered points for prediction has a lower (_minN) and an upper (_maxN) limit.
+  /// Lower limit for the number of points considered for prediction.
   size_t _minN = 0;
+
+  /// Upper limit for the number of points considered for prediction.
   size_t _maxN = 0;
 };
-
 /**
  * Estimates a constant value by computing the arithmetic mean of observed
  * y values in a streaming fashion.
@@ -98,13 +108,26 @@ class RegressionBase {
  */
 class Mean : public RegressionBase {
  public:
-  // TODO: minN > 0
+  /**
+   * Default constructor.
+   * Initializes the base RegressionBase with minN = 1 and maxN = 100.
+   */
   Mean() : RegressionBase(1, 100) {}
 
+  /**
+   * Constructor with maximum points.
+   * Initializes RegressionBase with minN = 1 and the given maxN.
+   * @param maxN Upper limit for the number of points considered for prediction.
+   */
   explicit Mean(const size_t maxN) : RegressionBase(1, maxN) {}
 
+  /**
+   * @param minN Lower limit for the number of points considered for prediction.
+   * @param maxN Upper limit for the number of points considered for prediction.
+   */
   Mean(const size_t minN, const size_t maxN) : RegressionBase(minN, maxN) {}
 
+  /// Reset to initial values.
   void reset() { RegressionBase::reset(); }
 
   /**
@@ -112,24 +135,27 @@ class Mean : public RegressionBase {
    */
   ReturnCode addNewPoint(long const y) {
     if (reachedMaxPoints()) {
-      return ReturnCode::EXCEEDED_MAX_POINTS;
+      return ReturnCode::EXCEEDED_MAX_POINTS_REG;
     }
 
     return RegressionBase::addNewPoint(y);
   }
 
+  /// The prediction of the Mean class takes the mean over the gathered points.
   Result predict() {
     if (!hasEnoughPoints()) {
-      return Result{0, ReturnCode::NOT_ENOUGH_POINTS, false};
+      return Result{0, ReturnCode::NOT_ENOUGH_POINTS_REG, false};
     }
 
-    // If the maximum number of points has not been reached yet,
-    // recompute the mean using the current accumulated values.
-    // Once the estimator is full, the cached mean can be reused.
+    /*
+     * If the maximum number of points has not been reached yet,
+     * recompute the mean using the current accumulated values.
+     * Once the estimator is full, the cached mean can be reused.
+     */
     if (!exceedsMaxPoints()) {
       _lastMean = static_cast<double>(_sumY) / static_cast<double>(_n);
     }
-    return Result{_lastMean, ReturnCode::OK, true};
+    return Result{_lastMean, ReturnCode::OK_REG, true};
   }
 
  private:
@@ -151,23 +177,28 @@ class SimpleLinearRegressionBoost : public RegressionBase {
     _x.reserve(_maxN);
   }
 
+  /**
+   * @param minN Lower limit for the number of points considered for prediction.
+   * @param maxN Upper limit for the number of points considered for prediction.
+   */
   SimpleLinearRegressionBoost(const size_t minN, const size_t maxN) : RegressionBase(minN, maxN) {
     _y.reserve(_maxN);
     _x.reserve(_maxN);
   }
 
-  /// Point limits are evaluated based on the number of distinct x values,
-  /// not on the total number of samples.
+  /// Checks whether at least _minN distinct x values have been gathered, the minimum number required for prediction.
   [[nodiscard]] bool hasEnoughPoints() const { return _numDifferentXConsidered >= _minN; }
-  [[nodiscard]] bool reachedMaxPoints() const { return _numDifferentXConsidered >= _maxN; }
-  [[nodiscard]] bool exceedsMaxPoints() const { return _numDifferentXConsidered > _maxN; }
-  [[nodiscard]] bool isWithinPointsLimits() const {
-    return _numDifferentXConsidered <= _maxN && _numDifferentXConsidered >= _minN;
-  }
 
-  // for tests
+  /// Checks whether _maxN distinct x values have been gathered.
+  [[nodiscard]] bool reachedMaxPoints() const { return _numDifferentXConsidered >= _maxN; }
+
+  /// Checks whether more than _maxN distinct x values have been gathered.
+  [[nodiscard]] bool exceedsMaxPoints() const { return _numDifferentXConsidered > _maxN; }
+
+  /// for tests
   [[nodiscard]] size_t getNumDifferentXConsidered() const { return _numDifferentXConsidered; }
 
+  /// Reset to initial values.
   void reset() {
     RegressionBase::reset();
     _numDifferentXConsidered = 0;
@@ -186,9 +217,11 @@ class SimpleLinearRegressionBoost : public RegressionBase {
     if (_currentMaxX < x) {
       _currentMaxX = x;
       if (this->reachedMaxPoints()) {
-        // Ideally, all entries with the same x value should be removed here. However, this case is intentionally
-        // ignored, because of performance and code volume, which means there may be more than _maxN values considered
-        // for prediction.
+        /*
+         * Ideally, all entries with the same x value should be removed here. However, this case is intentionally
+         * ignored, because of performance and code volume, which means there may be more than _maxN values considered
+         * for prediction.
+         */
         _x.erase(_x.begin());
         _y.erase(_y.begin());
       } else {
@@ -202,18 +235,25 @@ class SimpleLinearRegressionBoost : public RegressionBase {
     return RegressionBase::addNewPoint(y);
   }
 
+  /**
+   * Predicts the y value for a given x using a linear regression over the collected data.
+   *
+   * @param x Value for which the y value should be returned.
+   * @return y' a linear regression estimate for x based on the collected data, returned if no error occurred during
+   * calculation.
+   */
   [[nodiscard]] Result predict(const long x) const {
     if (not this->hasEnoughPoints()) {
-      return Result{0, ReturnCode::NOT_ENOUGH_POINTS, false};
+      return Result{0, ReturnCode::NOT_ENOUGH_POINTS_REG, false};
     }
     std::pair<double, double> ßs;
     try {
       ßs = boost::math::statistics::simple_ordinary_least_squares(_x, _y);
     } catch (...) {
-      return Result{0, ReturnCode::UNKNOWN_ERROR, false};
+      return Result{0, ReturnCode::UNKNOWN_ERROR_REG, false};
     }
     const double prediction = ßs.first + ßs.second * static_cast<double>(x);
-    return Result{prediction, ReturnCode::OK, true};
+    return Result{prediction, ReturnCode::OK_REG, true};
   }
 
  private:
@@ -227,17 +267,25 @@ class SimpleLinearRegressionBoost : public RegressionBase {
    */
   long _currentMaxX = LONG_MIN;
 
-  std::vector<long> _x;
-  std::vector<long> _y;
+  /// Vectors storing the currently considered x values and their corresponding y values for prediction.
+  std::vector<long> _x, _y;
 };
 
+/**
+ * In RebuildDecisionContext, remainder traversals with an empty buffer are ignored for prediction
+ * because they could skew the result, but they are still needed for the rebuild decision.
+ *
+ * This class provides a structure to separate remainder traversal time values with empty buffers from non-zero ones.
+ */
 class SimpleLinearRegressionSeparateZero {
  public:
+  /// Reset both storage structures to their initial values.
   void reset() {
     _zero.reset();
     _rest.reset();
   }
 
+  /// Adds a new point. If x equals zero, store in _zero. Otherwise, store in _rest.
   RegressionBase::ReturnCode addNewPoint(const long x, const long y) {
     RegressionBase::ReturnCode returnCode;
     if (x == 0) {
@@ -248,22 +296,37 @@ class SimpleLinearRegressionSeparateZero {
     return returnCode;
   }
 
+  /// For prediction via linear regression, only values from non-empty buffers are considered.
   [[nodiscard]] RegressionBase::Result predict(const long x) { return _rest.predict(x); }
 
+  /**
+   * For the overall rebuild decision, the y values from both empty and non-empty buffered remainder traversals are
+   * needed.
+   */
   [[nodiscard]] long getSumY() const { return _zero.getSumY() + _rest.getSumY(); }
 
-  void setMinMax(const size_t minN, const size_t maxN) { _rest.setMinMax(minN, maxN); }
-
  private:
+  /// Stores remainder traversal values with an empty buffer.
   Mean _zero{SIZE_MAX};
+
+  /**
+   * Stores remainder traversal values with a filled buffer
+   * and predicts remainder traversal time for a given buffer filling.
+   */
   SimpleLinearRegressionBoost _rest{};
 };
 
+/**
+ * Includes all methods and variables needed to make a rebuild decision by minimizing
+ * the sum of rebuild and remainder traversal time spans over the simulation time.
+ */
 class RebuildDecisionContext {
  public:
-  // log
+  /// For rebuildNeighborTimeEstimate logging.
   [[nodiscard]] double getRebuildNeighborTimeEstimate() const { return _rebuildNeighborTimeEstimate; }
+  /// For remainderTraversalTimeEstimate  logging.
   [[nodiscard]] double getRemainderTraversalTimeEstimate() const { return _remainderTraversalTimeEstimate; }
+  /// For particlesBufferEstimate  logging.
   [[nodiscard]] size_t getNumParticlesBufferEstimate() const { return _numParticlesBufferEstimate; }
 
   /**
@@ -277,7 +340,7 @@ class RebuildDecisionContext {
   void afterRebuild(const long rebuildTime, const bool doTuningRebuild, const bool isFirstIteration) {
     // tuning iterations distort the rebuild time estimate
     if (!doTuningRebuild and !isFirstIteration) {
-      if (_rebuildNeighborTimeMean.addNewPoint(rebuildTime) == RegressionBase::ReturnCode::OVERFLOW) {
+      if (_rebuildNeighborTimeMean.addNewPoint(rebuildTime) == RegressionBase::ReturnCode::OVERFLOW_REG) {
         _rebuildNeighborTimeMean.reset();
         _rebuildNeighborTimeEstimate = std::numeric_limits<double>::quiet_NaN();
       }
@@ -317,7 +380,8 @@ class RebuildDecisionContext {
     }
 
     return _remainderTraversalTimePredictor.addNewPoint(static_cast<long>(numParticlesBuffer),
-                                                        remainderTraversalTime) == RegressionBase::ReturnCode::OVERFLOW;
+                                                        remainderTraversalTime) ==
+           RegressionBase::ReturnCode::OVERFLOW_REG;
   }
 
   void updateNumParticlesBufferEstimate(const long currentNumParticlesBuffer) {
@@ -354,12 +418,12 @@ class RebuildDecisionContext {
         doDynamicRebuild = true;
       }
 
-    } else if (returnCode_rebuild == RegressionBase::ReturnCode::OVERFLOW ||
-               returnCode_remainder == RegressionBase::ReturnCode::OVERFLOW ||
+    } else if (returnCode_rebuild == RegressionBase::ReturnCode::OVERFLOW_REG ||
+               returnCode_remainder == RegressionBase::ReturnCode::OVERFLOW_REG ||
                // No rebuild has been performed yet; trigger one to obtain an initial rebuild time estimate
-               returnCode_rebuild == RegressionBase::ReturnCode::NOT_ENOUGH_POINTS ||
+               returnCode_rebuild == RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG ||
                // if the boost library linear regression implementation throws an error
-               returnCode_remainder == RegressionBase::ReturnCode::UNKNOWN_ERROR) {
+               returnCode_remainder == RegressionBase::ReturnCode::UNKNOWN_ERROR_REG) {
       doDynamicRebuild = true;
     }
     return doDynamicRebuild;
@@ -393,19 +457,25 @@ class RebuildDecisionContext {
    */
   long _lastRemainderTraversalTime{0};
 
-  /**
-   * Estimates the particle buffer size by extrapolating from the particle increase
-   * between iterations.
-   *
-   * The rebuild decision must be made before particles migrate between containers,
-   * including across periodic boundaries.
-   */
+  /// Number of particles in the particle buffer after the fast particles have been added.
   size_t _afterFastAddNumParticlesBuffer{0};
+
+  /**
+   * Stores the number of particles added to the buffer during a iteration,
+   * due to migrating particles, for estimating the particle buffer filling for the next iteration.
+   */
   size_t _lastIncreaseNumParticlesBuffer{0};
+
+  /**
+   * Estimated number of particles for the particle buffer based on the last increases
+   * and the number of particles in the buffer after fast particles have been added.
+   */
   size_t _numParticlesBufferEstimate{0};
 
-  // log
+  /// For rebuildNeighborTimeEstimate logging.
   double _rebuildNeighborTimeEstimate{std::numeric_limits<double>::quiet_NaN()};
+  /// For remainderTraversalTimeEstimate  logging.
   double _remainderTraversalTimeEstimate{std::numeric_limits<double>::quiet_NaN()};
 };
-}  // namespace autopas::utils
+}  // namespace autopas::utils::RegressionModels
+#endif

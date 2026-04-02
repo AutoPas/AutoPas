@@ -6,29 +6,31 @@
 
 #include "RegressionModelsTest.h"
 
-using namespace autopas::utils;
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+
+using namespace autopas::utils::RegressionModels;
 
 TEST(RegressionModelsTest, testMean) {
   Mean mean(1, 3);
   EXPECT_EQ(mean.getN(), 0);
 
   // Add points
-  EXPECT_EQ(mean.addNewPoint(10), RegressionBase::ReturnCode::OK);
-  EXPECT_EQ(mean.addNewPoint(20), RegressionBase::ReturnCode::OK);
+  EXPECT_EQ(mean.addNewPoint(10), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(mean.addNewPoint(20), RegressionBase::ReturnCode::OK_REG);
 
   // check predict
   auto result = mean.predict();
   EXPECT_TRUE(result._isOk);
   EXPECT_DOUBLE_EQ(result._value, 15);
 
-  EXPECT_EQ(mean.addNewPoint(30), RegressionBase::ReturnCode::OK);
+  EXPECT_EQ(mean.addNewPoint(30), RegressionBase::ReturnCode::OK_REG);
 
   result = mean.predict();
   EXPECT_TRUE(result._isOk);
   EXPECT_DOUBLE_EQ(result._value, 20);
 
   // Exceed maximum number of points
-  EXPECT_EQ(mean.addNewPoint(40), RegressionBase::ReturnCode::EXCEEDED_MAX_POINTS);
+  EXPECT_EQ(mean.addNewPoint(40), RegressionBase::ReturnCode::EXCEEDED_MAX_POINTS_REG);
   result = mean.predict();
   EXPECT_TRUE(result._isOk);
   EXPECT_DOUBLE_EQ(result._value, 20);
@@ -38,9 +40,9 @@ TEST(RegressionModelsTest, testMean) {
   EXPECT_EQ(mean.getN(), 0);
 
   // Correct behavior if there are not enough points for prediction
-  EXPECT_EQ(mean.predict()._returnCode, RegressionBase::ReturnCode::NOT_ENOUGH_POINTS);
+  EXPECT_EQ(mean.predict()._returnCode, RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG);
 
-  EXPECT_EQ(mean.addNewPoint(20), RegressionBase::ReturnCode::OK);
+  EXPECT_EQ(mean.addNewPoint(20), RegressionBase::ReturnCode::OK_REG);
   result = mean.predict();
   EXPECT_TRUE(result._isOk);
   EXPECT_DOUBLE_EQ(result._value, 20);
@@ -49,20 +51,20 @@ TEST(RegressionModelsTest, testMean) {
 TEST(RegressionModelsTest, testSimpleLinearRegressionBoost) {
   SimpleLinearRegressionBoost reg(2, 3);
 
-  EXPECT_EQ(reg.addNewPoint(1, 2), RegressionBase::ReturnCode::OK);
-  EXPECT_EQ(reg.addNewPoint(2, 3), RegressionBase::ReturnCode::OK);
+  EXPECT_EQ(reg.addNewPoint(1, 2), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(reg.addNewPoint(2, 3), RegressionBase::ReturnCode::OK_REG);
 
   auto result = reg.predict(3);
   EXPECT_TRUE(result._isOk);
   EXPECT_NEAR(result._value, 4.0, 1e-6);  // y = x + 1 = (x=3) 4
 
-  EXPECT_EQ(reg.addNewPoint(3, 7), RegressionBase::ReturnCode::OK);
+  EXPECT_EQ(reg.addNewPoint(3, 7), RegressionBase::ReturnCode::OK_REG);
 
   result = reg.predict(6);
   EXPECT_TRUE(result._isOk);
   EXPECT_NEAR(result._value, 14.0, 1e-6);  // y = 2.5*x - 1 = (x=6) 14
 
-  EXPECT_EQ(reg.addNewPoint(6, 32), RegressionBase::ReturnCode::OK);
+  EXPECT_EQ(reg.addNewPoint(6, 32), RegressionBase::ReturnCode::OK_REG);
 
   result = reg.predict(7);
   EXPECT_TRUE(result._isOk);
@@ -78,20 +80,20 @@ TEST(RegressionModelsTest, testSimpleLinearRegressionBoost) {
   EXPECT_EQ(reg.getN(), 0);
   EXPECT_EQ(reg.getSumY(), 0);
 
-  EXPECT_EQ(reg.predict(6)._returnCode, RegressionBase::ReturnCode::NOT_ENOUGH_POINTS);
+  EXPECT_EQ(reg.predict(6)._returnCode, RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG);
 
   // numDifferentXConsidered
   EXPECT_EQ(reg.getNumDifferentXConsidered(), 0);
-  EXPECT_EQ(reg.addNewPoint(1, 3), RegressionBase::ReturnCode::OK);
+  EXPECT_EQ(reg.addNewPoint(1, 3), RegressionBase::ReturnCode::OK_REG);
   EXPECT_EQ(reg.getNumDifferentXConsidered(), 1);
-  EXPECT_EQ(reg.addNewPoint(1, 2), RegressionBase::ReturnCode::OK);
+  EXPECT_EQ(reg.addNewPoint(1, 2), RegressionBase::ReturnCode::OK_REG);
   EXPECT_EQ(reg.getNumDifferentXConsidered(), 1);
 
-  EXPECT_EQ(reg.addNewPoint(2, 3), RegressionBase::ReturnCode::OK);
-  EXPECT_EQ(reg.addNewPoint(3, 7), RegressionBase::ReturnCode::OK);
+  EXPECT_EQ(reg.addNewPoint(2, 3), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(reg.addNewPoint(3, 7), RegressionBase::ReturnCode::OK_REG);
 
   // Four points are considered even though _maxN = 3 because duplicate x values are not removed.
-  EXPECT_EQ(reg.addNewPoint(6, 21), RegressionBase::ReturnCode::OK);  // 4*x - 3.75
+  EXPECT_EQ(reg.addNewPoint(6, 21), RegressionBase::ReturnCode::OK_REG);  // 4*x - 3.75
 
   EXPECT_EQ(reg.getNumDifferentXConsidered(), 3);
 
@@ -154,3 +156,4 @@ TEST(RegressionModelsTest, testRebuildDecisionContext) {
   // Not enough remainder traversal times collected
   EXPECT_FALSE(rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(1));
 }
+#endif
