@@ -45,12 +45,14 @@ class FeatureVector : public Configuration {
    * @param dataLayout
    * @param newton3
    * @param cellSizeFactor
+   * @param threadCount
    * @param interactionType
    */
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
-                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3,
+                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3, int threadCount,
                 InteractionTypeOption interactionType)
-      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType) {}
+      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, threadCount,
+                      interactionType) {}
 
   /**
    * Construct from Configuration.

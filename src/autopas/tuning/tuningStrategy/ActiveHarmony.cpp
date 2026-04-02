@@ -105,8 +105,8 @@ Configuration ActiveHarmony::fetchConfiguration() {
     cellSizeFactor = ah_get_real(htask, cellSizeFactorsName);
   }
 
-  return {containerOption,  cellSizeFactor, traversalOption, loadEstimatorOption,
-          dataLayoutOption, newton3Option,  _interactionType};
+  return {containerOption,  cellSizeFactor, traversalOption,           loadEstimatorOption,
+          dataLayoutOption, newton3Option,  autopas_get_max_threads(), _interactionType};
 #else
   return {};
 #endif

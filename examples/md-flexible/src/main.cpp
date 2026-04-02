@@ -34,7 +34,11 @@ int main(int argc, char **argv) {
     // print start configuration and parallelization info
     if (domainDecomposition->getDomainIndex() == 0) {
       std::cout << configuration.to_string() << std::endl;
-      std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
+      std::cout << std::endl << "Using ";
+      if (configuration.threadCounts.value.get()->getAll().size() != 1) {
+        std::cout << "(up to) ";
+      }
+      std::cout << configuration.threadCounts.value.get()->getMax() << " Threads" << std::endl;
 #if defined(AUTOPAS_INCLUDE_MPI)
       std::cout << "MPI is running with " << domainDecomposition->getNumberOfSubdomains() << " ranks." << std::endl;
 #else

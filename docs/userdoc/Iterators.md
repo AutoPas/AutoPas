@@ -102,7 +102,7 @@ Iteration of the AutoPas object can also be done in parallel via OpenMP.
 For this, place any of the examples above in a parallel region.
 
 ```c++
-AUTOPAS_OPENMP(parallel)
+AUTOPAS_OPENMP(parallel num_threads(autopas::autopas_get_preferred_num_threads()))
 for(auto& particle : autoPas) {
   // user code
 }
@@ -117,7 +117,7 @@ All features described above also work in parallel, including particle deletion.
 If iterators are nested, inner loops should not spawn multiple iterators to avoid spreading the work too thin.
 This can be achieved by adapting the `IteratorBehavior`, which works similar to a bit vector:
 ```c++
-AUTOPAS_OPENMP(parallel)
+AUTOPAS_OPENMP(parallel num_threads(autopas::autopas_get_preferred_num_threads()))
 for(auto& particle : autoPas) {   // spawns N iterators
   for(auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOrHalo | autopas::IteratorBehavior::forceSequential);
       iter != autoPas.end();
