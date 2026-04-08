@@ -21,7 +21,7 @@ option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Fun
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC "Compile auto vectorized Axilrod Teller Functor." OFF)
 option(MD_FLEXIBLE_CALC_GLOBALS "Compiles md-flexible Functors with calculation of globals, including calculation of shift offset for LJ functors." OFF)
-option(MD_FLEXIBLE_SCALING_CUTOFF "Use scaling cutoff for Lennard-Jones functor." OFF)
+option(MD_FLEXIBLE_SCALING_CUTOFF "Scale the cutoff according to the particle's size (i.e. sigma value) ." OFF)
 
 target_compile_definitions(
         md-flexible
