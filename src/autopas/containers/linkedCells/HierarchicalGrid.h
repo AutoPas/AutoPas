@@ -24,7 +24,7 @@ namespace autopas {
  * Traverses them all one by one, and cross hierarchy afterward
  * @tparam Particle type of the Particle
  */
-template <class Particle>
+template <class Particle_T>
 class HierarchicalGrid : public ParticleContainerInterface<Particle> {
  public:
   /**
