@@ -1412,15 +1412,6 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
     }
   }
 
-  size_t particleBufferSize = 0;
-  for (const auto &buffer : particleBuffers) {
-    particleBufferSize += buffer.size();
-  }
-  size_t haloParticleBufferSize = 0;
-  for (const auto &buffer : haloParticleBuffers) {
-    haloParticleBufferSize += buffer.size();
-  }
-
   AutoPasLog(TRACE, "Timer Buffers <-> Container  (1+2): {}", timerBufferContainer.getTotalTime());
   AutoPasLog(TRACE, "Timer PBuffers<-> PBuffer    (  3): {}", timerPBufferPBuffer.getTotalTime());
   AutoPasLog(TRACE, "Timer PBuffers<-> HBuffer    (  4): {}", timerPBufferHBuffer.getTotalTime());
