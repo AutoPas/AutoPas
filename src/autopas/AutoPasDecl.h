@@ -604,20 +604,20 @@ class AutoPas {
   }
 
   /**
-   * Get cutoffs for each level of Hierarchical Grid container
-   * @return cutoffs
+   * Get the minimum cell sizes for each level of the Hierarchical Grid container. The actual cell sizes could be larger, due to potentially adding a skin to each cell or increasing cell sizes to perfectly fit the box.
+   * @return hGridMinCellSizesPerLevel
    */
-  [[nodiscard]] std::vector<double> getCutoffs() const { return _logicHandlerInfo.cutoffs; }
+  [[nodiscard]] std::vector<double> getHGridMinCellSizesPerLevel() const { return _logicHandlerInfo.hGridMinCellSizesPerLevel; }
 
   /**
-   * Set cutoffs for each level of Hierarchical Grid container
-   * @param cutoffs
+   * Set the minimum cell sizes for each level of the Hierarchical Grid container. If this container is used, particles will be sorted into the grid level with the smallest minimum cell size that is still larger than that particle's size scaled by the cutoff. The actual cell sizes could be larger, due to potentially adding a skin to each cell or increasing cell sizes to perfectly fit the box. If scaled cutoffs are not used, this does nothing.
+   * @param hGridMinCellSizesPerLevel
    */
-  void setCutoffs(const std::vector<double> cutoffs) {
-    if (std::any_of(cutoffs.begin(), cutoffs.end(), [](double cutoff) { return cutoff <= 0.0; })) {
-      utils::ExceptionHandler::exception("Error: Cutoff has to be positive {} <= 0.0!");
+  void setHGridMinCellSizesPerLevel(const std::vector<double> hGridMinCellSizesPerLevel) {
+    if (std::any_of(hGridMinCellSizesPerLevel.begin(), hGridMinCellSizesPerLevel.end(), [](double cellSize) { return cellSize <= 0.0; })) {
+      utils::ExceptionHandler::exception("Error: The minimum cell sizes used by the HGrid container have to be positive: {} <= 0.0!");
     };
-    _logicHandlerInfo.cutoffs = cutoffs;
+    _logicHandlerInfo.hGridMinCellSizesPerLevel = hGridMinCellSizesPerLevel;
   }
 
   /**
