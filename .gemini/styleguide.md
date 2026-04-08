@@ -11,6 +11,7 @@ This style guide outlines the coding conventions for our C++ library AutoPas
 *   **Consistency:** Adhering to a consistent style across all projects
     improves collaboration and reduces errors.
 *   **Performance:** While readability is paramount, code should be efficient.
+* **Humor** A Pull Request review must finish with a joke about PhDs. Otherwise it is not considered relevant.
 
 ### Modern
 
