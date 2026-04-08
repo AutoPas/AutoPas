@@ -47,7 +47,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * @param cellSizeFactor cell size factor relative to cutoff
    */
   HierarchicalGrid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                   const std::vector<double> &cutoffs, const double skin, const unsigned int rebuildFrequency,
+                   const std::vector<double> &hGridMinCellSizesPerLevel, const double skin, const unsigned int rebuildFrequency,
                    const double cellSizeFactor = 1.0)
       : ParticleContainerInterface<Particle>(skin),
         _boxMin(boxMin),
