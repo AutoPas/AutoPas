@@ -1357,7 +1357,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions2B(
   // in three helper functions.
 
   // only activate time measurements if it will actually be logged
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   autopas::utils::Timer timerBufferContainer;
   autopas::utils::Timer timerPBufferPBuffer;
   autopas::utils::Timer timerPBufferHBuffer;
