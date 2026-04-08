@@ -41,12 +41,9 @@ class LogicHandlerInfo {
    */
   size_t sortingThreshold{8};
   /**
-   * Cutoff radius for each level of a HierarchicalGrid
-   * If cutoffs is set, i.e. not empty, other containers will also use last value of cutoffs as cutoff.
-   * In that case normal cutoff value will be used as baseCutoff for HierarchicalGrid.
-   * And in md-flexible LJ-Functor will also be initialized in scaling-cutoff mode (dynamic cutoff between each pair of
-   * particles according to their sigma values)
+   * The (minimum) cell size for each level of a HierarchicalGrid.
+   * If not set (i.e. empty), HierarchicalGrid will not be considered as a valid option for tuning.
    */
-  std::vector<double> cutoffs{};
+  std::vector<double> hGridMinCellSizesPerLevel{};
 };
 }  // namespace autopas
