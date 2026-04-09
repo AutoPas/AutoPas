@@ -44,6 +44,6 @@ class LogicHandlerInfo {
    * The (minimum) cell size for each level of a HierarchicalGrid.
    * If not set (i.e. empty), HierarchicalGrid will not be considered as a valid option for tuning.
    */
-  std::vector<double> hGridMinCellSizesPerLevel{};
+  std::vector<double> hgridMaxCutoffPerLevel{};
 };
 }  // namespace autopas

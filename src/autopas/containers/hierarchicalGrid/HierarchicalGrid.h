@@ -22,10 +22,10 @@ namespace autopas {
  * HierarchicalGrid class.
  * This class stores multiple LinkedCells containers, each for different sizes of particles
  * Traverses them all one by one, and cross hierarchy afterward
- * @tparam Particle type of the Particle
+ * @tparam Particle_T type of the Particle
  */
 template <class Particle_T>
-class HierarchicalGrid : public ParticleContainerInterface<Particle> {
+class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
  public:
   /**
    *  Type of the ParticleCell.
@@ -91,7 +91,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     std::sort(_maxCutoffPerLevel.begin(), _maxCutoffPerLevel.end());
     // make all maxCutoffs unique
     _maxCutoffPerLevel.resize(std::unique(_maxCutoffPerLevel.begin(), _maxCutoffPerLevel.end()) -
-                               _maxCutoffPerLevel.begin());
+                              _maxCutoffPerLevel.begin());
     if (_maxCutoffPerLevel.size() != _numLevels) {
       AutoPasLog(WARN, "Max cutoffs should all be unique, adjusting max cutoffs size from {} to {}", _numLevels,
                  _maxCutoffPerLevel.size());
@@ -237,7 +237,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
 
   void addParticleImpl(const ParticleType &p) override { _levels[getHierarchyLevel(p)]->addParticleImpl(p); }
 
-  bool deleteParticle(Particle &particle) override {
+  bool deleteParticle(Particle_T &particle) override {
     return _levels[getHierarchyLevel(particle)]->deleteParticle(particle);
   }
 
@@ -306,14 +306,14 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     return _levels.back()->getTraversalSelectorInfo();
   }
 
-  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                            IteratorBehavior iteratorBehavior,
                                                            const std::array<double, 3> &boxMin,
                                                            const std::array<double, 3> &boxMax) const override {
     return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
   }
 
-  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+  std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                            IteratorBehavior iteratorBehavior) const override {
     // this is not a region iter hence we stretch the bounding box to the numeric max
     constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
@@ -335,7 +335,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
    */
   template <bool regionIter>
-  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+  std::tuple<const Particle_T *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
@@ -408,7 +408,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
 
   /**
    * Reduce properties of particles as defined by a lambda function.
-   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam Lambda (Particle_T p, A initialValue) -> void
    * @tparam A type of particle attribute to be reduced
    * @param reduceLambda code to reduce properties of particles
    * @param result reference to result of type A
@@ -423,7 +423,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
 
   /**
    * Execute code on all particles in this container as defined by a lambda function.
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param behavior @see IteratorBehavior
    */
@@ -436,7 +436,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
 
   /**
    * Execute code on all particles in this container in a certain region as defined by a lambda function.
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
    * @param lowerCorner lower corner of bounding box
    * @param higherCorner higher corner of bounding box
@@ -452,7 +452,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
 
   /**
    * Execute code on all particles in this container in a certain region as defined by a lambda function.
-   * @tparam Lambda (Particle &p, A &result) -> void
+   * @tparam Lambda (Particle_T &p, A &result) -> void
    * @tparam A type of reduction Value
    * @param reduceLambda code to be executed on all particles
    * @param result reference to starting and final value for reduction
@@ -490,7 +490,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   const unsigned int _rebuildFrequency;
   std::vector<std::unique_ptr<LinkedCells<Particle>>> _levels;
   std::vector<double> _maxCutoffPerLevel;
-  
+
   /**
    * Gets the level of the hierarchical grid to which the particle should belong, e.g. for purposes of adding the
    * particle to the container. This is the level with the smallest cell size (excluding skin) that is greater than or

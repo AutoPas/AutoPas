@@ -39,7 +39,7 @@ class HGTraversalBase : public TraversalInterface {
    * @param stepsSinceLastRebuild number of time-steps since last rebuild
    * @param rebuildFrequency frequency of rebuild
    */
-  void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>> *levels, std::vector<double> &maxCutoffPerLevel,
+  void setLevels(std::vector<std::unique_ptr<LinkedCells<ParticleType>>> *levels, std::vector<double> &maxCutoffPerLevel,
                  double skin, double maxDisplacement, unsigned int stepsSinceLastRebuild,
                  const unsigned int rebuildFrequency) {
     _numLevels = maxCutoffPerLevel.size();
@@ -53,7 +53,7 @@ class HGTraversalBase : public TraversalInterface {
 
  protected:
   size_t _numLevels;
-  std::vector<std::unique_ptr<LinkedCells<Particle>>> *_levels;
+  std::vector<std::unique_ptr<LinkedCells<ParticleType>>> *_levels;
   std::vector<double> _maxCutoffPerLevel;
   double _skin;
   double _maxDisplacement;
@@ -66,7 +66,7 @@ class HGTraversalBase : public TraversalInterface {
   // Intralevel traversals used for each level for this iteration
   std::vector<std::unique_ptr<TraversalInterface>> _traversals;
 
-  using CellBlock = internal::CellBlock3D<FullParticleCell<Particle>>;
+  using CellBlock = internal::CellBlock3D<FullParticleCell<ParticleType>>;
 
   /**
    * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes
@@ -227,7 +227,7 @@ class HGTraversalBase : public TraversalInterface {
 
   /**
    * Traverses a single upper-level cell and lower-level cells that are in the interaction range using AoS.
-   * @tparam Functor type of the functor
+   * @tparam Functor_T type of the functor
    * @param lowerCB lower level cell block
    * @param upperCB upper level cell block
    * @param upperCellCoords 3d cell index of cell belonging to the upper level
@@ -240,7 +240,7 @@ class HGTraversalBase : public TraversalInterface {
    */
   template <class Functor_T>
   void AoSTraversal(const CellBlock &lowerCB, const CellBlock &upperCB, const std::array<size_t, 3> upperCellCoords,
-                    Functor *functor, size_t lowerLevel, size_t upperLevel, const std::array<size_t, 3> &lowerBound,
+                    Functor_T *functor, size_t lowerLevel, size_t upperLevel, const std::array<size_t, 3> &lowerBound,
                     const std::array<size_t, 3> &upperBound) {
     // can also use sorted cell optimization? need to be careful to sort only once per upper cell, to not sort for each
     // particle in the upper cell
@@ -302,7 +302,7 @@ class HGTraversalBase : public TraversalInterface {
   /**
    * Traverses a single upper level cell and a lower level cells that are in the interaction range using SoA.
    * SoA is calculated between a single upper level particle and a full lower level cell.
-   * @tparam Functor type of the functor
+   * @tparam Functor_T type of the functor
    * @param lowerCB lower level cell block
    * @param upperCB upper level cell block
    * @param upperCellCoords 3d cell index of cell belonging to the upper level
@@ -312,9 +312,9 @@ class HGTraversalBase : public TraversalInterface {
    * @param upperBound upper bound of the coordinates of lower level cells that contain owned particles
    * less than the interaction length, otherwise skips the lower level cell
    */
-  template <class Functor>
+  template <class Functor_T>
   void SoATraversalParticleToCell(const CellBlock &lowerCB, const CellBlock &upperCB,
-                                  const std::array<size_t, 3> upperCellCoords, Functor *functor, size_t lowerLevel,
+                                  const std::array<size_t, 3> upperCellCoords, Functor_T *functor, size_t lowerLevel,
                                   size_t upperLevel, const std::array<size_t, 3> &lowerBound,
                                   const std::array<size_t, 3> &upperBound) {
     using namespace autopas::utils::ArrayMath::literals;
@@ -332,9 +332,9 @@ class HGTraversalBase : public TraversalInterface {
     // variable to determine if we are only interested in owned particles in the lower level
     const bool containToOwnedOnly = isHalo && this->_useNewton3;
     auto &soa = upperCell._particleSoABuffer;
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xptr = soa.template begin<ParticleType::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<ParticleType::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<ParticleType::AttributeNames::posZ>();
 
     const double lowerInteractionLength = currentSkin() + _maxCutoffPerLevel[lowerLevel] / 2;
     const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};

@@ -36,7 +36,7 @@ namespace mdLib {
  */
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool countFLOPs = false, bool relevantForTuning = true, bool scalingCutoff_T = false>
+          bool countFLOPs = false, bool relevantForTuning = true, bool scalingCutoff = false>
 class LJFunctor
     : public autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3,
                                                             calculateGlobals, countFLOPs, relevantForTuning>> {
@@ -137,7 +137,7 @@ class LJFunctor
     auto cutoffSquared = _cutoffSquared;
     if constexpr (useMixing) {
       sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      if constexpr (scalingCutoff_T) {
+      if constexpr (scalingCutoff) {
         cutoffSquared = sigmaSquared * _cutoffSquared;
       }
       epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
@@ -279,7 +279,7 @@ class LJFunctor
         SoAFloatPrecision epsilon24 = const_epsilon24;
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
-          if constexpr (scalingCutoff_T) {
+          if constexpr (scalingCutoff) {
             cutoffSquared = sigmaSquared * _cutoffSquared;
           }
           epsilon24 = epsilon24s[j];
@@ -469,7 +469,7 @@ class LJFunctor
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
-          if constexpr (scalingCutoff_T) {
+          if constexpr (scalingCutoff) {
             cutoffSquared = sigmaSquared * _cutoffSquared;
           }
           epsilon24 = epsilon24s[j];
@@ -598,7 +598,7 @@ class LJFunctor
     _sigmaSquared = sigmaSquared;
     if (applyShift) {
       _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared,
-                                                                      scalingCutoff_T);
+                                                                      scalingCutoff);
     } else {
       _shift6 = 0.;
     }
