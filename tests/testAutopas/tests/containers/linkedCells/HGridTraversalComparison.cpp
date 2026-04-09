@@ -196,7 +196,6 @@ HGridTraversalComparison::calculateForcesImpl(Functor functor, autopas::Containe
 
   if (doSlightShift) {
     // need to set max displacement because particles will get shifted
-    container.setMaxDisplacement(skin / 2);
     executeShift(container, skin / 2, numParticles + numHaloParticles);
   }
 

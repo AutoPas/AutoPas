@@ -25,7 +25,6 @@ class HGTraversalBase : public TraversalInterface {
         _numLevels(0),
         _levels(nullptr),
         _skin(0),
-        _maxDisplacement(0),
         _stepsSinceLastRebuild(0),
         _rebuildFrequency(1) {}
 
@@ -34,19 +33,16 @@ class HGTraversalBase : public TraversalInterface {
    * @param levels LinkedCells for each HGrid level
    * @param maxCutoffPerLevel maxCutoffPerLevel of each HGrid level
    * @param skin verlet skin of HGrid container
-   * @param maxDisplacement maximum displacement of any particle in the container, ignored if dynamic containers is not
-   * used
    * @param stepsSinceLastRebuild number of time-steps since last rebuild
    * @param rebuildFrequency frequency of rebuild
    */
   void setLevels(std::vector<std::unique_ptr<LinkedCells<ParticleType>>> *levels, std::vector<double> &maxCutoffPerLevel,
-                 double skin, double maxDisplacement, unsigned int stepsSinceLastRebuild,
+                 double skin, unsigned int stepsSinceLastRebuild,
                  const unsigned int rebuildFrequency) {
     _numLevels = maxCutoffPerLevel.size();
     _maxCutoffPerLevel = maxCutoffPerLevel;
     _levels = levels;
     _skin = skin;
-    _maxDisplacement = maxDisplacement;
     _stepsSinceLastRebuild = stepsSinceLastRebuild;
     _rebuildFrequency = rebuildFrequency;
   }
@@ -56,7 +52,6 @@ class HGTraversalBase : public TraversalInterface {
   std::vector<std::unique_ptr<LinkedCells<ParticleType>>> *_levels;
   std::vector<double> _maxCutoffPerLevel;
   double _skin;
-  double _maxDisplacement;
   unsigned int _stepsSinceLastRebuild;
   unsigned int _rebuildFrequency;
   // At this ratio of max Cutoffs between two levels, distance checks are employed to sort out unnecessary interactions.
@@ -105,11 +100,11 @@ class HGTraversalBase : public TraversalInterface {
     // containers are used.
     // NOTE: if in the future, if Hgrid will be used as a base container to a verlet list, interactionLength should be
     // always cutoff + _skin.
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    return std::min(this->_maxDisplacement * 2 + 1e-9, this->_skin);
-#else
+//#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+ //   return std::min(this->_maxDisplacement * 2 + 1e-9, this->_skin);
+//#else
     return std::min((this->_skin / _rebuildFrequency) * _stepsSinceLastRebuild + 1e-9, this->_skin);
-#endif
+//#endif
   }
 
   /**

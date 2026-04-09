@@ -609,7 +609,7 @@ class AutoPas {
    * @return hGridMaxCutoffPerLevel
    */
   [[nodiscard]] std::vector<double> getHGridMaxCutoffPerLevel() const {
-    return _logicHandlerInfo.hgridMaxCutoffPerLevel;
+    return _logicHandlerInfo.hGridMaxCutoffPerLevel;
   }
 
   /**
@@ -625,7 +625,7 @@ class AutoPas {
       utils::ExceptionHandler::exception(
           "Error: The maximum cutoff sizes used by the HGrid container have to be positive: {} <= 0.0!");
     };
-    _logicHandlerInfo.hgridMaxCutoffPerLevel = hGridMaxCutoffPerLevel;
+    _logicHandlerInfo.hGridMaxCutoffPerLevel = hGridMaxCutoffPerLevel;
   }
 
   /**
