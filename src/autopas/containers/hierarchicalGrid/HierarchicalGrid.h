@@ -44,7 +44,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
   HierarchicalGrid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                    const std::vector<double> &hGridmaxCutoffPerLevel, const double skin,
                    const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
-      : ParticleContainerInterface<Particle>(skin),
+      : ParticleContainerInterface<Particle_T>(skin),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _skin(skin),
@@ -104,8 +104,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       // For traversals, we also choose the proper, smaller interaction length
       const double interactionLengthLevel = _maxCutoffPerLevel[i] + _skin;
       const double ratio = interactionLengthLevel / interactionLengthLargest;
-      _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle>>(
-          _boxMin, _boxMax, _maxCutoffPerLevel.back(), skin, rebuildFrequency, _cellSizeFactor * ratio));
+      _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle_T>>(
+          _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, _rebuildFrequency, _cellSizeFactor * ratio));
     }
   }
 
@@ -167,7 +167,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     for (const auto &linkedCells : _levels) {
       linkedCells->setStepsSinceLastRebuild(stepsSinceLastRebuild);
     }
-    ParticleContainerInterface<Particle>::setStepsSinceLastRebuild(stepsSinceLastRebuild);
+    ParticleContainerInterface<Particle_T>::setStepsSinceLastRebuild(stepsSinceLastRebuild);
   }
   /**
    * String representation of Hgrid for debugging
@@ -483,7 +483,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
   const size_t _cacheOffset;
 
   const unsigned int _rebuildFrequency;
-  std::vector<std::unique_ptr<LinkedCells<Particle>>> _levels;
+  std::vector<std::unique_ptr<LinkedCells<Particle_T>>> _levels;
   std::vector<double> _maxCutoffPerLevel;
 
   /**
