@@ -53,7 +53,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.checkpointfile,
       config.containerOptions,
       config.cutoff,
-      config.cutoffs,
+      config.hGridmaxCutoffPerLevel,
       config.dataLayoutOptions,
       config.dataLayoutOptions3B,
       config.deltaT,
@@ -188,14 +188,14 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.cutoffs)::getoptChar: {
+      case decltype(config.hGridmaxCutoffPerLevel)::getoptChar: {
         auto parsedCutoffs = autopas::utils::StringUtils::parseNumberSet(strArg);
         if (parsedCutoffs->isEmpty()) {
           cerr << "Error parsing HGrid cutoffs: " << optarg << endl;
           displayHelp = true;
         }
         const auto tempSet = parsedCutoffs->getAll();
-        std::copy(tempSet.begin(), tempSet.end(), std::back_inserter(config.cutoffs.value));
+        std::copy(tempSet.begin(), tempSet.end(), std::back_inserter(config.hGridmaxCutoffPerLevel.value));
         break;
       }
       case decltype(config.boxLength)::getoptChar: {

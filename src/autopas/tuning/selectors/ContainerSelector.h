@@ -44,18 +44,18 @@ class ContainerSelector {
    * @param boxMin Lower corner of the container.
    * @param boxMax Upper corner of the container.
    * @param cutoff Cutoff radius to be used in this container.
-   * @param cutoffs Cutoffs for the different levels of the hierarchical grid.
+   * @param hGridmaxCutoffPerLevel Cutoffs for the different levels of the hierarchical grid.
    */
   ContainerSelector(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
-                    const std::vector<double> &cutoffs = {})
+                    const std::vector<double> &hGridmaxCutoffPerLevel = {})
       : _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
         _currentContainer(nullptr),
-        _cutoffs(cutoffs),
+        _hGridmaxCutoffPerLevel(hGridmaxCutoffPerLevel),
         _currentInfo() {
-    // make sure cutoffs are sorted
-    std::sort(_cutoffs.begin(), _cutoffs.end());
+    // make sure hGridmaxCutoffPerLevel are sorted
+    std::sort(_hGridmaxCutoffPerLevel.begin(), _hGridmaxCutoffPerLevel.end());
   }
 
   /**
@@ -101,7 +101,7 @@ class ContainerSelector {
 
   std::array<double, 3> _boxMin, _boxMax;
   const double _cutoff;
-  std::vector<double> _cutoffs;
+  std::vector<double> _hGridmaxCutoffPerLevel;
   std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> _currentContainer;
   ContainerSelectorInfo _currentInfo;
 };
@@ -110,10 +110,10 @@ template <class Particle_T>
 std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelector<Particle_T>::generateContainer(
     ContainerOption containerChoice, ContainerSelectorInfo containerInfo) {
   double cutoff = _cutoff;
-  if (!_cutoffs.empty()) {
-    // if cutoffs is set, use the last one as cutoff for single level containers
+  if (!_hGridmaxCutoffPerLevel.empty()) {
+    // if hGridmaxCutoffPerLevel is set, use the last one as cutoff for single level containers
     // the normal _cutoff is then the scaling value for hierarchical grid and the functor
-    cutoff = _cutoffs.back();
+    cutoff = _hGridmaxCutoffPerLevel.back();
   }
   std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> container;
   switch (containerChoice) {
@@ -173,12 +173,12 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle_T>> ContainerSelect
       break;
     }
     case ContainerOption::hierarchicalGrid: {
-      if (_cutoffs.empty()) {
-        // if cutoffs for levels are not provided, set cutoff levels to a single level with value _cutoff
+      if (_hGridmaxCutoffPerLevel.empty()) {
+        // if hGridmaxCutoffPerLevel for levels are not provided, set cutoff levels to a single level with value _cutoff
         // this way, Hgrid will behave same as LinkedCells
-        _cutoffs = {_cutoff};
+        _hGridmaxCutoffPerLevel = {_cutoff};
       }
-      container = std::make_unique<HierarchicalGrid<Particle_T>>(_boxMin, _boxMax, _cutoffs, containerInfo.verletSkin,
+      container = std::make_unique<HierarchicalGrid<Particle_T>>(_boxMin, _boxMax, _hGridmaxCutoffPerLevel, containerInfo.verletSkin,
                                                                  containerInfo.verletRebuildFrequency,
                                                                  containerInfo.cellSizeFactor);
       break;
