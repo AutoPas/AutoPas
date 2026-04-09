@@ -14,7 +14,7 @@
 
 namespace autopas {
 /**
- * For each level, LCC08Traversal is used. For the cross-level interactions, for each level x only smaller levels
+ * For each level, LCC08Traversal is used. For the cross-level interactions, for each level x, only smaller levels
  * are iterated (newton3 on only). The cells on level x are iterated with colors (dynamic color count based on ratio
  * of cell lengths between level x and y) so that the cells on the lower level y
  * that are considered for each cell on level x do not intersect.
@@ -135,7 +135,7 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
 
  protected:
   int _blockMultiplier;
-  Functor_T *_functor;
+  Functor_T &_functor;
 
   /**
    * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes

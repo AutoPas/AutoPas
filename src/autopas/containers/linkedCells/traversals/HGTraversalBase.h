@@ -17,7 +17,7 @@ namespace autopas {
 template <class ParticleCell_T>
 class HGTraversalBase : public TraversalInterface {
  public:
-  using Particle = typename ParticleCell_T::ParticleType;
+  using ParticleType = typename ParticleCell_T::ParticleType;
 
   explicit HGTraversalBase(DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3),
@@ -85,8 +85,7 @@ class HGTraversalBase : public TraversalInterface {
   }
 
   /**
-   * Check if ratio between two levels is small enough to consider checking distance of each cell to early break
-   * and not call functors.
+   * Check if the ratio of level grid sizes is small enough to that the distance between each cell should be checked before applying functors.
    * @param upperLevel The upper level index.
    * @param lowerLevel The lower level index.
    * @return True if the distance is small enough, false otherwise.
@@ -122,7 +121,7 @@ class HGTraversalBase : public TraversalInterface {
       if (otherLevel == level) {
         continue;
       }
-      if (this->_useNewton3 && ((otherLevel >= level && topDown) || (otherLevel <= level && !topDown))) {
+      if (this->_useNewton3 and ((otherLevel >= level and topDown) or (otherLevel <= level and !topDown))) {
         continue;
       }
       const double interactionLength = this->getInteractionLength(level, otherLevel);
@@ -135,7 +134,7 @@ class HGTraversalBase : public TraversalInterface {
           if (this->_dataLayout == DataLayoutOption::soa) {
             tempStride[i] = 1 + static_cast<size_t>(std::ceil(std::ceil(interactionLength / otherLevelLength[i]) * 2 *
                                                               otherLevelLength[i] / levelLength[i]));
-            // the stride calculation below can result in less colors, but two different threads can operate on SoA
+            // the stride calculation below, for AoS, can result in less colors, but two different threads can operate on SoA
             // buffer of the same cell at the same time. They won't update the same value at the same time, but
             // causes race conditions in SoA. (Inbetween loading data into vectors (avx etc.) -> functor calcs -> store
             // again).
@@ -257,7 +256,7 @@ class HGTraversalBase : public TraversalInterface {
   }
 
   /**
-   * Traverses a single upper level cell and a lower level cells that are in the interaction range using AoS.
+   * Traverses a single upper-level cell and lower-level cells that are in the interaction range using AoS.
    * @tparam Functor type of the functor
    * @param lowerCB lower level cell block
    * @param upperCB upper level cell block
@@ -268,7 +267,7 @@ class HGTraversalBase : public TraversalInterface {
    * @param upperBound upper bound of the coordinates of lower level cells that contain owned particles
    * less than the interaction length, otherwise skips the lower level cell
    */
-  template <class Functor>
+  template <class Functor_T>
   void AoSTraversal(const CellBlock &lowerCB, const CellBlock &upperCB, const std::array<size_t, 3> upperCellCoords,
                     Functor *functor, size_t lowerLevel, size_t upperLevel, const std::array<size_t, 3> &lowerBound,
                     const std::array<size_t, 3> &upperBound) {
@@ -277,7 +276,7 @@ class HGTraversalBase : public TraversalInterface {
     using namespace autopas::utils::ArrayMath::literals;
     using utils::ArrayUtils::operator<<;
 
-    bool distanceCheck = checkDistance(upperLevel, lowerLevel);
+    const bool enableCellDistanceChecking = checkDistance(upperLevel, lowerLevel);
     const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
     auto &upperCell = upperCB.getCell(upperCellCoords);
     if (upperCell.isEmpty()) {
@@ -306,12 +305,10 @@ class HGTraversalBase : public TraversalInterface {
         startIndex3D = this->getMax(startIndex3D, lowerBound);
         stopIndex3D = this->getMin(stopIndex3D, upperBound);
       }
-      if (distanceCheck) {
-        particleCellIndex3D = lowerCB.get3DIndexOfPosition(pos);
-      }
+      const auto particleCellIndex3D = distanceCheck ? lowerCB.get3DIndexOfPosition(pos) : std::array{0,0,0};
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-          cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
+          const auto cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
               {static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
           for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl, ++cellIndex1D) {
             auto &lowerCell = lowerCB.getCell(cellIndex1D);
@@ -430,23 +427,23 @@ class HGTraversalBase : public TraversalInterface {
   static std::array<size_t, 3> findBestGroupSizeForTargetBlocksPerColor(int targetBlocksPerColor,
                                                                         const std::array<size_t, 3> &stride,
                                                                         const std::array<unsigned long, 3> &end) {
-    unsigned long smallestNumColors = 1e15;
-    unsigned long largestBlocksPerColor = 0;
+    unsigned long smallestNumColors = std::numeric_limits<unsigned long>::max();
+    unsigned long largestBlocksPerColor = std::numeric_limits<unsigned long>::min();
     std::array<size_t, 3> bestGroup = {1, 1, 1};
-    for (size_t x_group = 1; x_group <= std::max(stride[0] - 1, static_cast<size_t>(1)); ++x_group)
-      for (size_t y_group = 1; y_group <= std::max(stride[1] - 1, static_cast<size_t>(1)); ++y_group)
-        for (size_t z_group = 1; z_group <= std::max(stride[2] - 1, static_cast<size_t>(1)); ++z_group) {
+    for (size_t x_group = 1; x_group <= std::max(stride[0] - 1, 1ul); ++x_group)
+      for (size_t y_group = 1; y_group <= std::max(stride[1] - 1, 1ul); ++y_group)
+        for (size_t z_group = 1; z_group <= std::max(stride[2] - 1, 1ul); ++z_group) {
           std::array<size_t, 3> group = {x_group, y_group, z_group};
           std::array<size_t, 3> num_index{}, testStride{};
           for (size_t i = 0; i < 3; i++) {
-            testStride[i] = 1 + static_cast<size_t>(std::ceil(1.0 * (stride[i] - 1) / group[i]));
+            testStride[i] = 1 + static_cast<size_t>(std::ceil((static_cast<double>(stride[i]) - 1.0) / static_cast<double>(group[i])));
             num_index[i] = (end[i] + (testStride[i] * group[i]) - 1) / (testStride[i] * group[i]);
           }
           const size_t numColors = testStride[0] * testStride[1] * testStride[2];
-          const long numBlocksPerColor = num_index[0] * num_index[1] * num_index[2];
-          if (numBlocksPerColor >= targetBlocksPerColor &&
-              (numColors < smallestNumColors ||
-               (numColors == smallestNumColors && numBlocksPerColor > largestBlocksPerColor))) {
+          const unsigned long numBlocksPerColor = num_index[0] * num_index[1] * num_index[2];
+          if (numBlocksPerColor >= targetBlocksPerColor and
+              (numColors < smallestNumColors or
+               (numColors == smallestNumColors and numBlocksPerColor > largestBlocksPerColor))) {
             smallestNumColors = numColors;
             largestBlocksPerColor = numBlocksPerColor;
             bestGroup = group;

@@ -32,7 +32,7 @@ namespace mdLib {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam countFLOPs counts FLOPs and hitrate
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
- * @tparam scalingCutoff_T If set to true, the cutoff will be scaled by the sigma of the particles.
+ * @tparam scalingCutoff If set to true, the cutoff will be scaled by the sigma of the particles.
  */
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
@@ -97,7 +97,6 @@ class LJFunctor
    * properties like sigma, epsilon and shift.
    * @param cutoff
    * @param particlePropertiesLibrary
-   * @param scalingCutoff If set to true, the cutoff will be scaled by the sigma of the particles.
    */
   explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : LJFunctor(cutoff, nullptr) {

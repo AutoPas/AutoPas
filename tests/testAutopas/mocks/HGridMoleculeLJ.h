@@ -34,7 +34,7 @@ class HGridMoleculeLJ : public mdLib::MoleculeLJ {
   }
 
   void generateSize() {
-    std::mt19937 gen(std::random_device{}());
+    std::mt19937 gen(42);
     const int n = 4;
     std::uniform_int_distribution<int> dist(1, n);
     _size = dist(gen) * 1.0 / n;
@@ -67,9 +67,6 @@ class HGridMoleculeLJ : public mdLib::MoleculeLJ {
   /**
    * The type for the SoA storage.
    *
-   * @note The attribute owned is of type float but treated as a bool.
-   * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
-   * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType =
       typename autopas::utils::SoAType<HGridMoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
@@ -90,7 +87,6 @@ class HGridMoleculeLJ : public mdLib::MoleculeLJ {
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @return Value of the requested attribute.
-   * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    * @note Moving this function to the .cpp leads to undefined references
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
@@ -126,7 +122,7 @@ class HGridMoleculeLJ : public mdLib::MoleculeLJ {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
-      autopas::utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("HGridMoleculeLJ::get() unknown attribute {}", attribute);
     }
   }
 
@@ -134,7 +130,6 @@ class HGridMoleculeLJ : public mdLib::MoleculeLJ {
    * Setter, which allows set an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @param value New value of the requested attribute.
-   * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    * @note Moving this function to the .cpp leads to undefined references
    */
   template <AttributeNames attribute>
@@ -170,7 +165,7 @@ class HGridMoleculeLJ : public mdLib::MoleculeLJ {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
-      autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("HGridMoleculeLJ::set() unknown attribute {}", attribute);
     }
   }
 

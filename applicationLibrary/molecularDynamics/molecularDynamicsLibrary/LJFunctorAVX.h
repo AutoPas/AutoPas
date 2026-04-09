@@ -42,7 +42,7 @@ namespace mdLib {
  */
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool countFLOPs = false, bool relevantForTuning = true, bool scalingCutoff_T = false>
+          bool countFLOPs = false, bool relevantForTuning = true, bool scalingCutoff = false>
 class LJFunctorAVX
     : public autopas::PairwiseFunctor<Particle_T, LJFunctorAVX<Particle_T, applyShift, useMixing, useNewton3,
                                                                calculateGlobals, countFLOPs, relevantForTuning>> {

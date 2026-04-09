@@ -355,10 +355,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
 
     // get which hierarchy cellIndex is in
     while (currentLevel < _numLevels) {
-      const auto cellCount =
-          static_cast<const CellBasedParticleContainer<FullParticleCell<Particle>> &>(*_levels[currentLevel])
-              .getCells()
-              .size();
+      const auto cellCount =_levels[currentLevel]->getCells().size();
       if (cellIndex - prevCells >= cellCount) {
         // skip this level
         prevCells += cellCount;
@@ -516,10 +513,10 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
   std::vector<std::unique_ptr<LinkedCells<Particle>>> _levels;
   std::vector<double> _cutoffs;
 
-  /**
-   *
-   * @param p Particle to add into HierarchicalGrid
-   * @return which Hierarchy the particle belongs to
+ /**
+   * Gets the level of the hierarchical grid to which the particle should belong, e.g. for purposes of adding the particle to the container. This is the level with the smallest cell size (excluding skin) that is greater than or equal to that of the particle.
+   * @param p the particle
+   * @return the level of the hierarchical grid to which the particle should belong.
    */
   size_t getHierarchyLevel(const ParticleType &p) const {
     const double cutoff = p.getSize();
