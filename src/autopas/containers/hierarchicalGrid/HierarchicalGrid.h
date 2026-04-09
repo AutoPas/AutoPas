@@ -30,12 +30,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
   /**
    *  Type of the ParticleCell.
    */
-  using ParticleCell = FullParticleCell<Particle>;
-
-  /**
-   *  Type of the Particle.
-   */
-  using ParticleType = Particle;
+  using ParticleCell = FullParticleCell<Particle_T>;
 
   /**
    * Constructor of the HierarchicalGrid class.
@@ -235,7 +230,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     }
   }
 
-  void addParticleImpl(const ParticleType &p) override { _levels[getHierarchyLevel(p)]->addParticleImpl(p); }
+  void addParticleImpl(const Particle_T &p) override { _levels[getHierarchyLevel(p)]->addParticleImpl(p); }
 
   bool deleteParticle(Particle_T &particle) override {
     return _levels[getHierarchyLevel(particle)]->deleteParticle(particle);
@@ -256,11 +251,11 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     return false;
   }
 
-  void addHaloParticleImpl(const ParticleType &haloParticle) override {
+  void addHaloParticleImpl(const Particle_T &haloParticle) override {
     _levels[getHierarchyLevel(haloParticle)]->addHaloParticleImpl(haloParticle);
   }
 
-  bool updateHaloParticle(const ParticleType &haloParticle) override {
+  bool updateHaloParticle(const Particle_T &haloParticle) override {
     return _levels[getHierarchyLevel(haloParticle)]->updateHaloParticle(haloParticle);
   }
 
@@ -287,11 +282,11 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     // AutoPasLog(INFO, toString());
   }
 
-  [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
+  [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
     if (keepNeighborListsValid) {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
     }
-    std::vector<ParticleType> invalidParticles;
+    std::vector<Particle_T> invalidParticles;
     // parallelized inside each updateContainer
     for (auto &linkedCells : _levels) {
       auto invalidParticlesSingle = linkedCells->updateContainer(keepNeighborListsValid);
@@ -380,30 +375,30 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     return {nullptr, 0, 0};
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
+  [[nodiscard]] ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+      typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
+  [[nodiscard]] ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors =
+      typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors =
           nullptr) const override {
-    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+    return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
+  [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
-    return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
+      typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+    return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
   }
 
-  [[nodiscard]] ContainerIterator<ParticleType, false, false> begin(
+  [[nodiscard]] ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors =
+      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
           nullptr) const override {
-    return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
+    return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
   }
 
   /**
@@ -498,7 +493,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    * @param p the particle
    * @return the level of the hierarchical grid to which the particle should belong.
    */
-  size_t getHierarchyLevel(const ParticleType &p) const {
+  size_t getHierarchyLevel(const Particle_T &p) const {
     const double cutoff = p.getSize();
     for (size_t i = 0; i < _numLevels; ++i) {
       if (_maxCutoffPerLevel[i] >= cutoff) {
