@@ -11,9 +11,9 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/containers/hierarchicalGrid/traversals/HGTraversalBase.h"
+#include "autopas/containers/hierarchicalGrid/traversals/HGTraversalInterface.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/containers/linkedCells/traversals/HGTraversalBase.h"
-#include "autopas/containers/linkedCells/traversals/HGTraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 
 namespace autopas {
@@ -41,27 +41,28 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * Constructor of the HierarchicalGrid class.
    * @param boxMin
    * @param boxMax
-   * @param cutoffs cutoffs for each level of the hierarchy
+   * @param hGridmaxCutoffPerLevel max cutoffs for each level of the hierarchy
    * @param skin Verlet skin
    * @param rebuildFrequency the frequency the container will be definitely rebuilt
    * @param cellSizeFactor cell size factor relative to cutoff
    */
   HierarchicalGrid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                   const std::vector<double> &hGridMinCellSizesPerLevel, const double skin, const unsigned int rebuildFrequency,
-                   const double cellSizeFactor = 1.0)
+                   const std::vector<double> &hGridmaxCutoffPerLevel, const double skin,
+                   const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
       : ParticleContainerInterface<Particle>(skin),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _skin(skin),
-        _numLevels(cutoffs.size()),
+        _numLevels(hGridmaxCutoffPerLevel.size()),
         _cellSizeFactor(cellSizeFactor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(size_t)),
         _rebuildFrequency(rebuildFrequency),
-        _cutoffs(cutoffs) {
+        _maxCutoffPerLevel(hGridmaxCutoffPerLevel) {
     /*
-     * NOTE: In the future add auto cutoff? We need to know particles sizes beforehand.
+     * NOTE: In the future automatically choose the number of levels and min cell sizes per level?
+     * We need to know particles sizes beforehand.
      * Not relevant for md simulations but can be useful for DEM simulations.
-     * Good heuristic for auto cutoffs:
+     * Good heuristic for automatically choosing:
      * Let m = avg particle per cell, L = number of levels
      * try to make m for each hierarchy level close, then minimize L*m
      * prob works -> ternary search for m, for fixed m binary search over particle array sorted by size to find L
@@ -70,46 +71,46 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     _currentLevel.resize(autopas_get_max_threads() * _cacheOffset, 0);
     _prevCells.resize(autopas_get_max_threads() * _cacheOffset, 0);
 
-    if (_cutoffs.empty()) {
-      utils::ExceptionHandler::exception("Error: Hierarchical Grid cutoffs vector is empty.");
-    }
+    // In case cutoffs are empty, the traversals will return not applicable, as it makes no sense to use HG, instead of
+    // LC
+
     // calculate max allowable cutoff
     double maxLength = 1e15;
     for (size_t i = 0; i < 3; ++i) {
       maxLength = std::min(maxLength, boxMax[i] - boxMin[i]);
     }
     maxLength -= _skin;
-    // fix cutoffs if they are bigger than maxLength
-    for (auto &cutoff : _cutoffs) {
-      if (cutoff > maxLength) {
-        AutoPasLog(ERROR,
-                   "Cutoff {} is greater than the maximum length according to Box size - skin {}, lowering cutoff",
-                   cutoff, maxLength);
-        cutoff = maxLength;
+    // fix maxCutoffs if they are bigger than maxLength
+    for (auto &cellSize : _maxCutoffPerLevel) {
+      if (cellSize > maxLength) {
+        utils::ExceptionHandler::exception(
+            "Cell size {} is greater than the maximum length according to Box size - skin {}", cellSize, maxLength);
       }
     }
-    // make sure cutoffs are sorted
-    std::sort(_cutoffs.begin(), _cutoffs.end());
-    // make all cutoffs unique
-    _cutoffs.resize(std::unique(_cutoffs.begin(), _cutoffs.end()) - _cutoffs.begin());
-    if (_cutoffs.size() != _numLevels) {
-      AutoPasLog(ERROR, "Cutoffs should all be unique, adjusting cutoffs size from {} to {}", _numLevels,
-                 _cutoffs.size());
-      _numLevels = _cutoffs.size();
+    // make sure maxCutoffs are sorted
+    std::sort(_maxCutoffPerLevel.begin(), _maxCutoffPerLevel.end());
+    // make all maxCutoffs unique
+    _maxCutoffPerLevel.resize(std::unique(_maxCutoffPerLevel.begin(), _maxCutoffPerLevel.end()) -
+                               _maxCutoffPerLevel.begin());
+    if (_maxCutoffPerLevel.size() != _numLevels) {
+      AutoPasLog(WARN, "Max cutoffs should all be unique, adjusting max cutoffs size from {} to {}", _numLevels,
+                 _maxCutoffPerLevel.size());
+      _numLevels = _maxCutoffPerLevel.size();
     }
     // largest interaction length
-    const double interactionLengthLargest = _cutoffs.back() + _skin;
+    const double interactionLengthLargest = _maxCutoffPerLevel.back() + _skin;
     // generate LinkedCells for each hierarchy, with different cutoffs
     _levels.reserve(_numLevels);
     for (size_t i = 0; i < _numLevels; ++i) {
-      // here, LinkedCells with smaller cutoffs need to have bigger halo regions, because particles on level above
+      // here, LinkedCells with smaller cellSizes need to have bigger halo regions, because particles on level above
       // can potentially interact with those, even though these halo particles cannot interact with other particles
       // inside its own level a hacky way: make all LinkedCells interactionLength equal to the biggest one, adjust
       // cellSizeFactor for each LinkedCells so that the cellLength is equal to actual interaction length of that level
-      const double interactionLengthLevel = _cutoffs[i] + _skin;
+      // For traversals, we also choose the proper, smaller interaction length
+      const double interactionLengthLevel = _maxCutoffPerLevel[i] + _skin;
       const double ratio = interactionLengthLevel / interactionLengthLargest;
-      _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle>>(_boxMin, _boxMax, _cutoffs.back(), skin,
-                                                                            rebuildFrequency, _cellSizeFactor * ratio));
+      _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle>>(
+          _boxMin, _boxMax, _maxCutoffPerLevel.back(), skin, rebuildFrequency, _cellSizeFactor * ratio));
     }
   }
 
@@ -137,7 +138,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * For Hierarchical Grid the cutoff is the cutoff of the level that is the largest
    * @return the largest cutoff
    */
-  [[nodiscard]] double getCutoff() const final { return _cutoffs.back(); }
+  [[nodiscard]] double getCutoff() const final { return _maxCutoffPerLevel.back(); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setCutoff()
@@ -181,23 +182,18 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     using utils::ArrayUtils::operator<<;
     std::ostringstream text;
     text << "\n------------------------------------------\nHierarchicalGrid sizes: ";
-    text << utils::ArrayUtils::to_string(_cutoffs, ", ", {"Cutoffs [ ", " ]\n"});
+    text << utils::ArrayUtils::to_string(_maxCutoffPerLevel, ", ", {"Cutoffs [ ", " ]\n"});
     text << "BoxMin: " << getBoxMin() << " BoxMax: " << getBoxMax() << "\n";
     for (size_t i = 0; i < _numLevels; ++i) {
       auto &cellBlock = _levels[i]->getCellBlock();
       text << "------------------------------------------\nHierarchicalGrid " << i + 1
-           << " numParticles: " << _levels[i]->size() << " cutoff: " << _cutoffs[i] << "\n";
+           << " numParticles: " << _levels[i]->size() << " cutoff: " << _maxCutoffPerLevel[i] << "\n";
       text << "CellLength: " << cellBlock.getCellLength()
            << " InteractionLength: " << _levels[i]->getInteractionLength()
            << "\nCellsPerInteractionLength: " << cellBlock.getCellsPerInteractionLength()
            << " NumCells: " << cellBlock.getNumCells() << "\n"
            << "CellsPerDimensionWithHalo: " << cellBlock.getCellsPerDimensionWithHalo() << "\n"
            << "Particle Density " << 1.0 * _levels[i]->size() / cellBlock.getNumCells() << "\n";
-      // _levels[i]->forEach(
-      //     [&](Particle &p) {
-      //       text << "Cell index: " << cellBlock.get3DIndexOfPosition(p.getR()) << "\n" << p.toString() << "\n\n";
-      //     },
-      //     IteratorBehavior::ownedOrHaloOrDummy);
     }
     return text.str();
   }
@@ -216,7 +212,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
    * In HierarchicalGrids, interaction length returns maximum interaction length which is the biggest cutoff + skin
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
-  [[nodiscard]] double getInteractionLength() const final { return _cutoffs.back() + _skin; }
+  [[nodiscard]] double getInteractionLength() const final { return _maxCutoffPerLevel.back() + _skin; }
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::hierarchicalGrid; }
 
@@ -355,7 +351,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
 
     // get which hierarchy cellIndex is in
     while (currentLevel < _numLevels) {
-      const auto cellCount =_levels[currentLevel]->getCells().size();
+      const auto cellCount = _levels[currentLevel]->getCells().size();
       if (cellIndex - prevCells >= cellCount) {
         // skip this level
         prevCells += cellCount;
@@ -472,63 +468,47 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     }
   }
 
-  //
-  //  /**
-  // * Get the cell block, not supposed to be used except by verlet lists
-  // * @return the cell block
-  // */
-  //  internal::CellBlock3D<ParticleCell> &getCellBlock() { return nullptr; }
-  //
-  //  /**
-  // * @copydoc autopas::LinkedCells::getCellBlock()
-  // * @note const version
-  // */
-  //  const internal::CellBlock3D<ParticleCell> &getCellBlock() const { return nullptr; }
-  //
-  //  /**
-  //   * Returns a non-const reference to the cell data structure.
-  //   * @return Non-const reference.
-  //   */
-  //  std::vector<ParticleCell> &getCells() { return nullptr; }
-  //
-  //  /**
-  //  * Get immutable vector of cells.
-  //  * @return immutable reference to _cells
-  //  */
-  //  [[nodiscard]] const std::vector<ParticleCell> &getCells() const {
-  //    return std::vector<ParticleCell>();
-  //  }
-
  private:
   std::array<double, 3> _boxMin;
   std::array<double, 3> _boxMax;
   double _skin;
   size_t _numLevels;
   const double _cellSizeFactor;
-  // store iteration stage
+  /**
+   * Per-thread index of the hierarchy level currently used by getParticleImpl().
+   */
   mutable std::vector<size_t> _currentLevel;
+  /**
+   * Per-thread number of cells already skipped in earlier hierarchy levels during getParticleImpl().
+   */
   mutable std::vector<size_t> _prevCells;
+  /**
+   * Cache-line padding factor for _currentLevel and _prevCells to reduce false sharing between threads.
+   */
   const size_t _cacheOffset;
+
   const unsigned int _rebuildFrequency;
   std::vector<std::unique_ptr<LinkedCells<Particle>>> _levels;
-  std::vector<double> _cutoffs;
-
- /**
-   * Gets the level of the hierarchical grid to which the particle should belong, e.g. for purposes of adding the particle to the container. This is the level with the smallest cell size (excluding skin) that is greater than or equal to that of the particle.
+  std::vector<double> _maxCutoffPerLevel;
+  
+  /**
+   * Gets the level of the hierarchical grid to which the particle should belong, e.g. for purposes of adding the
+   * particle to the container. This is the level with the smallest cell size (excluding skin) that is greater than or
+   * equal to that of the particle.
    * @param p the particle
    * @return the level of the hierarchical grid to which the particle should belong.
    */
   size_t getHierarchyLevel(const ParticleType &p) const {
     const double cutoff = p.getSize();
     for (size_t i = 0; i < _numLevels; ++i) {
-      if (_cutoffs[i] >= cutoff) {
+      if (_maxCutoffPerLevel[i] >= cutoff) {
         return i;
       }
     }
     AutoPasLog(ERROR,
-               "Size of Particle({}) is bigger than biggest cutoff({}) of HierarchicalGrid, "
+               "Size of Particle({}) is bigger than biggest allowed cutoff({}) of HierarchicalGrid, "
                "will result in wrong interaction calculation.",
-               cutoff, _cutoffs.back());
+               cutoff, _maxCutoffPerLevel.back());
     return _numLevels - 1;
   }
 
@@ -541,8 +521,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle> {
     auto *traversalInterface = dynamic_cast<HGTraversalInterface *>(traversal);
     auto *hGridTraversal = dynamic_cast<HGTraversalBase<ParticleCell> *>(traversal);
     if (traversalInterface && hGridTraversal) {
-      hGridTraversal->setLevels(&_levels, _cutoffs, _skin, this->getMaxDisplacement(), this->_stepsSinceLastRebuild,
-                                _rebuildFrequency);
+      hGridTraversal->setLevels(&_levels, _maxCutoffPerLevel, _skin, this->getMaxDisplacement(),
+                                this->_stepsSinceLastRebuild, _rebuildFrequency);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the HierarchicalGrid container. TraversalID: {}",

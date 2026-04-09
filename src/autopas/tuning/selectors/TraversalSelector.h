@@ -13,7 +13,7 @@
 
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
-#include "autopas/containers/linkedCells/traversals/HGBlockTraversal.h"
+#include "autopas/containers/hierarchicalGrid/traversals/HGBlockTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"

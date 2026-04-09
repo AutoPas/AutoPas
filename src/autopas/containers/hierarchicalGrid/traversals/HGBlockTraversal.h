@@ -131,8 +131,6 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
     }
   };
 
-  [[nodiscard]] bool isApplicable() const override { return true; }
-
  protected:
   int _blockMultiplier;
   Functor_T &_functor;
@@ -148,6 +146,47 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
     return std::make_unique<LCC08Traversal<ParticleCell_T, Functor_T>>(
         traversalInfo.cellsPerDim, _functor, traversalInfo.interactionLength, traversalInfo.cellLength,
         this->_dataLayout, this->_useNewton3);
+  }
+
+  /**
+   * Finds the best group size for a given target number of blocks per color.
+   * The block size is selected so that the number of blocks per color is at least the target number, and the number of
+   * colors is the smallest possible. If there are two configurations with the same number of colors, the one with the
+   * highest number of blocks per color is selected.
+   * A block is a unit of work that is assigned to a thread in an OpenMP loop.
+   * A group of blocks of 3d size x,y,z will be assigned to a thread per openmp loop iteration.
+   * @param targetBlocksPerColor The target number of blocks per color.
+   * @param stride The stride for each dimension.
+   * @param end The end coordinates for each dimension.
+   * @return The best group size for the given target number of blocks per color.
+   */
+  static std::array<size_t, 3> findBestGroupSizeForTargetBlocksPerColor(int targetBlocksPerColor,
+                                                                        const std::array<size_t, 3> &stride,
+                                                                        const std::array<unsigned long, 3> &end) {
+    unsigned long smallestNumColors = std::numeric_limits<unsigned long>::max();
+    unsigned long largestBlocksPerColor = std::numeric_limits<unsigned long>::min();
+    std::array<size_t, 3> bestGroup = {1, 1, 1};
+    for (size_t x_group = 1; x_group <= std::max(stride[0] - 1, 1ul); ++x_group)
+      for (size_t y_group = 1; y_group <= std::max(stride[1] - 1, 1ul); ++y_group)
+        for (size_t z_group = 1; z_group <= std::max(stride[2] - 1, 1ul); ++z_group) {
+          std::array<size_t, 3> group = {x_group, y_group, z_group};
+          std::array<size_t, 3> num_index{}, testStride{};
+          for (size_t i = 0; i < 3; i++) {
+            testStride[i] = 1 + static_cast<size_t>(
+                                    std::ceil((static_cast<double>(stride[i]) - 1.0) / static_cast<double>(group[i])));
+            num_index[i] = (end[i] + (testStride[i] * group[i]) - 1) / (testStride[i] * group[i]);
+          }
+          const size_t numColors = testStride[0] * testStride[1] * testStride[2];
+          const unsigned long numBlocksPerColor = num_index[0] * num_index[1] * num_index[2];
+          if (numBlocksPerColor >= targetBlocksPerColor and
+              (numColors < smallestNumColors or
+               (numColors == smallestNumColors and numBlocksPerColor > largestBlocksPerColor))) {
+            smallestNumColors = numColors;
+            largestBlocksPerColor = numBlocksPerColor;
+            bestGroup = group;
+          }
+        }
+    return bestGroup;
   }
 };
 }  // namespace autopas

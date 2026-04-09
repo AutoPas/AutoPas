@@ -8,6 +8,7 @@
 
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
 /**
@@ -31,17 +32,18 @@ class HGTraversalBase : public TraversalInterface {
   /**
    * Store HGrid data
    * @param levels LinkedCells for each HGrid level
-   * @param cutoffs cutoffs of each HGrid level
+   * @param maxCutoffPerLevel maxCutoffPerLevel of each HGrid level
    * @param skin verlet skin of HGrid container
    * @param maxDisplacement maximum displacement of any particle in the container, ignored if dynamic containers is not
    * used
    * @param stepsSinceLastRebuild number of time-steps since last rebuild
    * @param rebuildFrequency frequency of rebuild
    */
-  void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>> *levels, std::vector<double> &cutoffs, double skin,
-                 double maxDisplacement, unsigned int stepsSinceLastRebuild, const unsigned int rebuildFrequency) {
-    _numLevels = cutoffs.size();
-    _cutoffs = cutoffs;
+  void setLevels(std::vector<std::unique_ptr<LinkedCells<Particle>>> *levels, std::vector<double> &maxCutoffPerLevel,
+                 double skin, double maxDisplacement, unsigned int stepsSinceLastRebuild,
+                 const unsigned int rebuildFrequency) {
+    _numLevels = maxCutoffPerLevel.size();
+    _maxCutoffPerLevel = maxCutoffPerLevel;
     _levels = levels;
     _skin = skin;
     _maxDisplacement = maxDisplacement;
@@ -52,12 +54,13 @@ class HGTraversalBase : public TraversalInterface {
  protected:
   size_t _numLevels;
   std::vector<std::unique_ptr<LinkedCells<Particle>>> *_levels;
-  std::vector<double> _cutoffs;
+  std::vector<double> _maxCutoffPerLevel;
   double _skin;
   double _maxDisplacement;
   unsigned int _stepsSinceLastRebuild;
   unsigned int _rebuildFrequency;
-  // the ratio between cutoffs of levels from which point distance should be checked before checking distance of
+  // At this ratio of max Cutoffs between two levels, distance checks are employed to sort out unnecessary interactions.
+  // This is needed as the number of interactions can increase drastically if the cell size difference is too large.
   // particles can do particle to level specific instead of level to level specific in the future
   const double distCheckRatio = 0.2;
   // Intralevel traversals used for each level for this iteration
@@ -74,18 +77,19 @@ class HGTraversalBase : public TraversalInterface {
 
   /**
    * Get the interaction length for a given level pair.
-   * This is simply the average of the cutoffs of the two levels plus the verlet skin.
+   * This is simply the average of the maximum possible cutoff of the two levels plus the verlet skin.
    * @param lowerLevel The lower level index.
    * @param upperLevel The upper level index.
    * @return The interaction length for the given level pair.
    */
   [[nodiscard]] double getInteractionLength(const size_t lowerLevel, const size_t upperLevel) const {
-    const double cutoff = (this->_cutoffs[upperLevel] + this->_cutoffs[lowerLevel]) / 2;
+    const double cutoff = (this->_maxCutoffPerLevel[upperLevel] + this->_maxCutoffPerLevel[lowerLevel]) / 2;
     return cutoff + currentSkin();
   }
 
   /**
-   * Check if the ratio of level grid sizes is small enough to that the distance between each cell should be checked before applying functors.
+   * Check if the ratio of level grid sizes is small enough to that the distance between each cell should be checked
+   * before applying functors.
    * @param upperLevel The upper level index.
    * @param lowerLevel The lower level index.
    * @return True if the distance is small enough, false otherwise.
@@ -93,7 +97,7 @@ class HGTraversalBase : public TraversalInterface {
   [[nodiscard]] bool checkDistance(const size_t upperLevel, const size_t lowerLevel) const {
     // size of the lower level cell divided by interactionLength
     // We don't use cellLength because cellSizeFactor might have influenced it
-    return (_cutoffs[lowerLevel] + _skin) / getInteractionLength(lowerLevel, upperLevel) <= distCheckRatio;
+    return (_maxCutoffPerLevel[lowerLevel] + _skin) / getInteractionLength(lowerLevel, upperLevel) <= distCheckRatio;
   }
 
   [[nodiscard]] double currentSkin() const {
@@ -109,8 +113,9 @@ class HGTraversalBase : public TraversalInterface {
   }
 
   /**
-   * Compute the color for the given level.
-   * Computed the needed stride by checking all lower levels and takes the maximum for each dimension.
+   * Compute the needed stride to avoid race conditions.
+   * For SoA consider that two cells interacting on the same lower level cell is problematic, as two threads can operate
+   * on the same buffer.
    * @param level The hierarchy level to compute the stride for.
    * @return The stride for each dimension.
    */
@@ -134,8 +139,8 @@ class HGTraversalBase : public TraversalInterface {
           if (this->_dataLayout == DataLayoutOption::soa) {
             tempStride[i] = 1 + static_cast<size_t>(std::ceil(std::ceil(interactionLength / otherLevelLength[i]) * 2 *
                                                               otherLevelLength[i] / levelLength[i]));
-            // the stride calculation below, for AoS, can result in less colors, but two different threads can operate on SoA
-            // buffer of the same cell at the same time. They won't update the same value at the same time, but
+            // the stride calculation below, for AoS, can result in less colors, but two different threads can operate
+            // on SoA buffer of the same cell at the same time. They won't update the same value at the same time, but
             // causes race conditions in SoA. (Inbetween loading data into vectors (avx etc.) -> functor calcs -> store
             // again).
           } else {
@@ -170,40 +175,6 @@ class HGTraversalBase : public TraversalInterface {
   }
 
   /**
-   *
-   * @tparam T type of elements in arrays
-   * @tparam SIZE size of arrays
-   * @param a first array
-   * @param b second array
-   * @return max of two arrays element-wise
-   */
-  template <class T, std::size_t SIZE>
-  constexpr std::array<T, SIZE> getMax(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
-    std::array<T, SIZE> ret{};
-    for (size_t i = 0; i < SIZE; ++i) {
-      ret[i] = std::max(a[i], b[i]);
-    }
-    return ret;
-  }
-
-  /**
-   *
-   * @tparam T type of elements in arrays
-   * @tparam SIZE size of arrays
-   * @param a first array
-   * @param b second array
-   * @return min of two arrays element-wise
-   */
-  template <class T, std::size_t SIZE>
-  constexpr std::array<T, SIZE> getMin(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
-    std::array<T, SIZE> ret{};
-    for (size_t i = 0; i < SIZE; ++i) {
-      ret[i] = std::min(a[i], b[i]);
-    }
-    return ret;
-  }
-
-  /**
    * Returns traversalSelectorInfo for the specific level
    * @param level Which level to get info from
    * @return TraversalSelectorInfo of level
@@ -230,21 +201,17 @@ class HGTraversalBase : public TraversalInterface {
     for (size_t level = 0; level < this->_numLevels; level++) {
       // We do not simply call computeInteractions() here as we want to store SoA after inter-level traversals are
       // computed. They will be loaded in HGTraversalBase::endTraversal().
-      TraversalInterface *temp = this->_traversals[level].get();
-      // set actual halo region length of the traversal
-      // this will let traversal skip going through unnecessary halo cells
-      const double haloRegionLength = _cutoffs.back() + _skin;
-      temp->setHaloRegionLength(haloRegionLength);
-      this->_levels->at(level)->prepareTraversal(temp);
-      this->_traversals[level]->initTraversal();
       this->_traversals[level]->traverseParticles();
     }
   }
 
   void initTraversal() override {
     this->_traversals.resize(this->_numLevels);
-    for (size_t i = 0; i < this->_numLevels; ++i) {
-      this->_traversals[i] = this->generateNewTraversal(i);
+    for (size_t level = 0; level < this->_numLevels; ++level) {
+      this->_traversals[level] = this->generateNewTraversal(level);
+      TraversalInterface &intraLevelTraversal = *this->_traversals[level];
+      this->_levels->at(level)->prepareTraversal(&intraLevelTraversal);
+      this->_traversals[level]->initTraversal();
     }
   }
 
@@ -255,6 +222,9 @@ class HGTraversalBase : public TraversalInterface {
     }
   }
 
+  // HG traversals only make sense if there are multiple levels, otherwise just use LinkedCells
+  [[nodiscard]] bool isApplicable() const override { return not _maxCutoffPerLevel.empty(); }
+
   /**
    * Traverses a single upper-level cell and lower-level cells that are in the interaction range using AoS.
    * @tparam Functor type of the functor
@@ -263,9 +233,10 @@ class HGTraversalBase : public TraversalInterface {
    * @param upperCellCoords 3d cell index of cell belonging to the upper level
    * @param functor functor to apply
    * @param lowerLevel lower level index
-   * @param lowerBound lower bound of the coordinates of lower level cells that contain owned particles
-   * @param upperBound upper bound of the coordinates of lower level cells that contain owned particles
-   * less than the interaction length, otherwise skips the lower level cell
+   * @param lowerBound inclusive lower coordinate bound for lower-level owned cells when only interacting with owned
+   * particles
+   * @param upperBound inclusive upper coordinate bound for lower-level owned cells when only interacting with owned
+   * particles
    */
   template <class Functor_T>
   void AoSTraversal(const CellBlock &lowerCB, const CellBlock &upperCB, const std::array<size_t, 3> upperCellCoords,
@@ -287,10 +258,8 @@ class HGTraversalBase : public TraversalInterface {
     if (isHalo && !this->_useNewton3) {
       return;
     }
-    const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
+    const double lowerInteractionLength = currentSkin() + _maxCutoffPerLevel[lowerLevel] / 2;
     const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
-    size_t cellIndex1D;
-    std::array<size_t, 3> particleCellIndex3D;
     // variable to determine if we are only interested in owned particles in the lower level
     const bool containToOwnedOnly = isHalo && this->_useNewton3;
     for (auto p1Ptr = upperCell.begin(); p1Ptr != upperCell.end(); ++p1Ptr) {
@@ -302,10 +271,11 @@ class HGTraversalBase : public TraversalInterface {
       auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
       // skip halo cells if we need to consider only owned particles
       if (containToOwnedOnly) {
-        startIndex3D = this->getMax(startIndex3D, lowerBound);
-        stopIndex3D = this->getMin(stopIndex3D, upperBound);
+        startIndex3D = utils::ArrayMath::max(startIndex3D, lowerBound);
+        stopIndex3D = utils::ArrayMath::min(stopIndex3D, upperBound);
       }
-      const auto particleCellIndex3D = distanceCheck ? lowerCB.get3DIndexOfPosition(pos) : std::array{0,0,0};
+      const auto particleCellIndex3D =
+          enableCellDistanceChecking ? lowerCB.get3DIndexOfPosition(pos) : std::array{0, 0, 0};
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
           const auto cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
@@ -316,11 +286,9 @@ class HGTraversalBase : public TraversalInterface {
               continue;
             }
             // skip if cell is farther than interactionLength
-            if (distanceCheck and
+            if (enableCellDistanceChecking and
                 this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
               continue;
-            } else if (distanceCheck and xl >= particleCellIndex3D[0]) {
-              break;
             }
             for (auto &p : lowerCell) {
               functor->AoSFunctor(*p1Ptr, p, this->_useNewton3);
@@ -350,7 +318,7 @@ class HGTraversalBase : public TraversalInterface {
                                   size_t upperLevel, const std::array<size_t, 3> &lowerBound,
                                   const std::array<size_t, 3> &upperBound) {
     using namespace autopas::utils::ArrayMath::literals;
-    bool distanceCheck = checkDistance(upperLevel, lowerLevel);
+    const bool enableCellDistanceChecking = checkDistance(upperLevel, lowerLevel);
     const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
     auto &upperCell = upperCB.getCell(upperCellCoords);
     if (upperCell.isEmpty()) {
@@ -368,10 +336,8 @@ class HGTraversalBase : public TraversalInterface {
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    const double lowerInteractionLength = currentSkin() + _cutoffs[lowerLevel] / 2;
+    const double lowerInteractionLength = currentSkin() + _maxCutoffPerLevel[lowerLevel] / 2;
     const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
-    size_t cellIndex1D;
-    std::array<size_t, 3> particleCellIndex3D;
 
     for (int idx = 0; idx < upperCell.size(); ++idx) {
       const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
@@ -382,15 +348,15 @@ class HGTraversalBase : public TraversalInterface {
       auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
       auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
       if (containToOwnedOnly) {
-        startIndex3D = this->getMax(startIndex3D, lowerBound);
-        stopIndex3D = this->getMin(stopIndex3D, upperBound);
+        startIndex3D = utils::ArrayMath::max(startIndex3D, lowerBound);
+        stopIndex3D = utils::ArrayMath::min(stopIndex3D, upperBound);
       }
-      if (distanceCheck) {
-        particleCellIndex3D = lowerCB.get3DIndexOfPosition(pos);
-      }
+
+      const auto particleCellIndex3D =
+          enableCellDistanceChecking ? lowerCB.get3DIndexOfPosition(pos) : std::array{0, 0, 0};
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-          cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
+          const auto cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
               {static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
           for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl, ++cellIndex1D) {
             auto &lowerCell = lowerCB.getCell(cellIndex1D);
@@ -398,11 +364,9 @@ class HGTraversalBase : public TraversalInterface {
               continue;
             }
             // skip if cell is farther than interactionLength
-            if (distanceCheck and
+            if (enableCellDistanceChecking and
                 this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
               continue;
-            } else if (distanceCheck and xl >= particleCellIndex3D[0]) {
-              break;
             }
             // 1 to n SoAFunctorPair
             functor->SoAFunctorPair(soaSingleParticle, lowerCell._particleSoABuffer, this->_useNewton3);
@@ -410,46 +374,6 @@ class HGTraversalBase : public TraversalInterface {
         }
       }
     }
-  }
-
-  /**
-   * Finds the best group size for a given target number of blocks per color.
-   * The block size is selected so that the number of blocks per color is at least the target number, and the number of
-   * colors is the smallest possible. If there are two configurations with the same number of colors, the one with the
-   * highest number of blocks per color is selected.
-   * A block is a unit of work that is assigned to a thread in an OpenMP loop.
-   * A group of blocks of 3d size x,y,z will be assigned to a thread per openmp loop iteration.
-   * @param targetBlocksPerColor The target number of blocks per color.
-   * @param stride The stride for each dimension.
-   * @param end The end coordinates for each dimension.
-   * @return The best group size for the given target number of blocks per color.
-   */
-  static std::array<size_t, 3> findBestGroupSizeForTargetBlocksPerColor(int targetBlocksPerColor,
-                                                                        const std::array<size_t, 3> &stride,
-                                                                        const std::array<unsigned long, 3> &end) {
-    unsigned long smallestNumColors = std::numeric_limits<unsigned long>::max();
-    unsigned long largestBlocksPerColor = std::numeric_limits<unsigned long>::min();
-    std::array<size_t, 3> bestGroup = {1, 1, 1};
-    for (size_t x_group = 1; x_group <= std::max(stride[0] - 1, 1ul); ++x_group)
-      for (size_t y_group = 1; y_group <= std::max(stride[1] - 1, 1ul); ++y_group)
-        for (size_t z_group = 1; z_group <= std::max(stride[2] - 1, 1ul); ++z_group) {
-          std::array<size_t, 3> group = {x_group, y_group, z_group};
-          std::array<size_t, 3> num_index{}, testStride{};
-          for (size_t i = 0; i < 3; i++) {
-            testStride[i] = 1 + static_cast<size_t>(std::ceil((static_cast<double>(stride[i]) - 1.0) / static_cast<double>(group[i])));
-            num_index[i] = (end[i] + (testStride[i] * group[i]) - 1) / (testStride[i] * group[i]);
-          }
-          const size_t numColors = testStride[0] * testStride[1] * testStride[2];
-          const unsigned long numBlocksPerColor = num_index[0] * num_index[1] * num_index[2];
-          if (numBlocksPerColor >= targetBlocksPerColor and
-              (numColors < smallestNumColors or
-               (numColors == smallestNumColors and numBlocksPerColor > largestBlocksPerColor))) {
-            smallestNumColors = numColors;
-            largestBlocksPerColor = numBlocksPerColor;
-            bestGroup = group;
-          }
-        }
-    return bestGroup;
   }
 };
 }  // namespace autopas

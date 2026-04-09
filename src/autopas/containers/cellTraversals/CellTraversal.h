@@ -58,6 +58,12 @@ class CellTraversal {
    * The cells to traverse.
    */
   std::vector<ParticleCell> *_cells;
+
+  /**
+   * The width of the halo region in case it is different from the interaction length, e.g. for lower levels of the
+   * hierarchical grid. @todo
+   */
+  double _haloRegionCellWidth;
 };
 
 }  // namespace autopas

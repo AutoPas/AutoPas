@@ -11,7 +11,7 @@
 
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
-#include "autopas/containers/linkedCells/HierarchicalGrid.h"
+#include "autopas/containers/hierarchicalGrid/HierarchicalGrid.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
