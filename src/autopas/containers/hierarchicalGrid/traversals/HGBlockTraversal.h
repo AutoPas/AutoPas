@@ -8,7 +8,7 @@
 
 #include "HGTraversalBase.h"
 #include "HGTraversalInterface.h"
-#include "LCC08Traversal.h"
+#include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 
