@@ -273,7 +273,7 @@ class HGTraversalBase : public TraversalInterface {
           enableCellDistanceChecking ? lowerCB.get3DIndexOfPosition(pos) : std::array{0, 0, 0};
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-          const auto cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
+          auto cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
               {static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
           for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl, ++cellIndex1D) {
             auto &lowerCell = lowerCB.getCell(cellIndex1D);
@@ -351,7 +351,7 @@ class HGTraversalBase : public TraversalInterface {
           enableCellDistanceChecking ? lowerCB.get3DIndexOfPosition(pos) : std::array{0, 0, 0};
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
-          const auto cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
+          auto cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
               {static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
           for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl, ++cellIndex1D) {
             auto &lowerCell = lowerCB.getCell(cellIndex1D);
