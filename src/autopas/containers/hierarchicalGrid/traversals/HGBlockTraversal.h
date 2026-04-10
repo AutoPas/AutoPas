@@ -150,7 +150,7 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
         this->_dataLayout, this->_useNewton3);
   }
 
-  [[nodiscard]] bool isApplicable() const override { return not _maxCutoffPerLevel.empty(); }
+  [[nodiscard]] bool isApplicable() const override { return true; }
 
   /**
    * Finds the best group size for a given target number of blocks per color.
