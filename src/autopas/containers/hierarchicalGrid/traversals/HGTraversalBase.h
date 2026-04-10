@@ -100,11 +100,11 @@ class HGTraversalBase : public TraversalInterface {
     // containers are used.
     // NOTE: if in the future, if Hgrid will be used as a base container to a verlet list, interactionLength should be
     // always cutoff + _skin.
-    // #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    //    return std::min(this->_maxDisplacement * 2 + 1e-9, this->_skin);
-    // #else
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    return this->_skin; //std::min(this->_maxDisplacement * 2 + 1e-9, this->_skin);
+#else
     return std::min((this->_skin / _rebuildFrequency) * _stepsSinceLastRebuild + 1e-9, this->_skin);
-    // #endif
+#endif
   }
 
   /**
