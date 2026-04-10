@@ -36,8 +36,8 @@ class HGTraversalBase : public TraversalInterface {
    * @param stepsSinceLastRebuild number of time-steps since last rebuild
    * @param rebuildFrequency frequency of rebuild
    */
-  void setLevels(std::vector<std::unique_ptr<LinkedCells<ParticleType>>> *levels, std::vector<double> &maxCutoffPerLevel,
-                 double skin, unsigned int stepsSinceLastRebuild,
+  void setLevels(std::vector<std::unique_ptr<LinkedCells<ParticleType>>> *levels,
+                 std::vector<double> &maxCutoffPerLevel, double skin, unsigned int stepsSinceLastRebuild,
                  const unsigned int rebuildFrequency) {
     _numLevels = maxCutoffPerLevel.size();
     _maxCutoffPerLevel = maxCutoffPerLevel;
@@ -100,11 +100,11 @@ class HGTraversalBase : public TraversalInterface {
     // containers are used.
     // NOTE: if in the future, if Hgrid will be used as a base container to a verlet list, interactionLength should be
     // always cutoff + _skin.
-//#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
- //   return std::min(this->_maxDisplacement * 2 + 1e-9, this->_skin);
-//#else
+    // #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    //    return std::min(this->_maxDisplacement * 2 + 1e-9, this->_skin);
+    // #else
     return std::min((this->_skin / _rebuildFrequency) * _stepsSinceLastRebuild + 1e-9, this->_skin);
-//#endif
+    // #endif
   }
 
   /**
@@ -204,8 +204,8 @@ class HGTraversalBase : public TraversalInterface {
     this->_traversals.resize(this->_numLevels);
     for (size_t level = 0; level < this->_numLevels; ++level) {
       this->_traversals[level] = this->generateNewTraversal(level);
-      TraversalInterface &intraLevelTraversal = *this->_traversals[level];
-      this->_levels->at(level)->prepareTraversal(&intraLevelTraversal);
+      TraversalInterface *intraLevelTraversal = this->_traversals[level].get();
+      this->_levels->at(level)->prepareTraversal(intraLevelTraversal);
       this->_traversals[level]->initTraversal();
     }
   }
