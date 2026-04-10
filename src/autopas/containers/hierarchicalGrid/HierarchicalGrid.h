@@ -36,23 +36,23 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    * Constructor of the HierarchicalGrid class.
    * @param boxMin
    * @param boxMax
-   * @param hGridmaxCutoffPerLevel max cutoffs for each level of the hierarchy
+   * @param hGridMaxCutoffPerLevel max cutoffs for each level of the hierarchy
    * @param skin Verlet skin
    * @param rebuildFrequency the frequency the container will be definitely rebuilt
    * @param cellSizeFactor cell size factor relative to cutoff
    */
   HierarchicalGrid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                   const std::vector<double> &hGridmaxCutoffPerLevel, const double skin,
+                   const std::vector<double> &hGridMaxCutoffPerLevel, const double skin,
                    const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
       : ParticleContainerInterface<Particle_T>(skin),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _skin(skin),
-        _numLevels(hGridmaxCutoffPerLevel.size()),
+        _numLevels(hGridMaxCutoffPerLevel.size()),
         _cellSizeFactor(cellSizeFactor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(size_t)),
         _rebuildFrequency(rebuildFrequency),
-        _maxCutoffPerLevel(hGridmaxCutoffPerLevel) {
+        _maxCutoffPerLevel(hGridMaxCutoffPerLevel) {
     /*
      * NOTE: In the future automatically choose the number of levels and min cell sizes per level?
      * We need to know particles sizes beforehand.

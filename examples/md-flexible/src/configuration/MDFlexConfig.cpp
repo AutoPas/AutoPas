@@ -352,7 +352,7 @@ std::string MDFlexConfig::to_string() const {
   }
 
   printOption(cutoff);
-  printOption(cutoffs);
+  printOption(hGridMaxCutoffPerLevel);
   printOption(boxMin);
   printOption(boxMax);
   printOption(cellSizeFactors);

@@ -513,7 +513,7 @@ class MDFlexConfig {
   /**
    * cutoffs for Hierarchical Grid container levels
    */
-  MDFlexOption<std::vector<double>, __LINE__> hGridmaxCutoffPerLevel{
+  MDFlexOption<std::vector<double>, __LINE__> hGridMaxCutoffPerLevel{
       {}, "cutoffs", true, "Maximum Lennard-Jones force cutoffs per level of Hierarchical Grid container."};
   /**
    * functorOption
