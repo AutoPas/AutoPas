@@ -31,7 +31,9 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
   using Particle = typename ParticleCell_T::ParticleType;
 
   explicit HGBlockTraversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3, int blockMultiplier)
-      : HGTraversalBase<ParticleCell_T>(dataLayout, useNewton3), _blockMultiplier(blockMultiplier), _functor(*functor) {}
+      : HGTraversalBase<ParticleCell_T>(dataLayout, useNewton3),
+        _blockMultiplier(blockMultiplier),
+        _functor(*functor) {}
 
   void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
@@ -144,9 +146,11 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override {
     const auto traversalInfo = this->getTraversalSelectorInfo(level);
     return std::make_unique<LCC08Traversal<ParticleCell_T, Functor_T>>(
-      traversalInfo.cellsPerDim, &_functor, traversalInfo.interactionLength, traversalInfo.cellLength,
+        traversalInfo.cellsPerDim, &_functor, traversalInfo.interactionLength, traversalInfo.cellLength,
         this->_dataLayout, this->_useNewton3);
   }
+
+  [[nodiscard]] bool isApplicable() const override { return not _maxCutoffPerLevel.empty(); }
 
   /**
    * Finds the best group size for a given target number of blocks per color.
