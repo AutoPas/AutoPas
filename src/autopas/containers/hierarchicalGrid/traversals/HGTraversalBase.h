@@ -270,7 +270,7 @@ class HGTraversalBase : public TraversalInterface {
         stopIndex3D = utils::ArrayMath::min(stopIndex3D, upperBound);
       }
       const auto particleCellIndex3D =
-          enableCellDistanceChecking ? lowerCB.get3DIndexOfPosition(pos) : std::array{0, 0, 0};
+          enableCellDistanceChecking ? lowerCB.get3DIndexOfPosition(pos) : std::array{0ul, 0ul, 0ul};
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
           auto cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
@@ -348,7 +348,7 @@ class HGTraversalBase : public TraversalInterface {
       }
 
       const auto particleCellIndex3D =
-          enableCellDistanceChecking ? lowerCB.get3DIndexOfPosition(pos) : std::array{0, 0, 0};
+          enableCellDistanceChecking ? lowerCB.get3DIndexOfPosition(pos) : std::array{0ul, 0ul, 0ul};
       for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
         for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
           auto cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
