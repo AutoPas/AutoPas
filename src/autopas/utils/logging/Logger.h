@@ -29,7 +29,7 @@ namespace autopas {
  * It manages the lifecycle safely using lazy initialization.
  */
 class Logger {
-  static inline auto loggerName() { return "AutoPasLog"; };
+  static inline const std::string loggerName = "AutoPasLog";
 
  public:
   /**
@@ -41,11 +41,11 @@ class Logger {
    * Get the pointer to the spdlog logger.
    * If the logger does not exist yet (e.g., during static initialization),
    * this function will automatically create a default one (std::cout).
-   * * This guarantees that spdlog::get() never returns nullptr.
-   * * @return Shared pointer to the logger.
+   * This guarantees that Logger::get() never returns nullptr.
+   * @return Shared pointer to the logger.
    */
   static std::shared_ptr<spdlog::logger> get() {
-    auto logger = spdlog::get(loggerName());
+    auto logger = spdlog::get(loggerName);
     if (logger) {
       return logger;
     }
@@ -54,10 +54,9 @@ class Logger {
     std::lock_guard<std::mutex> lock(_registrationMutex);
 
     // Double-check after locking in case another thread created it just now
-    logger = spdlog::get(loggerName());
-    if (!logger) {
-      create_internal(std::cout);  // Default to cout
-      logger = spdlog::get(loggerName());
+    logger = spdlog::get(loggerName);
+    if (not logger) {
+      logger = create_internal(std::cout);  // Default to cout
     }
     return logger;
   }
@@ -68,6 +67,7 @@ class Logger {
    */
   static void create(std::ostream &logOutputStream = std::cout) {
     std::lock_guard<std::mutex> lock(_registrationMutex);
+    unregister_internal();  // Drop old one first
     create_internal(logOutputStream);
   }
 
@@ -79,7 +79,7 @@ class Logger {
     std::lock_guard<std::mutex> lock(_registrationMutex);
     unregister_internal();  // Drop old one first
 
-    auto logger = spdlog::basic_logger_mt(loggerName(), filename);
+    auto logger = spdlog::basic_logger_mt(loggerName, filename);
     logger->flush_on(spdlog::level::warn);
     // spdlog automatically registers the logger upon creation via factory methods
   }
@@ -102,9 +102,7 @@ class Logger {
   /**
    * Internal helper to create the logger (must be called with lock held).
    */
-  static void create_internal(std::ostream &oss) {
-    unregister_internal();  // clear any existing logger
-
+  static std::shared_ptr<spdlog::logger> create_internal(std::ostream &oss) {
     std::shared_ptr<spdlog::sinks::sink> ostreamSink;
 #ifdef AUTOPAS_COLORED_CONSOLE_LOGGING
     if (oss.rdbuf() == std::cout.rdbuf()) {
@@ -117,16 +115,17 @@ class Logger {
 #else
     ostreamSink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
 #endif
-    auto logger = std::make_shared<spdlog::logger>(loggerName(), ostreamSink);
+    auto logger = std::make_shared<spdlog::logger>(loggerName, ostreamSink);
     // The logger is normally only flushed on successful program termination.
     // This line ensures flushing when log messages of level warning or more severe are created.
     logger->flush_on(spdlog::level::warn);
     spdlog::register_logger(logger);
+    return logger;
   }
 
   /**
    * Internal helper to drop the logger (must be called with lock held).
    */
-  static void unregister_internal() { spdlog::drop(loggerName()); }
+  static void unregister_internal() { spdlog::drop(loggerName); }
 };  // class Logger
 }  // namespace autopas

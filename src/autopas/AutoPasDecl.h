@@ -75,14 +75,14 @@ class AutoPas {
 
   /**
    * Constructor for the AutoPas class.
-   * @param logOutputStream Stream where log output should go to. Default is std::out.
+   * @param logOutputStream Stream where log output should go to. Default is std::cout.
    */
   explicit AutoPas(std::ostream &logOutputStream = std::cout);
 
   /**
    * Constructor for the AutoPas class.
    * This constructor can be used when the logging should be directed to a file.
-   * @param logFileName
+   * @param logFileName Name of the log file.
    */
   explicit AutoPas(const std::string &logFileName);
 
