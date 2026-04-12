@@ -276,6 +276,13 @@ class AutoTuner {
   bool tuneConfiguration();
 
   /**
+   * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
+   * used until the next tuning phase, as well as setting other relevant class members (_endOfTuningPhase, _isTuning,
+   * _samplesRebuildingNeighborLists, _iterationBaseline)
+   */
+  void handleEndOfTuningPhaseIfRelevant();
+
+  /**
    * Selects the best configuration for the current container from the evidence collection.
    */
   void selectBestConfiguration();

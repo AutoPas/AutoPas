@@ -110,6 +110,7 @@ bool AutoTuner::tuneConfiguration() {
   // We plan to test a new config so clear all samples.
   _samplesTraverseInteractions.clear();
   _samplesRebuildingNeighborLists.clear();
+  _earlyStoppingOfResampling = false;
 
   // Helper function to reset the ConfigQueue if something wipes it.
   auto restoreConfigQueueIfEmpty = [&](const auto &configQueueBackup, const TuningStrategyOption &stratOpt) {
@@ -187,10 +188,6 @@ void AutoTuner::handleEndOfTuningPhaseIfRelevant() {
     _endOfTuningPhase = true;
     selectBestConfiguration();
   }
-  tuningTimer.stop();
-
-  _earlyStoppingOfResampling = false;
-  return _isTuning;
 }
 
 void AutoTuner::selectBestConfiguration() {
@@ -329,7 +326,7 @@ void AutoTuner::bumpIterationCounters() {
 
   if (_iteration % _tuningInterval == 0) {
     ++_tuningPhase;
-    if (_isTuning and not _iteration == 0) {
+    if (_isTuning) {
       AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval of {}!",
                  _tuningInterval);
     }
@@ -403,6 +400,10 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
         tuningStrategy->receiveDomainSimilarityStatistics(pdBinDensityStdDevSmoothed, pdBinMaxDensitySmoothed);
       }
     }
+
+    // Clear the vectors so the next tuning phase starts with fresh data
+    _pdBinDensityStdDevOfLastTenIterations.clear();
+    _pdBinMaxDensityOfLastTenIterations.clear();
   }
   if (_needsDomainSimilarityStatistics and _forceRetune and isStartOfTuningPhase()) {
     // If we have sent statistics because of a forced retune, throw a warning
