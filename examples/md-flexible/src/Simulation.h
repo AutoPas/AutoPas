@@ -261,14 +261,9 @@ class Simulation {
   struct Timers _timers;
 
   /**
-   * Parallel VTK file writer.
+   * Parallel VTK file writer. Optional.
    */
-  std::shared_ptr<ParallelVtkWriter> _vtkWriter;
-
-  /**
-   * Defines, if vtk files should be created or not.
-   */
-  bool _createVtkFiles;
+  std::optional<ParallelVtkWriter> _vtkWriter;
 
  private:
   /**
