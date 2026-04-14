@@ -81,7 +81,7 @@ class TunerManager {
   /**
    * Find all container options that are part of all currently managed AutoTuner instances.
    */
-  void setCommonContainerOption();
+  std::set<ContainerOption> setCommonContainerOption();
 
   /**
    * Constrain all AutoTuners to the given container options and refresh their config queues.
@@ -94,44 +94,13 @@ class TunerManager {
    */
   void tuneConfigurations();
 
-  /**
-   * Store the best result for the current container option.
-   */
-  void captureCurrentContainerPerformance();
-
-  /**
-   * Find the container option with the best results in _containerResults.
-   * Apply the chosen container option to all AutoTuners and tune once to push the best configuration to the config
-   * queue.
-   */
-  void selectBestContainer();
-
-  /**
-   * Marks the current container as invalid as at least one autotuner couldn't find a valid configuration with it.
-   * @return true if a new container is available, false if we ran out of options.
-   */
-  bool rejectCurrentContainer();
+  void findBestConfigsCombination();
 
   /**
    * All AutoTuners used in this instance of AutoPas.
    * There can be up to one per interaction type.
    */
   std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> _autoTuners;
-
-  /**
-   * Vector of all allowed container options with configurations for all interaction types.
-   */
-  std::vector<ContainerOption::Value> _commonContainerOptions;
-
-  /**
-   * Store the tuning results for each container option of the last tuning phase.
-   */
-  std::unordered_map<ContainerOption::Value, long> _containerResults;
-
-  /**
-   * Index to track the active container option during tuning.
-   */
-  size_t _currentContainerIndex = 0;
 
   /**
    * New tuning phase starting at multiples of _tuningInterval.

@@ -126,6 +126,8 @@ class AutoTuner {
    */
   [[nodiscard]] const Configuration &getCurrentConfig() const;
 
+  const Configuration &getNextConfig();
+
   /**
    * Tell the tuner that the given config is not applicable.
    * Since this operation might change the suggestion what configuration to try next, this next suggestion is returned.
@@ -293,6 +295,8 @@ class AutoTuner {
    * @param container The container type to allow.
    */
   void setContainerConstraint(ContainerOption container);
+
+  void liftContainerConstraint();
 
   /**
    * Get the set of all container types present in the search space.

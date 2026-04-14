@@ -66,7 +66,7 @@ void AutoTuner::logTuningResult(long tuningTime) const {
     // This string is part of several older scripts, hence it is not recommended to change it.
     const auto [conf, optimalEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
     AutoPasLog(DEBUG, "Selected Configuration {}", conf.toString());
-    _tuningResultLogger.logTuningResult(conf, _iteration, tuningTime, optimalEvidence.value);
+    _tuningResultLogger.logTuningResult(conf, _iteration, tuningTime, optimalEvidence.reducedValue);
   }
 }
 
@@ -192,11 +192,13 @@ void AutoTuner::selectBestConfiguration() {
   // If there are still queued up configurations, clear them.
   _configQueue.clear();
   // Find and push_back the optimal configuration for the current container.
-  const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase, _containerConstraint);
+  const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase, EvidenceCollection::REDUCED, _containerConstraint);
   _configQueue.push_back(optConf);
   _isTuning = false;
   // Fill up sample buffer to indicate we are not collecting samples anymore.
   _samplesRebuildingNeighborLists.resize(_maxSamples);
+  _samplesTraverseInteractions.resize(_maxSamples);
+
 }
 
 const Configuration &AutoTuner::getCurrentConfig() const {
@@ -207,6 +209,21 @@ const Configuration &AutoTuner::getCurrentConfig() const {
   return _configQueue.back();
 }
 
+std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
+  // If we are not (yet) tuning or there is nothing to tune return immediately.
+  if (not inTuningPhase()) {
+    return {getCurrentConfig(), false};
+  } else if (getCurrentNumSamples() < _maxSamples and not _earlyStoppingOfResampling) {
+    // If we are still collecting samples from one config return immediately.
+    return {getCurrentConfig(), true};
+  } else {
+    // This case covers any iteration in a tuning phase where a new configuration is needed (even the start of a phase)
+    // If we are at the start of a phase tuneConfiguration() will also refill the queue and call reset on all strategies
+    const bool stillTuning = tuneConfiguration();
+    _earlyStoppingOfResampling = false;
+    return {getCurrentConfig(), stillTuning};
+  }
+}
 std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool indefinitely) {
   if (searchSpaceIsTrivial()) {
     utils::ExceptionHandler::exception("Rejected the only configuration in the search space!\n{}",
@@ -259,7 +276,8 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles,
   //  - remove the configuration from the queue
   if (getCurrentNumSamples() == _maxSamples or _earlyStoppingOfResampling) {
     const long reducedValue = estimateRuntimeFromSamples();
-    _evidenceCollection.addEvidence(currentConfig, {_iteration, _tuningPhase, reducedValue});
+    _evidenceCollection.addEvidence(currentConfig,
+                                    {_iteration, _tuningPhase, reducedValue, sampleRebuild, sampleTraverseParticles});
 
     // If LOESS-based smoothening is enabled, use it to smooth evidence to remove high outliers. If smoothing results in
     // a higher value or if LOESS-based smoothening is disabled, use the original value.
@@ -269,7 +287,7 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles,
             : reducedValue;
 
     // replace collected evidence with smoothed value to improve next smoothing
-    _evidenceCollection.modifyLastEvidence(currentConfig).value = smoothedValue;
+    _evidenceCollection.modifyLastEvidence(currentConfig).reducedValue = smoothedValue;
 
     for (const auto &tuningStrategy : _tuningStrategies) {
       tuningStrategy->addEvidence(getCurrentConfig(), _evidenceCollection.modifyLastEvidence(currentConfig));
@@ -440,7 +458,7 @@ void AutoTuner::checkEarlyStoppingCondition() {
 
   auto [_, bestEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
 
-  double slowdownFactor = static_cast<double>(preliminaryEstimate) / static_cast<double>(bestEvidence.value);
+  double slowdownFactor = static_cast<double>(preliminaryEstimate) / static_cast<double>(bestEvidence.reducedValue);
 
   if (slowdownFactor > _earlyStoppingFactor) {
     AutoPasLog(DEBUG,
@@ -452,6 +470,7 @@ void AutoTuner::checkEarlyStoppingCondition() {
 }
 
 void AutoTuner::setContainerConstraint(ContainerOption container) { _containerConstraint = container; }
+void AutoTuner::liftContainerConstraint() {_containerConstraint.reset();}
 
 std::set<ContainerOption> AutoTuner::getSearchSpaceContainers() const {
   std::set<ContainerOption> containers;

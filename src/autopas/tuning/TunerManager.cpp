@@ -27,14 +27,8 @@ void TunerManager::updateAutoTuners(const size_t currentIteration) {
     tuner->bumpIterationCounters();
   }
 
-  // Start new tuning phase if needed
-  if (currentIteration % _tuningInterval == 0 and not anyTunerWasTuning) {
-    _currentContainerIndex = 0;
-    applyContainerConstraint(_commonContainerOptions[_currentContainerIndex]);
-  } else {
-    // Tune configurations if we didn't just start a new phase
-    tuneConfigurations();
-  }
+  // Tune configurations
+  tuneConfigurations();
 }
 
 Configuration TunerManager::rejectConfig(const Configuration &configuration, bool indefinitely) {
@@ -73,12 +67,10 @@ void TunerManager::forceRetune() {
   for (const auto &autoTuner : _autoTuners | std::views::values) {
     autoTuner->forceRetune();
   }
-  _currentContainerIndex = 0;
-  applyContainerConstraint(_commonContainerOptions[_currentContainerIndex]);
 }
 
-void TunerManager::setCommonContainerOption() {
-  if (_autoTuners.empty()) return;
+std::set<ContainerOption> TunerManager::setCommonContainerOption() {
+  if (_autoTuners.empty()) return {};
 
   // Calculate Intersection of Supported Containers for all interaction types
   bool first = true;
@@ -97,13 +89,7 @@ void TunerManager::setCommonContainerOption() {
     }
   }
 
-  // Convert to a vector for deterministic ordering
-  _commonContainerOptions.assign(intersectionSet.begin(), intersectionSet.end());
-
-  // Initial Setup: Restrict all tuners to the first container immediately
-  if (!_commonContainerOptions.empty()) {
-    applyContainerConstraint(_commonContainerOptions[0]);
-  }
+  return intersectionSet;
 }
 
 void TunerManager::applyContainerConstraint(ContainerOption containerOption) {
@@ -131,72 +117,40 @@ void TunerManager::tuneConfigurations() {
 
   if (allTunersJustFinished and not wasAlreadyOutsideTuningPhase) {
     // Save the best container results before changing container
-    captureCurrentContainerPerformance();
-
-    // Try advancing to the next container
-    if (_currentContainerIndex + 1 < _commonContainerOptions.size()) {
-      ++_currentContainerIndex;
-      const ContainerOption nextContainerOption = _commonContainerOptions[_currentContainerIndex];
-      applyContainerConstraint(nextContainerOption);
-      return;
-    }
-
-    selectBestContainer();
+    findBestConfigsCombination();
   }
 }
 
-void TunerManager::captureCurrentContainerPerformance() {
-  long totalRuntime = 0;
-  const ContainerOption currentContainer = _commonContainerOptions[_currentContainerIndex];
+void TunerManager::findBestConfigsCombination() {
 
+  long bestTotalValue = 0;
   for (const auto &tuner : _autoTuners | std::views::values) {
-    auto [optConf, evidence] = tuner->getEvidenceCollection().getLatestOptimalConfiguration();
-    totalRuntime = totalRuntime + evidence.value;
+    auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigNotReduced();
+    bestTotalValue += evidence.rebuildValue + evidence.traversalValue;
   }
+  long bestCommonContainerValue = std::numeric_limits<long>::max();
+  auto commonContainerOptions = setCommonContainerOption();
+  ContainerOption bestContainer = *commonContainerOptions.begin();
 
-  _containerResults[currentContainer] = totalRuntime;
-  AutoPasLog(DEBUG, "TunerManager: Container {} finished with total runtime of {} ns", currentContainer.to_string(),
-             totalRuntime);
-}
-
-void TunerManager::selectBestContainer() {
-  // We have tested all containers. Select the best one. The tuners will find their best config for that container.
-  ContainerOption bestContainer = _commonContainerOptions[0];
-  long minTime = std::numeric_limits<long>::max();
-  for (const auto &[container, time] : _containerResults) {
-    if (time < minTime) {
-      minTime = time;
+  for (const auto &container : commonContainerOptions) {
+    long totalValueForContainer = 0;
+    for (const auto &tuner : _autoTuners | std::views::values) {
+      auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigForContainer(container);
+      totalValueForContainer += evidence.reducedValue;
+    }
+    if (totalValueForContainer < bestCommonContainerValue) {
+      bestCommonContainerValue = totalValueForContainer;
       bestContainer = container;
     }
   }
 
-  AutoPasLog(DEBUG, "TunerManager: Tuning Finished. Best Container is {} with total time {} ns.",
-             bestContainer.to_string(), minTime);
-
-  for (const auto &tuner : _autoTuners | std::views::values) {
-    tuner->setContainerConstraint(bestContainer);
-    tuner->selectBestConfiguration();
-  }
-  _tuningJustFinished = true;
-}
-
-bool TunerManager::rejectCurrentContainer() {
-  // Remove container from tuning phases
-  _commonContainerOptions.erase(_commonContainerOptions.begin() + _currentContainerIndex);
-
-  if (_commonContainerOptions.empty()) {
-    // The only allowed container option was rejected.
-    return false;
-  }
-
-  if (_currentContainerIndex < _commonContainerOptions.size()) {
-    // Advance to the next container
-    applyContainerConstraint(_commonContainerOptions[_currentContainerIndex]);
+  if (bestTotalValue < bestCommonContainerValue) {
+    AutoPasLog(DEBUG, "TunerManager::findBestConfigsCombination: ");
+    // ContainerConstraint = None
   } else {
-    // Last container was rejected, so tuning is finished
-    selectBestContainer();
+    AutoPasLog(DEBUG, "TunerManager::findBestConfigsCombination: ");
+    applyContainerConstraint(bestContainer);
   }
-  return true;
-}
 
+}
 }  // namespace autopas

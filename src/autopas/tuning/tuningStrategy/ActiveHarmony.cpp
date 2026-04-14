@@ -61,7 +61,7 @@ void ActiveHarmony::addEvidence(const Configuration &configuration, const Eviden
     AutoPasLog(DEBUG, "ActiveHarmony::addEvidence: Search space is {}; did not report performance",
                searchSpaceIsTrivial() ? "trivial" : "empty");
   } else {
-    auto perf = static_cast<double>(evidence.value);
+    auto perf = static_cast<double>(evidence.reducedValue);
     if (ah_report(htask, &perf) != 0) {
       utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error reporting performance to server");
     }

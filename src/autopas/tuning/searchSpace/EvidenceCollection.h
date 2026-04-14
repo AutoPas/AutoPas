@@ -19,6 +19,13 @@ namespace autopas {
  * Class to manage all evidence.
  */
 class EvidenceCollection {
+
+  enum EvidenceMode {
+    REDUCED,
+    TRAVERSAL,
+    TOTAL
+  };
+
  public:
   EvidenceCollection() = default;
 
@@ -43,6 +50,10 @@ class EvidenceCollection {
    */
   Evidence &modifyLastEvidence(const Configuration &configuration);
 
+  std::tuple<Configuration, Evidence> getBestConfigForContainer(ContainerOption containerOption) const;
+
+  std::tuple<Configuration, Evidence> getBestConfigNotReduced() const;
+
   /**
    * Retrieve the configuration with the lowest evidence value for the given tuning phase.
    * @param tuningPhase The tuning phase for which the optimum should be returned.
@@ -50,7 +61,7 @@ class EvidenceCollection {
    * @return The optimal configuration.
    */
   std::tuple<Configuration, Evidence> getOptimalConfiguration(
-      size_t tuningPhase, std::optional<ContainerOption> containerConstraint = std::nullopt) const;
+      size_t tuningPhase, EvidenceMode mode, std::optional<ContainerOption> containerConstraint = std::nullopt) const;
 
   /**
    * Retrieve the configuration with the lowest evidence value for the latest tuning phase.

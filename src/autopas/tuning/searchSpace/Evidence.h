@@ -25,7 +25,11 @@ class Evidence {
   /**
    * Value of the measurement (time, energy, ...).
    */
-  long value;
+  long reducedValue;
+
+  long rebuildValue;
+
+  long traversalValue;
 
   /**
    * Equality operator.
