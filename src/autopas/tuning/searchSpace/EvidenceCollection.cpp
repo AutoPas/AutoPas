@@ -40,13 +40,13 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigForContaine
 std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigNotReduced() const {
   if (_evidenceMap.empty()) {
     utils::ExceptionHandler::exception(
-        "EvidenceCollection::getLatestOptimalConfiguration(): Trying to determine the optimal configuration but there "
+        "EvidenceCollection::getBestConfigNotReduced(): Trying to determine the optimal configuration but there "
         "is no evidence yet!");
   }
   Configuration optimalConf{};
   Evidence optimalEvidence{0, 0, std::numeric_limits<decltype(Evidence::reducedValue)>::max(),
-                           std::numeric_limits<decltype(Evidence::rebuildValue)>::max(),
-                           std::numeric_limits<decltype(Evidence::traversalValue)>::max()};
+                           std::numeric_limits<decltype(Evidence::rebuildValue)>::max() / 2,
+                           std::numeric_limits<decltype(Evidence::traversalValue)>::max() / 2};
 
   for (const auto &[conf, evidenceVec] : _evidenceMap) {
     // reverse iteration of the evidence vector because we are probably interested in the latest evidence.
@@ -64,7 +64,7 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigNotReduced(
   // Check if the found config differs from the (invalid) default. If not nothing was found.
   if (optimalConf == Configuration{}) {
     utils::ExceptionHandler::exception(
-        "EvidenceCollection::getLatestOptimalConfiguration(): No configuration could be determined to be the optimum "
+        "EvidenceCollection::getBestConfigNotReduced(): No configuration could be determined to be the optimum "
         "for tuning phase {}. This suggests there is no evidence for this phase yet.",
         _latestTuningPhase);
   }
@@ -72,23 +72,23 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigNotReduced(
 }
 
 std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(
-    size_t tuningPhase, EvidenceMode mode = REDUCED, const std::optional<ContainerOption> containerConstraint) const {
+    size_t tuningPhase, EvidenceMode mode, const std::optional<ContainerOption> containerConstraint) const {
   if (_evidenceMap.empty()) {
     utils::ExceptionHandler::exception(
-        "EvidenceCollection::getLatestOptimalConfiguration(): Trying to determine the optimal configuration but there "
+        "EvidenceCollection::getOptimalConfiguration(): Trying to determine the optimal configuration but there "
         "is no evidence yet!");
   }
   Configuration optimalConf{};
-  Evidence optimalEvidence{0, 0, std::numeric_limits<long>::max(),
-  std::numeric_limits<long>::max(), std::numeric_limits<long>::max()};
+  Evidence optimalEvidence{0, 0, std::numeric_limits<long>::max(), std::numeric_limits<long>::max() / 2,
+                           std::numeric_limits<long>::max() / 2};
   for (const auto &[conf, evidenceVec] : _evidenceMap) {
     if (containerConstraint.has_value() and conf.container != containerConstraint.value()) {
       continue;
     }
     // reverse iteration of the evidence vector because we are probably interested in the latest evidence.
-    for (const auto & evidence : std::views::reverse(evidenceVec)) {
+    for (const auto &evidence : std::views::reverse(evidenceVec)) {
       if (evidence.tuningPhase == tuningPhase) {
-        switch(mode) {
+        switch (mode) {
           case EvidenceMode::REDUCED:
             if (optimalEvidence.reducedValue > evidence.reducedValue) {
               optimalConf = conf;
@@ -102,7 +102,8 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(
             }
             break;
           case EvidenceMode::TOTAL:
-            if ((optimalEvidence.rebuildValue + optimalEvidence.traversalValue) > (evidence.rebuildValue + evidence.traversalValue)) {
+            if ((optimalEvidence.rebuildValue + optimalEvidence.traversalValue) >
+                (evidence.rebuildValue + evidence.traversalValue)) {
               optimalConf = conf;
               optimalEvidence = evidence;
             }

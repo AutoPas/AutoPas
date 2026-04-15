@@ -43,14 +43,9 @@ class TunerManager {
    */
   void updateAutoTuners(size_t currentIteration);
 
-  /**
-   * Reject given configuration from the AutoTuners config queue and search space (if indefinitely==true). Also handles
-   * the case if the rejected config was the last one for the currently selected container option.
-   * @param configuration
-   * @param indefinitely
-   * @return
-   */
-  Configuration rejectConfig(const Configuration &configuration, bool indefinitely);
+  bool tune(size_t currentIteration, const LiveInfo &info);
+
+  bool needsLiveInfo(size_t currentIteration);
 
   /**
    * @return True, if a rebuild is necessary due to a configuration change.
@@ -87,14 +82,14 @@ class TunerManager {
    * Constrain all AutoTuners to the given container options and refresh their config queues.
    * @param containerOption
    */
-  void applyContainerConstraint(ContainerOption containerOption);
+  void applyContainerConstraint(std::optional<ContainerOption> containerOption);
 
   /**
    * Let all AutoTuners tune their configuration for the time step ahead.
    */
   void tuneConfigurations();
 
-  void findBestConfigsCombination();
+  void setOptimalConfigurations();
 
   /**
    * All AutoTuners used in this instance of AutoPas.
@@ -109,6 +104,13 @@ class TunerManager {
 
   /**
    * Set to true when the tuning phase just finished for all AutoTuners.
+   */
+  bool _tuningFinished = true;
+
+  size_t _lastTuningIteration{std::numeric_limits<size_t>::max()};
+
+  /**
+   * Initialize
    */
   bool _tuningJustFinished = false;
 };

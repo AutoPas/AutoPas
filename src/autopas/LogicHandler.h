@@ -173,7 +173,7 @@ class LogicHandler {
     bool doDataStructureUpdate = not neighborListsAreValid();
 
     if (_tunerManager->tuningPhaseJustFinished()) {
-      _iterationAtEndOfLastTuningPhase = _iteration;
+      _iterationAfterLastTuningPhase = _iteration;
     }
     // We will do a rebuild in this timestep
     if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
@@ -603,7 +603,7 @@ class LogicHandler {
     const auto numRebuilds = considerOnlyLastNonTuningPhase ? _numRebuildsInNonTuningPhase : _numRebuilds;
     // The total number of iterations is iteration + 1
     const auto iterationCount =
-        considerOnlyLastNonTuningPhase ? _iteration - _iterationAtEndOfLastTuningPhase : _iteration + 1;
+        considerOnlyLastNonTuningPhase ? _iteration - _iterationAfterLastTuningPhase : _iteration + 1;
     if (numRebuilds == 0) {
       return static_cast<double>(_neighborListRebuildFrequency);
     } else {
@@ -863,7 +863,7 @@ class LogicHandler {
   /**
    * The iteration number at the end of last tuning phase.
    */
-  size_t _iterationAtEndOfLastTuningPhase{0};
+  size_t _iterationAfterLastTuningPhase{0};
 
   /**
    * Atomic tracker of the number of owned particles.
@@ -1190,22 +1190,22 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     return {configuration, std::move(traversalPtr), false};
   }
 
-  if (autoTuner.needsLiveInfo()) {
+  if (_tunerManager->needsLiveInfo(_iteration)) {
     // If live info has not been gathered yet, gather it now and send it to the tuner.
     if (info.get().empty()) {
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
       info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
                   _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
     }
-    autoTuner.receiveLiveInfo(info);
   }
 
   size_t numRejectedConfigs = 0;
   utils::TraceTimer selectConfigurationTimer;
   selectConfigurationTimer.start();
 
+  auto stillTuning = _tunerManager->tune(_iteration, info);
+
   auto configuration = autoTuner.getCurrentConfig();
-  auto stillTuning = autoTuner.inTuningPhase();
 
   // loop as long as we don't get a valid configuration
   do {
@@ -1218,8 +1218,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       return {configuration, std::move(traversalPtr), stillTuning};
     }
     // if no config is left after rejecting this one, an exception is thrown here.
-    configuration = _tunerManager->rejectConfig(configuration, rejectIndefinitely);
-    stillTuning = autoTuner.inTuningPhase();
+    configuration = autoTuner.rejectConfig(configuration, rejectIndefinitely);
+    _tunerManager->tune(_iteration, info);
   } while (true);
 }
 

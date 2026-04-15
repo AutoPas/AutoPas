@@ -140,7 +140,7 @@ class AutoTuner {
    * indefinitely).
    * @return Tuple<Next configuration to use, still tuning>.
    */
-  [[nodiscard]] std::tuple<Configuration, bool> rejectConfig(const Configuration &rejectedConfig, bool indefinitely);
+  [[nodiscard]] Configuration rejectConfig(const Configuration &rejectedConfig, bool indefinitely);
 
   /**
    * Indicator function whether the search space consists of exactly one configuration.
@@ -282,7 +282,7 @@ class AutoTuner {
    * used until the next tuning phase, as well as setting other relevant class members (_endOfTuningPhase, _isTuning,
    * _samplesRebuildingNeighborLists, _iterationBaseline)
    */
-  void handleEndOfTuningPhaseIfRelevant();
+  void handleEndOfTuningPhase();
 
   /**
    * Selects the best configuration for the current container from the evidence collection.
@@ -294,7 +294,7 @@ class AutoTuner {
    * Configurations using other containers will be ignored/filtered out during tuning.
    * @param container The container type to allow.
    */
-  void setContainerConstraint(ContainerOption container);
+  void setContainerConstraint(std::optional<ContainerOption> container);
 
   void liftContainerConstraint();
 

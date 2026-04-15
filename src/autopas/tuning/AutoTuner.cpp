@@ -80,25 +80,16 @@ void AutoTuner::forceRetune() {
   }
   _samplesTraverseInteractions.resize(_maxSamples);
   _forceRetune = true;
-  _requiresRebuild = true;
 }
 
 bool AutoTuner::tuneConfiguration() {
-  _requiresRebuild = false;
   // If we are not (yet) tuning or there is nothing to tune return immediately.
   if (not inTuningPhase()) {
     return false;
   }
   if (getCurrentNumSamples() < _maxSamples and not _earlyStoppingOfResampling) {
-    // If we are still collecting samples from one config return immediately.
-    if (getCurrentNumSamples() == 0) {
-      _requiresRebuild = true;
-    }
     return true;
   }
-
-  // We are looking for a new config, so we will require a rebuild
-  _requiresRebuild = true;
 
   // We finished collection samples for this config so remove it from the queue
   if (not _configQueue.empty()) {
@@ -168,37 +159,33 @@ bool AutoTuner::tuneConfiguration() {
       }
     }
   }
-  // Apply the Container Constraint (Filter).
-  if (_containerConstraint.has_value()) {
-    // Remove any configuration that does not match the forced container.
-    std::erase_if(_configQueue,
-                  [&](const Configuration &conf) { return conf.container != _containerConstraint.value(); });
+
+  if (_configQueue.empty()) {
+    // If the queue is empty we are done tuning.
+    handleEndOfTuningPhase();
   }
-
-  handleEndOfTuningPhaseIfRelevant();
-
   return _isTuning;
 }
 
-void AutoTuner::handleEndOfTuningPhaseIfRelevant() {
-  if (_configQueue.empty()) {
-    // If the queue is empty we are done tuning.
-    _endOfTuningPhase = true;
-    selectBestConfiguration();
-  }
+void AutoTuner::handleEndOfTuningPhase() {
+  _endOfTuningPhase = true;
+  _isTuning = false;
+  selectBestConfiguration();
 }
 
 void AutoTuner::selectBestConfiguration() {
   // If there are still queued up configurations, clear them.
   _configQueue.clear();
   // Find and push_back the optimal configuration for the current container.
-  const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase, EvidenceCollection::REDUCED, _containerConstraint);
+  const auto evidenceMode = _containerConstraint.has_value() ? EvidenceCollection::EvidenceMode::REDUCED
+                                                             : EvidenceCollection::EvidenceMode::TOTAL;
+  const auto [optConf, optEvidence] =
+      _evidenceCollection.getOptimalConfiguration(_tuningPhase, evidenceMode, _containerConstraint);
   _configQueue.push_back(optConf);
   _isTuning = false;
   // Fill up sample buffer to indicate we are not collecting samples anymore.
   _samplesRebuildingNeighborLists.resize(_maxSamples);
   _samplesTraverseInteractions.resize(_maxSamples);
-
 }
 
 const Configuration &AutoTuner::getCurrentConfig() const {
@@ -209,22 +196,22 @@ const Configuration &AutoTuner::getCurrentConfig() const {
   return _configQueue.back();
 }
 
-std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
-  // If we are not (yet) tuning or there is nothing to tune return immediately.
-  if (not inTuningPhase()) {
-    return {getCurrentConfig(), false};
-  } else if (getCurrentNumSamples() < _maxSamples and not _earlyStoppingOfResampling) {
-    // If we are still collecting samples from one config return immediately.
-    return {getCurrentConfig(), true};
-  } else {
-    // This case covers any iteration in a tuning phase where a new configuration is needed (even the start of a phase)
-    // If we are at the start of a phase tuneConfiguration() will also refill the queue and call reset on all strategies
-    const bool stillTuning = tuneConfiguration();
-    _earlyStoppingOfResampling = false;
-    return {getCurrentConfig(), stillTuning};
-  }
-}
-std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool indefinitely) {
+// std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
+//   // If we are not (yet) tuning or there is nothing to tune return immediately.
+//   if (not inTuningPhase()) {
+//     return {getCurrentConfig(), false};
+//   } else if (getCurrentNumSamples() < _maxSamples and not _earlyStoppingOfResampling) {
+//     // If we are still collecting samples from one config return immediately.
+//     return {getCurrentConfig(), true};
+//   } else {
+//     // This case covers any iteration in a tuning phase where a new configuration is needed (even the start of a
+//     phase)
+//     // If we are at the start of a phase tuneConfiguration() will also refill the queue and call reset on all
+//     strategies const bool stillTuning = tuneConfiguration(); _earlyStoppingOfResampling = false; return
+//     {getCurrentConfig(), stillTuning};
+//   }
+// }
+Configuration AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool indefinitely) {
   if (searchSpaceIsTrivial()) {
     utils::ExceptionHandler::exception("Rejected the only configuration in the search space!\n{}",
                                        rejectedConfig.toString());
@@ -245,8 +232,12 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
                                             [](const auto &conf) { return conf.toShortString(false); }));
   });
 
-  const auto stillTuning = tuneConfiguration();
-  return {getCurrentConfig(), stillTuning};
+  if (_configQueue.empty()) {
+    handleEndOfTuningPhase();
+  } else {
+    tuneConfiguration();
+  }
+  return getCurrentConfig();
 }
 
 void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt) {
@@ -274,7 +265,7 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles,
   //  - calculate the evidence from the collected samples
   //  - log what was collected
   //  - remove the configuration from the queue
-  if (getCurrentNumSamples() == _maxSamples or _earlyStoppingOfResampling) {
+  if (getCurrentNumSamples() >= _maxSamples or _earlyStoppingOfResampling) {
     const long reducedValue = estimateRuntimeFromSamples();
     _evidenceCollection.addEvidence(currentConfig,
                                     {_iteration, _tuningPhase, reducedValue, sampleRebuild, sampleTraverseParticles});
@@ -328,6 +319,11 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles,
 
     _tuningDataLogger.logTuningData(currentConfig, samplesRebuildingNeighborLists, samplesTraverseInteractions,
                                     _iteration, reducedValue, smoothedValue, _rebuildFrequency);
+
+    // This was the last sample for this tuning phase
+    if (_configQueue.size() == 1) {
+      _isTuning = false;
+    }
   }
 }
 
@@ -346,7 +342,12 @@ void AutoTuner::bumpIterationCounters() {
   }
 }
 
-bool AutoTuner::willRebuildNeighborLists() const { return _requiresRebuild; }
+bool AutoTuner::willRebuildNeighborLists() const {
+  if (_isTuning and (_earlyStoppingOfResampling or (getCurrentNumSamples() >= _maxSamples))) {
+    return true;
+  }
+  return false;
+}
 
 bool AutoTuner::initEnergy() {
   // Try to initialize the raplMeter
@@ -469,8 +470,8 @@ void AutoTuner::checkEarlyStoppingCondition() {
   }
 }
 
-void AutoTuner::setContainerConstraint(ContainerOption container) { _containerConstraint = container; }
-void AutoTuner::liftContainerConstraint() {_containerConstraint.reset();}
+void AutoTuner::setContainerConstraint(std::optional<ContainerOption> container) { _containerConstraint = container; }
+void AutoTuner::liftContainerConstraint() { _containerConstraint.reset(); }
 
 std::set<ContainerOption> AutoTuner::getSearchSpaceContainers() const {
   std::set<ContainerOption> containers;

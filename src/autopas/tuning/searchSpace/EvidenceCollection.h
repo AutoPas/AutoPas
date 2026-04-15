@@ -15,18 +15,15 @@
 #include "autopas/tuning/searchSpace/Evidence.h"
 
 namespace autopas {
+
 /**
  * Class to manage all evidence.
  */
 class EvidenceCollection {
-
-  enum EvidenceMode {
-    REDUCED,
-    TRAVERSAL,
-    TOTAL
-  };
-
  public:
+  // Helper enum to get the optimal evidence depending on what timings to include
+  enum EvidenceMode { REDUCED, TRAVERSAL, TOTAL };
+
   EvidenceCollection() = default;
 
   /**
@@ -61,7 +58,8 @@ class EvidenceCollection {
    * @return The optimal configuration.
    */
   std::tuple<Configuration, Evidence> getOptimalConfiguration(
-      size_t tuningPhase, EvidenceMode mode, std::optional<ContainerOption> containerConstraint = std::nullopt) const;
+      size_t tuningPhase, EvidenceMode mode = REDUCED,
+      std::optional<ContainerOption> containerConstraint = std::nullopt) const;
 
   /**
    * Retrieve the configuration with the lowest evidence value for the latest tuning phase.

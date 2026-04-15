@@ -19,32 +19,29 @@ void TunerManager::addAutoTuner(std::unique_ptr<AutoTuner> tuner, const Interact
 }
 
 void TunerManager::updateAutoTuners(const size_t currentIteration) {
-  bool anyTunerWasTuning = false;
-
   // Bump counters and check if they were tuning
   for (const auto &tuner : _autoTuners | std::views::values) {
-    anyTunerWasTuning = anyTunerWasTuning or tuner->inTuningPhase();
     tuner->bumpIterationCounters();
   }
-
-  // Tune configurations
-  tuneConfigurations();
 }
 
-Configuration TunerManager::rejectConfig(const Configuration &configuration, bool indefinitely) {
-  try {
-    auto [newConfiguration, stillTuning] =
-        _autoTuners.at(configuration.interactionType)->rejectConfig(configuration, indefinitely);
-    return newConfiguration;
+bool TunerManager::needsLiveInfo(size_t currentIteration) {
+  return std::ranges::any_of(_autoTuners, [](const auto &tuner) { return tuner.second->needsLiveInfo(); }) and
+         currentIteration < _lastTuningIteration;
+}
 
-  } catch (utils::ExceptionHandler::AutoPasException &exception) {
-    // Rejected config was the only one for this container
-    bool couldChangeContainer = rejectCurrentContainer();
-    if (not couldChangeContainer) {
-      throw;
+bool TunerManager::tune(const size_t currentIteration, const LiveInfo &info) {
+  if (_lastTuningIteration != currentIteration) {
+    _lastTuningIteration = currentIteration;
+
+    for (const auto &tuner : _autoTuners | std::ranges::views::values) {
+      if (tuner->needsLiveInfo()) {
+        tuner->receiveLiveInfo(info);
+      }
     }
-    return _autoTuners.at(configuration.interactionType)->getCurrentConfig();
+    tuneConfigurations();
   }
+  return not _tuningFinished;
 }
 
 bool TunerManager::requiresRebuilding() {
@@ -61,7 +58,7 @@ bool TunerManager::allSearchSpacesAreTrivial() const {
   return true;
 }
 
-bool TunerManager::tuningPhaseJustFinished() const { return _tuningJustFinished; }
+bool TunerManager::tuningPhaseJustFinished() const { return _tuningFinished and (not _tuningJustFinished); }
 
 void TunerManager::forceRetune() {
   for (const auto &autoTuner : _autoTuners | std::views::values) {
@@ -92,37 +89,31 @@ std::set<ContainerOption> TunerManager::setCommonContainerOption() {
   return intersectionSet;
 }
 
-void TunerManager::applyContainerConstraint(ContainerOption containerOption) {
+void TunerManager::applyContainerConstraint(std::optional<ContainerOption> containerOption) {
   for (const auto &tuner : _autoTuners | std::views::values) {
     tuner->setContainerConstraint(containerOption);
-    tuner->forceRetune();
+    // tuner->forceRetune();
     tuner->tuneConfiguration();
   }
 }
 
 void TunerManager::tuneConfigurations() {
-  if (_tuningJustFinished) {
-    _tuningJustFinished = false;
-  }
-
   // Check if any tuner is still tuning
-  bool wasAlreadyOutsideTuningPhase = true;
-  bool allTunersJustFinished = true;
+  bool allTunersFinished = true;
   for (const auto &tuner : _autoTuners | std::views::values) {
-    const bool wasTuning = tuner->inTuningPhase();
     const bool stillTuning = tuner->tuneConfiguration();
-    wasAlreadyOutsideTuningPhase = wasAlreadyOutsideTuningPhase and (not wasTuning);
-    allTunersJustFinished = allTunersJustFinished and (not stillTuning);
+    allTunersFinished = allTunersFinished and (not stillTuning);
   }
-
-  if (allTunersJustFinished and not wasAlreadyOutsideTuningPhase) {
+  _tuningJustFinished = false;
+  if (allTunersFinished and (not _tuningFinished)) {
     // Save the best container results before changing container
-    findBestConfigsCombination();
+    setOptimalConfigurations();
+    _tuningJustFinished = true;
   }
+  _tuningFinished = allTunersFinished;
 }
 
-void TunerManager::findBestConfigsCombination() {
-
+void TunerManager::setOptimalConfigurations() {
   long bestTotalValue = 0;
   for (const auto &tuner : _autoTuners | std::views::values) {
     auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigNotReduced();
@@ -145,12 +136,16 @@ void TunerManager::findBestConfigsCombination() {
   }
 
   if (bestTotalValue < bestCommonContainerValue) {
-    AutoPasLog(DEBUG, "TunerManager::findBestConfigsCombination: ");
-    // ContainerConstraint = None
+    AutoPasLog(DEBUG,
+               "TunerManager::setOptimalConfigurations: Each AutoTuner will run their individually best rebuild + "
+               "traversal configuration");
+    applyContainerConstraint(std::nullopt);
   } else {
-    AutoPasLog(DEBUG, "TunerManager::findBestConfigsCombination: ");
+    AutoPasLog(DEBUG,
+               "TunerManager::setOptimalConfigurations: AutoTuners will run their best configuration with the {} "
+               "container option",
+               bestContainer);
     applyContainerConstraint(bestContainer);
   }
-
 }
 }  // namespace autopas

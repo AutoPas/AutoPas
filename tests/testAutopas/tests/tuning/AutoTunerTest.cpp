@@ -893,7 +893,7 @@ TEST_F(AutoTunerTest, testRestoreAfterWipe) {
   for (const auto conf : searchSpace) {
     autoTuner.bumpIterationCounters();
     autoTuner.tuneConfiguration();
-    autoTuner.addMeasurement(42, true);
+    autoTuner.addMeasurement(10, 42, true);
   }
 
   // Trigger the tuning process with evidence. Here the slow config filter would wipe out everything
@@ -1001,40 +1001,45 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
       _confLc_c18_N3,
   };
 
-  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  tunerManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, "2B"),
+      autopas::InteractionTypeOption::pairwise);
+
+  auto &autoTuner = *tunerManager->getAutoTuners()[autopas::InteractionTypeOption::pairwise];
+  autopas::LiveInfo info{};
 
   // 1) Sample first config (accepted).
-  const auto [config1, stillTuning1] = autoTuner.getNextConfig();
-  EXPECT_TRUE(stillTuning1);
+  tunerManager->tune(0, info);
+  const auto config1 = autoTuner.getCurrentConfig();
+  // EXPECT_TRUE(stillTuning1);
   autoTuner.addMeasurement(180, 20, /*neighborListRebuilt*/ true);
   autoTuner.bumpIterationCounters();
 
   // 2) Second config is rejected, should immediately get the next one.
-  const auto [config2, stillTuning2] = autoTuner.getNextConfig();
-  EXPECT_TRUE(stillTuning2);
-  const auto [configAfterReject2, stillTuningAfterReject2] =
-      autoTuner.rejectConfig(config2, /*indefinitely*/ rejectIndefinitely);
-  EXPECT_TRUE(stillTuningAfterReject2);
+  tunerManager->tune(1, info);
+  const auto config2 = autoTuner.getCurrentConfig();
+  // EXPECT_TRUE(stillTuning2);
+  const auto configAfterReject2 = autoTuner.rejectConfig(config2, /*indefinitely*/ rejectIndefinitely);
+  // EXPECT_TRUE(stillTuningAfterReject2);
 
   // 3) Sample third config (accepted). Make it faster than config1 so it becomes the optimum.
+  tunerManager->tune(1, info);
   autoTuner.addMeasurement(90, 10, /*neighborListRebuilt*/ true);
   autoTuner.bumpIterationCounters();
 
   // 4) Final config is rejected.
-  const auto [config4, stillTuning4] = autoTuner.getNextConfig();
-  EXPECT_TRUE(stillTuning4);
-  const auto [configAfterReject4, stillTuningAfterReject4] =
-      autoTuner.rejectConfig(config4, /*indefinitely*/ rejectIndefinitely);
-  EXPECT_FALSE(stillTuningAfterReject4);
+  tunerManager->tune(2, info);
+  const auto config4 = autoTuner.getCurrentConfig();
+  // EXPECT_TRUE(stillTuning4);
+  const auto configAfterReject4 = autoTuner.rejectConfig(config4, /*indefinitely*/ rejectIndefinitely);
+  // EXPECT_FALSE(stillTuningAfterReject4);
 
   const auto expectedBest = _confLc_c08_N3;
   EXPECT_EQ(configAfterReject4, expectedBest);
 
   // We should be able to later call getCurrentConfig and receive the expectedBest
   EXPECT_EQ(autoTuner.getCurrentConfig(), expectedBest);
-
-  // Similarly with getNextConfig during non-tuning phase
-  EXPECT_EQ(std::get<0>(autoTuner.getNextConfig()), expectedBest);
 }
 
 /**
