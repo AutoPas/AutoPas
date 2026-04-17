@@ -75,6 +75,9 @@ constexpr bool calcGlobals =
     false;
 #endif
 
+/**
+ * If md-flexible is compiled with cutoff scaling enabled, use functors with cutoff scaling.
+ */
 constexpr bool scalingCutoff =
 #ifdef MD_FLEXIBLE_SCALING_CUTOFF
     true;

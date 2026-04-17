@@ -83,8 +83,8 @@ class LogicHandler {
                                                             _logicHandlerInfo.verletSkin,
                                                             _verletClusterSize,
                                                             _sortingThreshold,
-                                  configuration.loadEstimator,
-                                  _logicHandlerInfo.hGridMaxCutoffPerLevel};
+                                                            configuration.loadEstimator,
+                                                            _logicHandlerInfo.hGridMaxCutoffPerLevel};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();

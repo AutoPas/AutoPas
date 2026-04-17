@@ -18,8 +18,16 @@ namespace autopas {
 template <class ParticleCell_T>
 class HGTraversalBase : public TraversalInterface {
  public:
+  /**
+   * Type of particles stored in the traversed cells.
+   */
   using ParticleType = typename ParticleCell_T::ParticleType;
 
+  /**
+   * Constructor.
+   * @param dataLayout Data layout used by this traversal.
+   * @param useNewton3 Whether Newton3 optimization is enabled.
+   */
   explicit HGTraversalBase(DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3),
         _numLevels(0),
@@ -48,19 +56,44 @@ class HGTraversalBase : public TraversalInterface {
   }
 
  protected:
+  /**
+   * Number of hierarchy levels.
+   */
   size_t _numLevels;
+  /**
+   * Pointer to all LinkedCells levels of the hierarchical grid.
+   */
   std::vector<std::unique_ptr<LinkedCells<ParticleType>>> *_levels;
+  /**
+   * Maximum cutoff per hierarchy level.
+   */
   std::vector<double> _maxCutoffPerLevel;
+  /**
+   * Configured verlet skin of the container.
+   */
   double _skin;
+  /**
+   * Number of time steps since the last rebuild.
+   */
   unsigned int _stepsSinceLastRebuild;
+  /**
+   * Rebuild frequency used by the container.
+   */
   unsigned int _rebuildFrequency;
-  // At this ratio of max Cutoffs between two levels, distance checks are employed to sort out unnecessary interactions.
-  // This is needed as the number of interactions can increase drastically if the cell size difference is too large.
-  // particles can do particle to level specific instead of level to level specific in the future
+  /**
+   * Cutoff ratio threshold for enabling cell distance checks.
+   * At this ratio of max Cutoffs between two levels, distance checks are employed to sort out unnecessary interactions.
+   * Particles can do particle to level specific instead of level to level specific in the future.
+   */
   const double distCheckRatio = 0.2;
-  // Intralevel traversals used for each level for this iteration
+  /**
+   * Traversals used for intra-level interactions for each level.
+   */
   std::vector<std::unique_ptr<TraversalInterface>> _traversals;
 
+  /**
+   * Type alias for cell blocks used by hierarchical levels.
+   */
   using CellBlock = internal::CellBlock3D<FullParticleCell<ParticleType>>;
 
   /**
@@ -95,13 +128,17 @@ class HGTraversalBase : public TraversalInterface {
     return (_maxCutoffPerLevel[lowerLevel] + _skin) / getInteractionLength(lowerLevel, upperLevel) <= distCheckRatio;
   }
 
+  /**
+   * Compute the currently valid skin based on rebuild progress.
+   * @return Effective skin for the current traversal step.
+   */
   [[nodiscard]] double currentSkin() const {
     // We only need to check at most distance cutoff + max displacement of any particle in the container if dynamic
     // containers are used.
     // NOTE: if in the future, if Hgrid will be used as a base container to a verlet list, interactionLength should be
     // always cutoff + _skin.
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    return this->_skin; //std::min(this->_maxDisplacement * 2 + 1e-9, this->_skin);
+    return this->_skin;  // std::min(this->_maxDisplacement * 2 + 1e-9, this->_skin);
 #else
     return std::min((this->_skin / _rebuildFrequency) * _stepsSinceLastRebuild + 1e-9, this->_skin);
 #endif
@@ -112,6 +149,7 @@ class HGTraversalBase : public TraversalInterface {
    * For SoA consider that two cells interacting on the same lower level cell is problematic, as two threads can operate
    * on the same buffer.
    * @param level The hierarchy level to compute the stride for.
+   * @param topDown If true compute stride for top-down traversal, otherwise bottom-up.
    * @return The stride for each dimension.
    */
   std::array<size_t, 3> computeStride(const size_t level, const bool topDown = true) {
@@ -228,6 +266,7 @@ class HGTraversalBase : public TraversalInterface {
    * @param upperCellCoords 3d cell index of cell belonging to the upper level
    * @param functor functor to apply
    * @param lowerLevel lower level index
+   * @param upperLevel upper level index
    * @param lowerBound inclusive lower coordinate bound for lower-level owned cells when only interacting with owned
    * particles
    * @param upperBound inclusive upper coordinate bound for lower-level owned cells when only interacting with owned
@@ -303,6 +342,7 @@ class HGTraversalBase : public TraversalInterface {
    * @param upperCellCoords 3d cell index of cell belonging to the upper level
    * @param functor functor to apply
    * @param lowerLevel lower level index
+   * @param upperLevel upper level index
    * @param lowerBound lower bound of the coordinates of lower level cells that contain owned particles
    * @param upperBound upper bound of the coordinates of lower level cells that contain owned particles
    * less than the interaction length, otherwise skips the lower level cell

@@ -943,8 +943,8 @@ class LJFunctorAVX
     _epsilon24 = _mm256_set1_pd(epsilon24);
     _sigmaSquared = _mm256_set1_pd(sigmaSquared);
     if constexpr (applyShift) {
-      _shift6 = _mm256_set1_pd(ParticlePropertiesLibrary<double, size_t>::calcShift6(
-          epsilon24, sigmaSquared, _cutoffSquared[0], scalingCutoff));
+      _shift6 = _mm256_set1_pd(ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared,
+                                                                                     _cutoffSquared[0], scalingCutoff));
     } else {
       _shift6 = _mm256_setzero_pd();
     }

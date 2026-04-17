@@ -42,6 +42,7 @@ class ContainerSelectorInfo {
    * @param verletClusterSize Size of verlet Clusters
    * @param sortingThreshold Number of particles in two cells from which sorting should be performed
    * @param loadEstimator load estimation algorithm for balanced traversals.
+   * @param hGridMaxCutoffPerLevel Maximum cutoff per hierarchy level for HierarchicalGrid.
    */
   explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                  double cutoff, double cellSizeFactor, double verletSkin,

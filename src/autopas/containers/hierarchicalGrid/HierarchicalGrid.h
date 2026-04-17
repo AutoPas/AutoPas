@@ -211,6 +211,10 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::hierarchicalGrid; }
 
+  /**
+   * Get the cell type used by this container.
+   * @return CellType::FullParticleCell.
+   */
   [[nodiscard]] CellType getParticleCellTypeEnum() const { return CellType::FullParticleCell; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
@@ -378,28 +382,28 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
   [[nodiscard]] ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       utils::optRef<typename ContainerIterator<Particle_T, true, true>::ParticleVecType> additionalVectors =
-        std::nullopt) override {
+          std::nullopt) override {
     return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   [[nodiscard]] ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       utils::optRef<typename ContainerIterator<Particle_T, false, true>::ParticleVecType> additionalVectors =
-        std::nullopt) const override {
+          std::nullopt) const override {
     return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       utils::optRef<typename ContainerIterator<Particle_T, true, false>::ParticleVecType> additionalVectors =
-        std::nullopt) override {
+          std::nullopt) override {
     return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
   }
 
   [[nodiscard]] ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
-        std::nullopt) const override {
+          std::nullopt) const override {
     return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
   }
 
