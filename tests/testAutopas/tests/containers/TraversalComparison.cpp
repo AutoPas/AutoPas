@@ -13,6 +13,11 @@
 #include "autopas/utils/StringUtils.h"
 #include "autopasTools/generators/UniformGenerator.h"
 
+/*
+ * @todo: Integrate HgridTraversalComparison tests according to 
+ * https://github.com/AutoPas/AutoPas/pull/1014/changes/BASE..ad9eb3091137eb141f23c2a82bbb51186f0c0cb5#r2171213075
+ */
+
 /**
  * Generates a random 3d shift with the given magnitude. The shift is uniformly distributed on a sphere with radius
  * magnitude.
