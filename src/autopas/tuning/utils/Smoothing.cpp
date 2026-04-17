@@ -108,7 +108,7 @@ double calculateYFitSimple(const std::vector<autopas::Evidence> &points, size_t 
 
   double yFitted = 0.;
   for (size_t j = 0; j < projections.size(); ++j) {
-    yFitted += projections[j] * static_cast<double>(points[j + firstIndex].value);
+    yFitted += projections[j] * static_cast<double>(points[j + firstIndex].reducedValue);
   }
 
   return yFitted;
@@ -117,7 +117,7 @@ double calculateYFitSimple(const std::vector<autopas::Evidence> &points, size_t 
 long autopas::smoothing::smoothLastPoint(const std::vector<Evidence> &points, size_t pointsPerEstimation) {
   // smoothening requires at least two points
   if (pointsPerEstimation < 2 or points.size() == 1) {
-    return points.back().value;
+    return points.back().reducedValue;
   }
   // special case: there are no points so return 0 instead of points.back().value
   if (points.empty()) {
@@ -143,6 +143,6 @@ long autopas::smoothing::smoothLastPoint(const std::vector<Evidence> &points, si
   if (fitOk) {
     return std::lround(calculateYFitSimple(points, pointsPerEstimation, weights));
   } else {
-    return points[indexToFit].value;
+    return points[indexToFit].reducedValue;
   }
 }

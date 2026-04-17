@@ -32,11 +32,12 @@ void LogicHandlerTest::initLogicHandler() {
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
         autopas::InteractionTypeOption::pairwise}});
-  _tunerMap.emplace(
-      autopas::InteractionTypeOption::pairwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  _tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  _tunerManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
   _logicHandler =
-      std::make_unique<autopas::LogicHandler<Molecule>>(_tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+      std::make_unique<autopas::LogicHandler<Molecule>>(_tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 }
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS

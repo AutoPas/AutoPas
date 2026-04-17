@@ -108,9 +108,8 @@ class AutoTuner {
 
   /**
    * Increase internal iteration counters by one. Should be called at the end of an iteration.
-   * @param needToWait If tuner should wait for other tuners.
    */
-  void bumpIterationCounters(bool needToWait = false);
+  void bumpIterationCounters();
 
   /**
    * Returns whether rebuildNeighborLists() should be triggered in the next iteration.
@@ -127,12 +126,7 @@ class AutoTuner {
    */
   [[nodiscard]] const Configuration &getCurrentConfig() const;
 
-  /**
-   * Ask the tuner for the next configuration to use.
-   * This either returns the already selected config or triggers a step of the tuning process.
-   * @return Tuple<Next configuration to use, still tuning>.
-   */
-  [[nodiscard]] std::tuple<Configuration, bool> getNextConfig();
+  const Configuration &getNextConfig();
 
   /**
    * Tell the tuner that the given config is not applicable.
@@ -146,7 +140,7 @@ class AutoTuner {
    * indefinitely).
    * @return Tuple<Next configuration to use, still tuning>.
    */
-  [[nodiscard]] std::tuple<Configuration, bool> rejectConfig(const Configuration &rejectedConfig, bool indefinitely);
+  [[nodiscard]] Configuration rejectConfig(const Configuration &rejectedConfig, bool indefinitely);
 
   /**
    * Indicator function whether the search space consists of exactly one configuration.
@@ -162,10 +156,9 @@ class AutoTuner {
 
   /**
    * After a tuning phase has finished, write the result to a file.
-   * @param tuningIteration
    * @param tuningTime
    */
-  void logTuningResult(bool tuningIteration, long tuningTime) const;
+  void logTuningResult(long tuningTime) const;
 
   /**
    * Initialize pmt sensor.
@@ -273,21 +266,6 @@ class AutoTuner {
    */
   void checkEarlyStoppingCondition();
 
- private:
-  /**
-   * Total number of collected samples. This is the sum of the sizes of all sample vectors.
-   * @return Sum of sizes of sample vectors.
-   */
-  size_t getCurrentNumSamples() const;
-
-  /**
-   * Estimate the runtime from the current samples according to the SelectorStrategy and rebuild frequency.
-   * Samples are weighted so that we normalize to the expected number of (non-)rebuild iterations and then divide by the
-   * rebuild frequency.
-   * @return estimate time for one iteration
-   */
-  [[nodiscard]] long estimateRuntimeFromSamples() const;
-
   /**
    * Tune available algorithm configurations.
    *
@@ -304,7 +282,43 @@ class AutoTuner {
    * used until the next tuning phase, as well as setting other relevant class members (_endOfTuningPhase, _isTuning,
    * _samplesRebuildingNeighborLists, _iterationBaseline)
    */
-  void handleEndOfTuningPhaseIfRelevant();
+  void handleEndOfTuningPhase();
+
+  /**
+   * Selects the best configuration for the current container from the evidence collection.
+   */
+  void selectBestConfiguration();
+
+  /**
+   * Restricts the tuning process to a specific container type.
+   * Configurations using other containers will be ignored/filtered out during tuning.
+   * @param container The container type to allow.
+   */
+  void setContainerConstraint(std::optional<ContainerOption> container);
+
+  void liftContainerConstraint();
+
+  /**
+   * Get the set of all container types present in the search space.
+   * Used by the Coordinator to calculate the intersection.
+   * @return set of all container types present in the search space.
+   */
+  std::set<ContainerOption> getSearchSpaceContainers() const;
+
+ private:
+  /**
+   * Total number of collected samples. This is the sum of the sizes of all sample vectors.
+   * @return Sum of sizes of sample vectors.
+   */
+  size_t getCurrentNumSamples() const;
+
+  /**
+   * Estimate the runtime from the current samples according to the SelectorStrategy and rebuild frequency.
+   * Samples are weighted so that we normalize to the expected number of (non-)rebuild iterations and then divide by the
+   * rebuild frequency.
+   * @return estimate time for one iteration
+   */
+  [[nodiscard]] long estimateRuntimeFromSamples() const;
 
   /**
    * Strategy how to reduce the sampled values to one value.
@@ -318,18 +332,23 @@ class AutoTuner {
   std::vector<std::unique_ptr<TuningStrategyInterface>> _tuningStrategies;
 
   /**
-   * Counter for the current simulation iteration.
-   * The first iteration has number 0.
+   * The container type we are currently restricted to.
+   * If std::nullopt, no restriction is active.
    */
-  size_t _iteration{0};
+  std::optional<ContainerOption> _containerConstraint{std::nullopt};
+
+  /**
+   * Counter for the current simulation iteration.
+   * Initialized as max, so ++_iteration == 0 for the first iteration.
+   */
+  size_t _iteration{std::numeric_limits<size_t>::max()};
 
   /**
    * The number of the current tuning phase.
    * If we are currently between phases this is the number of the last phase.
-   * The first tuning phase has number 0.
-   * See bumpIterationCounters() for more details.
+   * Initialized as max, so ++_tuningPhase == 0 for the first tuning phase.
    */
-  size_t _tuningPhase{0};
+  size_t _tuningPhase{std::numeric_limits<size_t>::max()};
 
   /**
    * Fixed interval at which tuning phases are started.
@@ -464,10 +483,9 @@ class AutoTuner {
   bool _earlyStoppingOfResampling{false};
 
   /**
-   * Used only for triggering rebuilds when configurations switch during tuning phases, which occurs when
-   * _iterationBaseline % _maxSamples == 0. _iterationBaseline may therefore be modified to "skip" iterations e.g. when
-   * early stopping is used."
+   * Is set to true if the current configuration is different to the previous configuration and therefore a rebuild is
+   * required.
    */
-  size_t _iterationBaseline{0};
+  bool _requiresRebuild{false};
 };
 }  // namespace autopas

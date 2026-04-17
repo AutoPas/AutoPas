@@ -78,11 +78,11 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
 
   const std::set searchSpace({config1, config2});
 
-  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::pairwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
-  autopas::LogicHandler<ParticleFP64> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  tunerManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
+  autopas::LogicHandler<ParticleFP64> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 
   // Helper to add particles to the container.
   auto addParticlesToContainer = [&](auto &containerToFill) {
@@ -109,6 +109,7 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
     }
   };
 
+  auto emigrants = logicHandler.updateContainer();
   // The first computeInteractions run to initialize the 'from' container.
   MockPairwiseFunctor<ParticleFP64> functor{};
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
@@ -120,7 +121,7 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
       logicHandler.getContainer().getContainerType() == config1.container ? config2.container : config1.container;
 
   // Start the second iteration which should swap the container to the secondContainerType configuration.
-  auto emigrants = logicHandler.updateContainer();
+  emigrants = logicHandler.updateContainer();
   ASSERT_TRUE(emigrants.empty()) << "There should be no emigrating particles in this test.";
   addParticlesToContainer(logicHandler.getContainer());
 
@@ -151,7 +152,7 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
   EXPECT_THAT(afterListHaloOutsideCutoff, UnorderedPointwise(ParticleEq(), beforeListHaloOutsideCutoff));
 
   // Reset tuning, so third iteration should swap back to firstContainerType
-  tunerMap[autopas::InteractionTypeOption::pairwise]->forceRetune();
+  tunerManager->forceRetune();
   emigrants = logicHandler.updateContainer();
   ASSERT_TRUE(emigrants.empty()) << "There should be no emigrating particles in this test.";
 

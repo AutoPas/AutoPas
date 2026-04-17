@@ -24,6 +24,7 @@
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/TunerManager.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
@@ -572,7 +573,7 @@ class AutoPas {
    * get the bool value indicating if the search space is trivial (not more than one configuration to test).
    * @return bool indicating if search space is trivial.
    */
-  [[nodiscard]] bool searchSpaceIsTrivial();
+  [[nodiscard]] bool searchSpaceIsTrivial() const;
 
   /**
    * Set coordinates of the lower corner of the domain.
@@ -971,9 +972,9 @@ class AutoPas {
   [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>>
   getCurrentConfigs() const {
     std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>> currentConfigs;
-    currentConfigs.reserve(_autoTuners.size());
+    currentConfigs.reserve(_tunerManager->getAutoTuners().size());
 
-    for (const auto &[type, tuner] : _autoTuners) {
+    for (const auto &[type, tuner] : _tunerManager->getAutoTuners()) {
       currentConfigs.emplace(type, std::cref(tuner->getCurrentConfig()));
     }
     return currentConfigs;
@@ -1186,14 +1187,12 @@ class AutoPas {
   /**
    * LogicHandler of autopas.
    */
-  std::unique_ptr<autopas::LogicHandler<Particle_T>> _logicHandler;
+  std::unique_ptr<LogicHandler<Particle_T>> _logicHandler;
 
   /**
-   * All AutoTuners used in this instance of AutoPas.
-   * There can be up to one per interaction type.
+   * TunerManager which contains all the AutoTuner objects and coordinates them.
    */
-  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> _autoTuners;
-
+  std::shared_ptr<TunerManager> _tunerManager;
   /**
    * Stores whether the mpi communicator was provided externally or not
    */
