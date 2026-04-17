@@ -65,7 +65,7 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3,
         autopas::InteractionTypeOption::triwise}});
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::triwise);
@@ -454,7 +454,7 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
         autopas::InteractionTypeOption::triwise}});
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::triwise);

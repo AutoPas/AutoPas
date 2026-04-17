@@ -22,7 +22,7 @@
 #include "autopas/remainder/RemainderTriwiseInteractionHandler.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
-#include "autopas/tuning/TunerManager.h"
+#include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
@@ -55,9 +55,9 @@ class LogicHandler {
    * @param rebuildFrequency
    * @param outputSuffix
    */
-  LogicHandler(const std::shared_ptr<TunerManager> &tunerManager, const LogicHandlerInfo &logicHandlerInfo,
+  LogicHandler(const std::shared_ptr<TuningManager> &tunerManager, const LogicHandlerInfo &logicHandlerInfo,
                unsigned int rebuildFrequency, const std::string &outputSuffix)
-      : _tunerManager(tunerManager),
+      : _tuningManager(tunerManager),
         _logicHandlerInfo(logicHandlerInfo),
         _neighborListRebuildFrequency{rebuildFrequency},
         _particleBuffer(autopas_get_max_threads()),
@@ -170,7 +170,7 @@ class LogicHandler {
 #endif
     bool doDataStructureUpdate = not neighborListsAreValid();
 
-    if (_tunerManager->tuningPhaseJustFinished()) {
+    if (_tuningManager->tuningPhaseJustFinished()) {
       _iterationAfterLastTuningPhase = _iteration;
     }
     // We will do a rebuild in this timestep
@@ -815,7 +815,7 @@ class LogicHandler {
    */
   size_t _sortingThreshold;
 
-  std::shared_ptr<TunerManager> _tunerManager;
+  std::shared_ptr<TuningManager> _tuningManager;
 
   /**
    * The current container holding the particles.
@@ -955,7 +955,7 @@ bool LogicHandler<Particle_T>::neighborListsAreValid() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
       or getNeighborListsInvalidDoDynamicRebuild()
 #endif
-      or _tunerManager->requiresRebuilding(_iteration)) {
+      or _tuningManager->requiresRebuilding(_iteration)) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 
@@ -1045,9 +1045,9 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     }
   }();
 
-  auto &autoTuner = *_tunerManager->getAutoTuners()[interactionType];
+  auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  if (_tunerManager->inFirstTuningIteration(_iteration)) {
+  if (_tuningManager->inFirstTuningIteration(_iteration)) {
     _numRebuildsInNonTuningPhase = 0;
   }
 
@@ -1174,7 +1174,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
   // if this iteration is not relevant, take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
-    auto configuration = _tunerManager->getCurrentConfig(interactionType);
+    auto configuration = _tuningManager->getCurrentConfig(interactionType);
     auto [traversalPtr, _] = isConfigurationApplicable(configuration, functor);
 
     if (not traversalPtr) {
@@ -1186,7 +1186,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     return {configuration, std::move(traversalPtr), false};
   }
 
-  if (_tunerManager->needsLiveInfo(_iteration)) {
+  if (_tuningManager->needsLiveInfo(_iteration)) {
     // If live info has not been gathered yet, gather it now and send it to the tuner.
     if (info.get().empty()) {
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
@@ -1199,9 +1199,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   utils::TraceTimer selectConfigurationTimer;
   selectConfigurationTimer.start();
 
-  auto stillTuning = _tunerManager->tune(_iteration, info);
+  auto stillTuning = _tuningManager->tune(_iteration, info);
 
-  auto configuration = _tunerManager->getCurrentConfig(interactionType);
+  auto configuration = _tuningManager->getCurrentConfig(interactionType);
 
   // loop as long as we don't get a valid configuration
   do {
@@ -1215,7 +1215,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     }
     numRejectedConfigs++;
     // if no config is left after rejecting this one, an exception is thrown here.
-    configuration = _tunerManager->rejectConfiguration(configuration, rejectIndefinitely, _iteration, interactionType);
+    configuration = _tuningManager->rejectConfiguration(configuration, rejectIndefinitely, _iteration, interactionType);
   } while (true);
 }
 
@@ -1260,7 +1260,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   tuningTimer.start();
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor, interactionType);
   tuningTimer.stop();
-  _tunerManager->logTuningResult(tuningTimer.getTotalTime(), _iteration, interactionType);
+  _tuningManager->logTuningResult(tuningTimer.getTotalTime(), _iteration, interactionType);
 
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
   const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
@@ -1302,7 +1302,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
     if (stillTuning) {
       // choose the metric of interest
       const auto measurement = [&]() {
-        switch (_tunerManager->getTuningMetric(interactionType)) {
+        switch (_tuningManager->getTuningMetric(interactionType)) {
           case TuningMetricOption::time:
             return std::make_pair(measurements.timeRebuild,
                                   measurements.timeComputeInteractions + measurements.timeRemainderTraversal);
@@ -1313,8 +1313,8 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
             return std::make_pair(0l, 0l);
         }
       }();
-      _tunerManager->addMeasurement(measurement.first, measurement.second, rebuildIteration, _iteration,
-                                    interactionType);
+      _tuningManager->addMeasurement(measurement.first, measurement.second, rebuildIteration, _iteration,
+                                     interactionType);
     }
   } else {
     AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");

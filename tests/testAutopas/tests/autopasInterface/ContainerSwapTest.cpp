@@ -78,7 +78,7 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
 
   const std::set searchSpace({config1, config2});
 
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);

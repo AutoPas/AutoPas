@@ -1,5 +1,5 @@
 /**
- * @file TunerManager.h
+ * @file TuningManager.h
  * @author muehlhaeusser
  * @date 06.02.2026
  */
@@ -17,21 +17,21 @@
 namespace autopas {
 
 /**
- * The TunerManager is responsible for coordinating the AutoTuner(s)
+ * The TuningManager is responsible for coordinating the AutoTuner(s)
  * In the case of multiple AutoTuners it ensures that configurations are selected with the same container for all
  * tuners. Otherwise, neighbor lists would need to be rebuilt every time the interaction type (e.g. pairwise and
  * triwise) is switched.
  */
-class TunerManager {
+class TuningManager {
  public:
   /**
-   * Constructor of the TunerManager.
+   * Constructor of the TuningManager.
    * @param autoTunerInfo to get the tuning interval
    */
-  explicit TunerManager(const AutoTunerInfo &autoTunerInfo);
+  explicit TuningManager(const AutoTunerInfo &autoTunerInfo);
 
   /**
-   * Add an AutoTuner to the TunerManager, which will take over ownership.
+   * Add an AutoTuner to the TuningManager, which will take over ownership.
    * @param interactionType
    * @param tuner A unique_ptr to the new tuner.
    */

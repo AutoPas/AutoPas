@@ -32,7 +32,7 @@ void LogicHandlerTest::initLogicHandler() {
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
         autopas::InteractionTypeOption::pairwise}});
-  _tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  _tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   _tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);

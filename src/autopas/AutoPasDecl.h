@@ -24,7 +24,7 @@
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
-#include "autopas/tuning/TunerManager.h"
+#include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
@@ -972,9 +972,9 @@ class AutoPas {
   [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>>
   getCurrentConfigs() const {
     std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>> currentConfigs;
-    currentConfigs.reserve(_tunerManager->getAutoTuners().size());
+    currentConfigs.reserve(_tuningManager->getAutoTuners().size());
 
-    for (const auto &[type, tuner] : _tunerManager->getAutoTuners()) {
+    for (const auto &[type, tuner] : _tuningManager->getAutoTuners()) {
       currentConfigs.emplace(type, std::cref(tuner->getCurrentConfig()));
     }
     return currentConfigs;
@@ -1190,9 +1190,9 @@ class AutoPas {
   std::unique_ptr<LogicHandler<Particle_T>> _logicHandler;
 
   /**
-   * TunerManager which contains all the AutoTuner objects and coordinates them.
+   * TuningManager which contains all the AutoTuner objects and coordinates them.
    */
-  std::shared_ptr<TunerManager> _tunerManager;
+  std::shared_ptr<TuningManager> _tuningManager;
   /**
    * Stores whether the mpi communicator was provided externally or not
    */

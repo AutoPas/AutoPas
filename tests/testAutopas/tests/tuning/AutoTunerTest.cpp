@@ -67,7 +67,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
       autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::InteractionTypeOption::pairwise);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
@@ -190,7 +190,7 @@ TEST_F(AutoTunerTest, testTuningIntervalIsFixed) {
       _confLc_c08_noN3,
   };
 
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
@@ -239,7 +239,7 @@ TEST_F(AutoTunerTest, testTuningPhaseLongerThanTuningInterval) {
       _confLc_c08_N3,
   };
 
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
@@ -298,7 +298,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
       _confLc_c08_noN3,
   };
 
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
@@ -378,7 +378,7 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
       _confLc_c08_N3,
   };
 
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
@@ -436,7 +436,7 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
       _confLc_c08_noN3,
   };
 
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
@@ -493,7 +493,7 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c01_noN3, _confLc_c18_noN3, _confLc_c08_noN3};
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
@@ -559,7 +559,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
 
   const auto searchSpace = {_confLc_c01_noN3, _confLc_c18_noN3, _confLc_c08_noN3};
 
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
@@ -643,7 +643,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   const auto searchSpace = {_confLc_c08_noN3};
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
@@ -684,7 +684,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   const auto searchSpace = {_confLc_c08_noN3, _confLc_c08_N3};
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
@@ -725,7 +725,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const auto searchSpace = {_confLc_c08_noN3, _confLc_c18_noN3};
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
@@ -756,7 +756,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   // Use configurations with N3, otherwise there are more calls to AoSFunctor
   const auto searchSpace = {_confLc_c08_N3, _confDs_seq_N3};
 
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
@@ -945,7 +945,7 @@ TEST_F(AutoTunerTest, testMultipleTuners) {
   const auto pairwiseSearchSpace = {_confDs_seq_N3, _confLc_c18_N3, _confLc_c08_N3};
   const auto triwiseSearchSpace = {_confDs_3b_N3, _confLc_c01_3b_noN3};
 
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(std::make_unique<autopas::AutoTuner>(tuningStrategies, pairwiseSearchSpace, autoTunerInfo,
                                                                   rebuildFrequency, "2B"),
                              autopas::InteractionTypeOption::pairwise);
@@ -1020,7 +1020,7 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
       _confLc_c18_N3,
   };
 
-  auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, "2B"),
       autopas::InteractionTypeOption::pairwise);

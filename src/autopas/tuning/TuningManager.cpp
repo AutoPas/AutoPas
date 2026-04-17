@@ -1,50 +1,50 @@
 /**
- * @file TunerManager.cpp
+ * @file TuningManager.cpp
  * @author muehlhaeusser
  * @date 06.02.2026
  */
 
-#include "autopas/tuning/TunerManager.h"
+#include "autopas/tuning/TuningManager.h"
 
 #include <ranges>
 #include <set>
 
 namespace autopas {
 
-TunerManager::TunerManager(const AutoTunerInfo &autoTunerInfo) : _tuningInterval(autoTunerInfo.tuningInterval) {}
+TuningManager::TuningManager(const AutoTunerInfo &autoTunerInfo) : _tuningInterval(autoTunerInfo.tuningInterval) {}
 
-void TunerManager::addAutoTuner(std::unique_ptr<AutoTuner> tuner, const InteractionTypeOption::Value interactionType) {
+void TuningManager::addAutoTuner(std::unique_ptr<AutoTuner> tuner, const InteractionTypeOption::Value interactionType) {
   _autoTuners[interactionType] = std::move(tuner);
   setCommonContainerOption();
 }
 
-void TunerManager::logTuningResult(long tuningTime, size_t currentIteration,
-                                   InteractionTypeOption::Value interactionType) const {
+void TuningManager::logTuningResult(long tuningTime, size_t currentIteration,
+                                    InteractionTypeOption::Value interactionType) const {
   _autoTuners.at(interactionType)->logTuningResult(tuningTime, currentIteration);
 }
 
-void TunerManager::addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt,
-                                  size_t iteration, InteractionTypeOption::Value interactionType) {
+void TuningManager::addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt,
+                                   size_t iteration, InteractionTypeOption::Value interactionType) {
   _autoTuners.at(interactionType)
       ->addMeasurement(sampleRebuild, sampleTraverseParticles, neighborListRebuilt, iteration, _tuningPhase);
 }
 
-const TuningMetricOption &TunerManager::getTuningMetric(InteractionTypeOption::Value interactionType) const {
+const TuningMetricOption &TuningManager::getTuningMetric(InteractionTypeOption::Value interactionType) const {
   return _autoTuners.at(interactionType)->getTuningMetric();
 }
 
-const Configuration &TunerManager::getCurrentConfig(InteractionTypeOption::Value interactionType) const {
+const Configuration &TuningManager::getCurrentConfig(InteractionTypeOption::Value interactionType) const {
   return _autoTuners.at(interactionType)->getCurrentConfig();
 }
 
-bool TunerManager::needsLiveInfo(size_t currentIteration) {
+bool TuningManager::needsLiveInfo(size_t currentIteration) {
   const bool isStart = isStartOfTuningPhase(currentIteration);
   const bool aboutToBegin = tuningPhaseAboutToBegin(currentIteration);
   return (isStart or aboutToBegin) and
          std::ranges::any_of(_autoTuners, [&](const auto &tuner) { return tuner.second->needsLiveInfo(); });
 }
 
-bool TunerManager::tune(const size_t currentIteration, const LiveInfo &info) {
+bool TuningManager::tune(const size_t currentIteration, const LiveInfo &info) {
   if (_lastTuningIteration != currentIteration) {
     _lastTuningIteration = currentIteration;
 
@@ -69,13 +69,13 @@ bool TunerManager::tune(const size_t currentIteration, const LiveInfo &info) {
   return not _tuningFinished;
 }
 
-bool TunerManager::requiresRebuilding(size_t currentIteration) {
+bool TuningManager::requiresRebuilding(size_t currentIteration) {
   const bool isStart = isStartOfTuningPhase(currentIteration);
   return std::ranges::any_of(
       _autoTuners, [&](const auto &tunerEntry) { return tunerEntry.second->willRebuildNeighborLists(isStart); });
 }
 
-bool TunerManager::allSearchSpacesAreTrivial() const {
+bool TuningManager::allSearchSpacesAreTrivial() const {
   for (const auto &autoTuner : _autoTuners | std::views::values) {
     if (not autoTuner->searchSpaceIsTrivial()) {
       return false;
@@ -84,19 +84,20 @@ bool TunerManager::allSearchSpacesAreTrivial() const {
   return true;
 }
 
-bool TunerManager::tuningPhaseJustFinished() const {
+bool TuningManager::tuningPhaseJustFinished() const {
   return _tuningFinished and (not _transitionToOptimalConfigurations);
 }
 
-void TunerManager::forceRetune() {
+void TuningManager::forceRetune() {
   _forceRetunePending = true;
   for (const auto &autoTuner : _autoTuners | std::views::values) {
     autoTuner->forceRetune();
   }
 }
 
-Configuration TunerManager::rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely,
-                                                size_t currentIteration, InteractionTypeOption::Value interactionType) {
+Configuration TuningManager::rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely,
+                                                 size_t currentIteration,
+                                                 InteractionTypeOption::Value interactionType) {
   auto &tunerToReject = _autoTuners[interactionType];
   auto newConfig = tunerToReject->rejectConfig(rejectedConfig, indefinitely, currentIteration, _tuningPhase);
   bool allTunersFinished = true;
@@ -107,7 +108,7 @@ Configuration TunerManager::rejectConfiguration(const Configuration &rejectedCon
   return newConfig;
 }
 
-std::set<ContainerOption> TunerManager::setCommonContainerOption() {
+std::set<ContainerOption> TuningManager::setCommonContainerOption() {
   if (_autoTuners.empty()) return {};
 
   // Calculate Intersection of Supported Containers for all interaction types
@@ -130,7 +131,7 @@ std::set<ContainerOption> TunerManager::setCommonContainerOption() {
   return intersectionSet;
 }
 
-void TunerManager::tuneConfigurations(size_t currentIteration) {
+void TuningManager::tuneConfigurations(size_t currentIteration) {
   // Check if any tuner is still tuning
   bool allTunersFinished = true;
   const bool isStart = isStartOfTuningPhase(currentIteration);
@@ -148,7 +149,7 @@ void TunerManager::tuneConfigurations(size_t currentIteration) {
   _tuningFinished = allTunersFinished;
 }
 
-void TunerManager::setOptimalConfigurations(size_t currentIteration) {
+void TuningManager::setOptimalConfigurations(size_t currentIteration) {
   long bestTotalValue = 0;
   for (const auto &tuner : _autoTuners | std::views::values) {
     auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigNotReduced();
@@ -172,7 +173,7 @@ void TunerManager::setOptimalConfigurations(size_t currentIteration) {
 
   if (bestTotalValue < bestCommonContainerValue) {
     AutoPasLog(DEBUG,
-               "TunerManager::setOptimalConfigurations: Each AutoTuner will run their individually best rebuild + "
+               "TuningManager::setOptimalConfigurations: Each AutoTuner will run their individually best rebuild + "
                "traversal configuration");
     for (const auto &tuner : _autoTuners | std::views::values) {
       auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigNotReduced();
@@ -180,7 +181,7 @@ void TunerManager::setOptimalConfigurations(size_t currentIteration) {
     }
   } else {
     AutoPasLog(DEBUG,
-               "TunerManager::setOptimalConfigurations: AutoTuners will run their best configuration with the {} "
+               "TuningManager::setOptimalConfigurations: AutoTuners will run their best configuration with the {} "
                "container option",
                bestContainer);
     for (const auto &tuner : _autoTuners | std::views::values) {
@@ -190,16 +191,16 @@ void TunerManager::setOptimalConfigurations(size_t currentIteration) {
   }
 }
 
-bool TunerManager::tuningPhaseAboutToBegin(size_t currentIteration) const {
+bool TuningManager::tuningPhaseAboutToBegin(size_t currentIteration) const {
   return _tuningInterval <= 10 or currentIteration % _tuningInterval > _tuningInterval - 10;
 }
 
-bool TunerManager::isStartOfTuningPhase(size_t currentIteration) const {
+bool TuningManager::isStartOfTuningPhase(size_t currentIteration) const {
   // If it's a multiple of the interval, or if a retune was forced
   return (currentIteration % _tuningInterval == 0) or _forceRetunePending;
 }
 
-bool TunerManager::inFirstTuningIteration(size_t currentIteration) const {
+bool TuningManager::inFirstTuningIteration(size_t currentIteration) const {
   return currentIteration % _tuningInterval == 0;
 }
 
