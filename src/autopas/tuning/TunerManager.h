@@ -63,11 +63,30 @@ class TunerManager {
   bool tuningPhaseJustFinished() const;
 
   /**
+   * Log the tuning result for a specific interaction type.
+   */
+  void logTuningResult(long tuningTime, InteractionTypeOption::Value interactionType) const;
+
+  /**
+   * Add a performance measurement to the specified tuner.
+   */
+  void addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt,
+                      InteractionTypeOption::Value interactionType);
+
+  const TuningMetricOption &getTuningMetric(InteractionTypeOption::Value interactionType) const;
+
+  /**
+   * Get the current configuration for a specific interaction type.
+   */
+  const Configuration &getCurrentConfig(InteractionTypeOption::Value interactionType) const;
+
+  /**
    * Force all AutoTuners to start a new tuning phase immediately.
    */
   void forceRetune();
 
-  Configuration rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely, InteractionTypeOption::Value interactionType);
+  Configuration rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely,
+                                    InteractionTypeOption::Value interactionType);
 
   /**
    * @return A reference to the map of AutoTuners.

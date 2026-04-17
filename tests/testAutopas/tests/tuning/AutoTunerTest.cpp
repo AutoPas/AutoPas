@@ -278,7 +278,7 @@ TEST_F(AutoTunerTest, testTuningPhaseLongerThanTuningInterval) {
 
 /**
  * Tests if AutoPas will correctly rebuild for new configurations (DS NoN3, DS N3, LC NoN3)
-*/
+ */
 TEST_F(AutoTunerTest, testWillRebuildDDL) {
   // also check if rebuild is detected if next config is invalid
   const unsigned int verletRebuildFrequency = 20;
@@ -758,8 +758,8 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   auto tunerManager = std::make_shared<autopas::TunerManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
-    std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
-    autopas::InteractionTypeOption::pairwise);
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
   auto &autoTuner = *tunerManager->getAutoTuners()[autopas::InteractionTypeOption::pairwise];
   autopas::LiveInfo info{};
 

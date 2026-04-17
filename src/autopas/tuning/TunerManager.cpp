@@ -18,6 +18,23 @@ void TunerManager::addAutoTuner(std::unique_ptr<AutoTuner> tuner, const Interact
   setCommonContainerOption();
 }
 
+void TunerManager::logTuningResult(long tuningTime, InteractionTypeOption::Value interactionType) const {
+  _autoTuners.at(interactionType)->logTuningResult(tuningTime);
+}
+
+void TunerManager::addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt,
+                                  InteractionTypeOption::Value interactionType) {
+  _autoTuners.at(interactionType)->addMeasurement(sampleRebuild, sampleTraverseParticles, neighborListRebuilt);
+}
+
+const TuningMetricOption &TunerManager::getTuningMetric(InteractionTypeOption::Value interactionType) const {
+  return _autoTuners.at(interactionType)->getTuningMetric();
+}
+
+const Configuration &TunerManager::getCurrentConfig(InteractionTypeOption::Value interactionType) const {
+  return _autoTuners.at(interactionType)->getCurrentConfig();
+}
+
 void TunerManager::updateAutoTuners(const size_t currentIteration) {
   // Bump counters and check if they were tuning
   for (const auto &tuner : _autoTuners | std::views::values) {
@@ -67,7 +84,7 @@ void TunerManager::forceRetune() {
 }
 
 Configuration TunerManager::rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely,
-                                                 InteractionTypeOption::Value interactionType) {
+                                                InteractionTypeOption::Value interactionType) {
   auto &tunerToReject = _autoTuners[interactionType];
   auto newConfig = tunerToReject->rejectConfig(rejectedConfig, indefinitely);
   bool allTunersFinished = true;

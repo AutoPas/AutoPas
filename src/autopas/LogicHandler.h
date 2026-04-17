@@ -1164,8 +1164,6 @@ template <typename Particle_T>
 template <class Functor>
 std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::selectConfiguration(
     Functor &functor, const InteractionTypeOption &interactionType) {
-  auto &autoTuner = *_tunerManager->getAutoTuners()[interactionType];
-
   // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
   // https://github.com/AutoPas/AutoPas/issues/916
   LiveInfo info{};
@@ -1178,7 +1176,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
   // if this iteration is not relevant, take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
-    auto configuration = autoTuner.getCurrentConfig();
+    auto configuration = _tunerManager->getCurrentConfig(interactionType);
     auto [traversalPtr, _] = isConfigurationApplicable(configuration, functor);
 
     if (not traversalPtr) {
@@ -1205,7 +1203,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
   auto stillTuning = _tunerManager->tune(_iteration, info);
 
-  auto configuration = autoTuner.getCurrentConfig();
+  auto configuration = _tunerManager->getCurrentConfig(interactionType);
 
   // loop as long as we don't get a valid configuration
   do {
@@ -1253,7 +1251,7 @@ template <typename Particle_T>
 template <class Functor>
 bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
                                                            const InteractionTypeOption &interactionType) {
-  if (not _interactionTypes.count(interactionType)) {
+  if (not _interactionTypes.contains(interactionType)) {
     utils::ExceptionHandler::exception(
         "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions type: "
         "{}.",
@@ -1264,8 +1262,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   tuningTimer.start();
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor, interactionType);
   tuningTimer.stop();
-  auto &autoTuner = *_tunerManager->getAutoTuners()[interactionType];
-  autoTuner.logTuningResult(tuningTimer.getTotalTime());
+  _tunerManager->logTuningResult(tuningTimer.getTotalTime(), interactionType);
 
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
   const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
@@ -1307,7 +1304,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
     if (stillTuning) {
       // choose the metric of interest
       const auto measurement = [&]() {
-        switch (autoTuner.getTuningMetric()) {
+        switch (_tunerManager->getTuningMetric(interactionType)) {
           case TuningMetricOption::time:
             return std::make_pair(measurements.timeRebuild,
                                   measurements.timeComputeInteractions + measurements.timeRemainderTraversal);
@@ -1318,7 +1315,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
             return std::make_pair(0l, 0l);
         }
       }();
-      autoTuner.addMeasurement(measurement.first, measurement.second, rebuildIteration);
+      _tunerManager->addMeasurement(measurement.first, measurement.second, rebuildIteration, interactionType);
     }
   } else {
     AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
