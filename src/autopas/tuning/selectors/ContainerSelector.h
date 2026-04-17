@@ -105,11 +105,6 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
       break;
     }
     case ContainerOption::hierarchicalGrid: {
-      if (hGridMaxCutoffPerLevel.empty()) {
-        // If hGridMaxCutoffPerLevel for levels are not provided, set cutoff levels to a single level with value cutoff
-        // this way, Hgrid will behave same as LinkedCells
-        hGridMaxCutoffPerLevel = {cutoff};
-      }
       container = std::make_unique<HierarchicalGrid<Particle_T>>(boxMin, boxMax, hGridMaxCutoffPerLevel, verletSkin,
                                                                  cellSizeFactor, loadEstimator);
       break;

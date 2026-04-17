@@ -55,7 +55,13 @@ class ContainerSelectorInfo {
         verletClusterSize(verletClusterSize),
         sortingThreshold(sortingThreshold),
         loadEstimator(loadEstimator),
-        hGridMaxCutoffPerLevel(hGridMaxCutoffPerLevel) {}
+        hGridMaxCutoffPerLevel(hGridMaxCutoffPerLevel) {
+    if (hGridMaxCutoffPerLevel.empty()) {
+      // if hGridMaxCutoffPerLevel for levels are not provided, set cutoff levels to a single level with value cutoff
+      // this way, Hgrid will behave same as LinkedCells
+      this->hGridMaxCutoffPerLevel = {cutoff};
+    }
+  }
 
   /**
    * Equality between ContainerSelectorInfo
@@ -84,9 +90,10 @@ class ContainerSelectorInfo {
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkin, verletClusterSize, sortingThreshold, loadEstimator, hGridMaxCutoffPerLevel) <
-           std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize, other.sortingThreshold,
-                    other.loadEstimator, other.hGridMaxCutoffPerLevel);
+    return std::tie(cellSizeFactor, verletSkin, verletClusterSize, sortingThreshold, loadEstimator,
+                    hGridMaxCutoffPerLevel) < std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize,
+                                                       other.sortingThreshold, other.loadEstimator,
+                                                       other.hGridMaxCutoffPerLevel);
   }
 
   /**
