@@ -67,6 +67,8 @@ class TunerManager {
    */
   void forceRetune();
 
+  Configuration rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely, InteractionTypeOption::Value interactionType);
+
   /**
    * @return A reference to the map of AutoTuners.
    */

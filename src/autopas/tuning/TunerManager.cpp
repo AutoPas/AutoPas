@@ -66,6 +66,18 @@ void TunerManager::forceRetune() {
   }
 }
 
+Configuration TunerManager::rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely,
+                                                 InteractionTypeOption::Value interactionType) {
+  auto &tunerToReject = _autoTuners[interactionType];
+  auto newConfig = tunerToReject->rejectConfig(rejectedConfig, indefinitely);
+  bool allTunersFinished = true;
+  for (const auto &tuner : _autoTuners | std::views::values) {
+    allTunersFinished = allTunersFinished and (not tuner->inTuningPhase());
+  }
+  _tuningFinished = allTunersFinished;
+  return newConfig;
+}
+
 std::set<ContainerOption> TunerManager::setCommonContainerOption() {
   if (_autoTuners.empty()) return {};
 

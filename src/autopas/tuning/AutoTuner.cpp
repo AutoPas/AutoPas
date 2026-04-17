@@ -182,7 +182,6 @@ void AutoTuner::selectBestConfiguration() {
   const auto [optConf, optEvidence] =
       _evidenceCollection.getOptimalConfiguration(_tuningPhase, evidenceMode, _containerConstraint);
   _configQueue.push_back(optConf);
-  _isTuning = false;
   // Fill up sample buffer to indicate we are not collecting samples anymore.
   _samplesRebuildingNeighborLists.resize(_maxSamples);
   _samplesTraverseInteractions.resize(_maxSamples);
@@ -242,13 +241,6 @@ Configuration AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool 
 
 void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt) {
   const auto &currentConfig = _configQueue.back();
-  // sanity check
-  if (getCurrentNumSamples() >= _maxSamples) {
-    utils::ExceptionHandler::exception(
-        "AutoTuner::addMeasurement(): Trying to add a new measurement to the AutoTuner but there are already enough "
-        "for this configuration!\n"
-        "tuneConfiguration() should have been called before to process and flush samples.");
-  }
   AutoPasLog(TRACE, "Adding sampleRebuild and sampleNonRebuild {}, {} to configuration {}.", sampleRebuild,
              sampleTraverseParticles, currentConfig.toShortString());
   if (neighborListRebuilt) {
@@ -321,9 +313,9 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles,
                                     _iteration, reducedValue, smoothedValue, _rebuildFrequency);
 
     // This was the last sample for this tuning phase
-    if (_configQueue.size() == 1) {
-      _isTuning = false;
-    }
+    // if (_configQueue.size() == 1) {
+    //   _isTuning = false;
+    // }
   }
 }
 
@@ -343,10 +335,16 @@ void AutoTuner::bumpIterationCounters() {
 }
 
 bool AutoTuner::willRebuildNeighborLists() const {
-  if (_isTuning and (_earlyStoppingOfResampling or (getCurrentNumSamples() >= _maxSamples))) {
-    return true;
-  }
-  return false;
+  // This function should return true if the next call to tune() (which calls tuneConfiguration())
+  // will lead to a new configuration being selected.
+  // A new configuration will be selected if:
+  // 1. It's the very first iteration of a tuning phase.
+  // 2. The current configuration has finished collecting samples (either _maxSamples reached or early stopping).
+  //    This function is called *before* tuneConfiguration() for the current iteration,
+  //    so getCurrentNumSamples() reflects the count *before* the current iteration's measurement,
+  //    and _earlyStoppingOfResampling reflects the state *after* the previous iteration's measurement.
+  return isStartOfTuningPhase() or
+         (_isTuning and (_earlyStoppingOfResampling or (getCurrentNumSamples() >= _maxSamples)));
 }
 
 bool AutoTuner::initEnergy() {

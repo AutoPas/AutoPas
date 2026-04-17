@@ -1218,8 +1218,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       return {configuration, std::move(traversalPtr), stillTuning};
     }
     // if no config is left after rejecting this one, an exception is thrown here.
-    configuration = autoTuner.rejectConfig(configuration, rejectIndefinitely);
-    _tunerManager->tune(_iteration, info);
+    configuration = _tunerManager->rejectConfiguration(configuration, rejectIndefinitely, interactionType);
+    stillTuning = _tunerManager->tune(_iteration, info);
   } while (true);
 }
 
