@@ -18,32 +18,6 @@ void TuningManager::addAutoTuner(std::unique_ptr<AutoTuner> tuner, const Interac
   setCommonContainerOption();
 }
 
-void TuningManager::logTuningResult(long tuningTime, size_t currentIteration,
-                                    InteractionTypeOption::Value interactionType) const {
-  _autoTuners.at(interactionType)->logTuningResult(tuningTime, currentIteration);
-}
-
-void TuningManager::addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt,
-                                   size_t iteration, InteractionTypeOption::Value interactionType) {
-  _autoTuners.at(interactionType)
-      ->addMeasurement(sampleRebuild, sampleTraverseParticles, neighborListRebuilt, iteration, _tuningPhase);
-}
-
-const TuningMetricOption &TuningManager::getTuningMetric(InteractionTypeOption::Value interactionType) const {
-  return _autoTuners.at(interactionType)->getTuningMetric();
-}
-
-const Configuration &TuningManager::getCurrentConfig(InteractionTypeOption::Value interactionType) const {
-  return _autoTuners.at(interactionType)->getCurrentConfig();
-}
-
-bool TuningManager::needsLiveInfo(size_t currentIteration) {
-  const bool isStart = isStartOfTuningPhase(currentIteration);
-  const bool aboutToBegin = tuningPhaseAboutToBegin(currentIteration);
-  return (isStart or aboutToBegin) and
-         std::ranges::any_of(_autoTuners, [&](const auto &tuner) { return tuner.second->needsLiveInfo(); });
-}
-
 bool TuningManager::tune(const size_t currentIteration, const LiveInfo &info) {
   if (_lastTuningIteration != currentIteration) {
     _lastTuningIteration = currentIteration;
@@ -69,30 +43,10 @@ bool TuningManager::tune(const size_t currentIteration, const LiveInfo &info) {
   return not _tuningFinished;
 }
 
-bool TuningManager::requiresRebuilding(size_t currentIteration) {
-  const bool isStart = isStartOfTuningPhase(currentIteration);
-  return std::ranges::any_of(
-      _autoTuners, [&](const auto &tunerEntry) { return tunerEntry.second->willRebuildNeighborLists(isStart); });
-}
-
-bool TuningManager::allSearchSpacesAreTrivial() const {
-  for (const auto &autoTuner : _autoTuners | std::views::values) {
-    if (not autoTuner->searchSpaceIsTrivial()) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool TuningManager::tuningPhaseJustFinished() const {
-  return _tuningFinished and (not _transitionToOptimalConfigurations);
-}
-
-void TuningManager::forceRetune() {
-  _forceRetunePending = true;
-  for (const auto &autoTuner : _autoTuners | std::views::values) {
-    autoTuner->forceRetune();
-  }
+void TuningManager::addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt,
+                                   size_t iteration, InteractionTypeOption::Value interactionType) {
+  _autoTuners.at(interactionType)
+      ->addMeasurement(sampleRebuild, sampleTraverseParticles, neighborListRebuilt, iteration, _tuningPhase);
 }
 
 Configuration TuningManager::rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely,
@@ -108,27 +62,54 @@ Configuration TuningManager::rejectConfiguration(const Configuration &rejectedCo
   return newConfig;
 }
 
-std::set<ContainerOption> TuningManager::setCommonContainerOption() {
-  if (_autoTuners.empty()) return {};
+void TuningManager::forceRetune() {
+  _forceRetunePending = true;
+  for (const auto &autoTuner : _autoTuners | std::views::values) {
+    autoTuner->forceRetune();
+  }
+}
 
-  // Calculate Intersection of Supported Containers for all interaction types
-  bool first = true;
-  std::set<ContainerOption> intersectionSet;
+void TuningManager::logTuningResult(long tuningTime, size_t currentIteration,
+                                    InteractionTypeOption::Value interactionType) const {
+  _autoTuners.at(interactionType)->logTuningResult(tuningTime, currentIteration);
+}
 
-  for (const auto &tuner : _autoTuners | std::views::values) {
-    std::set<ContainerOption> tunerContainers = tuner->getSearchSpaceContainers();
+bool TuningManager::requiresRebuilding(size_t currentIteration) {
+  const bool isStart = isStartOfTuningPhase(currentIteration);
+  return std::ranges::any_of(
+      _autoTuners, [&](const auto &tunerEntry) { return tunerEntry.second->willRebuildNeighborLists(isStart); });
+}
 
-    if (first) {
-      intersectionSet = tunerContainers;
-      first = false;
-    } else {
-      std::set<ContainerOption> result;
-      std::ranges::set_intersection(intersectionSet, tunerContainers, std::inserter(result, result.begin()));
-      intersectionSet = result;
+bool TuningManager::needsLiveInfo(size_t currentIteration) {
+  const bool isStart = isStartOfTuningPhase(currentIteration);
+  const bool aboutToBegin = tuningPhaseAboutToBegin(currentIteration);
+  return (isStart or aboutToBegin) and
+         std::ranges::any_of(_autoTuners, [&](const auto &tuner) { return tuner.second->needsLiveInfo(); });
+}
+
+bool TuningManager::allSearchSpacesAreTrivial() const {
+  for (const auto &autoTuner : _autoTuners | std::views::values) {
+    if (not autoTuner->searchSpaceIsTrivial()) {
+      return false;
     }
   }
+  return true;
+}
 
-  return intersectionSet;
+bool TuningManager::tuningPhaseJustFinished() const {
+  return _tuningFinished and (not _transitionToOptimalConfigurations);
+}
+
+bool TuningManager::inFirstTuningIteration(size_t currentIteration) const {
+  return currentIteration % _tuningInterval == 0;
+}
+
+const Configuration &TuningManager::getCurrentConfig(InteractionTypeOption::Value interactionType) const {
+  return _autoTuners.at(interactionType)->getCurrentConfig();
+}
+
+const TuningMetricOption &TuningManager::getTuningMetric(InteractionTypeOption::Value interactionType) const {
+  return _autoTuners.at(interactionType)->getTuningMetric();
 }
 
 void TuningManager::tuneConfigurations(size_t currentIteration) {
@@ -191,6 +172,29 @@ void TuningManager::setOptimalConfigurations(size_t currentIteration) {
   }
 }
 
+std::set<ContainerOption> TuningManager::setCommonContainerOption() {
+  if (_autoTuners.empty()) return {};
+
+  // Calculate Intersection of Supported Containers for all interaction types
+  bool first = true;
+  std::set<ContainerOption> intersectionSet;
+
+  for (const auto &tuner : _autoTuners | std::views::values) {
+    std::set<ContainerOption> tunerContainers = tuner->getSearchSpaceContainers();
+
+    if (first) {
+      intersectionSet = tunerContainers;
+      first = false;
+    } else {
+      std::set<ContainerOption> result;
+      std::ranges::set_intersection(intersectionSet, tunerContainers, std::inserter(result, result.begin()));
+      intersectionSet = result;
+    }
+  }
+
+  return intersectionSet;
+}
+
 bool TuningManager::tuningPhaseAboutToBegin(size_t currentIteration) const {
   return _tuningInterval <= 10 or currentIteration % _tuningInterval > _tuningInterval - 10;
 }
@@ -198,10 +202,6 @@ bool TuningManager::tuningPhaseAboutToBegin(size_t currentIteration) const {
 bool TuningManager::isStartOfTuningPhase(size_t currentIteration) const {
   // If it's a multiple of the interval, or if a retune was forced
   return (currentIteration % _tuningInterval == 0) or _forceRetunePending;
-}
-
-bool TuningManager::inFirstTuningIteration(size_t currentIteration) const {
-  return currentIteration % _tuningInterval == 0;
 }
 
 }  // namespace autopas

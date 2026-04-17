@@ -37,20 +37,33 @@ class TuningManager {
    */
   void addAutoTuner(std::unique_ptr<AutoTuner> tuner, InteractionTypeOption::Value interactionType);
 
-  /**
-   * Prepare AutoTuners for the next time step. Bumps internal counters and tunes configurations.
-   * @param currentIteration
-   */
-  void updateAutoTuners(size_t currentIteration);
-
   bool tune(size_t currentIteration, const LiveInfo &info);
 
-  bool needsLiveInfo(size_t currentIteration);
+  /**
+   * Add a performance measurement to the specified tuner.
+   */
+  void addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt, size_t iteration,
+                      InteractionTypeOption::Value interactionType);
+
+  Configuration rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely, size_t currentIteration,
+                                    InteractionTypeOption::Value interactionType);
+
+  /**
+   * Force all AutoTuners to start a new tuning phase immediately.
+   */
+  void forceRetune();
+
+  /**
+   * Log the tuning result for a specific interaction type.
+   */
+  void logTuningResult(long tuningTime, size_t currentIteration, InteractionTypeOption::Value interactionType) const;
 
   /**
    * @return True, if a rebuild is necessary due to a configuration change.
    */
   bool requiresRebuilding(size_t currentIteration);
+
+  bool needsLiveInfo(size_t currentIteration);
 
   /**
    * @return True, if the search space of all AutoTuners consists of only one valid configuration.
@@ -62,45 +75,21 @@ class TuningManager {
    */
   bool tuningPhaseJustFinished() const;
 
-  /**
-   * Log the tuning result for a specific interaction type.
-   */
-  void logTuningResult(long tuningTime, size_t currentIteration, InteractionTypeOption::Value interactionType) const;
-
-  /**
-   * Add a performance measurement to the specified tuner.
-   */
-  void addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt, size_t iteration,
-                      InteractionTypeOption::Value interactionType);
-
-  const TuningMetricOption &getTuningMetric(InteractionTypeOption::Value interactionType) const;
+  bool inFirstTuningIteration(size_t currentIteration) const;
 
   /**
    * Get the current configuration for a specific interaction type.
    */
   const Configuration &getCurrentConfig(InteractionTypeOption::Value interactionType) const;
 
-  /**
-   * Force all AutoTuners to start a new tuning phase immediately.
-   */
-  void forceRetune();
-
-  Configuration rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely, size_t currentIteration,
-                                    InteractionTypeOption::Value interactionType);
+  const TuningMetricOption &getTuningMetric(InteractionTypeOption::Value interactionType) const;
 
   /**
    * @return A reference to the map of AutoTuners.
    */
   std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &getAutoTuners() { return _autoTuners; }
 
-  bool inFirstTuningIteration(size_t currentIteration) const;
-
  private:
-  /**
-   * Find all container options that are part of all currently managed AutoTuner instances.
-   */
-  std::set<ContainerOption> setCommonContainerOption();
-
   /**
    * Let all AutoTuners tune their configuration for the time step ahead.
    */
@@ -108,9 +97,15 @@ class TuningManager {
 
   void setOptimalConfigurations(size_t currentIteration);
 
+  /**
+   * Find all container options that are part of all currently managed AutoTuner instances.
+   */
+  std::set<ContainerOption> setCommonContainerOption();
+
   bool tuningPhaseAboutToBegin(size_t currentIteration) const;
 
   bool isStartOfTuningPhase(size_t currentIteration) const;
+
   /**
    * All AutoTuners used in this instance of AutoPas.
    * There can be up to one per interaction type.
