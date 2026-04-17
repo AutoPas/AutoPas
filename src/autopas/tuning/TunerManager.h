@@ -50,7 +50,7 @@ class TunerManager {
   /**
    * @return True, if a rebuild is necessary due to a configuration change.
    */
-  bool requiresRebuilding();
+  bool requiresRebuilding(size_t currentIteration);
 
   /**
    * @return True, if the search space of all AutoTuners consists of only one valid configuration.
@@ -65,12 +65,12 @@ class TunerManager {
   /**
    * Log the tuning result for a specific interaction type.
    */
-  void logTuningResult(long tuningTime, InteractionTypeOption::Value interactionType) const;
+  void logTuningResult(long tuningTime, size_t currentIteration, InteractionTypeOption::Value interactionType) const;
 
   /**
    * Add a performance measurement to the specified tuner.
    */
-  void addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt,
+  void addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt, size_t iteration,
                       InteractionTypeOption::Value interactionType);
 
   const TuningMetricOption &getTuningMetric(InteractionTypeOption::Value interactionType) const;
@@ -85,13 +85,15 @@ class TunerManager {
    */
   void forceRetune();
 
-  Configuration rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely,
+  Configuration rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely, size_t currentIteration,
                                     InteractionTypeOption::Value interactionType);
 
   /**
    * @return A reference to the map of AutoTuners.
    */
   std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &getAutoTuners() { return _autoTuners; }
+
+  bool inFirstTuningIteration(size_t currentIteration) const;
 
  private:
   /**
@@ -100,24 +102,22 @@ class TunerManager {
   std::set<ContainerOption> setCommonContainerOption();
 
   /**
-   * Constrain all AutoTuners to the given container options and refresh their config queues.
-   * @param containerOption
-   */
-  void applyContainerConstraint(std::optional<ContainerOption> containerOption);
-
-  /**
    * Let all AutoTuners tune their configuration for the time step ahead.
    */
-  void tuneConfigurations();
+  void tuneConfigurations(size_t currentIteration);
 
-  void setOptimalConfigurations();
+  void setOptimalConfigurations(size_t currentIteration);
 
+  bool tuningPhaseAboutToBegin(size_t currentIteration) const;
+
+  bool isStartOfTuningPhase(size_t currentIteration) const;
   /**
    * All AutoTuners used in this instance of AutoPas.
    * There can be up to one per interaction type.
    */
   std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> _autoTuners;
 
+  size_t _tuningPhase = 0;
   /**
    * New tuning phase starting at multiples of _tuningInterval.
    */
@@ -133,7 +133,13 @@ class TunerManager {
   /**
    * Initialize
    */
-  bool _tuningJustFinished = false;
+  bool _transitionToOptimalConfigurations = false;
+
+  /**
+   * Flag to indicate that a retune has been forced and a new tuning phase should start
+   * in the next iteration.
+   */
+  bool _forceRetunePending{false};
 };
 
 }  // namespace autopas

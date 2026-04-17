@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <cstddef>
 #include <memory>
 #include <set>
 #include <tuple>
@@ -83,20 +82,7 @@ class AutoTuner {
    * Pass live info on to all tuning strategies.
    * @param liveInfo
    */
-  void receiveLiveInfo(const LiveInfo &liveInfo);
-
-  /**
-   * Returns true if the AutoTuner is about to calculate the first interactions of a tuning phase (i.e. the first
-   * iteration), before tuneConfiguration() has been called.
-   * @return
-   */
-  bool isStartOfTuningPhase() const;
-
-  /**
-   * Returns true if the AutoTuner is within 10 iterations of the start of a tuning phase.
-   * @return
-   */
-  bool tuningPhaseAboutToBegin() const;
+  void receiveLiveInfo(const LiveInfo &liveInfo, bool tuningPhaseAboutToBegin, bool isStartOfTuningPhase);
 
   /**
    * Returns true if the AutoTuner needs live info. This occurs if any strategy requires this and AutoPas is beginning
@@ -107,26 +93,19 @@ class AutoTuner {
   [[nodiscard]] bool needsLiveInfo() const;
 
   /**
-   * Increase internal iteration counters by one. Should be called at the end of an iteration.
-   */
-  void bumpIterationCounters();
-
-  /**
    * Returns whether rebuildNeighborLists() should be triggered in the next iteration.
    * This indicates a configuration change.
    * In the non-tuning phase, the rebuildNeighborLists() is triggered in LogicHandler.
    * @return True if the current iteration counters indicate a rebuild in the next iteration due to a configuration
    * change.
    */
-  bool willRebuildNeighborLists() const;
+  bool willRebuildNeighborLists(bool isStartOfTuningPhase) const;
 
   /**
    * Get the currently selected configuration.
    * @return
    */
   [[nodiscard]] const Configuration &getCurrentConfig() const;
-
-  const Configuration &getNextConfig();
 
   /**
    * Tell the tuner that the given config is not applicable.
@@ -140,7 +119,8 @@ class AutoTuner {
    * indefinitely).
    * @return Tuple<Next configuration to use, still tuning>.
    */
-  [[nodiscard]] Configuration rejectConfig(const Configuration &rejectedConfig, bool indefinitely);
+  [[nodiscard]] Configuration rejectConfig(const Configuration &rejectedConfig, bool indefinitely,
+                                           size_t currentIteration, size_t tuningPhase);
 
   /**
    * Indicator function whether the search space consists of exactly one configuration.
@@ -158,7 +138,7 @@ class AutoTuner {
    * After a tuning phase has finished, write the result to a file.
    * @param tuningTime
    */
-  void logTuningResult(long tuningTime) const;
+  void logTuningResult(long tuningTime, size_t currentIteration) const;
 
   /**
    * Initialize pmt sensor.
@@ -190,7 +170,8 @@ class AutoTuner {
    * computeInteraction and remainderTraversal call.
    * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
    */
-  void addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt);
+  void addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt, size_t iteration,
+                      size_t tuningPhase);
 
   /**
    * Adds domain similarity statistics to a vector of measurements, which can be smoothed for use in MPI Tuning to find
@@ -218,12 +199,6 @@ class AutoTuner {
    * @return
    */
   bool inTuningPhase() const;
-
-  /**
-   * Indicate if the tuner is in the first iteration of a tuning phase.
-   * @return
-   */
-  bool inFirstTuningIteration() const;
 
   /**
    * Indicates if the tuner is in the last iteration of the tuning phase.
@@ -275,28 +250,9 @@ class AutoTuner {
    *
    * @return true iff still in tuning phase.
    */
-  bool tuneConfiguration();
+  bool tuneConfiguration(size_t currentIteration, size_t tuningPhase, bool isStartOfTuningPhase);
 
-  /**
-   * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
-   * used until the next tuning phase, as well as setting other relevant class members (_endOfTuningPhase, _isTuning,
-   * _samplesRebuildingNeighborLists, _iterationBaseline)
-   */
-  void handleEndOfTuningPhase();
-
-  /**
-   * Selects the best configuration for the current container from the evidence collection.
-   */
-  void selectBestConfiguration();
-
-  /**
-   * Restricts the tuning process to a specific container type.
-   * Configurations using other containers will be ignored/filtered out during tuning.
-   * @param container The container type to allow.
-   */
-  void setContainerConstraint(std::optional<ContainerOption> container);
-
-  void liftContainerConstraint();
+  void forceOptimalConfiguration(const Configuration &optimalConfig);
 
   /**
    * Get the set of all container types present in the search space.
@@ -306,6 +262,18 @@ class AutoTuner {
   std::set<ContainerOption> getSearchSpaceContainers() const;
 
  private:
+  /**
+   * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
+   * used until the next tuning phase, as well as setting other relevant class members (_endOfTuningPhase, _isTuning,
+   * _samplesRebuildingNeighborLists, _iterationBaseline)
+   */
+  void handleEndOfTuningPhase(size_t tuningPhase);
+
+  /**
+   * Selects the best configuration for the current container from the evidence collection.
+   */
+  void selectBestConfiguration(size_t tuningPhase);
+
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
    * @return Sum of sizes of sample vectors.
@@ -330,31 +298,6 @@ class AutoTuner {
    * The strategies are always applied in the order they are in this vector.
    */
   std::vector<std::unique_ptr<TuningStrategyInterface>> _tuningStrategies;
-
-  /**
-   * The container type we are currently restricted to.
-   * If std::nullopt, no restriction is active.
-   */
-  std::optional<ContainerOption> _containerConstraint{std::nullopt};
-
-  /**
-   * Counter for the current simulation iteration.
-   * Initialized as max, so ++_iteration == 0 for the first iteration.
-   */
-  size_t _iteration{std::numeric_limits<size_t>::max()};
-
-  /**
-   * The number of the current tuning phase.
-   * If we are currently between phases this is the number of the last phase.
-   * Initialized as max, so ++_tuningPhase == 0 for the first tuning phase.
-   */
-  size_t _tuningPhase{std::numeric_limits<size_t>::max()};
-
-  /**
-   * Fixed interval at which tuning phases are started.
-   * A tuning phase always starts when _iteration % _tuningInterval == 0.
-   */
-  size_t _tuningInterval;
 
   /**
    * Metric to use for tuning.
@@ -481,11 +424,5 @@ class AutoTuner {
    * significantly slower than the fastest configuration by more than _earlyStoppingFactor.
    */
   bool _earlyStoppingOfResampling{false};
-
-  /**
-   * Is set to true if the current configuration is different to the previous configuration and therefore a rebuild is
-   * required.
-   */
-  bool _requiresRebuild{false};
 };
 }  // namespace autopas

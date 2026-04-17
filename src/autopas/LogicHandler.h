@@ -165,8 +165,6 @@ class LogicHandler {
   [[nodiscard]] std::vector<Particle_T> updateContainer() {
     ++_iteration;
 
-    _tunerManager->updateAutoTuners(_iteration);
-
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->checkNeighborListsInvalidDoDynamicRebuild();
 #endif
@@ -957,7 +955,7 @@ bool LogicHandler<Particle_T>::neighborListsAreValid() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
       or getNeighborListsInvalidDoDynamicRebuild()
 #endif
-      or _tunerManager->requiresRebuilding()) {
+      or _tunerManager->requiresRebuilding(_iteration)) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 
@@ -1049,7 +1047,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 
   auto &autoTuner = *_tunerManager->getAutoTuners()[interactionType];
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  if (autoTuner.inFirstTuningIteration()) {
+  if (_tunerManager->inFirstTuningIteration(_iteration)) {
     _numRebuildsInNonTuningPhase = 0;
   }
 
@@ -1215,9 +1213,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
                  selectConfigurationTimer.getTotalTime(), numRejectedConfigs);
       return {configuration, std::move(traversalPtr), stillTuning};
     }
+    numRejectedConfigs++;
     // if no config is left after rejecting this one, an exception is thrown here.
-    configuration = _tunerManager->rejectConfiguration(configuration, rejectIndefinitely, interactionType);
-    stillTuning = _tunerManager->tune(_iteration, info);
+    configuration = _tunerManager->rejectConfiguration(configuration, rejectIndefinitely, _iteration, interactionType);
   } while (true);
 }
 
@@ -1262,7 +1260,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   tuningTimer.start();
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor, interactionType);
   tuningTimer.stop();
-  _tunerManager->logTuningResult(tuningTimer.getTotalTime(), interactionType);
+  _tunerManager->logTuningResult(tuningTimer.getTotalTime(), _iteration, interactionType);
 
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
   const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
@@ -1315,7 +1313,8 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
             return std::make_pair(0l, 0l);
         }
       }();
-      _tunerManager->addMeasurement(measurement.first, measurement.second, rebuildIteration, interactionType);
+      _tunerManager->addMeasurement(measurement.first, measurement.second, rebuildIteration, _iteration,
+                                    interactionType);
     }
   } else {
     AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
