@@ -8,15 +8,11 @@
 
 #include <gmock/gmock-matchers.h>
 
-#include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
-#include "autopas/tuning/tuningStrategy/TuningStrategyFactory.h"
-#include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
-#include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
 
 void MPIParallelizedStrategyTest::testBucketDistribution(
-    const std::array<double, numRanksExpected> &homogeneities,
+    const std::array<double, numRanksExpected> &particleDependentBinDensityStdDevs,
     const std::array<size_t, numRanksExpected> &expectedNumLocalConfigs,
     const std::set<autopas::Configuration> &searchSpace) {
   // Get MPI info
@@ -32,33 +28,33 @@ void MPIParallelizedStrategyTest::testBucketDistribution(
   ASSERT_GT(searchSpace.size(), numRanks) << "There should be more configurations than ranks, otherwise the test can't "
                                              "distribute them in the desired way.";
 
-  // Build the tuner and the strategy
-  const autopas::TuningStrategyFactoryInfo factoryInfo{
-      .mpiDivideAndConquer = true,
-      .mpiTuningMaxDifferenceForBucket = 0.3,
-      .autopasMpiCommunicator = AUTOPAS_MPI_COMM_WORLD,
-  };
-  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  tuningStrategies.push_back(autopas::TuningStrategyFactory::generateTuningStrategy(
-      searchSpace, autopas::TuningStrategyOption::mpiDivideAndConquer, factoryInfo, ""));
-  const autopas::AutoTunerInfo tunerInfo{};
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, tunerInfo, 10, "");
+  constexpr double mpiTuningMaxDifferenceForBucket{0.3};
+  constexpr double mpiTuningWeightForMaxDensity{0.0};
+  const autopas::AutoPas_MPI_Comm autopasMpiCommunicator = AUTOPAS_MPI_COMM_WORLD;
 
-  // Trigger the tuning strategy to adapt the internal config queue
-  autoTuner.addHomogeneityAndMaxDensity(homogeneities[rank], homogeneities[rank], 0);
-  autoTuner.forceRetune();
-  autoTuner.prepareIteration();
-  const auto [unusedConf, unusedStillTuning] = autoTuner.getNextConfig();
-  const auto &configQueue = autoTuner.getConfigQueue();
+  auto mpiDivideAndConquerStrategy = autopas::MPIParallelizedStrategy(
+      autopas::MPIParallelizedStrategy::createFallBackConfiguration(searchSpace,
+                                                                    autopas::InteractionTypeOption::pairwise),
+      autopasMpiCommunicator, mpiTuningMaxDifferenceForBucket, mpiTuningWeightForMaxDensity);
+
+  // Begin with the full search space as the configQueue
+  std::vector<autopas::Configuration> myConfigQueue{searchSpace.begin(), searchSpace.end()};
+
+  // Send domain similarity statistics
+  mpiDivideAndConquerStrategy.receiveDomainSimilarityStatistics(particleDependentBinDensityStdDevs[rank],
+                                                                particleDependentBinDensityStdDevs[rank]);
+
+  // Reset, which divides the configQueue between ranks which share a bucket
+  mpiDivideAndConquerStrategy.reset(0, 0, myConfigQueue, {});
 
   // Check that all queues have the right size and the queues of each bucket add up to the search space
-  EXPECT_EQ(configQueue.size(), expectedNumLocalConfigs[rank])
+  EXPECT_EQ(myConfigQueue.size(), expectedNumLocalConfigs[rank])
       << "The local rank was not assigned the expected number of configurations.";
+
   // For every bucket check that the union of all configQueues adds up to the full search space
-  const auto bucketCommunicator =
-      dynamic_cast<autopas::MPIParallelizedStrategy *>(autoTuner.getTuningStrategies().front().get())->getBucket();
+  const auto bucketCommunicator = mpiDivideAndConquerStrategy.getBucket();
   const auto globalConfs =
-      autopas::utils::AutoPasConfigurationCommunicator::gatherConfigurations(bucketCommunicator, configQueue, 0);
+      autopas::utils::AutoPasConfigurationCommunicator::gatherConfigurations(bucketCommunicator, myConfigQueue, 0);
   int rankInBucket{};
   autopas::AutoPas_MPI_Comm_rank(bucketCommunicator, &rankInBucket);
   if (rankInBucket == 0) {
@@ -75,22 +71,22 @@ void MPIParallelizedStrategyTest::testBucketDistribution(
  * MPI divide and conquer for with one bucket.
  */
 TEST_F(MPIParallelizedStrategyTest, testDistributeOneBucket) {
-  const std::array<double, numRanksExpected> homogeneities{1., 1., 1.};
+  const std::array<double, numRanksExpected> particleDependentBinDensityStdDevs{1., 1., 1.};
   const std::array<size_t, numRanksExpected> expectedNumLocalConfig{2, 2, 1};
   const std::set<autopas::Configuration> searchSpace{
       lc_c01_aos, lc_c04_aos, lc_c08_aos, lc_c01_soa, lc_c04_soa,
   };
-  testBucketDistribution(homogeneities, expectedNumLocalConfig, searchSpace);
+  testBucketDistribution(particleDependentBinDensityStdDevs, expectedNumLocalConfig, searchSpace);
 }
 
 /**
  * MPI divide and conquer for with two buckets.
  */
 TEST_F(MPIParallelizedStrategyTest, testDistributeTwoBucket) {
-  const std::array<double, numRanksExpected> homogeneities{1., 10., 10.};
+  const std::array<double, numRanksExpected> particleDependentBinDensityStdDevs{1., 10., 10.};
   const std::array<size_t, numRanksExpected> expectedNumLocalConfig{5, 3, 2};
   const std::set<autopas::Configuration> searchSpace{
       lc_c01_aos, lc_c04_aos, lc_c08_aos, lc_c01_soa, lc_c04_soa,
   };
-  testBucketDistribution(homogeneities, expectedNumLocalConfig, searchSpace);
+  testBucketDistribution(particleDependentBinDensityStdDevs, expectedNumLocalConfig, searchSpace);
 }

@@ -11,22 +11,12 @@
 
 #pragma once
 
-#include "VLCNeighborListInterface.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCNeighborListInterface.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
-
-/**
- * TraversalSelector is used for the construction of the list in the applyBuildFunctor method.
- * Forward declaration necessary to avoid circle of includes:
- * TraversalSelector includes all VLC traversals include VLCTraversalInterface includes VLCAllCellsNeighborList
- */
-template <class ParticleCell>
-class TraversalSelector;
-
-template <class Particle_T, class NeighborList>
-class VLCTraversalInterface;
 
 /**
  * Neighbor list to be used with VerletListsCells container. Classic implementation of verlet lists based on linked
@@ -60,7 +50,8 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle_T> {
   /**
    * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
    */
-  void buildAoSNeighborList(TraversalOption vlcTraversalOpt, LinkedCells<Particle_T> &linkedCells, bool useNewton3) {
+  void buildAoSNeighborList(TraversalOption vlcTraversalOpt, LinkedCells<Particle_T> &linkedCells,
+                            bool useNewton3) override {
     using namespace utils::ArrayMath::literals;
     // Sanity check.
     if (linkedCells.getCellBlock().getCellsPerInteractionLength() > 1) {

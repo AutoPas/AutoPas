@@ -60,7 +60,7 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
                                                    const std::array<double, 3> &cellLength, double interactionLength) {
   using namespace autopas::utils::ArrayMath::literals;
   using namespace internal;
-  using utils::ArrayMath::ceilToInt;
+  using utils::ArrayMath::ceilAndCast;
   using utils::ArrayUtils::static_cast_copy_array;
   using utils::ThreeDimensionalMapping::threeToOneD;
 
@@ -68,7 +68,7 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
   OffsetPairType<Mode> resultOffsetsC08{};
 
   // The overlap with interacting cells (see autopas::CBasedTraversal constructor)
-  const std::array<int, 3> overlap{ceilToInt(interactionLength / cellLength)};
+  const std::array<int, 3> overlap{ceilAndCast(interactionLength / cellLength)};
   const std::array<int, 3> &cellsPerDimIntegral = static_cast_copy_array<int>(cellsPerDimension);
 
   // Small constants used multiple times in the code below

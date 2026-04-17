@@ -12,7 +12,7 @@ data-layout-3b                       :  [AoS]
 #data-layout                          :  [AoS, SoA]
 
 verlet-rebuild-frequency             :  10
-verlet-skin-radius-per-timestep      :  0.02
+verlet-skin-radius      :  0.2
 selector-strategy                    :  Fastest-Absolute-Value
 tuning-strategies                    :  []
 tuning-interval                      :  2000

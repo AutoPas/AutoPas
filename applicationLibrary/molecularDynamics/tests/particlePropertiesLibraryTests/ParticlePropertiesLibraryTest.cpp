@@ -27,7 +27,7 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   const double mass0 = 1.;
   PPL->addSiteType(0, mass0);
   PPL->addLJParametersToSite(0, epsilon0, sigma0);
-  PPL->addATParametersToSite(0, nu0);
+  PPL->addATMParametersToSite(0, nu0);
 
   // Check successfully getting of information
   EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 1);
@@ -43,7 +43,7 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   const double mass1 = 1.2;
   PPL->addSiteType(1, mass1);
   PPL->addLJParametersToSite(1, epsilon1, sigma1);
-  PPL->addATParametersToSite(1, nu1);
+  PPL->addATMParametersToSite(1, nu1);
 
   // Check successfully getting of information
   EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 2);
@@ -82,7 +82,7 @@ TEST_F(ParticlePropertiesLibraryTest, AddingDifferentSitesTest) {
   const double nu1 = 0.1;
   const double mass1 = 1.2;
   PPL->addSiteType(1, mass1);
-  PPL->addATParametersToSite(1, nu1);
+  PPL->addATMParametersToSite(1, nu1);
 
   // Check successfully getting of information
   // Uninitialized LJ or AT parameters should be 0
@@ -107,7 +107,7 @@ TEST_F(ParticlePropertiesLibraryTest, AddingDifferentSitesTest) {
 
   // Check that add<LJ/AT>Site for a non-initialized siteId throws an error.
   EXPECT_ANY_THROW(PPL->addLJParametersToSite(2, 1., 1.));
-  EXPECT_ANY_THROW(PPL->addATParametersToSite(3, 1.));
+  EXPECT_ANY_THROW(PPL->addATMParametersToSite(3, 1.));
 }
 
 /**
@@ -337,7 +337,7 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
 }
 
 /**
- * Tests that getting the Axilrod-Teller mixing data works correctly and that the mixing rules applied in PPL are
+ * Tests that getting the Axilrod-Teller-Muto mixing data works correctly and that the mixing rules applied in PPL are
  * correct. In addition, tests that the mixing data getters are consistent with each other.
  */
 TEST_F(ParticlePropertiesLibraryTest, AxilrodTellerMixingTest) {
@@ -352,11 +352,11 @@ TEST_F(ParticlePropertiesLibraryTest, AxilrodTellerMixingTest) {
   const double nu2 = 0.3;
 
   PPL->addSiteType(0, 1.);
-  PPL->addATParametersToSite(0, nu0);
+  PPL->addATMParametersToSite(0, nu0);
   PPL->addSiteType(1, 1.);
-  PPL->addATParametersToSite(1, nu1);
+  PPL->addATMParametersToSite(1, nu1);
   PPL->addSiteType(2, 1.);
-  PPL->addATParametersToSite(2, nu2);
+  PPL->addATMParametersToSite(2, nu2);
 
   // Calculate mixing coefficients
   PPL->calculateMixingCoefficients();
@@ -395,7 +395,7 @@ TEST_F(ParticlePropertiesLibraryTest, AxilrodTellerMixingTest) {
   for (unsigned int i = 0; i < PPL->getNumberRegisteredSiteTypes(); i++) {
     for (unsigned int j = 0; j < PPL->getNumberRegisteredSiteTypes(); j++) {
       for (unsigned int k = 0; k < PPL->getNumberRegisteredSiteTypes(); k++) {
-        const auto allMixingData = PPL->getATMixingData(i, j, k);
+        const auto allMixingData = PPL->getATMMixingData(i, j, k);
         const auto nu = PPL->getMixingNu(i, j, k);
 
         EXPECT_DOUBLE_EQ(allMixingData.nu, nu);

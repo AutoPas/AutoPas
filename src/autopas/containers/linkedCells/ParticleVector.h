@@ -21,7 +21,7 @@
 template <class Particle_T>
 class ParticleVector {
  public:
-  ParticleVector<Particle_T>() = default;
+  ParticleVector() = default;
 
   /**
    * Returns the dirty flag, indicating whether Particles exist in the vector that are not stored in a cell yet.
@@ -35,6 +35,15 @@ class ParticleVector {
   void markAsClean() {
     _dirty = false;
     _dirtyIndex = _particleListImp.size();
+  }
+
+  /**
+   * Remove all particles from the container and mark it as dirty.
+   */
+  void clearAllParticles() {
+    _particleListImp.clear();
+    _dirty = true;
+    _dirtyIndex = 0;
   }
 
   /**

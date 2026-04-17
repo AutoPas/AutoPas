@@ -13,10 +13,10 @@ option(
     AUTOPAS_COMPILE_TIME_PROFILING "Sets clang's -ftime-trace or gcc's -ftime-report" OFF
 )
 
-# autopas requires c++17. If cmake < 3.17 is used this is set globally in the top level
+# autopas requires c++20. If cmake < 3.17 is used this is set globally in the top level
 # CMakeLists.txt
 if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.17)
-    target_compile_features(autopas PUBLIC cxx_std_17)
+    target_compile_features(autopas PUBLIC cxx_std_20)
 endif ()
 
 target_compile_options(

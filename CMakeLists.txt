@@ -33,7 +33,7 @@ if (CMAKE_VERSION VERSION_LESS 3.17)
             STATUS
             "Setting CMAKE_CXX_STANDARD globally because cmake < 3.17 is used."
     )
-    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD 20)
 endif ()
 
 if (NOT CYGWIN)
@@ -82,9 +82,9 @@ if (AUTOPAS_FORMATTING_TARGETS)
 endif ()
 
 include(autopas_ccache)
+include(autopas_OpenMP)
 include(autopas_clang-sanitizers)
 include(autopas_clang-tidy)
-include(autopas_OpenMP)
 include(autopas_mpi)
 
 include(version.cmake)

@@ -41,6 +41,11 @@ class LogicHandlerInfo {
    */
   size_t sortingThreshold{8};
   /**
+   * Time step used in the simulation.
+   * This is currently used in rebuild frequency estimation for dynamic containers.
+   */
+  double deltaT{0};
+  /**
    * The (minimum) cell size for each level of a HierarchicalGrid.
    * If not set (i.e. empty), HierarchicalGrid will not be considered as a valid option for tuning.
    */

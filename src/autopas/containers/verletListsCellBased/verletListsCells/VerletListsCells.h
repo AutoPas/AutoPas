@@ -6,18 +6,14 @@
 
 #pragma once
 
-#include "autopas/cells/FullParticleCell.h"
-#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/cellTraversals/BalancedTraversal.h"
-#include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
-#include "autopas/options/TraversalOption.h"
-#include "autopas/tuning/selectors/TraversalSelector.h"
 
 namespace autopas {
 
@@ -34,8 +30,6 @@ namespace autopas {
 
 template <class Particle_T, class NeighborList>
 class VerletListsCells : public VerletListsLinkedBase<Particle_T> {
-  using ParticleCell = FullParticleCell<Particle_T>;
-
  public:
   /**
    * Constructor of the VerletListsCells class.
@@ -43,19 +37,17 @@ class VerletListsCells : public VerletListsLinkedBase<Particle_T> {
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
-   * @param rebuildFrequency The rebuild Frequency.
    * @param skin The skin radius.
    * @param cellSizeFactor Cell size factor relative to cutoff.
    * @param loadEstimator Load estimation algorithm for balanced traversals.
    * @param dataLayoutDuringListRebuild Data layout during the list generation. Has no influence on list layout.
    */
   VerletListsCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                   const double skin = 0, const unsigned int rebuildFrequency = 2, const double cellSizeFactor = 1.0,
+                   const double skin = 0, const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
                    typename VerletListsCellsHelpers::VLCBuildType dataLayoutDuringListRebuild =
                        VerletListsCellsHelpers::VLCBuildType::soaBuild)
-      : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
-                                          compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
+      : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, cellSizeFactor),
         _loadEstimator(loadEstimator),
         _dataLayoutDuringListRebuild(dataLayoutDuringListRebuild) {}
 
@@ -150,7 +142,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle_T> {
   /**
    * Load estimation algorithm for balanced traversals.
    */
-  autopas::LoadEstimatorOption _loadEstimator;
+  LoadEstimatorOption _loadEstimator;
 
   /**
    * Data layout during the list generation. Has no influence on list layout.

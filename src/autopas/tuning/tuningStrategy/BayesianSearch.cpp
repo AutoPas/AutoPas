@@ -160,7 +160,7 @@ bool autopas::BayesianSearch::reset(size_t iteration, size_t tuningPhase, std::v
   return optimizeSuggestions(configQueue, evidenceCollection);
 }
 
-bool autopas::BayesianSearch::needsSmoothedHomogeneityAndMaxDensity() const { return false; }
+bool autopas::BayesianSearch::needsDomainSimilarityStatistics() const { return false; }
 
 autopas::TuningStrategyOption autopas::BayesianSearch::getOptionType() const {
   return autopas::TuningStrategyOption::bayesianSearch;
