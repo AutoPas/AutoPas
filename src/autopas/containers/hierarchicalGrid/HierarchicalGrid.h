@@ -302,7 +302,9 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
 
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     // return traversal info of hierarchy with biggest interactionLength for autoPas container
-    return _levels.back()->getTraversalSelectorInfo();
+    auto traversalSelectorInfo = _levels.back()->getTraversalSelectorInfo();
+    traversalSelectorInfo.hGridNumLevels = _numLevels;
+    return traversalSelectorInfo;
   }
 
   std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,

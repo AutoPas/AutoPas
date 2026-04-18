@@ -256,7 +256,7 @@ class HGTraversalBase : public TraversalInterface {
   }
 
   // HG traversals only make sense if there are multiple levels, otherwise just use LinkedCells
-  [[nodiscard]] bool isApplicable() const override { return not _maxCutoffPerLevel.empty(); }
+  [[nodiscard]] bool isApplicable() const override { return _numLevels > 1; }
 
   /**
    * Traverses a single upper-level cell and lower-level cells that are in the interaction range using AoS.
