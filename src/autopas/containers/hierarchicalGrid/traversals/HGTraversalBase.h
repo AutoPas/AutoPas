@@ -25,12 +25,13 @@ class HGTraversalBase : public TraversalInterface {
 
   /**
    * Constructor.
+   * @param numLevels Number of levels in the hierarchical grid.
    * @param dataLayout Data layout used by this traversal.
    * @param useNewton3 Whether Newton3 optimization is enabled.
    */
-  explicit HGTraversalBase(DataLayoutOption dataLayout, bool useNewton3)
+  explicit HGTraversalBase(size_t numLevels, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3),
-        _numLevels(0),
+        _numLevels(numLevels),
         _levels(nullptr),
         _skin(0),
         _stepsSinceLastRebuild(0),

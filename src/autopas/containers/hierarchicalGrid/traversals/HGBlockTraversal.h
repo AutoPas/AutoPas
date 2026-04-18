@@ -36,12 +36,14 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
   /**
    * Constructor.
    * @param functor Pairwise functor used for interactions.
+   * @param numLevels Number of levels in the hierarchical grid.
    * @param dataLayout Data layout used by the traversal.
    * @param useNewton3 Whether Newton3 optimization is enabled.
    * @param blockMultiplier Multiplier controlling target blocks per color.
    */
-  explicit HGBlockTraversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3, int blockMultiplier)
-      : HGTraversalBase<ParticleCell_T>(dataLayout, useNewton3),
+  explicit HGBlockTraversal(Functor_T *functor, size_t numLevels, DataLayoutOption dataLayout, bool useNewton3,
+                            int blockMultiplier)
+      : HGTraversalBase<ParticleCell_T>(numLevels, dataLayout, useNewton3),
         _blockMultiplier(blockMultiplier),
         _functor(*functor) {}
 
