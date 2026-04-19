@@ -109,6 +109,11 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
                                                                  cellSizeFactor, sortingThreshold, loadEstimator);
       break;
     }
+    case ContainerOption::hierarchicalGridFitted: {
+      container = std::make_unique<HierarchicalGrid<Particle_T>>(boxMin, boxMax, hGridMaxCutoffPerLevel, verletSkin,
+                                                                 cellSizeFactor, sortingThreshold, loadEstimator, true);
+      break;
+    }
     default: {
       utils::ExceptionHandler::exception("ContainerSelector: Container type {} is not a known type!",
                                          containerChoice.to_string());

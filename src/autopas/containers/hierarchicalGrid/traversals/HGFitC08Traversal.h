@@ -33,11 +33,12 @@ class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>, public HGTrave
   /**
    * Constructor of the lc_c08 traversal.
    * @param functor The functor that defines the interaction of two particles.
+   * @param numLevels Number of levels in the hierarchical grid.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit HGFitC08Traversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3)
-      : HGTraversalBase<ParticleCell_T>(dataLayout, useNewton3),
+  explicit HGFitC08Traversal(Functor_T *functor, size_t numLevels, DataLayoutOption dataLayout, bool useNewton3)
+      : HGTraversalBase<ParticleCell_T>(numLevels, dataLayout, useNewton3),
         _functor(functor),
         _dataLayoutConverter(_functor, dataLayout) {}
 
