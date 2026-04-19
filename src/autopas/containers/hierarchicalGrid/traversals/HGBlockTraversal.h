@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "HGC08SingleLevelTraversal.h"
 #include "HGTraversalBase.h"
 #include "HGTraversalInterface.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
@@ -32,6 +33,10 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
    * Type of particles stored in the traversed cells.
    */
   using Particle = typename ParticleCell_T::ParticleType;
+  /**
+   * Type alias for cell blocks used by this traversal.
+   */
+  using CellBlock = typename HGTraversalBase<ParticleCell_T>::CellBlock;
 
   /**
    * Constructor.
@@ -158,10 +163,16 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
    * @return A new traversal that is applicable to a specific LinkedCells level
    */
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override {
+    // Instead of LCC08Traversal, we use HGC08SingleLevelTraversal with upperLevel=0 for the intra-level interactions.
+    // This way it works the same, but considers the wider halo region to skip unnecessary halo-halo interactions.
+    const double haloRegionWidth = this->_maxCutoffPerLevel.back() + this->_skin;
     const auto traversalInfo = this->getTraversalSelectorInfo(level);
-    return std::make_unique<LCC08Traversal<ParticleCell_T, Functor_T>>(
+    // We dont actually compute inter-level interactions, so this is enough:
+    std::vector<CellBlock *> cellBlocks = {&this->_levels->at(level)->getCellBlock()};
+    std::vector<double> interactionLengthsSquared = {};
+    return std::make_unique<HGC08SingleLevelTraversal<ParticleCell_T, Functor_T>>(
         traversalInfo.cellsPerDim, &_functor, traversalInfo.interactionLength, traversalInfo.cellLength,
-        this->_dataLayout, this->_useNewton3);
+        this->_dataLayout, this->_useNewton3, cellBlocks, interactionLengthsSquared, 0, haloRegionWidth);
   }
 
   [[nodiscard]] bool isApplicable() const override { return true; }

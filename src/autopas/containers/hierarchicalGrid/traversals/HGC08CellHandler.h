@@ -92,11 +92,11 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> 
   /**
    * The cell blocks of the hierarchical grid, ordered from lowest to highest level.
    */
-  const std::vector<internal::CellBlock3D<ParticleCell> *> &_cellBlocks;
+  std::vector<internal::CellBlock3D<ParticleCell> *> _cellBlocks;
   /**
    * The squared interaction lengths from each lower level to upperLevel, ordered from lowest to highest level.
    */
-  const std::vector<double> &_interactionLengthsSquared;
+  std::vector<double> _interactionLengthsSquared;
   /**
    * Shift length, which is smaller than the smalles cell width.
    */
