@@ -106,7 +106,7 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
     }
     case ContainerOption::hierarchicalGrid: {
       container = std::make_unique<HierarchicalGrid<Particle_T>>(boxMin, boxMax, hGridMaxCutoffPerLevel, verletSkin,
-                                                                 cellSizeFactor, loadEstimator);
+                                                                 cellSizeFactor, sortingThreshold, loadEstimator);
       break;
     }
     default: {

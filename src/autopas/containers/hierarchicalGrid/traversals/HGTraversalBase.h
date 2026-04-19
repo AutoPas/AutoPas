@@ -30,30 +30,20 @@ class HGTraversalBase : public TraversalInterface {
    * @param useNewton3 Whether Newton3 optimization is enabled.
    */
   explicit HGTraversalBase(size_t numLevels, DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3),
-        _numLevels(numLevels),
-        _levels(nullptr),
-        _skin(0),
-        _stepsSinceLastRebuild(0),
-        _rebuildFrequency(1) {}
+      : TraversalInterface(dataLayout, useNewton3), _numLevels(numLevels), _levels(nullptr), _skin(0) {}
 
   /**
    * Store HGrid data
    * @param levels LinkedCells for each HGrid level
    * @param maxCutoffPerLevel maxCutoffPerLevel of each HGrid level
    * @param skin verlet skin of HGrid container
-   * @param stepsSinceLastRebuild number of time-steps since last rebuild
-   * @param rebuildFrequency frequency of rebuild
    */
   void setLevels(std::vector<std::unique_ptr<LinkedCells<ParticleType>>> *levels,
-                 std::vector<double> &maxCutoffPerLevel, double skin, unsigned int stepsSinceLastRebuild,
-                 const unsigned int rebuildFrequency) {
+                 std::vector<double> &maxCutoffPerLevel, double skin) {
     _numLevels = maxCutoffPerLevel.size();
     _maxCutoffPerLevel = maxCutoffPerLevel;
     _levels = levels;
     _skin = skin;
-    _stepsSinceLastRebuild = stepsSinceLastRebuild;
-    _rebuildFrequency = rebuildFrequency;
   }
 
  protected:
@@ -73,14 +63,6 @@ class HGTraversalBase : public TraversalInterface {
    * Configured verlet skin of the container.
    */
   double _skin;
-  /**
-   * Number of time steps since the last rebuild.
-   */
-  unsigned int _stepsSinceLastRebuild;
-  /**
-   * Rebuild frequency used by the container.
-   */
-  unsigned int _rebuildFrequency;
   /**
    * Cutoff ratio threshold for enabling cell distance checks.
    * At this ratio of max Cutoffs between two levels, distance checks are employed to sort out unnecessary interactions.
@@ -113,7 +95,7 @@ class HGTraversalBase : public TraversalInterface {
    */
   [[nodiscard]] double getInteractionLength(const size_t lowerLevel, const size_t upperLevel) const {
     const double cutoff = (this->_maxCutoffPerLevel[upperLevel] + this->_maxCutoffPerLevel[lowerLevel]) / 2;
-    return cutoff + currentSkin();
+    return cutoff + _skin;
   }
 
   /**
@@ -127,22 +109,6 @@ class HGTraversalBase : public TraversalInterface {
     // size of the lower level cell divided by interactionLength
     // We don't use cellLength because cellSizeFactor might have influenced it
     return (_maxCutoffPerLevel[lowerLevel] + _skin) / getInteractionLength(lowerLevel, upperLevel) <= distCheckRatio;
-  }
-
-  /**
-   * Compute the currently valid skin based on rebuild progress.
-   * @return Effective skin for the current traversal step.
-   */
-  [[nodiscard]] double currentSkin() const {
-    // We only need to check at most distance cutoff + max displacement of any particle in the container if dynamic
-    // containers are used.
-    // NOTE: if in the future, if Hgrid will be used as a base container to a verlet list, interactionLength should be
-    // always cutoff + _skin.
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    return this->_skin;  // std::min(this->_maxDisplacement * 2 + 1e-9, this->_skin);
-#else
-    return std::min((this->_skin / _rebuildFrequency) * _stepsSinceLastRebuild + 1e-9, this->_skin);
-#endif
   }
 
   /**
@@ -293,7 +259,7 @@ class HGTraversalBase : public TraversalInterface {
     if (isHalo && !this->_useNewton3) {
       return;
     }
-    const double lowerInteractionLength = currentSkin() + _maxCutoffPerLevel[lowerLevel] / 2;
+    const double lowerInteractionLength = _skin + _maxCutoffPerLevel[lowerLevel] / 2;
     const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
     // variable to determine if we are only interested in owned particles in the lower level
     const bool containToOwnedOnly = isHalo && this->_useNewton3;
@@ -372,7 +338,7 @@ class HGTraversalBase : public TraversalInterface {
     const auto *const __restrict yptr = soa.template begin<ParticleType::AttributeNames::posY>();
     const auto *const __restrict zptr = soa.template begin<ParticleType::AttributeNames::posZ>();
 
-    const double lowerInteractionLength = currentSkin() + _maxCutoffPerLevel[lowerLevel] / 2;
+    const double lowerInteractionLength = _skin + _maxCutoffPerLevel[lowerLevel] / 2;
     const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
 
     for (int idx = 0; idx < upperCell.size(); ++idx) {
