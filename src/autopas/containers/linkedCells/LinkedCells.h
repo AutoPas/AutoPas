@@ -68,21 +68,22 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
         _loadEstimator(loadEstimator) {}
 
   /**
-   * Constructor of the LinkedCells class using cells per dimension instead of cell size factor. 
+   * Constructor of the LinkedCells class using cells per dimension instead of cell size factor.
    * Usefull for HierarchicalGrid container.
    * @param boxMin
    * @param boxMax
    * @param cutoff
    * @param skin
-   * @param rebuildFrequency
-   * @param cellsPerDimension number of cells per dimension. 
+   * @param cellsPerDimension number of cells per dimension.
+   * @param sortingThreshold number of particles in two cells from which sorting should be performed
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
   LinkedCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-              const double skin, const unsigned int rebuildFrequency, const std::array<unsigned long, 3> &cellsPerDimension,
+              const double skin, const std::array<unsigned long, 3> &cellsPerDimension,
+              const size_t sortingThreshold = 8,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency),
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin, sortingThreshold),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellsPerDimension),
         _loadEstimator(loadEstimator) {}
 

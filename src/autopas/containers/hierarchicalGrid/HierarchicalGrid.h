@@ -94,7 +94,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       _numLevels = _maxCutoffPerLevel.size();
     }
     if (_fittedGrids) {
-      createFittedGrids();
+      createFittedGrids(sortingThreshold, loadEstimator);
       return;
     }
     // largest interaction length
@@ -115,7 +115,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     }
   }
 
-  void createFittedGrids() {
+  void createFittedGrids(const size_t sortingThreshold, LoadEstimatorOption loadEstimator) {
     std::vector<double> interactionLengths(_numLevels);
     interactionLengths[_numLevels - 1] = _maxCutoffPerLevel.back() + _skin;
 
@@ -132,7 +132,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
 
     // construct last level first, so we can fit other levels to it
     _levels[_numLevels - 1] = std::make_unique<autopas::LinkedCells<Particle_T>>(
-        _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, _rebuildFrequency, _cellSizeFactor * highLevelRatio);
+        _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, _cellSizeFactor * highLevelRatio, sortingThreshold,
+        loadEstimator);
 
     auto highestCellLength = _levels[_numLevels - 1]->getCellBlock().getCellLength();
     std::array<size_t, 3> cellsPerDimensionHigher = {
@@ -170,17 +171,14 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       // keep stride of 3
       if (!_fittedGrids) {
         double ratio = interactionLengths[i] / interactionLengths.back();
-        // here, LinkedCells with smaller cutoffs need to have bigger halo regions, because particles on level above
-        // can potentially interact with those, even though these halo particles cannot interact with other particles
-        // inside its own level a hacky way: make all LinkedCells interactionLength equal to the biggest one, adjust
-        // cellSizeFactor for each LinkedCells so that the cellLength is equal to actual interaction length of that
-        // level
-        _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
-            _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, _rebuildFrequency, _cellSizeFactor * ratio);
-      } else {
         // again the hacky way to get the proper halo size
         _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(),
-                                                                        _skin, _rebuildFrequency, cellsPerDimension);
+                                                                        _skin, _cellSizeFactor * ratio,
+                                                                        sortingThreshold, loadEstimator);
+      } else {
+        // again the hacky way to get the proper halo size
+        _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
+            _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, cellsPerDimension, sortingThreshold, loadEstimator);
       }
     }
     _levels.shrink_to_fit();
