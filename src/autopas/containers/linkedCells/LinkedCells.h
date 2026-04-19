@@ -566,6 +566,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
     return {cellIndex, particleIndex};
   }
 
+ public:
   /**
    * Checks if a given traversal is allowed for LinkedCells and sets it up for the force interactions.
    * @tparam Traversal Traversal type. E.g. pairwise, triwise
@@ -588,6 +589,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
     }
   }
 
+ protected:
   /**
    * object to manage the block of cells.
    */

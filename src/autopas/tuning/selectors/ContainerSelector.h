@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/hierarchicalGrid/HierarchicalGrid.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
@@ -51,6 +52,7 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
   const auto &cellSizeFactor = containerInfo.cellSizeFactor;
   const auto &loadEstimator = containerInfo.loadEstimator;
   const auto &sortingThreshold = containerInfo.sortingThreshold;
+  const auto &hGridMaxCutoffPerLevel = containerInfo.hGridMaxCutoffPerLevel;
 
   std::unique_ptr<ParticleContainerInterface<Particle_T>> container;
   switch (containerChoice) {
@@ -100,6 +102,11 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
     case ContainerOption::octree: {
       container =
           std::make_unique<Octree<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, sortingThreshold);
+      break;
+    }
+    case ContainerOption::hierarchicalGrid: {
+      container = std::make_unique<HierarchicalGrid<Particle_T>>(boxMin, boxMax, hGridMaxCutoffPerLevel, verletSkin,
+                                                                 cellSizeFactor, sortingThreshold, loadEstimator);
       break;
     }
     default: {

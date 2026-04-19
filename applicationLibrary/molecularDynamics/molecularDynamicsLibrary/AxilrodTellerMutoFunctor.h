@@ -592,7 +592,7 @@ class AxilrodTellerMutoFunctor
   static_assert(sizeof(AoSThreadDataGlobals) % 64 == 0, "AoSThreadDataGlobals has wrong size");
   static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
-  const double _cutoffSquared;
+  double _cutoffSquared;
 
   // Parameter of the Axilrod-Teller-Muto potential
   // not const because they might be reset through PPL

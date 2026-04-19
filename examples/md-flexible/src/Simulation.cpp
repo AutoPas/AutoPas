@@ -153,6 +153,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
   _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
   _autoPasContainer->setCutoff(_configuration.cutoff.value);
+  _autoPasContainer->setHGridMaxCutoffPerLevel(_configuration.hGridMaxCutoffPerLevel.value);
   _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
   _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
   _autoPasContainer->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
@@ -180,6 +181,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
   _autoPasContainer->setOutputSuffix(outputSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
+
+  // set data of MoleculeLJ for MD_FLEXIBLE_SCALING_CUTOFF
+  ParticleType::setParticlePropertiesLibrary(_configuration.getParticlePropertiesLibrary());
+  ParticleType::setCutoffMultiplier(_configuration.cutoff.value);
 
   _autoPasContainer->init();
 

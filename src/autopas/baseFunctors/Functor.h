@@ -263,6 +263,10 @@ class Functor {
     }
   }
 
+ protected:
+  /**
+   * Current interaction cutoff used by the functor.
+   */
   double _cutoff;
 };
 
