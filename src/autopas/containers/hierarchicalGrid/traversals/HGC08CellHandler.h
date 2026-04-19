@@ -7,9 +7,7 @@
 #pragma once
 
 #include <cmath>
-#include <iostream>
 #include <limits>
-#include <sstream>
 
 #include "autopas/containers/CellBlock3D.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandler.h"
@@ -45,7 +43,7 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> 
    * @param upperLevel The upper level of the hierarchical grid
    * @param fittedGrids Whether the grids of the hierarchical grid are fitted to each other.
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
-   * in that case the interactionLength is needed!S
+   * in that case the interactionLength is needed!
    */
   explicit HGC08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                             double interactionLength, const std::array<double, 3> &cellLength,
@@ -98,7 +96,7 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> 
    */
   std::vector<double> _interactionLengthsSquared;
   /**
-   * Shift length, which is smaller than the smalles cell width.
+   * Shift length, which is smaller than the smallest cell width.
    */
   std::array<double, 3> _shiftLength;
 
@@ -130,7 +128,7 @@ inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::decompose2AndProces
     lowCornerCell2 = {lowCornerCell2[0] + _shiftLength[0], lowCornerCell2[1] + _shiftLength[1],
                       lowCornerCell2[2] + _shiftLength[2]};
   } else {
-    // Replace upper corner with lower corner of the diagonally higher corner. Otherwise we might get ambigious
+    // Replace upper corner with lower corner of the diagonally higher corner. Otherwise we might get ambiguous
     // boundaries, because high and next low corner dont always give the same result, because of floating point errors.
     auto upperIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(
         cellIndex2, _cellBlocks[_upperLevel]->getCellsPerDimensionWithHalo());

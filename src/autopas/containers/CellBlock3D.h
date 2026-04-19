@@ -55,7 +55,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
   }
   /**
    * Constructor of CellBlock3D, where the number of cells per dimension is directly given.
-   * Usefull for HierarchicalGrid container
+   * Useful for HierarchicalGrid container
    * @param vec Vector of ParticleCells that this class manages.
    * @param bMin Lower corner of the cell block.
    * @param bMax Higher corner of the cell block.
@@ -146,7 +146,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param cellsPerDim Number of cells per dimension.
    */
   void rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
-               double interactionLength, std::array<index_t, 3> &cellsPerDim);
+               double interactionLength, const std::array<index_t, 3> &cellsPerDim);
 
   /**
    * Get the containing cell of a specified position.

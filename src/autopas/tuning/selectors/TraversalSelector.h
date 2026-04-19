@@ -359,6 +359,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
     case TraversalOption::hgridFit_c08: {
       traversal = std::make_unique<HGFitC08Traversal<ParticleCell_T, PairwiseFunctor_T>>(
           &pairwiseFunctor, traversalInfo.hGridNumLevels, dataLayout, useNewton3);
+      break;
     }
 
     default: {
