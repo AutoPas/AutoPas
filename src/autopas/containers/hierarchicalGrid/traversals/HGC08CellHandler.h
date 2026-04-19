@@ -11,8 +11,8 @@
 #include <limits>
 #include <sstream>
 
-#include "LCC08CellHandler.h"
 #include "autopas/containers/CellBlock3D.h"
+#include "autopas/containers/linkedCells/traversals/LCC08CellHandler.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
