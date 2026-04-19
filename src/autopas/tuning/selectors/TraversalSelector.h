@@ -348,10 +348,12 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
     case TraversalOption::hgrid_block4: {
       traversal = std::make_unique<HGBlockTraversal<ParticleCell_T, PairwiseFunctor_T>>(
           &pairwiseFunctor, traversalInfo.hGridNumLevels, dataLayout, useNewton3, 4);
+      break;
     }
     case TraversalOption::hgrid_block8: {
       traversal = std::make_unique<HGBlockTraversal<ParticleCell_T, PairwiseFunctor_T>>(
           &pairwiseFunctor, traversalInfo.hGridNumLevels, dataLayout, useNewton3, 8);
+      break;
     }
     default: {
       utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",
