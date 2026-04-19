@@ -36,7 +36,7 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
   /**
    * Type alias for cell blocks used by this traversal.
    */
-  using CellBlock = typename HGTraversalBase<ParticleCell_T>::CellBlock;
+  using CellBlock = internal::CellBlock3D<FullParticleCell<Particle>>;
 
   /**
    * Constructor.
@@ -170,7 +170,7 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
     // We dont actually compute inter-level interactions, so this is enough:
     std::vector<CellBlock *> cellBlocks = {&this->_levels->at(level)->getCellBlock()};
     std::vector<double> interactionLengthsSquared = {};
-    return std::make_unique<HGC08SingleLevelTraversal<ParticleCell_T, Functor_T>>(
+    return std::make_unique<HGC08SingleLevelTraversal<FullParticleCell<Particle>, Functor_T>>(
         traversalInfo.cellsPerDim, &_functor, traversalInfo.interactionLength, traversalInfo.cellLength,
         this->_dataLayout, this->_useNewton3, cellBlocks, interactionLengthsSquared, 0, haloRegionWidth);
   }
