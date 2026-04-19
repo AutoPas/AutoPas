@@ -35,17 +35,18 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    * Constructor of the HierarchicalGrid class.
    * @param boxMin
    * @param boxMax
-   * @param hGridMaxCutoffPerLevel max cutoffs for each level of the hierarchy
+   * @param hGridMaxCutoffPerLevel Max cutoffs for each level of the hierarchy
    * @param skin Verlet skin
-   * @param cellSizeFactor cell size factor relative to cutoff
-   * @param sortingThreshold number of particles in two cells from which sorting should be performed
-   * @param loadEstimator the load estimation algorithm for balanced traversals.
-
+   * @param cellSizeFactor Cell size factor relative to cutoff
+   * @param sortingThreshold Number of particles in two cells from which sorting should be performed
+   * @param loadEstimator The load estimation algorithm for balanced traversals.
+   * @param fittedGrids Whether to fit the grids into one another.
    */
   HierarchicalGrid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                    const std::vector<double> &hGridMaxCutoffPerLevel, const double skin,
                    const double cellSizeFactor = 1.0, const size_t sortingThreshold = 8,
-                   LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
+                   LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
+                   bool fittedGrids = false)
       : ParticleContainerInterface<Particle_T>(skin),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -53,7 +54,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
         _numLevels(hGridMaxCutoffPerLevel.size()),
         _cellSizeFactor(cellSizeFactor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(size_t)),
-        _maxCutoffPerLevel(hGridMaxCutoffPerLevel) {
+        _maxCutoffPerLevel(hGridMaxCutoffPerLevel),
+        _fittedGrids(fittedGrids) {
     /*
      * @todo: In the future automatically choose the number of levels and min cell sizes per level?
      * We need to know particles sizes beforehand.
