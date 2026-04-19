@@ -89,7 +89,7 @@ class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>, public HGTrave
    * @param level which HGrid level to generate a traversal for
    * @return
    */
-  std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override {}
+  std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override { return nullptr; }
 };
 
 template <class ParticleCell_T, class Functor_T>

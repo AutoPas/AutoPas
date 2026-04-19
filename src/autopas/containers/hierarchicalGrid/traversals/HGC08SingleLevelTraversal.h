@@ -88,7 +88,7 @@ class HGC08SingleLevelTraversal : public C08BasedTraversal<ParticleCell_T, Pairw
   /**
    * The width of the halo region in cells.
    */
-  const std::array<size_t, 3> _haloRegionCellWidth;
+  std::array<size_t, 3> _haloRegionCellWidth;
 };
 
 template <class ParticleCell_T, class PairwiseFunctor>
