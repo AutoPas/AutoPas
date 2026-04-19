@@ -49,9 +49,6 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
 
   void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
-    if (not this->isApplicable()) {
-      utils::ExceptionHandler::exception("Not supported with hgrid_block");
-    }
     this->computeIntraLevelInteractions();
     if (this->_numLevels == 1) {
       return;
