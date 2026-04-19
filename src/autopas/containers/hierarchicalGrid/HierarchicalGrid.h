@@ -43,7 +43,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    */
   HierarchicalGrid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                    const std::vector<double> &hGridMaxCutoffPerLevel, const double skin,
-                   const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
+                   const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0, bool fittedGrids = false)
       : ParticleContainerInterface<Particle_T>(skin),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -52,7 +52,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
         _cellSizeFactor(cellSizeFactor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(size_t)),
         _rebuildFrequency(rebuildFrequency),
-        _maxCutoffPerLevel(hGridMaxCutoffPerLevel) {
+        _maxCutoffPerLevel(hGridMaxCutoffPerLevel),
+        _fittedGrids(fittedGrids) {
     /*
      * NOTE: In the future automatically choose the number of levels and min cell sizes per level?
      * We need to know particles sizes beforehand.
@@ -75,7 +76,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       maxLength = std::min(maxLength, boxMax[i] - boxMin[i]);
     }
     maxLength -= _skin;
-    // fix maxCutoffs if they are bigger than maxLength
+    // exception if max Cutoffs are bigger than maxLength
     for (auto &cellSize : _maxCutoffPerLevel) {
       if (cellSize > maxLength) {
         utils::ExceptionHandler::exception(
@@ -92,6 +93,10 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
                  _maxCutoffPerLevel.size());
       _numLevels = _maxCutoffPerLevel.size();
     }
+    if (_fittedGrids) {
+      createFittedGrids();
+      return;
+    }
     // largest interaction length
     const double interactionLengthLargest = _maxCutoffPerLevel.back() + _skin;
     // generate LinkedCells for each hierarchy, with different cutoffs
@@ -107,6 +112,77 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle_T>>(
           _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, _rebuildFrequency, _cellSizeFactor * ratio));
     }
+  }
+
+  void createFittedGrids() {
+    std::vector<double> interactionLengths(_numLevels);
+    interactionLengths[_numLevels - 1] = _maxCutoffPerLevel.back() + _skin;
+
+    // Assure at least 2 levels
+    double highLevelRatio = 1.0;
+    interactionLengths[0] = _maxCutoffPerLevel[0] + _skin;
+    if (2.0 * interactionLengths[0] >= interactionLengths.back()) {
+      // Smallest representable value above the exact threshold that still guarantees >=2 lower cells per upper cell.
+      const double minimumSafeRatio = 2.0 * interactionLengths[0] / interactionLengths.back();
+      highLevelRatio = std::nextafter(minimumSafeRatio, std::numeric_limits<double>::infinity());
+    }
+
+    _levels.resize(_numLevels);
+
+    // construct last level first, so we can fit other levels to it
+    _levels[_numLevels - 1] = std::make_unique<autopas::LinkedCells<Particle>>(
+        _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, _rebuildFrequency, _cellSizeFactor * highLevelRatio);
+
+    auto highestCellLength = _levels[_numLevels - 1]->getCellBlock().getCellLength();
+    std::array<size_t, 3> cellsPerDimensionHigher = {
+        static_cast<size_t>(std::llround((boxMax[0] - boxMin[0]) / highestCellLength[0])),
+        static_cast<size_t>(std::llround((boxMax[1] - boxMin[1]) / highestCellLength[1])),
+        static_cast<size_t>(std::llround((boxMax[2] - boxMin[2]) / highestCellLength[2]))};
+    std::array<size_t, 3> cellsPerDimension;
+    size_t lowerCellsPerHigher;
+
+    // generate LinkedCells for each level with different cutoffs
+    for (size_t i = _numLevels - 1; i-- > 0;) {
+      interactionLengths[i] = _maxCutoffPerLevel[i] + _skin;
+      // increase size of lower level cells to fit the bigger level cell, if it does not fit, remove that level
+      auto cellLength = _levels[i + 1]->getCellBlock().getCellLength();
+      for (size_t d = 0; d < 3; ++d) {
+        lowerCellsPerHigher = static_cast<size_t>(std::floor(cellLength[d] / (interactionLengths[i] * _cellSizeFactor)));
+        // sort out levels too close to be fitted
+        if (lowerCellsPerHigher < 2) {
+          _maxCutoffPerLevel.erase(_maxCutoffPerLevel.begin() + i);
+          interactionLengths.erase(interactionLengths.begin() + i);
+          _levels.erase(_levels.begin() + i);
+          _numLevels--;
+          break;
+        }
+        // update cellsPerDimension for the next lower level
+        cellsPerDimension[d] = lowerCellsPerHigher * cellsPerDimensionHigher[d];
+      }
+      // if level was removed, create no linked cells and continue with next level
+      if (lowerCellsPerHigher < 2) {
+        continue;
+      }
+      cellsPerDimensionHigher = cellsPerDimension;
+      // Case we dont want to fit the grids perfecty, but just want to make sure they are not too close together, to
+      // keep stride of 3
+      if (!_fittedGrids) {
+        double ratio = interactionLengths[i] / interactionLengths.back();
+        // here, LinkedCells with smaller cutoffs need to have bigger halo regions, because particles on level above
+        // can potentially interact with those, even though these halo particles cannot interact with other particles
+        // inside its own level a hacky way: make all LinkedCells interactionLength equal to the biggest one, adjust
+        // cellSizeFactor for each LinkedCells so that the cellLength is equal to actual interaction length of that
+        // level
+        _levels[i] = std::make_unique<autopas::LinkedCells<Particle>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(), skin,
+                                                                      rebuildFrequency, cellSizeFactor * ratio);
+      } else {
+        // again the hacky way to get the proper halo size
+        _levels[i] = std::make_unique<autopas::LinkedCells<Particle>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(), skin,
+                                                                      rebuildFrequency, cellsPerDimension);
+      }
+    }
+    _levels.shrink_to_fit();
+    _maxCutoffPerLevel.shrink_to_fit();
   }
 
   /**
@@ -481,11 +557,13 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    * Cache-line padding factor for _currentLevel and _prevCells to reduce false sharing between threads.
    */
   const size_t _cacheOffset;
-
   const unsigned int _rebuildFrequency;
   std::vector<std::unique_ptr<LinkedCells<Particle_T>>> _levels;
   std::vector<double> _maxCutoffPerLevel;
-
+  /**
+   * Indicates whether grids fit perfectly into one another, allowing for HGC08
+   */
+  bool _fittedGrids;
   /**
    * Gets the level of the hierarchical grid to which the particle should belong, e.g. for purposes of adding the
    * particle to the container. This is the level with the smallest cell size (excluding skin) that is greater than or

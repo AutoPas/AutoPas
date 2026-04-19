@@ -209,6 +209,13 @@ class TraversalOption : public Option<TraversalOption> {
      */
     hgrid_block4,
     hgrid_block8,
+    // HierarchicalGridFitted Traversal
+    /**
+     * Traverses the LinkedCells of every level in lc_c08 fashion. For every cell pair of the regular c08 base step,
+     * decomposes each cell into all lower level cells inside of it and computes the inter level interactions between
+     * them.
+     */
+    hgridFit_c08,
   };
 
   /**
@@ -348,6 +355,9 @@ class TraversalOption : public Option<TraversalOption> {
         // HierarchicalGrid Traversals:
         {TraversalOption::hgrid_block4, "hgrid_block4"},
         {TraversalOption::hgrid_block8, "hgrid_block8"},
+
+        // HierarchicalGridFitted Traversals:
+        {TraversalOption::hgridFit_c08, "hgridFit_c08"},
     };
   };
 

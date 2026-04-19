@@ -145,6 +145,16 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
+ * Lists all traversal options applicable for the HierarchicalGridFitted container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allHGFCompatibleTraversals() {
+  // Can use all hgrid traversals and all hgridFit traversals
+  static const auto s = filterAllOptions("hgrid", InteractionTypeOption::pairwise);
+  return s;
+}
+
+/**
  * Provides a set of all traversals that only support Newton3 mode disabled.
  * @return
  */
@@ -224,6 +234,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
         case ContainerOption::hierarchicalGrid: {
           return allHGCompatibleTraversals();
+        }
+        case ContainerOption::hierarchicalGridFitted: {
+          return allHGFCompatibleTraversals();
         }
       }
     }

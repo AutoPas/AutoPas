@@ -307,6 +307,11 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
       return std::make_unique<HGBlockTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout, useNewton3,
                                                                                8);
     }
+    case TraversalOption::hgridFit_c08: {
+      return std::make_unique<HGFitC08Traversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
+                                                                                useNewton3);
+    }
+
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",
                                                   traversalType.to_string());

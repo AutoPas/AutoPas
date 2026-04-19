@@ -73,6 +73,10 @@ class ContainerOption : public Option<ContainerOption> {
      * hierarchy with the smallest cutoff that is bigger or equal than particles interactionLength.
      */
     hierarchicalGrid,
+    /**
+     * HierarchicalGridFitted: Like HierarchicalGrid, but the grids perfectly fit into each other.
+     */
+    hierarchicalGridFitted,
   };
 
   /**
@@ -114,7 +118,8 @@ class ContainerOption : public Option<ContainerOption> {
             {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
             {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
             {ContainerOption::octree, "Octree"},
-            {ContainerOption::hierarchicalGrid, "HierarchicalGrid"}};
+            {ContainerOption::hierarchicalGrid, "HierarchicalGrid"},
+            {ContainerOption::hierarchicalGridFitted, "HierarchicalGridFitted"}};
   };
 
  private:
