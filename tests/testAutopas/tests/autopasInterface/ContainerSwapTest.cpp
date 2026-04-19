@@ -205,6 +205,9 @@ std::vector<autopas::Configuration> containerConfigs = {
     {autopas::ContainerOption::hierarchicalGrid, 1, autopas::TraversalOption::hgrid_block8,
      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
      autopas::InteractionTypeOption::pairwise},
+    {autopas::ContainerOption::hierarchicalGridFitted, 1, autopas::TraversalOption::hgridFit_c08,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::octree, 1, autopas::TraversalOption::ot_c01, autopas::LoadEstimatorOption::none,
      autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise}};
 

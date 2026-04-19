@@ -28,6 +28,9 @@ namespace autopas {
 template <class ParticleCell_T, class Functor_T>
 class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>, public HGTraversalInterface {
  public:
+  /**
+   * Particle type handled by this traversal.
+   */
   using Particle = typename ParticleCell_T::ParticleType;
 
   /**
@@ -48,6 +51,7 @@ class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>, public HGTrave
 
   /**
    * C08 traversals are always usable for fitted grids.
+   * @todo: In the future sort out single level Hgrids.
    * @return true
    */
   [[nodiscard]] bool isApplicable() const override { return true; }
@@ -80,8 +84,17 @@ class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>, public HGTrave
 
  protected:
   // HGTraversalBase for some reason needs hardcoded FullParticleCell
+  /**
+   * Cell block type used for hierarchical-grid traversal.
+   */
   using CellBlock = internal::CellBlock3D<FullParticleCell<Particle>>;
+  /**
+   * Pairwise functor used to compute interactions.
+   */
   Functor_T *_functor;
+  /**
+   * Utility that converts between AoS and SoA data layouts for the functor.
+   */
   utils::DataLayoutConverter<Functor_T> _dataLayoutConverter;
 
   /**

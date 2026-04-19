@@ -72,7 +72,13 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> 
   void processBaseCell(size_t baseIndex);
 
  protected:
+  /**
+   * Particle type handled by the particle cells.
+   */
   using Particle = typename ParticleCell::ParticleType;
+  /**
+   * Cell block type used by the hierarchical-grid levels.
+   */
   using CellBlock = internal::CellBlock3D<ParticleCell>;
 
   /**

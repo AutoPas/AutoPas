@@ -117,6 +117,13 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     }
   }
 
+ private:
+  /**
+   * Create hierarchy levels whose cell grids are fitted to each other.
+   *
+   * @param sortingThreshold Number of particles in two cells from which sorting should be performed.
+   * @param loadEstimator The load estimation algorithm for balanced traversals.
+   */
   void createFittedGrids(const size_t sortingThreshold, LoadEstimatorOption loadEstimator) {
     std::vector<double> interactionLengths(_numLevels);
     interactionLengths[_numLevels - 1] = _maxCutoffPerLevel.back() + _skin;
@@ -187,6 +194,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     _maxCutoffPerLevel.shrink_to_fit();
   }
 
+ public:
   /**
    * Destructor of HierarchicalGrid.
    */
