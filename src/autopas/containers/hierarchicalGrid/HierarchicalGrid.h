@@ -130,14 +130,14 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     _levels.resize(_numLevels);
 
     // construct last level first, so we can fit other levels to it
-    _levels[_numLevels - 1] = std::make_unique<autopas::LinkedCells<Particle>>(
+    _levels[_numLevels - 1] = std::make_unique<autopas::LinkedCells<Particle_T>>(
         _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, _rebuildFrequency, _cellSizeFactor * highLevelRatio);
 
     auto highestCellLength = _levels[_numLevels - 1]->getCellBlock().getCellLength();
     std::array<size_t, 3> cellsPerDimensionHigher = {
-        static_cast<size_t>(std::llround((boxMax[0] - boxMin[0]) / highestCellLength[0])),
-        static_cast<size_t>(std::llround((boxMax[1] - boxMin[1]) / highestCellLength[1])),
-        static_cast<size_t>(std::llround((boxMax[2] - boxMin[2]) / highestCellLength[2]))};
+        static_cast<size_t>(std::llround((_boxMax[0] - _boxMin[0]) / highestCellLength[0])),
+        static_cast<size_t>(std::llround((_boxMax[1] - _boxMin[1]) / highestCellLength[1])),
+        static_cast<size_t>(std::llround((_boxMax[2] - _boxMin[2]) / highestCellLength[2]))};
     std::array<size_t, 3> cellsPerDimension;
     size_t lowerCellsPerHigher;
 
@@ -147,7 +147,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       // increase size of lower level cells to fit the bigger level cell, if it does not fit, remove that level
       auto cellLength = _levels[i + 1]->getCellBlock().getCellLength();
       for (size_t d = 0; d < 3; ++d) {
-        lowerCellsPerHigher = static_cast<size_t>(std::floor(cellLength[d] / (interactionLengths[i] * _cellSizeFactor)));
+        lowerCellsPerHigher =
+            static_cast<size_t>(std::floor(cellLength[d] / (interactionLengths[i] * _cellSizeFactor)));
         // sort out levels too close to be fitted
         if (lowerCellsPerHigher < 2) {
           _maxCutoffPerLevel.erase(_maxCutoffPerLevel.begin() + i);
@@ -173,12 +174,12 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
         // inside its own level a hacky way: make all LinkedCells interactionLength equal to the biggest one, adjust
         // cellSizeFactor for each LinkedCells so that the cellLength is equal to actual interaction length of that
         // level
-        _levels[i] = std::make_unique<autopas::LinkedCells<Particle>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(), skin,
-                                                                      rebuildFrequency, cellSizeFactor * ratio);
+        _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
+            _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, _rebuildFrequency, _cellSizeFactor * ratio);
       } else {
         // again the hacky way to get the proper halo size
-        _levels[i] = std::make_unique<autopas::LinkedCells<Particle>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(), skin,
-                                                                      rebuildFrequency, cellsPerDimension);
+        _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(),
+                                                                        _skin, _rebuildFrequency, cellsPerDimension);
       }
     }
     _levels.shrink_to_fit();
