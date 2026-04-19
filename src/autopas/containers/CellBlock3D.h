@@ -63,7 +63,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param cellsPerDim Number of cells per dimension (without halo).
    */
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
-              double interactionLength, std::array<index_t, 3> cellsPerDim)
+              double interactionLength, const std::array<index_t, 3> &cellsPerDim)
       : _cells(&vec), _boxMin(bMin), _boxMax(bMax), _interactionLength(interactionLength) {
     rebuild(vec, bMin, bMax, interactionLength, cellsPerDim);
 
@@ -460,7 +460,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
 template <class ParticleCell>
 inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin,
                                                const std::array<double, 3> &bMax, double interactionLength,
-                                               std::array<index_t, 3> &cellsPerDim) {
+                                               const std::array<index_t, 3> &cellsPerDim) {
   using namespace autopas::utils::ArrayMath::literals;
   this->_cells = &vec;
   this->_boxMin = bMin;

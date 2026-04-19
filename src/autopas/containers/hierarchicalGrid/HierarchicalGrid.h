@@ -176,6 +176,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
         continue;
       }
       cellsPerDimensionHigher = cellsPerDimension;
+      // @todo: This case is currently dead code and can be removed, I left it for now, so there is some trace of this
+      // existing, in case we might want non-fitted Hgrids using the HGC08 traversal in the future.
       // Case we dont want to fit the grids perfecty, but just want to make sure they are not too close together, to
       // keep stride of 3
       if (!_fittedGrids) {
@@ -295,7 +297,13 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    */
   [[nodiscard]] double getInteractionLength() const final { return _maxCutoffPerLevel.back() + _skin; }
 
-  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::hierarchicalGrid; }
+  [[nodiscard]] ContainerOption getContainerType() const override {
+    if (_fittedGrids) {
+      return ContainerOption::hierarchicalGridFitted;
+    } else {
+      return ContainerOption::hierarchicalGrid;
+    }
+  }
 
   /**
    * Get the cell type used by this container.

@@ -34,7 +34,7 @@ class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>, public HGTrave
   using Particle = typename ParticleCell_T::ParticleType;
 
   /**
-   * Constructor of the lc_c08 traversal.
+   * Constructor of the hgridFit_c08 traversal.
    * @param functor The functor that defines the interaction of two particles.
    * @param numLevels Number of levels in the hierarchical grid.
    * @param dataLayout The data layout with which this traversal should be initialized.
