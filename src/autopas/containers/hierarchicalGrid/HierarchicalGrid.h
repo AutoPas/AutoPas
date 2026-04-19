@@ -55,7 +55,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(size_t)),
         _maxCutoffPerLevel(hGridMaxCutoffPerLevel) {
     /*
-     * NOTE: In the future automatically choose the number of levels and min cell sizes per level?
+     * @todo: In the future automatically choose the number of levels and min cell sizes per level?
      * We need to know particles sizes beforehand.
      * Not relevant for md simulations but can be useful for DEM simulations.
      * Good heuristic for automatically choosing:
