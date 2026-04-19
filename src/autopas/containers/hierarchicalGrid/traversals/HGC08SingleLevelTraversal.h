@@ -7,7 +7,6 @@
 #pragma once
 
 #include "HGC08CellHandler.h"
-#include "LCTraversalInterface.h"
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -30,8 +29,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell_T, class PairwiseFunctor>
-class HGC08SingleLevelTraversal : public C08BasedTraversal<ParticleCell_T, PairwiseFunctor>,
-                                  public LCTraversalInterface {
+class HGC08SingleLevelTraversal : public C08BasedTraversal<ParticleCell_T, PairwiseFunctor> {
  public:
   /**
    * Constructor of the hg_c08 traversal.
