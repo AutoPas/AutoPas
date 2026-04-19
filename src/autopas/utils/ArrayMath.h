@@ -12,10 +12,10 @@
 #include <numeric>
 #include <sstream>
 
-#include "Math.h"
+#include "autopas/utils/ContainerConcept.h"
+#include "autopas/utils/Math.h"
 
 namespace autopas::utils::ArrayMath {
-
 /**
  * Adds two arrays, returns the result.
  * @tparam T floating point type
@@ -322,54 +322,73 @@ template <class T, std::size_t SIZE>
 }
 
 /**
- * Floors all array elements and converts them to integers.
- * @tparam T floating point type
+ * Floors all array elements and converts them to a different type. Useful to floor array elements and cast them to
+ * some integer type.
+ * @tparam target_T target type. By default int.
+ * @tparam float_T floating point type
  * @tparam SIZE size of the array
  * @param a input array
- * @return New array with floored elements of new type int.
+ * @return New array with floored elements of new type.
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<int, SIZE> floorToInt(const std::array<T, SIZE> &a) {
-  std::array<int, SIZE> result{};
+template <typename target_T = int, typename float_T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<target_T, SIZE> floorAndCast(const std::array<float_T, SIZE> &a) {
+  std::array<target_T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
-    result[d] = static_cast<int>(std::floor(a[d]));
+    result[d] = static_cast<target_T>(std::floor(a[d]));
   }
   return result;
 }
 
 /**
- * Ceils all array elements and converts them to integers.
- * @tparam T floating point type
+ * Ceils all array elements and converts them to a different type. Useful to ceil array elements and cast them to some
+ * integer type.
+ * @tparam target_T target type. By default int.
+ * @tparam float_T floating point type
  * @tparam SIZE size of the array
  * @param a input array
- * @return New array with ceiled elements of new type int.
+ * @return New array with ceiled elements of new type.
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<int, SIZE> ceilToInt(const std::array<T, SIZE> &a) {
-  std::array<int, SIZE> result{};
+template <class target_T = int, class float_T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<target_T, SIZE> ceilAndCast(const std::array<float_T, SIZE> &a) {
+  std::array<target_T, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
-    result[d] = static_cast<int>(std::ceil(a[d]));
+    result[d] = static_cast<target_T>(std::ceil(a[d]));
   }
   return result;
+}
+
+/**
+ * Function for comparing closeness of two floating point numbers using ULP (Units in the Last Place) method.
+ *
+ * @tparam Container must be container type (array, set, vector)
+ * @param lhs The left hand side floating point number to compare.
+ * @param rhs The right hand side floating point number to compare.
+ * @param ulpDistance The maximum acceptable ULP distance between the two floating points
+ *      for which they would be considered near each other. This is optional and defaults to {@link
+ *      autopas::utils::Math::MAX_ULP_DISTANCE}
+ * @return true if the UPL distance for all elements of lhs and rhs is less than or equal to the provided value
+ */
+template <ContainerType Container>
+bool isInUlp(Container lhs, Container rhs, unsigned int ulpDistance = Math::MAX_ULP_DISTANCE) {
+  return lhs.size() == rhs.size() && std::ranges::equal(lhs, rhs, [&ulpDistance](const auto &lhs, const auto &rhs) {
+           return Math::isInUlp(lhs, rhs, ulpDistance);
+         });
 }
 
 /**
  * Returns true if arrays are elementwise relatively near each other.
- * @tparam T floating point type
- * @tparam SIZE size of the array
- * @param a input array
- * @param b input array
- * @param maxRelativeDifference
+ * @tparam Container the container type
+ * @param lhs input array
+ * @param rhs input array
+ * @param maxRelativeDifference and defaults to {@link autopas::utils::Math::EPSILON_RELATIVE_EQUALITY}
  * @return
  */
-template <class T, std::size_t SIZE>
-[[nodiscard]] bool isNearRel(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b,
-                             double maxRelativeDifference = 1e-9) {
-  bool arraysAreNear = true;
-  for (std::size_t i = 0; i < SIZE; ++i) {
-    arraysAreNear = arraysAreNear and utils::Math::isNearRel(a[i], b[i], maxRelativeDifference);
-  }
-  return arraysAreNear;
+template <ContainerType Container>
+bool isNearRel(Container lhs, Container rhs, double maxRelativeDifference = Math::EPSILON_RELATIVE_EQUALITY) {
+  return lhs.size() == rhs.size() &&
+         std::ranges::equal(lhs, rhs, [&maxRelativeDifference](const auto &lhs, const auto &rhs) {
+           return Math::isNearRel(lhs, rhs, maxRelativeDifference);
+         });
 }
 
 /**
@@ -384,7 +403,7 @@ template <class T, std::size_t SIZE>
  */
 template <class T, std::size_t SIZE>
 [[nodiscard]] bool isNearRel(const std::vector<std::array<T, SIZE>> &a, const std::vector<std::array<T, SIZE>> &b,
-                             double maxRelativeDifference = 1e-9) {
+                             double maxRelativeDifference = Math::EPSILON_RELATIVE_EQUALITY) {
   const auto size = a.size();
   if (size != b.size()) {
     return false;
@@ -416,9 +435,25 @@ template <class T>
   return arraysAreEqual;
 }
 
+/**
+ * static_casts all elements of an array to a new type.
+ * @tparam new_T
+ * @tparam old_T
+ * @tparam SIZE
+ * @param a Old Array
+ * @return
+ */
+template <typename new_T, typename old_T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<new_T, SIZE> staticCastArray(const std::array<old_T, SIZE> &a) {
+  std::array<new_T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = static_cast<new_T>(a[d]);
+  }
+  return result;
+}
+
 // namespace for templated operators
 inline namespace literals {
-
 /**
  * Adds two arrays, returns the result.
  * @tparam T floating point type
@@ -647,7 +682,6 @@ constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, T s) {
   }
   return a;
 }
-
 }  // namespace literals
 
 /**

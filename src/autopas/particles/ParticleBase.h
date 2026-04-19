@@ -113,22 +113,6 @@ class ParticleBase {
   friend std::ostream &operator<<(std::ostream &os, const autopas::ParticleBase<T, P> &D);
 
   /**
-   * Equality operator for ParticleBase class.
-   * @param rhs
-   * @return
-   */
-  bool operator==(const ParticleBase &rhs) const {
-    return std::tie(_r, _v, _f, _id) == std::tie(rhs._r, rhs._v, rhs._f, rhs._id);
-  }
-
-  /**
-   * Not-Equals operator for ParticleBase class.
-   * @param rhs
-   * @return
-   */
-  bool operator!=(const ParticleBase &rhs) const { return not(rhs == *this); }
-
-  /**
    * get the force acting on the particle
    * @return force
    */
@@ -280,8 +264,10 @@ class ParticleBase {
   }
 
   /**
-   * Get the size of the Particle. This is used if AutoPas' scaled cutoff is enabled, where the actually applied cutoff for a particle pair is considered to be the cutoff times the mean size of the particles in the pair. In this case, some containers (e.g. Hierarchical Grid) can make optimisations to based on the particle's size.
-   * By default, this is 1, but can be overridden to whatever is appropriate for the custom Particle type.
+   * Get the size of the Particle. This is used if AutoPas' scaled cutoff is enabled, where the actually applied cutoff
+   * for a particle pair is considered to be the cutoff times the mean size of the particles in the pair. In this case,
+   * some containers (e.g. Hierarchical Grid) can make optimisations to based on the particle's size. By default, this
+   * is 1, but can be overridden to whatever is appropriate for the custom Particle type.
    * @return floatType size of the Particle
    */
   virtual floatType getSize() const { return 1; }

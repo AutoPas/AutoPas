@@ -17,7 +17,11 @@ class TraversalSelectorInfo {
    * Dummy constructor such that this class can be used in maps
    */
   TraversalSelectorInfo()
-      : cellsPerDim({0, 0, 0}), interactionLength(1.0), cellLength({0.0, 0.0, 0.0}), clusterSize{0} {}
+      : cellsPerDim({0, 0, 0}),
+        interactionLength(1.0),
+        cellLength({0.0, 0.0, 0.0}),
+        clusterSize{0},
+        hGridNumLevels(1) {}
 
   /**
    * Constructor of the TraversalSelector class.
@@ -25,13 +29,16 @@ class TraversalSelectorInfo {
    * @param interactionLength Interaction length (cutoff radius + skin)
    * @param cellLength cell length.
    * @param clusterSize The size of a cluster (set this to 0 if not applicable).
+   * @param hGridNumLevels The number of levels in the hierarchical grid.
    */
   explicit TraversalSelectorInfo(const std::array<unsigned long, 3> &cellsPerDim, const double interactionLength,
-                                 const std::array<double, 3> &cellLength, const unsigned int clusterSize)
+                                 const std::array<double, 3> &cellLength, const unsigned int clusterSize,
+                                 const unsigned int hGridNumLevels = 1)
       : cellsPerDim(cellsPerDim),
         interactionLength(interactionLength),
         cellLength(cellLength),
-        clusterSize{clusterSize} {}
+        clusterSize{clusterSize},
+        hGridNumLevels(hGridNumLevels) {}
 
   /**
    * Number of cells in the domain per dimension.
@@ -52,5 +59,9 @@ class TraversalSelectorInfo {
    * This specifies the size of verlet clusters.
    */
   const unsigned int clusterSize;
+  /**
+   * This specifies the number of levels in the h-grid.
+   */
+  const unsigned int hGridNumLevels;
 };
 }  // namespace autopas

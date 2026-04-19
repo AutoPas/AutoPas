@@ -3,20 +3,20 @@
  * @author seckler
  * @date 13.05.19
  */
-
 #include "AutoPasInterfaceTest.h"
 
+#include <ranges>
+
 #include "autopas/AutoPasDecl.h"
-#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
-#include "autopas/utils/StaticCellSelector.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
+#include "testingHelpers/ParticleMatcher.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
@@ -473,23 +473,22 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   constexpr double skinLocal = .1;
   constexpr double interactionLength = cutoffLocal + skinLocal;
   constexpr unsigned int clusterSize = 4;
+  constexpr size_t sortingThreshold = 8;
   const std::array<double, 3> boxMinLocal{0., 0., 0.};
   const std::array<double, 3> boxMaxLocal{33., 11., 11.};
   const auto cellsPerDim = static_cast_copy_array<unsigned long>(ceil(boxMaxLocal * (1. / interactionLength)));
   const autopas::TraversalSelectorInfo traversalSelectorInfo{
       cellsPerDim, interactionLength, {interactionLength, interactionLength, interactionLength}, clusterSize};
   LJFunctorGlobals functor(cutoffLocal);
-  const autopas::ContainerSelectorInfo containerSelectorInfo{conf.cellSizeFactor, skinLocal, rebuildFrequency,
-                                                             clusterSize, conf.loadEstimator};
-  autopas::ContainerSelector<Molecule> containerSelector{boxMinLocal, boxMaxLocal, cutoffLocal};
-  containerSelector.selectContainer(conf.container, containerSelectorInfo);
-  auto traversalPtr = autopas::utils::withStaticCellType<Molecule>(
-      containerSelector.getCurrentContainer().getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<LJFunctorGlobals>(
-            conf.traversal, functor, traversalSelectorInfo, conf.dataLayout, conf.newton3);
-      });
+  const autopas::ContainerSelectorInfo containerSelectorInfo{boxMinLocal,         boxMaxLocal,       cutoffLocal,
+                                                             conf.cellSizeFactor, skinLocal,         clusterSize,
+                                                             sortingThreshold,    conf.loadEstimator};
 
-  EXPECT_EQ(conf.hasCompatibleValues(), traversalPtr->isApplicable())
+  auto container = autopas::ContainerSelector<Molecule>::generateContainer(conf.container, containerSelectorInfo);
+  auto traversalPtr = autopas::TraversalSelector::generateTraversalFromConfig<Molecule, LJFunctorGlobals>(
+      conf, functor, traversalSelectorInfo);
+
+  EXPECT_EQ(conf.hasCompatibleValues(), traversalPtr != nullptr)
       << "Either the domain is chosen badly (fix this!) or hasCompatibleValues and isApplicable don't follow the same"
          "logic anymore.";
 }
@@ -538,13 +537,18 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
 
   auto particlesOutside = autoPas.resizeBox(boxMinNew, boxMaxNew);
 
+  // Predicate to compare molecules with each other
+  const auto pred = [&](const auto &lhs, const auto &rhs) { return almostEqualParticles(lhs, rhs); };
+
   // remove particles that are now outside from the expectation
   for (auto &p : particlesOutside) {
-    auto pInExpected = std::find(expectedParticles.begin(), expectedParticles.end(), p);
-    EXPECT_NE(pInExpected, expectedParticles.end())
+    auto match = std::ranges::search(expectedParticles, std::views::single(p), pred);
+    auto ptr = match.begin();
+    EXPECT_NE(ptr, expectedParticles.end())
         << "Particle that was returned as \"outside\" is not one of the initially expected particles!";
-    if (pInExpected != expectedParticles.end()) {
-      expectedParticles.erase(pInExpected);
+
+    if (ptr != expectedParticles.end()) {
+      expectedParticles.erase(ptr);
     }
   }
 
@@ -557,7 +561,7 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
     particlesInsideAfterResize.push_back(p);
   }
 
-  EXPECT_THAT(particlesInsideAfterResize, ::testing::UnorderedElementsAreArray(expectedParticles));
+  EXPECT_THAT(particlesInsideAfterResize, ::testing::UnorderedPointwise(ParticleEq(), expectedParticles));
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface1ContainersTest, ValuesIn(getTestableContainerOptions()),

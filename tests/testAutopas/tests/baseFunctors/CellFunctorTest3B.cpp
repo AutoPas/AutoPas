@@ -8,55 +8,58 @@
 
 #include <sstream>
 
+#include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
+
 // Type aliases via inheritance for more readable test names (using declarations do not work for this)
 struct CellFunctor_AoS_NoN3_NoBi
     : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
-                                              mdLib::AxilrodTellerFunctor<Molecule>, false> {
-  CellFunctor_AoS_NoN3_NoBi(mdLib::AxilrodTellerFunctor<Molecule> *f, const double sortingCutoff)
+                                              mdLib::AxilrodTellerMutoFunctor<Molecule>, false> {
+  CellFunctor_AoS_NoN3_NoBi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
       : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::aos, false) {}
 };
-struct CellFunctor_AoS_NoN3_Bi : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
-                                                                         mdLib::AxilrodTellerFunctor<Molecule>, true> {
-  CellFunctor_AoS_NoN3_Bi(mdLib::AxilrodTellerFunctor<Molecule> *f, const double sortingCutoff)
+struct CellFunctor_AoS_NoN3_Bi
+    : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
+                                              mdLib::AxilrodTellerMutoFunctor<Molecule>, true> {
+  CellFunctor_AoS_NoN3_Bi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
       : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::aos, false) {}
 };
-struct CellFunctor_AoS_N3_NoBi : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
-                                                                         mdLib::AxilrodTellerFunctor<Molecule>, false> {
-  CellFunctor_AoS_N3_NoBi(mdLib::AxilrodTellerFunctor<Molecule> *f, const double sortingCutoff)
+struct CellFunctor_AoS_N3_NoBi
+    : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
+                                              mdLib::AxilrodTellerMutoFunctor<Molecule>, false> {
+  CellFunctor_AoS_N3_NoBi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
       : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::aos, true) {}
 };
-struct CellFunctor_AoS_N3_Bi : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
-                                                                       mdLib::AxilrodTellerFunctor<Molecule>, true> {
-  CellFunctor_AoS_N3_Bi(mdLib::AxilrodTellerFunctor<Molecule> *f, const double sortingCutoff)
+struct CellFunctor_AoS_N3_Bi
+    : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
+                                              mdLib::AxilrodTellerMutoFunctor<Molecule>, true> {
+  CellFunctor_AoS_N3_Bi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
       : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::aos, true) {}
 };
-// TODO: Enable once SoA is implemented for AxilrodTellerFunctor
-/*
+
 struct CellFunctor_SoA_NoN3_NoBi
-    : public autopas::internal::CellFunctor3B<Molecule, autopas::FullParticleCell<Molecule>,
-mdLib::AxilrodTellerFunctor<Molecule>, autopas::DataLayoutOption::soa, false, false> {
-  CellFunctor_SoA_NoN3_NoBi(mdLib::AxilrodTellerFunctor<Molecule> *f, const double sortingCutoff)
-      : CellFunctor3B(f, sortingCutoff) {}
+    : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
+                                              mdLib::AxilrodTellerMutoFunctor<Molecule>, false> {
+  CellFunctor_SoA_NoN3_NoBi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
+      : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::soa, false) {}
 };
 struct CellFunctor_SoA_NoN3_Bi
-    : public autopas::internal::CellFunctor3B<Molecule, autopas::FullParticleCell<Molecule>,
-mdLib::AxilrodTellerFunctor<Molecule>, autopas::DataLayoutOption::soa, false, true> {
-  CellFunctor_SoA_NoN3_Bi(mdLib::AxilrodTellerFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor3B(f,
-sortingCutoff) {}
+    : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
+                                              mdLib::AxilrodTellerMutoFunctor<Molecule>, true> {
+  CellFunctor_SoA_NoN3_Bi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
+      : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::soa, false) {}
 };
 struct CellFunctor_SoA_N3_NoBi
-    : public autopas::internal::CellFunctor3B<Molecule, autopas::FullParticleCell<Molecule>,
-mdLib::AxilrodTellerFunctor<Molecule>, autopas::DataLayoutOption::soa, true, false> {
-  CellFunctor_SoA_N3_NoBi(mdLib::AxilrodTellerFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor3B(f,
-sortingCutoff) {}
+    : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
+                                              mdLib::AxilrodTellerMutoFunctor<Molecule>, false> {
+  CellFunctor_SoA_N3_NoBi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
+      : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::soa, true) {}
 };
 struct CellFunctor_SoA_N3_Bi
-    : public autopas::internal::CellFunctor3B<Molecule, autopas::FullParticleCell<Molecule>,
-mdLib::AxilrodTellerFunctor<Molecule>, autopas::DataLayoutOption::soa, true, true> {
-  CellFunctor_SoA_N3_Bi(mdLib::AxilrodTellerFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor3B(f,
-sortingCutoff) {}
+    : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
+                                              mdLib::AxilrodTellerMutoFunctor<Molecule>, true> {
+  CellFunctor_SoA_N3_Bi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
+      : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::soa, true) {}
 };
-*/
 
 /**
  * All relevant CellFunctor configurations which are used to instantiate the typed test cases
@@ -86,14 +89,14 @@ using CellFTestingTypes = ::testing::Types<CellFunctor_AoS_NoN3_NoBi,
  * @param ownershipParticle3 OwnershipState for particle 3
  * @param ownershipCell OwnershipState of the cell
  * @param dataLayout AoS or SoA
- * @param ATFunctor The functor to evaluate forces
+ * @param ATMFunctor The functor to evaluate forces
  * @return The force magnitudes exerted on the 3 particles <Force[p1], Force[p2], Force[p3]>
  */
 template <typename T>
 std::tuple<double, double, double> doSingleCellInteraction(
     T &cellFunctor, const autopas::OwnershipState ownershipParticle1, const autopas::OwnershipState ownershipParticle2,
     const autopas::OwnershipState ownershipParticle3, const autopas::OwnershipState ownershipCell,
-    const autopas::DataLayoutOption dataLayout, mdLib::AxilrodTellerFunctor<Molecule> &ATFunctor) {
+    const autopas::DataLayoutOption dataLayout, mdLib::AxilrodTellerMutoFunctor<Molecule> &ATMFunctor) {
   using autopas::utils::ArrayMath::L2Norm;
   //   create three particles
   Molecule p1({0.8, 0.5, 0.5}, {0., 0., 0.}, 0);
@@ -112,13 +115,13 @@ std::tuple<double, double, double> doSingleCellInteraction(
   cell1.addParticle(p3);
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    ATFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ATMFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
 
   cellFunctor.processCell(cell1);
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    ATFunctor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    ATMFunctor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
   }
 
   return std::tuple<double, double, double>{L2Norm(cell1[0].getF()), L2Norm(cell1[1].getF()), L2Norm(cell1[2].getF())};
@@ -137,7 +140,7 @@ std::tuple<double, double, double> doSingleCellInteraction(
  * @param ownershipCell1 OwnershipState of the cell 1
  * @param ownershipCell2 OwnershipState of the cell 2
  * @param dataLayout AoS or SoA
- * @param ATFunctor The functor to evaluate forces
+ * @param ATMFunctor The functor to evaluate forces
  * @param particle2InCell1 Boolean if the second particle is in cell 1
  * @return The force magnitudes exerted on the 3 particles <Force[p1], Force[p2], Force[p3]>
  */
@@ -146,7 +149,7 @@ std::tuple<double, double, double> doPairCellInteraction(
     T &cellFunctor, const autopas::OwnershipState ownershipParticle1, const autopas::OwnershipState ownershipParticle2,
     const autopas::OwnershipState ownershipParticle3, const autopas::OwnershipState ownershipCell1,
     const autopas::OwnershipState ownershipCell2, const autopas::DataLayoutOption dataLayout,
-    mdLib::AxilrodTellerFunctor<Molecule> &ATFunctor, const bool particle2InCell1) {
+    mdLib::AxilrodTellerMutoFunctor<Molecule> &ATMFunctor, const bool particle2InCell1) {
   using autopas::utils::ArrayMath::L2Norm;
   //   create three particles
   Molecule p1({0.8, 0.5, 0.5}, {0., 0., 0.}, 0);
@@ -171,15 +174,15 @@ std::tuple<double, double, double> doPairCellInteraction(
   cell2.addParticle(p3);
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    ATFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
-    ATFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ATMFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ATMFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
 
   cellFunctor.processCellPair(cell1, cell2);
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    ATFunctor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
-    ATFunctor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
+    ATMFunctor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    ATMFunctor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
   }
 
   if (particle2InCell1) {
@@ -205,7 +208,7 @@ std::tuple<double, double, double> doPairCellInteraction(
  * @param ownershipCell2 OwnershipState of the cell 2
  * @param ownershipCell3 OwnershipState of the cell 3
  * @param dataLayout AoS or SoA
- * @param ATFunctor The functor to evaluate forces
+ * @param ATMFunctor The functor to evaluate forces
  * @return The force magnitudes exerted on the 3 particles <Force[p1], Force[p2], Force[p3]>
  */
 template <typename T>
@@ -213,7 +216,7 @@ std::tuple<double, double, double> doTripleCellInteraction(
     T &cellFunctor, const autopas::OwnershipState ownershipParticle1, const autopas::OwnershipState ownershipParticle2,
     const autopas::OwnershipState ownershipParticle3, const autopas::OwnershipState ownershipCell1,
     const autopas::OwnershipState ownershipCell2, const autopas::OwnershipState ownershipCell3,
-    const autopas::DataLayoutOption dataLayout, mdLib::AxilrodTellerFunctor<Molecule> &ATFunctor) {
+    const autopas::DataLayoutOption dataLayout, mdLib::AxilrodTellerMutoFunctor<Molecule> &ATMFunctor) {
   using autopas::utils::ArrayMath::L2Norm;
   //   create three particles
   Molecule p1({0.8, 0.5, 0.5}, {0., 0., 0.}, 0);
@@ -236,17 +239,17 @@ std::tuple<double, double, double> doTripleCellInteraction(
   cell3.addParticle(p3);
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    ATFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
-    ATFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
-    ATFunctor.SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ATMFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ATMFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ATMFunctor.SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
 
   cellFunctor.processCellTriple(cell1, cell2, cell3);
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    ATFunctor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
-    ATFunctor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
-    ATFunctor.SoAExtractor(cell3, cell3._particleSoABuffer, 0);
+    ATMFunctor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    ATMFunctor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
+    ATMFunctor.SoAExtractor(cell3, cell3._particleSoABuffer, 0);
   }
 
   return std::tuple<double, double, double>{L2Norm(cell1[0].getF()), L2Norm(cell2[0].getF()), L2Norm(cell3[0].getF())};
@@ -291,19 +294,19 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionSingle) {
               continue;
             }
 
-            mdLib::AxilrodTellerFunctor<Molecule> ATFunctor(CellFunctorTest3B<CellFunctorType>::cutoff);
-            ATFunctor.setParticleProperties(CellFunctorTest3B<CellFunctorType>::nu);
+            mdLib::AxilrodTellerMutoFunctor<Molecule> ATMFunctor(CellFunctorTest3B<CellFunctorType>::cutoff);
+            ATMFunctor.setParticleProperties(CellFunctorTest3B<CellFunctorType>::nu);
 
-            ATFunctor.initTraversal();
+            ATMFunctor.initTraversal();
 
-            CellFunctorType cellFunctor(&ATFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
+            CellFunctorType cellFunctor(&ATMFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
             cellFunctor.setSortingThreshold(sortingThreshold);
 
             const auto &[forceParticle1, forceParticle2, forceParticle3] = doSingleCellInteraction<CellFunctorType>(
                 cellFunctor, ownershipParticle1, ownershipParticle2, ownershipParticle3, ownershipCell1,
-                cellFunctor.getDataLayout(), ATFunctor);
+                cellFunctor.getDataLayout(), ATMFunctor);
 
-            ATFunctor.endTraversal(cellFunctor.getNewton3());
+            ATMFunctor.endTraversal(cellFunctor.getNewton3());
 
             // EXPECTATIONS
             if (ownershipCell1 == halo) {
@@ -384,19 +387,19 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionPair) {
                 if (ownershipCell2 == halo and not particle2InCell1 and ownershipParticle2 == owned) {
                   continue;
                 }
-                mdLib::AxilrodTellerFunctor<Molecule> ATFunctor(CellFunctorTest3B<CellFunctorType>::cutoff);
-                ATFunctor.setParticleProperties(CellFunctorTest3B<CellFunctorType>::nu);
+                mdLib::AxilrodTellerMutoFunctor<Molecule> ATMFunctor(CellFunctorTest3B<CellFunctorType>::cutoff);
+                ATMFunctor.setParticleProperties(CellFunctorTest3B<CellFunctorType>::nu);
 
-                ATFunctor.initTraversal();
+                ATMFunctor.initTraversal();
 
-                CellFunctorType cellFunctor(&ATFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
+                CellFunctorType cellFunctor(&ATMFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
                 cellFunctor.setSortingThreshold(sortingThreshold);
 
                 const auto &[forceParticle1, forceParticle2, forceParticle3] = doPairCellInteraction<CellFunctorType>(
                     cellFunctor, ownershipParticle1, ownershipParticle2, ownershipParticle3, ownershipCell1,
-                    ownershipCell2, cellFunctor.getDataLayout(), ATFunctor, particle2InCell1);
+                    ownershipCell2, cellFunctor.getDataLayout(), ATMFunctor, particle2InCell1);
 
-                ATFunctor.endTraversal(cellFunctor.getNewton3());
+                ATMFunctor.endTraversal(cellFunctor.getNewton3());
 
                 // EXPECTATIONS
                 if (ownershipCell1 == halo and ownershipCell2 == halo) {
@@ -482,19 +485,19 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionTriple) {
           for (const auto ownershipCell1 : {ownershipParticle1, ownedOrHalo}) {
             for (const auto ownershipCell2 : {ownershipParticle2, ownedOrHalo}) {
               for (const auto ownershipCell3 : {ownershipParticle3, ownedOrHalo}) {
-                mdLib::AxilrodTellerFunctor<Molecule> ATFunctor(CellFunctorTest3B<CellFunctorType>::cutoff);
-                ATFunctor.setParticleProperties(CellFunctorTest3B<CellFunctorType>::nu);
+                mdLib::AxilrodTellerMutoFunctor<Molecule> ATMFunctor(CellFunctorTest3B<CellFunctorType>::cutoff);
+                ATMFunctor.setParticleProperties(CellFunctorTest3B<CellFunctorType>::nu);
 
-                ATFunctor.initTraversal();
+                ATMFunctor.initTraversal();
 
-                CellFunctorType cellFunctor(&ATFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
+                CellFunctorType cellFunctor(&ATMFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
                 cellFunctor.setSortingThreshold(sortingThreshold);
 
                 const auto &[forceParticle1, forceParticle2, forceParticle3] = doTripleCellInteraction<CellFunctorType>(
                     cellFunctor, ownershipParticle1, ownershipParticle2, ownershipParticle3, ownershipCell1,
-                    ownershipCell2, ownershipCell3, cellFunctor.getDataLayout(), ATFunctor);
+                    ownershipCell2, ownershipCell3, cellFunctor.getDataLayout(), ATMFunctor);
 
-                ATFunctor.endTraversal(cellFunctor.getNewton3());
+                ATMFunctor.endTraversal(cellFunctor.getNewton3());
 
                 // EXPECTATIONS
                 if (ownershipCell1 == halo and ownershipCell2 == halo and ownershipCell3 == halo) {

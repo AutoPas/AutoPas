@@ -31,19 +31,21 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    *  Type of the ParticleCell.
    */
   using ParticleCell = FullParticleCell<Particle_T>;
-
   /**
    * Constructor of the HierarchicalGrid class.
    * @param boxMin
    * @param boxMax
    * @param hGridMaxCutoffPerLevel max cutoffs for each level of the hierarchy
    * @param skin Verlet skin
-   * @param rebuildFrequency the frequency the container will be definitely rebuilt
    * @param cellSizeFactor cell size factor relative to cutoff
+   * @param sortingThreshold number of particles in two cells from which sorting should be performed
+   * @param loadEstimator the load estimation algorithm for balanced traversals.
+
    */
   HierarchicalGrid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                    const std::vector<double> &hGridMaxCutoffPerLevel, const double skin,
-                   const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0, bool fittedGrids = false)
+                   const double cellSizeFactor = 1.0, const size_t sortingThreshold = 8,
+                   LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : ParticleContainerInterface<Particle_T>(skin),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -51,11 +53,9 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
         _numLevels(hGridMaxCutoffPerLevel.size()),
         _cellSizeFactor(cellSizeFactor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(size_t)),
-        _rebuildFrequency(rebuildFrequency),
-        _maxCutoffPerLevel(hGridMaxCutoffPerLevel),
-        _fittedGrids(fittedGrids) {
+        _maxCutoffPerLevel(hGridMaxCutoffPerLevel) {
     /*
-     * NOTE: In the future automatically choose the number of levels and min cell sizes per level?
+     * @todo: In the future automatically choose the number of levels and min cell sizes per level?
      * We need to know particles sizes beforehand.
      * Not relevant for md simulations but can be useful for DEM simulations.
      * Good heuristic for automatically choosing:
@@ -109,8 +109,9 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       // For traversals, we also choose the proper, smaller interaction length
       const double interactionLengthLevel = _maxCutoffPerLevel[i] + _skin;
       const double ratio = interactionLengthLevel / interactionLengthLargest;
-      _levels.emplace_back(std::make_unique<autopas::LinkedCells<Particle_T>>(
-          _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, _rebuildFrequency, _cellSizeFactor * ratio));
+      _levels.emplace_back(
+          std::make_unique<autopas::LinkedCells<Particle_T>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin,
+                                                             _cellSizeFactor * ratio, sortingThreshold, loadEstimator));
     }
   }
 
@@ -288,7 +289,11 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::hierarchicalGrid; }
 
-  [[nodiscard]] CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
+  /**
+   * Get the cell type used by this container.
+   * @return CellType::FullParticleCell.
+   */
+  [[nodiscard]] CellType getParticleCellTypeEnum() const { return CellType::FullParticleCell; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     // reserve on each level proportionally to their number of cells
@@ -375,7 +380,9 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
 
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
     // return traversal info of hierarchy with biggest interactionLength for autoPas container
-    return _levels.back()->getTraversalSelectorInfo();
+    auto infoHighest = _levels.back()->getTraversalSelectorInfo();
+    return TraversalSelectorInfo(infoHighest.cellsPerDim, infoHighest.interactionLength, infoHighest.cellLength, 0,
+                                 _numLevels);
   }
 
   std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
@@ -454,27 +461,29 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
 
   [[nodiscard]] ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) override {
+      utils::optRef<typename ContainerIterator<Particle_T, true, true>::ParticleVecType> additionalVectors =
+          std::nullopt) override {
     return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   [[nodiscard]] ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors =
-          nullptr) const override {
+      utils::optRef<typename ContainerIterator<Particle_T, false, true>::ParticleVecType> additionalVectors =
+          std::nullopt) const override {
     return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) override {
+      utils::optRef<typename ContainerIterator<Particle_T, true, false>::ParticleVecType> additionalVectors =
+          std::nullopt) override {
     return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
   }
 
   [[nodiscard]] ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors =
-          nullptr) const override {
+      utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
+          std::nullopt) const override {
     return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
   }
 
@@ -558,7 +567,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    * Cache-line padding factor for _currentLevel and _prevCells to reduce false sharing between threads.
    */
   const size_t _cacheOffset;
-  const unsigned int _rebuildFrequency;
+
   std::vector<std::unique_ptr<LinkedCells<Particle_T>>> _levels;
   std::vector<double> _maxCutoffPerLevel;
   /**
@@ -595,7 +604,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     auto *traversalInterface = dynamic_cast<HGTraversalInterface *>(traversal);
     auto *hGridTraversal = dynamic_cast<HGTraversalBase<ParticleCell> *>(traversal);
     if (traversalInterface && hGridTraversal) {
-      hGridTraversal->setLevels(&_levels, _maxCutoffPerLevel, _skin, this->_stepsSinceLastRebuild, _rebuildFrequency);
+      hGridTraversal->setLevels(&_levels, _maxCutoffPerLevel, _skin);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "The selected traversal is not compatible with the HierarchicalGrid container. TraversalID: {}",

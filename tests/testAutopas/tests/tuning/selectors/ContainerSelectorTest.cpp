@@ -6,18 +6,17 @@
 
 #include "ContainerSelectorTest.h"
 
-TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
-  autopas::ContainerSelector<ParticleFP64> containerSelector(bBoxMin, bBoxMax, cutoff);
-  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, verletRebuildFrequency, 64,
-                                               autopas::LoadEstimatorOption::none);
+#include "autopas/tuning/selectors/ContainerSelector.h"
+#include "testingHelpers/commonTypedefs.h"
 
-  // expect an exception if nothing is selected yet
-  EXPECT_THROW((containerSelector.getCurrentContainer()), autopas::utils::ExceptionHandler::AutoPasException);
+TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
+  autopas::ContainerSelectorInfo containerInfo(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin, 64, 8,
+                                               autopas::LoadEstimatorOption::none);
 
   // test all individual options
   for (auto containerOp : autopas::ContainerOption::getAllOptions()) {
-    containerSelector.selectContainer(containerOp, containerInfo);
+    const auto container = autopas::ContainerSelector<ParticleFP64>::generateContainer(containerOp, containerInfo);
 
-    EXPECT_EQ(containerOp, containerSelector.getCurrentContainer().getContainerType());
+    EXPECT_EQ(containerOp, container->getContainerType());
   }
 }

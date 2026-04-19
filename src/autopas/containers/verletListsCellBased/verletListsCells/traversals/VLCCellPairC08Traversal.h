@@ -6,8 +6,8 @@
 
 #pragma once
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairC08CellHandler.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {
@@ -20,12 +20,11 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-
 class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
                                 public VLCCellPairTraversalInterface<typename ParticleCell::ParticleType> {
  public:
   /**
-   * Constructor of the c08 traversal fot VLCCellPairNeighborList.
+   * Constructor of the c08 traversal for VLCCellPairNeighborList.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.

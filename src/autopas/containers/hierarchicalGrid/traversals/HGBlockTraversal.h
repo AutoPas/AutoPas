@@ -28,18 +28,27 @@ namespace autopas {
 template <class ParticleCell_T, class Functor_T>
 class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraversalInterface {
  public:
+  /**
+   * Type of particles stored in the traversed cells.
+   */
   using Particle = typename ParticleCell_T::ParticleType;
 
-  explicit HGBlockTraversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3, int blockMultiplier)
-      : HGTraversalBase<ParticleCell_T>(dataLayout, useNewton3),
+  /**
+   * Constructor.
+   * @param functor Pairwise functor used for interactions.
+   * @param numLevels Number of levels in the hierarchical grid.
+   * @param dataLayout Data layout used by the traversal.
+   * @param useNewton3 Whether Newton3 optimization is enabled.
+   * @param blockMultiplier Multiplier controlling target blocks per color.
+   */
+  explicit HGBlockTraversal(Functor_T *functor, size_t numLevels, DataLayoutOption dataLayout, bool useNewton3,
+                            int blockMultiplier)
+      : HGTraversalBase<ParticleCell_T>(numLevels, dataLayout, useNewton3),
         _blockMultiplier(blockMultiplier),
         _functor(*functor) {}
 
   void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
-    if (not this->isApplicable()) {
-      utils::ExceptionHandler::exception("Not supported with hgrid_block");
-    }
     this->computeIntraLevelInteractions();
     if (this->_numLevels == 1) {
       return;
@@ -134,13 +143,18 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
   };
 
  protected:
+  /**
+   * Multiplier for target blocks per color used for dynamic load balancing.
+   */
   int _blockMultiplier;
+  /**
+   * Functor instance used by this traversal.
+   */
   Functor_T &_functor;
 
   /**
    * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes
    * @param level which HGrid level to generate a traversal for
-   * @param traversalInfo traversal info to generate the new traversal
    * @return A new traversal that is applicable to a specific LinkedCells level
    */
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override {
