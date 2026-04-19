@@ -59,7 +59,7 @@ class HGC08SingleLevelTraversal : public C08BasedTraversal<ParticleCell_T, Pairw
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3, cellBlocks, interactionLengthsSquared, upperLevel, fittedGrids) {
     for (size_t d = 0; d < 3; ++d) {
-      _haloRegionCellWidth[d] = std::ceil(haloRegionWidth / _cellLength[d]);
+      _haloRegionCellWidth[d] = std::ceil(haloRegionWidth / cellLength[d]);
     }
   }
 
@@ -99,11 +99,11 @@ inline void HGC08SingleLevelTraversal<ParticleCell_T, PairwiseFunctor>::traverse
   const auto stride = this->_overlap + 1ul;
   const auto offset = this->_haloRegionCellWidth - this->_overlap;
 
-  auto &&loopBody = [&](unsigned long x, unsigned long y, unsigned long z) {
-    unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    _cellHandler.processBaseCell(baseIndex);
-  };
-  this->colorTraversal(std::forward<LoopBody>(loopBody), end, stride, offset);
+  this->colorTraversal(
+      [&](unsigned long x, unsigned long y, unsigned long z) {
+        const auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
+        _cellHandler.processBaseCell(baseIndex);
+      },
+      end, stride, offset);
 }
-
 }  // namespace autopas

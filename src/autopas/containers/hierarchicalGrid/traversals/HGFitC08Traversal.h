@@ -92,8 +92,8 @@ class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>, public HGTrave
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override {}
 };
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void HGFitC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
+template <class ParticleCell_T, class Functor_T>
+inline void HGFitC08Traversal<ParticleCell_T, Functor_T>::traverseParticles() {
   const double haloRegionWidth = this->_maxCutoffPerLevel.back() + this->_skin;
 
   // get a vector of cell blocks for easier access in the traversal
@@ -114,7 +114,7 @@ inline void HGFitC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticles(
 
     // prepare and perform HGc08 traversal
     const auto traversalInfo = this->getTraversalSelectorInfo(upperLevel);
-    auto currentTraversal = std::make_unique<HGC08Traversal<FullParticleCell<Particle>, Functor_T>>(
+    auto currentTraversal = std::make_unique<HGC08SingleLevelTraversal<FullParticleCell<Particle>, Functor_T>>(
         traversalInfo.cellsPerDim, _functor, traversalInfo.interactionLength, traversalInfo.cellLength,
         this->_dataLayout, this->_useNewton3, cellBlocks, interactionLengthsSquared, upperLevel, haloRegionWidth);
     currentTraversal->traverseParticles();
