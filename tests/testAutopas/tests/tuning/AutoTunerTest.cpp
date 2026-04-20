@@ -245,8 +245,7 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
   // 2) Second config is rejected, should immediately get the next one.
   autoTuner.tuneConfiguration(iteration, 0, false);
   const auto config2 = autoTuner.getCurrentConfig();
-  const auto configAfterReject2 =
-      autoTuner.rejectConfig(config2, /*indefinitely*/ rejectIndefinitely, iteration, tuningPhase);
+  const auto configAfterReject2 = autoTuner.rejectConfig(config2, /*indefinitely*/ rejectIndefinitely, tuningPhase);
   // EXPECT_TRUE(stillTuningAfterReject2);
 
   // 3) Sample third config (accepted). Make it faster than config1 so it becomes the optimum.
@@ -256,8 +255,7 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
   // 4) Final config is rejected.
   autoTuner.tuneConfiguration(iteration, 0, false);
   const auto config4 = autoTuner.getCurrentConfig();
-  const auto configAfterReject4 =
-      autoTuner.rejectConfig(config4, /*indefinitely*/ rejectIndefinitely, iteration, tuningPhase);
+  const auto configAfterReject4 = autoTuner.rejectConfig(config4, /*indefinitely*/ rejectIndefinitely, tuningPhase);
 
   const auto expectedBest = _confLc_c08_N3;
   EXPECT_EQ(configAfterReject4, expectedBest);

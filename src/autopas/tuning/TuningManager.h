@@ -62,11 +62,10 @@ class TuningManager {
    * @param rejectedConfig The configuration to skip/remove
    * @param indefinitely True, if the configuration should also be removed from the search space and with that upcoming
    * tuning phases.
-   * @param currentIteration Current LogicHandler iteration number.
    * @param interactionType Pairwise, triwise, ...
    * @return The next configuration from the queue.
    */
-  Configuration rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely, size_t currentIteration,
+  Configuration rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely,
                                     InteractionTypeOption::Value interactionType);
 
   /**

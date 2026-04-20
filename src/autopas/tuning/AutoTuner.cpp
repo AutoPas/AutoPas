@@ -54,12 +54,14 @@ AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {
   return *this;
 }
 
+AutoTuner::~AutoTuner() = default;
+
 void AutoTuner::addDomainSimilarityStatistics(double pdBinDensityStdDev, double pdBinMaxDensity) {
   _pdBinDensityStdDevOfLastTenIterations.push_back(pdBinDensityStdDev);
   _pdBinMaxDensityOfLastTenIterations.push_back(pdBinMaxDensity);
 }
 
-void AutoTuner::logTuningResult(long tuningTime, size_t currentIteration) const {
+void AutoTuner::logTuningResult(const long tuningTime, const size_t currentIteration) const {
   // only log if we are at the end of a tuning phase
   if (_endOfTuningPhase) {
     // This string is part of several older scripts, hence it is not recommended to change it.
@@ -81,7 +83,8 @@ void AutoTuner::forceRetune() {
   _forceRetune = true;
 }
 
-bool AutoTuner::tuneConfiguration(size_t currentIteration, size_t tuningPhase, bool isStartOfTuningPhase) {
+bool AutoTuner::tuneConfiguration(const size_t currentIteration, const size_t tuningPhase,
+                                  const bool isStartOfTuningPhase) {
   if (isStartOfTuningPhase or _forceRetune) {
     _isTuning = true;
   }
@@ -172,13 +175,13 @@ bool AutoTuner::tuneConfiguration(size_t currentIteration, size_t tuningPhase, b
   return _isTuning;
 }
 
-void AutoTuner::handleEndOfTuningPhase(size_t tuningPhase) {
+void AutoTuner::handleEndOfTuningPhase(const size_t tuningPhase) {
   _endOfTuningPhase = true;
   _isTuning = false;
   selectBestConfiguration(tuningPhase);
 }
 
-void AutoTuner::selectBestConfiguration(size_t tuningPhase) {
+void AutoTuner::selectBestConfiguration(const size_t tuningPhase) {
   // If there are still queued up configurations, clear them.
   _configQueue.clear();
   // Find and push_back the optimal configuration for the current container.
@@ -210,8 +213,8 @@ const Configuration &AutoTuner::getCurrentConfig() const {
   return _configQueue.back();
 }
 
-Configuration AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool indefinitely, size_t currentIteration,
-                                      size_t tuningPhase) {
+Configuration AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool indefinitely,
+                                      const size_t tuningPhase) {
   if (searchSpaceIsTrivial()) {
     utils::ExceptionHandler::exception("Rejected the only configuration in the search space!\n{}",
                                        rejectedConfig.toString());
@@ -239,8 +242,8 @@ Configuration AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool 
   return getCurrentConfig();
 }
 
-void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt,
-                               size_t iteration, size_t tuningPhase) {
+void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles, const bool neighborListRebuilt,
+                               const size_t iteration, const size_t tuningPhase) {
   const auto &currentConfig = _configQueue.back();
   AutoPasLog(TRACE, "Adding sampleRebuild and sampleNonRebuild {}, {} to configuration {}.", sampleRebuild,
              sampleTraverseParticles, currentConfig.toShortString());
@@ -360,7 +363,7 @@ const std::vector<std::unique_ptr<TuningStrategyInterface>> &AutoTuner::getTunin
   return _tuningStrategies;
 }
 
-void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo, bool isStartOfTuningPhase) {
+void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo, const bool isStartOfTuningPhase) {
   // Handle Live Info processing before the tuning phase
   if (_needsDomainSimilarityStatistics) {
     const auto particleDependentBinDensityStdDev = liveInfo.get<double>("particleDependentBinDensityStdDev");

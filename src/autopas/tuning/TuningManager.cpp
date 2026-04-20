@@ -49,11 +49,10 @@ void TuningManager::addMeasurement(long sampleRebuild, long sampleTraversePartic
       ->addMeasurement(sampleRebuild, sampleTraverseParticles, neighborListRebuilt, iteration, _tuningPhase);
 }
 
-Configuration TuningManager::rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely,
-                                                 size_t currentIteration,
-                                                 InteractionTypeOption::Value interactionType) {
+Configuration TuningManager::rejectConfiguration(const Configuration &rejectedConfig, const bool indefinitely,
+                                                 const InteractionTypeOption::Value interactionType) {
   auto &tunerToReject = _autoTuners[interactionType];
-  auto newConfig = tunerToReject->rejectConfig(rejectedConfig, indefinitely, currentIteration, _tuningPhase);
+  auto newConfig = tunerToReject->rejectConfig(rejectedConfig, indefinitely, _tuningPhase);
   bool allTunersFinished = true;
   for (const auto &tuner : _autoTuners | std::views::values) {
     allTunersFinished = allTunersFinished and (not tuner->inTuningPhase());

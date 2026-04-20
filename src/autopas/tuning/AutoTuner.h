@@ -68,6 +68,11 @@ class AutoTuner {
   AutoTuner &operator=(AutoTuner &&other) noexcept;
 
   /**
+   * Default destructor defined in .cpp as it's too big to be inlined.
+   */
+  ~AutoTuner();
+
+  /**
    * @copydoc autopas::AutoPas::forceRetune()
    */
   void forceRetune();
@@ -118,12 +123,10 @@ class AutoTuner {
    * @param rejectedConfig
    * @param indefinitely Whether the given config should be completely removed from the search space (aka rejected
    * indefinitely).
-   * @param currentIteration Current LogicHandler iteration number.
    * @param tuningPhase Current tuning phase.
    * @return Tuple<Next configuration to use, still tuning>.
    */
-  [[nodiscard]] Configuration rejectConfig(const Configuration &rejectedConfig, bool indefinitely,
-                                           size_t currentIteration, size_t tuningPhase);
+  [[nodiscard]] Configuration rejectConfig(const Configuration &rejectedConfig, bool indefinitely, size_t tuningPhase);
 
   /**
    * Indicator function whether the search space consists of exactly one configuration.
