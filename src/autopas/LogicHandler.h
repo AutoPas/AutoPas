@@ -1047,7 +1047,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 
   auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  if (_tuningManager->inFirstTuningIteration(_iteration)) {
+  if (_tuningManager->isStartOfTuningPhase(_iteration)) {
     _numRebuildsInNonTuningPhase = 0;
   }
 

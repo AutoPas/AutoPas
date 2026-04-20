@@ -101,8 +101,9 @@ bool TuningManager::tuningPhaseJustFinished() const {
   return _tuningFinished and (not _transitionToOptimalConfigurations);
 }
 
-bool TuningManager::inFirstTuningIteration(const size_t currentIteration) const {
-  return currentIteration % _tuningInterval == 0;
+bool TuningManager::isStartOfTuningPhase(const size_t currentIteration) const {
+  // If it's a multiple of the interval, or if a retune was forced
+  return (currentIteration % _tuningInterval == 0) or _forceRetunePending;
 }
 
 const Configuration &TuningManager::getCurrentConfig(const InteractionTypeOption::Value interactionType) const {
@@ -199,10 +200,4 @@ std::set<ContainerOption> TuningManager::setCommonContainerOption() {
 bool TuningManager::tuningPhaseAboutToBegin(const size_t currentIteration) const {
   return _tuningInterval <= 10 or currentIteration % _tuningInterval > _tuningInterval - 10;
 }
-
-bool TuningManager::isStartOfTuningPhase(const size_t currentIteration) const {
-  // If it's a multiple of the interval, or if a retune was forced
-  return (currentIteration % _tuningInterval == 0) or _forceRetunePending;
-}
-
 }  // namespace autopas
