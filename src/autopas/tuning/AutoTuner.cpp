@@ -87,6 +87,8 @@ bool AutoTuner::tuneConfiguration(size_t currentIteration, size_t tuningPhase, b
   }
   // If we are not (yet) tuning or there is nothing to tune return immediately.
   if (not inTuningPhase()) {
+    _isTuning = false;
+    _forceRetune = false;
     return false;
   }
   if (getCurrentNumSamples() < _maxSamples and not _earlyStoppingOfResampling) {

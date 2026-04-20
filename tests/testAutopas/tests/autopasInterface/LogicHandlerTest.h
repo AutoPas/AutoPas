@@ -8,12 +8,12 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/LogicHandler.h"
-#include "autopas/tuning/TunerManager.h"
+#include "autopas/tuning/TuningManager.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class LogicHandlerTest : public AutoPasTestBase {
  public:
   std::unique_ptr<autopas::LogicHandler<Molecule>> _logicHandler;
-  std::shared_ptr<autopas::TuningManager> _tunerManager;
+  std::shared_ptr<autopas::TuningManager> _tuningManager;
   void initLogicHandler();
 };

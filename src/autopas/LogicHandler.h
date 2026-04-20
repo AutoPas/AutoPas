@@ -162,7 +162,7 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::updateContainer()
    */
-  [[nodiscard]] std::vector<Particle_T> updateContainer() {
+  std::vector<Particle_T> updateContainer() {
     ++_iteration;
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
