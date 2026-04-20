@@ -939,7 +939,7 @@ TEST_F(TuningManagerTest, testLiveInfoRouting) {
 
   auto autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, 20, "");
   // Force the internal flag to true for testing purposes (simulating a strategy that needs it)
-  autoTuner->receiveLiveInfo(autopas::LiveInfo{}, true, true);
+  autoTuner->receiveLiveInfo(autopas::LiveInfo{}, true);
 
   auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(std::move(autoTuner), autopas::InteractionTypeOption::pairwise);

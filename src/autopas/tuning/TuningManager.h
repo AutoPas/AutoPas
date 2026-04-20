@@ -63,6 +63,11 @@ class TuningManager {
    */
   bool requiresRebuilding(size_t currentIteration);
 
+  /**
+   *
+   * @param currentIteration Current LogicHandler iteration number.
+   * @return true, if at least one AutoTuner needs live information for tuning.
+   */
   bool needsLiveInfo(size_t currentIteration);
 
   /**
@@ -75,6 +80,11 @@ class TuningManager {
    */
   bool tuningPhaseJustFinished() const;
 
+  /**
+   * Determines whether this is the first iteration of a tuning phase.
+   * @param currentIteration The current LogicHandler iteration number.
+   * @return true, if this is the first tuning iteration.
+   */
   bool inFirstTuningIteration(size_t currentIteration) const;
 
   /**
@@ -82,6 +92,11 @@ class TuningManager {
    */
   const Configuration &getCurrentConfig(InteractionTypeOption::Value interactionType) const;
 
+  /**
+   * Gets the tuning metric of the AutoTuner of interactionType. (Metric as in time, energy, ...)
+   * @param interactionType , which AutoTuner to look at.
+   * @return TuningMetricOption of the respective AutoTuner.
+   */
   const TuningMetricOption &getTuningMetric(InteractionTypeOption::Value interactionType) const;
 
   /**
@@ -95,15 +110,30 @@ class TuningManager {
    */
   void tuneConfigurations(size_t currentIteration);
 
-  void setOptimalConfigurations(size_t currentIteration);
+  /**
+   * To be called at the end of a tuning phase.
+   * Compares evidence of all active AutoTuners and sets the best configurations leading to an overall optimal time step
+   * performance.
+   */
+  void setOptimalConfigurations();
 
   /**
    * Find all container options that are part of all currently managed AutoTuner instances.
    */
   std::set<ContainerOption> setCommonContainerOption();
 
+  /**
+   * Calculate whether we are about to start a new tuning phase based on the current iteration and tuning interval.
+   * @param currentIteration Current LogicHandler iteration number.
+   * @return True, if we are within 10 iterations of the next tuning phase.
+   */
   bool tuningPhaseAboutToBegin(size_t currentIteration) const;
 
+  /**
+   * Calculate whether we are at the start of a new tuning phase based on the current iteration and tuning interval.
+   * @param currentIteration Current LogicHandler iteration number.
+   * @return True, if this is the first tuning iteration.
+   */
   bool isStartOfTuningPhase(size_t currentIteration) const;
 
   /**
@@ -112,7 +142,11 @@ class TuningManager {
    */
   std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> _autoTuners;
 
+  /**
+   * Tuning Phase counter.
+   */
   size_t _tuningPhase = 0;
+
   /**
    * New tuning phase starting at multiples of _tuningInterval.
    */
@@ -123,10 +157,13 @@ class TuningManager {
    */
   bool _tuningFinished = true;
 
+  /**
+   * Stores the iteration number of the last tuning iteration.
+   */
   size_t _lastTuningIteration{std::numeric_limits<size_t>::max()};
 
   /**
-   * Initialize
+   * Intermediate value to signal that tuning just finished, and we need to select our optimal set-up.
    */
   bool _transitionToOptimalConfigurations = false;
 

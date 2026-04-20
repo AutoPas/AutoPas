@@ -23,12 +23,16 @@ class Evidence {
    */
   size_t tuningPhase;
   /**
-   * Value of the measurement (time, energy, ...).
+   * Value of the measurement (time, energy, ...) for the rebuild and traversal time combined.
    */
   long reducedValue;
-
+  /**
+   * Value of the measurement for only the rebuilding step.
+   */
   long rebuildValue;
-
+  /**
+   * Value of the measurement for the actual traversal (without potential rebuild).
+   */
   long traversalValue;
 
   /**

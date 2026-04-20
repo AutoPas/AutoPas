@@ -35,7 +35,7 @@ bool TuningManager::tune(const size_t currentIteration, const LiveInfo &info) {
 
     for (const auto &tuner : _autoTuners | std::ranges::views::values) {
       if (tuner->needsLiveInfo() and (isStart or aboutToBegin)) {
-        tuner->receiveLiveInfo(info, aboutToBegin, isStart);
+        tuner->receiveLiveInfo(info, isStart);
       }
     }
     tuneConfigurations(currentIteration);
@@ -74,10 +74,11 @@ void TuningManager::logTuningResult(long tuningTime, size_t currentIteration,
   _autoTuners.at(interactionType)->logTuningResult(tuningTime, currentIteration);
 }
 
-bool TuningManager::requiresRebuilding(size_t currentIteration) {
+bool TuningManager::requiresRebuilding(const size_t currentIteration) {
   const bool isStart = isStartOfTuningPhase(currentIteration);
-  return std::ranges::any_of(
-      _autoTuners, [&](const auto &tunerEntry) { return tunerEntry.second->willRebuildNeighborLists(isStart); });
+  return isStart or std::ranges::any_of(_autoTuners, [&](const auto &tunerEntry) {
+           return tunerEntry.second->willRebuildNeighborLists();
+         });
 }
 
 bool TuningManager::needsLiveInfo(size_t currentIteration) {
@@ -130,7 +131,7 @@ void TuningManager::tuneConfigurations(size_t currentIteration) {
   _tuningFinished = allTunersFinished;
 }
 
-void TuningManager::setOptimalConfigurations(size_t currentIteration) {
+void TuningManager::setOptimalConfigurations() {
   long bestTotalValue = 0;
   for (const auto &tuner : _autoTuners | std::views::values) {
     auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigNotReduced();

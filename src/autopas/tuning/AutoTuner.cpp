@@ -315,17 +315,12 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles,
   }
 }
 
-bool AutoTuner::willRebuildNeighborLists(bool isStartOfTuningPhase) const {
-  // This function should return true if the next call to tune() (which calls tuneConfiguration())
-  // will lead to a new configuration being selected.
-  // A new configuration will be selected if:
-  // 1. It's the very first iteration of a tuning phase.
-  // 2. The current configuration has finished collecting samples (either _maxSamples reached or early stopping).
-  //    This function is called *before* tuneConfiguration() for the current iteration,
-  //    so getCurrentNumSamples() reflects the count *before* the current iteration's measurement,
-  //    and _earlyStoppingOfResampling reflects the state *after* the previous iteration's measurement.
-  return isStartOfTuningPhase or _forceRetune or
-         (_isTuning and (_earlyStoppingOfResampling or (getCurrentNumSamples() >= _maxSamples)));
+bool AutoTuner::willRebuildNeighborLists() const {
+  // This function should return true if the next call to tuneConfiguration() will lead to a new configuration being
+  // selected. A new configuration will be selected if:
+  //  The current configuration has finished collecting samples (either _maxSamples reached or early stopping).
+  //  We prepare for a forced retuning.
+  return _forceRetune or (_isTuning and (_earlyStoppingOfResampling or (getCurrentNumSamples() >= _maxSamples)));
 }
 
 bool AutoTuner::initEnergy() {
@@ -365,9 +360,9 @@ const std::vector<std::unique_ptr<TuningStrategyInterface>> &AutoTuner::getTunin
   return _tuningStrategies;
 }
 
-void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo, bool tuningPhaseAboutToBegin, bool isStartOfTuningPhase) {
+void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo, bool isStartOfTuningPhase) {
   // Handle Live Info processing before the tuning phase
-  if (_needsDomainSimilarityStatistics and tuningPhaseAboutToBegin) {
+  if (_needsDomainSimilarityStatistics) {
     const auto particleDependentBinDensityStdDev = liveInfo.get<double>("particleDependentBinDensityStdDev");
     const auto particleDependentBinMaxDensity = liveInfo.get<double>("particleDependentBinMaxDensity");
     addDomainSimilarityStatistics(particleDependentBinDensityStdDev, particleDependentBinMaxDensity);

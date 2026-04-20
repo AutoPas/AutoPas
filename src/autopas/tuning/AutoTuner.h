@@ -81,8 +81,9 @@ class AutoTuner {
   /**
    * Pass live info on to all tuning strategies.
    * @param liveInfo
+   * @param isStartOfTuningPhase True, if the next iteration starts a new tuning phase.
    */
-  void receiveLiveInfo(const LiveInfo &liveInfo, bool tuningPhaseAboutToBegin, bool isStartOfTuningPhase);
+  void receiveLiveInfo(const LiveInfo &liveInfo, bool isStartOfTuningPhase);
 
   /**
    * Returns true if the AutoTuner needs live info. This occurs if any strategy requires this and AutoPas is beginning
@@ -99,7 +100,7 @@ class AutoTuner {
    * @return True if the current iteration counters indicate a rebuild in the next iteration due to a configuration
    * change.
    */
-  bool willRebuildNeighborLists(bool isStartOfTuningPhase) const;
+  bool willRebuildNeighborLists() const;
 
   /**
    * Get the currently selected configuration.
@@ -117,6 +118,8 @@ class AutoTuner {
    * @param rejectedConfig
    * @param indefinitely Whether the given config should be completely removed from the search space (aka rejected
    * indefinitely).
+   * @param currentIteration Current LogicHandler iteration number.
+   * @param tuningPhase Current tuning phase.
    * @return Tuple<Next configuration to use, still tuning>.
    */
   [[nodiscard]] Configuration rejectConfig(const Configuration &rejectedConfig, bool indefinitely,
@@ -136,7 +139,8 @@ class AutoTuner {
 
   /**
    * After a tuning phase has finished, write the result to a file.
-   * @param tuningTime
+   * @param tuningTime Measured tuning time in nanoseconds.
+   * @param currentIteration Current LogicHandler iteration number.
    */
   void logTuningResult(long tuningTime, size_t currentIteration) const;
 
@@ -169,6 +173,8 @@ class AutoTuner {
    * @param sampleTraverseParticles time or energy sample for traverse interaction part of the iteration. This includes
    * computeInteraction and remainderTraversal call.
    * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
+   * @param iteration Current LogicHandler iteration.
+   * @param tuningPhase Current tuning phase number from the TuningManager
    */
   void addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt, size_t iteration,
                       size_t tuningPhase);
@@ -248,10 +254,19 @@ class AutoTuner {
    * When in tuning phase selects next config to test. At the end of the tuning phase select optimum.
    * The function returns true if the selected config is not yet the optimum but something that should be sampled.
    *
+   * @param currentIteration Current LogicHandler iteration number.
+   * @param tuningPhase Current tuning phase number.
+   * @param isStartOfTuningPhase True if this is the start of a new tuning phase.
    * @return true iff still in tuning phase.
    */
   bool tuneConfiguration(size_t currentIteration, size_t tuningPhase, bool isStartOfTuningPhase);
 
+  /**
+   * Pushes the provided config into the _configQueue and ends tuning immediately.
+   * Used by the TuningManager, when we want a different configuration than the one determined by one AutoTuner in
+   * isolation.
+   * @param optimalConfig The configuration to be used from now on until the next tuning phase.
+   */
   void forceOptimalConfiguration(const Configuration &optimalConfig);
 
   /**
