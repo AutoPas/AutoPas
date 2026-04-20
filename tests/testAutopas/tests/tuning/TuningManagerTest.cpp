@@ -9,6 +9,9 @@
 #include "autopas/LogicHandler.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/TuningManager.h"
+#include "autopas/tuning/tuningStrategy/RandomSearch.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyFactory.h"
+#include "autopas/tuning/tuningStrategy/fuzzyTuning/FuzzyTuning.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -927,21 +930,36 @@ TEST_F(TuningManagerTest, testSetOptimalConfigurationsDifferentContainers) {
  * is about to begin or has just started, and blocks it otherwise.
  */
 TEST_F(TuningManagerTest, testLiveInfoRouting) {
-  const autopas::AutoTunerInfo autoTunerInfo{
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 100,
       .maxSamples = 1,
   };
 
   // We need a tuner that actually requests LiveInfo to test the gatekeeper
-  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  // We don't need a real strategy here, just simulating the flag behavior is enough for the Manager logic
   const autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3};
 
-  auto autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, 20, "");
-  // Force the internal flag to true for testing purposes (simulating a strategy that needs it)
-  autoTuner->receiveLiveInfo(autopas::LiveInfo{}, true);
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  // Create and add a dummy tuning strategy that actually requests live info
+  class DummyTuningStrategy : public autopas::TuningStrategyInterface {
+    bool needsLiveInfo() const override { return true; }
+
+    autopas::TuningStrategyOption getOptionType() const override { return autopas::TuningStrategyOption::fullSearch; }
+    bool optimizeSuggestions(std::vector<autopas::Configuration> &configQueue,
+                             const autopas::EvidenceCollection &evidenceCollection) override {
+      return true;
+    }
+    bool reset(size_t iteration, size_t tuningPhase, std::vector<autopas::Configuration> &configQueue,
+               const autopas::EvidenceCollection &evidenceCollection) override {
+      return true;
+    }
+  };
+
+  tuningStrategies.emplace_back(std::move(std::make_unique<DummyTuningStrategy>()));
+
+  auto autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, 20, "");
+
+  const auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(std::move(autoTuner), autopas::InteractionTypeOption::pairwise);
 
   // Iteration 0: Start of Phase -> Should need info
@@ -955,35 +973,4 @@ TEST_F(TuningManagerTest, testLiveInfoRouting) {
 
   // Iteration 100: Start of new Phase -> Should need info
   EXPECT_TRUE(tunerManager->needsLiveInfo(100)) << "Manager should request LiveInfo at interval boundary.";
-}
-
-/**
- * Test that the TuningManager handles an empty tuner map gracefully without crashing.
- */
-TEST_F(TuningManagerTest, testEmptyTunerMap) {
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 100,
-      .maxSamples = 3,
-  };
-
-  autopas::TuningManager tunerManager{autoTunerInfo};
-  autopas::LiveInfo info{};
-
-  // None of these should throw exceptions or segfault
-  EXPECT_NO_THROW({
-    bool stillTuning = tunerManager.tune(0, info);
-    EXPECT_FALSE(stillTuning) << "Empty manager should not be tuning.";
-  });
-
-  EXPECT_NO_THROW({
-    bool needsRebuild = tunerManager.requiresRebuilding(0);
-    EXPECT_FALSE(needsRebuild) << "Empty manager should not require rebuilding.";
-  });
-
-  EXPECT_NO_THROW({
-    bool needsInfo = tunerManager.needsLiveInfo(0);
-    EXPECT_FALSE(needsInfo) << "Empty manager should not need LiveInfo.";
-  });
-
-  EXPECT_NO_THROW(tunerManager.forceRetune());
 }

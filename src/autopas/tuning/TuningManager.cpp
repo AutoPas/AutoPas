@@ -81,7 +81,7 @@ bool TuningManager::requiresRebuilding(const size_t currentIteration) {
          });
 }
 
-bool TuningManager::needsLiveInfo(size_t currentIteration) {
+bool TuningManager::needsLiveInfo(const size_t currentIteration) {
   const bool isStart = isStartOfTuningPhase(currentIteration);
   const bool aboutToBegin = tuningPhaseAboutToBegin(currentIteration);
   return (isStart or aboutToBegin) and
@@ -101,19 +101,19 @@ bool TuningManager::tuningPhaseJustFinished() const {
   return _tuningFinished and (not _transitionToOptimalConfigurations);
 }
 
-bool TuningManager::inFirstTuningIteration(size_t currentIteration) const {
+bool TuningManager::inFirstTuningIteration(const size_t currentIteration) const {
   return currentIteration % _tuningInterval == 0;
 }
 
-const Configuration &TuningManager::getCurrentConfig(InteractionTypeOption::Value interactionType) const {
+const Configuration &TuningManager::getCurrentConfig(const InteractionTypeOption::Value interactionType) const {
   return _autoTuners.at(interactionType)->getCurrentConfig();
 }
 
-const TuningMetricOption &TuningManager::getTuningMetric(InteractionTypeOption::Value interactionType) const {
+const TuningMetricOption &TuningManager::getTuningMetric(const InteractionTypeOption::Value interactionType) const {
   return _autoTuners.at(interactionType)->getTuningMetric();
 }
 
-void TuningManager::tuneConfigurations(size_t currentIteration) {
+void TuningManager::tuneConfigurations(const size_t currentIteration) {
   // Check if any tuner is still tuning
   bool allTunersFinished = true;
   const bool isStart = isStartOfTuningPhase(currentIteration);
@@ -196,11 +196,11 @@ std::set<ContainerOption> TuningManager::setCommonContainerOption() {
   return intersectionSet;
 }
 
-bool TuningManager::tuningPhaseAboutToBegin(size_t currentIteration) const {
+bool TuningManager::tuningPhaseAboutToBegin(const size_t currentIteration) const {
   return _tuningInterval <= 10 or currentIteration % _tuningInterval > _tuningInterval - 10;
 }
 
-bool TuningManager::isStartOfTuningPhase(size_t currentIteration) const {
+bool TuningManager::isStartOfTuningPhase(const size_t currentIteration) const {
   // If it's a multiple of the interval, or if a retune was forced
   return (currentIteration % _tuningInterval == 0) or _forceRetunePending;
 }

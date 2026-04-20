@@ -116,6 +116,7 @@ class TuningManager {
 
   /**
    * Get the current configuration for a specific interaction type.
+   * @param interactionType
    * @return Configuration
    */
   const Configuration &getCurrentConfig(InteractionTypeOption::Value interactionType) const;
