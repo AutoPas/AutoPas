@@ -21,7 +21,9 @@ namespace autopas {
  */
 class EvidenceCollection {
  public:
-  // Helper enum to get the optimal evidence depending on what timings to include
+  /**
+   * Helper enum to switch between evidence measurements modes.
+   */
   enum EvidenceMode {
     // Evidence of rebuild and traversal measurement combined taking into account the rebuild frequency.
     REDUCED,
