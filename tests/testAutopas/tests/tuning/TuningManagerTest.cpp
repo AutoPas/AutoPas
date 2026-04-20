@@ -7,11 +7,11 @@
 #include "TuningManagerTest.h"
 
 #include "autopas/LogicHandler.h"
-#include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/AutoTuner.h"
+#include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
-#include "testingHelpers/commonTypedefs.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
+#include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
 
@@ -55,10 +55,12 @@ TEST_F(TuningManagerTest, testTuningIntervalIsFixed) {
 
   while (iterations < numIterations) {
     [[maybe_unused]] auto emigrants = logicHandler.updateContainer();
-    const auto stillTuning = logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+    const auto stillTuning =
+        logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
 
     if (not lastWasTuningInteration and stillTuning) {
-      EXPECT_TRUE(iterations % tuningInterval == 0) << "Tuning phase did not start at fixed iteration number. Iteration: " << iterations;
+      EXPECT_TRUE(iterations % tuningInterval == 0)
+          << "Tuning phase did not start at fixed iteration number. Iteration: " << iterations;
     }
     ++iterations;
     lastWasTuningInteration = stillTuning;
@@ -87,8 +89,8 @@ TEST_F(TuningManagerTest, testMultipleTuners) {
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(std::make_unique<autopas::AutoTuner>(tuningStrategies, pairwiseSearchSpace, autoTunerInfo,
-                                                                  rebuildFrequency, "2B"),
-                             autopas::InteractionTypeOption::pairwise);
+                                                                   rebuildFrequency, "2B"),
+                              autopas::InteractionTypeOption::pairwise);
   tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, triwiseSearchSpace, autoTunerInfo, rebuildFrequency, "3B"),
       autopas::InteractionTypeOption::triwise);
@@ -185,7 +187,8 @@ TEST_F(TuningManagerTest, testTuningPhaseLongerThanTuningInterval) {
 
   while (iterationsDone < iterationsToDo) {
     [[maybe_unused]] auto emigrants = logicHandler.updateContainer();
-    const bool stillTuning = logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+    const bool stillTuning =
+        logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
 
     if (iterationsDone < searchSpace.size() * autoTunerInfo.maxSamples) {
       EXPECT_TRUE(stillTuning) << "AutoTuner should tune.";
@@ -259,7 +262,8 @@ TEST_F(TuningManagerTest, testForceRetuneBetweenPhases) {
 
   // 3. Instead of waiting the full tuning interval, restart tuning immediately
   tuningManager->forceRetune();
-  EXPECT_TRUE(tuningManager->requiresRebuilding(iteration)) << "TuningManager does not recognize forceRetune() required rebuild";
+  EXPECT_TRUE(tuningManager->requiresRebuilding(iteration))
+      << "TuningManager does not recognize forceRetune() required rebuild";
 
   // 4. Expect a second full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i, ++iteration) {
@@ -270,11 +274,11 @@ TEST_F(TuningManagerTest, testForceRetuneBetweenPhases) {
 
   // 5. First iteration after the forced tuning phase
   logicHandler.updateContainer();
-  EXPECT_TRUE(tuningManager->requiresRebuilding(iteration)) << "Expect rebuilding after the forced tuning phase finished.";
+  EXPECT_TRUE(tuningManager->requiresRebuilding(iteration))
+      << "Expect rebuilding after the forced tuning phase finished.";
   EXPECT_FALSE((logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)))
       << "Tuner should be done tuning after the forced phase.";
 }
-
 
 /**
  * Test the correct AutoTuner behavior if a retuning is forced during a tuning phase.
@@ -329,7 +333,8 @@ TEST_F(TuningManagerTest, testForceRetuneInPhase) {
 
   // first iteration after tuning phase
   logicHandler.updateContainer();
-  EXPECT_TRUE(tuningManager->requiresRebuilding(iteration)) << "Expect rebuilding after the forced tuning phase finished.";
+  EXPECT_TRUE(tuningManager->requiresRebuilding(iteration))
+      << "Expect rebuilding after the forced tuning phase finished.";
   EXPECT_FALSE((logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)))
       << "Tuner should be done be tuning.\nIteration " << iteration;
 }
@@ -455,8 +460,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
     ++iterations;
     ++collectedSamples;
 
-    const auto currentConfig =
-        tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise);
+    const auto currentConfig = tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise);
     if (stillTuning) {
       if (collectedSamples == 1) {
         EXPECT_NE(currentConfig, prevConfig)
@@ -574,7 +578,8 @@ TEST_F(TuningManagerTest, testWillRebuildDDL) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  // updateContainer increments the logic handler's iteration counters for this time step and checks the rebuild conditions afterwards.
+  // updateContainer increments the logic handler's iteration counters for this time step and checks the rebuild
+  // conditions afterwards.
 
   size_t iteration = 0;
   logicHandler.updateContainer();
@@ -692,7 +697,6 @@ TEST_F(TuningManagerTest, testWillRebuildDDLOneConfigKicked) {
   logicHandler.updateContainer();
   EXPECT_FALSE(tuningManager->requiresRebuilding(iteration)) << "Expect no rebuild because not tuning.";
 }
-
 
 /**
  * Generates exactly one valid configuration.
@@ -892,21 +896,22 @@ TEST_F(TuningManagerTest, testSetOptimalConfigurationsDifferentContainers) {
   size_t iteration = 0;
 
   // --- Phase: Sample the first configurations (DS) ---
-  tunerManager->tune(iteration, info); // Tuners transition to DS
+  tunerManager->tune(iteration, info);  // Tuners transition to DS
   // Let Direct Sum perform good for pairwise, but bad for triwise
   tunerManager->addMeasurement(10, 10, true, iteration, autopas::InteractionTypeOption::pairwise);
   tunerManager->addMeasurement(10, 1000, true, iteration, autopas::InteractionTypeOption::triwise);
   iteration++;
 
   // --- Phase: Sample the second configurations (LC) ---
-  tunerManager->tune(iteration, info); // Tuners transition to LC
+  tunerManager->tune(iteration, info);  // Tuners transition to LC
   // Let Linked Cells perform good for triwise, but bad for pairwise
   tunerManager->addMeasurement(10, 1000, true, iteration, autopas::InteractionTypeOption::pairwise);
   tunerManager->addMeasurement(10, 10, true, iteration, autopas::InteractionTypeOption::triwise);
   iteration++;
 
   // --- Trigger End of Tuning Phase ---
-  // The TuningManager should evaluate the evidence and realize that switching containers between every pairwise and triwise functor call is still better, even if we have to rebuild every time.
+  // The TuningManager should evaluate the evidence and realize that switching containers between every pairwise and
+  // triwise functor call is still better, even if we have to rebuild every time.
   tunerManager->tune(iteration, info);
 
   EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise), _confDs_seq_noN3);
@@ -923,9 +928,9 @@ TEST_F(TuningManagerTest, testSetOptimalConfigurationsDifferentContainers) {
  */
 TEST_F(TuningManagerTest, testLiveInfoRouting) {
   const autopas::AutoTunerInfo autoTunerInfo{
-    .tuningInterval = 100,
-    .maxSamples = 1,
-};
+      .tuningInterval = 100,
+      .maxSamples = 1,
+  };
 
   // We need a tuner that actually requests LiveInfo to test the gatekeeper
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
@@ -957,9 +962,9 @@ TEST_F(TuningManagerTest, testLiveInfoRouting) {
  */
 TEST_F(TuningManagerTest, testEmptyTunerMap) {
   const autopas::AutoTunerInfo autoTunerInfo{
-    .tuningInterval = 100,
-    .maxSamples = 3,
-};
+      .tuningInterval = 100,
+      .maxSamples = 3,
+  };
 
   autopas::TuningManager tunerManager{autoTunerInfo};
   autopas::LiveInfo info{};
