@@ -8,7 +8,6 @@
 
 #include <memory>
 #include <unordered_map>
-#include <vector>
 
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/InteractionTypeOption.h"
@@ -37,14 +36,36 @@ class TuningManager {
    */
   void addAutoTuner(std::unique_ptr<AutoTuner> tuner, InteractionTypeOption::Value interactionType);
 
+  /**
+   *
+   * @param currentIteration Current LogicHandler iteration number.
+   * @param info LiveInfo object to be passed to AutoTuners if relevant.
+   * @return true, if at least one AutoTuner is still in tuning state.
+   */
   bool tune(size_t currentIteration, const LiveInfo &info);
 
   /**
-   * Add a performance measurement to the specified tuner.
+   * Add performance metrics for the currently active configuration.
+   * @param sampleRebuild Measurement for the rebuild step.
+   * @param sampleTraverseParticles Measurement for the traversal step.
+   * @param neighborListRebuilt True, if this was a rebuild iteration.
+   * @param iteration The current iteration number.
+   * @param interactionType
    */
   void addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt, size_t iteration,
-                      InteractionTypeOption::Value interactionType);
+                      InteractionTypeOption::Value interactionType) const;
 
+  /**
+   * Reject the current configuration for the interactionType by either skipping over it (indefinitely = false) or
+   * removing it entirely (indefinitely = true). Also refreshes the respective AutoTuner's queue and returns the next
+   * configuration in line.
+   * @param rejectedConfig The configuration to skip/remove
+   * @param indefinitely True, if the configuration should also be removed from the search space and with that upcoming
+   * tuning phases.
+   * @param currentIteration Current LogicHandler iteration number.
+   * @param interactionType Pairwise, triwise, ...
+   * @return The next configuration from the queue.
+   */
   Configuration rejectConfiguration(const Configuration &rejectedConfig, bool indefinitely, size_t currentIteration,
                                     InteractionTypeOption::Value interactionType);
 
@@ -55,10 +76,16 @@ class TuningManager {
 
   /**
    * Log the tuning result for a specific interaction type.
+   * @param tuningTime Measured time it took for tuning in nanoseconds.
+   * @param currentIteration Current LogicHandler iteration number.
+   * @param interactionType
    */
   void logTuningResult(long tuningTime, size_t currentIteration, InteractionTypeOption::Value interactionType) const;
 
   /**
+   * Returns whether a rebuild is required during the given iteration, based on AutoTuner(s) providing a new
+   * configuration.
+   * @param currentIteration Current LogicHandler iteration number.
    * @return True, if a rebuild is necessary due to a configuration change.
    */
   bool requiresRebuilding(size_t currentIteration);
@@ -89,12 +116,13 @@ class TuningManager {
 
   /**
    * Get the current configuration for a specific interaction type.
+   * @return Configuration
    */
   const Configuration &getCurrentConfig(InteractionTypeOption::Value interactionType) const;
 
   /**
    * Gets the tuning metric of the AutoTuner of interactionType. (Metric as in time, energy, ...)
-   * @param interactionType , which AutoTuner to look at.
+   * @param interactionType Get info from the pairwise/triwise AutoTuner.
    * @return TuningMetricOption of the respective AutoTuner.
    */
   const TuningMetricOption &getTuningMetric(InteractionTypeOption::Value interactionType) const;

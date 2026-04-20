@@ -44,7 +44,7 @@ bool TuningManager::tune(const size_t currentIteration, const LiveInfo &info) {
 }
 
 void TuningManager::addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt,
-                                   size_t iteration, InteractionTypeOption::Value interactionType) {
+                                   size_t iteration, InteractionTypeOption::Value interactionType) const {
   _autoTuners.at(interactionType)
       ->addMeasurement(sampleRebuild, sampleTraverseParticles, neighborListRebuilt, iteration, _tuningPhase);
 }
@@ -125,7 +125,7 @@ void TuningManager::tuneConfigurations(size_t currentIteration) {
   _transitionToOptimalConfigurations = false;
   if (allTunersFinished and (not _tuningFinished)) {
     // Save the best container results before changing container
-    setOptimalConfigurations(currentIteration);
+    setOptimalConfigurations();
     _transitionToOptimalConfigurations = true;
   }
   _tuningFinished = allTunersFinished;
