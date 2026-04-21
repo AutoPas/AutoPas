@@ -189,10 +189,42 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 
     iter->addAngularVel(torqueDivMoIW * 0.5 * deltaT);  // (28)
   }
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+  AUTOPAS_OPENMP(parallel)
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    const std::array<double, 3> torque = iter->getTorque();
+    const double mass = particlePropertiesLibrary.getSiteMass(iter->getTypeId());
+    const double radius = particlePropertiesLibrary.getRadius(iter->getTypeId());
+    const double momentOfInertia = 0.4 * mass * radius * radius;
+    const double invMomentOfInertia = 1. / momentOfInertia;
 
+    const std::array<double, 3> deltaAngularVel =
+        autopas::utils::ArrayMath::mulScalar(torque, invMomentOfInertia * deltaT);
+
+    iter->addAngularVel(deltaAngularVel);
+  }
 #else
   autopas::utils::ExceptionHandler::exception(
       "Attempting to perform rotational integrations when md-flexible has not been compiled with multi-site support!");
+#endif
+}
+
+void calculateTemperatures(autopas::AutoPas<ParticleType> &autoPasContainer,
+                           const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
+#if defined(MD_FLEXIBLE_FUNCTOR_DEM)
+  AUTOPAS_OPENMP(parallel)
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    const double mass = particlePropertiesLibrary.getSiteMass(iter->getTypeId());
+    const double specificHeat = particlePropertiesLibrary.getSpecificHeat(iter->getTypeId());
+    const double thermalCapacity = mass * specificHeat;
+    const double heatFlux = iter->getHeatFlux();
+    const double deltaTemperature = heatFlux / thermalCapacity * deltaT;
+
+    iter->addTemperature(deltaTemperature);
+  }
+#else
+  autopas::utils::ExceptionHandler::exception(
+      "Attempting to perform DEM temperature integrations when md-flexible has not been compiled with DEM functor!");
 #endif
 }
 
