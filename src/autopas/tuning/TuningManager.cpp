@@ -15,7 +15,6 @@ TuningManager::TuningManager(const AutoTunerInfo &autoTunerInfo) : _tuningInterv
 
 void TuningManager::addAutoTuner(std::unique_ptr<AutoTuner> tuner, const InteractionTypeOption::Value interactionType) {
   _autoTuners[interactionType] = std::move(tuner);
-  setCommonContainerOption();
 }
 
 bool TuningManager::tune(const size_t currentIteration, const LiveInfo &info) {
@@ -132,28 +131,41 @@ void TuningManager::tuneConfigurations(const size_t currentIteration) {
 }
 
 void TuningManager::setOptimalConfigurations() {
+  // 1. Check the potential time if we switch container with every functor call
   long bestTotalValue = 0;
   for (const auto &tuner : _autoTuners | std::views::values) {
     auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigNotReduced();
     bestTotalValue += evidence.rebuildValue + evidence.traversalValue;
   }
+
+  // 2. Check the potential time if we keep all interaction types fixed to the same container (and save rebuilds)
   long bestCommonContainerValue = std::numeric_limits<long>::max();
   auto commonContainerOptions = setCommonContainerOption();
-  ContainerOption bestContainer = *commonContainerOptions.begin();
+
+  std::optional<ContainerOption> bestContainer = std::nullopt;
 
   for (const auto &container : commonContainerOptions) {
     long totalValueForContainer = 0;
-    for (const auto &tuner : _autoTuners | std::views::values) {
-      auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigForContainer(container);
-      totalValueForContainer += evidence.reducedValue;
+    bool containerIsValid = true;
+
+    for (const auto &[interactionType, tuner] : _autoTuners) {
+      try {
+        auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigForContainer(container);
+        totalValueForContainer += evidence.reducedValue;
+      } catch (const std::exception &e) {
+        containerIsValid = false;
+        AutoPasLog(DEBUG, "No evidence for the interaction type {} with container: {}", interactionType, container);
+        break;
+      }
     }
-    if (totalValueForContainer < bestCommonContainerValue) {
+    if (containerIsValid and totalValueForContainer < bestCommonContainerValue) {
       bestCommonContainerValue = totalValueForContainer;
       bestContainer = container;
     }
   }
 
-  if (bestTotalValue < bestCommonContainerValue) {
+  // 3. Evaluate our options
+  if ((not bestContainer.has_value()) or bestTotalValue < bestCommonContainerValue) {
     AutoPasLog(DEBUG,
                "TuningManager::setOptimalConfigurations: Each AutoTuner will run their individually best rebuild + "
                "traversal configuration");
@@ -167,7 +179,7 @@ void TuningManager::setOptimalConfigurations() {
                "container option",
                bestContainer);
     for (const auto &tuner : _autoTuners | std::views::values) {
-      auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigForContainer(bestContainer);
+      auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigForContainer(bestContainer.value());
       tuner->forceOptimalConfiguration(optConf);
     }
   }
