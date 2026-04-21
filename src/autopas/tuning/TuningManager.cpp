@@ -209,6 +209,6 @@ std::set<ContainerOption> TuningManager::setCommonContainerOption() {
 }
 
 bool TuningManager::tuningPhaseAboutToBegin(const size_t currentIteration) const {
-  return _tuningInterval <= 10 or currentIteration % _tuningInterval > _tuningInterval - 10;
+  return _tuningInterval <= 10 or currentIteration % _tuningInterval >= _tuningInterval - 10;
 }
 }  // namespace autopas
