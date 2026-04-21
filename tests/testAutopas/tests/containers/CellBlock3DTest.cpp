@@ -9,13 +9,31 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "autopasTools/generators/GridGenerator.h"
 
-void testIndex(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::array<double, 3> &start,
+void CellBlock3DTest::SetUp() {
+  // Initialize different cell blocks
+  _cells_1x1x1 = std::make_unique<autopas::internal::CellBlock3D<FMCell>>(
+      _vec1, std::array<double, 3>({0.0, 0.0, 0.0}), std::array<double, 3>({10.0, 10.0, 10.0}), 10.0);
+  _cells_1x1x1_cs2 = std::make_unique<autopas::internal::CellBlock3D<FMCell>>(
+      _vec1_cs, std::array<double, 3>({0.0, 0.0, 0.0}), std::array<double, 3>({10.0, 10.0, 10.0}), 5.0, 2.0);
+  _cells_2x2x2 = std::make_unique<autopas::internal::CellBlock3D<FMCell>>(
+      _vec2, std::array<double, 3>({0.0, 0.0, 0.0}), std::array<double, 3>({10.0, 10.0, 10.0}), 5.0);
+  _cells_2x2x2_cs05 = std::make_unique<autopas::internal::CellBlock3D<FMCell>>(
+      _vec2_cs, std::array<double, 3>({0.0, 0.0, 0.0}), std::array<double, 3>({10.0, 10.0, 10.0}), 10.0, 0.5);
+  _cells_3x3x3 = std::make_unique<autopas::internal::CellBlock3D<FMCell>>(
+      _vec3, std::array<double, 3>({0.0, 0.0, 0.0}), std::array<double, 3>({10.0, 10.0, 10.0}), 3.0);
+  _cells_11x4x4_nonZeroBoxMin = std::make_unique<autopas::internal::CellBlock3D<FMCell>>(
+      _vec4, std::array<double, 3>({2. / 3., 0.0, 0.0}), std::array<double, 3>({1., .125, .125}), 3. / 100.);
+  _cells_19x19x19 = std::make_unique<autopas::internal::CellBlock3D<FMCell>>(
+      _vec19, std::array<double, 3>({0.0, 0.0, 0.0}), std::array<double, 3>({58.5, 58.5, 58.5}), 3.0);
+}
+
+void testIndex(std::unique_ptr<autopas::internal::CellBlock3D<FMCell>> &cellBlock, std::array<double, 3> &start,
                std::array<double, 3> &dr, std::array<int, 3> &numParts) {
   auto mesh = CellBlock3DTest::getMesh(start, dr, numParts);
 
   unsigned long counter = 0ul;
   for (auto &m : mesh) {
-    unsigned long index = cellBlock.get1DIndexOfPosition(m);
+    unsigned long index = cellBlock->get1DIndexOfPosition(m);
     ASSERT_EQ(index, counter) << "Pos: [" << autopas::utils::ArrayUtils::to_string(m) << "]";
     ++counter;
   }
@@ -51,7 +69,7 @@ TEST_F(CellBlock3DTest, test3x3x3) {
   testIndex(_cells_3x3x3, start, dr, numParts);
 }
 
-void testBoundary(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::array<double, 3> boxMin,
+void testBoundary(std::unique_ptr<autopas::internal::CellBlock3D<FMCell>> &cellBlock, std::array<double, 3> boxMin,
                   std::array<double, 3> boxMax) {
   std::array<std::array<double, 4>, 3> possibleShifts = {};
   for (unsigned short dim = 0; dim < 3; ++dim) {
@@ -60,15 +78,15 @@ void testBoundary(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::array<
                            std::nextafter(boxMax[dim], -1.),  // slightly below boxmax (inside)
                            boxMax[dim]};                      // boxmax (outside)
   }
-  std::array<size_t, 3> cellsPerDimWithHalo = cellBlock.getCellsPerDimensionWithHalo();
-  auto haloThickness(cellBlock.getCellsPerInteractionLength());
+  std::array<size_t, 3> cellsPerDimWithHalo = cellBlock->getCellsPerDimensionWithHalo();
+  auto haloThickness(cellBlock->getCellsPerInteractionLength());
   std::array<size_t, 3> ind = {};
   for (ind[0] = 0; ind[0] < 4; ++ind[0]) {
     for (ind[1] = 0; ind[1] < 4; ++ind[1]) {
       for (ind[2] = 0; ind[2] < 4; ++ind[2]) {
         std::array<double, 3> position = {possibleShifts[0][ind[0]], possibleShifts[1][ind[1]],
                                           possibleShifts[2][ind[2]]};
-        auto pos = cellBlock.get3DIndexOfPosition(position);
+        auto pos = cellBlock->get3DIndexOfPosition(position);
 
         for (int d = 0; d < 3; ++d) {
           switch (ind[d]) {
@@ -141,11 +159,12 @@ std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(std::array<double, 3
   return ret;
 }
 
-size_t getNumberOfParticlesInBox(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::vector<FMCell> &vec) {
+size_t getNumberOfParticlesInBox(std::unique_ptr<autopas::internal::CellBlock3D<FMCell>> &cellBlock,
+                                 std::vector<FMCell> &vec) {
   const Molecule defaultParticle;
-  autopasTools::generators::GridGenerator::fillWithParticles(vec, cellBlock.getCellsPerDimensionWithHalo(),
-                                                             cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);
-  cellBlock.clearHaloCells();
+  autopasTools::generators::GridGenerator::fillWithParticles(
+      vec, cellBlock->getCellsPerDimensionWithHalo(), cellBlock->getCellsPerDimensionWithHalo(), defaultParticle);
+  cellBlock->clearHaloCells();
   return std::accumulate(vec.begin(), vec.end(), 0, [](auto acc, auto &e) { return acc + e.size(); });
 }
 
@@ -162,17 +181,16 @@ TEST_F(CellBlock3DTest, testClearHaloParticles) {
 /**
  * Checks if the OwnershipState is set correctly, depending on whether it is a cell that can contain only owned
  * particles, only halo particles, owned and halo particles, or if it is an empty cell.
- *
  */
 TEST_F(CellBlock3DTest, testCellOwnership) {
-  std::size_t numCells = _cells_1x1x1.getNumCells();
+  std::size_t numCells = _cells_1x1x1->getNumCells();
   for (int i = 0; i < numCells; i++) {
-    if (_cells_1x1x1.cellCanContainHaloParticles(i)) {
-      EXPECT_TRUE(toInt64(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() & autopas::OwnershipState::halo));
-    } else if (_cells_1x1x1.cellCanContainOwnedParticles(i)) {
-      EXPECT_TRUE(toInt64(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() & autopas::OwnershipState::owned));
+    if (_cells_1x1x1->cellCanContainHaloParticles(i)) {
+      EXPECT_TRUE(toInt64(_cells_1x1x1->getCell(i).getPossibleParticleOwnerships() & autopas::OwnershipState::halo));
+    } else if (_cells_1x1x1->cellCanContainOwnedParticles(i)) {
+      EXPECT_TRUE(toInt64(_cells_1x1x1->getCell(i).getPossibleParticleOwnerships() & autopas::OwnershipState::owned));
     } else {
-      EXPECT_TRUE(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() == autopas::OwnershipState::dummy);
+      EXPECT_TRUE(_cells_1x1x1->getCell(i).getPossibleParticleOwnerships() == autopas::OwnershipState::dummy);
     }
   }
 }
