@@ -19,8 +19,6 @@
  * @return 0 on success
  */
 int main(int argc, char **argv) {
-  autopas::Logger::create();
-
   if (argc <= 2) {
     std::cerr
         << "Usage: ruleChecker tuningRules.rule tuningLog.txt...\n"
@@ -111,6 +109,4 @@ int main(int argc, char **argv) {
       static_cast<double>(wouldHaveSkippedTuningTimeSum) / static_cast<double>(tuningTimeSum) * 100;
   auto savedTuningTimeRatioRounded = std::round(savedTuningTimeRatio * 100) / 100;
   AutoPasLog(INFO, "Overall, {}% of the tuning time would have been saved.", savedTuningTimeRatioRounded);
-
-  autopas::Logger::unregister();
 }
