@@ -177,7 +177,7 @@ void TuningManager::setOptimalConfigurations() {
     AutoPasLog(DEBUG,
                "TuningManager::setOptimalConfigurations: AutoTuners will run their best configuration with the {} "
                "container option",
-               bestContainer);
+               bestContainer.value());
     for (const auto &tuner : _autoTuners | std::views::values) {
       auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigForContainer(bestContainer.value());
       tuner->forceOptimalConfiguration(optConf);
