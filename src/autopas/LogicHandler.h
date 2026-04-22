@@ -26,6 +26,7 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
+#include "autopas/utils/RegressionModels.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/TraceTimer.h"
@@ -161,10 +162,47 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle_T> updateContainer() {
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    this->checkNeighborListsInvalidDoDynamicRebuild();
-#endif
     bool doDataStructureUpdate = not neighborListsAreValid();
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    /*
+     * Checks whether a rebuild will already be triggered for reasons other than
+     * particle buffer fullness (e.g. tuning rebuild, first iteration, or missing
+     * rebuild time estimates).
+     */
+    if (not doDataStructureUpdate) {
+      /**
+       * When using reflective boundaries, fast-moving particles can leave the box unnoticed and trigger an error.
+       * This can happen during a burst of movement when a particle is near the bottom, followed by little movement,
+       * so no rebuild is triggered. The particle then moves toward the boundary and causes an error because the
+       * current implementation does not check whether particles in the buffer get too close to the border.
+       */
+      this->addFastParticlesToParticleBuffer();
+
+      long const currentNumParticlesBuffer = getNumberOfParticlesBuffer();
+      /**
+       * The number of particles in the buffer has to be estimated because the rebuild
+       * decision must be taken before the containers are updated.
+       * Additional particles (to fast particles) may enter the buffer due to MPI communication or
+       * periodic boundary conditions.
+       */
+      _rebuildDecisionContext.updateNumParticlesBufferEstimate(currentNumParticlesBuffer);
+
+      /*
+       * If the buffer is empty, no data points are available for the estimators.
+       * In this case, no prediction can be made and therefore no rebuild decision
+       * based on buffer fullness is possible, even if the estimated particle count
+       * would be non-zero.
+       */
+      if (currentNumParticlesBuffer > 0) {
+        _doDynamicRebuild = _rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(_stepsSinceLastListRebuild);
+        doDataStructureUpdate = not neighborListsAreValid();
+      }
+    } else {
+      // Required to compute the particle buffer increase of the current iteration
+      _rebuildDecisionContext.updateNumParticlesBufferEstimate(getNumberOfParticlesBuffer());
+    }
+
+#endif
 
     if (_functorCalls > 0) {
       // Bump iteration counters for all autotuners
@@ -176,7 +214,6 @@ class LogicHandler {
         }
         autoTuner->bumpIterationCounters(needsToWait);
       }
-
       // We will do a rebuild in this timestep
       if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
         _stepsSinceLastListRebuild = 0;
@@ -185,7 +222,6 @@ class LogicHandler {
       _currentContainer->setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
       ++_iteration;
     }
-
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
 
@@ -554,6 +590,18 @@ class LogicHandler {
   [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
 
   /**
+   * Get the number of particles in the buffer.
+   * @return
+   */
+  [[nodiscard]] unsigned long getNumberOfParticlesBuffer() const {
+    size_t particleBufferSize = 0;
+    for (auto &cell : _particleBuffer) {
+      particleBufferSize += cell.size();
+    }
+    return particleBufferSize;
+  }
+
+  /**
    * Check if other autotuners for any other interaction types are still in a tuning phase.
    * @param interactionType
    * @return bool whether other tuners are still tuning.
@@ -632,44 +680,33 @@ class LogicHandler {
 #endif
   }
 
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   /**
-   * Estimates the rebuild frequency based on the current maximum velocity in the container
-   * Using the formula rf = skin/deltaT/vmax/2
-   * @param skin is the skin length used in the simulation
-   * @param deltaT is the time step
-   * @return estimate of the current rebuild frequency
+   * Adds particle to particle buffer if it has moved more than skin/2.
    */
-  double getVelocityMethodRFEstimate(const double skin, const double deltaT) const {
-    using autopas::utils::ArrayMath::dot;
-    // Initialize the maximum velocity to zero
-    double maxVelocity = 0;
-    // Iterate over the owned particles in container to determine maximum velocity
-    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
-    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-      std::array<double, 3> tempVel = iter->getV();
-      double tempVelAbs = sqrt(dot(tempVel, tempVel));
-      maxVelocity = std::max(tempVelAbs, maxVelocity);
-    }
-    // return the rebuild frequency estimate
-    return skin / maxVelocity / deltaT / 2;
-  }
-  /**
-   * getter function for _neighborListInvalidDoDynamicRebuild
-   * @return bool stored in _neighborListInvalidDoDynamicRebuild
-   */
-  bool getNeighborListsInvalidDoDynamicRebuild();
+  void addFastParticlesToParticleBuffer();
+#endif
 
   /**
-   * Checks if any particle has moved more than skin/2.
-   * updates bool: _neighborListInvalidDoDynamicRebuild
+   * Checks if the auto tuner tests a NEW configuration.
+   * updates bool: _doTuningRebuild
+   * @return _doTuningRebuild
    */
-  void checkNeighborListsInvalidDoDynamicRebuild();
+  bool isTuningInNeedOfRebuild();
+
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  /**
+   * getter function for testing
+   * @return _doDynamicRebuild
+   */
+  [[nodiscard]] bool getDoDynamicRebuild() const;
 
   /**
-   * Checks if any particle has moved more than skin/2.
-   * resets bool: _neighborListInvalidDoDynamicRebuild to false
+   * getter function for testing
+   * @return _rebuildDecisionContext.getNumParticlesBufferEstimate()
    */
-  void resetNeighborListsInvalidDoDynamicRebuild();
+  [[nodiscard]] size_t getNumParticlesBufferEstimate() const;
+#endif
 
   /**
    * Checks if in the next iteration the neighbor lists have to be rebuilt.
@@ -677,7 +714,7 @@ class LogicHandler {
    * This can be the case either because we hit the rebuild frequency or the dynamic rebuild criteria or because the
    * auto tuner tests a new configuration.
    *
-   * @return True iff the neighbor lists will not be rebuild.
+   * @return True iff the neighbor lists will not be rebuilt.
    */
   bool neighborListsAreValid();
 
@@ -886,6 +923,24 @@ class LogicHandler {
   unsigned int _iteration{0};
 
   /**
+   * Amount of particles in the particle buffer before remainder traversal per iteration.
+   */
+  size_t _particleBufferSize{0};
+
+  /**
+   * The current amount of fast particles
+   */
+  size_t _numParticlesFast{0};
+
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  /**
+   * Aggregates all data required to decide whether a neighbor list rebuild
+   * should be triggered based on estimated remainder traversal and rebuild times.
+   */
+  utils::RegressionModels::RebuildDecisionContext _rebuildDecisionContext{};
+#endif
+
+  /**
    * The iteration number at the end of last tuning phase.
    */
   unsigned int _iterationAtEndOfLastTuningPhase{0};
@@ -927,6 +982,24 @@ class LogicHandler {
    * neighborListInvalidDoDynamicRebuild - true if a particle has moved more than skin/2
    */
   bool _neighborListInvalidDoDynamicRebuild{false};
+
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  /**
+   * Indicates whether a dynamic rebuild should be performed.
+   *
+   * doDynamicRebuild - true if the particle buffer is sufficiently full such that performing
+   * a rebuild is more advantageous than executing another remainder traversal,
+   * or if a rebuild time estimate is required to make this decision.
+   * It is also set to true if an error occurred during data collection or
+   * decision-making.
+   */
+  bool _doDynamicRebuild{false};
+#endif
+
+  /**
+   * doTuningRebuild - true if a rebuild is triggered by auto-tuning.
+   */
+  bool _doTuningRebuild{false};
 
   /**
    * updating position at rebuild for every particle
@@ -971,24 +1044,30 @@ void LogicHandler<Particle_T>::checkMinimalSize() const {
   }
 }
 
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
 template <typename Particle_T>
-bool LogicHandler<Particle_T>::getNeighborListsInvalidDoDynamicRebuild() {
-  return _neighborListInvalidDoDynamicRebuild;
+bool LogicHandler<Particle_T>::getDoDynamicRebuild() const {
+  return _doDynamicRebuild;
 }
+#endif
+
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+template <typename Particle_T>
+size_t LogicHandler<Particle_T>::getNumParticlesBufferEstimate() const {
+  return _rebuildDecisionContext.getNumParticlesBufferEstimate();
+}
+#endif
 
 template <typename Particle_T>
 bool LogicHandler<Particle_T>::neighborListsAreValid() {
-  // Implement rebuild indicator as function, so it is only evaluated when needed.
-  const auto needRebuild = [&](const InteractionTypeOption &interactionOption) {
-    return _interactionTypes.count(interactionOption) != 0 and
-           _autoTunerRefs[interactionOption]->willRebuildNeighborLists();
-  };
-
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency
+  isTuningInNeedOfRebuild();
+  if (
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-      or getNeighborListsInvalidDoDynamicRebuild()
+      _doDynamicRebuild
+#else
+      _stepsSinceLastListRebuild >= _neighborListRebuildFrequency
 #endif
-      or needRebuild(InteractionTypeOption::pairwise) or needRebuild(InteractionTypeOption::triwise)) {
+      or _doTuningRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 
@@ -996,28 +1075,43 @@ bool LogicHandler<Particle_T>::neighborListsAreValid() {
 }
 
 template <typename Particle_T>
-void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
+bool LogicHandler<Particle_T>::isTuningInNeedOfRebuild() {
+  // Implement rebuild indicator as function, so it is only evaluated when needed.
+  const auto needRebuild = [&](const InteractionTypeOption &interactionOption) {
+    return _interactionTypes.contains(interactionOption) and
+           _autoTunerRefs[interactionOption]->willRebuildNeighborLists();
+  };
+  if (needRebuild(InteractionTypeOption::pairwise) or needRebuild(InteractionTypeOption::triwise)) {
+    _doTuningRebuild = true;
+  }
+  return _doTuningRebuild;
+}
+
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+template <typename Particle_T>
+void LogicHandler<Particle_T>::addFastParticlesToParticleBuffer() {
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
+  AUTOPAS_OPENMP(parallel reduction(+ : _numParticlesFast))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
+    if (distanceSquare >= halfSkinSquare) {
+      Particle_T &particle = *iter;
+      Particle_T particleCopy = particle;
 
-    _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
+      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+      internal::markParticleAsDeleted(particle);
+
+      _numParticlesFast++;
+    }
   }
+}
 #endif
-}
-
-template <typename Particle_T>
-void LogicHandler<Particle_T>::resetNeighborListsInvalidDoDynamicRebuild() {
-  _neighborListInvalidDoDynamicRebuild = false;
-}
 
 template <typename Particle_T>
 void LogicHandler<Particle_T>::setParticleBuffers(
@@ -1079,32 +1173,11 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   }();
 
   auto &autoTuner = *_autoTunerRefs[interactionType];
+
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (autoTuner.inFirstTuningIteration()) {
+    autoTuner.setRebuildFrequency(getMeanRebuildFrequency(/* considerOnlyLastNonTuningPhase */ true));
     _numRebuildsInNonTuningPhase = 0;
-  }
-
-  // Rebuild frequency estimation should be triggered early in the tuning phase.
-  // This is necessary because runtime prediction for each trial configuration
-  // depends on the rebuild frequency.
-  // To avoid the influence of poorly initialized velocities at the start of the simulation,
-  // the rebuild frequency is estimated at iteration corresponding to the last sample of the first configuration.
-  // The rebuild frequency estimated here is then reused for the remainder of the tuning phase.
-  if (autoTuner.inFirstConfigurationLastSample()) {
-    // Fetch the needed information for estimating the rebuild frequency from _logicHandlerInfo
-    // and estimate the current rebuild frequency using the velocity method.
-    double rebuildFrequencyEstimate =
-        getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
-    double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
-    // The user defined rebuild frequency is considered as the upper bound.
-    // If velocity method estimate exceeds upper bound, set the rebuild frequency to the user defined value.
-    // This is done because we currently use the user defined rebuild frequency as the upper bound to avoid expensive
-    // buffer interactions.
-    if (rebuildFrequencyEstimate > userProvidedRF) {
-      autoTuner.setRebuildFrequency(userProvidedRF);
-    } else {
-      autoTuner.setRebuildFrequency(rebuildFrequencyEstimate);
-    }
   }
 #endif
   utils::Timer timerTotal;
@@ -1119,13 +1192,14 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   functor.initTraversal();
 
   // if lists are not valid -> rebuild;
-  if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+  const bool doRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
+
+  if (doRebuild) {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->updateRebuildPositions();
 #endif
     _currentContainer->rebuildNeighborLists(&traversal);
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    this->resetNeighborListsInvalidDoDynamicRebuild();
     _numRebuilds++;
     if (not autoTuner.inTuningPhase()) {
       _numRebuildsInNonTuningPhase++;
@@ -1136,6 +1210,21 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   timerRebuild.stop();
   std::tie(std::ignore, std::ignore, std::ignore, energyTotalRebuild) = autoTuner.sampleEnergy();
 
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  const size_t numParticlesBuffer = getNumberOfParticlesBuffer();
+  // for logging in current iteration
+  const bool doDynamicRebuild = _doDynamicRebuild;
+  const double predRebuild = _rebuildDecisionContext.getRebuildNeighborTimeEstimate();
+  const double predRemainder = _rebuildDecisionContext.getRemainderTraversalTimeEstimate();
+
+  // resetting variables after current rebuild before next iteration
+  if (doRebuild) {
+    _rebuildDecisionContext.afterRebuild(timerRebuild.getTotalTime(), _doTuningRebuild);
+    _numParticlesFast = 0;
+    _doTuningRebuild = false;
+    _doDynamicRebuild = false;
+  }
+#endif
   timerComputeInteractions.start();
   _currentContainer->computeInteractions(&traversal);
   timerComputeInteractions.stop();
@@ -1145,6 +1234,13 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   const auto dataLayout = autoTuner.getCurrentConfig().dataLayout;
   computeRemainderInteractions(functor, newton3, dataLayout);
   timerComputeRemainder.stop();
+
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  if (not doRebuild) {
+    _doDynamicRebuild =
+        _rebuildDecisionContext.afterRemainderTraversal(timerComputeRemainder.getTotalTime(), numParticlesBuffer);
+  }
+#endif
 
   functor.endTraversal(newton3);
 
@@ -1164,7 +1260,19 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
           energyMeasurementsPossible ? energyTotalRebuild : nanL,
           energyMeasurementsPossible ? energyTotal - energyTotalRebuild
                                      : nanL,  // ComputeInteractions + Remainder Traversal energy consumption
-          energyMeasurementsPossible ? energyTotal : nanL};
+          energyMeasurementsPossible ? energyTotal : nanL
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+          ,
+          numParticlesBuffer,
+          getNumberOfParticlesOwned(),
+          getNumberOfParticlesHalo(),
+          _numParticlesFast,
+          _rebuildDecisionContext.getNumParticlesBufferEstimate(),
+          predRemainder,
+          predRebuild,
+          doDynamicRebuild
+#endif
+  };
 }
 
 template <typename Particle_T>

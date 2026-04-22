@@ -637,8 +637,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.addATParametersToSite(siteID, nu);
         }
       } else if (key == MDFlexConfig::moleculesStr) {
-        // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion
-        // update)
+        // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the
+        // quaternion update)
         expected = "See AllOptions.yaml for examples.";
         description = "";
 
