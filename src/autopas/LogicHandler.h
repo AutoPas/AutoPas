@@ -1230,15 +1230,15 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   timerComputeInteractions.stop();
 
   timerComputeRemainder.start();
-    const bool newton3 = autoTuner.getCurrentConfig().newton3;
-    const auto dataLayout = autoTuner.getCurrentConfig().dataLayout;
+  const bool newton3 = autoTuner.getCurrentConfig().newton3;
+  const auto dataLayout = autoTuner.getCurrentConfig().dataLayout;
   if (not doRebuild) {
     computeRemainderInteractions(functor, newton3, dataLayout);
   }
   timerComputeRemainder.stop();
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    if (not doRebuild) {
+  if (not doRebuild) {
     _doDynamicRebuild =
         _rebuildDecisionContext.afterRemainderTraversal(timerComputeRemainder.getTotalTime(), numParticlesBuffer);
   }
