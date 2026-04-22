@@ -335,11 +335,10 @@ class RebuildDecisionContext {
    *
    * @param rebuildTime Measured remainder traversal time
    * @param doTuningRebuild
-   * @param isFirstIteration
    */
-  void afterRebuild(const long rebuildTime, const bool doTuningRebuild, const bool isFirstIteration) {
+  void afterRebuild(const long rebuildTime, const bool doTuningRebuild) {
     // tuning iterations distort the rebuild time estimate
-    if (!doTuningRebuild and !isFirstIteration) {
+    if (not doTuningRebuild) {
       if (_rebuildNeighborTimeMean.addNewPoint(rebuildTime) == RegressionBase::ReturnCode::OVERFLOW_REG) {
         _rebuildNeighborTimeMean.reset();
         _rebuildNeighborTimeEstimate = std::numeric_limits<double>::quiet_NaN();

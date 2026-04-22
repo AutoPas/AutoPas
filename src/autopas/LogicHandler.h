@@ -1219,7 +1219,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 
   // resetting variables after current rebuild before next iteration
   if (doRebuild) {
-    _rebuildDecisionContext.afterRebuild(timerRebuild.getTotalTime(), _doTuningRebuild, _iteration == 0);
+    _rebuildDecisionContext.afterRebuild(timerRebuild.getTotalTime(), _doTuningRebuild);
     _numParticlesFast = 0;
     _doTuningRebuild = false;
     _doDynamicRebuild = false;

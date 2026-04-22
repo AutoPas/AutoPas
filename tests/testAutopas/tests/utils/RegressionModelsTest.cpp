@@ -109,7 +109,7 @@ TEST(RegressionModelsTest, testRebuildDecisionContext) {
   unsigned int rf = 1;
   // First rebuild
   EXPECT_TRUE(std::isnan(rebuildDecisionContext.getRebuildNeighborTimeEstimate()));
-  rebuildDecisionContext.afterRebuild(100, false, false);
+  rebuildDecisionContext.afterRebuild(100, false);
 
   EXPECT_FALSE(rebuildDecisionContext.afterRemainderTraversal(10, 0));
   rebuildDecisionContext.updateNumParticlesBufferEstimate(3);
@@ -145,7 +145,7 @@ TEST(RegressionModelsTest, testRebuildDecisionContext) {
   // Rebuild is cheaper than another remainder traversal with a full buffer
   EXPECT_TRUE(rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(rf));
   EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 190);
-  rebuildDecisionContext.afterRebuild(120, false, false);
+  rebuildDecisionContext.afterRebuild(120, false);
 
   // Steps since rebuild: 1
   // Check reset behavior
