@@ -417,11 +417,8 @@ class RebuildDecisionContext {
       if (remainderIncline >= rebuildIncline or value_rebuild <= value_remainder) {
         doDynamicRebuild = true;
       }
-
     } else if (returnCode_rebuild == RegressionBase::ReturnCode::OVERFLOW_REG ||
                returnCode_remainder == RegressionBase::ReturnCode::OVERFLOW_REG ||
-               // No rebuild has been performed yet; trigger one to obtain an initial rebuild time estimate
-               returnCode_rebuild == RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG ||
                // if the boost library linear regression implementation throws an error
                returnCode_remainder == RegressionBase::ReturnCode::UNKNOWN_ERROR_REG) {
       doDynamicRebuild = true;

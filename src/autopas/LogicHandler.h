@@ -163,7 +163,6 @@ class LogicHandler {
    */
   [[nodiscard]] std::vector<Particle_T> updateContainer() {
     bool doDataStructureUpdate = not neighborListsAreValid();
-
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     /*
      * Checks whether a rebuild will already be triggered for reasons other than
@@ -187,6 +186,7 @@ class LogicHandler {
        * periodic boundary conditions.
        */
       _rebuildDecisionContext.updateNumParticlesBufferEstimate(currentNumParticlesBuffer);
+
       /*
        * If the buffer is empty, no data points are available for the estimators.
        * In this case, no prediction can be made and therefore no rebuild decision
@@ -214,7 +214,6 @@ class LogicHandler {
         }
         autoTuner->bumpIterationCounters(needsToWait);
       }
-
       // We will do a rebuild in this timestep
       if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
         _stepsSinceLastListRebuild = 0;
@@ -223,7 +222,6 @@ class LogicHandler {
       _currentContainer->setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
       ++_iteration;
     }
-
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
 
@@ -1193,14 +1191,6 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   timerRebuild.start();
   functor.initTraversal();
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  const size_t numParticlesBuffer = getNumberOfParticlesBuffer();
-  // for logging
-  const bool doDynamicRebuild = _doDynamicRebuild;
-  const double predRebuild = _rebuildDecisionContext.getRebuildNeighborTimeEstimate();
-  const double predRemainder = _rebuildDecisionContext.getRemainderTraversalTimeEstimate();
-#endif
-
   // if lists are not valid -> rebuild;
   const bool doRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
 
@@ -1209,40 +1199,49 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     this->updateRebuildPositions();
 #endif
     _currentContainer->rebuildNeighborLists(&traversal);
-
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     _numRebuilds++;
     if (not autoTuner.inTuningPhase()) {
       _numRebuildsInNonTuningPhase++;
     }
 #endif
+    _neighborListsAreValid.store(true, std::memory_order_relaxed);
   }
   timerRebuild.stop();
   std::tie(std::ignore, std::ignore, std::ignore, energyTotalRebuild) = autoTuner.sampleEnergy();
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  const size_t numParticlesBuffer = getNumberOfParticlesBuffer();
+  // for logging in current iteration
+  const bool doDynamicRebuild = _doDynamicRebuild;
+  const double predRebuild = _rebuildDecisionContext.getRebuildNeighborTimeEstimate();
+  const double predRemainder = _rebuildDecisionContext.getRemainderTraversalTimeEstimate();
+
+  // resetting variables after current rebuild before next iteration
   if (doRebuild) {
     _rebuildDecisionContext.afterRebuild(timerRebuild.getTotalTime(), _doTuningRebuild, _iteration == 0);
     _numParticlesFast = 0;
     _doTuningRebuild = false;
     _doDynamicRebuild = false;
-    _neighborListsAreValid.store(true, std::memory_order_relaxed);
   }
 #endif
-
   timerComputeInteractions.start();
   _currentContainer->computeInteractions(&traversal);
   timerComputeInteractions.stop();
 
   timerComputeRemainder.start();
-  const bool newton3 = autoTuner.getCurrentConfig().newton3;
-  const auto dataLayout = autoTuner.getCurrentConfig().dataLayout;
-  computeRemainderInteractions(functor, newton3, dataLayout);
+    const bool newton3 = autoTuner.getCurrentConfig().newton3;
+    const auto dataLayout = autoTuner.getCurrentConfig().dataLayout;
+  if (not doRebuild) {
+    computeRemainderInteractions(functor, newton3, dataLayout);
+  }
   timerComputeRemainder.stop();
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  _doDynamicRebuild =
-      _rebuildDecisionContext.afterRemainderTraversal(timerComputeRemainder.getTotalTime(), numParticlesBuffer);
+    if (not doRebuild) {
+    _doDynamicRebuild =
+        _rebuildDecisionContext.afterRemainderTraversal(timerComputeRemainder.getTotalTime(), numParticlesBuffer);
+  }
 #endif
 
   functor.endTraversal(newton3);
