@@ -304,7 +304,7 @@ class AutoTuner {
    * rebuild frequency.
    * @return estimate time for one iteration
    */
-  [[nodiscard]] long estimateRuntimeFromSamples() const;
+  [[nodiscard]] std::tuple<long, long, long> estimateRuntimeFromSamples() const;
 
   /**
    * Strategy how to reduce the sampled values to one value.

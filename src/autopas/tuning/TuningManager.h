@@ -6,7 +6,9 @@
 
 #pragma once
 
+#include <limits>
 #include <memory>
+#include <set>
 #include <unordered_map>
 
 #include "autopas/options/ContainerOption.h"

@@ -6,8 +6,9 @@
 
 #include "autopas/tuning/TuningManager.h"
 
+#include <algorithm>
+#include <iterator>
 #include <ranges>
-#include <set>
 
 namespace autopas {
 
@@ -21,14 +22,10 @@ bool TuningManager::tune(const size_t currentIteration, const LiveInfo &info) {
   if (_lastTuningIteration != currentIteration) {
     _lastTuningIteration = currentIteration;
 
-    // Evaluate if we crossed the interval threshold
-    if (currentIteration % _tuningInterval == 0) {
-      ++_tuningPhase;
-    }
-
     const bool isStart = isStartOfTuningPhase(currentIteration);
     const bool aboutToBegin = tuningPhaseAboutToBegin(currentIteration);
     if (isStart) {
+      ++_tuningPhase;
       _forceRetunePending = false;
     }
 
@@ -44,8 +41,10 @@ bool TuningManager::tune(const size_t currentIteration, const LiveInfo &info) {
 
 void TuningManager::addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt,
                                    size_t iteration, InteractionTypeOption::Value interactionType) const {
-  _autoTuners.at(interactionType)
-      ->addMeasurement(sampleRebuild, sampleTraverseParticles, neighborListRebuilt, iteration, _tuningPhase);
+  if (_autoTuners.at(interactionType)->inTuningPhase()) {
+    _autoTuners.at(interactionType)
+        ->addMeasurement(sampleRebuild, sampleTraverseParticles, neighborListRebuilt, iteration, _tuningPhase);
+  }
 }
 
 Configuration TuningManager::rejectConfiguration(const Configuration &rejectedConfig, const bool indefinitely,

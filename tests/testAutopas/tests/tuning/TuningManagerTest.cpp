@@ -955,7 +955,7 @@ TEST_F(TuningManagerTest, testLiveInfoRouting) {
     }
   };
 
-  tuningStrategies.emplace_back(std::move(std::make_unique<DummyTuningStrategy>()));
+  tuningStrategies.emplace_back(std::make_unique<DummyTuningStrategy>());
 
   auto autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, 20, "");
 

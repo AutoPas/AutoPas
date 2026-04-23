@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include <cstddef>
 #include <map>
+#include <optional>
+#include <tuple>
 #include <vector>
 
 #include "autopas/options/ContainerOption.h"
