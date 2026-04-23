@@ -6,8 +6,8 @@
 
 #pragma once
 
+#include "autopas/containers/cellTraversals/C08CellHandlerUtility.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
-#include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -336,8 +336,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::setupIntervals(
     }
   }
 
-  std::vector<LCC08CellHandlerUtility::OffsetPairVector> cellPairOffsets =
-      LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<LCC08CellHandlerUtility::C08OffsetMode::c04CellPairs>(
+  std::vector<C08CellHandlerUtility::OffsetPairVector> cellPairOffsets =
+      C08CellHandlerUtility::computePairwiseCellOffsetsC08<C08CellHandlerUtility::C08OffsetMode::c04CellPairs>(
           cellsPerDimension, this->_cellLength, this->_interactionLength);
 
   // Create intervals

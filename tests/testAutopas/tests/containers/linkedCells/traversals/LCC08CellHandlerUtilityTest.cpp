@@ -11,8 +11,8 @@ using testing::DoubleNear;
 using testing::Eq;
 using testing::Pointwise;
 
-using autopas::LCC08CellHandlerUtility::C08OffsetMode;
-using autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08;
+using autopas::C08CellHandlerUtility::C08OffsetMode;
+using autopas::C08CellHandlerUtility::computePairwiseCellOffsetsC08;
 
 /*
  * The given cell length and interaction length lead to an overlap of one.

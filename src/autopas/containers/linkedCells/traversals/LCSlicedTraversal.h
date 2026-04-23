@@ -10,8 +10,8 @@
 #include <algorithm>
 
 #include "LCTraversalInterface.h"
+#include "autopas/containers/cellTraversals/C08CellHandler.h"
 #include "autopas/containers/cellTraversals/SlicedLockBasedTraversal.h"
-#include "autopas/containers/linkedCells/traversals/LCC08CellHandler.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -59,7 +59,7 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwise
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
+  C08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
 };
 
 template <class ParticleCell, class PairwiseFunctor>

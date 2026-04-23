@@ -11,8 +11,6 @@
 #include "autopas/baseFunctors/CellFunctor3B.h"
 #include "autopas/containers/cellTraversals/C01BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/checkFunctorType.h"
 
@@ -101,13 +99,8 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
                      dataLayout, useNewton3),
         _functor(functor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
-    computeOffsets();
+    this->computeOffsets();
   }
-
-  /**
-   * Computes all combinations of cells used in processBaseCell()
-   */
-  void computeOffsets();
 
   void traverseParticles() override;
 
@@ -137,11 +130,6 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
   void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
  private:
-  // CellOffsets needs to store interaction pairs or triplets depending on the Functor type.
-  using CellOffsetsType = std::conditional_t<decltype(utils::isPairwiseFunctor<Functor>())::value,
-                                             std::vector<std::vector<std::pair<long, std::array<double, 3>>>>,
-                                             std::vector<std::tuple<long, long, std::array<double, 3>>>>;
-
   // CellFunctor type for either Pairwise or Triwise Functors.
   using CellFunctorType = std::conditional_t<decltype(utils::isPairwiseFunctor<Functor>())::value,
                                              internal::CellFunctor<ParticleCell, Functor, /*bidirectional*/ false>,
@@ -172,18 +160,6 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
                                      unsigned long z);
 
   /**
-   * Pairwise implementation of computeOffsets().
-   * @copydoc computeOffsets()
-   */
-  void computePairwiseOffsets();
-
-  /**
-   * Triwise implementation of computeOffsets().
-   * @copydoc computeOffsets()
-   */
-  void computeTriwiseOffsets();
-
-  /**
    * Appends all needed Attributes to the SoA buffer in cell.
    * @tparam I
    * @param cell
@@ -200,12 +176,6 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
    * of threads and cell offsets (= _cellOffsets.size()).
    */
   void resizeBuffers();
-
-  /**
-   * Pairs or triplets for processBaseCell().
-   * @note std::map not applicable since ordering arising from insertion is important for later processing!
-   */
-  CellOffsetsType _cellOffsets;
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two or more cells.
@@ -234,139 +204,6 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
 };
 
 template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computeOffsets() {
-  if constexpr (utils::isPairwiseFunctor<Functor>()) {
-    computePairwiseOffsets();
-  } else if (utils::isTriwiseFunctor<Functor>()) {
-    computeTriwiseOffsets();
-  } else {
-    utils::ExceptionHandler::exception("LCC01Traversal::computeOffsets(): Functor is not valid.");
-  }
-}
-
-template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computePairwiseOffsets() {
-  _cellOffsets.resize(2 * this->_overlap[0] + 1);
-
-  const auto interactionLengthSquare{this->_interactionLength * this->_interactionLength};
-
-  for (long x = -this->_overlap[0]; x <= 0l; ++x) {
-    for (long y = -this->_overlap[1]; y <= static_cast<long>(this->_overlap[1]); ++y) {
-      for (long z = -this->_overlap[2]; z <= static_cast<long>(this->_overlap[2]); ++z) {
-        const std::array<double, 3> pos = {
-            std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0],
-            std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1],
-            std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2],
-        };
-        const double distSquare = utils::ArrayMath::dot(pos, pos);
-        if (distSquare <= interactionLengthSquare) {
-          const long currentOffset = utils::ThreeDimensionalMapping::threeToOneD(
-              x, y, z, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
-          const bool containCurrentOffset =
-              std::any_of(_cellOffsets[x + this->_overlap[0]].cbegin(), _cellOffsets[x + this->_overlap[0]].cend(),
-                          [currentOffset](const auto &e) { return e.first == currentOffset; });
-          if (containCurrentOffset) {
-            continue;
-          }
-          for (long ix = x; ix <= std::abs(x); ++ix) {
-            const long offset = utils::ThreeDimensionalMapping::threeToOneD(
-                ix, y, z, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
-            const size_t index = ix + this->_overlap[0];
-
-            // Calculate the sorting direction from the base cell (x, y, z) and the other cell by use of the offset (ix,
-            // y, z).
-            std::array<double, 3> sortingDir = {static_cast<double>(ix) * this->_cellLength[0],
-                                                static_cast<double>(y) * this->_cellLength[1],
-                                                static_cast<double>(z) * this->_cellLength[2]};
-
-            // the offset to the current cell itself is zero.
-            if (ix == 0 and y == 0 and z == 0) {
-              sortingDir = {1., 1., 1.};
-            }
-            sortingDir = utils::ArrayMath::normalize(sortingDir);
-
-            if (y == 0l and z == 0l) {
-              // make sure center of slice is always at the beginning
-              _cellOffsets[index].insert(_cellOffsets[index].cbegin(), std::make_pair(offset, sortingDir));
-            } else {
-              _cellOffsets[index].emplace_back(offset, sortingDir);
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computeTriwiseOffsets() {
-  using namespace utils::ArrayMath::literals;
-  // Reserve approximately. Overestimates more for larger overlap.
-  const int cubeSize = this->_overlap[0] * this->_overlap[1] * this->_overlap[2];
-  _cellOffsets.reserve(cubeSize * cubeSize / 4);
-
-  // Helper function to get minimal distance between two cells
-  auto cellDistance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
-    return std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * this->_cellLength[0],
-                                 std::max(0l, (std::abs(y1 - y2) - 1l)) * this->_cellLength[1],
-                                 std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2]};
-  };
-
-  const auto interactionLengthSquare{this->_interactionLength * this->_interactionLength};
-  _cellOffsets.emplace_back(0, 0, std::array<double, 3>{1., 1., 1.});
-
-  // offsets for the first cell
-  for (long x1 = -this->_overlap[0]; x1 <= static_cast<long>(this->_overlap[0]); ++x1) {
-    for (long y1 = -this->_overlap[1]; y1 <= static_cast<long>(this->_overlap[1]); ++y1) {
-      for (long z1 = -this->_overlap[2]; z1 <= static_cast<long>(this->_overlap[2]); ++z1) {
-        // check distance between base cell and cell 1
-        const auto dist01 = cellDistance(0l, 0l, 0l, x1, y1, z1);
-
-        const double distSquare = utils::ArrayMath::dot(dist01, dist01);
-        if (distSquare > interactionLengthSquare) continue;
-
-        // offsets for cell 2
-        for (long x2 = -this->_overlap[0]; x2 <= static_cast<long>(this->_overlap[0]); ++x2) {
-          for (long y2 = -this->_overlap[1]; y2 <= static_cast<long>(this->_overlap[1]); ++y2) {
-            for (long z2 = -this->_overlap[2]; z2 <= static_cast<long>(this->_overlap[2]); ++z2) {
-              // check distance between cell 1 and cell 2
-              const auto dist12 = cellDistance(x1, y1, z1, x2, y2, z2);
-
-              const double dist12Squared = utils::ArrayMath::dot(dist12, dist12);
-              if (dist12Squared > interactionLengthSquare) continue;
-
-              // check distance between base cell and cell 2
-              const auto dist02 = cellDistance(0l, 0l, 0l, x2, y2, z2);
-
-              const double dist02Squared = utils::ArrayMath::dot(dist02, dist02);
-              if (dist02Squared > interactionLengthSquare) continue;
-
-              const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(
-                  x1, y1, z1, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
-
-              const long offset2 = utils::ThreeDimensionalMapping::threeToOneD(
-                  x2, y2, z2, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
-
-              // Only add unique combinations. E.g.: (5, 8) == (8, 5)
-              if (offset2 <= offset1) continue;
-
-              // sorting direction from base cell to the first different cell
-              std::array<double, 3> sortDirection{};
-              if (offset1 == 0) {
-                sortDirection = {x2 * this->_cellLength[0], y2 * this->_cellLength[1], z2 * this->_cellLength[2]};
-              } else {
-                sortDirection = {x1 * this->_cellLength[0], y1 * this->_cellLength[1], z1 * this->_cellLength[2]};
-              }
-              _cellOffsets.emplace_back(offset1, offset2, utils::ArrayMath::normalize(sortDirection));
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-template <class ParticleCell, class Functor, bool combineSoA>
 inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCell(std::vector<ParticleCell> &cells,
                                                                                unsigned long x, unsigned long y,
                                                                                unsigned long z) {
@@ -387,7 +224,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
                                                                                        unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
   ParticleCell &baseCell = cells[baseIndex];
-  const size_t cOffSize = _cellOffsets.size();
+  const size_t cOffSize = this->_cellOffsets.size();
 
   if constexpr (combineSoA) {
     // Iteration along x
@@ -401,7 +238,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
       currentSlice = 0;
       for (unsigned int offsetSlice = 0; offsetSlice < cOffSize; offsetSlice++) {
         combinationSlice[offsetSlice]._particleSoABuffer.clear();
-        for (const auto &offset : _cellOffsets[offsetSlice]) {
+        for (const auto &offset : this->_cellOffsets[offsetSlice]) {
           const unsigned long otherIndex = baseIndex + offset.first;
           ParticleCell &otherCell = cells[otherIndex];
           appendNeeded(combinationSlice[offsetSlice], otherCell,
@@ -414,7 +251,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
       const size_t midSlice = (currentSlice + this->_overlap[0] + 1) % cOffSize;
       for (size_t slice = (currentSlice + 1) % cOffSize; slice != midSlice; ++slice %= cOffSize, ++i) {
         size_t newSize = 0;
-        for (const auto &offset : _cellOffsets[i]) {
+        for (const auto &offset : this->_cellOffsets[i]) {
           const unsigned long otherIndex = baseIndex + offset.first;
           ParticleCell &otherCell = cells[otherIndex];
           newSize += otherCell.size();
@@ -423,9 +260,9 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
       }
       // append buffers
       for (size_t slice = midSlice; slice != currentSlice; ++slice %= cOffSize, ++i) {
-        for (auto offsetIndex = _cellOffsets[(i + 1) % cOffSize].size(); offsetIndex < _cellOffsets[i].size();
-             ++offsetIndex) {
-          const unsigned long otherIndex = baseIndex + _cellOffsets[i][offsetIndex].first;
+        for (auto offsetIndex = this->_cellOffsets[(i + 1) % cOffSize].size();
+             offsetIndex < this->_cellOffsets[i].size(); ++offsetIndex) {
+          const unsigned long otherIndex = baseIndex + this->_cellOffsets[i][offsetIndex].first;
           ParticleCell &otherCell = cells[otherIndex];
           appendNeeded(combinationSlice[slice], otherCell,
                        std::make_index_sequence<Functor::getNeededAttr(std::false_type()).size()>{});
@@ -434,7 +271,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
 
       combinationSlice[currentSlice]._particleSoABuffer.clear();
 
-      for (const auto &offset : _cellOffsets.back()) {
+      for (const auto &offset : this->_cellOffsets.back()) {
         const unsigned long otherIndex = baseIndex + offset.first;
         ParticleCell &otherCell = cells[otherIndex];
         appendNeeded(combinationSlice[currentSlice], otherCell,
@@ -460,7 +297,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
       }
     }
   } else {
-    for (const auto &slice : _cellOffsets) {
+    for (const auto &slice : this->_cellOffsets) {
       for (auto const &[offset, r] : slice) {
         const unsigned long otherIndex = baseIndex + offset;
         ParticleCell &otherCell = cells[otherIndex];
@@ -482,7 +319,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellTr
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
   ParticleCell &baseCell = cells[baseIndex];
 
-  for (auto const &[offset1, offset2, r] : _cellOffsets) {
+  for (auto const &[offset1, offset2, r] : this->_cellOffsets) {
     const unsigned long otherIndex1 = baseIndex + offset1;
     const unsigned long otherIndex2 = baseIndex + offset2;
     ParticleCell &otherCell1 = cells[otherIndex1];
@@ -507,7 +344,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, combineSoA>::resizeBuf
   const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
   if (_combinationSlices.size() != numThreads) {
     _combinationSlices.resize(numThreads);
-    const auto cellOffsetsSize = _cellOffsets.size();
+    const auto cellOffsetsSize = this->_cellOffsets.size();
     std::for_each(_combinationSlices.begin(), _combinationSlices.end(),
                   [cellOffsetsSize](auto &e) { e.resize(cellOffsetsSize); });
     _currentSlices.resize(numThreads * _cacheOffset);
