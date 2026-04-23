@@ -205,6 +205,22 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   }
 
   _timers.initialization.stop();
+
+  // if an RDF should be created init it here
+  const bool captureRDF = _configuration.rdfRadius.value > 0;
+  if (captureRDF) {
+    _rdf = std::make_shared<RDF>(
+        _autoPasContainer, 0, _configuration.rdfRadius.value, _configuration.rdfNumBins.value,
+        _configuration.rdfGuardArea.value,
+        std::all_of(_configuration.boundaryOption.value.begin(), _configuration.boundaryOption.value.end(),
+                    [](const auto &boundary) { return boundary == options::BoundaryTypeOption::periodic; })
+            ? true
+            : false);
+    // if end iteration is not specified capture until end
+    if (_configuration.rdfEndIteration.value == 0) {
+      _configuration.rdfEndIteration.value = _configuration.iterations.value;
+    }
+  }
 }
 
 void Simulation::finalize() {
@@ -223,6 +239,12 @@ void Simulation::run() {
       _timers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
       _timers.vtk.stop();
+    }
+
+    if (_rdf and _iteration >= _configuration.rdfStartIteration.value and
+        _iteration <= _configuration.rdfEndIteration.value and
+        _iteration % _configuration.rdfCaptureFreuency.value == 0) {
+      _rdf->captureRDF();
     }
 
     _timers.computationalLoad.start();
@@ -332,6 +354,15 @@ void Simulation::run() {
     }
   }
   _timers.simulate.stop();
+
+  // capture the last RDF
+  if (_rdf) {
+    if (_iteration <= _configuration.rdfEndIteration.value) {
+      _rdf->captureRDF();
+    }
+    _rdf->computeFinalRDF();
+    _rdf->writeToCSV(_configuration.rdfOutputFolder.value, _configuration.rdfFileName.value);
+  }
 
   // Record last state of simulation.
   if (_vtkWriter.has_value()) {
