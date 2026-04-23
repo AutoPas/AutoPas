@@ -99,25 +99,25 @@ long PredictiveTuning::linePrediction(size_t iteration, size_t tuningPhase, cons
   } else
     // if there is enough evidenceVec calculate new prediction function
     if (evidenceVec.size() >= _minNumberOfEvidence) {
-      const auto &[traversal1Iteration, traversal1TuningPhase, traversal1Time] = evidenceVec[evidenceVec.size() - 1];
-      const auto &[traversal2Iteration, traversal2TuningPhase, traversal2Time] = evidenceVec[evidenceVec.size() - 2];
+      const auto &evidenceTraversal1 = evidenceVec[evidenceVec.size() - 1];
+      const auto &evidenceTraversal2 = evidenceVec[evidenceVec.size() - 2];
 
-      const auto gradient = static_cast<double>(traversal1Time - traversal2Time) /
-                            static_cast<double>(traversal1Iteration - traversal2Iteration);
-      const auto delta = static_cast<double>(iteration) - static_cast<double>(traversal1Iteration);
+      const auto gradient = static_cast<double>(evidenceTraversal1.reducedValue - evidenceTraversal2.reducedValue) /
+                            static_cast<double>(evidenceTraversal1.iteration - evidenceTraversal2.iteration);
+      const auto delta = static_cast<double>(iteration) - static_cast<double>(evidenceTraversal1.iteration);
 
       const auto change = static_cast<long>(utils::Math::safeMul(gradient, delta));
 
       // this might overflow so use safeAdd.
-      const long prediction =
-          utils::Math::safeAdd(traversal1Time, change, _predictionUnderflowValue, _predictionOverflowValue);
+      const long prediction = utils::Math::safeAdd(evidenceTraversal1.reducedValue, change, _predictionUnderflowValue,
+                                                   _predictionOverflowValue);
       // Do not accept values smaller zero.
       const auto predictionUnderflowChecked = prediction < 0 ? _predictionUnderflowValue : prediction;
 
       // update _predictionFunctionParameters
       functionParams.clear();
       functionParams.emplace_back(gradient);
-      functionParams.emplace_back(traversal1Time);
+      functionParams.emplace_back(evidenceTraversal1.reducedValue);
 
       return predictionUnderflowChecked;
     } else {
@@ -153,8 +153,10 @@ long PredictiveTuning::linearRegression(size_t iteration, size_t tuningPhase, co
 
       bool numericOverflow = false;
       for (auto i = evidenceVec.size() - _minNumberOfEvidence; i < evidenceVec.size(); i++) {
-        const auto &[evidenceIteration, evidenceTuningPhase, evidenceValue] = evidenceVec[i];
-        const auto iterationMultTimeI = utils::Math::safeMul(static_cast<long>(evidenceIteration), evidenceValue);
+        const auto &[evidenceIteration, evidenceTuningPhase, evidenceReducedValue, evidenceRebuildValue,
+                     evidenceTraversalValue] = evidenceVec[i];
+        const auto iterationMultTimeI =
+            utils::Math::safeMul(static_cast<long>(evidenceIteration), evidenceReducedValue);
         iterationMultTime = utils::Math::safeAdd(iterationMultTime, iterationMultTimeI);
         // if any of the safe operations overflow we can directly move to the next config
         if (iterationMultTime == std::numeric_limits<decltype(iterationMultTime)>::max()) {
@@ -163,7 +165,7 @@ long PredictiveTuning::linearRegression(size_t iteration, size_t tuningPhase, co
         }
         iterationSum += evidenceIteration;
         iterationSquareSum += evidenceIteration * evidenceIteration;
-        timeSum += evidenceValue;
+        timeSum += evidenceReducedValue;
       }
 
       // if there is an overflow the actual prediction will also overflow so abort and continue.
@@ -260,9 +262,9 @@ long PredictiveTuning::newtonPolynomial(size_t iteration, size_t tuningPhase, co
       std::vector<double> ithColumn(lengthIthColumn);
       for (unsigned int j = 0; j < lengthIthColumn; j++) {
         if (i == 0) {
-          const auto &[evidenceIteration, evidenceTuningPhase, evidenceValue] =
-              evidenceVec[numberOfEvidence - _minNumberOfEvidence + j];
-          ithColumn[j] = static_cast<double>(evidenceValue);
+          const auto &[evidenceIteration, evidenceTuningPhase, evidenceReducedValue, evidenceRebuildValue,
+                       evidenceTraversalValue] = evidenceVec[numberOfEvidence - _minNumberOfEvidence + j];
+          ithColumn[j] = static_cast<double>(evidenceReducedValue);
           iterationValues[j] = evidenceIteration;
         } else {
           // cast integer to decimal because this division contains small numbers which would cause precision lose
@@ -330,10 +332,11 @@ long PredictiveTuning::lastResult(size_t tuningPhase, const Configuration &confi
     return functionParams[0];
   } else {
     if (evidenceVec.size() >= _minNumberOfEvidence) {
-      const auto &[traversalIteration, traversalTuningPhase, traversalTime] = evidenceVec[evidenceVec.size() - 1];
+      const auto &[traversalIteration, traversalTuningPhase, traversalReducedValue, traversalRebuildValue,
+                   traversalTraversalValue] = evidenceVec[evidenceVec.size() - 1];
 
       // the prediction is the last traversal time
-      const long prediction = traversalTime;
+      const long prediction = traversalReducedValue;
 
       functionParams.clear();
       functionParams.emplace_back(prediction);

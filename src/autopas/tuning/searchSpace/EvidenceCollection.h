@@ -6,20 +6,34 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cstddef>
 #include <map>
+#include <optional>
+#include <tuple>
 #include <vector>
 
+#include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/Evidence.h"
 
 namespace autopas {
+
 /**
  * Class to manage all evidence.
  */
 class EvidenceCollection {
  public:
+  /**
+   * Helper enum to switch between evidence measurements modes.
+   */
+  enum EvidenceMode {
+    // Evidence of rebuild and traversal measurement combined taking into account the rebuild frequency.
+    REDUCED,
+    // Evidence of only the traversal measurement.
+    TRAVERSAL,
+    // Evidence of the rebuild + traversal measurement.
+    TOTAL
+  };
+
   EvidenceCollection() = default;
 
   /**
@@ -44,11 +58,28 @@ class EvidenceCollection {
   Evidence &modifyLastEvidence(const Configuration &configuration);
 
   /**
+   * Retrieve the configuration with the best reduced evidence for a particular container.
+   * @param containerOption The container option to limit our configurations to.
+   * @return The optimal configuration and corresponding evidence
+   */
+  std::tuple<Configuration, Evidence> getBestConfigForContainer(ContainerOption containerOption) const;
+
+  /**
+   * Retrieve the configuration with the best total evidence. Rebuild + Traversal.
+   * @return The optimal configuration and corresponding evidence
+   */
+  std::tuple<Configuration, Evidence> getBestConfigNotReduced() const;
+
+  /**
    * Retrieve the configuration with the lowest evidence value for the given tuning phase.
    * @param tuningPhase The tuning phase for which the optimum should be returned.
+   * @param mode The Evidence criterion to look at (REDUCED, TRAVERSAL or TOTAL). Default = REDUCED
+   * @param containerConstraint The container for which the optimum should be returned. Default = none
    * @return The optimal configuration.
    */
-  std::tuple<Configuration, Evidence> getOptimalConfiguration(size_t tuningPhase) const;
+  std::tuple<Configuration, Evidence> getOptimalConfiguration(
+      size_t tuningPhase, EvidenceMode mode = REDUCED,
+      std::optional<ContainerOption> containerConstraint = std::nullopt) const;
 
   /**
    * Retrieve the configuration with the lowest evidence value for the latest tuning phase.

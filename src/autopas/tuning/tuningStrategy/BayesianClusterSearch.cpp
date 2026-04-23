@@ -77,8 +77,8 @@ autopas::BayesianClusterSearch::~BayesianClusterSearch() = default;
 
 void autopas::BayesianClusterSearch::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   // store optimal evidence
-  if (evidence.value < _currentOptimalTime) {
-    _currentOptimalTime = evidence.value;
+  if (evidence.reducedValue < _currentOptimalTime) {
+    _currentOptimalTime = evidence.reducedValue;
     _currentOptimalConfig = configuration;
   }
 
@@ -86,7 +86,7 @@ void autopas::BayesianClusterSearch::addEvidence(const Configuration &configurat
   const auto vec = _encoder.convertToCluster(configuration, evidence.iteration * _iterationScale);
   // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
   // represent a maximization problem
-  _gaussianCluster.addEvidence(vec, -evidence.value * secondsPerMicroseconds);
+  _gaussianCluster.addEvidence(vec, -evidence.reducedValue * secondsPerMicroseconds);
 
   _currentIteration = evidence.iteration;
   ++_currentNumEvidence;
