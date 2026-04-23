@@ -9,7 +9,10 @@
 
 #include <hwy/highway.h>
 
+#include <algorithm>
 #include <optional>
+#include <utility>
+#include <vector>
 
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
@@ -236,6 +239,41 @@ class LJFunctorHWY
       }
       default:
         autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
+    }
+  }
+
+  /**
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorPairSorted()
+   *
+   * Pseudo-Verlet-List like SIMD strategy (Gonnet et al. 2018, SIMD_PsVL):
+   *   1. Project both SoAs onto sortingDirection and sort indices ascending.
+   *   2. Pack particle data (positions, ownership, typeIDs, force accumulators)
+   *      into contiguous SoA caches in sorted order. This removes indirect
+   *      memory access from the vectorized inner loop.
+   *   3. Compute max_index[i] for each particle i in soa1: the exclusive upper
+   *      bound on interaction partners in the sorted soa2. Since both arrays
+   *      are sorted ascending, max_index[] is monotonically non-decreasing and
+   *      is obtained in a single O(n) pass.
+   *   4. Run the p1xVec SIMD kernel on the packed cache with the tight j-loop
+   *      bound. Out-of-cutoff pairs are still masked by the 3D cutoff check
+   *      inside the kernel (the 1D bound is only approximate).
+   *   5. Scatter accumulated forces back to the original SoA indices.
+   *.
+   */
+  inline void SoAFunctorPairSorted(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                                   const std::array<double, 3> &sortingDirection, double sortingCutoff,
+                                   bool newton3) final {
+    if (soa1.size() == 0 or soa2.size() == 0) {
+      return;
+    }
+    if (_vecPattern != VectorizationPattern::p1xVec) {
+      SoAFunctorPair(soa1, soa2, newton3);
+      return;
+    }
+    if (newton3) {
+      SoAFunctorPairSortedPruneImpl<true>(soa1, soa2, sortingDirection, sortingCutoff);
+    } else {
+      SoAFunctorPairSortedPruneImpl<false>(soa1, soa2, sortingDirection, sortingCutoff);
     }
   }
 
@@ -844,6 +882,164 @@ class LJFunctorHWY
         handleILoopBody<false, newton3, true, vecPattern>(
             i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr,
             fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr, virialSumX, virialSumY, virialSumZ, uPotSum, restI, soa2.size());
+      }
+    }
+
+    if constexpr (calculateGlobals) {
+      computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
+    }
+  }
+
+
+  /**
+   * Templatized SIMD implementation of SoAFunctorPairSorted. Specialized to p1xVec.
+   *
+   * @tparam newton3
+   * @param soa1
+   * @param soa2
+   * @param sortingDirection Normalized vector along the cell-pair axis.
+   * @param sortingCutoff 1D cutoff for the tight max_index bound (normally the interaction cutoff).
+   *
+   * @todo: Think about other vectorization patterns
+   * @todo: Probably not doable but how about other directions? -> exploiting symmetries
+   * @todo: Or sort in place and sort back
+   * @todo: skip preprune, handle in iloop so no extra for loop
+   *
+   * Versioning in Thesis.
+   */
+  template <bool newton3>
+  inline void SoAFunctorPairSortedPruneImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                                       const std::array<double, 3> &sortingDirection, const double sortingCutoff) {
+    const size_t n1 = soa1.size();
+    const size_t n2 = soa2.size();
+
+    const auto *const __restrict x1PtrOrig = soa1.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y1PtrOrig = soa1.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z1PtrOrig = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict x2PtrOrig = soa2.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y2PtrOrig = soa2.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z2PtrOrig = soa2.template begin<Particle_T::AttributeNames::posZ>();
+
+    const auto *const __restrict ownedStatePtr1Orig = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2Orig = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    auto *const __restrict fx1PtrOrig = soa1.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fy1PtrOrig = soa1.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fz1PtrOrig = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fx2PtrOrig = soa2.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fy2PtrOrig = soa2.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fz2PtrOrig = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+
+    const auto *const __restrict typeID1PtrOrig = soa1.template begin<Particle_T::AttributeNames::typeId>();
+    const auto *const __restrict typeID2PtrOrig = soa2.template begin<Particle_T::AttributeNames::typeId>();
+
+    // Step 1: 1D projection, sort indices ascending.
+    std::vector<std::pair<double, size_t>> projIdx1(n1);
+    std::vector<std::pair<double, size_t>> projIdx2(n2);
+    for (size_t i = 0; i < n1; ++i) {
+      projIdx1[i] = {x1PtrOrig[i] * sortingDirection[0] + y1PtrOrig[i] * sortingDirection[1] +
+                         z1PtrOrig[i] * sortingDirection[2],
+                     i};
+    }
+    for (size_t j = 0; j < n2; ++j) {
+      projIdx2[j] = {x2PtrOrig[j] * sortingDirection[0] + y2PtrOrig[j] * sortingDirection[1] +
+                         z2PtrOrig[j] * sortingDirection[2],
+                     j};
+    }
+    std::sort(projIdx1.begin(), projIdx1.end(),
+              [](const auto &a, const auto &b) { return a.first < b.first; });
+    std::sort(projIdx2.begin(), projIdx2.end(),
+              [](const auto &a, const auto &b) { return a.first < b.first; });
+
+    // Step 2: pack positions / ownership / typeIDs into contiguous SoA caches in sorted order.
+    std::vector<double, autopas::AlignedAllocator<double>> x1s(n1), y1s(n1), z1s(n1);
+    std::vector<double, autopas::AlignedAllocator<double>> x2s(n2), y2s(n2), z2s(n2);
+    std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> ownership1s(
+        n1, autopas::OwnershipState::dummy);
+    std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> ownership2s(
+        n2, autopas::OwnershipState::dummy);
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> typeID1s(n1, 0), typeID2s(n2, 0);
+
+    // Force accumulators in sorted-index space. Zero-initialized because handleNewton3Reduction
+    // does a load-subtract-store sequence (fx2[j] -= fx), so the sorted cache must start at 0.
+    std::vector<double, autopas::AlignedAllocator<double>> fx1s(n1, 0.0), fy1s(n1, 0.0), fz1s(n1, 0.0);
+    std::vector<double, autopas::AlignedAllocator<double>> fx2s, fy2s, fz2s;
+    if constexpr (newton3) {
+      fx2s.assign(n2, 0.0);
+      fy2s.assign(n2, 0.0);
+      fz2s.assign(n2, 0.0);
+    }
+
+    for (size_t i = 0; i < n1; ++i) {
+      const size_t origIdx = projIdx1[i].second;
+      x1s[i] = x1PtrOrig[origIdx];
+      y1s[i] = y1PtrOrig[origIdx];
+      z1s[i] = z1PtrOrig[origIdx];
+      ownership1s[i] = ownedStatePtr1Orig[origIdx];
+      typeID1s[i] = typeID1PtrOrig[origIdx];
+    }
+    for (size_t j = 0; j < n2; ++j) {
+      const size_t origIdx = projIdx2[j].second;
+      x2s[j] = x2PtrOrig[origIdx];
+      y2s[j] = y2PtrOrig[origIdx];
+      z2s[j] = z2PtrOrig[origIdx];
+      ownership2s[j] = ownedStatePtr2Orig[origIdx];
+      typeID2s[j] = typeID2PtrOrig[origIdx];
+    }
+
+    // Step 3: compute max_index[i] (exclusive upper bound on inner-loop j). Single-pass since
+    // max_index[] is monotonically non-decreasing in i when both arrays are sorted ascending.
+    std::vector<size_t> maxIndex(n1, 0);
+    size_t jUpper = 0;
+    for (size_t i = 0; i < n1; ++i) {
+      const double upperLimit = projIdx1[i].first + sortingCutoff;
+      while (jUpper < n2 and projIdx2[jUpper].first <= upperLimit) {
+        ++jUpper;
+      }
+      maxIndex[i] = jUpper;
+    }
+
+    // Step 4: vectorized interaction loop (p1xVec: 1 i-particle vs _vecLengthDouble j-particles).
+    VectorDouble virialSumX = highway::Zero(tag_double);
+    VectorDouble virialSumY = highway::Zero(tag_double);
+    VectorDouble virialSumZ = highway::Zero(tag_double);
+    VectorDouble uPotSum = highway::Zero(tag_double);
+
+    // When newton3 is false we never write to the f2 arrays; pass f1 pointers as harmless stand-ins
+    // to keep the call well-formed.
+    double *const __restrict fx2Kernel = newton3 ? fx2s.data() : fx1s.data();
+    double *const __restrict fy2Kernel = newton3 ? fy2s.data() : fy1s.data();
+    double *const __restrict fz2Kernel = newton3 ? fz2s.data() : fz1s.data();
+
+    for (size_t i = 0; i < n1; ++i) {
+      const size_t jVecEnd = maxIndex[i];
+      if (jVecEnd == 0) {
+        continue;
+      }
+      if (ownership1s[i] == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+      handleILoopBody<false, newton3, false, VectorizationPattern::p1xVec>(
+          i, x1s.data(), y1s.data(), z1s.data(), ownership1s.data(), x2s.data(), y2s.data(), z2s.data(),
+          ownership2s.data(), fx1s.data(), fy1s.data(), fz1s.data(), fx2Kernel, fy2Kernel, fz2Kernel, typeID1s.data(),
+          typeID2s.data(), virialSumX, virialSumY, virialSumZ, uPotSum, 0, jVecEnd);
+    }
+
+    // Step 5: scatter accumulated forces back to the original SoA order.
+    // TODO: Try to vectorize scatter
+    for (size_t i = 0; i < n1; ++i) {
+      const size_t origIdx = projIdx1[i].second;
+      fx1PtrOrig[origIdx] += fx1s[i];
+      fy1PtrOrig[origIdx] += fy1s[i];
+      fz1PtrOrig[origIdx] += fz1s[i];
+    }
+    if constexpr (newton3) {
+      for (size_t j = 0; j < n2; ++j) {
+        const size_t origIdx = projIdx2[j].second;
+        fx2PtrOrig[origIdx] += fx2s[j];
+        fy2PtrOrig[origIdx] += fy2s[j];
+        fz2PtrOrig[origIdx] += fz2s[j];
       }
     }
 

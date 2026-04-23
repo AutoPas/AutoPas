@@ -52,6 +52,20 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
                                            VectorizationPattern pattern);
 
   /**
+   * Checks that SoAFunctorPairSorted on HWY matches the (unsorted) SoAFunctorPair on the autovec functor.
+   * Cells are arranged along x, so sortingDirection is {1,0,0}. Particles are permuted inside each
+   * cell to exercise the sort path.
+   *
+   * @tparam mixing
+   * @param newton3
+   * @param doDeleteSomeParticles
+   * @param pattern
+   */
+  template <bool mixing>
+  void testLJFunctorvsLJFunctorHWYTwoCellsSorted(bool newton3, bool doDeleteSomeParticles,
+                                                 VectorizationPattern pattern);
+
+  /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
    * Expects that particles are loaded and extracted in the same order.
    * In all comparisons first is HWY, second Autovec

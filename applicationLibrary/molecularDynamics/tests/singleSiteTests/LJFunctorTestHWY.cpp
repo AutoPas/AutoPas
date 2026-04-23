@@ -251,6 +251,110 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
 }
 
 /**
+ * Checks that SoAFunctorPairSorted on HWY matches the (unsorted) SoAFunctorPair on the autovec functor.
+ * Cells are arranged along x so the cell-pair axis is {1,0,0}. The HWY functor internally
+ * projects, sorts, and scatters back; the reference result must match regardless.
+ */
+template <bool mixing>
+void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsSorted(bool newton3, bool doDeleteSomeParticles,
+                                                                  VectorizationPattern pattern) {
+  FMCell cell1HWY;
+  FMCell cell2HWY;
+
+  const size_t numParticles = 23;
+
+  const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  autopasTools::generators::UniformGenerator::fillWithParticles(
+      cell1HWY, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(
+      cell2HWY, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
+
+  for (auto &particle : cell1HWY) {
+    if (doDeleteSomeParticles) {
+      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+      if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
+      if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
+    }
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
+    }
+  }
+
+  for (auto &particle : cell2HWY) {
+    if (doDeleteSomeParticles) {
+      if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
+      if (particle.getID() == 20) autopas::internal::markParticleAsDeleted(particle);
+      if (particle.getID() == 17) autopas::internal::markParticleAsDeleted(particle);
+    }
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
+    }
+  }
+
+  FMCell cell1NoHWY(cell1HWY);
+  FMCell cell2NoHWY(cell2HWY);
+
+  constexpr bool shifting = true;
+
+  auto ljFunctor = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
+    } else {
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+    }
+  }();
+
+  auto ljFunctorHWY = [&]() {
+    if constexpr (mixing) {
+      return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff,
+                                                                                                 std::ref(_PPL));
+    } else {
+      return mdLib::LJFunctorHWY<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+    }
+  }();
+  ljFunctorHWY.setVecPattern(pattern);
+
+  if constexpr (not mixing) {
+    ljFunctor.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  }
+
+  ljFunctorHWY.initTraversal();
+  ljFunctor.initTraversal();
+
+  ljFunctor.SoALoader(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorHWY.SoALoader(cell1HWY, cell1HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorHWY.SoALoader(cell2HWY, cell2HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
+      << "Cells 1 not equal after loading.";
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
+      << "Cells 2 not equal after loading.";
+
+  // Cell centers differ along x. Use the normalized cell-pair axis for sorting.
+  const std::array<double, 3> sortingDirection{1.0, 0.0, 0.0};
+  const double sortingCutoff = _cutoff;
+
+  // Reference: unsorted pair on autovec functor.
+  ljFunctor.SoAFunctorPair(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer, newton3);
+  // Under test: sorted pair on HWY functor.
+  ljFunctorHWY.SoAFunctorPairSorted(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, sortingDirection,
+                                    sortingCutoff, newton3);
+
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
+      << "Cells 1 not equal after applying functor.";
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
+      << "Cells 2 not equal after applying functor.";
+
+  ljFunctorHWY.endTraversal(newton3);
+  ljFunctor.endTraversal(newton3);
+
+  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), _maxError) << "global uPot";
+  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), _maxError) << "global virial";
+}
+
+/**
  * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
  * Expects that particles are loaded and extracted in the same order.
  * In all comparisons first is HWY, second Autovec
@@ -600,6 +704,19 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
     testLJFunctorvsLJFunctorHWYTwoCells<true>(newton3, doDeleteSomeParticle, true, vecPattern);
   } else {
     testLJFunctorvsLJFunctorHWYTwoCells<false>(newton3, doDeleteSomeParticle, true, vecPattern);
+  }
+}
+
+/**
+ * Checks that the HWY Functor's SoAFunctorPairSorted (Gonnet-style PsVL) produces the same result
+ * as the AutoVec SoAFunctorPair.
+ */
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSorted) {
+  auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
+  if (mixing) {
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<true>(newton3, doDeleteSomeParticle, vecPattern);
+  } else {
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<false>(newton3, doDeleteSomeParticle, vecPattern);
   }
 }
 

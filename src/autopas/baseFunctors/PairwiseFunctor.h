@@ -104,6 +104,23 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   /**
+   * SoAFunctorPair with interaction sorting along a projection axis.
+   * Implementations project all particles onto sortingDirection, sort both views by projection (ascending),
+   * then iterate with early break when |proj_j - proj_i| > sortingCutoff.
+   *
+   * @param soa1 First SoA view.
+   * @param soa2 Second SoA view.
+   * @param sortingDirection Normalized vector along the cell-pair axis.
+   * @param sortingCutoff 1D cutoff for early break (normally the interaction cutoff).
+   * @param newton3 Whether to apply Newton's third law.
+   */
+  virtual void SoAFunctorPairSorted(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2,
+                                    const std::array<double, 3> & /*sortingDirection*/, double /*sortingCutoff*/,
+                                    bool newton3) {
+    SoAFunctorPair(soa1, soa2, newton3);
+  }
+
+  /**
    * Specifies whether the functor is capable of using the specified Vectorization Pattern in the SoA functor.
    *
    * Note: All pairwise functors should support p1xVec by default.
