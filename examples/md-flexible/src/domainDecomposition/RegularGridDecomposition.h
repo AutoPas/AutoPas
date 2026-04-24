@@ -126,6 +126,16 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void exchangeMigratingParticles(AutoPasType &autoPasContainer, std::vector<ParticleType> &emigrants);
 
   /**
+   * Wraps the positions of particles that have left the local domain through a periodic boundary back into the domain.
+   * This only applies in dimensions where the local domain spans the full global domain (i.e., only one rank in that
+   * dimension) and the boundary condition is periodic.
+   * Calling this before updateContainer() avoids unnecessarily removing and re-inserting particles that simply crossed
+   * a periodic boundary but remain on the same rank.
+   * @param autoPasContainer: The container whose particles' positions need to be wrapped.
+   */
+  void wrapParticlesAroundPeriodicBoundaries(AutoPasType &autoPasContainer);
+
+  /**
    * Reflects particles within a reflective skin along the inside of a boundary.
    *
    * Particle reflection occurs by interacting the particle with particle mirrored onto the other side of the boundary.

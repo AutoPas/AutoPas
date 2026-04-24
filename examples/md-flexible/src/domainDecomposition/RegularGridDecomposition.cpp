@@ -300,6 +300,46 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
   }
 }
 
+void RegularGridDecomposition::wrapParticlesAroundPeriodicBoundaries(AutoPasType &autoPasContainer) {
+  using autopas::utils::Math::isNearRel;
+  using namespace autopas::utils::ArrayMath::literals;
+
+  // Determine which dimensions need wrapping:
+  // boundary is periodic AND the local domain covers the full global domain in that dimension.
+  std::array<bool, _dimensionCount> needsWrapping{};
+  std::array<double, _dimensionCount> boxLength{};
+  bool anyWrapping = false;
+  for (int d = 0; d < _dimensionCount; ++d) {
+    if (_boundaryType[d] == options::BoundaryTypeOption::periodic and
+        isNearRel(_localBoxMin[d], _globalBoxMin[d]) and isNearRel(_localBoxMax[d], _globalBoxMax[d])) {
+      needsWrapping[d] = true;
+      boxLength[d] = _globalBoxMax[d] - _globalBoxMin[d];
+      anyWrapping = true;
+    }
+  }
+
+  if (not anyWrapping) return;
+
+  AUTOPAS_OPENMP(parallel)
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    auto pos = iter->getR();
+    bool changed = false;
+    for (int d = 0; d < _dimensionCount; ++d) {
+      if (not needsWrapping[d]) continue;
+      if (pos[d] < _globalBoxMin[d]) {
+        pos[d] += boxLength[d];
+        changed = true;
+      } else if (pos[d] >= _globalBoxMax[d]) {
+        pos[d] -= boxLength[d];
+        changed = true;
+      }
+    }
+    if (changed) {
+      iter->setR(pos);
+    }
+  }
+}
+
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
                                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
   using autopas::utils::Math::isNearRel;

@@ -237,6 +237,7 @@ void Simulation::run() {
     // still be rebuilt in frozen scenarios e.g. for algorithm performance data gathering purposes. Also, it bumps the
     // iteration counter which can be used to uniquely identify functor calls.
     _timers.updateContainer.start();
+    _domainDecomposition->wrapParticlesAroundPeriodicBoundaries(*_autoPasContainer);
     auto emigrants = _autoPasContainer->updateContainer();
     _timers.updateContainer.stop();
 
