@@ -22,11 +22,11 @@ namespace autopas {
  * between two cells for each spatial direction based on the baseIndex. It also handles top-down the inter-level
  * interactions in the same spatial region.
  *
- * @tparam ParticleCell the type of cells
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam ParticleCell_T the type of cells
+ * @tparam PairwiseFunctor_T The functor that defines the interaction of two particles.
  */
 template <class ParticleCell_T, class PairwiseFunctor_T>
-class HGC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> {
+class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor_T> {
  public:
   /**
    * Constructor of the HGC08CellHandler.
@@ -45,13 +45,13 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> 
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
-  explicit HGC08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
+  explicit HGC08CellHandler(PairwiseFunctor_T *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                             double interactionLength, const std::array<double, 3> &cellLength,
                             const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3,
-                            const std::vector<internal::CellBlock3D<ParticleCell> *> &cellBlocks,
+                            const std::vector<internal::CellBlock3D<ParticleCell_T> *> &cellBlocks,
                             const std::vector<double> &interactionLengthsSquared, const size_t upperLevel,
                             bool fittedGrids = true)
-      : LCC08CellHandler<ParticleCell, PairwiseFunctor>(pairwiseFunctor, cellsPerDimension, interactionLength,
+      : LCC08CellHandler<ParticleCell_T, PairwiseFunctor_T>(pairwiseFunctor, cellsPerDimension, interactionLength,
                                                         cellLength, overlap, dataLayout, useNewton3),
         _cellBlocks(cellBlocks),
         _interactionLengthsSquared(interactionLengthsSquared),
@@ -73,11 +73,11 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> 
   /**
    * Particle type handled by the particle cells.
    */
-  using Particle = typename ParticleCell::ParticleType;
+  using Particle = typename ParticleCell_T::ParticleType;
   /**
    * Cell block type used by the hierarchical-grid levels.
    */
-  using CellBlock = internal::CellBlock3D<ParticleCell>;
+  using CellBlock = internal::CellBlock3D<ParticleCell_T>;
 
   /**
    * Indicates if the grids are fitted.
@@ -90,7 +90,7 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> 
   /**
    * The cell blocks of the hierarchical grid, ordered from lowest to highest level.
    */
-  std::vector<internal::CellBlock3D<ParticleCell> *> _cellBlocks;
+  std::vector<internal::CellBlock3D<ParticleCell_T> *> _cellBlocks;
   /**
    * The squared interaction lengths from each lower level to upperLevel, ordered from lowest to highest level.
    */
@@ -108,11 +108,11 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> 
    * @param cellIndex1 The index of the first upper-level cell.
    * @param cellIndex2 The index of the second upper-level cell.
    */
-  void decompose2AndProcessCells(ParticleCell &cell1, const size_t cellIndex1, const size_t cellIndex2);
+  void decompose2AndProcessCells(ParticleCell_T &cell1, const size_t cellIndex1, const size_t cellIndex2);
 };
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::decompose2AndProcessCells(ParticleCell &cell1,
+template <class ParticleCell_T, class PairwiseFunctor_T>
+inline void HGC08CellHandler<ParticleCell_T, PairwiseFunctor_T>::decompose2AndProcessCells(ParticleCell_T &cell1,
                                                                                        const size_t cellIndex1,
                                                                                        const size_t cellIndex2) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -149,7 +149,7 @@ inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::decompose2AndProces
       // Calculate the cell centers of the lower-level start and stop index. If they lie outside of the bounds of the
       // upper cell, we shift the start/stop index by one.
       const auto [startLow, startHigh] = _cellBlocks[lowerLevel]->getCellBoundingBox(startIndex3D);
-      std::array<double, 3> startCellCenter = 0.5 * (low + high);
+      std::array<double, 3> startCellCenter = 0.5 * (startHigh + startHigh);
       const auto [stopLow, stopHigh] = _cellBlocks[lowerLevel]->getCellBoundingBox(stopIndex3D);
       std::array<double, 3> stopCellCenter = 0.5 * (stopLow + stopHigh);
       if (startCellCenter[0] < lowCornerCell2[0] &&
@@ -195,8 +195,8 @@ inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::decompose2AndProces
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(size_t baseIndex) {
+template <class ParticleCell_T, class PairwiseFunctor_T>
+inline void HGC08CellHandler<ParticleCell_T, PairwiseFunctor_T>::processBaseCell(size_t baseIndex) {
   for (auto const &[offset1, offset2, r] : this->_cellPairOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
     const unsigned long cellIndex2 = baseIndex + offset2;

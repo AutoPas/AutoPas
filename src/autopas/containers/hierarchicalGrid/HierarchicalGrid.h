@@ -158,10 +158,10 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       // increase size of lower level cells to fit the bigger level cell, if it does not fit, remove that level
       auto cellLength = _levels[i + 1]->getCellBlock().getCellLength();
       for (size_t d = 0; d < 3; ++d) {
-        lowerCellsPerHigher =
+        numLowerCellsPerHigher =
             static_cast<size_t>(std::floor(cellLength[d] / (interactionLengths[i] * _cellSizeFactor)));
         // sort out levels too close to be fitted
-        if (lowerCellsPerHigher < 2) {
+        if (numLowerCellsPerHigher < 2) {
           _maxCutoffPerLevel.erase(_maxCutoffPerLevel.begin() + i);
           interactionLengths.erase(interactionLengths.begin() + i);
           _levels.erase(_levels.begin() + i);
@@ -169,10 +169,10 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
           break;
         }
         // update cellsPerDimension for the next lower level
-        cellsPerDimension[d] = lowerCellsPerHigher * cellsPerDimensionHigher[d];
+        cellsPerDimension[d] = numLowerCellsPerHigher * cellsPerDimensionHigher[d];
       }
       // if level was removed, create no linked cells and continue with next level
-      if (lowerCellsPerHigher < 2) {
+      if (numLowerCellsPerHigher < 2) {
         continue;
       }
       cellsPerDimensionHigher = cellsPerDimension;
