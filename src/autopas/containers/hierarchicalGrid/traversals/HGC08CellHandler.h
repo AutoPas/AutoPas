@@ -150,9 +150,9 @@ inline void HGC08CellHandler<ParticleCell_T, PairwiseFunctor_T>::decompose2AndPr
       // Calculate the cell centers of the lower-level start and stop index. If they lie outside of the bounds of the
       // upper cell, we shift the start/stop index by one.
       auto [startLow, startHigh] = _cellBlocks[lowerLevel]->getCellBoundingBox(startIndex3D);
-      std::array<double, 3> startCellCenter = 0.5 * (startLow + startHigh);
+      std::array<double, 3> startCellCenter = (startLow + startHigh) * 0.5;
       auto [stopLow, stopHigh] = _cellBlocks[lowerLevel]->getCellBoundingBox(stopIndex3D);
-      std::array<double, 3> stopCellCenter = 0.5 * (stopLow + stopHigh);
+      std::array<double, 3> stopCellCenter = (stopLow + stopHigh) * 0.5;
       if (startCellCenter[0] < lowCornerCell2[0] &&
           startIndex3D[0] < _cellBlocks[lowerLevel]->getCellsPerDimensionWithHalo()[0] - 1) {
         startIndex3D[0]++;
