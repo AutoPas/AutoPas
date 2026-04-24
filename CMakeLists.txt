@@ -111,6 +111,8 @@ add_subdirectory(tests)
 add_subdirectory(applicationLibrary)
 # might also include tests, hence might need flags from tests subdirectory
 add_subdirectory(examples)
+# google benchmark based micro-benchmarks (opt-in)
+add_subdirectory(benchmarks)
 
 include(autopas_doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES, which is defined in examples.
 

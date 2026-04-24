@@ -766,7 +766,8 @@ class LJFunctorHWY
 
     fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI,
                                                      restI);
-
+    // Note: for 2x0.5vec pattern might need to switch into 1vec if one of them is finished -> ask if feasible/allowed
+    // Could also just refill with the next Particle
     std::ptrdiff_t j = 0;
     for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j); incrementSecondLoop<vecPattern>(j)) {
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
@@ -890,7 +891,6 @@ class LJFunctorHWY
     }
   }
 
-
   /**
    * Templatized SIMD implementation of SoAFunctorPairSorted. Specialized to p1xVec.
    *
@@ -901,15 +901,14 @@ class LJFunctorHWY
    * @param sortingCutoff 1D cutoff for the tight max_index bound (normally the interaction cutoff).
    *
    * @todo: Think about other vectorization patterns
-   * @todo: Probably not doable but how about other directions? -> exploiting symmetries
-   * @todo: Or sort in place and sort back
+   * @todo: Or sort in place and sort back -> Improve scatter back
    * @todo: skip preprune, handle in iloop so no extra for loop
-   *
+   * @todo: Merge this into SoAFunctorPair if possible -> easier with the previous todo
    * Versioning in Thesis.
    */
   template <bool newton3>
   inline void SoAFunctorPairSortedPruneImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                       const std::array<double, 3> &sortingDirection, const double sortingCutoff) {
+                                            const std::array<double, 3> &sortingDirection, const double sortingCutoff) {
     const size_t n1 = soa1.size();
     const size_t n2 = soa2.size();
 
@@ -937,19 +936,17 @@ class LJFunctorHWY
     std::vector<std::pair<double, size_t>> projIdx1(n1);
     std::vector<std::pair<double, size_t>> projIdx2(n2);
     for (size_t i = 0; i < n1; ++i) {
-      projIdx1[i] = {x1PtrOrig[i] * sortingDirection[0] + y1PtrOrig[i] * sortingDirection[1] +
-                         z1PtrOrig[i] * sortingDirection[2],
-                     i};
+      projIdx1[i] = {
+          x1PtrOrig[i] * sortingDirection[0] + y1PtrOrig[i] * sortingDirection[1] + z1PtrOrig[i] * sortingDirection[2],
+          i};
     }
     for (size_t j = 0; j < n2; ++j) {
-      projIdx2[j] = {x2PtrOrig[j] * sortingDirection[0] + y2PtrOrig[j] * sortingDirection[1] +
-                         z2PtrOrig[j] * sortingDirection[2],
-                     j};
+      projIdx2[j] = {
+          x2PtrOrig[j] * sortingDirection[0] + y2PtrOrig[j] * sortingDirection[1] + z2PtrOrig[j] * sortingDirection[2],
+          j};
     }
-    std::sort(projIdx1.begin(), projIdx1.end(),
-              [](const auto &a, const auto &b) { return a.first < b.first; });
-    std::sort(projIdx2.begin(), projIdx2.end(),
-              [](const auto &a, const auto &b) { return a.first < b.first; });
+    std::sort(projIdx1.begin(), projIdx1.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+    std::sort(projIdx2.begin(), projIdx2.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
 
     // Step 2: pack positions / ownership / typeIDs into contiguous SoA caches in sorted order.
     std::vector<double, autopas::AlignedAllocator<double>> x1s(n1), y1s(n1), z1s(n1);

@@ -201,7 +201,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
       break;
     case DataLayoutOption::soa:
       if (sortingDirection != std::array<double, 3>{0., 0., 0.} and
-          cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size() > _sortingThreshold) {
+          cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size() > _sortingThreshold) { // TODO: Utilize different sorting threshhold for soa then for aos.
         if (_useNewton3) {
           processCellPairSoASortedN3(cell1, cell2, sortingDirection);
         } else {
