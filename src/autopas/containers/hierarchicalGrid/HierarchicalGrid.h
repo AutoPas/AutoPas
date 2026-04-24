@@ -140,17 +140,17 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     _levels.resize(_numLevels);
 
     // construct last level first, so we can fit other levels to it
-    _levels[_numLevels - 1] = std::make_unique<autopas::LinkedCells<Particle_T>>(
+    _levels.at(_numLevels - 1) = std::make_unique<autopas::LinkedCells<Particle_T>>(
         _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, _cellSizeFactor * highLevelRatio, sortingThreshold,
         loadEstimator);
 
-    auto highestCellLength = _levels[_numLevels - 1]->getCellBlock().getCellLength();
+    auto highestCellLength = _levels.at(_numLevels - 1)->getCellBlock().getCellLength();
     std::array<size_t, 3> cellsPerDimensionHigher = {
         static_cast<size_t>(std::llround((_boxMax[0] - _boxMin[0]) / highestCellLength[0])),
         static_cast<size_t>(std::llround((_boxMax[1] - _boxMin[1]) / highestCellLength[1])),
         static_cast<size_t>(std::llround((_boxMax[2] - _boxMin[2]) / highestCellLength[2]))};
     std::array<size_t, 3> cellsPerDimension;
-    size_t lowerCellsPerHigher;
+    size_t numLowerCellsPerHigher;
 
     // generate LinkedCells for each level with different cutoffs
     for (size_t i = _numLevels - 1; i-- > 0;) {

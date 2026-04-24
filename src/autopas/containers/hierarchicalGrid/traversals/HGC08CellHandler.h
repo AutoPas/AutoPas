@@ -25,7 +25,7 @@ namespace autopas {
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
+template <class ParticleCell_T, class PairwiseFunctor_T>
 class HGC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> {
  public:
   /**
@@ -128,8 +128,8 @@ inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::decompose2AndProces
     lowCornerCell2 = {lowCornerCell2[0] + _shiftLength[0], lowCornerCell2[1] + _shiftLength[1],
                       lowCornerCell2[2] + _shiftLength[2]};
   } else {
-    // Replace upper corner with lower corner of the diagonally higher corner. Otherwise we might get ambiguous
-    // boundaries, because high and next low corner dont always give the same result, because of floating point errors.
+    // Replace the upper corner with the lower corner of the diagonally higher corner. Otherwise, we might get ambiguous
+    // boundaries, because the high and next low corners don't always give the same result, because of floating point errors.
     auto upperIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(
         cellIndex2, _cellBlocks[_upperLevel]->getCellsPerDimensionWithHalo());
     upperIndex3D = {upperIndex3D[0] + 1, upperIndex3D[1] + 1, upperIndex3D[2] + 1};
@@ -145,15 +145,13 @@ inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::decompose2AndProces
 
     // if the grids are not fitted, we count lower cells only to the decomposition of an upper cell, if their center
     // lies within, to prevent considering the same pair twice or not at all.
-    if (!_fittedGrids) {
+    if (not _fittedGrids) {
       // Calculate the cell centers of the lower-level start and stop index. If they lie outside of the bounds of the
       // upper cell, we shift the start/stop index by one.
-      const auto [low, high] = _cellBlocks[lowerLevel]->getCellBoundingBox(startIndex3D);
-      std::array<double, 3> startCellCenter = {0.5 * (low[0] + high[0]), 0.5 * (low[1] + high[1]),
-                                               0.5 * (low[2] + high[2])};
+      const auto [startLow, startHigh] = _cellBlocks[lowerLevel]->getCellBoundingBox(startIndex3D);
+      std::array<double, 3> startCellCenter = 0.5 * (low + high);
       const auto [stopLow, stopHigh] = _cellBlocks[lowerLevel]->getCellBoundingBox(stopIndex3D);
-      std::array<double, 3> stopCellCenter = {0.5 * (stopLow[0] + stopHigh[0]), 0.5 * (stopLow[1] + stopHigh[1]),
-                                              0.5 * (stopLow[2] + stopHigh[2])};
+      std::array<double, 3> stopCellCenter = 0.5 * (stopLow + stopHigh);
       if (startCellCenter[0] < lowCornerCell2[0] &&
           startIndex3D[0] < _cellBlocks[lowerLevel]->getCellsPerDimensionWithHalo()[0] - 1) {
         startIndex3D[0]++;
@@ -206,7 +204,7 @@ inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(siz
     auto &cell1 = _cellBlocks[_upperLevel]->getCell(cellIndex1);
     auto &cell2 = _cellBlocks[_upperLevel]->getCell(cellIndex2);
     // if both cells are halo cells, we can skip the interaction,
-    if (cell1.getPossibleParticleOwnerships() == OwnershipState::halo &&
+    if (cell1.getPossibleParticleOwnerships() == OwnershipState::halo and
         cell2.getPossibleParticleOwnerships() == OwnershipState::halo) {
       continue;
     }
@@ -223,10 +221,10 @@ inline void HGC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(siz
     }
 
     // Inter Level
-    if (!cell1.isEmpty()) {
+    if (not cell1.isEmpty()) {
       decompose2AndProcessCells(cell1, cellIndex1, cellIndex2);
     }
-    if (cellIndex1 != cellIndex2 && !cell2.isEmpty()) {
+    if (cellIndex1 != cellIndex2 and not cell2.isEmpty()) {
       decompose2AndProcessCells(cell2, cellIndex2, cellIndex1);
     }
   }

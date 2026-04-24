@@ -15,8 +15,8 @@ namespace autopas {
 
 /**
  * This class provides the hg_c08 traversal, which is an adaptation of lc_c08 for Hierarchical Grids.
- * It calculates the intra-level interactions of one level, and the inter-level interactions of this level, with all
- * lower levels respectively. (e.g. when applied to level 3, it calculates 3-3, 3-2 and 3-1 interactions).
+ * It calculates the inter-level interactions of one level, and the intra-level interactions of this level with all
+ * lower levels. (e.g. when applied to level 3, it calculates 3-3, 3-2 and 3-1 interactions).
  *
  * The traversal uses the c08 base step performed on every single cell.
  * \image html C08.png "C08 base step in 2D. (dark blue cell = base cell)"
@@ -90,7 +90,7 @@ class HGC08SingleLevelTraversal : public C08BasedTraversal<ParticleCell_T, Pairw
   /**
    * The width of the halo region in cells.
    */
-  std::array<size_t, 3> _haloRegionCellWidth;
+  std::array<size_t, 3> _haloRegionCellWidth{};
 };
 
 template <class ParticleCell_T, class PairwiseFunctor>
