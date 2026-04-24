@@ -67,28 +67,28 @@ jobs:
         run: |
           # Define the FULL Matrix, which includes configurations for:
           # 1:   Debug Mode  => Test for subtleties between Debug and Release
-          # 2/3: Clang with Address/Thread sanitizer
+          # 2/3: Clang with Address/Thread sanitizer. 
           # 4:   GCC
           # 5:   MPI
-          # 6:   Multisite
-          # 7:   Multisite + MPI
+          # 6:   Multisite (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
+          # 7:   Multisite + MPI (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
           read -r -d '' full_matrix << EOM || true
           [
-            { "name": "Clang-Debug-CompileOnly", "container": "autopas-build-clang", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Debug", "omp": "ON", "asan": "OFF", "tsan": "OFF", "avx": "ON", "site": "singlesite" },
-            { "name": "Clang-Release-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "OFF", "asan": "ON",  "tsan": "OFF", "avx": "ON",  "site": "singlesite" },
-            { "name": "Clang-Release-OMP-TSan", "container": "autopas-build-archer", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON",  "avx": "ON",  "site": "singlesite" },
-            { "name": "GCC-Release-OMP", "container": "autopas-build-gcc",    "cc": "gcc",   "cxx": "g++",     "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "OFF", "avx": "ON",  "site": "singlesite" },
-            { "name": "MPI-Release-OMP-ASan", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "avx": "ON", "site": "singlesite" },
-            { "name": "Clang-OMP-TSan-MultiSite", "container": "autopas-build-archer", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON",  "avx": "OFF", "site": "multisite" },
-            { "name": "MPI-MultiSite", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "avx": "OFF", "site": "multisite" }
+            { "name": "Clang-Debug-CompileOnly", "container": "autopas-build-clang", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Debug", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite" },
+            { "name": "Clang-Release-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "OFF", "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite" },
+            { "name": "Clang-Release-OMP-TSan", "container": "autopas-build-archer", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "OFF",  "avx": "ON", "hwy": "ON",  "site": "singlesite" },
+            { "name": "GCC-Release-OMP", "container": "autopas-build-gcc",    "cc": "gcc",   "cxx": "g++",     "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite" },
+            { "name": "MPI-Release-OMP-ASan", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite" },
+            { "name": "Clang-OMP-TSan-MultiSite", "container": "autopas-build-archer", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "ON",  "avx": "OFF", "hwy": "OFF", "site": "multisite" },
+            { "name": "MPI-MultiSite", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "ON", "avx": "OFF", "hwy": "OFF", "site": "multisite" }
           ]
           EOM
 
           # Define the LIGHT Matrix
-          # Basic configuration without sanitizers
+          # Basic configuration without sanitizers or AVX
           read -r -d '' light_matrix << EOM || true
           [
-            { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "avx": "ON",  "site": "singlesite" }
+            { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite" }
           ]
           EOM
           
@@ -176,8 +176,9 @@ jobs:
             -DAUTOPAS_USE_VECTORIZATION=OFF \
             -DMD_FLEXIBLE_USE_MPI=${UseMPI} \
             -DMD_FLEXIBLE_MODE=${{ matrix.config.site }} \
-            -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON \
+            -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=${{ matrix.config.autovec }} \
             -DMD_FLEXIBLE_FUNCTOR_AVX=${{ matrix.config.avx }} \
+            -DMD_FLEXIBLE_FUNCTOR_HWY=${{ matrix.config.hwy }} \
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DMD_FLEXIBLE_ENABLE_ALLLBL=${UseMPI} \
             -DAUTOPAS_ENABLE_HARMONY=ON \
@@ -304,14 +305,16 @@ jobs:
         run: |
           brew install libomp gcc@14 ninja
       - name: Configure and Build md-flexible
+        # Only compile HWY functor.
         run: |
           mkdir build && cd build
           CC=${{matrix.compiler[0]}} CXX=${{matrix.compiler[1]}} cmake .. -G Ninja \
             -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/libomp \
             -DCMAKE_BUILD_TYPE=Release \
             -DAUTOPAS_LOG_ITERATIONS=ON \
-            -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON \
+            -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=OFF \
             -DMD_FLEXIBLE_FUNCTOR_AVX=OFF \
+            -DMD_FLEXIBLE_FUNCTOR_HWY=ON \
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=OFF
           cmake --build . --target md-flexible

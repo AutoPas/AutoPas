@@ -18,4 +18,5 @@ class FeatureVectorTest : public AutoPasTestBase {
   std::vector<autopas::FeatureVector::ContainerTraversalEstimatorOption> allCompatibleContainerTraversalEstimators;
   std::vector<autopas::DataLayoutOption> allDataLayouts;
   std::vector<autopas::Newton3Option> allNewton3;
+  std::vector<autopas::VectorizationPatternOption> allVecPatterns;
 };
