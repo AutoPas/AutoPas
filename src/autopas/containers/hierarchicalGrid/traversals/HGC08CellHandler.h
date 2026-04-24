@@ -52,7 +52,7 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
                             const std::vector<double> &interactionLengthsSquared, const size_t upperLevel,
                             bool fittedGrids = true)
       : LCC08CellHandler<ParticleCell_T, PairwiseFunctor_T>(pairwiseFunctor, cellsPerDimension, interactionLength,
-                                                        cellLength, overlap, dataLayout, useNewton3),
+                                                            cellLength, overlap, dataLayout, useNewton3),
         _cellBlocks(cellBlocks),
         _interactionLengthsSquared(interactionLengthsSquared),
         _upperLevel(upperLevel),
@@ -113,8 +113,8 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
 
 template <class ParticleCell_T, class PairwiseFunctor_T>
 inline void HGC08CellHandler<ParticleCell_T, PairwiseFunctor_T>::decompose2AndProcessCells(ParticleCell_T &cell1,
-                                                                                       const size_t cellIndex1,
-                                                                                       const size_t cellIndex2) {
+                                                                                           const size_t cellIndex1,
+                                                                                           const size_t cellIndex2) {
   using namespace autopas::utils::ArrayMath::literals;
 
   // get bounds of  cell2
@@ -129,7 +129,8 @@ inline void HGC08CellHandler<ParticleCell_T, PairwiseFunctor_T>::decompose2AndPr
                       lowCornerCell2[2] + _shiftLength[2]};
   } else {
     // Replace the upper corner with the lower corner of the diagonally higher corner. Otherwise, we might get ambiguous
-    // boundaries, because the high and next low corners don't always give the same result, because of floating point errors.
+    // boundaries, because the high and next low corners don't always give the same result, because of floating point
+    // errors.
     auto upperIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(
         cellIndex2, _cellBlocks[_upperLevel]->getCellsPerDimensionWithHalo());
     upperIndex3D = {upperIndex3D[0] + 1, upperIndex3D[1] + 1, upperIndex3D[2] + 1};
