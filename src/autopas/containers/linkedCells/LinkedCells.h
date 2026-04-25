@@ -69,7 +69,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
 
   /**
    * Constructor of the LinkedCells class using cells per dimension instead of cell size factor.
-   * Useful for HierarchicalGrid container.
+   * Useful for HierarchicalGridFitted container.
    * @param boxMin
    * @param boxMax
    * @param cutoff
