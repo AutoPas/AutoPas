@@ -143,16 +143,15 @@ HGridTraversalComparison::calculateForcesImpl(Functor functor, autopas::Containe
   constexpr double skin = _cutoff * 0.1;
   constexpr unsigned int rebuildFrequency = 1;
   const size_t sortingThreshold = useSorting ? 5 : std::numeric_limits<size_t>::max();
-  const auto containerInfo = autopas::ContainerSelectorInfo{
-      _boxMin,
-      boxMax,
-      _cutoff,
-      cellSizeFactor,
-      skin,
-      32,
-      sortingThreshold,
-      autopas::LoadEstimatorOption::none,
-      std::vector<double>{0.5, 1., 1.5}};
+  const auto containerInfo = autopas::ContainerSelectorInfo{_boxMin,
+                                                            boxMax,
+                                                            _cutoff,
+                                                            cellSizeFactor,
+                                                            skin,
+                                                            32,
+                                                            sortingThreshold,
+                                                            autopas::LoadEstimatorOption::none,
+                                                            std::vector<double>{0.5, 1., 1.5}};
   auto container = autopas::ContainerSelector<Molecule>::generateContainer(containerOption, containerInfo);
   std::array<size_t, 3> numParticlesArr = {numParticles / 3, numParticles / 3, numParticles - 2 * (numParticles / 3)};
   std::array<size_t, 3> numHaloParticlesArr = {numHaloParticles / 3, numHaloParticles / 3,
