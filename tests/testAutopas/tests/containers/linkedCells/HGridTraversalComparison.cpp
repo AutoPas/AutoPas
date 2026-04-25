@@ -24,7 +24,7 @@ std::shared_ptr<ParticlePropertiesLibrary<>> HGridTraversalComparison::_particle
  * @param generator
  * @return shift vector
  */
-std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
+static std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
   std::uniform_real_distribution<double> uniform01(0.0, 1.0);
   double theta = 2 * M_PI * uniform01(generator);
   double phi = acos(1 - 2 * uniform01(generator));
