@@ -334,7 +334,8 @@ auto HGridTraversalComparison::getTestParams() {
   Molecule::setParticlePropertiesLibrary(_particlePropertiesLibrary);
   Molecule::setCutoffMultiplier(1.0);
   std::vector<TestingTuple> testParams{};
-  for (auto containerOption : {autopas::ContainerOption::hierarchicalGrid}) {
+  for (auto containerOption :
+       {autopas::ContainerOption::hierarchicalGrid, autopas::ContainerOption::hierarchicalGridFitted}) {
     for (auto interactionType : {autopas::InteractionTypeOption::pairwise}) {
       for (auto traversalOption :
            autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType)) {
