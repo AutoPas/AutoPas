@@ -150,7 +150,8 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allHGFCompatibleTraversals() {
   // Can use all hgrid traversals and all hgridFit traversals
-  static const auto s = filterAllOptions("hgrid", InteractionTypeOption::pairwise);
+  static const std::set<TraversalOption> s{TraversalOption::hgrid_block4, TraversalOption::hgrid_block8,
+                                           TraversalOption::hgridFit_c08};
   return s;
 }
 

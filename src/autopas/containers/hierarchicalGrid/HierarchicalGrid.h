@@ -187,12 +187,12 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       // keep stride of 3
       if (!_fittedGrids) {
         double ratio = maxInterLenPerLevel[i] / maxInterLenPerLevel.back();
-        // again the hacky way to get the proper halo size
+        // again the hacky way to get the proper halo size (described at the bottom of the constructor)
         _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(),
                                                                         _skin, _cellSizeFactor * ratio,
                                                                         sortingThreshold, loadEstimator);
       } else {
-        // again the hacky way to get the proper halo size
+        // again the hacky way to get the proper halo size (described at the bottom of the constructor)
         _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
             _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, cellsPerDimension, sortingThreshold, loadEstimator);
       }

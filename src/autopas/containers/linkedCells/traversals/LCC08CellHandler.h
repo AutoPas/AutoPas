@@ -88,7 +88,6 @@ class LCC08CellHandler {
    */
   bool _useNewton3;
 
- protected:
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
@@ -96,6 +95,7 @@ class LCC08CellHandler {
                         /*bidirectional*/ true>
       _cellFunctor;
 
+ private:
   /**
    * Interaction length (cutoff + skin).
    */
