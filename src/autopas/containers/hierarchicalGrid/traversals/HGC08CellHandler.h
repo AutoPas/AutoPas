@@ -42,8 +42,7 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
    * from lowest to highest level.
    * @param upperLevel The upper level of the hierarchical grid
    * @param fittedGrids Whether the grids of the hierarchical grid are fitted to each other.
-   * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
-   * in that case the interactionLength is needed!
+   * @todo Check if passing the cutoff instead of the interaction length to the cell functor works.
    */
   explicit HGC08CellHandler(PairwiseFunctor_T *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                             double interactionLength, const std::array<double, 3> &cellLength,
@@ -96,7 +95,9 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
    */
   std::vector<double> _interactionLengthsSquared;
   /**
-   * Shift length, which is smaller than the smallest cell width.
+   * Shift length used to shift the boundaries for determining which lower-level cells are within each upper-level cell
+   * to prevent spilling into neighboring cells due to floating point errors. Must be smaller than the smallest cell
+   * length to prevent skipping cells.
    */
   std::array<double, 3> _shiftLength;
 
@@ -149,30 +150,23 @@ inline void HGC08CellHandler<ParticleCell_T, PairwiseFunctor_T>::decompose2AndPr
     if (not _fittedGrids) {
       // Calculate the cell centers of the lower-level start and stop index. If they lie outside of the bounds of the
       // upper cell, we shift the start/stop index by one.
+      // This whole logic assumes that the cell length of the lower level is at most half of that of the upper level.
+      // That way, there is always at least one lower-level cell center within each higher-level cell, so
+      // stopIndex3D>startIndex3D and we never get underflows.
       auto [startLow, startHigh] = _cellBlocks[lowerLevel]->getCellBoundingBox(startIndex3D);
       std::array<double, 3> startCellCenter = (startLow + startHigh) * 0.5;
       auto [stopLow, stopHigh] = _cellBlocks[lowerLevel]->getCellBoundingBox(stopIndex3D);
       std::array<double, 3> stopCellCenter = (stopLow + stopHigh) * 0.5;
-      if (startCellCenter[0] < lowCornerCell2[0] &&
-          startIndex3D[0] < _cellBlocks[lowerLevel]->getCellsPerDimensionWithHalo()[0] - 1) {
-        startIndex3D[0]++;
-      }
-      if (startCellCenter[1] < lowCornerCell2[1] &&
-          startIndex3D[1] < _cellBlocks[lowerLevel]->getCellsPerDimensionWithHalo()[1] - 1) {
-        startIndex3D[1]++;
-      }
-      if (startCellCenter[2] < lowCornerCell2[2] &&
-          startIndex3D[2] < _cellBlocks[lowerLevel]->getCellsPerDimensionWithHalo()[2] - 1) {
-        startIndex3D[2]++;
-      }
-      if (stopCellCenter[0] >= highCornerCell2[0] && stopIndex3D[0] > 0) {
-        stopIndex3D[0]--;
-      }
-      if (stopCellCenter[1] >= highCornerCell2[1] && stopIndex3D[1] > 0) {
-        stopIndex3D[1]--;
-      }
-      if (stopCellCenter[2] >= highCornerCell2[2] && stopIndex3D[2] > 0) {
-        stopIndex3D[2]--;
+      const auto &cellsPerDimensionWithHalo = _cellBlocks[lowerLevel]->getCellsPerDimensionWithHalo();
+      // This assumes that we never do this adjustment over periodic boundaries, which should be the case, as long as
+      // periodic boundaries are handeled via halo cells.
+      for (size_t d = 0; d < 3; ++d) {
+        if (startCellCenter[d] < lowCornerCell2[d] and startIndex3D[d] < cellsPerDimensionWithHalo[d] - 1) {
+          startIndex3D[d]++;
+        }
+        if (stopCellCenter[d] >= highCornerCell2[d] and stopIndex3D[d] > 0) {
+          stopIndex3D[d]--;
+        }
       }
     }
     for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
@@ -180,12 +174,10 @@ inline void HGC08CellHandler<ParticleCell_T, PairwiseFunctor_T>::decompose2AndPr
         for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
           // Check if the cells are within range of one another
           auto [lowCornerLowerCell, highCornerLowerCell] = _cellBlocks[lowerLevel]->getCellBoundingBox({x, y, z});
-          if (lowerLevel < _interactionLengthsSquared.size()) {
-            using autopas::utils::ArrayMath::boxDistanceSquared;
-            if (boxDistanceSquared(lowCornerLowerCell, highCornerLowerCell, lowCornerCell1, highCornerCell1) >
-                _interactionLengthsSquared[lowerLevel]) {
-              continue;
-            }
+          using autopas::utils::ArrayMath::boxDistanceSquared;
+          if (boxDistanceSquared(lowCornerLowerCell, highCornerLowerCell, lowCornerCell1, highCornerCell1) >
+              _interactionLengthsSquared[lowerLevel]) {
+            continue;
           }
           // @todo: Could potentially calculate and use sorting direction in the future
           auto &lowerCell = _cellBlocks[lowerLevel]->getCell({x, y, z});

@@ -42,8 +42,8 @@ class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>, public HGTrave
    */
   explicit HGFitC08Traversal(Functor_T *functor, size_t numLevels, DataLayoutOption dataLayout, bool useNewton3)
       : HGTraversalBase<ParticleCell_T>(numLevels, dataLayout, useNewton3),
-        _functor(functor),
-        _dataLayoutConverter(_functor, dataLayout) {}
+        _functor(*functor),
+        _dataLayoutConverter(functor, dataLayout) {}
 
   void traverseParticles() override;
 
@@ -91,7 +91,7 @@ class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>, public HGTrave
   /**
    * Pairwise functor used to compute interactions.
    */
-  Functor_T *_functor;
+  Functor_T &_functor;
   /**
    * Utility that converts between AoS and SoA data layouts for the functor.
    */
@@ -129,7 +129,7 @@ inline void HGFitC08Traversal<ParticleCell_T, Functor_T>::traverseParticles() {
     // prepare and perform HGc08 traversal
     const auto traversalInfo = this->getTraversalSelectorInfo(upperLevel);
     auto currentTraversal = std::make_unique<HGC08SingleLevelTraversal<FullParticleCell<Particle>, Functor_T>>(
-        traversalInfo.cellsPerDim, _functor, traversalInfo.interactionLength, traversalInfo.cellLength,
+        traversalInfo.cellsPerDim, &_functor, traversalInfo.interactionLength, traversalInfo.cellLength,
         this->_dataLayout, this->_useNewton3, cellBlocks, interactionLengthsSquared, upperLevel, haloRegionWidth);
     currentTraversal->traverseParticles();
   }

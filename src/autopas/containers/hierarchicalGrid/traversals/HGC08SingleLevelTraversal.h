@@ -46,8 +46,8 @@ class HGC08SingleLevelTraversal : public C08BasedTraversal<ParticleCell_T, Pairw
    * @param interactionLengthsSquared the squared interaction lengths between the upperl level and all lower levels
    * respectively.
    * @param upperLevel The higher level.
-   * @param haloRegionWidth the width of the halo region in length units, used to determine the number of halo cells to
-   * be skipped in the traversal.
+   * @param largestInteractionLength the largest interaction length, which corresponds to the width of the halo region
+   * in length units, used to determine the number of halo cells to be skipped in the traversal.
    * @param fittedGrids Whether the grids of the hierarchical grid are fitted to each other.
    */
   explicit HGC08SingleLevelTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
@@ -55,13 +55,13 @@ class HGC08SingleLevelTraversal : public C08BasedTraversal<ParticleCell_T, Pairw
                                      DataLayoutOption dataLayout, bool useNewton3,
                                      const std::vector<internal::CellBlock3D<ParticleCell_T> *> &cellBlocks,
                                      const std::vector<double> &interactionLengthsSquared, const size_t upperLevel,
-                                     double haloRegionWidth, bool fittedGrids = true)
+                                     double largestInteractionLength, bool fittedGrids = true)
       : C08BasedTraversal<ParticleCell_T, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                            dataLayout, useNewton3),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3, cellBlocks, interactionLengthsSquared, upperLevel, fittedGrids) {
     for (size_t d = 0; d < 3; ++d) {
-      _haloRegionCellWidth[d] = std::ceil(haloRegionWidth / cellLength[d]);
+      _haloRegionCellWidth[d] = static_cast<size_t>(std::ceil(largestInteractionLength / cellLength[d]));
     }
   }
 

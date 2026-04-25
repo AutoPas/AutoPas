@@ -125,21 +125,27 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    * @param loadEstimator The load estimation algorithm for balanced traversals.
    */
   void createFittedGrids(const size_t sortingThreshold, LoadEstimatorOption loadEstimator) {
-    std::vector<double> interactionLengths(_numLevels);
-    interactionLengths[_numLevels - 1] = _maxCutoffPerLevel.back() + _skin;
+    std::vector<double> maxInterLenPerLevel(_numLevels);
+    for (size_t i = 0; i < _numLevels; i++) {
+      maxInterLenPerLevel[i] = _maxCutoffPerLevel[i] + _skin;
+    }
 
-    // Assure at least 2 levels
+    // Assure at least 2 levels by increasing the cell length of the largest level if necessary, to make sure the
+    // smallest level can fit at least 2 cells into one cell of the largest level.
     double highLevelRatio = 1.0;
-    interactionLengths[0] = _maxCutoffPerLevel[0] + _skin;
-    if (2.0 * interactionLengths[0] >= interactionLengths.back()) {
+    if (2.0 * maxInterLenPerLevel[0] >= maxInterLenPerLevel.back()) {
       // Smallest representable value above the exact threshold that still guarantees >=2 lower cells per upper cell.
-      const double minimumSafeRatio = 2.0 * interactionLengths[0] / interactionLengths.back();
+      const double minimumSafeRatio = 2.0 * maxInterLenPerLevel[0] / maxInterLenPerLevel.back();
       highLevelRatio = std::nextafter(minimumSafeRatio, std::numeric_limits<double>::infinity());
+      AutoPasLog(DEBUG,
+                 "Adjusted high-level cell size by factor {:.6g} to guarantee at least two lower cells per "
+                 "upper cell (smallest interaction length: {:.6g}, largest interaction length: {:.6g}).",
+                 highLevelRatio, maxInterLenPerLevel[0], maxInterLenPerLevel.back());
     }
 
     _levels.resize(_numLevels);
 
-    // construct last level first, so we can fit other levels to it
+    // construct last/largest level first, so we can fit other levels to it
     _levels.at(_numLevels - 1) = std::make_unique<autopas::LinkedCells<Particle_T>>(
         _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, _cellSizeFactor * highLevelRatio, sortingThreshold,
         loadEstimator);
@@ -154,16 +160,15 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
 
     // generate LinkedCells for each level with different cutoffs
     for (size_t i = _numLevels - 1; i-- > 0;) {
-      interactionLengths[i] = _maxCutoffPerLevel[i] + _skin;
       // increase size of lower level cells to fit the bigger level cell, if it does not fit, remove that level
       auto cellLength = _levels[i + 1]->getCellBlock().getCellLength();
       for (size_t d = 0; d < 3; ++d) {
         numLowerCellsPerHigher =
-            static_cast<size_t>(std::floor(cellLength[d] / (interactionLengths[i] * _cellSizeFactor)));
+            static_cast<size_t>(std::floor(cellLength[d] / (maxInterLenPerLevel[i] * _cellSizeFactor)));
         // sort out levels too close to be fitted
         if (numLowerCellsPerHigher < 2) {
           _maxCutoffPerLevel.erase(_maxCutoffPerLevel.begin() + i);
-          interactionLengths.erase(interactionLengths.begin() + i);
+          maxInterLenPerLevel.erase(maxInterLenPerLevel.begin() + i);
           _levels.erase(_levels.begin() + i);
           _numLevels--;
           break;
@@ -181,7 +186,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       // Case we dont want to fit the grids perfecty, but just want to make sure they are not too close together, to
       // keep stride of 3
       if (!_fittedGrids) {
-        double ratio = interactionLengths[i] / interactionLengths.back();
+        double ratio = maxInterLenPerLevel[i] / maxInterLenPerLevel.back();
         // again the hacky way to get the proper halo size
         _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(),
                                                                         _skin, _cellSizeFactor * ratio,
