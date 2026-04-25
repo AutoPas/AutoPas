@@ -163,6 +163,7 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
    * @return A new traversal that is applicable to a specific LinkedCells level
    */
   std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override {
+#if 0
     // Instead of LCC08Traversal, we use HGC08SingleLevelTraversal with upperLevel=0 for the intra-level interactions.
     // This way it works the same, but considers the wider halo region to skip unnecessary halo-halo interactions.
     const double haloRegionWidth = this->_maxCutoffPerLevel.back() + this->_skin;
@@ -173,6 +174,11 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
     return std::make_unique<HGC08SingleLevelTraversal<FullParticleCell<Particle>, Functor_T>>(
         traversalInfo.cellsPerDim, &_functor, traversalInfo.interactionLength, traversalInfo.cellLength,
         this->_dataLayout, this->_useNewton3, cellBlocks, interactionLengthsSquared, 0, haloRegionWidth);
+#endif
+    const auto traversalInfo = this->getTraversalSelectorInfo(level);
+    return std::make_unique<LCC08Traversal<FullParticleCell<Particle>, Functor_T>>(
+        traversalInfo.cellsPerDim, &_functor, traversalInfo.interactionLength, traversalInfo.cellLength,
+        this->_dataLayout, this->_useNewton3);
   }
 
   [[nodiscard]] bool isApplicable() const override { return true; }
