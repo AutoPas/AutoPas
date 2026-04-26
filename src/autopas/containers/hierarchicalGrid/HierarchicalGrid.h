@@ -12,7 +12,6 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/hierarchicalGrid/traversals/HGTraversalBase.h"
-#include "autopas/containers/hierarchicalGrid/traversals/HGTraversalInterface.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -632,9 +631,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    * @param traversal
    */
   void prepareTraversal(TraversalInterface *traversal) {
-    auto *traversalInterface = dynamic_cast<HGTraversalInterface *>(traversal);
     auto *hGridTraversal = dynamic_cast<HGTraversalBase<ParticleCell> *>(traversal);
-    if (traversalInterface && hGridTraversal) {
+    if (hGridTraversal) {
       hGridTraversal->setLevels(&_levels, _maxCutoffPerLevel, _skin);
     } else {
       autopas::utils::ExceptionHandler::exception(
