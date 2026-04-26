@@ -125,7 +125,7 @@ static void BM_AoSFunctor(benchmark::State &state) {
   state.counters["pairs/s"] = benchmark::Counter(pairs, benchmark::Counter::kIsIterationInvariantRate);
 }
 BENCHMARK(BM_AoSFunctor)
-    ->ArgsProduct({{32, 128, 512}, {0, 1}})
+    ->ArgsProduct({{32, 128, 512, 1024, 2048}, {0, 1}})
     ->ArgNames({"N", "n3"})
     ->Repetitions(5)
     ->Name("BM_AoS_Functor_Single");
@@ -152,7 +152,7 @@ static void BM_SoAFunctorSingle(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 BENCHMARK(BM_SoAFunctorSingle)
-    ->ArgsProduct({{32, 128, 512, 2048}, {0, 1}})
+    ->ArgsProduct({{32, 128, 512, 1024, 2048}, {0, 1}})
     ->ArgNames({"N", "n3"})
     ->Repetitions(5)
     ->Name("BM_SoA_Functor_Single");
@@ -185,7 +185,7 @@ static void BM_SoAFunctorPair(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 BENCHMARK(BM_SoAFunctorPair)
-    ->ArgsProduct({{32, 128, 512},
+    ->ArgsProduct({{32, 128, 512, 1024, 2048},
                    {0, 1},
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
                     static_cast<int>(VectorizationPattern::pVecDiv2x2),
@@ -195,9 +195,11 @@ BENCHMARK(BM_SoAFunctorPair)
     ->Name("BM_SoA_Functor_Pair");
 
 // -----------------------------------------------------------------------------
-// SoAFunctorPairSorted: Gonnet-style pre-pruned SIMD. Only p1xVec is specialised
-// internally; other patterns fall back to SoAFunctorPair.
+// SoAFunctorPairSorted: in-loop pruned SIMD. p1xVec and pVecx1 are specialised;
+// other patterns fall back to SoAFunctorPair.
 // -----------------------------------------------------------------------------
+
+template <VectorizationPattern vp>
 static void BM_SoAFunctorPairSorted(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
@@ -207,7 +209,7 @@ static void BM_SoAFunctorPairSorted(benchmark::State &state) {
   fillCell(cell2, {kHigh[0] / 2.0, kLow[1], kLow[2]}, kHigh, n, 1337);
 
   auto functor = makeFunctor();
-  functor.setVecPattern(VectorizationPattern::p1xVec);
+  functor.setVecPattern(vp);
   functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
   functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
   functor.initTraversal();
@@ -224,8 +226,13 @@ static void BM_SoAFunctorPairSorted(benchmark::State &state) {
   }
   functor.endTraversal(newton3);
 }
-BENCHMARK(BM_SoAFunctorPairSorted)
-    ->ArgsProduct({{32, 128, 512}, {0, 1}})
+BENCHMARK(BM_SoAFunctorPairSorted<VectorizationPattern::p1xVec>)
+    ->ArgsProduct({{32, 128, 512, 1024, 2048}, {0, 1}})
+    ->ArgNames({"N", "n3"})
+    ->Repetitions(5)
+    ->Name("BM_SoA_Functor_SortedPair");
+BENCHMARK(BM_SoAFunctorPairSorted<VectorizationPattern::pVecx1>)
+    ->ArgsProduct({{32, 128, 512, 1024, 2048}, {0, 1}})
     ->ArgNames({"N", "n3"})
     ->Repetitions(5)
     ->Name("BM_SoA_Functor_SortedPair");
@@ -257,7 +264,7 @@ static void BM_SoAFunctorVerlet(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 BENCHMARK(BM_SoAFunctorVerlet)
-    ->ArgsProduct({{32, 128, 512}, {0, 1}})
+    ->ArgsProduct({{32, 128, 512, 1024, 2048}, {0, 1}})
     ->ArgNames({"N", "n3"})
     ->Repetitions(5)
     ->Name("BM_SoA_Functor_Verlet");
