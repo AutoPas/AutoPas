@@ -17,10 +17,39 @@ class ATMFunctorTest : public AutoPasTestBase {
  public:
   ATMFunctorTest() : AutoPasTestBase() {}
 
-  enum InteractionType { own, pair12, pair21, triple, verlet };
+  enum SoAFunctorType { single, pair12, pair21, triple, verlet };
+  static std::string to_string(SoAFunctorType type) {
+    switch (type) {
+      case SoAFunctorType::single:
+        return "single";
+      case SoAFunctorType::pair12:
+        return "pair12";
+      case SoAFunctorType::pair21:
+        return "pair21";
+      case SoAFunctorType::triple:
+        return "triple";
+      case SoAFunctorType::verlet:
+        return "verlet";
+      default:
+        return "unknown";
+    }
+  }
   // Where to place 3 particles. Inside or outside the domain.
   enum where_type { allInside, ininout, inoutout, allOutside };
-
+  static std::string to_string(where_type where) {
+    switch (where) {
+      case allInside:
+        return "all inside";
+      case ininout:
+        return "in, in, out";
+      case inoutout:
+        return "in, out, out";
+      case allOutside:
+        return "all outside";
+      default:
+        return "unknown";
+    }
+  }
   /**
    * Checks if the given function throws an exception containing "not implemented".
    * @tparam FunType Type of the given function.
