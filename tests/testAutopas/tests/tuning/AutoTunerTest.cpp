@@ -129,6 +129,10 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // HierarchicalGrid       hgrid_block4                 (AoS <=> SoA, newton3 <=> noNewton3)                = 4
   //                        hgrid_block8                 (AoS <=> SoA, newton3 <=> noNewton3)                = 4
   configsPerContainer[autopas::ContainerOption::hierarchicalGrid] = 8;
+  // HierarchicalGridFitted hgrid_block4                 (AoS <=> SoA, newton3 <=> noNewton3)                = 4
+  //                        hgrid_block8                 (AoS <=> SoA, newton3 <=> noNewton3)                = 4
+  //                        hgridFit_c08                 (AoS <=> SoA, newton3 <=> noNewton3)                = 4
+  configsPerContainer[autopas::ContainerOption::hierarchicalGridFitted] = 12;
 
   // check that there is an entry for every container.
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size());

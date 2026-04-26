@@ -6,8 +6,8 @@
 
 #pragma once
 
+#include "HGFitC08Traversal.h"
 #include "HGTraversalBase.h"
-#include "HGTraversalInterface.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
@@ -26,12 +26,16 @@ namespace autopas {
  * @tparam Functor_T type of Functor
  */
 template <class ParticleCell_T, class Functor_T>
-class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraversalInterface {
+class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public TraversalInterface {
  public:
   /**
    * Type of particles stored in the traversed cells.
    */
   using Particle = typename ParticleCell_T::ParticleType;
+  /**
+   * Type alias for cell blocks used by this traversal.
+   */
+  using CellBlock = internal::CellBlock3D<FullParticleCell<Particle>>;
 
   /**
    * Constructor.
@@ -44,6 +48,7 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
   explicit HGBlockTraversal(Functor_T *functor, size_t numLevels, DataLayoutOption dataLayout, bool useNewton3,
                             int blockMultiplier)
       : HGTraversalBase<ParticleCell_T>(numLevels, dataLayout, useNewton3),
+        TraversalInterface(dataLayout, useNewton3),
         _blockMultiplier(blockMultiplier),
         _functor(*functor) {}
 
@@ -130,6 +135,8 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
     }
   }
 
+  [[nodiscard]] bool isApplicable() const override { return true; }
+
   [[nodiscard]] TraversalOption getTraversalType() const override {
     if (_blockMultiplier == 4) {
       return TraversalOption::hgrid_block4;
@@ -142,6 +149,22 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
     }
   };
 
+  void initTraversal() override {
+    this->_traversals.reserve(this->_numLevels);
+    for (size_t level = 0; level < this->_numLevels; ++level) {
+      this->_traversals.emplace_back(std::make_unique<HGFitC08Traversal<ParticleCell_T, Functor_T>>(
+          &_functor, this->_numLevels, this->_dataLayout, this->_useNewton3, level));
+      this->_traversals[level]->setLevels(this->_levels, this->_maxCutoffPerLevel, this->_skin);
+    }
+    // HGFitC08Traversal is an Hgrid traversal which initializes the data layout for all levels
+    this->_traversals[0]->initTraversal();
+  }
+
+  void endTraversal() override {
+    // HGFitC08Traversal is an Hgrid traversal which stores the data layout for all levels
+    this->_traversals[0]->endTraversal();
+  }
+
  protected:
   /**
    * Multiplier for target blocks per color used for dynamic load balancing.
@@ -151,20 +174,209 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
    * Functor instance used by this traversal.
    */
   Functor_T &_functor;
+  /**
+   * Traversals used for intra-level interactions for each level.
+   */
+  std::vector<std::unique_ptr<HGFitC08Traversal<ParticleCell_T, Functor_T>>> _traversals;
 
   /**
-   * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes
-   * @param level which HGrid level to generate a traversal for
-   * @return A new traversal that is applicable to a specific LinkedCells level
+   * Compute intra-level interactions for all levels.
    */
-  std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override {
-    const auto traversalInfo = this->getTraversalSelectorInfo(level);
-    return std::make_unique<LCC08Traversal<ParticleCell_T, Functor_T>>(
-        traversalInfo.cellsPerDim, &_functor, traversalInfo.interactionLength, traversalInfo.cellLength,
-        this->_dataLayout, this->_useNewton3);
+  void computeIntraLevelInteractions() {
+    for (size_t level = 0; level < this->_numLevels; level++) {
+      // We do not simply call computeInteractions() here as we want to store SoA after inter-level traversals are
+      // computed. They will be loaded in HGTraversalBase::endTraversal().
+      this->_traversals[level]->traverseParticles();
+    }
   }
 
-  [[nodiscard]] bool isApplicable() const override { return true; }
+  /**
+   * Compute the needed stride to avoid race conditions.
+   * For SoA consider that two cells interacting on the same lower level cell is problematic, as two threads can
+   * operate on the same buffer.
+   * @param level The hierarchy level to compute the stride for.
+   * @param topDown If true compute stride for top-down traversal, otherwise bottom-up.
+   * @return The stride for each dimension.
+   */
+  std::array<size_t, 3> computeStride(const size_t level, const bool topDown = true) {
+    const std::array<double, 3> levelLength = this->_levels->at(level)->getTraversalSelectorInfo().cellLength;
+    std::array<size_t, 3> stride{1, 1, 1};
+    for (size_t otherLevel = 0; otherLevel < this->_numLevels; ++otherLevel) {
+      if (otherLevel == level) {
+        continue;
+      }
+      if (this->_useNewton3 and ((otherLevel >= level and topDown) or (otherLevel <= level and !topDown))) {
+        continue;
+      }
+      const double interactionLength = this->getInteractionLength(level, otherLevel);
+      const std::array<double, 3> otherLevelLength =
+          this->_levels->at(otherLevel)->getTraversalSelectorInfo().cellLength;
+      std::array<size_t, 3> tempStride{};
+      for (size_t i = 0; i < 3; i++) {
+        if (this->_useNewton3) {
+          // find out the stride so that cells we check on lowerLevel do not intersect
+          if (this->_dataLayout == DataLayoutOption::soa) {
+            tempStride[i] = 1 + static_cast<size_t>(std::ceil(std::ceil(interactionLength / otherLevelLength[i]) * 2 *
+                                                              otherLevelLength[i] / levelLength[i]));
+            // the stride calculation below, for AoS, can result in less colors, but two different threads can operate
+            // on SoA buffer of the same cell at the same time. They won't update the same value at the same time, but
+            // causes race conditions in SoA. (Inbetween loading data into vectors (avx etc.) -> functor calcs ->
+            // store again).
+          } else {
+            tempStride[i] = 1 + static_cast<size_t>(std::ceil(interactionLength * 2 / levelLength[i]));
+          }
+        } else {
+          // do c01 traversal if newton3 is disabled
+          tempStride[i] = 1;
+        }
+        stride[i] = std::max(stride[i], tempStride[i]);
+      }
+    }
+    return stride;
+  }
+
+  /**
+   * Traverses a single upper-level cell and lower-level cells that are in the interaction range using AoS.
+   * @param lowerCB lower level cell block
+   * @param upperCB upper level cell block
+   * @param upperCellCoords 3d cell index of cell belonging to the upper level
+   * @param functor functor to apply
+   * @param lowerLevel lower level index
+   * @param upperLevel upper level index
+   * @param lowerBound inclusive lower coordinate bound for lower-level owned cells when only interacting with owned
+   * particles
+   * @param upperBound inclusive upper coordinate bound for lower-level owned cells when only interacting with owned
+   * particles
+   */
+  void AoSTraversal(const CellBlock &lowerCB, const CellBlock &upperCB, const std::array<size_t, 3> upperCellCoords,
+                    Functor_T *functor, size_t lowerLevel, size_t upperLevel, const std::array<size_t, 3> &lowerBound,
+                    const std::array<size_t, 3> &upperBound) {
+    // can also use sorted cell optimization? need to be careful to sort only once per upper cell, to not sort for
+    // each particle in the upper cell
+    using namespace autopas::utils::ArrayMath::literals;
+
+    const bool enableCellDistanceChecking = this->checkDistance(upperLevel, lowerLevel);
+    const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
+    auto &upperCell = upperCB.getCell(upperCellCoords);
+    if (upperCell.isEmpty()) {
+      return;
+    }
+    // skip if cell is a halo cell and newton3 is disabled
+    auto isHalo = upperCell.getPossibleParticleOwnerships() == OwnershipState::halo;
+    if (isHalo && !this->_useNewton3) {
+      return;
+    }
+    const double lowerInteractionLength = this->_skin + this->_maxCutoffPerLevel[lowerLevel] / 2;
+    const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
+    // variable to determine if we are only interested in owned particles in the lower level
+    const bool containToOwnedOnly = isHalo && this->_useNewton3;
+    for (auto p1Ptr = upperCell.begin(); p1Ptr != upperCell.end(); ++p1Ptr) {
+      const std::array<double, 3> &pos = p1Ptr->getR();
+      const double radius = p1Ptr->getSize() / 2;
+      const std::array<double, 3> interactionLength = lowerDir + radius;
+      const double interactionLengthSquared = interactionLength[0] * interactionLength[0];
+      auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
+      auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
+      // skip halo cells if we need to consider only owned particles
+      if (containToOwnedOnly) {
+        startIndex3D = utils::ArrayMath::max(startIndex3D, lowerBound);
+        stopIndex3D = utils::ArrayMath::min(stopIndex3D, upperBound);
+      }
+      for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
+        for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
+          auto cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
+              {static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
+          for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl, ++cellIndex1D) {
+            auto &lowerCell = lowerCB.getCell(cellIndex1D);
+            if (lowerCell.isEmpty()) {
+              continue;
+            }
+            // skip if cell is farther than interactionLength
+            if (enableCellDistanceChecking and
+                this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
+              continue;
+            }
+            for (auto &p : lowerCell) {
+              functor->AoSFunctor(*p1Ptr, p, this->_useNewton3);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Traverses a single upper level cell and lower level cells that are in the interaction range using SoA.
+   * SoA is calculated between a single upper level particle and a full lower level cell.
+   * @param lowerCB lower level cell block
+   * @param upperCB upper level cell block
+   * @param upperCellCoords 3d cell index of cell belonging to the upper level
+   * @param functor functor to apply
+   * @param lowerLevel lower level index
+   * @param upperLevel upper level index
+   * @param lowerBound lower bound of the coordinates of lower level cells that contain owned particles
+   * @param upperBound upper bound of the coordinates of lower level cells that contain owned particles
+   */
+  void SoATraversalParticleToCell(const CellBlock &lowerCB, const CellBlock &upperCB,
+                                  const std::array<size_t, 3> upperCellCoords, Functor_T *functor, size_t lowerLevel,
+                                  size_t upperLevel, const std::array<size_t, 3> &lowerBound,
+                                  const std::array<size_t, 3> &upperBound) {
+    using namespace autopas::utils::ArrayMath::literals;
+    const bool enableCellDistanceChecking = this->checkDistance(upperLevel, lowerLevel);
+    const auto &lowerLevelDims = lowerCB.getCellsPerDimensionWithHalo();
+    auto &upperCell = upperCB.getCell(upperCellCoords);
+    if (upperCell.isEmpty()) {
+      return;
+    }
+    // skip if cell is a halo cell and newton3 is disabled
+    auto isHalo = upperCell.getPossibleParticleOwnerships() == OwnershipState::halo;
+    if (isHalo && !this->_useNewton3) {
+      return;
+    }
+    // variable to determine if we are only interested in owned particles in the lower level
+    const bool containToOwnedOnly = isHalo && this->_useNewton3;
+    auto &soa = upperCell._particleSoABuffer;
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    const double lowerInteractionLength = this->_skin + this->_maxCutoffPerLevel[lowerLevel] / 2;
+    const std::array<double, 3> lowerDir{lowerInteractionLength, lowerInteractionLength, lowerInteractionLength};
+
+    for (int idx = 0; idx < upperCell.size(); ++idx) {
+      const std::array<double, 3> pos = {xptr[idx], yptr[idx], zptr[idx]};
+      const double radius = upperCell[idx].getSize() / 2;
+      const std::array<double, 3> interactionLength = lowerDir + radius;
+      const double interactionLengthSquared = interactionLength[0] * interactionLength[0];
+      auto soaSingleParticle = soa.constructView(idx, idx + 1);
+      auto startIndex3D = lowerCB.get3DIndexOfPosition(pos - interactionLength);
+      auto stopIndex3D = lowerCB.get3DIndexOfPosition(pos + interactionLength);
+      if (containToOwnedOnly) {
+        startIndex3D = utils::ArrayMath::max(startIndex3D, lowerBound);
+        stopIndex3D = utils::ArrayMath::min(stopIndex3D, upperBound);
+      }
+
+      for (size_t zl = startIndex3D[2]; zl <= stopIndex3D[2]; ++zl) {
+        for (size_t yl = startIndex3D[1]; yl <= stopIndex3D[1]; ++yl) {
+          auto cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
+              {static_cast<size_t>(startIndex3D[0]), yl, zl}, lowerLevelDims);
+          for (size_t xl = startIndex3D[0]; xl <= stopIndex3D[0]; ++xl, ++cellIndex1D) {
+            auto &lowerCell = lowerCB.getCell(cellIndex1D);
+            if (lowerCell.isEmpty()) {
+              continue;
+            }
+            // skip if cell is farther than interactionLength
+            if (enableCellDistanceChecking and
+                this->getMinDistBetweenCellAndPointSquared(lowerCB, cellIndex1D, pos) > interactionLengthSquared) {
+              continue;
+            }
+            // 1 to n SoAFunctorPair
+            functor->SoAFunctorPair(soaSingleParticle, lowerCell._particleSoABuffer, this->_useNewton3);
+          }
+        }
+      }
+    }
+  }
 
   /**
    * Finds the best group size for a given target number of blocks per color.

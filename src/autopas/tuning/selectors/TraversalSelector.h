@@ -13,6 +13,7 @@
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
 #include "autopas/containers/hierarchicalGrid/traversals/HGBlockTraversal.h"
+#include "autopas/containers/hierarchicalGrid/traversals/HGFitC08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
@@ -355,6 +356,12 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
           &pairwiseFunctor, traversalInfo.hGridNumLevels, dataLayout, useNewton3, 8);
       break;
     }
+    case TraversalOption::hgridFit_c08: {
+      traversal = std::make_unique<HGFitC08Traversal<ParticleCell_T, PairwiseFunctor_T>>(
+          &pairwiseFunctor, traversalInfo.hGridNumLevels, dataLayout, useNewton3);
+      break;
+    }
+
     default: {
       utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",
                                          traversalType.to_string());

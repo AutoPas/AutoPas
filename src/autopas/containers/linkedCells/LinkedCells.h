@@ -67,6 +67,26 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
+  /**
+   * Constructor of the LinkedCells class using cells per dimension instead of cell size factor.
+   * Useful for HierarchicalGridFitted container.
+   * @param boxMin
+   * @param boxMax
+   * @param cutoff
+   * @param skin
+   * @param cellsPerDimension number of cells per dimension.
+   * @param sortingThreshold number of particles in two cells from which sorting should be performed
+   * @param loadEstimator the load estimation algorithm for balanced traversals.
+   * By default all applicable traversals are allowed.
+   */
+  LinkedCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
+              const double skin, const std::array<unsigned long, 3> &cellsPerDimension,
+              const size_t sortingThreshold = 8,
+              LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold),
+        _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellsPerDimension),
+        _loadEstimator(loadEstimator) {}
+
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
