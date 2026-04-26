@@ -198,7 +198,8 @@ inline void HGFitC08Traversal<ParticleCell_T, Functor_T>::intraLevelOnlyTraversa
   CellBlock &cellBlock = this->_levels->at(this->_intraLevel)->getCellBlock();
   this->changeGrid(this->_maxCutoffPerLevel[this->_intraLevel] + this->_skin, cellBlock.getCellLength(),
                    cellBlock.getCellsPerDimensionWithHalo());
-  LCC08CellHandler<ParticleCell_T, Functor_T> cellHandler{
+  using LevelParticleCell = FullParticleCell<Particle>;
+  LCC08CellHandler<LevelParticleCell, Functor_T> cellHandler{
       &_pairwiseFunctor, this->_cellsPerDimension, this->_interactionLength, this->_cellLength,
       this->_overlap,    this->_dataLayout,        this->_useNewton3};
   cellHandler.setSortingThreshold(_sortingThreshold);
