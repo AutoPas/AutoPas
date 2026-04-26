@@ -138,7 +138,10 @@ class HGTraversalBase {
     return ret;
   }
 
-  // HG traversals only make sense if there are multiple levels, otherwise just use LinkedCells
+  /**
+   * HG traversals only make sense if there are multiple levels, otherwise just use LinkedCells.
+   * @return true if the hierarchical grid has more than one level.
+   */
   [[nodiscard]] bool isApplicable() const { return _numLevels > 1; }
 };
 }  // namespace autopas

@@ -46,7 +46,7 @@ class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>,
 
   /**
    * Constructor of the hgridFit_c08 traversal.
-   * @param functor The functor that defines the interaction of two particles.
+   * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param numLevels Number of levels in the hierarchical grid.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
@@ -67,6 +67,11 @@ class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>,
   }
 
   void traverseParticles() override;
+
+  /**
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   */
+  void setSortingThreshold(size_t sortingThreshold) override { _sortingThreshold = sortingThreshold; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::hgridFit_c08; };
 
@@ -127,6 +132,11 @@ class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>,
    * interactions.
    */
   void intraLevelOnlyTraversal();
+
+  /**
+   * Sorting threshold forwarded to local cell handlers.
+   */
+  size_t _sortingThreshold = 0;
 };
 
 template <class ParticleCell_T, class Functor_T>
@@ -154,7 +164,7 @@ inline void HGFitC08Traversal<ParticleCell_T, Functor_T>::traverseParticles() {
     // prepare for grid of current upperLevel
     this->changeGrid(this->_maxCutoffPerLevel[upperLevel] + this->_skin, cellBlocks[upperLevel]->getCellLength(),
                      cellBlocks[upperLevel]->getCellsPerDimensionWithHalo());
-    HGC08CellHandler cellHandler{_pairwiseFunctor,
+    HGC08CellHandler cellHandler{&_pairwiseFunctor,
                                  this->_cellsPerDimension,
                                  this->_interactionLength,
                                  this->_cellLength,
@@ -164,6 +174,7 @@ inline void HGFitC08Traversal<ParticleCell_T, Functor_T>::traverseParticles() {
                                  cellBlocks,
                                  interactionLengthsSquared,
                                  upperLevel};
+    cellHandler.setSortingThreshold(_sortingThreshold);
 
     // Perform c08 based traversal, but consider the potentially larger halo regions of HierarchicalGrid levels to skip
     // unnecessary halo-halo interactions
@@ -190,6 +201,7 @@ inline void HGFitC08Traversal<ParticleCell_T, Functor_T>::intraLevelOnlyTraversa
   LCC08CellHandler<ParticleCell_T, Functor_T> cellHandler{
       &_pairwiseFunctor, this->_cellsPerDimension, this->_interactionLength, this->_cellLength,
       this->_overlap,    this->_dataLayout,        this->_useNewton3};
+  cellHandler.setSortingThreshold(_sortingThreshold);
   const unsigned long haloRegionCellWidth = cellBlock.getCellsPerInteractionLength();
   const auto end = this->_cellsPerDimension - haloRegionCellWidth;
   const auto stride = this->_overlap + 1ul;
