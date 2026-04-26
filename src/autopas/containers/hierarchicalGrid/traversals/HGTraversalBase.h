@@ -76,13 +76,6 @@ class HGTraversalBase : public TraversalInterface {
   using CellBlock = internal::CellBlock3D<FullParticleCell<ParticleType>>;
 
   /**
-   * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes
-   * @param level which HGrid level to generate a traversal for
-   * @return A new traversal that is applicable to a specific LinkedCells level
-   */
-  std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) = 0;
-
-  /**
    * Get the interaction length for a given level pair.
    * This is simply the average of the maximum possible cutoff of the two levels plus the verlet skin.
    * @param lowerLevel The lower level index.
