@@ -200,6 +200,18 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.cellSizeFactors.value->isEmpty()) {
           throw std::runtime_error("Parsed cell-size-factor-list is empty.");
         }
+      } else if (key == config.hGridMaxCutoffPerLevel.name) {
+        expected = "YAML-sequence of floats.";
+        description = config.hGridMaxCutoffPerLevel.description;
+
+        auto parsedCutoffs = autopas::utils::StringUtils::parseNumberSet(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (parsedCutoffs->isEmpty()) {
+          throw std::runtime_error("Parsed hGrid max-cutoff-per-level list is empty.");
+        }
+        const auto tempSet = parsedCutoffs->getAll();
+        std::copy(tempSet.begin(), tempSet.end(), std::back_inserter(config.hGridMaxCutoffPerLevel.value));
       } else if (key == config.dataLayoutOptions.name) {
         expected = "YAML-sequence of possible values.";
         description = config.dataLayoutOptions.description;

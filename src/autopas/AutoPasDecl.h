@@ -610,6 +610,31 @@ class AutoPas {
   }
 
   /**
+   * Get the maximum cutoff sizes for each level of the Hierarchical Grid container. The actual cell sizes could be
+   * larger, due to potentially adding a skin to each cell or increasing cell sizes to perfectly fit the box.
+   * @return hGridMaxCutoffPerLevel
+   */
+  [[nodiscard]] std::vector<double> getHGridMaxCutoffPerLevel() const {
+    return _logicHandlerInfo.hGridMaxCutoffPerLevel;
+  }
+
+  /**
+   * Set the maximum Cutoffs for each level of the Hierarchical Grid container. If this container is used, particles
+   * will be sorted into the grid level with the smallest minimum cell size that is still larger than that particle's
+   * size scaled by the cutoff. The actual cell sizes could be larger, due to potentially adding a skin to each cell or
+   * increasing cell sizes to perfectly fit the box. If scaled cutoffs are not used, this does nothing.
+   * @param hGridMaxCutoffPerLevel
+   */
+  void setHGridMaxCutoffPerLevel(const std::vector<double> hGridMaxCutoffPerLevel) {
+    if (std::any_of(hGridMaxCutoffPerLevel.begin(), hGridMaxCutoffPerLevel.end(),
+                    [](double cellSize) { return cellSize <= 0.0; })) {
+      utils::ExceptionHandler::exception(
+          "Error: The maximum cutoff sizes used by the HGrid container have to be positive: {} <= 0.0!");
+    };
+    _logicHandlerInfo.hGridMaxCutoffPerLevel = hGridMaxCutoffPerLevel;
+  }
+
+  /**
    * Get allowed cell size factors (only relevant for LinkedCells, VerletLists and VerletListsCells).
    * @return
    */

@@ -315,12 +315,12 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   }
 
   // Helper function to check if a region iterator finds a given particle with exptectedID in the given region.
-  auto testRegion = [&](const std::array<double, 3> &min, const std::array<double, 3> &max, size_t exptectedID,
+  auto testRegion = [&](const std::array<double, 3> &min, const std::array<double, 3> &max, size_t expectedID,
                         const std::string &context) {
     size_t numParticlesFound = 0;
     for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
       ++numParticlesFound;
-      EXPECT_EQ(iter->getID(), exptectedID) << "There should only be one particle with ID 0.\n" << context;
+      EXPECT_EQ(iter->getID(), expectedID) << "There should only be one particle with ID 0.\n" << context;
     }
     EXPECT_EQ(numParticlesFound, 1) << "Exactly one particle was inserted in the domain\n" << context;
   };

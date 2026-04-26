@@ -12,6 +12,7 @@
 #include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
+#include "autopas/containers/hierarchicalGrid/traversals/HGBlockTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
@@ -341,6 +342,17 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
       using ParticleType = typename ParticleCell_T::ParticleType;
       traversal = std::make_unique<OTC01Traversal<ParticleType, PairwiseFunctor_T>>(
           &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.interactionLength, dataLayout, useNewton3);
+      break;
+    }
+    // Hierarchical Grid
+    case TraversalOption::hgrid_block4: {
+      traversal = std::make_unique<HGBlockTraversal<ParticleCell_T, PairwiseFunctor_T>>(
+          &pairwiseFunctor, traversalInfo.hGridNumLevels, dataLayout, useNewton3, 4);
+      break;
+    }
+    case TraversalOption::hgrid_block8: {
+      traversal = std::make_unique<HGBlockTraversal<ParticleCell_T, PairwiseFunctor_T>>(
+          &pairwiseFunctor, traversalInfo.hGridNumLevels, dataLayout, useNewton3, 8);
       break;
     }
     default: {
