@@ -15,7 +15,6 @@
 // The LogicHandler includes dependencies to wide parts of AutoPas, making it expensive to compile and thus is moved
 // here from AutoPasDecl.h.
 #include "autopas/AutoPasDecl.h"
-#include "autopas/InstanceCounter.h"
 #include "autopas/LogicHandler.h"
 #include "autopas/Version.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
@@ -34,30 +33,20 @@ namespace autopas {
 
 template <class Particle_T>
 AutoPas<Particle_T>::AutoPas(std::ostream &logOutputStream) {
-  // count the number of autopas instances. This is needed to ensure that the autopas
-  // logger is not unregistered while other instances are still using it.
-  InstanceCounter::count++;
-  // remove potentially existing logger
-  autopas::Logger::unregister();
-  // initialize the Logger
-  autopas::Logger::create(logOutputStream);
-  // The logger is normally only flushed on successful program termination.
-  // This line ensures flushing when log messages of level warning or more severe are created.
-  autopas::Logger::get()->flush_on(spdlog::level::warn);
+  Logger::create(logOutputStream);
 }
 
 template <class Particle_T>
-AutoPas<Particle_T>::~AutoPas() {
-  InstanceCounter::count--;
-  if (InstanceCounter::count == 0) {
-    // remove the Logger from the registry. Do this only if we have no other autopas instances running.
-    autopas::Logger::unregister();
-  }
+AutoPas<Particle_T>::AutoPas(const std::string &logFileName) {
+  Logger::create(logFileName);
 }
+
+template <class Particle_T>
+AutoPas<Particle_T>::~AutoPas() = default;
 
 template <class Particle_T>
 AutoPas<Particle_T> &AutoPas<Particle_T>::operator=(AutoPas &&other) noexcept {
-  _autoTuners = std::move(other._autoTuners);
+  _tuningManager = std::move(other._tuningManager);
   _logicHandler = std::move(other._logicHandler);
   return *this;
 }
@@ -96,6 +85,7 @@ void AutoPas<Particle_T>::init() {
     }
   }();
 
+  _tuningManager = std::make_shared<TuningManager>(_autoTunerInfo);
   // Create autotuners for each interaction type
   for (const auto &interactionType : _allowedInteractionTypeOptions) {
     const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
@@ -113,14 +103,14 @@ void AutoPas<Particle_T>::init() {
       tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
     }
     auto tunerOutputSuffix = _outputSuffix + "_" + interactionType.to_string();
-    _autoTuners.emplace(interactionType,
-                        std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
-                                                             _verletRebuildFrequency, tunerOutputSuffix));
+    _tuningManager->addAutoTuner(std::make_unique<AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
+                                                             _verletRebuildFrequency, tunerOutputSuffix),
+                                 interactionType);
   }
 
   // Create logic handler
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
-      _autoTuners, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
+      _tuningManager, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 }
 
 template <class Particle_T>
@@ -241,9 +231,7 @@ std::vector<Particle_T> AutoPas<Particle_T>::resizeBox(const std::array<double, 
 
 template <class Particle_T>
 void AutoPas<Particle_T>::forceRetune() {
-  for (auto &[interaction, tuner] : _autoTuners) {
-    tuner->forceRetune();
-  }
+  _tuningManager->forceRetune();
 }
 
 template <class Particle_T>
@@ -356,12 +344,8 @@ const autopas::ParticleContainerInterface<Particle_T> &AutoPas<Particle_T>::getC
 }
 
 template <class Particle_T>
-bool AutoPas<Particle_T>::searchSpaceIsTrivial() {
-  bool isTrivial = true;
-  for (auto &[interaction, tuner] : _autoTuners) {
-    isTrivial = isTrivial and tuner->searchSpaceIsTrivial();
-  }
-  return isTrivial;
+bool AutoPas<Particle_T>::searchSpaceIsTrivial() const {
+  return _tuningManager->allSearchSpacesAreTrivial();
 }
 
 }  // namespace autopas

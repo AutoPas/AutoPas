@@ -151,7 +151,8 @@ void autopas::BayesianSearch::rejectConfiguration(const autopas::Configuration &
 void autopas::BayesianSearch::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
   // represent a maximization problem
-  _gaussianProcess.addEvidence(_encoder.oneHotEncode(configuration), -evidence.value * secondsPerMicroseconds, true);
+  _gaussianProcess.addEvidence(_encoder.oneHotEncode(configuration), -evidence.reducedValue * secondsPerMicroseconds,
+                               true);
 }
 
 bool autopas::BayesianSearch::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,

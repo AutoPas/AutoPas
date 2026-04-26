@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <cstddef>
 #include <memory>
 #include <set>
 #include <tuple>
@@ -69,6 +68,11 @@ class AutoTuner {
   AutoTuner &operator=(AutoTuner &&other) noexcept;
 
   /**
+   * Default destructor defined in .cpp as it's too big to be inlined.
+   */
+  ~AutoTuner();
+
+  /**
    * @copydoc autopas::AutoPas::forceRetune()
    */
   void forceRetune();
@@ -82,21 +86,9 @@ class AutoTuner {
   /**
    * Pass live info on to all tuning strategies.
    * @param liveInfo
+   * @param isStartOfTuningPhase True, if the next iteration starts a new tuning phase.
    */
-  void receiveLiveInfo(const LiveInfo &liveInfo);
-
-  /**
-   * Returns true if the AutoTuner is about to calculate the first interactions of a tuning phase (i.e. the first
-   * iteration), before tuneConfiguration() has been called.
-   * @return
-   */
-  bool isStartOfTuningPhase() const;
-
-  /**
-   * Returns true if the AutoTuner is within 10 iterations of the start of a tuning phase.
-   * @return
-   */
-  bool tuningPhaseAboutToBegin() const;
+  void receiveLiveInfo(const LiveInfo &liveInfo, bool isStartOfTuningPhase);
 
   /**
    * Returns true if the AutoTuner needs live info. This occurs if any strategy requires this and AutoPas is beginning
@@ -105,12 +97,6 @@ class AutoTuner {
    * @return True if the AutoTuner needs live info.
    */
   [[nodiscard]] bool needsLiveInfo() const;
-
-  /**
-   * Increase internal iteration counters by one. Should be called at the end of an iteration.
-   * @param needToWait If tuner should wait for other tuners.
-   */
-  void bumpIterationCounters(bool needToWait = false);
 
   /**
    * Returns whether rebuildNeighborLists() should be triggered in the next iteration.
@@ -128,13 +114,6 @@ class AutoTuner {
   [[nodiscard]] const Configuration &getCurrentConfig() const;
 
   /**
-   * Ask the tuner for the next configuration to use.
-   * This either returns the already selected config or triggers a step of the tuning process.
-   * @return Tuple<Next configuration to use, still tuning>.
-   */
-  [[nodiscard]] std::tuple<Configuration, bool> getNextConfig();
-
-  /**
    * Tell the tuner that the given config is not applicable.
    * Since this operation might change the suggestion what configuration to try next, this next suggestion is returned.
    *
@@ -144,9 +123,10 @@ class AutoTuner {
    * @param rejectedConfig
    * @param indefinitely Whether the given config should be completely removed from the search space (aka rejected
    * indefinitely).
+   * @param tuningPhase Current tuning phase.
    * @return Tuple<Next configuration to use, still tuning>.
    */
-  [[nodiscard]] std::tuple<Configuration, bool> rejectConfig(const Configuration &rejectedConfig, bool indefinitely);
+  [[nodiscard]] Configuration rejectConfig(const Configuration &rejectedConfig, bool indefinitely, size_t tuningPhase);
 
   /**
    * Indicator function whether the search space consists of exactly one configuration.
@@ -162,10 +142,10 @@ class AutoTuner {
 
   /**
    * After a tuning phase has finished, write the result to a file.
-   * @param tuningIteration
-   * @param tuningTime
+   * @param tuningTime Measured tuning time in nanoseconds.
+   * @param currentIteration Current LogicHandler iteration number.
    */
-  void logTuningResult(bool tuningIteration, long tuningTime) const;
+  void logTuningResult(long tuningTime, size_t currentIteration) const;
 
   /**
    * Initialize pmt sensor.
@@ -192,10 +172,15 @@ class AutoTuner {
    * on to the tuning strategy. This function expects that samples of the same configuration are taken consecutively.
    * The sample argument is a long because std::chrono::duration::count returns a long.
    *
-   * @param sample
+   * @param sampleRebuild time or energy sample for rebuild part of the iteration.
+   * @param sampleTraverseParticles time or energy sample for traverse interaction part of the iteration. This includes
+   * computeInteraction and remainderTraversal call.
    * @param neighborListRebuilt If the neighbor list as been rebuilt during the given time.
+   * @param iteration Current LogicHandler iteration.
+   * @param tuningPhase Current tuning phase number from the TuningManager
    */
-  void addMeasurement(long sample, bool neighborListRebuilt);
+  void addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt, size_t iteration,
+                      size_t tuningPhase);
 
   /**
    * Adds domain similarity statistics to a vector of measurements, which can be smoothed for use in MPI Tuning to find
@@ -225,16 +210,17 @@ class AutoTuner {
   bool inTuningPhase() const;
 
   /**
-   * Indicate if the tuner is in the first iteration of a tuning phase.
-   * @return
-   */
-  bool inFirstTuningIteration() const;
-
-  /**
-   * Indicate if the tuner is in the last iteration of the tuning phase.
+   * Indicates if the tuner is in the last iteration of the tuning phase.
    * @return
    */
   bool inLastTuningIteration() const;
+
+  /**
+   * Indicates whether the tuner is in the iteration corresponding to the last sample of the first configuration in the
+   * current tuning phase.
+   * @return
+   */
+  bool inFirstConfigurationLastSample() const;
 
   /**
    * Getter for the internal evidence collection.
@@ -264,7 +250,48 @@ class AutoTuner {
    */
   void checkEarlyStoppingCondition();
 
+  /**
+   * Tune available algorithm configurations.
+   *
+   * It is assumed this function is only called for relevant functors and that at least two configurations are allowed.
+   * When in tuning phase selects next config to test. At the end of the tuning phase select optimum.
+   * The function returns true if the selected config is not yet the optimum but something that should be sampled.
+   *
+   * @param currentIteration Current LogicHandler iteration number.
+   * @param tuningPhase Current tuning phase number.
+   * @param isStartOfTuningPhase True if this is the start of a new tuning phase.
+   * @return true iff still in tuning phase.
+   */
+  bool tuneConfiguration(size_t currentIteration, size_t tuningPhase, bool isStartOfTuningPhase);
+
+  /**
+   * Pushes the provided config into the _configQueue and ends tuning immediately.
+   * Used by the TuningManager, when we want a different configuration than the one determined by one AutoTuner in
+   * isolation.
+   * @param optimalConfig The configuration to be used from now on until the next tuning phase.
+   */
+  void forceOptimalConfiguration(const Configuration &optimalConfig);
+
+  /**
+   * Get the set of all container types present in the search space.
+   * Used by the Coordinator to calculate the intersection.
+   * @return set of all container types present in the search space.
+   */
+  std::set<ContainerOption> getSearchSpaceContainers() const;
+
  private:
+  /**
+   * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
+   * used until the next tuning phase, as well as setting other relevant class members (_endOfTuningPhase, _isTuning,
+   * _samplesRebuildingNeighborLists, _iterationBaseline)
+   */
+  void handleEndOfTuningPhase(size_t tuningPhase);
+
+  /**
+   * Selects the best configuration for the current container from the evidence collection.
+   */
+  void selectBestConfiguration(size_t tuningPhase);
+
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
    * @return Sum of sizes of sample vectors.
@@ -277,18 +304,7 @@ class AutoTuner {
    * rebuild frequency.
    * @return estimate time for one iteration
    */
-  [[nodiscard]] long estimateRuntimeFromSamples() const;
-
-  /**
-   * Tune available algorithm configurations.
-   *
-   * It is assumed this function is only called for relevant functors and that at least two configurations are allowed.
-   * When in tuning phase selects next config to test. At the end of the tuning phase select optimum.
-   * The function returns true if the selected config is not yet the optimum but something that should be sampled.
-   *
-   * @return true iff still in tuning phase.
-   */
-  bool tuneConfiguration();
+  [[nodiscard]] std::tuple<long, long, long> estimateRuntimeFromSamples() const;
 
   /**
    * Strategy how to reduce the sampled values to one value.
@@ -300,26 +316,6 @@ class AutoTuner {
    * The strategies are always applied in the order they are in this vector.
    */
   std::vector<std::unique_ptr<TuningStrategyInterface>> _tuningStrategies;
-
-  /**
-   * Counter for the current simulation iteration.
-   * The first iteration has number 0.
-   */
-  size_t _iteration{0};
-
-  /**
-   * The number of the current tuning phase.
-   * If we are currently between phases this is the number of the last phase.
-   * The first tuning phase has number 0.
-   * See bumpIterationCounters() for more details.
-   */
-  size_t _tuningPhase{0};
-
-  /**
-   * Fixed interval at which tuning phases are started.
-   * A tuning phase always starts when _iteration % _tuningInterval == 0.
-   */
-  size_t _tuningInterval;
 
   /**
    * Metric to use for tuning.
@@ -382,7 +378,7 @@ class AutoTuner {
    *
    * @note Initialized with size of _maxSamples to start tuning at start of simulation.
    */
-  std::vector<long> _samplesNotRebuildingNeighborLists;
+  std::vector<long> _samplesTraverseInteractions;
 
   /**
    * Raw time samples of the current configuration. Contains only the samples of iterations where the neighbor lists
@@ -446,12 +442,5 @@ class AutoTuner {
    * significantly slower than the fastest configuration by more than _earlyStoppingFactor.
    */
   bool _earlyStoppingOfResampling{false};
-
-  /**
-   * Used only for triggering rebuilds when configurations switch during tuning phases, which occurs when
-   * _iterationBaseline % _maxSamples == 0. _iterationBaseline may therefore be modified to "skip" iterations e.g. when
-   * early stopping is used."
-   */
-  size_t _iterationBaseline{0};
 };
 }  // namespace autopas

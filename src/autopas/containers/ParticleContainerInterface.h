@@ -19,6 +19,7 @@
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/optRef.h"
 
 namespace autopas {
 
@@ -193,7 +194,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle_T, true, false>::ParticleVecType *additionalVectors = nullptr) = 0;
+      utils::optRef<typename ContainerIterator<Particle_T, true, false>::ParticleVecType> additionalVectors =
+          std::nullopt) = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
@@ -201,7 +203,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ContainerIterator<Particle_T, false, false> begin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const = 0;
+      utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
+          std::nullopt) const = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
@@ -209,7 +212,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] ContainerIterator<Particle_T, false, false> cbegin(
       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
-      typename ContainerIterator<Particle_T, false, false>::ParticleVecType *additionalVectors = nullptr) const {
+      utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
+          std::nullopt) const {
     return begin(behavior, additionalVectors);
   }
 
@@ -219,12 +223,13 @@ class ParticleContainerInterface {
    * @param lowerCorner Lower corner of the region
    * @param higherCorner Higher corner of the region
    * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
-   * @param additionalVectors Vectors that should be included besides the container.
+   * @param additionalVectors Vectors that should be included besides the container. Optional reference.
    * @return Iterator to iterate over all particles in a specific region.
    */
   [[nodiscard]] virtual ContainerIterator<Particle_T, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle_T, true, true>::ParticleVecType *additionalVectors = nullptr) = 0;
+      utils::optRef<typename ContainerIterator<Particle_T, true, true>::ParticleVecType> additionalVectors =
+          std::nullopt) = 0;
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
@@ -232,7 +237,8 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual ContainerIterator<Particle_T, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle_T, false, true>::ParticleVecType *additionalVectors = nullptr) const = 0;
+      utils::optRef<typename ContainerIterator<Particle_T, false, true>::ParticleVecType> additionalVectors =
+          std::nullopt) const = 0;
 
   /**
    * @copydoc autopas::AutoPas::end()
@@ -274,22 +280,6 @@ class ParticleContainerInterface {
    * @return verletSkin
    */
   [[nodiscard]] virtual double getVerletSkin() const = 0;
-
-  /**
-   * Return the number of time-steps since last neighbor list rebuild
-   * @note: The value has to be set by setStepsSinceLastRebuild() from outside the container. Otherwise this will always
-   * return 0
-   * @return steps since last rebuild
-   */
-  [[nodiscard]] virtual size_t getStepsSinceLastRebuild() const { return _stepsSinceLastRebuild; }
-
-  /**
-   * Set the number of time-steps since last neighbor list rebuild
-   * @param stepsSinceLastRebuild steps since last neighbor list rebuild
-   */
-  virtual void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) {
-    _stepsSinceLastRebuild = stepsSinceLastRebuild;
-  }
 
   /**
    * Return the interaction length (cutoff+skin) of the container.
@@ -414,13 +404,6 @@ class ParticleContainerInterface {
   virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
 
  protected:
-  /**
-   * Stores the number of time-steps since last neighbor list rebuild
-   * @note: The value has to be set by setStepsSinceLastRebuild() from outside the container. Otherwise this will always
-   * be 0
-   */
-  size_t _stepsSinceLastRebuild{0};
-
   /**
    * Skin distance a particle is allowed to move in one time-step.
    */

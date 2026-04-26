@@ -9,11 +9,13 @@
 #include "autopas/LogicHandler.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/particles/OwnershipState.h"
+#include "testingHelpers/ParticleMatcher.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::Combine;
 using ::testing::Return;
 using ::testing::UnorderedElementsAreArray;
+using ::testing::UnorderedPointwise;
 using ::testing::ValuesIn;
 
 /**
@@ -76,11 +78,11 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
 
   const std::set searchSpace({config1, config2});
 
-  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::pairwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
-  autopas::LogicHandler<ParticleFP64> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tunerManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
+  autopas::LogicHandler<ParticleFP64> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 
   // Helper to add particles to the container.
   auto addParticlesToContainer = [&](auto &containerToFill) {
@@ -107,6 +109,7 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
     }
   };
 
+  auto emigrants = logicHandler.updateContainer();
   // The first computeInteractions run to initialize the 'from' container.
   MockPairwiseFunctor<ParticleFP64> functor{};
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
@@ -118,7 +121,7 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
       logicHandler.getContainer().getContainerType() == config1.container ? config2.container : config1.container;
 
   // Start the second iteration which should swap the container to the secondContainerType configuration.
-  auto emigrants = logicHandler.updateContainer();
+  emigrants = logicHandler.updateContainer();
   ASSERT_TRUE(emigrants.empty()) << "There should be no emigrating particles in this test.";
   addParticlesToContainer(logicHandler.getContainer());
 
@@ -144,12 +147,12 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
     FAIL();
   }
 
-  EXPECT_THAT(afterListInner, UnorderedElementsAreArray(beforeListInner));
-  EXPECT_THAT(afterListHaloWithinCutoff, UnorderedElementsAreArray(beforeListHaloWithinCutoff));
-  EXPECT_THAT(afterListHaloOutsideCutoff, UnorderedElementsAreArray(beforeListHaloOutsideCutoff));
+  EXPECT_THAT(afterListInner, UnorderedPointwise(ParticleEq(), beforeListInner));
+  EXPECT_THAT(afterListHaloWithinCutoff, UnorderedPointwise(ParticleEq(), beforeListHaloWithinCutoff));
+  EXPECT_THAT(afterListHaloOutsideCutoff, UnorderedPointwise(ParticleEq(), beforeListHaloOutsideCutoff));
 
   // Reset tuning, so third iteration should swap back to firstContainerType
-  tunerMap[autopas::InteractionTypeOption::pairwise]->forceRetune();
+  tunerManager->forceRetune();
   emigrants = logicHandler.updateContainer();
   ASSERT_TRUE(emigrants.empty()) << "There should be no emigrating particles in this test.";
 
@@ -171,9 +174,9 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
     FAIL();
   }
 
-  EXPECT_THAT(after2ListInner, UnorderedElementsAreArray(afterListInner));
-  EXPECT_THAT(after2ListHaloWithinCutoff, UnorderedElementsAreArray(afterListHaloWithinCutoff));
-  EXPECT_THAT(after2ListHaloOutsideCutoff, UnorderedElementsAreArray(afterListHaloOutsideCutoff));
+  EXPECT_THAT(after2ListInner, UnorderedPointwise(ParticleEq(), afterListInner));
+  EXPECT_THAT(after2ListHaloWithinCutoff, UnorderedPointwise(ParticleEq(), afterListHaloWithinCutoff));
+  EXPECT_THAT(after2ListHaloOutsideCutoff, UnorderedPointwise(ParticleEq(), afterListHaloOutsideCutoff));
 }
 
 std::vector<autopas::Configuration> containerConfigs = {

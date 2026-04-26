@@ -24,7 +24,7 @@ TuningStrategyLogger::TuningStrategyLogger(const std::string &outputSuffix) {
 TuningStrategyLogger::~TuningStrategyLogger() { _logOut.flush(); }
 
 void TuningStrategyLogger::addEvidence(const Configuration &configuration, const Evidence &evidence) {
-  _logOut << tuningLogEntry::writeEvidence(evidence.value, evidence.iteration, configuration) << std::endl;
+  _logOut << tuningLogEntry::writeEvidence(evidence.reducedValue, evidence.iteration, configuration) << std::endl;
 }
 
 bool TuningStrategyLogger::optimizeSuggestions(std::vector<Configuration> &configQueue,
