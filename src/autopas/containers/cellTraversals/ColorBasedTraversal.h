@@ -125,9 +125,10 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
    * Used for example in HGFitC08Traversal when changing levels.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
+   * @param cellsPerDimension number of cells per dimension (including halo cells).
    */
   void changeGrid(const double interactionLength, const std::array<double, 3> &cellLength,
-                  std::array<unsigned long, 3> &cellsPerDimension) {
+                  const std::array<unsigned long, 3> &cellsPerDimension) {
     _interactionLength = interactionLength;
     _cellLength = cellLength;
     this->_cellsPerDimension = cellsPerDimension;

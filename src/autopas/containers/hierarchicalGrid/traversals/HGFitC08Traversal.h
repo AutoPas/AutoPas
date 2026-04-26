@@ -170,7 +170,8 @@ inline void HGFitC08Traversal<ParticleCell_T, Functor_T>::traverseParticles() {
     const unsigned long haloRegionCellWidth = cellBlocks[upperLevel]->getCellsPerInteractionLength();
     const auto end = this->_cellsPerDimension - haloRegionCellWidth;
     const auto stride = this->_overlap + 1ul;
-    const auto offset = haloRegionCellWidth - this->_overlap;
+    const std::array<unsigned long, 3> offset =
+        std::array<unsigned long, 3>{haloRegionCellWidth, haloRegionCellWidth, haloRegionCellWidth} - this->_overlap;
     this->colorTraversal(
         [&](unsigned long x, unsigned long y, unsigned long z) {
           const auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
@@ -192,7 +193,8 @@ inline void HGFitC08Traversal<ParticleCell_T, Functor_T>::intraLevelOnlyTraversa
   const unsigned long haloRegionCellWidth = cellBlock.getCellsPerInteractionLength();
   const auto end = this->_cellsPerDimension - haloRegionCellWidth;
   const auto stride = this->_overlap + 1ul;
-  const auto offset = haloRegionCellWidth - this->_overlap;
+  const std::array<unsigned long, 3> offset =
+      std::array<unsigned long, 3>{haloRegionCellWidth, haloRegionCellWidth, haloRegionCellWidth} - this->_overlap;
   this->colorTraversal(
       [&](unsigned long x, unsigned long y, unsigned long z) {
         const auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
