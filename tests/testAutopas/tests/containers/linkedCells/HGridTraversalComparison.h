@@ -95,7 +95,7 @@ class HGridTraversalComparison : public AutoPasTestBase, public ::testing::WithP
       mykey_t key, bool useSorting);
 
   static constexpr std::array<double, 3> _boxMin{0, 0, 0};
-  static constexpr double _cutoff{1.};
+  static constexpr double _cutoff{1.5};
 
   static std::shared_ptr<ParticlePropertiesLibrary<>> _particlePropertiesLibrary;
 
