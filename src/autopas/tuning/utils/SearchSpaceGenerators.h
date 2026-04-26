@@ -54,6 +54,10 @@ struct OptionSpace {
    * Available discrete cellSizeFactors options.
    */
   std::set<double> cellSizeFactors;
+  /**
+   * Available OpenMP thread counts.
+   */
+  std::set<int> threadCounts;
 };
 
 /**
@@ -65,6 +69,7 @@ struct OptionSpace {
  * @param allowedDataLayoutOptions
  * @param allowedNewton3Options
  * @param allowedCellSizeFactors
+ * @param allowedThreadCounts
  * @param interactionType
  * @return A set containing all valid configurations.
  */
@@ -74,6 +79,7 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
+                                         const NumberSetFinite<int> *allowedThreadCounts,
                                          const InteractionTypeOption &interactionType);
 
 /**

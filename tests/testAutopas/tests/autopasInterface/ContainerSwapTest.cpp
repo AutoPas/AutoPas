@@ -177,33 +177,35 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
   EXPECT_THAT(after2ListHaloWithinCutoff, UnorderedPointwise(ParticleEq(), afterListHaloWithinCutoff));
   EXPECT_THAT(after2ListHaloOutsideCutoff, UnorderedPointwise(ParticleEq(), afterListHaloOutsideCutoff));
 }
-
+const int threadCount = autopas::autopas_get_max_threads();
 std::vector<autopas::Configuration> containerConfigs = {
     {autopas::ContainerOption::directSum, 1, autopas::TraversalOption::ds_sequential,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, threadCount,
      autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::linkedCells, 1, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
-     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
+     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, threadCount,
+     autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::linkedCellsReferences, 1, autopas::TraversalOption::lc_c01,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, threadCount,
      autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::verletLists, 1, autopas::TraversalOption::vl_list_iteration,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, threadCount,
      autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::varVerletListsAsBuild, 1, autopas::TraversalOption::vvl_as_built,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, threadCount,
      autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::verletClusterLists, 1, autopas::TraversalOption::vcl_cluster_iteration,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, threadCount,
      autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::verletListsCells, 1, autopas::TraversalOption::vlc_c01,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, threadCount,
      autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::pairwiseVerletLists, 1, autopas::TraversalOption::vlp_c01,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, threadCount,
      autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::octree, 1, autopas::TraversalOption::ot_c01, autopas::LoadEstimatorOption::none,
-     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise}};
+     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, threadCount,
+     autopas::InteractionTypeOption::pairwise}};
 
 // Generates all unique pairs of configurations, order does not matter and no pairs of the same configuration.
 std::vector<std::pair<autopas::Configuration, autopas::Configuration>> GenerateUniquePairs(

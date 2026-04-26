@@ -11,6 +11,7 @@
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StringUtils.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/UniformGenerator.h"
 
 /**
@@ -155,9 +156,14 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
       *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numParticles /*initial ID*/), container->getCutoff(),
       numHaloParticles);
   EXPECT_EQ(container->size(), numParticles + numHaloParticles) << "Wrong number of halo molecules inserted!";
-  const auto config =
-      autopas::Configuration{containerOption,  cellSizeFactor, traversalOption, autopas::LoadEstimatorOption::none,
-                             dataLayoutOption, newton3Option,  interactionType};
+  const auto config = autopas::Configuration{containerOption,
+                                             cellSizeFactor,
+                                             traversalOption,
+                                             autopas::LoadEstimatorOption::none,
+                                             dataLayoutOption,
+                                             newton3Option,
+                                             autopas::autopas_get_max_threads(),
+                                             interactionType};
 
   auto traversal = autopas::TraversalSelector::generateTraversalFromConfig<Molecule, decltype(functor)>(
       config, functor, container->getTraversalSelectorInfo());
