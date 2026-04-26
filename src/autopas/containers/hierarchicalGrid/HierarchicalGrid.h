@@ -15,6 +15,7 @@
 #include "autopas/containers/hierarchicalGrid/traversals/HGTraversalInterface.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/iterators/ContainerIterator.h"
+#include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
 
@@ -97,8 +98,19 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     }
     if (_fittedGrids) {
       createFittedGrids(sortingThreshold, loadEstimator);
-      return;
+    } else {
+      createGrids(sortingThreshold, loadEstimator);
     }
+  }
+
+ private:
+  /**
+   * Create (unfitted) hierarchy levels.
+   *
+   * @param sortingThreshold Number of particles in two cells from which sorting should be performed.
+   * @param loadEstimator The load estimation algorithm for balanced traversals.
+   */
+  void createGrids(const size_t &sortingThreshold, LoadEstimatorOption &loadEstimator) {
     // largest interaction length
     const double interactionLengthLargest = _maxCutoffPerLevel.back() + _skin;
     // generate LinkedCells for each hierarchy, with different cutoffs
@@ -117,14 +129,15 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     }
   }
 
- private:
   /**
    * Create hierarchy levels whose cell grids are fitted to each other.
    *
    * @param sortingThreshold Number of particles in two cells from which sorting should be performed.
    * @param loadEstimator The load estimation algorithm for balanced traversals.
    */
-  void createFittedGrids(const size_t sortingThreshold, LoadEstimatorOption loadEstimator) {
+  void createFittedGrids(const size_t &sortingThreshold, LoadEstimatorOption &loadEstimator) {
+    using namespace autopas::utils::ArrayMath::literals;
+
     std::vector<double> maxInterLenPerLevel(_numLevels);
     for (size_t i = 0; i < _numLevels; i++) {
       maxInterLenPerLevel[i] = _maxCutoffPerLevel[i] + _skin;
@@ -146,15 +159,12 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     _levels.resize(_numLevels);
 
     // construct last/largest level first, so we can fit other levels to it
-    _levels.at(_numLevels - 1) = std::make_unique<autopas::LinkedCells<Particle_T>>(
-        _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, _cellSizeFactor * highLevelRatio, sortingThreshold,
-        loadEstimator);
+    _levels.back() = std::make_unique<autopas::LinkedCells<Particle_T>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(),
+                                                                        _skin, _cellSizeFactor * highLevelRatio,
+                                                                        sortingThreshold, loadEstimator);
 
-    auto highestCellLength = _levels.at(_numLevels - 1)->getCellBlock().getCellLength();
-    std::array<size_t, 3> cellsPerDimensionHigher = {
-        static_cast<size_t>(std::llround((_boxMax[0] - _boxMin[0]) / highestCellLength[0])),
-        static_cast<size_t>(std::llround((_boxMax[1] - _boxMin[1]) / highestCellLength[1])),
-        static_cast<size_t>(std::llround((_boxMax[2] - _boxMin[2]) / highestCellLength[2]))};
+    std::array<size_t, 3> cellsPerDimensionNextHighest =
+        _levels.back()->getCellBlock().getCellsPerDimensionWithoutHalo();
     std::array<size_t, 3> cellsPerDimension;
     size_t numLowerCellsPerHigher;
 
@@ -174,25 +184,25 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
           break;
         }
         // update cellsPerDimension for the next lower level
-        cellsPerDimension[d] = numLowerCellsPerHigher * cellsPerDimensionHigher[d];
+        cellsPerDimension[d] = numLowerCellsPerHigher * cellsPerDimensionNextHighest[d];
       }
       // if level was removed, create no linked cells and continue with next level
       if (numLowerCellsPerHigher < 2) {
         continue;
       }
-      cellsPerDimensionHigher = cellsPerDimension;
+      cellsPerDimensionNextHighest = cellsPerDimension;
       // @todo: This case is currently dead code and can be removed, I left it for now, so there is some trace of this
       // existing, in case we might want non-fitted Hgrids using the HGC08 traversal in the future.
       // Case we dont want to fit the grids perfecty, but just want to make sure they are not too close together, to
       // keep stride of 3
       if (!_fittedGrids) {
         double ratio = maxInterLenPerLevel[i] / maxInterLenPerLevel.back();
-        // again the hacky way to get the proper halo size (described at the bottom of the constructor)
+        // again the hacky way to get the proper halo size (see createGrids for explanation)
         _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(),
                                                                         _skin, _cellSizeFactor * ratio,
                                                                         sortingThreshold, loadEstimator);
       } else {
-        // again the hacky way to get the proper halo size (described at the bottom of the constructor)
+        // again the hacky way to get the proper halo size (see createGrids for explanation)
         _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
             _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, cellsPerDimension, sortingThreshold, loadEstimator);
       }

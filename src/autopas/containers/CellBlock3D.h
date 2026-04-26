@@ -195,6 +195,15 @@ class CellBlock3D : public CellBorderAndFlagManager {
   }
 
   /**
+   * Get the dimension of the cell block excluding the halo boxes.
+   * @return The dimensions of the cell block.
+   */
+  [[nodiscard]] const std::array<index_t, 3> getCellsPerDimensionWithoutHalo() const {
+    using namespace autopas::utils::ArrayMath::literals;
+    return _cellsPerDimensionWithHalo - 2 * _cellsPerInteractionLength;
+  }
+
+  /**
    * Checks whether a given position is inside the halo region of the managed cell block.
    * @param position The given position.
    * @return true if the position is inside the halo region.
