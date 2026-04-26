@@ -147,6 +147,23 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
     }
   };
 
+  void initTraversal() override {
+    this->_traversals.resize(this->_numLevels);
+    for (size_t level = 0; level < this->_numLevels; ++level) {
+      this->_traversals[level] = this->generateNewTraversal(level);
+      TraversalInterface *intraLevelTraversal = this->_traversals[level].get();
+      this->_levels->at(level)->prepareTraversal(intraLevelTraversal);
+      this->_traversals[level]->initTraversal();
+    }
+  }
+
+  void endTraversal() override {
+    // stores SoA if SoA is used
+    for (size_t level = 0; level < this->_numLevels; level++) {
+      this->_traversals[level]->endTraversal();
+    }
+  }
+
  protected:
   /**
    * Multiplier for target blocks per color used for dynamic load balancing.
@@ -162,7 +179,7 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
    * @param level which HGrid level to generate a traversal for
    * @return A new traversal that is applicable to a specific LinkedCells level
    */
-  std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override {
+  std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) {
     // Instead of LCC08Traversal, we use HGC08SingleLevelTraversal with upperLevel=0 for the intra-level interactions.
     // This way it works the same, but considers the wider halo region to skip unnecessary halo-halo interactions.
     const double haloRegionWidth = this->_maxCutoffPerLevel.back() + this->_skin;

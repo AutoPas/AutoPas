@@ -84,7 +84,7 @@ class HGTraversalBase : public TraversalInterface {
    * @param level which HGrid level to generate a traversal for
    * @return A new traversal that is applicable to a specific LinkedCells level
    */
-  virtual std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) = 0;
+  std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) = 0;
 
   /**
    * Get the interaction length for a given level pair.
@@ -202,23 +202,6 @@ class HGTraversalBase : public TraversalInterface {
       // We do not simply call computeInteractions() here as we want to store SoA after inter-level traversals are
       // computed. They will be loaded in HGTraversalBase::endTraversal().
       this->_traversals[level]->traverseParticles();
-    }
-  }
-
-  void initTraversal() override {
-    this->_traversals.resize(this->_numLevels);
-    for (size_t level = 0; level < this->_numLevels; ++level) {
-      this->_traversals[level] = this->generateNewTraversal(level);
-      TraversalInterface *intraLevelTraversal = this->_traversals[level].get();
-      this->_levels->at(level)->prepareTraversal(intraLevelTraversal);
-      this->_traversals[level]->initTraversal();
-    }
-  }
-
-  void endTraversal() override {
-    // stores SoA if SoA is used
-    for (size_t level = 0; level < this->_numLevels; level++) {
-      this->_traversals[level]->endTraversal();
     }
   }
 

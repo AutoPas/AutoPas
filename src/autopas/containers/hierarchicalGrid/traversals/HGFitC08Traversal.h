@@ -96,14 +96,6 @@ class HGFitC08Traversal : public HGTraversalBase<ParticleCell_T>, public HGTrave
    * Utility that converts between AoS and SoA data layouts for the functor.
    */
   utils::DataLayoutConverter<Functor_T> _dataLayoutConverter;
-
-  /**
-   * HGFitc08Traversal does intra and inter-level traversals combined, so generating seperate intra-level traversals is
-   * not needed.
-   * @param level which HGrid level to generate a traversal for
-   * @return
-   */
-  std::unique_ptr<TraversalInterface> generateNewTraversal(const size_t level) override { return nullptr; }
 };
 
 template <class ParticleCell_T, class Functor_T>
