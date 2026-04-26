@@ -250,15 +250,13 @@ class LJFunctorHWY
    *   2. Pack particle data (positions, ownership, typeIDs, force accumulators)
    *      into contiguous SoA caches in sorted order. This removes indirect
    *      memory access from the vectorized inner loop.
-   *   3. Compute max_index[i] for each particle i in soa1: the exclusive upper
-   *      bound on interaction partners in the sorted soa2. Since both arrays
-   *      are sorted ascending, max_index[] is monotonically non-decreasing and
-   *      is obtained in a single O(n) pass.
-   *   4. Run the p1xVec SIMD kernel on the packed cache with the tight j-loop
-   *      bound. Out-of-cutoff pairs are still masked by the 3D cutoff check
-   *      inside the kernel (the 1D bound is only approximate).
+   *   3. Extract sorted projection values of soa2 for in-loop upper-bound checks.
+   *   4. Run the SIMD kernel (p1xVec or pVecx1) with in-loop j-exit: for p1xVec,
+   *      exit when projVals2[j] exceeds the scalar i's projection + sortingCutoff;
+   *      for pVecx1, exit when projVals2[j] exceeds the MAX projection in the
+   *      i-block (projIdx1[i + vecLen - 1]) + sortingCutoff. Out-of-cutoff pairs
+   *      are still masked by the 3D cutoff check inside the kernel.
    *   5. Scatter accumulated forces back to the original SoA indices.
-   *.
    */
   inline void SoAFunctorPairSorted(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                                    const std::array<double, 3> &sortingDirection, double sortingCutoff,
@@ -266,14 +264,23 @@ class LJFunctorHWY
     if (soa1.size() == 0 or soa2.size() == 0) {
       return;
     }
-    if (_vecPattern != VectorizationPattern::p1xVec) {
-      SoAFunctorPair(soa1, soa2, newton3);
-      return;
-    }
-    if (newton3) {
-      SoAFunctorPairImpl<true, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingDirection, sortingCutoff);
-    } else {
-      SoAFunctorPairImpl<false, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingDirection, sortingCutoff);
+    auto dispatch = [&]<VectorizationPattern vp>() {
+      if (newton3) {
+        SoAFunctorPairImpl<true, true, vp>(soa1, soa2, sortingDirection, sortingCutoff);
+      } else {
+        SoAFunctorPairImpl<false, true, vp>(soa1, soa2, sortingDirection, sortingCutoff);
+      }
+    };
+    switch (_vecPattern) {
+      case VectorizationPattern::p1xVec:
+        dispatch.template operator()<VectorizationPattern::p1xVec>();
+        break;
+      case VectorizationPattern::pVecx1:
+        dispatch.template operator()<VectorizationPattern::pVecx1>();
+        break;
+      default:
+        SoAFunctorPair(soa1, soa2, newton3);
+        break;
     }
   }
 
@@ -885,6 +892,7 @@ class LJFunctorHWY
     const auto *const typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
     // Sorted-path caches. Declared always; allocated only when sorted=true.
+    // TODO: move these into class members to avoid constant reallocation
     std::vector<std::pair<double, size_t>> projIdx1, projIdx2;
     std::vector<double, autopas::AlignedAllocator<double>> x1s, y1s, z1s, x2s, y2s, z2s;
     std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> ownership1s, ownership2s;
@@ -899,37 +907,50 @@ class LJFunctorHWY
       projIdx1.resize(n1);
       projIdx2.resize(n2);
       for (size_t i = 0; i < n1; ++i) {
-        projIdx1[i] = {x1Ptr[i] * sortingDirection[0] + y1Ptr[i] * sortingDirection[1] +
-                           z1Ptr[i] * sortingDirection[2],
+        projIdx1[i] = {x1Ptr[i] * sortingDirection[0] + y1Ptr[i] * sortingDirection[1] + z1Ptr[i] * sortingDirection[2],
                        i};
       }
       for (size_t j = 0; j < n2; ++j) {
-        projIdx2[j] = {x2Ptr[j] * sortingDirection[0] + y2Ptr[j] * sortingDirection[1] +
-                           z2Ptr[j] * sortingDirection[2],
+        projIdx2[j] = {x2Ptr[j] * sortingDirection[0] + y2Ptr[j] * sortingDirection[1] + z2Ptr[j] * sortingDirection[2],
                        j};
       }
       std::sort(projIdx1.begin(), projIdx1.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
       std::sort(projIdx2.begin(), projIdx2.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
 
       // Step 2: pack into contiguous caches in sorted order.
-      x1s.resize(n1); y1s.resize(n1); z1s.resize(n1);
-      x2s.resize(n2); y2s.resize(n2); z2s.resize(n2);
+      x1s.resize(n1);
+      y1s.resize(n1);
+      z1s.resize(n1);
+      x2s.resize(n2);
+      y2s.resize(n2);
+      z2s.resize(n2);
       ownership1s.assign(n1, autopas::OwnershipState::dummy);
       ownership2s.assign(n2, autopas::OwnershipState::dummy);
-      typeID1s.assign(n1, 0); typeID2s.assign(n2, 0);
-      fx1s.assign(n1, 0.0); fy1s.assign(n1, 0.0); fz1s.assign(n1, 0.0);
+      typeID1s.assign(n1, 0);
+      typeID2s.assign(n2, 0);
+      fx1s.assign(n1, 0.0);
+      fy1s.assign(n1, 0.0);
+      fz1s.assign(n1, 0.0);
       if constexpr (newton3) {
-        fx2s.assign(n2, 0.0); fy2s.assign(n2, 0.0); fz2s.assign(n2, 0.0);
+        fx2s.assign(n2, 0.0);
+        fy2s.assign(n2, 0.0);
+        fz2s.assign(n2, 0.0);
       }
       for (size_t i = 0; i < n1; ++i) {
         const size_t idx = projIdx1[i].second;
-        x1s[i] = x1Ptr[idx]; y1s[i] = y1Ptr[idx]; z1s[i] = z1Ptr[idx];
-        ownership1s[i] = ownedStatePtr1[idx]; typeID1s[i] = typeID1Ptr[idx];
+        x1s[i] = x1Ptr[idx];
+        y1s[i] = y1Ptr[idx];
+        z1s[i] = z1Ptr[idx];
+        ownership1s[i] = ownedStatePtr1[idx];
+        typeID1s[i] = typeID1Ptr[idx];
       }
       for (size_t j = 0; j < n2; ++j) {
         const size_t idx = projIdx2[j].second;
-        x2s[j] = x2Ptr[idx]; y2s[j] = y2Ptr[idx]; z2s[j] = z2Ptr[idx];
-        ownership2s[j] = ownedStatePtr2[idx]; typeID2s[j] = typeID2Ptr[idx];
+        x2s[j] = x2Ptr[idx];
+        y2s[j] = y2Ptr[idx];
+        z2s[j] = z2Ptr[idx];
+        ownership2s[j] = ownedStatePtr2[idx];
+        typeID2s[j] = typeID2Ptr[idx];
       }
 
       // Step 3: extract sorted projection values for the in-loop upper-bound check.
@@ -940,16 +961,16 @@ class LJFunctorHWY
     }
 
     // After packing, data pointers alias either sorted caches or original SoA arrays.
-    const double *const x1Data      = sorted ? x1s.data()         : x1Ptr;
-    const double *const y1Data      = sorted ? y1s.data()         : y1Ptr;
-    const double *const z1Data      = sorted ? z1s.data()         : z1Ptr;
-    const double *const x2Data      = sorted ? x2s.data()         : x2Ptr;
-    const double *const y2Data      = sorted ? y2s.data()         : y2Ptr;
-    const double *const z2Data      = sorted ? z2s.data()         : z2Ptr;
-    const auto   *const owned1Data  = sorted ? ownership1s.data() : ownedStatePtr1;
-    const auto   *const owned2Data  = sorted ? ownership2s.data() : ownedStatePtr2;
-    const size_t *const typeID1Data = sorted ? typeID1s.data()    : typeID1Ptr;
-    const size_t *const typeID2Data = sorted ? typeID2s.data()    : typeID2Ptr;
+    const double *const x1Data = sorted ? x1s.data() : x1Ptr;
+    const double *const y1Data = sorted ? y1s.data() : y1Ptr;
+    const double *const z1Data = sorted ? z1s.data() : z1Ptr;
+    const double *const x2Data = sorted ? x2s.data() : x2Ptr;
+    const double *const y2Data = sorted ? y2s.data() : y2Ptr;
+    const double *const z2Data = sorted ? z2s.data() : z2Ptr;
+    const auto *const owned1Data = sorted ? ownership1s.data() : ownedStatePtr1;
+    const auto *const owned2Data = sorted ? ownership2s.data() : ownedStatePtr2;
+    const size_t *const typeID1Data = sorted ? typeID1s.data() : typeID1Ptr;
+    const size_t *const typeID2Data = sorted ? typeID2s.data() : typeID2Ptr;
     // For sorted+newton3=false, fx2 writes go to fx1s as a harmless stand-in.
     double *const fx1Data = sorted ? fx1s.data() : fx1Ptr;
     double *const fy1Data = sorted ? fy1s.data() : fy1Ptr;
@@ -965,8 +986,17 @@ class LJFunctorHWY
 
     // Projection value helpers — return meaningful data when sorted, zero/nullptr otherwise.
     // Both are eliminated at compile time when sorted=false.
-    auto projVal1 = [&](std::ptrdiff_t i) -> double {
-      if constexpr (sorted) return projIdx1[i].first;
+    //
+    // For pVecx1, the outer i-loop covers a block of _vecLengthDouble particles. The j-exit condition
+    // must use the MAX projection in that block (projIdx1[i + blockSize - 1]) so that the j-loop only
+    // exits once ALL particles in the i-block are definitely beyond sortingCutoff of j.
+    auto projVal1 = [&](std::ptrdiff_t i, size_t blockSize) -> double {
+      if constexpr (sorted) {
+        if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+          return projIdx1[i + blockSize - 1].first;
+        }
+        return projIdx1[i].first;
+      }
       return 0.0;
     };
     auto projVals2Ptr = [&]() -> const double * {
@@ -974,22 +1004,20 @@ class LJFunctorHWY
       return nullptr;
     };
 
-    // Step 4: unified i-loop using existing loop helpers.
-    auto iLoopBody = [&]<bool remainderI>(std::ptrdiff_t i, size_t restI) {
-      handleILoopBody<false, newton3, remainderI, sorted, vecPattern>(
-          i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data, owned2Data, fx1Data, fy1Data, fz1Data,
-          fx2Data, fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, restI, n2,
-          projVal1(i), projVals2Ptr(), sortingCutoff);
-    };
-
     std::ptrdiff_t i = 0;
     for (; checkFirstLoopCondition<false, vecPattern>(i, n1); incrementFirstLoop<vecPattern>(i)) {
-      iLoopBody.template operator()<false>(i, 0);
+      handleILoopBody<false, newton3, false, sorted, vecPattern>(
+          i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data, owned2Data, fx1Data, fy1Data, fz1Data, fx2Data,
+          fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, 0, n2,
+          projVal1(i, _vecLengthDouble), projVals2Ptr(), sortingCutoff);
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       const int restI = obtainILoopRemainderLength<false>(i, n1);
       if (restI > 0) {
-        iLoopBody.template operator()<true>(i, restI);
+        handleILoopBody<false, newton3, true, sorted, vecPattern>(
+            i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data, owned2Data, fx1Data, fy1Data, fz1Data,
+            fx2Data, fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, restI, n2,
+            projVal1(i, static_cast<size_t>(restI)), projVals2Ptr(), sortingCutoff);
       }
     }
 
