@@ -10,9 +10,11 @@
 #include "autopas/tuning/tuningStrategy/ActiveHarmony.h"
 #include "autopas/tuning/tuningStrategy/BayesianClusterSearch.h"
 #include "autopas/tuning/tuningStrategy/BayesianSearch.h"
+#include "autopas/tuning/tuningStrategy/DeepReinforcementLearning.h"
 #include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
 #include "autopas/tuning/tuningStrategy/PredictiveTuning.h"
 #include "autopas/tuning/tuningStrategy/RandomSearch.h"
+#include "autopas/tuning/tuningStrategy/ReinforcementLearning.h"
 #include "autopas/tuning/tuningStrategy/SlowConfigFilter.h"
 #include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
@@ -98,6 +100,17 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
       tuningStrategy =
           std::make_unique<PredictiveTuning>(info.relativeOptimumRange, info.maxTuningPhasesWithoutTest,
                                              info.minNumberOfEvidence, info.extrapolationMethodOption, outputSuffix);
+      break;
+    }
+
+    case TuningStrategyOption::reinforcementLearning: {
+      tuningStrategy = std::make_unique<ReinforcementLearning>(searchSpace, info.learningRate, info.discountFactor);
+      break;
+    }
+
+    case TuningStrategyOption::deepReinforcementLearning: {
+      tuningStrategy =
+          std::make_unique<DeepReinforcementLearning>(info.doReinforcementUpdates, info.numExplorationSamples);
       break;
     }
 

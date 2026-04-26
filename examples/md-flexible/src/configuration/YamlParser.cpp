@@ -458,6 +458,26 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one acquisition function option!"));
 
         config.acquisitionFunctionOption.value = *parsedOptions.begin();
+      } else if (key == config.learningRate.name) {
+        expected = "Floating-point Value between 0 and 1";
+        description = config.learningRate.description;
+
+        config.learningRate.value = node[key].as<double>();
+      } else if (key == config.discountFactor.name) {
+        expected = "Floating-point Value between 0 and 1";
+        description = config.discountFactor.description;
+
+        config.discountFactor.value = node[key].as<double>();
+      } else if (key == config.numExplorationSamples.name) {
+        expected = "Integer Value";
+        description = config.numExplorationSamples.description;
+
+        config.numExplorationSamples.value = node[key].as<int>();
+      } else if (key == config.doReinforcementUpdates.name) {
+        expected = "Boolean Value";
+        description = config.doReinforcementUpdates.description;
+
+        config.doReinforcementUpdates.value = node[key].as<bool>();
       } else if (key == config.logLevel.name) {
         expected = "Log level out of the possible values.";
         description = config.logLevel.description;
