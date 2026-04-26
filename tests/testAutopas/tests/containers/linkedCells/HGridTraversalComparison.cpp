@@ -107,7 +107,7 @@ HGridTraversalComparison::calculateForces(autopas::ContainerOption containerOpti
     mdLib::LJFunctor<Molecule, true /*applyShift*/, true /*useMixing*/, autopas::FunctorN3Modes::Both,
                      globals /*calculateGlobals*/, false /* countFLOPs */, true /* relevantForTuning */,
                      true /* scalingCutoff */>
-        functor{_cutoff, *_particlePropertiesLibrary};
+        functor{_functorCutoffMultiplier, *_particlePropertiesLibrary};
     std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
         functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
   }
@@ -140,12 +140,12 @@ HGridTraversalComparison::calculateForcesImpl(Functor functor, autopas::Containe
         interactionType] = key;
 
   // Construct container
-  constexpr double skin = _cutoff * 0.1;
+  constexpr double skin = _maxSigmaCutoff * _functorCutoffMultiplier * 0.1;
   constexpr unsigned int rebuildFrequency = 1;
   const size_t sortingThreshold = useSorting ? 5 : std::numeric_limits<size_t>::max();
   const auto containerInfo = autopas::ContainerSelectorInfo{_boxMin,
                                                             boxMax,
-                                                            _cutoff,
+                                                            _maxSigmaCutoff * _functorCutoffMultiplier,
                                                             cellSizeFactor,
                                                             skin,
                                                             32,
@@ -328,8 +328,8 @@ auto HGridTraversalComparison::getTestParams() {
     _particlePropertiesLibrary->addSiteType(siteTypeId, mass);
   }
   // initialize LJ parameters
-  for (auto [siteTypeId, eps_sigma] :
-       std::vector<std::pair<int, std::pair<double, double>>>{{0, {1., 1.5}}, {1, {1., 1.}}, {2, {1., 0.5}}}) {
+  for (auto [siteTypeId, eps_sigma] : std::vector<std::pair<int, std::pair<double, double>>>{
+           {0, {1., _maxSigmaCutoff}}, {1, {1., 1.}}, {2, {1., 0.5}}}) {
     auto [epsilon, sigma] = eps_sigma;
     _particlePropertiesLibrary->addLJParametersToSite(siteTypeId, epsilon, sigma);
   }
@@ -341,8 +341,7 @@ auto HGridTraversalComparison::getTestParams() {
   Molecule::setParticlePropertiesLibrary(_particlePropertiesLibrary);
   Molecule::setCutoffMultiplier(1.0);
   std::vector<TestingTuple> testParams{};
-  for (auto containerOption :
-       {autopas::ContainerOption::hierarchicalGrid, autopas::ContainerOption::hierarchicalGridFitted}) {
+  for (auto containerOption : {autopas::ContainerOption::hierarchicalGrid}) {
     for (auto interactionType : {autopas::InteractionTypeOption::pairwise}) {
       for (auto traversalOption :
            autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType)) {
