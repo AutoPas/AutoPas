@@ -271,9 +271,9 @@ class LJFunctorHWY
       return;
     }
     if (newton3) {
-      SoAFunctorPairSortedPruneImpl<true>(soa1, soa2, sortingDirection, sortingCutoff);
+      SoAFunctorPairSortedNoPruneImpl<true>(soa1, soa2, sortingDirection, sortingCutoff);
     } else {
-      SoAFunctorPairSortedPruneImpl<false>(soa1, soa2, sortingDirection, sortingCutoff);
+      SoAFunctorPairSortedNoPruneImpl<false>(soa1, soa2, sortingDirection, sortingCutoff);
     }
   }
 
@@ -744,7 +744,7 @@ class LJFunctorHWY
    * @param restI In the remainder case, this is the number of elements left in the SoA.
    * @param jVecEnd The end index for the inner "j" loop.
    */
-  template <bool reversed, bool newton3, bool remainderI, VectorizationPattern vecPattern>
+  template <bool reversed, bool newton3, bool remainderI, bool sorted, VectorizationPattern vecPattern>
   inline void handleILoopBody(
       const size_t i, const double *const __restrict xPtr1, const double *const __restrict yPtr1,
       const double *const __restrict zPtr1, const autopas::OwnershipState *const __restrict ownedStatePtr1,
@@ -753,7 +753,8 @@ class LJFunctorHWY
       double *const __restrict fyPtr1, double *const __restrict fzPtr1, double *const __restrict fxPtr2,
       double *const __restrict fyPtr2, double *const __restrict fzPtr2, const size_t *const __restrict typeIDptr1,
       const size_t *const __restrict typeIDptr2, VectorDouble &virialSumX, VectorDouble &virialSumY,
-      VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t jVecEnd) {
+      VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t jVecEnd,
+      const double projVal1_i = 0.0, const double *const projVals2 = nullptr, const double sortingCutoff = 0.0) {
     VectorDouble fxAcc = highway::Zero(tag_double);
     VectorDouble fyAcc = highway::Zero(tag_double);
     VectorDouble fzAcc = highway::Zero(tag_double);
@@ -766,24 +767,31 @@ class LJFunctorHWY
 
     fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI,
                                                      restI);
-    // Note: for 2x0.5vec pattern might need to switch into 1vec if one of them is finished -> ask if feasible/allowed
-    // Could also just refill with the next Particle
+
+    // Returns false (i.e. continue) when j is within the 1D projection cutoff window.
+    // Eliminated at compile time when sorted=false.
+    auto withinProjCutoff = [&](std::ptrdiff_t j) -> bool {
+      if constexpr (sorted) {
+        return projVals2[j] - projVal1_i <= sortingCutoff;
+      }
+      return true;
+    };
+
     std::ptrdiff_t j = 0;
-    for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j); incrementSecondLoop<vecPattern>(j)) {
+    for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j) && withinProjCutoff(j);
+         incrementSecondLoop<vecPattern>(j)) {
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
           fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j], fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
           uPotSum, restI, 0);
     }
-
     const int restJ = obtainJLoopRemainderLength<vecPattern>(jVecEnd);
-    if (restJ > 0) {
+    if (restJ > 0 && withinProjCutoff(j)) {
       SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
-          i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
-          fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j], fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
-          uPotSum, restI, restJ);
+          i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2,
+          fxPtr2, fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j], fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
+          virialSumZ, uPotSum, restI, restJ);
     }
-
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
   }
 
@@ -821,7 +829,7 @@ class LJFunctorHWY
       static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
 
-      handleILoopBody<true, true, false, VectorizationPattern::p1xVec>(
+      handleILoopBody<true, true, false, false, VectorizationPattern::p1xVec>(
           i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr,
           typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, i);
     }
@@ -871,7 +879,7 @@ class LJFunctorHWY
 
     std::ptrdiff_t i = 0;
     for (; checkFirstLoopCondition<false, vecPattern>(i, soa1.size()); incrementFirstLoop<vecPattern>(i)) {
-      handleILoopBody<false, newton3, false, vecPattern>(
+      handleILoopBody<false, newton3, false, false, vecPattern>(
           i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr,
           fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, soa2.size());
     }
@@ -880,7 +888,7 @@ class LJFunctorHWY
       // Rest I can't occur in 1xVec case
       const int restI = obtainILoopRemainderLength<false>(i, soa1.size());
       if (restI > 0) {
-        handleILoopBody<false, newton3, true, vecPattern>(
+        handleILoopBody<false, newton3, true, false, vecPattern>(
             i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr,
             fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr, virialSumX, virialSumY, virialSumZ, uPotSum, restI, soa2.size());
       }
@@ -902,13 +910,14 @@ class LJFunctorHWY
    *
    * @todo: Think about other vectorization patterns
    * @todo: Or sort in place and sort back -> Improve scatter back
-   * @todo: skip preprune, handle in iloop so no extra for loop
    * @todo: Merge this into SoAFunctorPair if possible -> easier with the previous todo
    * Versioning in Thesis.
    */
   template <bool newton3>
-  inline void SoAFunctorPairSortedPruneImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                            const std::array<double, 3> &sortingDirection, const double sortingCutoff) {
+  inline void SoAFunctorPairSortedNoPruneImpl(autopas::SoAView<SoAArraysType> soa1,
+                                              autopas::SoAView<SoAArraysType> soa2,
+                                              const std::array<double, 3> &sortingDirection,
+                                              const double sortingCutoff) {
     const size_t n1 = soa1.size();
     const size_t n2 = soa2.size();
 
@@ -984,16 +993,10 @@ class LJFunctorHWY
       typeID2s[j] = typeID2PtrOrig[origIdx];
     }
 
-    // Step 3: compute max_index[i] (exclusive upper bound on inner-loop j). Single-pass since
-    // max_index[] is monotonically non-decreasing in i when both arrays are sorted ascending.
-    std::vector<size_t> maxIndex(n1, 0);
-    size_t jUpper = 0;
-    for (size_t i = 0; i < n1; ++i) {
-      const double upperLimit = projIdx1[i].first + sortingCutoff;
-      while (jUpper < n2 and projIdx2[jUpper].first <= upperLimit) {
-        ++jUpper;
-      }
-      maxIndex[i] = jUpper;
+    // Step 3: extract sorted projection values for the in-loop upper-bound check.
+    std::vector<double> projVals2(n2);
+    for (size_t j = 0; j < n2; ++j) {
+      projVals2[j] = projIdx2[j].first;
     }
 
     // Step 4: vectorized interaction loop (p1xVec: 1 i-particle vs _vecLengthDouble j-particles).
@@ -1009,18 +1012,15 @@ class LJFunctorHWY
     double *const __restrict fz2Kernel = newton3 ? fz2s.data() : fz1s.data();
 
     for (size_t i = 0; i < n1; ++i) {
-      const size_t jVecEnd = maxIndex[i];
-      if (jVecEnd == 0) {
-        continue;
-      }
       if (ownership1s[i] == autopas::OwnershipState::dummy) {
         continue;
       }
 
-      handleILoopBody<false, newton3, false, VectorizationPattern::p1xVec>(
+      handleILoopBody<false, newton3, false, true, VectorizationPattern::p1xVec>(
           i, x1s.data(), y1s.data(), z1s.data(), ownership1s.data(), x2s.data(), y2s.data(), z2s.data(),
           ownership2s.data(), fx1s.data(), fy1s.data(), fz1s.data(), fx2Kernel, fy2Kernel, fz2Kernel, typeID1s.data(),
-          typeID2s.data(), virialSumX, virialSumY, virialSumZ, uPotSum, 0, jVecEnd);
+          typeID2s.data(), virialSumX, virialSumY, virialSumZ, uPotSum, 0, n2,
+          projIdx1[i].first, projVals2.data(), sortingCutoff);
     }
 
     // Step 5: scatter accumulated forces back to the original SoA order.

@@ -28,3 +28,5 @@ venv/
 *.csv
 *.out
 *.log
+
+data
