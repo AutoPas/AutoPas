@@ -210,7 +210,7 @@ inline void HGFitC08Traversal<ParticleCell_T, Functor_T>::intraLevelOnlyTraversa
   this->colorTraversal(
       [&](unsigned long x, unsigned long y, unsigned long z) {
         const auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-        cellHandler.processBaseCell(*this->_cells, baseIndex);
+        cellHandler.processBaseCell(this->_levels->at(this->_intraLevel)->getCells(), baseIndex);
       },
       end, stride, offset);
 }
