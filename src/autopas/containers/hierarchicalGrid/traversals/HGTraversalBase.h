@@ -69,10 +69,6 @@ class HGTraversalBase : public TraversalInterface {
    * Particles can do particle to level specific instead of level to level specific in the future.
    */
   const double distCheckRatio = 0.2;
-  /**
-   * Traversals used for intra-level interactions for each level.
-   */
-  std::vector<std::unique_ptr<TraversalInterface>> _traversals;
 
   /**
    * Type alias for cell blocks used by hierarchical levels.
@@ -192,17 +188,6 @@ class HGTraversalBase : public TraversalInterface {
     const TraversalSelectorInfo ret{temp.cellsPerDim, this->getInteractionLength(level, level), temp.cellLength,
                                     temp.clusterSize};
     return ret;
-  }
-
-  /**
-   * Compute intra-level interactions for all levels.
-   */
-  void computeIntraLevelInteractions() {
-    for (size_t level = 0; level < this->_numLevels; level++) {
-      // We do not simply call computeInteractions() here as we want to store SoA after inter-level traversals are
-      // computed. They will be loaded in HGTraversalBase::endTraversal().
-      this->_traversals[level]->traverseParticles();
-    }
   }
 
   // HG traversals only make sense if there are multiple levels, otherwise just use LinkedCells

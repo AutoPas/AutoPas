@@ -135,6 +135,8 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
     }
   }
 
+  [[nodiscard]] bool isApplicable() const override { return true; }
+
   [[nodiscard]] TraversalOption getTraversalType() const override {
     if (_blockMultiplier == 4) {
       return TraversalOption::hgrid_block4;
@@ -173,6 +175,10 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
    * Functor instance used by this traversal.
    */
   Functor_T &_functor;
+  /**
+   * Traversals used for intra-level interactions for each level.
+   */
+  std::vector<std::unique_ptr<TraversalInterface>> _traversals;
 
   /**
    * Generate a new Traversal from the given data, needed as each level of HGrid has different cell sizes
@@ -192,7 +198,16 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public HGTraver
         this->_dataLayout, this->_useNewton3, cellBlocks, interactionLengthsSquared, 0, haloRegionWidth);
   }
 
-  [[nodiscard]] bool isApplicable() const override { return true; }
+  /**
+   * Compute intra-level interactions for all levels.
+   */
+  void computeIntraLevelInteractions() {
+    for (size_t level = 0; level < this->_numLevels; level++) {
+      // We do not simply call computeInteractions() here as we want to store SoA after inter-level traversals are
+      // computed. They will be loaded in HGTraversalBase::endTraversal().
+      this->_traversals[level]->traverseParticles();
+    }
+  }
 
   /**
    * Finds the best group size for a given target number of blocks per color.
