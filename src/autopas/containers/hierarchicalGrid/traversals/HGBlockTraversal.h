@@ -152,10 +152,9 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public Traversa
   void initTraversal() override {
     this->_traversals.resize(this->_numLevels);
     for (size_t level = 0; level < this->_numLevels; ++level) {
-      auto traversal = std::make_unique<HGFitC08Traversal<ParticleCell_T, Functor_T>>(
+      this->_traversals[level] = std::make_unique<HGFitC08Traversal<ParticleCell_T, Functor_T>>(
           &_functor, this->_numLevels, this->_dataLayout, this->_useNewton3, level);
-      traversal->setLevels(this->_levels, this->_maxCutoffPerLevel, this->_skin);
-      this->_traversals[level] = traversal;
+      this->_traversals[level]->setLevels(this->_levels, this->_maxCutoffPerLevel, this->_skin);
     }
     // HGFitC08Traversal is an Hgrid traversal which initializes the data layout for all levels
     this->_traversals[0]->initTraversal();
