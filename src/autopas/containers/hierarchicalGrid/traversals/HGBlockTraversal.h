@@ -177,7 +177,7 @@ class HGBlockTraversal : public HGTraversalBase<ParticleCell_T>, public Traversa
   /**
    * Traversals used for intra-level interactions for each level.
    */
-  std::vector<std::unique_ptr<HGFitC08Traversal>> _traversals;
+  std::vector<std::unique_ptr<HGFitC08Traversal<ParticleCell_T, Functor_T>>> _traversals;
 
   /**
    * Compute intra-level interactions for all levels.
