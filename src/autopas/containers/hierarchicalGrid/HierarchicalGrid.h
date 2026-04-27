@@ -178,26 +178,26 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
 
     // generate LinkedCells for each level with different cutoffs
     for (size_t i = _numLevels - 1; i-- > 0;) {
+      numLowerCellsPerHigher = std::numeric_limits<size_t>::max();
       // increase size of lower level cells to fit the bigger level cell, if it does not fit, remove that level
       auto cellLength = _levels[i + 1]->getCellBlock().getCellLength();
       for (size_t d = 0; d < 3; ++d) {
+        // take the minimum number, because we want no direction to get smaller than interaction length*cellSizeFactor
         numLowerCellsPerHigher =
-            static_cast<size_t>(std::floor(cellLength[d] / (maxInterLenPerLevel[i] * _cellSizeFactor)));
-        // sort out levels too close to be fitted
-        if (numLowerCellsPerHigher < 2) {
-          _maxCutoffPerLevel.erase(_maxCutoffPerLevel.begin() + i);
-          maxInterLenPerLevel.erase(maxInterLenPerLevel.begin() + i);
-          _levels.erase(_levels.begin() + i);
-          _numLevels--;
-          break;
-        }
-        // update cellsPerDimension for the next lower level
+            std::min(numLowerCellsPerHigher,
+                     static_cast<size_t>(std::floor(cellLength[d] / (maxInterLenPerLevel[i] * _cellSizeFactor))));
         cellsPerDimension[d] = numLowerCellsPerHigher * cellsPerDimensionNextHighest[d];
       }
-      // if level was removed, create no linked cells and continue with next level
+      // sort out levels too close to be fitted, create no linked cells and continue with next level
       if (numLowerCellsPerHigher < 2) {
+        _maxCutoffPerLevel.erase(_maxCutoffPerLevel.begin() + i);
+        maxInterLenPerLevel.erase(maxInterLenPerLevel.begin() + i);
+        _levels.erase(_levels.begin() + i);
+        _numLevels--;
         continue;
       }
+      // update cellsPerDimension for the next lower level
+      cellsPerDimension = cellsPerDimensionNextHighest * numLowerCellsPerHigher;
       cellsPerDimensionNextHighest = cellsPerDimension;
       // We use an artificially large cutoff, to make sure the halo region in length units is exactly _haloRegionWidth
       // for all levels. Since the halo region width in CellBlock3D is calculated with a ceiling, we decrement

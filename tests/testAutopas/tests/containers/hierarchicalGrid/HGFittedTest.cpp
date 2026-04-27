@@ -78,29 +78,22 @@ std::array<T, N> parseArray(const std::string &text) {
 
 ParsedLevel parseLevel(const std::string &cellLine, const std::string &interactionLine, const std::string &haloLine) {
   const std::string cellLengthPrefix{"CellLength: "};
-  const std::string interactionMarker{" InteractionLength: "};
   const std::string ciplPrefix{"CellsPerInteractionLength: "};
   const std::string numCellsMarker{" NumCells: "};
   const std::string haloPrefix{"CellsPerDimensionWithHalo: "};
 
-  const auto interactionPosition = cellLine.find(interactionMarker);
-  if (cellLine.rfind(cellLengthPrefix, 0) != 0 || interactionPosition == std::string::npos) {
+  if (cellLine.rfind(cellLengthPrefix, 0) != 0) {
     throw std::runtime_error("Unexpected cell length line: " + cellLine);
   }
 
   ParsedLevel level{};
-  level.cellLength = parseArray<double, 3>(
-      extractBetweenMarkers(cellLine, cellLengthPrefix, interactionMarker));
-  const double interactionLength = std::stod(cellLine.substr(interactionPosition + interactionMarker.size()));
-  (void)interactionLength;
+  level.cellLength = parseArray<double, 3>(extractAfterPrefix(cellLine, cellLengthPrefix));
 
-  const auto numCellsPosition = interactionLine.find(numCellsMarker);
-  if (interactionLine.rfind(ciplPrefix, 0) != 0 || numCellsPosition == std::string::npos) {
+  if (interactionLine.rfind(ciplPrefix, 0) != 0 || interactionLine.find(numCellsMarker) == std::string::npos) {
     throw std::runtime_error("Unexpected cells-per-interaction-length line: " + interactionLine);
   }
 
-  level.cellsPerInteractionLength =
-      std::stoul(extractBetweenMarkers(interactionLine, ciplPrefix, numCellsMarker));
+  level.cellsPerInteractionLength = std::stoul(extractBetweenMarkers(interactionLine, ciplPrefix, numCellsMarker));
 
   if (haloLine.rfind(haloPrefix, 0) != 0) {
     throw std::runtime_error("Unexpected halo line: " + haloLine);
@@ -116,10 +109,7 @@ std::array<double, 3> haloWidth(const ParsedLevel &level) {
           level.cellLength[2] * static_cast<double>(level.cellsPerInteractionLength)};
 }
 
-}  // namespace
-
-void HGFittedTest::expectFittedHierarchy(const std::string &hierarchyDump, const std::array<double, 3> &boxMin,
-                                         const std::array<double, 3> &boxMax) {
+std::vector<ParsedLevel> parseLevels(const std::string &hierarchyDump) {
   std::istringstream stream(hierarchyDump);
   std::string line;
   std::vector<ParsedLevel> levels;
@@ -140,6 +130,18 @@ void HGFittedTest::expectFittedHierarchy(const std::string &hierarchyDump, const
     levels.push_back(parseLevel(cellLine, interactionLine, haloLine));
   }
 
+  return levels;
+}
+
+std::size_t cellsPerDimensionWithoutHalo(const ParsedLevel &level, std::size_t dim) {
+  return level.cellsPerDimensionWithHalo[dim] - 2 * level.cellsPerInteractionLength;
+}
+
+}  // namespace
+
+void HGFittedTest::expectFittedHierarchy(const std::string &hierarchyDump, const std::array<double, 3> &boxMin,
+                                         const std::array<double, 3> &boxMax) {
+  const auto levels = parseLevels(hierarchyDump);
   ASSERT_GE(levels.size(), 2u) << "Expected at least two fitted hierarchy levels.";
 
   const std::array<double, 3> boxLength{boxMax[0] - boxMin[0], boxMax[1] - boxMin[1], boxMax[2] - boxMin[2]};
@@ -152,7 +154,7 @@ void HGFittedTest::expectFittedHierarchy(const std::string &hierarchyDump, const
     const auto width = haloWidth(level);
 
     for (std::size_t dim = 0; dim < 3; ++dim) {
-      const auto cellsWithoutHalo = level.cellsPerDimensionWithHalo[dim] - 2 * level.cellsPerInteractionLength;
+      const auto cellsWithoutHalo = cellsPerDimensionWithoutHalo(level, dim);
       ASSERT_GT(cellsWithoutHalo, 0u);
       EXPECT_NEAR(level.cellLength[dim] * static_cast<double>(cellsWithoutHalo), boxLength[dim], tolerance);
       EXPECT_EQ(level.cellsPerDimensionWithHalo[dim], cellsWithoutHalo + 2 * level.cellsPerInteractionLength);
@@ -170,19 +172,22 @@ void HGFittedTest::expectFittedHierarchy(const std::string &hierarchyDump, const
     const auto coarserHaloWidth = haloWidth(coarser);
 
     for (std::size_t dim = 0; dim < 3; ++dim) {
-      const auto finerCellsWithoutHalo = finer.cellsPerDimensionWithHalo[dim] - 2 * finer.cellsPerInteractionLength;
-      const auto coarserCellsWithoutHalo = coarser.cellsPerDimensionWithHalo[dim] - 2 * coarser.cellsPerInteractionLength;
+      const auto finerCellsWithoutHalo = cellsPerDimensionWithoutHalo(finer, dim);
+      const auto coarserCellsWithoutHalo = cellsPerDimensionWithoutHalo(coarser, dim);
 
       ASSERT_GT(coarserCellsWithoutHalo, 0u);
       EXPECT_EQ(finerCellsWithoutHalo % coarserCellsWithoutHalo, 0u)
           << "The refined grid does not fit an integer number of times into the coarser grid in dimension " << dim;
+      EXPECT_EQ(finerCellsWithoutHalo * coarser.cellsPerInteractionLength,
+                coarserCellsWithoutHalo * finer.cellsPerInteractionLength)
+          << "The halo thickness ratio does not match the grid ratio in dimension " << dim;
       EXPECT_NEAR(finerHaloWidth[dim], coarserHaloWidth[dim], tolerance)
           << "The halo thickness differs between adjacent levels in dimension " << dim;
     }
   }
 }
 
-TEST_F(HGFittedTest, HierarchyLevelsAndHaloRegionsFitTogether) {
+TEST_F(HGFittedTest, HierarchyLevelsFitIntoNextOneExactly) {
   struct TestCase {
     std::array<double, 3> boxMin;
     std::array<double, 3> boxMax;
@@ -193,20 +198,82 @@ TEST_F(HGFittedTest, HierarchyLevelsAndHaloRegionsFitTogether) {
 
   const std::vector<TestCase> testCases{
       {{0., 0., 0.}, {60., 60., 60.}, {0.5, 1.0, 2.0, 4.0}, 0.25, 1.0},
-      {{-3., 2., 5.}, {33., 50., 65.}, {0.75, 1.5, 3.0}, 0.5, 1.0},
-      {{1., 2., 3.}, {25., 32., 41.}, {1.0, 1.4}, 0.1, 1.0},
+      {{-3., 2., 5.}, {33., 50., 65.}, {0.75, 1.5, 3.0}, 0.5, 2.0},
+      {{1., 2., 3.}, {25., 32., 41.}, {1.0, 1.4}, 0.1, 0.5},
   };
 
   for (std::size_t caseIndex = 0; caseIndex < testCases.size(); ++caseIndex) {
     SCOPED_TRACE(::testing::Message() << "case " << caseIndex);
 
     const auto &testCase = testCases[caseIndex];
-    autopas::HierarchicalGrid<ParticleFP64> container(testCase.boxMin, testCase.boxMax, testCase.cutoffs,
-                                                      testCase.skin, testCase.cellSizeFactor,
-                                                      /*sortingThreshold=*/8,
-                                                      autopas::LoadEstimatorOption::squaredParticlesPerCell,
-                                                      /*fittedGrids=*/true);
+    autopas::HierarchicalGrid<ParticleFP64> container(
+        testCase.boxMin, testCase.boxMax, testCase.cutoffs, testCase.skin, testCase.cellSizeFactor,
+        /*sortingThreshold=*/8, autopas::LoadEstimatorOption::squaredParticlesPerCell,
+        /*fittedGrids=*/true);
 
-    expectFittedHierarchy(container.toString(), testCase.boxMin, testCase.boxMax);
+    const auto levels = parseLevels(container.toString());
+    ASSERT_GE(levels.size(), 2u) << "Expected at least two fitted hierarchy levels.";
+
+    for (std::size_t levelIndex = 0; levelIndex + 1 < levels.size(); ++levelIndex) {
+      SCOPED_TRACE(::testing::Message() << "levels " << levelIndex << " and " << levelIndex + 1);
+
+      const auto &finer = levels[levelIndex];
+      const auto &coarser = levels[levelIndex + 1];
+
+      for (std::size_t dim = 0; dim < 3; ++dim) {
+        const auto finerCellsWithoutHalo = cellsPerDimensionWithoutHalo(finer, dim);
+        const auto coarserCellsWithoutHalo = cellsPerDimensionWithoutHalo(coarser, dim);
+
+        ASSERT_GT(coarserCellsWithoutHalo, 0u);
+        EXPECT_EQ(finerCellsWithoutHalo % coarserCellsWithoutHalo, 0u)
+            << "The refined grid does not fit an integer number of times into the coarser grid in dimension " << dim;
+      }
+    }
+  }
+}
+
+TEST_F(HGFittedTest, HaloWidthsAlignByMatchingRatios) {
+  struct TestCase {
+    std::array<double, 3> boxMin;
+    std::array<double, 3> boxMax;
+    std::vector<double> cutoffs;
+    double skin;
+    double cellSizeFactor;
+  };
+
+  const std::vector<TestCase> testCases{
+      {{0., 0., 0.}, {60., 60., 60.}, {0.5, 1.0, 2.0, 4.0}, 0.25, 1.0},
+      {{-3., 2., 5.}, {33., 50., 65.}, {0.75, 1.5, 3.0}, 0.5, 2.0},
+      {{1., 2., 3.}, {25., 32., 41.}, {1.0, 1.4}, 0.1, 0.5},
+  };
+
+  for (std::size_t caseIndex = 0; caseIndex < testCases.size(); ++caseIndex) {
+    SCOPED_TRACE(::testing::Message() << "case " << caseIndex);
+
+    const auto &testCase = testCases[caseIndex];
+    autopas::HierarchicalGrid<ParticleFP64> container(
+        testCase.boxMin, testCase.boxMax, testCase.cutoffs, testCase.skin, testCase.cellSizeFactor,
+        /*sortingThreshold=*/8, autopas::LoadEstimatorOption::squaredParticlesPerCell,
+        /*fittedGrids=*/true);
+
+    const auto levels = parseLevels(container.toString());
+    ASSERT_GE(levels.size(), 2u) << "Expected at least two fitted hierarchy levels.";
+
+    for (std::size_t levelIndex = 0; levelIndex + 1 < levels.size(); ++levelIndex) {
+      SCOPED_TRACE(::testing::Message() << "levels " << levelIndex << " and " << levelIndex + 1);
+
+      const auto &finer = levels[levelIndex];
+      const auto &coarser = levels[levelIndex + 1];
+
+      for (std::size_t dim = 0; dim < 3; ++dim) {
+        const auto finerCellsWithoutHalo = cellsPerDimensionWithoutHalo(finer, dim);
+        const auto coarserCellsWithoutHalo = cellsPerDimensionWithoutHalo(coarser, dim);
+
+        ASSERT_GT(coarserCellsWithoutHalo, 0u);
+        EXPECT_EQ(finer.cellsPerInteractionLength * coarserCellsWithoutHalo,
+                  coarser.cellsPerInteractionLength * finerCellsWithoutHalo)
+            << "The halo-width ratio does not match the grid ratio in dimension " << dim;
+      }
+    }
   }
 }
