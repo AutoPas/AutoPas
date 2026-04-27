@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <iostream>
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleContainerInterface.h"
@@ -203,13 +204,13 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       // for all levels. Since the halo region width in CellBlock3D is calculated with a ceiling, we decrement
       // the value by about 0.1 if a cell width to make sure we get the wanted value in the end.
       const double decrementDelta = 0.01 * maxCellLength * maxInterLenPerLevel[0] / maxInterLenPerLevel.back();
-      AutoPasLog(DEBUG,
-             "Creating fitted grid level {} with cutoff {:.6g}, cell size factor {:.6g} and cells per dimension "
-             "{}, {}, {} (num lower cells per higher cell: {}, actual interaction length: {:.6g}, "
-             "halo region width: {:.6g}, decrement delta: {:.6g}).",
-             i, _maxCutoffPerLevel[i], _cellSizeFactor, cellsPerDimension[0], cellsPerDimension[1],
-             cellsPerDimension[2], numLowerCellsPerHigher, maxInterLenPerLevel[i], haloRegionWidth,
-             decrementDelta);
+      std::cout << "Creating fitted grid level " << i << " with cutoff " << _maxCutoffPerLevel[i]
+            << ", cell size factor " << _cellSizeFactor << " and cells per dimension " << cellsPerDimension[0]
+            << ", " << cellsPerDimension[1] << ", " << cellsPerDimension[2]
+            << " (num lower cells per higher cell: " << numLowerCellsPerHigher
+            << ", actual interaction length: " << maxInterLenPerLevel[i]
+            << ", halo region width: " << haloRegionWidth << ", decrement delta: " << decrementDelta
+            << ")." << std::endl;
       const double haloRegionCutoff = haloRegionWidth - _skin - decrementDelta;
       _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
           _boxMin, _boxMax, haloRegionCutoff, _skin, cellsPerDimension, sortingThreshold, loadEstimator);
