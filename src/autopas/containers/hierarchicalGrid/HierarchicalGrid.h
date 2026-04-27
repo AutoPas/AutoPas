@@ -190,21 +190,9 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
         continue;
       }
       cellsPerDimensionNextHighest = cellsPerDimension;
-      // @todo: This case is currently dead code and can be removed, I left it for now, so there is some trace of this
-      // existing, in case we might want non-fitted Hgrids using the HGC08 traversal in the future.
-      // Case we dont want to fit the grids perfecty, but just want to make sure they are not too close together, to
-      // keep stride of 3
-      if (!_fittedGrids) {
-        double ratio = maxInterLenPerLevel[i] / maxInterLenPerLevel.back();
-        // again the hacky way to get the proper halo size (see createGrids for explanation)
-        _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(),
-                                                                        _skin, _cellSizeFactor * ratio,
-                                                                        sortingThreshold, loadEstimator);
-      } else {
-        // again the hacky way to get the proper halo size (see createGrids for explanation)
-        _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
-            _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, cellsPerDimension, sortingThreshold, loadEstimator);
-      }
+      // again the hacky way to get the proper halo size (see createGrids for explanation)
+      _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
+          _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, cellsPerDimension, sortingThreshold, loadEstimator);
     }
     _levels.shrink_to_fit();
     _maxCutoffPerLevel.shrink_to_fit();

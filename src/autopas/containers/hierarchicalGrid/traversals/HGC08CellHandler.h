@@ -20,7 +20,10 @@ namespace autopas {
  *
  * The base step processBaseCell() computes one set of pairwise interactions
  * between two cells for each spatial direction based on the baseIndex. It also handles top-down the inter-level
- * interactions in the same spatial region.
+ * interactions in the same spatial region. It only works for hierarchical grids with fitted grids.
+ *
+ * A version working for non-fitted grids was implemented, but deemed not worth it. It can be found at
+ * https://github.com/AutoPas/AutoPas/pull/1136
  *
  * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor_T The functor that defines the interaction of two particles.
@@ -41,21 +44,18 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
    * @param interactionLengthsSquared The squared interaction lengths from each lower level to upperLevel, ordered
    * from lowest to highest level.
    * @param upperLevel The upper level of the hierarchical grid
-   * @param fittedGrids Whether the grids of the hierarchical grid are fitted to each other.
    * @todo Check if passing the cutoff instead of the interaction length to the cell functor works.
    */
   explicit HGC08CellHandler(PairwiseFunctor_T *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                             double interactionLength, const std::array<double, 3> &cellLength,
                             const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3,
                             const std::vector<internal::CellBlock3D<ParticleCell_T> *> &cellBlocks,
-                            const std::vector<double> &interactionLengthsSquared, const size_t upperLevel,
-                            bool fittedGrids = true)
+                            const std::vector<double> &interactionLengthsSquared, const size_t upperLevel)
       : LCC08CellHandler<ParticleCell_T, PairwiseFunctor_T>(pairwiseFunctor, cellsPerDimension, interactionLength,
                                                             cellLength, overlap, dataLayout, useNewton3),
         _cellBlocks(cellBlocks),
         _interactionLengthsSquared(interactionLengthsSquared),
-        _upperLevel(upperLevel),
-        _fittedGrids(fittedGrids) {
+        _upperLevel(upperLevel) {
     using namespace autopas::utils::ArrayMath::literals;
     _shiftLength = _cellBlocks[0]->getCellLength() * 0.01;
   }
@@ -77,11 +77,6 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
    * Cell block type used by the hierarchical-grid levels.
    */
   using CellBlock = internal::CellBlock3D<ParticleCell_T>;
-
-  /**
-   * Indicates if the grids are fitted.
-   */
-  bool _fittedGrids;
   /**
    * The upper level of the hierarchical grid.
    */
@@ -110,6 +105,8 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
    * @param cellIndex2 The index of the second upper-level cell.
    */
   void decompose2AndProcessCells(ParticleCell_T &cell1, const size_t cellIndex1, const size_t cellIndex2);
+
+  friend class HGC08CellHandlerTest;
 };
 
 template <class ParticleCell_T, class PairwiseFunctor_T>
@@ -117,58 +114,18 @@ inline void HGC08CellHandler<ParticleCell_T, PairwiseFunctor_T>::decompose2AndPr
                                                                                            const size_t cellIndex1,
                                                                                            const size_t cellIndex2) {
   using namespace autopas::utils::ArrayMath::literals;
-
-  // get bounds of  cell2
+  // Get bounds of  cell2. Use shifted corners so exact boundary points do not spill into the neighboring cell.
   auto [lowCornerCell2, highCornerCell2] = _cellBlocks[_upperLevel]->getCellBoundingBox(cellIndex2);
+  highCornerCell2 = {highCornerCell2[0] - _shiftLength[0], highCornerCell2[1] - _shiftLength[1],
+                     highCornerCell2[2] - _shiftLength[2]};
 
-  if (_fittedGrids) {
-    // Use shifted corners so exact boundary points do not spill into the neighboring cell.
-    highCornerCell2 = {highCornerCell2[0] - _shiftLength[0], highCornerCell2[1] - _shiftLength[1],
-                       highCornerCell2[2] - _shiftLength[2]};
-
-    lowCornerCell2 = {lowCornerCell2[0] + _shiftLength[0], lowCornerCell2[1] + _shiftLength[1],
-                      lowCornerCell2[2] + _shiftLength[2]};
-  } else {
-    // Replace the upper corner with the lower corner of the diagonally higher corner. Otherwise, we might get ambiguous
-    // boundaries, because the high and next low corners don't always give the same result, because of floating point
-    // errors.
-    auto upperIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(
-        cellIndex2, _cellBlocks[_upperLevel]->getCellsPerDimensionWithHalo());
-    upperIndex3D = {upperIndex3D[0] + 1, upperIndex3D[1] + 1, upperIndex3D[2] + 1};
-    highCornerCell2 = _cellBlocks[_upperLevel]->getCellBoundingBox(upperIndex3D).first;
-  }
-
+  lowCornerCell2 = {lowCornerCell2[0] + _shiftLength[0], lowCornerCell2[1] + _shiftLength[1],
+                    lowCornerCell2[2] + _shiftLength[2]};
   const auto [lowCornerCell1, highCornerCell1] = _cellBlocks[_upperLevel]->getCellBoundingBox(cellIndex1);
-
   // decompose for every level below upperLevel
   for (size_t lowerLevel = 0; lowerLevel < _upperLevel; lowerLevel++) {
     auto startIndex3D = _cellBlocks[lowerLevel]->get3DIndexOfPosition(lowCornerCell2);
     auto stopIndex3D = _cellBlocks[lowerLevel]->get3DIndexOfPosition(highCornerCell2);
-
-    // if the grids are not fitted, we count lower cells only to the decomposition of an upper cell, if their center
-    // lies within, to prevent considering the same pair twice or not at all.
-    if (not _fittedGrids) {
-      // Calculate the cell centers of the lower-level start and stop index. If they lie outside of the bounds of the
-      // upper cell, we shift the start/stop index by one.
-      // This whole logic assumes that the cell length of the lower level is at most half of that of the upper level.
-      // That way, there is always at least one lower-level cell center within each higher-level cell, so
-      // stopIndex3D>startIndex3D and we never get underflows.
-      auto [startLow, startHigh] = _cellBlocks[lowerLevel]->getCellBoundingBox(startIndex3D);
-      std::array<double, 3> startCellCenter = (startLow + startHigh) * 0.5;
-      auto [stopLow, stopHigh] = _cellBlocks[lowerLevel]->getCellBoundingBox(stopIndex3D);
-      std::array<double, 3> stopCellCenter = (stopLow + stopHigh) * 0.5;
-      const auto &cellsPerDimensionWithHalo = _cellBlocks[lowerLevel]->getCellsPerDimensionWithHalo();
-      // This assumes that we never do this adjustment over periodic boundaries, which should be the case, as long as
-      // periodic boundaries are handeled via halo cells.
-      for (size_t d = 0; d < 3; ++d) {
-        if (startCellCenter[d] < lowCornerCell2[d] and startIndex3D[d] < cellsPerDimensionWithHalo[d] - 1) {
-          startIndex3D[d]++;
-        }
-        if (stopCellCenter[d] >= highCornerCell2[d] and stopIndex3D[d] > 0) {
-          stopIndex3D[d]--;
-        }
-      }
-    }
     for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
       for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
         for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
