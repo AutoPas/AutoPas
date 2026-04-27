@@ -165,11 +165,11 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     // calculate halo region width of the largest level, to make sure all levels have the same halo region width in
     // length units
     auto &largestLevelCellLength = _levels.back()->getCellBlock().getCellLength();
-    double maxCellLength = 0.0;
+    double maxCellLength = std::numeric_limits<double>::max();
     for (size_t d = 0; d < 3; ++d) {
-      maxCellLength = std::max(maxCellLength, largestLevelCellLength[d]);
+      maxCellLength = std::min(maxCellLength, largestLevelCellLength[d]);
     }
-    double haloRegionWidth = maxCellLength * _levels.back()->getCellBlock().getCellsPerInteractionLength();
+    const double haloRegionWidth = maxCellLength * static_cast<double>(_levels.back()->getCellBlock().getCellsPerInteractionLength());
 
     // Always fit cells per dimension to the value of the next highest level
     std::array<size_t, 3> cellsPerDimensionNextHighest =
