@@ -58,6 +58,16 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
         _upperLevel(upperLevel) {
     using namespace autopas::utils::ArrayMath::literals;
     _shiftLength = _cellBlocks[0]->getCellLength() * 0.01;
+    if (this->_upperLevel == 0) {
+      return;
+    }
+    _cellPairOffsetsPerLevel.resize(_upperLevel);
+    for (auto const &[offset1, offset2, r] : this->_cellPairOffsets) {
+      computePairwiseCellOffsetsHGC08(offset1, offset2);
+      if (offset1 != offset2) {
+        computePairwiseCellOffsetsHGC08(offset2, offset1);
+      }
+    }
   }
 
   /**
@@ -97,85 +107,85 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
   std::array<double, 3> _shiftLength;
 
   /**
-   * Decomposes the higher-level cell with index cellIndex2 into all lower-level cells inside of it. Then processes the
-   * interactions between cell1 and the lower-level cells. The lower-level cells are determined by the bounding box of
-   * cell2.
-   * @param cell1 The upper-level cell to interact with.
-   * @param cellIndex1 The index of the first upper-level cell.
-   * @param cellIndex2 The index of the second upper-level cell.
+   * Pair sets for inter-level interactions in processBaseCell().
+   * Values are: offset of upper-level cell, offset of lower-level cell, sorting direction.
    */
-  void decompose2AndProcessCells(ParticleCell_T &cell1, const size_t cellIndex1, const size_t cellIndex2);
+  std::vector<std::vector<LCC08CellHandlerUtility::OffsetPairSorting>> _cellPairOffsetsPerLevel{};
 
-  friend class HGC08CellHandlerTest;
-};
+  /**
+   * Compute the pairwise cell offsets for the inter-level interactions in processBaseCell() for one pair of upper-level
+   * cells. The lower-level cells are determined by the bounding box of the second upper-level cell.
+   * @param offset1 the offset of the first upper-level cell
+   * @param offset2 the offset of the second upper-level cell
+   */
+  void computePairwiseCellOffsetsHGC08(const unsigned long offset1, const unsigned long offset2) {
+    using namespace autopas::utils::ArrayMath::literals;
+    // Get bounds of  cell2. Use shifted corners so exact boundary points do not spill into the neighboring cell.
+    auto [lowCornerCell2, highCornerCell2] = _cellBlocks[_upperLevel]->getCellBoundingBox(offset2);
+    highCornerCell2 = {highCornerCell2[0] - _shiftLength[0], highCornerCell2[1] - _shiftLength[1],
+                       highCornerCell2[2] - _shiftLength[2]};
 
-template <class ParticleCell_T, class PairwiseFunctor_T>
-inline void HGC08CellHandler<ParticleCell_T, PairwiseFunctor_T>::decompose2AndProcessCells(ParticleCell_T &cell1,
-                                                                                           const size_t cellIndex1,
-                                                                                           const size_t cellIndex2) {
-  using namespace autopas::utils::ArrayMath::literals;
-  // Get bounds of  cell2. Use shifted corners so exact boundary points do not spill into the neighboring cell.
-  auto [lowCornerCell2, highCornerCell2] = _cellBlocks[_upperLevel]->getCellBoundingBox(cellIndex2);
-  highCornerCell2 = {highCornerCell2[0] - _shiftLength[0], highCornerCell2[1] - _shiftLength[1],
-                     highCornerCell2[2] - _shiftLength[2]};
-
-  lowCornerCell2 = {lowCornerCell2[0] + _shiftLength[0], lowCornerCell2[1] + _shiftLength[1],
-                    lowCornerCell2[2] + _shiftLength[2]};
-  const auto [lowCornerCell1, highCornerCell1] = _cellBlocks[_upperLevel]->getCellBoundingBox(cellIndex1);
-  // decompose for every level below upperLevel
-  for (size_t lowerLevel = 0; lowerLevel < _upperLevel; lowerLevel++) {
-    auto startIndex3D = _cellBlocks[lowerLevel]->get3DIndexOfPosition(lowCornerCell2);
-    auto stopIndex3D = _cellBlocks[lowerLevel]->get3DIndexOfPosition(highCornerCell2);
-    for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
-      for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
-        for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
-          // Check if the cells are within range of one another
-          auto [lowCornerLowerCell, highCornerLowerCell] = _cellBlocks[lowerLevel]->getCellBoundingBox({x, y, z});
-          using autopas::utils::ArrayMath::boxDistanceSquared;
-          if (boxDistanceSquared(lowCornerLowerCell, highCornerLowerCell, lowCornerCell1, highCornerCell1) >
-              _interactionLengthsSquared[lowerLevel]) {
-            continue;
+    lowCornerCell2 = {lowCornerCell2[0] + _shiftLength[0], lowCornerCell2[1] + _shiftLength[1],
+                      lowCornerCell2[2] + _shiftLength[2]};
+    const auto [lowCornerCell1, highCornerCell1] = _cellBlocks[_upperLevel]->getCellBoundingBox(offset1);
+    // decompose for every level below upperLevel
+    for (size_t lowerLevel = 0; lowerLevel < _upperLevel; lowerLevel++) {
+      auto startIndex3D = _cellBlocks[lowerLevel]->get3DIndexOfPosition(lowCornerCell2);
+      auto stopIndex3D = _cellBlocks[lowerLevel]->get3DIndexOfPosition(highCornerCell2);
+      for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
+        for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
+          for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
+            // Check if the cells are within range of one another
+            auto [lowCornerLowerCell, highCornerLowerCell] = _cellBlocks[lowerLevel]->getCellBoundingBox({x, y, z});
+            using autopas::utils::ArrayMath::boxDistanceSquared;
+            if (boxDistanceSquared(lowCornerLowerCell, highCornerLowerCell, lowCornerCell1, highCornerCell1) >
+                _interactionLengthsSquared[lowerLevel]) {
+              continue;
+            }
+            // @todo: Could potentially calculate and use sorting direction in the future
+            this->_cellPairOffsetsPerLevel[lowerLevel].emplace_back(
+                offset1,
+                utils::ThreeDimensionalMapping::threeToOneD(x, y, z,
+                                                            _cellBlocks[lowerLevel]->getCellsPerDimensionWithHalo()),
+                std::array<double, 3>{0., 0., 0.});
           }
-          // @todo: Could potentially calculate and use sorting direction in the future
-          auto &lowerCell = _cellBlocks[lowerLevel]->getCell({x, y, z});
-          this->_cellFunctor.processCellPair(cell1, lowerCell, {0., 0., 0.});
         }
       }
     }
   }
-}
+};
 
 template <class ParticleCell_T, class PairwiseFunctor_T>
-inline void HGC08CellHandler<ParticleCell_T, PairwiseFunctor_T>::processBaseCell(size_t baseIndex) {
+inline void HGC08CellHandler<ParticleCell_T, PairwiseFunctor_T>::processBaseCell(size_t baseIndexUpperLevel) {
+  using namespace autopas::utils::ArrayMath::literals;
+  // Intra Level
   for (auto const &[offset1, offset2, r] : this->_cellPairOffsets) {
-    const unsigned long cellIndex1 = baseIndex + offset1;
-    const unsigned long cellIndex2 = baseIndex + offset2;
+    const unsigned long cellIndex1 = baseIndexUpperLevel + offset1;
+    const unsigned long cellIndex2 = baseIndexUpperLevel + offset2;
 
     auto &cell1 = _cellBlocks[_upperLevel]->getCell(cellIndex1);
     auto &cell2 = _cellBlocks[_upperLevel]->getCell(cellIndex2);
-    // if both cells are halo cells, we can skip the interaction,
-    if (cell1.getPossibleParticleOwnerships() == OwnershipState::halo and
-        cell2.getPossibleParticleOwnerships() == OwnershipState::halo) {
-      continue;
-    }
 
-    // Intra Level
     if (cellIndex1 == cellIndex2) {
       this->_cellFunctor.processCell(cell1);
     } else {
       this->_cellFunctor.processCellPair(cell1, cell2, r);
     }
-    // Inter-level only top-down
-    if (_upperLevel == 0) {
-      continue;
-    }
+  }
+  auto [lowCornerBaseCell, highCornerBaseCell] = _cellBlocks[_upperLevel]->getCellBoundingBox(baseIndexUpperLevel);
+  lowCornerBaseCell = lowCornerBaseCell + _shiftLength;
 
-    // Inter Level
-    if (not cell1.isEmpty()) {
-      decompose2AndProcessCells(cell1, cellIndex1, cellIndex2);
-    }
-    if (cellIndex1 != cellIndex2 and not cell2.isEmpty()) {
-      decompose2AndProcessCells(cell2, cellIndex2, cellIndex1);
+  // Inter Level
+  // @todo does it ever make sense to make this parallel/is that possible? Maybe for less thread downtime at the end?
+  for (size_t lowerLevel = 0; lowerLevel < _cellPairOffsetsPerLevel.size(); lowerLevel++) {
+    const size_t baseIndexLowerLevel = _cellBlocks[lowerLevel]->get1DIndexOfPosition(lowCornerBaseCell);
+    for (auto const &[offset1, offset2, r] : this->_cellPairOffsetsPerLevel[lowerLevel]) {
+      const unsigned long cellIndexUpperLevel = baseIndexUpperLevel + offset1;
+      const unsigned long cellIndexLowerLevel = baseIndexLowerLevel + offset2;
+
+      auto &cell1 = _cellBlocks[_upperLevel]->getCell(cellIndexUpperLevel);
+      auto &cell2 = _cellBlocks[lowerLevel]->getCell(cellIndexLowerLevel);
+      this->_cellFunctor.processCellPair(cell1, cell2, r);
     }
   }
 }

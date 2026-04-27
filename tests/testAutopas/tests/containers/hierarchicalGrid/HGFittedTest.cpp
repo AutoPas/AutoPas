@@ -231,3 +231,49 @@ TEST_F(HGFittedTest, HierarchyLevelsFitIntoNextOneExactly) {
     }
   }
 }
+
+TEST_F(HGFittedTest, HaloWidthsAlignByMatchingRatios) {
+  struct TestCase {
+    std::array<double, 3> boxMin;
+    std::array<double, 3> boxMax;
+    std::vector<double> cutoffs;
+    double skin;
+    double cellSizeFactor;
+  };
+
+  const std::vector<TestCase> testCases{
+      {{0., 0., 0.}, {60., 60., 60.}, {0.5, 1.0, 2.0, 4.0}, 0.25, 1.0},
+      {{-3., 2., 5.}, {33., 50., 65.}, {0.75, 1.5, 3.0}, 0.5, 2.0},
+      {{1., 2., 3.}, {25., 32., 41.}, {1.0, 1.4}, 0.1, 0.5},
+  };
+
+  for (std::size_t caseIndex = 0; caseIndex < testCases.size(); ++caseIndex) {
+    SCOPED_TRACE(::testing::Message() << "case " << caseIndex);
+
+    const auto &testCase = testCases[caseIndex];
+    autopas::HierarchicalGrid<ParticleFP64> container(
+        testCase.boxMin, testCase.boxMax, testCase.cutoffs, testCase.skin, testCase.cellSizeFactor,
+        /*sortingThreshold=*/8, autopas::LoadEstimatorOption::squaredParticlesPerCell,
+        /*fittedGrids=*/true);
+
+    const auto levels = parseLevels(container.toString());
+    ASSERT_GE(levels.size(), 2u) << "Expected at least two fitted hierarchy levels.";
+
+    for (std::size_t levelIndex = 0; levelIndex + 1 < levels.size(); ++levelIndex) {
+      SCOPED_TRACE(::testing::Message() << "levels " << levelIndex << " and " << levelIndex + 1);
+
+      const auto &finer = levels[levelIndex];
+      const auto &coarser = levels[levelIndex + 1];
+
+      for (std::size_t dim = 0; dim < 3; ++dim) {
+        const auto finerCellsWithoutHalo = cellsPerDimensionWithoutHalo(finer, dim);
+        const auto coarserCellsWithoutHalo = cellsPerDimensionWithoutHalo(coarser, dim);
+
+        ASSERT_GT(coarserCellsWithoutHalo, 0u);
+        EXPECT_EQ(finer.cellsPerInteractionLength * coarserCellsWithoutHalo,
+                  coarser.cellsPerInteractionLength * finerCellsWithoutHalo)
+            << "The halo-width ratio does not match the grid ratio in dimension " << dim;
+      }
+    }
+  }
+}
