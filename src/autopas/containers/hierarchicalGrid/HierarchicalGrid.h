@@ -169,7 +169,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     for (size_t d = 0; d < 3; ++d) {
       maxCellLength = std::min(maxCellLength, largestLevelCellLength[d]);
     }
-    const double haloRegionWidth = maxCellLength * static_cast<double>(_levels.back()->getCellBlock().getCellsPerInteractionLength());
+    const double haloRegionWidth =
+        maxCellLength * static_cast<double>(_levels.back()->getCellBlock().getCellsPerInteractionLength());
 
     // Always fit cells per dimension to the value of the next highest level
     std::array<size_t, 3> cellsPerDimensionNextHighest =
@@ -204,13 +205,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       // for all levels. Since the halo region width in CellBlock3D is calculated with a ceiling, we decrement
       // the value by about 0.1 if a cell width to make sure we get the wanted value in the end.
       const double decrementDelta = 0.01 * maxCellLength * maxInterLenPerLevel[0] / maxInterLenPerLevel.back();
-      std::cout << "Creating fitted grid level " << i << " with cutoff " << _maxCutoffPerLevel[i]
-            << ", cell size factor " << _cellSizeFactor << " and cells per dimension " << cellsPerDimension[0]
-            << ", " << cellsPerDimension[1] << ", " << cellsPerDimension[2]
-            << " (num lower cells per higher cell: " << numLowerCellsPerHigher
-            << ", actual interaction length: " << maxInterLenPerLevel[i]
-            << ", halo region width: " << haloRegionWidth << ", decrement delta: " << decrementDelta
-            << ")." << std::endl;
       const double haloRegionCutoff = haloRegionWidth - _skin - decrementDelta;
       _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
           _boxMin, _boxMax, haloRegionCutoff, _skin, cellsPerDimension, sortingThreshold, loadEstimator);
