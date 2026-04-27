@@ -153,7 +153,6 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
       }
     }
   }
-  friend class ::HGC08CellHandlerTest;
 };
 
 template <class ParticleCell_T, class PairwiseFunctor_T>
