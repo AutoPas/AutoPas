@@ -61,7 +61,7 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
     if (this->_upperLevel == 0) {
       return;
     }
-    _cellPairOffsetsPerLevel.resize(_upperLevel - 1);
+    _cellPairOffsetsPerLevel.resize(_upperLevel);
     for (auto const &[offset1, offset2, r] : this->_cellPairOffsets) {
       computePairwiseCellOffsetsHGC08(offset1, offset2);
       if (offset1 != offset2) {
