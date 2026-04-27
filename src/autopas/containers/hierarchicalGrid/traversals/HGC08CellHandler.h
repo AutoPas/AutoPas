@@ -178,7 +178,7 @@ inline void HGC08CellHandler<ParticleCell_T, PairwiseFunctor_T>::processBaseCell
   // Inter Level
   // @todo does it ever make sense to make this parallel/is that possible? Maybe for less thread downtime at the end?
   for (size_t lowerLevel = 0; lowerLevel < _cellPairOffsetsPerLevel.size(); lowerLevel++) {
-    const double baseIndexLowerLevel = _cellBlocks[lowerLevel]->get1DIndexOfPosition(lowCornerBaseCell);
+    const size_t baseIndexLowerLevel = _cellBlocks[lowerLevel]->get1DIndexOfPosition(lowCornerBaseCell);
     for (auto const &[offset1, offset2, r] : this->_cellPairOffsetsPerLevel[lowerLevel]) {
       const unsigned long cellIndexUpperLevel = baseIndexUpperLevel + offset1;
       const unsigned long cellIndexLowerLevel = baseIndexLowerLevel + offset2;

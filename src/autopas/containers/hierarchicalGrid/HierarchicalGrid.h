@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <array>
-#include <iostream>
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleContainerInterface.h"
@@ -165,12 +164,12 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     // calculate halo region width of the largest level, to make sure all levels have the same halo region width in
     // length units
     auto &largestLevelCellLength = _levels.back()->getCellBlock().getCellLength();
-    double maxCellLength = std::numeric_limits<double>::max();
+    double minCellLength = std::numeric_limits<double>::max();
     for (size_t d = 0; d < 3; ++d) {
-      maxCellLength = std::min(maxCellLength, largestLevelCellLength[d]);
+      minCellLength = std::min(maxCellLength, largestLevelCellLength[d]);
     }
     const double haloRegionWidth =
-        maxCellLength * static_cast<double>(_levels.back()->getCellBlock().getCellsPerInteractionLength());
+        minCellLength * static_cast<double>(_levels.back()->getCellBlock().getCellsPerInteractionLength());
 
     // Always fit cells per dimension to the value of the next highest level
     std::array<size_t, 3> cellsPerDimensionNextHighest =
@@ -188,7 +187,6 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
         numLowerCellsPerHigher =
             std::min(numLowerCellsPerHigher,
                      static_cast<size_t>(std::floor(cellLength[d] / (maxInterLenPerLevel[i] * _cellSizeFactor))));
-        cellsPerDimension[d] = numLowerCellsPerHigher * cellsPerDimensionNextHighest[d];
       }
       // sort out levels too close to be fitted, create no linked cells and continue with next level
       if (numLowerCellsPerHigher < 2) {
@@ -204,7 +202,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       // We use an artificially large cutoff, to make sure the halo region in length units is exactly _haloRegionWidth
       // for all levels. Since the halo region width in CellBlock3D is calculated with a ceiling, we decrement
       // the value by about 0.1 if a cell width to make sure we get the wanted value in the end.
-      const double decrementDelta = 0.01 * maxCellLength * maxInterLenPerLevel[0] / maxInterLenPerLevel.back();
+      const double decrementDelta = 0.01 * minCellLength * maxInterLenPerLevel[0] / maxInterLenPerLevel.back();
       const double haloRegionCutoff = haloRegionWidth - _skin - decrementDelta;
       _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
           _boxMin, _boxMax, haloRegionCutoff, _skin, cellsPerDimension, sortingThreshold, loadEstimator);
