@@ -91,7 +91,39 @@ void HGC08CellHandlerTest::runDecomposeScenario(const std::array<double, 3> &box
       std::vector<double>{0.2},
       1};
 
-  handler.decompose2AndProcessCells(upperBlock.getCell(upperCell1Index), upperCell1Index1D, upperCell2Index1D);
+  // decompose2AndProcessCells was removed; perform the same decomposition here using handler internals
+  {
+    using namespace autopas::utils::ArrayMath::literals;
+    // Get bounds of cell2 (upper)
+    auto [lowCornerCell2, highCornerCell2] = upperBlock.getCellBoundingBox(upperCell2Index1D);
+    highCornerCell2 = {highCornerCell2[0] - handler._shiftLength[0], highCornerCell2[1] - handler._shiftLength[1],
+                       highCornerCell2[2] - handler._shiftLength[2]};
+    lowCornerCell2 = {lowCornerCell2[0] + handler._shiftLength[0], lowCornerCell2[1] + handler._shiftLength[1],
+                      lowCornerCell2[2] + handler._shiftLength[2]};
+
+    const auto [lowCornerCell1, highCornerCell1] = upperBlock.getCellBoundingBox(upperCell1Index1D);
+
+    // decompose for every lower level below upperLevel (here only level 0)
+    for (size_t lowerLevel = 0; lowerLevel < handler._upperLevel; ++lowerLevel) {
+      auto startIndex3D = lowerBlock.get3DIndexOfPosition(lowCornerCell2);
+      auto stopIndex3D = lowerBlock.get3DIndexOfPosition(highCornerCell2);
+      for (size_t z = startIndex3D[2]; z <= stopIndex3D[2]; ++z) {
+        for (size_t y = startIndex3D[1]; y <= stopIndex3D[1]; ++y) {
+          for (size_t x = startIndex3D[0]; x <= stopIndex3D[0]; ++x) {
+            auto [lowCornerLowerCell, highCornerLowerCell] = lowerBlock.getCellBoundingBox({x, y, z});
+            using autopas::utils::ArrayMath::boxDistanceSquared;
+            if (boxDistanceSquared(lowCornerLowerCell, highCornerLowerCell, lowCornerCell1, highCornerCell1) >
+                handler._interactionLengthsSquared[lowerLevel]) {
+              continue;
+            }
+            auto &lowerCell = lowerBlock.getCell({x, y, z});
+            auto &upperCellRef = upperBlock.getCell(upperCell1Index);
+            handler._cellFunctor.processCellPair(upperCellRef, lowerCell, {0., 0., 0.});
+          }
+        }
+      }
+    }
+  }
 
   EXPECT_THAT(functor.calls,
               UnorderedElementsAre(Pair(1ul, 100ul), Pair(1ul, 101ul), Pair(1ul, 102ul), Pair(1ul, 103ul)));
