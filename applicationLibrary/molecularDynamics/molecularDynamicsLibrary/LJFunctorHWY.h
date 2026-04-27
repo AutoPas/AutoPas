@@ -264,19 +264,21 @@ class LJFunctorHWY
     if (soa1.size() == 0 or soa2.size() == 0) {
       return;
     }
-    auto dispatch = [&]<VectorizationPattern vp>() {
-      if (newton3) {
-        SoAFunctorPairImpl<true, true, vp>(soa1, soa2, sortingDirection, sortingCutoff);
-      } else {
-        SoAFunctorPairImpl<false, true, vp>(soa1, soa2, sortingDirection, sortingCutoff);
-      }
-    };
+
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec:
-        dispatch.template operator()<VectorizationPattern::p1xVec>();
+        if (newton3) {
+          SoAFunctorPairImpl<true, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingDirection, sortingCutoff);
+        } else {
+          SoAFunctorPairImpl<false, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingDirection, sortingCutoff);
+        }
         break;
       case VectorizationPattern::pVecx1:
-        dispatch.template operator()<VectorizationPattern::pVecx1>();
+        if (newton3) {
+          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingDirection, sortingCutoff);
+        } else {
+          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingDirection, sortingCutoff);
+        }
         break;
       default:
         SoAFunctorPair(soa1, soa2, newton3);
@@ -893,31 +895,58 @@ class LJFunctorHWY
 
     // Sorted-path caches. Declared always; allocated only when sorted=true.
     // TODO: move these into class members to avoid constant reallocation
-    std::vector<std::pair<double, size_t>> projIdx1, projIdx2;
+    std::vector<double> projVals1, projVals2;
+    std::vector<size_t> projIdx1, projIdx2;
     std::vector<double, autopas::AlignedAllocator<double>> x1s, y1s, z1s, x2s, y2s, z2s;
     std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> ownership1s, ownership2s;
     std::vector<size_t, autopas::AlignedAllocator<size_t>> typeID1s, typeID2s;
-    // Force accumulators in sorted-index space. Zero-initialized because handleNewton3Reduction
-    // does a load-subtract-store sequence (fx2[j] -= fx), so the sorted cache must start at 0.
+    // Force accumulators, get scattered back into actual SoA later.
     std::vector<double, autopas::AlignedAllocator<double>> fx1s, fy1s, fz1s, fx2s, fy2s, fz2s;
-    std::vector<double> projVals2;
 
     if constexpr (sorted) {
       // Step 1: 1D projection, sort indices ascending.
       projIdx1.resize(n1);
       projIdx2.resize(n2);
+      projVals1.resize(n1);
+      projVals2.resize(n2);
+      std::iota(projIdx1.begin(), projIdx1.end(), 0);
+      std::iota(projIdx2.begin(), projIdx2.end(), 0);
       for (size_t i = 0; i < n1; ++i) {
-        projIdx1[i] = {x1Ptr[i] * sortingDirection[0] + y1Ptr[i] * sortingDirection[1] + z1Ptr[i] * sortingDirection[2],
-                       i};
+        projVals1[i] = x1Ptr[i] * sortingDirection[0] + y1Ptr[i] * sortingDirection[1] + z1Ptr[i] * sortingDirection[2];
       }
       for (size_t j = 0; j < n2; ++j) {
-        projIdx2[j] = {x2Ptr[j] * sortingDirection[0] + y2Ptr[j] * sortingDirection[1] + z2Ptr[j] * sortingDirection[2],
-                       j};
+        projVals2[j] = x2Ptr[j] * sortingDirection[0] + y2Ptr[j] * sortingDirection[1] + z2Ptr[j] * sortingDirection[2];
       }
-      std::sort(projIdx1.begin(), projIdx1.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
-      std::sort(projIdx2.begin(), projIdx2.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+      /*
+       * @todo C++23
+       * std::ranges::sort(std::views::zip(projVals1, projIdx1));
+       * std::ranges::sort(std::views::zip(projVals2, projIdx2));
+       */
+      auto sortVectors = [](std::vector<size_t> &idx, std::vector<double> &vals) {
+        size_t n = vals.size();
+        // 1. Zip into pairs
+        std::vector<std::pair<double, size_t>> pairs(n);
+        for (size_t i = 0; i < n; ++i) {
+          pairs[i] = {vals[i], idx[i]};
+        }
 
-      // Step 2: pack into contiguous caches in sorted order.
+        // 2. Sort (std::pair automatically sorts by .first, then .second)
+        std::sort(pairs.begin(), pairs.end());
+
+        // 3. Unzip back to original vectors
+        for (size_t i = 0; i < n; ++i) {
+          vals[i] = pairs[i].first;
+          idx[i] = pairs[i].second;
+        }
+      };
+
+      // Apply to both of your sets
+      sortVectors(projIdx1, projVals1);
+      sortVectors(projIdx2, projVals2);
+
+      // Step 2: pack into contiguous caches in sorted order and compute projVals
+      // in sorted order from the freshly-gathered coordinates (avoids a separate
+      // reorder pass and temp allocation).
       x1s.resize(n1);
       y1s.resize(n1);
       z1s.resize(n1);
@@ -937,7 +966,7 @@ class LJFunctorHWY
         fz2s.assign(n2, 0.0);
       }
       for (size_t i = 0; i < n1; ++i) {
-        const size_t idx = projIdx1[i].second;
+        const size_t idx = projIdx1[i];
         x1s[i] = x1Ptr[idx];
         y1s[i] = y1Ptr[idx];
         z1s[i] = z1Ptr[idx];
@@ -945,18 +974,12 @@ class LJFunctorHWY
         typeID1s[i] = typeID1Ptr[idx];
       }
       for (size_t j = 0; j < n2; ++j) {
-        const size_t idx = projIdx2[j].second;
+        const size_t idx = projIdx2[j];
         x2s[j] = x2Ptr[idx];
         y2s[j] = y2Ptr[idx];
         z2s[j] = z2Ptr[idx];
         ownership2s[j] = ownedStatePtr2[idx];
         typeID2s[j] = typeID2Ptr[idx];
-      }
-
-      // Step 3: extract sorted projection values for the in-loop upper-bound check.
-      projVals2.resize(n2);
-      for (size_t j = 0; j < n2; ++j) {
-        projVals2[j] = projIdx2[j].first;
       }
     }
 
@@ -993,15 +1016,11 @@ class LJFunctorHWY
     auto projVal1 = [&](std::ptrdiff_t i, size_t blockSize) -> double {
       if constexpr (sorted) {
         if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-          return projIdx1[i + blockSize - 1].first;
+          return projVals1[i + blockSize - 1];
         }
-        return projIdx1[i].first;
+        return projVals1[i];
       }
       return 0.0;
-    };
-    auto projVals2Ptr = [&]() -> const double * {
-      if constexpr (sorted) return projVals2.data();
-      return nullptr;
     };
 
     std::ptrdiff_t i = 0;
@@ -1009,7 +1028,7 @@ class LJFunctorHWY
       handleILoopBody<false, newton3, false, sorted, vecPattern>(
           i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data, owned2Data, fx1Data, fy1Data, fz1Data, fx2Data,
           fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, 0, n2,
-          projVal1(i, _vecLengthDouble), projVals2Ptr(), sortingCutoff);
+          projVal1(i, _vecLengthDouble), projVals2.data(), sortingCutoff);
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       const int restI = obtainILoopRemainderLength<false>(i, n1);
@@ -1017,26 +1036,40 @@ class LJFunctorHWY
         handleILoopBody<false, newton3, true, sorted, vecPattern>(
             i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data, owned2Data, fx1Data, fy1Data, fz1Data,
             fx2Data, fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, restI, n2,
-            projVal1(i, static_cast<size_t>(restI)), projVals2Ptr(), sortingCutoff);
+            projVal1(i, static_cast<size_t>(restI)), projVals2.data(), sortingCutoff);
       }
     }
 
     // Step 5: scatter accumulated forces back to the original SoA order (sorted only).
-    // TODO: Try to vectorize scatter
+    // projIdx1/projIdx2 are permutations of [0,n), so indices within each SIMD batch
+    // are always distinct — no write-write conflicts, no conflict detection needed.
     if constexpr (sorted) {
-      for (size_t k = 0; k < n1; ++k) {
-        const size_t origIdx = projIdx1[k].second;
-        fx1Ptr[origIdx] += fx1s[k];
-        fy1Ptr[origIdx] += fy1s[k];
-        fz1Ptr[origIdx] += fz1s[k];
-      }
-      if constexpr (newton3) {
-        for (size_t k = 0; k < n2; ++k) {
-          const size_t origIdx = projIdx2[k].second;
-          fx2Ptr[origIdx] += fx2s[k];
-          fy2Ptr[origIdx] += fy2s[k];
-          fz2Ptr[origIdx] += fz2s[k];
+      auto scatterAddForces = [](double *__restrict fxPtr, double *__restrict fyPtr, double *__restrict fzPtr,
+                                 const double *__restrict fxs, const double *__restrict fys,
+                                 const double *__restrict fzs, const size_t *__restrict idx, const size_t n) {
+        size_t k = 0;
+        for (; k + _vecLengthDouble <= n; k += _vecLengthDouble) {
+          const VectorLong idxVec = highway::LoadU(tag_long, reinterpret_cast<const int64_t *>(&idx[k]));
+          const VectorDouble fxNew = highway::Load(tag_double, &fxs[k]);
+          const VectorDouble fyNew = highway::Load(tag_double, &fys[k]);
+          const VectorDouble fzNew = highway::Load(tag_double, &fzs[k]);
+          highway::ScatterIndex(highway::Add(highway::GatherIndex(tag_double, fxPtr, idxVec), fxNew), tag_double, fxPtr,
+                                idxVec);
+          highway::ScatterIndex(highway::Add(highway::GatherIndex(tag_double, fyPtr, idxVec), fyNew), tag_double, fyPtr,
+                                idxVec);
+          highway::ScatterIndex(highway::Add(highway::GatherIndex(tag_double, fzPtr, idxVec), fzNew), tag_double, fzPtr,
+                                idxVec);
         }
+        for (; k < n; ++k) {
+          fxPtr[idx[k]] += fxs[k];
+          fyPtr[idx[k]] += fys[k];
+          fzPtr[idx[k]] += fzs[k];
+        }
+      };
+
+      scatterAddForces(fx1Ptr, fy1Ptr, fz1Ptr, fx1s.data(), fy1s.data(), fz1s.data(), projIdx1.data(), n1);
+      if constexpr (newton3) {
+        scatterAddForces(fx2Ptr, fy2Ptr, fz2Ptr, fx2s.data(), fy2s.data(), fz2s.data(), projIdx2.data(), n2);
       }
     }
 
