@@ -202,7 +202,14 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       // We use an artificially large cutoff, to make sure the halo region in length units is exactly _haloRegionWidth
       // for all levels. Since the halo region width in CellBlock3D is calculated with a ceiling, we decrement
       // the value by about 0.1 if a cell width to make sure we get the wanted value in the end.
-      const double decrementDelta = 0.1 * maxCellLength * _maxCutoffPerLevel[i] / maxInterLenPerLevel.back();
+      const double decrementDelta = 0.01 * maxCellLength * maxInterLenPerLevel[0] / maxInterLenPerLevel.back();
+      AutoPasLog(DEBUG,
+                 "Creating fitted grid level {} with cutoff {:.6g}, cell size factor {:.6g} and cells per dimension "
+                 "{}, {}, {} (num lower cells per higher cell: {}, actual interaction length: {:.6g}, "
+                 "halo region width: {:.6g}, decrement delta: {:.6g}).",
+                 i, _maxCutoffPerLevel[i], _cellSizeFactor, cellsPerDimension[0], cellsPerDimension[1],
+                 cellsPerDimension[2], numLowerCellsPerHigher, maxInterLenPerLevel[i], haloRegionWidth,
+                 decrementDelta);
       const double haloRegionCutoff = haloRegionWidth - _skin - decrementDelta;
       _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
           _boxMin, _boxMax, haloRegionCutoff, _skin, cellsPerDimension, sortingThreshold, loadEstimator);
