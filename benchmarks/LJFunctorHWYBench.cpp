@@ -230,12 +230,12 @@ BENCHMARK(BM_SoAFunctorPairSorted<VectorizationPattern::p1xVec>)
     ->ArgsProduct({{32, 128, 512, 1024, 2048}, {0, 1}})
     ->ArgNames({"N", "n3"})
     ->Repetitions(5)
-    ->Name("BM_SoA_Functor_SortedPair");
+    ->Name("BM_SoA_Functor_SortedPair<p1xVec>");
 BENCHMARK(BM_SoAFunctorPairSorted<VectorizationPattern::pVecx1>)
     ->ArgsProduct({{32, 128, 512, 1024, 2048}, {0, 1}})
     ->ArgNames({"N", "n3"})
     ->Repetitions(5)
-    ->Name("BM_SoA_Functor_SortedPair");
+    ->Name("BM_SoA_Functor_SortedPair<pVecx1>");
 
 // -----------------------------------------------------------------------------
 // SoAFunctorVerlet: full verlet sweep over an O(n^2) built neighbor list.
