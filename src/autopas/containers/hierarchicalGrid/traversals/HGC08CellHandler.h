@@ -153,15 +153,6 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
       }
     }
   }
-
-  /**
-   * Decomposes the higher-level cell with index cellIndex2 into all lower-level cells inside of it. Then processes
-   * the interactions between cell1 and the lower-level cells. The lower-level cells are determined by the bounding
-   * box of cell2.
-   * @param cell1 The upper-level cell to interact with.
-   * @param cellIndex1 The index of the first upper-level cell.
-   * @param cellIndex2 The index of the second upper-level cell.
-   */
   friend class ::HGC08CellHandlerTest;
 };
 
