@@ -166,7 +166,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     auto &largestLevelCellLength = _levels.back()->getCellBlock().getCellLength();
     double minCellLength = std::numeric_limits<double>::max();
     for (size_t d = 0; d < 3; ++d) {
-      minCellLength = std::min(maxCellLength, largestLevelCellLength[d]);
+      minCellLength = std::min(minCellLength, largestLevelCellLength[d]);
     }
     const double haloRegionWidth =
         minCellLength * static_cast<double>(_levels.back()->getCellBlock().getCellsPerInteractionLength());
