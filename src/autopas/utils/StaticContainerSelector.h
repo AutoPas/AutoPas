@@ -55,6 +55,8 @@ decltype(auto) withStaticContainerType(ParticleContainerInterface<Particle_T> &c
       return function(dynamic_cast<Octree<Particle_T> &>(container));
     case ContainerOption::hierarchicalGrid:
       return function(dynamic_cast<autopas::HierarchicalGrid<Particle_T> &>(container));
+    case ContainerOption::hierarchicalGridFitted:
+      return function(dynamic_cast<autopas::HierarchicalGrid<Particle_T> &>(container));
   }
   utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                      container.getContainerType());

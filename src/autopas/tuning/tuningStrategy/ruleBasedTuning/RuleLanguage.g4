@@ -25,6 +25,8 @@ Container_opt
                 | 'VarVerletListsAsBuild'
                 | 'PairwiseVerletLists'
                 | 'Octree'
+                | 'HierarchicalGrid'
+                | 'HierarchicalGridFitted'
                 ;
 
 Traversal_opt
@@ -50,6 +52,7 @@ Traversal_opt
                 | 'vlc_sliced_c02'
                 | 'vlc_c18'
                 | 'vlc_c01'
+                | 'vlc_c08'
                 | 'vlc_sliced_balanced'
                 | 'vvl_as_built'
                 | 'vlp_sliced'
@@ -60,6 +63,9 @@ Traversal_opt
                 | 'vlp_c08'
                 | 'ot_c18'
                 | 'ot_c01'
+                | 'hgrid_block4'
+                | 'hgrid_block8'
+                | 'hgridFit_c08'
                 ;
 
 Load_estimator_opt

@@ -44,7 +44,37 @@ class CellBlock3D : public CellBorderAndFlagManager {
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
               double interactionLength, double cellSizeFactor = 1.0)
       : _cells(&vec), _boxMin(bMin), _boxMax(bMax), _interactionLength(interactionLength) {
-    rebuild(vec, bMin, bMax, interactionLength, cellSizeFactor);
+    // Calculate cells per dimension
+    std::array<index_t, 3> cellsPerDim{};
+    for (int d = 0; d < 3; ++d) {
+      const double boxLength = _boxMax[d] - _boxMin[d];
+      // The number of cells is rounded down because the cells will be stretched to fit.
+      // std::max to ensure there is at least one cell.
+      cellsPerDim[d] =
+          std::max(static_cast<index_t>(std::floor(boxLength / (_interactionLength * cellSizeFactor))), 1ul);
+    }
+    rebuild(vec, bMin, bMax, interactionLength, cellsPerDim);
+
+    for (int i = 0; i < 3; ++i) {
+      if (bMax[i] < bMin[i] + interactionLength) {
+        AutoPasLog(ERROR, "Interaction length too large is {}, bmin {}, bmax {}", interactionLength, bMin[i], bMax[i]);
+        utils::ExceptionHandler::exception("Error in CellBlock3D: interaction Length too large!");
+      }
+    }
+  }
+  /**
+   * Constructor of CellBlock3D, where the number of cells per dimension is directly given.
+   * Useful for HierarchicalGridFitted container
+   * @param vec Vector of ParticleCells that this class manages.
+   * @param bMin Lower corner of the cell block.
+   * @param bMax Higher corner of the cell block.
+   * @param interactionLength Max. radius of interaction between particles.
+   * @param cellsPerDim Number of cells per dimension (without halo).
+   */
+  CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
+              double interactionLength, const std::array<index_t, 3> &cellsPerDim)
+      : _cells(&vec), _boxMin(bMin), _boxMax(bMax), _interactionLength(interactionLength) {
+    rebuild(vec, bMin, bMax, interactionLength, cellsPerDim);
 
     for (int i = 0; i < 3; ++i) {
       if (bMax[i] < bMin[i] + interactionLength) {
@@ -111,10 +141,10 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param bMin New lower corner of the cell block.
    * @param bMax New higher corner of the cell block.
    * @param interactionLength Max. radius of interaction between particles.
-   * @param cellSizeFactor Cell size factor relative to interactionLength.
+   * @param cellsPerDim Number of cells per dimension (excluding halo cells).
    */
   void rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
-               double interactionLength, double cellSizeFactor);
+               double interactionLength, const std::array<index_t, 3> &cellsPerDim);
 
   /**
    * Get the containing cell of a specified position.
@@ -162,6 +192,15 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   [[nodiscard]] const std::array<index_t, 3> &getCellsPerDimensionWithHalo() const {
     return _cellsPerDimensionWithHalo;
+  }
+
+  /**
+   * Get the dimension of the cell block excluding the halo boxes.
+   * @return The dimensions of the cell block.
+   */
+  [[nodiscard]] const std::array<index_t, 3> getCellsPerDimensionWithoutHalo() const {
+    using namespace autopas::utils::ArrayMath::literals;
+    return _cellsPerDimensionWithHalo - 2 * _cellsPerInteractionLength;
   }
 
   /**
@@ -359,54 +398,57 @@ void CellBlock3D<ParticleCell>::reserve(size_t numParticles) {
 template <class ParticleCell>
 inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin,
                                                const std::array<double, 3> &bMax, double interactionLength,
-                                               double cellSizeFactor) {
+                                               const std::array<index_t, 3> &cellsPerDim) {
   using namespace autopas::utils::ArrayMath::literals;
-
   _cells = &vec;
   _boxMin = bMin;
   _boxMax = bMax;
   _interactionLength = interactionLength;
 
-  if (cellSizeFactor >= 1.0) {
-    _cellsPerInteractionLength = 1;
-  } else {
-    _cellsPerInteractionLength = ceil(1.0 / cellSizeFactor);
-  }
-  // compute cell length and number of cells
+  // This is only a start value, the actual number of cells per interaction length is computed in the loop below and can
+  // be larger than this.
+  _cellsPerInteractionLength = 1;
+
+  // compute cell length and cells per interaction length
   index_t numCells = 1;
   for (int d = 0; d < 3; ++d) {
     const double boxLength = _boxMax[d] - _boxMin[d];
-    // The number of cells is rounded down because the cells will be stretched to fit.
-    // std::max to ensure there is at least one cell.
-    const auto cellsPerDim =
-        std::max(static_cast<index_t>(std::floor(boxLength / (_interactionLength * cellSizeFactor))), 1ul);
 
-    _cellsPerDimensionWithHalo[d] = cellsPerDim + 2 * _cellsPerInteractionLength;
+    _cellLength[d] = boxLength / static_cast<double>(cellsPerDim[d]);
 
-    _cellLength[d] = boxLength / static_cast<double>(cellsPerDim);
+    _cellLengthReciprocal[d] = static_cast<double>(cellsPerDim[d]) / boxLength;  // compute with least rounding possible
 
-    _cellLengthReciprocal[d] = static_cast<double>(cellsPerDim) / boxLength;  // compute with least rounding possible
+    auto cellsPerInteractionLengthNew = static_cast<index_t>(std::ceil(_interactionLength / _cellLength[d]));
+
+    if (cellsPerInteractionLengthNew > _cellsPerInteractionLength) {
+      _cellsPerInteractionLength = cellsPerInteractionLengthNew;
+    }
+  }
+
+  // compute number of cells and halo box
+  for (int d = 0; d < 3; ++d) {
+    _cellsPerDimensionWithHalo[d] = cellsPerDim[d] + 2 * _cellsPerInteractionLength;
 
     _haloBoxMin[d] = _boxMin[d] - _cellsPerInteractionLength * _cellLength[d];
     _haloBoxMax[d] = _boxMax[d] + _cellsPerInteractionLength * _cellLength[d];
 
     numCells *= _cellsPerDimensionWithHalo[d];
   }
+
   AutoPasLog(TRACE, "Box Length incl Halo : {}", autopas::utils::ArrayUtils::to_string(_haloBoxMax - _haloBoxMin));
   AutoPasLog(TRACE, "Cells/Dim  incl Halo : {}", autopas::utils::ArrayUtils::to_string(_cellsPerDimensionWithHalo));
   AutoPasLog(TRACE, "Cell Length          : {}", autopas::utils::ArrayUtils::to_string(_cellLength));
   AutoPasLog(TRACE, "Interaction Length   : {}", interactionLength);
-  AutoPasLog(TRACE, "Cell Size Factor     : {}", cellSizeFactor);
 
   _firstOwnedCellIndex = _cellsPerDimensionWithHalo[0] * _cellsPerDimensionWithHalo[1] * _cellsPerInteractionLength +
                          _cellsPerDimensionWithHalo[0] * _cellsPerInteractionLength + _cellsPerInteractionLength;
   _lastOwnedCellIndex = numCells - 1 - _firstOwnedCellIndex;
 
   // initialize cells
-  _cells->resize(numCells);
+  this->_cells->resize(numCells);
 
-  for (auto &cell : *_cells) {
-    cell.setCellLength(_cellLength);
+  for (auto &cell : *this->_cells) {
+    cell.setCellLength(this->_cellLength);
   }
 
   // determine the OwnershipStates, each cell can contain. This is later used in the CellFunctor to skip calculations
@@ -414,13 +456,13 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
     const bool canHaveHalos = cellCanContainHaloParticles(i);
     const bool canHaveOwned = cellCanContainOwnedParticles(i);
     if (canHaveHalos and canHaveOwned) {
-      (*_cells)[i].setPossibleParticleOwnerships(OwnershipState::owned | OwnershipState::halo);
+      (*this->_cells)[i].setPossibleParticleOwnerships(OwnershipState::owned | OwnershipState::halo);
     } else if (canHaveHalos) {
-      (*_cells)[i].setPossibleParticleOwnerships(OwnershipState::halo);
+      (*this->_cells)[i].setPossibleParticleOwnerships(OwnershipState::halo);
     } else if (canHaveOwned) {
-      (*_cells)[i].setPossibleParticleOwnerships(OwnershipState::owned);
+      (*this->_cells)[i].setPossibleParticleOwnerships(OwnershipState::owned);
     } else {
-      (*_cells)[i].setPossibleParticleOwnerships(OwnershipState::dummy);
+      (*this->_cells)[i].setPossibleParticleOwnerships(OwnershipState::dummy);
     }
   }
 }

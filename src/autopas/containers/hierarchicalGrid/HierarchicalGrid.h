@@ -12,9 +12,9 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/hierarchicalGrid/traversals/HGTraversalBase.h"
-#include "autopas/containers/hierarchicalGrid/traversals/HGTraversalInterface.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/iterators/ContainerIterator.h"
+#include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
 
@@ -35,17 +35,18 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    * Constructor of the HierarchicalGrid class.
    * @param boxMin
    * @param boxMax
-   * @param hGridMaxCutoffPerLevel max cutoffs for each level of the hierarchy
+   * @param hGridMaxCutoffPerLevel Max cutoffs for each level of the hierarchy
    * @param skin Verlet skin
-   * @param cellSizeFactor cell size factor relative to cutoff
-   * @param sortingThreshold number of particles in two cells from which sorting should be performed
-   * @param loadEstimator the load estimation algorithm for balanced traversals.
-
+   * @param cellSizeFactor Cell size factor relative to cutoff
+   * @param sortingThreshold Number of particles in two cells from which sorting should be performed
+   * @param loadEstimator The load estimation algorithm for balanced traversals.
+   * @param fittedGrids Whether to fit the grids into one another.
    */
   HierarchicalGrid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                    const std::vector<double> &hGridMaxCutoffPerLevel, const double skin,
                    const double cellSizeFactor = 1.0, const size_t sortingThreshold = 8,
-                   LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
+                   LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
+                   bool fittedGrids = false)
       : ParticleContainerInterface<Particle_T>(skin),
         _boxMin(boxMin),
         _boxMax(boxMax),
@@ -53,7 +54,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
         _numLevels(hGridMaxCutoffPerLevel.size()),
         _cellSizeFactor(cellSizeFactor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(size_t)),
-        _maxCutoffPerLevel(hGridMaxCutoffPerLevel) {
+        _maxCutoffPerLevel(hGridMaxCutoffPerLevel),
+        _fittedGrids(fittedGrids) {
     /*
      * @todo: In the future automatically choose the number of levels and min cell sizes per level?
      * We need to know particles sizes beforehand.
@@ -76,7 +78,7 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
       maxLength = std::min(maxLength, boxMax[i] - boxMin[i]);
     }
     maxLength -= _skin;
-    // fix maxCutoffs if they are bigger than maxLength
+    // exception if max Cutoffs are bigger than maxLength
     for (auto &cellSize : _maxCutoffPerLevel) {
       if (cellSize > maxLength) {
         utils::ExceptionHandler::exception(
@@ -93,6 +95,21 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
                  _maxCutoffPerLevel.size());
       _numLevels = _maxCutoffPerLevel.size();
     }
+    if (_fittedGrids) {
+      createFittedGrids(sortingThreshold, loadEstimator);
+    } else {
+      createGrids(sortingThreshold, loadEstimator);
+    }
+  }
+
+ private:
+  /**
+   * Create (unfitted) hierarchy levels.
+   *
+   * @param sortingThreshold Number of particles in two cells from which sorting should be performed.
+   * @param loadEstimator The load estimation algorithm for balanced traversals.
+   */
+  void createGrids(const size_t &sortingThreshold, LoadEstimatorOption &loadEstimator) {
     // largest interaction length
     const double interactionLengthLargest = _maxCutoffPerLevel.back() + _skin;
     // generate LinkedCells for each hierarchy, with different cutoffs
@@ -111,6 +128,77 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     }
   }
 
+  /**
+   * Create hierarchy levels whose cell grids are fitted to each other.
+   *
+   * @param sortingThreshold Number of particles in two cells from which sorting should be performed.
+   * @param loadEstimator The load estimation algorithm for balanced traversals.
+   */
+  void createFittedGrids(const size_t &sortingThreshold, LoadEstimatorOption &loadEstimator) {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    std::vector<double> maxInterLenPerLevel(_numLevels);
+    for (size_t i = 0; i < _numLevels; i++) {
+      maxInterLenPerLevel[i] = _maxCutoffPerLevel[i] + _skin;
+    }
+
+    // Assure at least 2 levels by increasing the cell length of the largest level if necessary, to make sure the
+    // smallest level can fit at least 2 cells into one cell of the largest level.
+    double highLevelRatio = 1.0;
+    if (2.0 * maxInterLenPerLevel[0] >= maxInterLenPerLevel.back()) {
+      // Smallest representable value above the exact threshold that still guarantees >=2 lower cells per upper cell.
+      const double minimumSafeRatio = 2.0 * maxInterLenPerLevel[0] / maxInterLenPerLevel.back();
+      highLevelRatio = std::nextafter(minimumSafeRatio, std::numeric_limits<double>::infinity());
+      AutoPasLog(DEBUG,
+                 "Adjusted high-level cell size by factor {:.6g} to guarantee at least two lower cells per "
+                 "upper cell (smallest interaction length: {:.6g}, largest interaction length: {:.6g}).",
+                 highLevelRatio, maxInterLenPerLevel[0], maxInterLenPerLevel.back());
+    }
+
+    _levels.resize(_numLevels);
+
+    // construct last/largest level first, so we can fit other levels to it
+    _levels.back() = std::make_unique<autopas::LinkedCells<Particle_T>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(),
+                                                                        _skin, _cellSizeFactor * highLevelRatio,
+                                                                        sortingThreshold, loadEstimator);
+
+    std::array<size_t, 3> cellsPerDimensionNextHighest =
+        _levels.back()->getCellBlock().getCellsPerDimensionWithoutHalo();
+    std::array<size_t, 3> cellsPerDimension;
+    size_t numLowerCellsPerHigher;
+
+    // generate LinkedCells for each level with different cutoffs
+    for (size_t i = _numLevels - 1; i-- > 0;) {
+      // increase size of lower level cells to fit the bigger level cell, if it does not fit, remove that level
+      auto cellLength = _levels[i + 1]->getCellBlock().getCellLength();
+      for (size_t d = 0; d < 3; ++d) {
+        numLowerCellsPerHigher =
+            static_cast<size_t>(std::floor(cellLength[d] / (maxInterLenPerLevel[i] * _cellSizeFactor)));
+        // sort out levels too close to be fitted
+        if (numLowerCellsPerHigher < 2) {
+          _maxCutoffPerLevel.erase(_maxCutoffPerLevel.begin() + i);
+          maxInterLenPerLevel.erase(maxInterLenPerLevel.begin() + i);
+          _levels.erase(_levels.begin() + i);
+          _numLevels--;
+          break;
+        }
+        // update cellsPerDimension for the next lower level
+        cellsPerDimension[d] = numLowerCellsPerHigher * cellsPerDimensionNextHighest[d];
+      }
+      // if level was removed, create no linked cells and continue with next level
+      if (numLowerCellsPerHigher < 2) {
+        continue;
+      }
+      cellsPerDimensionNextHighest = cellsPerDimension;
+      // again the hacky way to get the proper halo size (see createGrids for explanation)
+      _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
+          _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, cellsPerDimension, sortingThreshold, loadEstimator);
+    }
+    _levels.shrink_to_fit();
+    _maxCutoffPerLevel.shrink_to_fit();
+  }
+
+ public:
   /**
    * Destructor of HierarchicalGrid.
    */
@@ -211,7 +299,13 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    */
   [[nodiscard]] double getInteractionLength() const final { return _maxCutoffPerLevel.back() + _skin; }
 
-  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::hierarchicalGrid; }
+  [[nodiscard]] ContainerOption getContainerType() const override {
+    if (_fittedGrids) {
+      return ContainerOption::hierarchicalGridFitted;
+    } else {
+      return ContainerOption::hierarchicalGrid;
+    }
+  }
 
   /**
    * Get the cell type used by this container.
@@ -494,7 +588,10 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
 
   std::vector<std::unique_ptr<LinkedCells<Particle_T>>> _levels;
   std::vector<double> _maxCutoffPerLevel;
-
+  /**
+   * Indicates whether grids fit perfectly into one another, allowing for HGC08
+   */
+  bool _fittedGrids;
   /**
    * Gets the level of the hierarchical grid to which the particle should belong, e.g. for purposes of adding the
    * particle to the container. This is the level with the smallest cell size (excluding skin) that is greater than or
@@ -522,9 +619,8 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
    * @param traversal
    */
   void prepareTraversal(TraversalInterface *traversal) {
-    auto *traversalInterface = dynamic_cast<HGTraversalInterface *>(traversal);
     auto *hGridTraversal = dynamic_cast<HGTraversalBase<ParticleCell> *>(traversal);
-    if (traversalInterface && hGridTraversal) {
+    if (hGridTraversal) {
       hGridTraversal->setLevels(&_levels, _maxCutoffPerLevel, _skin);
     } else {
       autopas::utils::ExceptionHandler::exception(

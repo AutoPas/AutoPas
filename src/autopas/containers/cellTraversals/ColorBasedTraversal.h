@@ -108,17 +108,34 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
   /**
    * Interaction length (cutoff + skin).
    */
-  const double _interactionLength;
+  double _interactionLength;
 
   /**
    * cell length in CellBlock3D.
    */
-  const std::array<double, 3> _cellLength;
+  std::array<double, 3> _cellLength;
 
   /**
    * overlap of interacting cells. Array allows asymmetric cell sizes.
    */
   std::array<unsigned long, 3> _overlap;
+
+  /**
+   * Change the grid for the traversal. This is required if the cell length or interaction length changes.
+   * Used for example in HGFitC08Traversal when changing levels.
+   * @param interactionLength Interaction length (cutoff + skin).
+   * @param cellLength cell length.
+   * @param cellsPerDimension number of cells per dimension (including halo cells).
+   */
+  void changeGrid(const double interactionLength, const std::array<double, 3> &cellLength,
+                  const std::array<unsigned long, 3> &cellsPerDimension) {
+    _interactionLength = interactionLength;
+    _cellLength = cellLength;
+    this->_cellsPerDimension = cellsPerDimension;
+    for (unsigned int d = 0; d < 3; d++) {
+      _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
+    }
+  }
 
  private:
   /**
