@@ -161,7 +161,16 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
     _levels.back() = std::make_unique<autopas::LinkedCells<Particle_T>>(_boxMin, _boxMax, _maxCutoffPerLevel.back(),
                                                                         _skin, _cellSizeFactor * highLevelRatio,
                                                                         sortingThreshold, loadEstimator);
+    // calculate halo region width of the largest level, to make sure all levels have the same halo region width in
+    // length units
+    auto &largestLevelCellLength = _levels.back()->getCellBlock().getCellLength();
+    double maxCellLength = 0.0;
+    for (size_t d = 0; d < 3; ++d) {
+      maxCellLength = std::max(maxCellLength, largestLevelCellLength[d]);
+    }
+    double haloRegionWidth = maxCellLength * _levels.back()->getCellBlock().getCellsPerInteractionLength();
 
+    // Always fit cells per dimension to the value of the next highest level
     std::array<size_t, 3> cellsPerDimensionNextHighest =
         _levels.back()->getCellBlock().getCellsPerDimensionWithoutHalo();
     std::array<size_t, 3> cellsPerDimension;
@@ -190,9 +199,13 @@ class HierarchicalGrid : public ParticleContainerInterface<Particle_T> {
         continue;
       }
       cellsPerDimensionNextHighest = cellsPerDimension;
-      // again the hacky way to get the proper halo size (see createGrids for explanation)
+      // We use an artificially large cutoff, to make sure the halo region in length units is exactly _haloRegionWidth
+      // for all levels. Since the halo region width in CellBlock3D is calculated with a ceiling, we decrement
+      // the value by about 0.1 if a cell width to make sure we get the wanted value in the end.
+      const double decrementDelta = 0.1 * maxCellLength * _maxCutoffPerLevel[i] / maxInterLenPerLevel.back();
+      const double haloRegionCutoff = haloRegionWidth - _skin - decrementDelta;
       _levels[i] = std::make_unique<autopas::LinkedCells<Particle_T>>(
-          _boxMin, _boxMax, _maxCutoffPerLevel.back(), _skin, cellsPerDimension, sortingThreshold, loadEstimator);
+          _boxMin, _boxMax, haloRegionCutoff, _skin, cellsPerDimension, sortingThreshold, loadEstimator);
     }
     _levels.shrink_to_fit();
     _maxCutoffPerLevel.shrink_to_fit();

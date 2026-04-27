@@ -31,7 +31,7 @@ void expectCellBlocksEquivalent(const autopas::internal::CellBlock3D<ParticleCel
   for (int d = 0; d < 3; ++d) {
     EXPECT_EQ(fromCellSizeFactor.getCellsPerDimensionWithHalo()[d],
               fromCellSizeFactor.getCellsPerDimensionWithoutHalo()[d] +
-                  2 * fromCellSizeFactor.getCellsPerInteractionLength());
+                  2 * fromCellSizeFactor.getCellsPerInteractionLength())<< " CellsPerDimensionWithoutHalo changed " << d;
   }
   EXPECT_EQ(fromCellSizeFactor.getNumCells(), fromCellsPerDim.getNumCells());
   EXPECT_EQ(fromCellSizeFactor.getFirstOwnedCellIndex(), fromCellsPerDim.getFirstOwnedCellIndex());
