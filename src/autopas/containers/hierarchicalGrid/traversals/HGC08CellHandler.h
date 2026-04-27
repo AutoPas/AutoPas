@@ -108,7 +108,7 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
 
   std::vector<std::vector<LCC08CellHandlerUtility::OffsetPairSorting>> _cellPairOffsetsPerLevel{};
 
-  void computePairwiseCellOffsetsHGC08(const int offset1, const int offset2) {
+  void computePairwiseCellOffsetsHGC08(const unsigned long offset1, const unsigned long offset2) {
     using namespace autopas::utils::ArrayMath::literals;
     // Get bounds of  cell2. Use shifted corners so exact boundary points do not spill into the neighboring cell.
     auto [lowCornerCell2, highCornerCell2] = _cellBlocks[_upperLevel]->getCellBoundingBox(offset2);
@@ -137,7 +137,7 @@ class HGC08CellHandler : public LCC08CellHandler<ParticleCell_T, PairwiseFunctor
                 offset1,
                 utils::ThreeDimensionalMapping::threeToOneD(x, y, z,
                                                             _cellBlocks[lowerLevel]->getCellsPerDimensionWithHalo()),
-                {0., 0., 0.});
+                std::array<double, 3>{0., 0., 0.});
           }
         }
       }
