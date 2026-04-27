@@ -67,7 +67,7 @@ CellContentSnapshot getCellContentSnapshot(const LinkedCellsType &linkedCells) {
   CellContentSnapshot snapshot;
   snapshot.reserve(linkedCells.getCells().size());
 
-  for (const auto &cell : linkedCells.getCells()) {
+  for (auto &cell : linkedCells.getCells()) {
     std::vector<std::tuple<size_t, autopas::OwnershipState>> particleData;
     particleData.reserve(cell.size());
     for (const auto &particle : cell) {

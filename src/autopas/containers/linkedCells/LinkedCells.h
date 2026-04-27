@@ -520,12 +520,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    */
   std::vector<ParticleCellType> &getCells() { return this->_cells; }
 
-  /**
-   * Returns a const reference to the cell data structure.
-   * @return Const reference.
-   */
-  const std::vector<ParticleCellType> &getCells() const { return this->_cells; }
-
  protected:
   /**
    * Given a pair of cell-/particleIndex and iterator restrictions either returns the next indices that match these
