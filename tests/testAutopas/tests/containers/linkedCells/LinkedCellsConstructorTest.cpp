@@ -21,13 +21,18 @@ namespace {
 using CellContentSnapshot = std::vector<std::vector<std::tuple<size_t, autopas::OwnershipState>>>;
 
 template <class ParticleCell>
-void expectCellBlocksEquivalent(
-    const autopas::internal::CellBlock3D<ParticleCell> &fromCellSizeFactor,
-    const autopas::internal::CellBlock3D<ParticleCell> &fromCellsPerDim,
-    const std::vector<std::array<double, 3>> &positionsToCheck) {
+void expectCellBlocksEquivalent(const autopas::internal::CellBlock3D<ParticleCell> &fromCellSizeFactor,
+                                const autopas::internal::CellBlock3D<ParticleCell> &fromCellsPerDim,
+                                const std::vector<std::array<double, 3>> &positionsToCheck) {
   EXPECT_EQ(fromCellSizeFactor.getCellsPerDimensionWithHalo(), fromCellsPerDim.getCellsPerDimensionWithHalo());
   EXPECT_EQ(fromCellSizeFactor.getCellsPerDimensionWithoutHalo(), fromCellsPerDim.getCellsPerDimensionWithoutHalo());
   EXPECT_EQ(fromCellSizeFactor.getCellsPerInteractionLength(), fromCellsPerDim.getCellsPerInteractionLength());
+  // test getCellsPerDimensionWithoutHalo:
+  for (int d = 0; d < 3; ++d) {
+    EXPECT_EQ(fromCellSizeFactor.getCellsPerDimensionWithHalo()[d],
+              fromCellSizeFactor.getCellsPerDimensionWithoutHalo()[d] +
+                  2 * fromCellSizeFactor.getCellsPerInteractionLength());
+  }
   EXPECT_EQ(fromCellSizeFactor.getNumCells(), fromCellsPerDim.getNumCells());
   EXPECT_EQ(fromCellSizeFactor.getFirstOwnedCellIndex(), fromCellsPerDim.getFirstOwnedCellIndex());
   EXPECT_EQ(fromCellSizeFactor.getLastOwnedCellIndex(), fromCellsPerDim.getLastOwnedCellIndex());
@@ -90,16 +95,16 @@ std::array<unsigned long, 3> LinkedCellsConstructorTest::cellsPerDimFromCellSize
   std::array<unsigned long, 3> cellsPerDim{};
   for (size_t d = 0; d < 3; ++d) {
     const auto boxLength = boxMax[d] - boxMin[d];
-    cellsPerDim[d] = std::max(static_cast<unsigned long>(std::floor(boxLength / (interactionLength * cellSizeFactor))),
-                              1ul);
+    cellsPerDim[d] =
+        std::max(static_cast<unsigned long>(std::floor(boxLength / (interactionLength * cellSizeFactor))), 1ul);
   }
   return cellsPerDim;
 }
 
 std::vector<std::array<double, 3>> LinkedCellsConstructorTest::representativePositions(
     const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
-  const auto center = std::array<double, 3>{(boxMin[0] + boxMax[0]) / 2., (boxMin[1] + boxMax[1]) / 2.,
-                                            (boxMin[2] + boxMax[2]) / 2.};
+  const auto center =
+      std::array<double, 3>{(boxMin[0] + boxMax[0]) / 2., (boxMin[1] + boxMax[1]) / 2., (boxMin[2] + boxMax[2]) / 2.};
   return {
       center,
       {boxMin[0], boxMin[1], boxMin[2]},
@@ -113,8 +118,8 @@ std::vector<std::array<double, 3>> LinkedCellsConstructorTest::representativePos
   };
 }
 
-std::vector<ParticleFP64> LinkedCellsConstructorTest::representativeOwnedParticles(const std::array<double, 3> &boxMin,
-                                                                                    const std::array<double, 3> &boxMax) {
+std::vector<ParticleFP64> LinkedCellsConstructorTest::representativeOwnedParticles(
+    const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax) {
   const std::array<double, 3> v{0., 0., 0.};
   const auto dx = (boxMax[0] - boxMin[0]) / 10.;
   const auto dy = (boxMax[1] - boxMin[1]) / 10.;
@@ -122,27 +127,34 @@ std::vector<ParticleFP64> LinkedCellsConstructorTest::representativeOwnedParticl
   return {
       {{boxMin[0] + dx, boxMin[1] + dy, boxMin[2] + dz}, v, 1},
       {{boxMin[0] + 3. * dx, boxMin[1] + 5. * dy, boxMin[2] + 7. * dz}, v, 2},
-      {{std::nextafter(boxMax[0], -std::numeric_limits<double>::infinity()), boxMin[1] + 2. * dy,
-        boxMin[2] + 8. * dz},
+      {{std::nextafter(boxMax[0], -std::numeric_limits<double>::infinity()), boxMin[1] + 2. * dy, boxMin[2] + 8. * dz},
        v,
        3},
   };
 }
 
 std::vector<ParticleFP64> LinkedCellsConstructorTest::representativeHaloParticles(const std::array<double, 3> &boxMin,
-                                                                                   const std::array<double, 3> &boxMax) {
+                                                                                  const std::array<double, 3> &boxMax) {
   const std::array<double, 3> v{0., 0., 0.};
   const auto cx = (boxMin[0] + boxMax[0]) / 2.;
   const auto cy = (boxMin[1] + boxMax[1]) / 2.;
   const auto cz = (boxMin[2] + boxMax[2]) / 2.;
   return {
-      {{std::nextafter(boxMin[0], -std::numeric_limits<double>::infinity()), cy, cz}, v, 4,
+      {{std::nextafter(boxMin[0], -std::numeric_limits<double>::infinity()), cy, cz},
+       v,
+       4,
        autopas::OwnershipState::halo},
-      {{std::nextafter(boxMax[0], std::numeric_limits<double>::infinity()), cy, cz}, v, 5,
+      {{std::nextafter(boxMax[0], std::numeric_limits<double>::infinity()), cy, cz},
+       v,
+       5,
        autopas::OwnershipState::halo},
-      {{cx, std::nextafter(boxMin[1], -std::numeric_limits<double>::infinity()), cz}, v, 6,
+      {{cx, std::nextafter(boxMin[1], -std::numeric_limits<double>::infinity()), cz},
+       v,
+       6,
        autopas::OwnershipState::halo},
-      {{cx, cy, std::nextafter(boxMax[2], std::numeric_limits<double>::infinity())}, v, 7,
+      {{cx, cy, std::nextafter(boxMax[2], std::numeric_limits<double>::infinity())},
+       v,
+       7,
        autopas::OwnershipState::halo},
   };
 }
@@ -156,10 +168,8 @@ TEST_F(LinkedCellsConstructorTest, CellBlock3DConstructorsProvideEquivalentObjec
   };
 
   const std::vector<CellBlockCase> cases{
-      {{0., 0., 0.}, {10., 10., 10.}, 1., 1.0},
-      {{0., 0., 0.}, {10., 10., 10.}, 1., 0.5},
-      {{0., 0., 0.}, {10., 10., 10.}, 1., 2.0},
-      {{2. / 3., 0., 0.}, {1., .125, .125}, 0.03, 1.0},
+      {{0., 0., 0.}, {10., 10., 10.}, 1., 1.0},     {{0., 0., 0.}, {10., 10., 10.}, 1., 0.5},
+      {{0., 0., 0.}, {10., 10., 10.}, 1., 2.0},     {{2. / 3., 0., 0.}, {1., .125, .125}, 0.03, 1.0},
       {{0., 0., 0.}, {58.5, 58.5, 58.5}, 3.0, 1.0},
   };
 
@@ -167,9 +177,8 @@ TEST_F(LinkedCellsConstructorTest, CellBlock3DConstructorsProvideEquivalentObjec
     std::vector<FMCell> cellsFromCellSizeFactor;
     std::vector<FMCell> cellsFromCellsPerDim;
 
-    const auto cellsPerDim =
-        cellsPerDimFromCellSizeFactor(testCase.boxMin, testCase.boxMax, testCase.interactionLength,
-                                      testCase.cellSizeFactor);
+    const auto cellsPerDim = cellsPerDimFromCellSizeFactor(testCase.boxMin, testCase.boxMax, testCase.interactionLength,
+                                                           testCase.cellSizeFactor);
 
     autopas::internal::CellBlock3D<FMCell> fromCellSizeFactor(cellsFromCellSizeFactor, testCase.boxMin, testCase.boxMax,
                                                               testCase.interactionLength, testCase.cellSizeFactor);
@@ -204,8 +213,8 @@ TEST_F(LinkedCellsConstructorTest, LinkedCellsConstructorsProvideEquivalentObjec
 
     autopas::LinkedCells<ParticleFP64> fromCellSizeFactor(testCase.boxMin, testCase.boxMax, testCase.cutoff,
                                                           testCase.skin, testCase.cellSizeFactor);
-    autopas::LinkedCells<ParticleFP64> fromCellsPerDim(testCase.boxMin, testCase.boxMax, testCase.cutoff,
-                                                       testCase.skin, cellsPerDim);
+    autopas::LinkedCells<ParticleFP64> fromCellsPerDim(testCase.boxMin, testCase.boxMax, testCase.cutoff, testCase.skin,
+                                                       cellsPerDim);
 
     const auto positions = representativePositions(testCase.boxMin, testCase.boxMax);
     expectCellBlocksEquivalent(fromCellSizeFactor.getCellBlock(), fromCellsPerDim.getCellBlock(), positions);
