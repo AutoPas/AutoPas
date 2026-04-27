@@ -63,7 +63,7 @@ void expectCellBlocksEquivalent(const autopas::internal::CellBlock3D<ParticleCel
 }
 
 template <class LinkedCellsType>
-CellContentSnapshot getCellContentSnapshot(const LinkedCellsType &linkedCells) {
+CellContentSnapshot getCellContentSnapshot(LinkedCellsType &linkedCells) {
   CellContentSnapshot snapshot;
   snapshot.reserve(linkedCells.getCells().size());
 
