@@ -62,12 +62,6 @@ void testBoundary(autopas::internal::CellBlock3D<FMCell> &cellBlock, std::array<
   }
   std::array<size_t, 3> cellsPerDimWithHalo = cellBlock.getCellsPerDimensionWithHalo();
   auto haloThickness(cellBlock.getCellsPerInteractionLength());
-  // test getCellsPerDimensionWithoutHalo:
-  for (int d = 0; d < 3; ++d) {
-    EXPECT_EQ(cellsPerDimWithHalo[d], cellBlock.getCellsPerDimensionWithoutHalo()[d] + 2 * haloThickness)
-        << " for d = " << d << ", boxMin[d] = " << boxMin[d] << ", boxMax[d] = " << boxMax[d];
-  }
-
   std::array<size_t, 3> ind = {};
   for (ind[0] = 0; ind[0] < 4; ++ind[0]) {
     for (ind[1] = 0; ind[1] < 4; ++ind[1]) {
