@@ -45,7 +45,7 @@ class VCLClusterIterationTraversal : public TraversalInterface,
 
   void initTraversal() override {
     // Pass the OpenMP configurator to the VCL container.
-    VCLTraversalInterface<Particle>::_verletClusterLists->setOmpConfig(TraversalInterface::_ompConfig);
+    VCLTraversalInterface<ParticleType>::_verletClusterLists->setOmpConfig(TraversalInterface::_ompConfig);
 
     if (_dataLayout == DataLayoutOption::soa) {
       VCLTraversalInterface<ParticleType>::_verletClusterLists->loadParticlesIntoSoAs(_functor);

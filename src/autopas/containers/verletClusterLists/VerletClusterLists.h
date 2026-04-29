@@ -895,8 +895,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     const auto numTowers = _towerBlock.size();
 
     // Sets OpenMP's runtime schedule using the OpenMP configurator.
-    if (ParticleContainerInterface<Particle>::_ompConfig) {
-      autopas_set_schedule(*(ParticleContainerInterface<Particle>::_ompConfig));
+    if (ParticleContainerInterface<Particle_T>::_ompConfig) {
+      autopas_set_schedule(*(ParticleContainerInterface<Particle_T>::_ompConfig));
     }
 
     /// @todo: find sensible chunksize
@@ -916,8 +916,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     const auto numTowers = _towerBlock.size();
 
     // Sets OpenMP's runtime schedule using the OpenMP configurator.
-    if (ParticleContainerInterface<Particle>::_ompConfig != nullptr) {
-      autopas_set_schedule(*(ParticleContainerInterface<Particle>::_ompConfig));
+    if (ParticleContainerInterface<Particle_T>::_ompConfig != nullptr) {
+      autopas_set_schedule(*(ParticleContainerInterface<Particle_T>::_ompConfig));
     }
 
     /// @todo: find sensible chunksize
@@ -1053,8 +1053,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     const auto towersPerDimY = _towerBlock.getTowersPerDim()[1];
 
     // Sets OpenMP's runtime schedule using the OpenMP configurator.
-    if (ParticleContainerInterface<Particle>::_ompConfig != nullptr) {
-      autopas_set_schedule(*(ParticleContainerInterface<Particle>::_ompConfig));
+    if (ParticleContainerInterface<Particle_T>::_ompConfig != nullptr) {
+      autopas_set_schedule(*(ParticleContainerInterface<Particle_T>::_ompConfig));
     }
 
     /// @todo: find sensible chunksize
