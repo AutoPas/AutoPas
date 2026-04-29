@@ -111,8 +111,8 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
 
     case TuningStrategyOption::deepReinforcementLearning: {
       tuningStrategy = std::make_unique<DeepReinforcementLearning>(
-          info.drlRetrainingIterations, info.drlLearningRate, info.drlNumExplorationSamples, info.drlNumExploitationSamples,
-          info.drlPhaseScale, info.drlUpdateWeight, info.drlExplorationMethod);
+          info.drlRetrainingIterations, info.drlLearningRate, info.drlNumExplorationSamples,
+          info.drlNumExploitationSamples, info.drlPhaseScale, info.drlUpdateWeight, info.drlExplorationMethod);
       break;
     }
 

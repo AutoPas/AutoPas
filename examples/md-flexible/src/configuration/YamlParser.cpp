@@ -531,7 +531,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.rlExplorationSamples.value < 1) {
           throw std::runtime_error("The number of RL exploration samples has to be a positive integer >= 1!");
         }
-      } else if(key == config.rlModel.name) {
+      } else if (key == config.rlModel.name) {
         expected = "Exactly one RL model out of the possible values.";
         description = config.rlModel.description;
 

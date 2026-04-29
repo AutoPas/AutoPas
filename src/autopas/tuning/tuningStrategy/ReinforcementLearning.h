@@ -33,8 +33,7 @@ class ReinforcementLearning final : public TuningStrategyInterface {
    * @param model The reinforcement learning model to use.
    */
   explicit ReinforcementLearning(const double learningRate, const double discountFactor,
-                                 const size_t numRandomExplorations,
-                                 const ReinforcementModel model);
+                                 const size_t numRandomExplorations, const ReinforcementModel model);
 
   ~ReinforcementLearning() override = default;
 
