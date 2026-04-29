@@ -7,6 +7,7 @@
 #include "EvidenceCollection.h"
 
 #include <limits>
+#include <ranges>
 
 #include "Evidence.h"
 #include "autopas/tuning/Configuration.h"
@@ -22,30 +23,63 @@ const std::vector<Evidence> *EvidenceCollection::getEvidence(const Configuration
   const auto iter = _evidenceMap.find(configuration);
   if (iter != _evidenceMap.end()) {
     return &iter->second;
-  } else {
-    return nullptr;
   }
+  return nullptr;
 }
 
 Evidence &EvidenceCollection::modifyLastEvidence(const Configuration &configuration) {
   return _evidenceMap[configuration].back();
 }
 
-std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(size_t tuningPhase) const {
+std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigForContainer(
+    ContainerOption containerOption) const {
+  return getOptimalConfiguration(_latestTuningPhase, EvidenceMode::REDUCED, containerOption);
+}
+
+std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigNotReduced() const {
+  return getOptimalConfiguration(_latestTuningPhase, EvidenceMode::TOTAL, std::nullopt);
+}
+
+std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(
+    const size_t tuningPhase, const EvidenceMode mode, const std::optional<ContainerOption> containerConstraint) const {
   if (_evidenceMap.empty()) {
     utils::ExceptionHandler::exception(
-        "EvidenceCollection::getLatestOptimalConfiguration(): Trying to determine the optimal configuration but there "
+        "EvidenceCollection::getOptimalConfiguration(): Trying to determine the optimal configuration but there "
         "is no evidence yet!");
   }
   Configuration optimalConf{};
-  Evidence optimalEvidence{0, 0, std::numeric_limits<decltype(Evidence::value)>::max()};
+  Evidence optimalEvidence{};
+  long bestValue = std::numeric_limits<long>::max();
+
+  // Helper lambda to fetch the metric as determined by the EvidenceMode
+  auto getValue = [mode](const Evidence &e) -> long {
+    switch (mode) {
+      case EvidenceMode::REDUCED:
+        return e.reducedValue;
+      case EvidenceMode::TRAVERSAL:
+        return e.traversalValue;
+      case EvidenceMode::TOTAL:
+        return e.rebuildValue + e.traversalValue;
+    }
+    return std::numeric_limits<long>::max();
+  };
+
   for (const auto &[conf, evidenceVec] : _evidenceMap) {
+    if (containerConstraint.has_value() and conf.container != containerConstraint.value()) {
+      continue;
+    }
     // reverse iteration of the evidence vector because we are probably interested in the latest evidence.
-    for (auto evidenceIter = evidenceVec.rbegin(); evidenceIter != evidenceVec.rend(); ++evidenceIter) {
-      if (evidenceIter->tuningPhase == tuningPhase and optimalEvidence.value > evidenceIter->value) {
-        optimalConf = conf;
-        optimalEvidence = *evidenceIter;
-        // Assumption: There is only one evidence per tuning phase.
+    for (const auto &evidence : std::views::reverse(evidenceVec)) {
+      if (evidence.tuningPhase == tuningPhase) {
+        long currentValue = getValue(evidence);
+
+        if (currentValue < bestValue) {
+          bestValue = currentValue;
+          optimalConf = conf;
+          optimalEvidence = evidence;
+        }
+
+        // Assumption: There is only one evidence per tuning phase
         break;
       }
     }
