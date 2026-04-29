@@ -47,6 +47,12 @@ void TuningManager::addMeasurement(long sampleRebuild, long sampleTraversePartic
   }
 }
 
+void TuningManager::setRebuildFrequency(const double rebuildFrequency) {
+  for (const auto &tuner : _autoTuners | std::views::values) {
+    tuner->setRebuildFrequency(rebuildFrequency);
+  }
+}
+
 Configuration TuningManager::rejectConfiguration(const Configuration &rejectedConfig, const bool indefinitely,
                                                  const InteractionTypeOption::Value interactionType) {
   auto &tunerToReject = _autoTuners[interactionType];
@@ -101,6 +107,10 @@ bool TuningManager::tuningPhaseJustFinished() const {
 bool TuningManager::isStartOfTuningPhase(const size_t currentIteration) const {
   // If it's a multiple of the interval, or if a retune was forced
   return (currentIteration % _tuningInterval == 0) or _forceRetunePending;
+}
+
+bool TuningManager::inFirstConfigurationLastSample(const size_t currentIteration) const {
+  return (currentIteration % _tuningInterval == _maxSamples - 1);
 }
 
 const Configuration &TuningManager::getCurrentConfig(const InteractionTypeOption::Value interactionType) const {

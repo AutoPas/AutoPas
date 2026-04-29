@@ -167,6 +167,33 @@ class LogicHandler {
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->checkNeighborListsInvalidDoDynamicRebuild();
+
+    if (_tuningManager->isStartOfTuningPhase(_iteration)) {
+      _numRebuildsInNonTuningPhase = 0;
+    }
+
+    // Rebuild frequency estimation should be triggered early in the tuning phase.
+    // This is necessary because runtime prediction for each trial configuration
+    // depends on the rebuild frequency.
+    // To avoid the influence of poorly initialized velocities at the start of the simulation,
+    // the rebuild frequency is estimated at iteration corresponding to the last sample of the first configuration.
+    // The rebuild frequency estimated here is then reused for the remainder of the tuning phase.
+    if (_tuningManager->inFirstConfigurationLastSample(_iteration)) {
+      // Fetch the needed information for estimating the rebuild frequency from _logicHandlerInfo
+      // and estimate the current rebuild frequency using the velocity method.
+      double rebuildFrequencyEstimate =
+          getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
+      double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
+      // The user defined rebuild frequency is considered as the upper bound.
+      // If velocity method estimate exceeds upper bound, set the rebuild frequency to the user defined value.
+      // This is done because we currently use the user defined rebuild frequency as the upper bound to avoid expensive
+      // buffer interactions.
+      if (rebuildFrequencyEstimate > userProvidedRF) {
+        _tuningManager->setRebuildFrequency(userProvidedRF);
+      } else {
+        _tuningManager->setRebuildFrequency(rebuildFrequencyEstimate);
+      }
+    }
 #endif
     bool doDataStructureUpdate = not neighborListsAreValid();
 
@@ -1046,34 +1073,6 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   }();
 
   auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  if (_tuningManager->isStartOfTuningPhase(_iteration)) {
-    _numRebuildsInNonTuningPhase = 0;
-  }
-
-  // Rebuild frequency estimation should be triggered early in the tuning phase.
-  // This is necessary because runtime prediction for each trial configuration
-  // depends on the rebuild frequency.
-  // To avoid the influence of poorly initialized velocities at the start of the simulation,
-  // the rebuild frequency is estimated at iteration corresponding to the last sample of the first configuration.
-  // The rebuild frequency estimated here is then reused for the remainder of the tuning phase.
-  if (autoTuner.inFirstConfigurationLastSample()) {
-    // Fetch the needed information for estimating the rebuild frequency from _logicHandlerInfo
-    // and estimate the current rebuild frequency using the velocity method.
-    double rebuildFrequencyEstimate =
-        getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
-    double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
-    // The user defined rebuild frequency is considered as the upper bound.
-    // If velocity method estimate exceeds upper bound, set the rebuild frequency to the user defined value.
-    // This is done because we currently use the user defined rebuild frequency as the upper bound to avoid expensive
-    // buffer interactions.
-    if (rebuildFrequencyEstimate > userProvidedRF) {
-      autoTuner.setRebuildFrequency(userProvidedRF);
-    } else {
-      autoTuner.setRebuildFrequency(rebuildFrequencyEstimate);
-    }
-  }
-#endif
   utils::Timer timerTotal;
   utils::Timer timerRebuild;
   utils::Timer timerComputeInteractions;
@@ -1373,7 +1372,6 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   if (traversalPtr and generateNewContainer) {
     _currentContainerSelectorInfo = containerInfo;
     setCurrentContainer(std::move(containerPtr));
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};

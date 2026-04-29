@@ -58,6 +58,12 @@ class TuningManager {
                       InteractionTypeOption::Value interactionType) const;
 
   /**
+   * Pass the given rebuild frequency over to all AutoTuners
+   * @param rebuildFrequency
+   */
+  void setRebuildFrequency(double rebuildFrequency);
+
+  /**
    * Reject the current configuration for the interactionType by either skipping over it (indefinitely = false) or
    * removing it entirely (indefinitely = true). Also refreshes the respective AutoTuner's queue and returns the next
    * configuration in line.
@@ -114,6 +120,14 @@ class TuningManager {
    * @return True, if this is the first tuning iteration.
    */
   bool isStartOfTuningPhase(size_t currentIteration) const;
+
+  /**
+   * Indicates whether the tuner is in the iteration corresponding to the last sample of the first configuration in the
+   * current tuning phase.
+   * @param currentIteration Current LogicHandler iteration number.
+   * @return True, if this is the last sampling iteration for the first tested config.
+   */
+  bool inFirstConfigurationLastSample(size_t currentIteration) const;
 
   /**
    * Get the current configuration for a specific interaction type.
@@ -174,6 +188,11 @@ class TuningManager {
    * New tuning phase starting at multiples of _tuningInterval.
    */
   size_t _tuningInterval = 0;
+
+  /**
+   * Number of samples taken for each configuration.
+   */
+  size_t _maxSamples = 0;
 
   /**
    * Set to true when the tuning phase just finished for all AutoTuners.

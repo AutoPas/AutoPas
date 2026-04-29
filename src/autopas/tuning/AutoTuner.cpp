@@ -409,14 +409,7 @@ bool AutoTuner::inTuningPhase() const {
   return (_isTuning or _forceRetune) and not searchSpaceIsTrivial();
 }
 
-// bool AutoTuner::inFirstTuningIteration() const { return (_iteration % _tuningInterval == 0); }
-
 bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
-
-bool AutoTuner::inFirstConfigurationLastSample() const {
-  // todo: first config should be determined different in case a strategy filters out configs
-  return (_configQueue.size() == _searchSpace.size()) and (getCurrentNumSamples() == _maxSamples - 1);
-}
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
