@@ -8,6 +8,7 @@
 
 #include <unordered_map>
 
+#include "autopas/options/ReinforcementModelOption.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 
 namespace autopas {
@@ -20,14 +21,20 @@ namespace autopas {
 class ReinforcementLearning final : public TuningStrategyInterface {
  public:
   /**
+   * Type definition for reinforcement learning models for the Reinforcement Learning tuning strategy.
+   */
+  using ReinforcementModel = ReinforcementModelOption::Value;
+
+  /**
    * Create a reinforcement learning tuning strategy.
-   * @param searchSpace The search space to use.
    * @param learningRate The learning rate for the reinforcement learning algorithm.
    * @param discountFactor The discount factor for the reinforcement learning algorithm.
-   * @param numRandomExplorations Optional: The number of random explorations to perform.
+   * @param numRandomExplorations The number of random explorations to perform.
+   * @param model The reinforcement learning model to use.
    */
-  explicit ReinforcementLearning(const std::set<Configuration> &searchSpace, const double learningRate,
-                                 const double discountFactor, const size_t numRandomExplorations = 5);
+  explicit ReinforcementLearning(const double learningRate, const double discountFactor,
+                                 const size_t numRandomExplorations,
+                                 const ReinforcementModel model);
 
   ~ReinforcementLearning() override = default;
 
@@ -94,11 +101,21 @@ class ReinforcementLearning final : public TuningStrategyInterface {
   size_t _numRandomExplorations = 5;
 
   /**
+   * Store the reinforcement learning model to be used.
+   */
+  ReinforcementModel _model = ReinforcementModel::SARSA;
+
+  /**
    * Store the state of the reinforcement learning algorithm.
    *
    * This is a map of configurations and double weights.
    */
   std::unordered_map<Configuration, double, ConfigHash> _state;
+
+  /**
+   * Store the allowed configurations for the tuning phase.
+   */
+  std::vector<Configuration> _allowedConfigurations;
 
   /**
    * Store the best evidence in this tuning phase.

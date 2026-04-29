@@ -8,14 +8,13 @@
 
 #include "autopas/utils/Random.h"
 
-autopas::ReinforcementLearning::ReinforcementLearning(const std::set<Configuration> &searchSpace,
-                                                      const double learningRate, const double discountFactor,
-                                                      const size_t numRandomExplorations)
-    : _learningRate(learningRate), _discountFactor(discountFactor), _numRandomExplorations(numRandomExplorations) {
-  if (searchSpace.size() <= _numRandomExplorations) {
-    AutoPasLog(WARN, "The number of random explorations is larger than or equal to the search space size.");
-  }
-
+autopas::ReinforcementLearning::ReinforcementLearning(const double learningRate, const double discountFactor,
+                                                      const size_t numRandomExplorations,
+                                                      const ReinforcementModel model)
+    : _learningRate(learningRate),
+      _discountFactor(discountFactor),
+      _numRandomExplorations(numRandomExplorations),
+      _model(model) {
   if (learningRate <= 0 or learningRate > 1) {
     utils::ExceptionHandler::exception("The learning rate must be between 0 and 1 for Reinforcement Learning Tuning.");
   }
@@ -23,6 +22,11 @@ autopas::ReinforcementLearning::ReinforcementLearning(const std::set<Configurati
   if (discountFactor <= 0 or discountFactor > 1) {
     utils::ExceptionHandler::exception(
         "The discount factor must be between 0 and 1 for Reinforcement Learning Tuning.");
+  }
+
+  if (numRandomExplorations == 0) {
+    utils::ExceptionHandler::exception(
+        "The number of random explorations must be greater than 0 for Reinforcement Learning Tuning.");
   }
 
   _learningRate = learningRate;
@@ -34,11 +38,16 @@ autopas::TuningStrategyOption autopas::ReinforcementLearning::getOptionType() co
 }
 
 void autopas::ReinforcementLearning::addEvidence(const Configuration &configuration, const Evidence &evidence) {
-  if (_firstTuningPhase) {
+  if (_state.find(configuration) == _state.end()) {
     _state.emplace(configuration, -evidence.value);
   } else {
-    double oldState = _state.at(configuration);
-    _state.at(configuration) = oldState + _learningRate * (-evidence.value + _discountFactor * oldState - oldState);
+    if (_model == ReinforcementModel::SARSA) {
+      double oldState = _state.at(configuration);
+      _state.at(configuration) = oldState + _learningRate * (-evidence.value + _discountFactor * oldState - oldState);
+    } else if (_model == ReinforcementModel::QLearning) {
+      double oldState = _state.at(configuration);
+      _state.at(configuration) = oldState + _learningRate * (-evidence.value + _discountFactor * oldState - oldState);
+    }
   }
 
   if (evidence.value <= _bestEvidence) {
@@ -124,6 +133,7 @@ bool autopas::ReinforcementLearning::reset(size_t iteration, size_t tuningPhase,
     return false;
   }
 
+  _allowedConfigurations = configQueue;
   _firstTuningPhase = tuningPhase == 0;
   _explorationPhase = true;
   _bestEvidence = std::numeric_limits<long>::max();

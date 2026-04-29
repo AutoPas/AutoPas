@@ -10,6 +10,7 @@
 #include <map>
 #include <random>
 
+#include "autopas/options/ExplorationMethodOption.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/Random.h"
 
@@ -27,32 +28,12 @@ namespace autopas {
  * thesis.
  */
 class DeepReinforcementLearning final : public TuningStrategyInterface {
- public:
-  /**
-   * Enum class for the different exploration methods.
-   */
-  enum class ExplorationMethod {
-    /**
-     * The polynomial exploration method.
-     *
-     * Choose the next configuration based on the weighted age squared and the predicted evidence:
-     *
-     * @f[age^2 \cdot _phaseScale + predictedEvidence()@f]
-     *
-     * The predicted evidence is an interpolation of the last two tuning phases.
-     */
-    polynomial,
-    /**
-     * The random exploration method. Choose the next exploration samples randomly.
-     */
-    random,
-    /**
-     * The longest ago exploration method. Choose the exploration samples based on the longest ago search.
-     */
-    longestAgo,
-  };
-
  private:
+  /**
+   * Type definition for the different exploration methods.
+   */
+  using ExplorationMethod = ExplorationMethodOption;
+
   /**
    * Enum class for the different tuning states.
    */
@@ -153,13 +134,19 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   DeepReinforcementLearning() = delete;
 
   /**
-   * Constructor for the DeepReinforcementLearning class.
-   * @param retrain Whether to retrain the neural network or not. (I.e. make this simple a deep learning strategy)
-   * @param numExplorationSamples The number of exploration samples to use.
-   * @param explorationMethod The exploration method to use.
+   * Constructor.
+   * @param retrainingIterations The number of retraining iterations.
+   * @param learningRate The learning rate.
+   * @param numExplorationSamples The number of samples to be used for exploration.
+   * @param numExploitationSamples The number of samples to be used for exploitation.
+   * @param phaseScale The scaling factor used for the priority of the age of a data in polynomial exploration.
+   * @param updateWeight The weight used for updating the neural network in the reinforcement learning process.
+   * @param explorationMethod The extrapolation method to be used for selecting the exploration samples.
    */
-  explicit DeepReinforcementLearning(const bool retrain, const size_t numExplorationSamples = 3,
-                                     const ExplorationMethod explorationMethod = ExplorationMethod::polynomial);
+  DeepReinforcementLearning(const size_t retrainingIterations, const double learningRate,
+                            const size_t numExplorationSamples, const size_t numExploitationSamples,
+                            const double phaseScale, const double updateWeight,
+                            const ExplorationMethod explorationMethod);
 
   /**
    * Destructor.
@@ -210,10 +197,15 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   [[nodiscard]] std::set<Configuration> getExplorationSamples() const;
 
   /**
-   * Define the activation function to be used.
+   * Define the Exponential Linear Unit (ELU) activation function.
    *
-   * For deep reinforcement learning, the ELU activation function is being used: @f$elu(x) = \max(0, x) + \min(0,
-   * \alpha(\exp(x) - 1))@f$
+   * For deep reinforcement learning, the ELU activation function is being used:
+   * @f[
+   * elu(x) = \begin{cases}
+   *   x & \text{if } x > 0 \\
+   *   \exp(x) - 1 & \text{if } x \leq 0
+   * \end{cases}
+   * @f]
    *
    * @param x The input to the activation function.
    * @return The output of the activation function.
@@ -226,7 +218,13 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   /**
    * Define the derivative of the activation function.
    *
-   * This is the derivative of the ELU activation function: @f$elu'(x) = \max(0, 1) + \min(0, \exp(x))@f$
+   * This is the derivative of the ELU activation function:
+   * @f[
+   * elu'(x) = \begin{cases}
+   *   1 & \text{if } x > 0 \\
+   *   \exp(x) & \text{if } x \leq 0
+   * \end{cases}
+   * @f]
    *
    * @param x The input to the derivative.
    * @return The output of the derivative.
@@ -268,14 +266,9 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
   ExplorationMethod _explorationMethod = ExplorationMethod::polynomial;
 
   /**
-   * Store if the neural network should be retrained with reinforcement learning.
-   */
-  bool _retrain = false;
-
-  /**
    * The configurations that have been explored.
    */
-  std::set<Configuration> _exploredConfigurations;
+  std::set<Configuration> _allowedConfigurations;
 
   /**
    * The history of the search.
@@ -286,12 +279,12 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
    * The input length of the neural network. This is equivalent to the number of evidences stored in the history for a
    * particular configuration.
    */
-  size_t _inputLength = 4;
+  const size_t _inputLength = 4;
 
   /**
    * The size of the hidden layer.
    */
-  size_t _hiddenLayerSize = 16;
+  const size_t _hiddenLayerSize = 16;
 
   /**
    * The hidden layer weights. This is a _inputLength * 2 x _hiddenLayerSize matrix for the hidden layer.
@@ -360,5 +353,10 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
    * polynomial method is being used for selecting the exploration samples.
    */
   double _phaseScale = 1.162197398643888948e-05;
+
+  /**
+   * The weight used for updating the neural network in the reinforcement learning process.
+   */
+  double _updateWeight = 0.5;
 };
 }  // namespace autopas

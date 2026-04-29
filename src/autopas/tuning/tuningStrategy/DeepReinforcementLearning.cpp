@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <ranges>
 
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/logging/Logger.h"
 
 autopas::DeepReinforcementLearning::DRLHistoryData::DRLHistoryData(const size_t inputLength, const double value,
@@ -80,12 +81,39 @@ Eigen::Matrix<double, Eigen::Dynamic, 1> autopas::DeepReinforcementLearning::DRL
   return vec;
 }
 
-autopas::DeepReinforcementLearning::DeepReinforcementLearning(const bool retrain, const size_t numExplorationSamples,
+autopas::DeepReinforcementLearning::DeepReinforcementLearning(const size_t retrainingIterations,
+                                                              const double learningRate,
+                                                              const size_t numExplorationSamples,
+                                                              const size_t numExploitationSamples,
+                                                              const double phaseScale, const double updateWeight,
                                                               const ExplorationMethod explorationMethod)
-    : _explorationMethod(explorationMethod), _retrain(retrain), _numExplorationSamples(numExplorationSamples) {
-  // Test that there is at least two exploration sample
-  if (_numExplorationSamples <= 1) {
+
+    : _explorationMethod(explorationMethod),
+      _retrainingIterations(retrainingIterations),
+      _learningRate(learningRate),
+      _numExplorationSamples(numExplorationSamples),
+      _numExploitationSamples(numExploitationSamples),
+      _phaseScale(phaseScale),
+      _updateWeight(updateWeight) {
+  if (learningRate <= 0.0) {
+    utils::ExceptionHandler::exception("DeepReinforcementLearning: The learning rate must be greater than 0.");
+  }
+
+  if (numExploitationSamples < 1) {
+    utils::ExceptionHandler::exception("DeepReinforcementLearning: The exploitation samples may not be less than 1.");
+  }
+
+  if (numExplorationSamples < 2) {
     utils::ExceptionHandler::exception("DeepReinforcementLearning: The exploration samples may not be less than 2.");
+  }
+
+  if (phaseScale < 0.0) {
+    utils::ExceptionHandler::exception(
+        "DeepReinforcementLearning: The phase scale must be greater than or equal to 0.");
+  }
+
+  if (updateWeight < 0.0 || updateWeight > 1.0) {
+    utils::ExceptionHandler::exception("DeepReinforcementLearning: The update weight must be between 0 and 1.");
   }
 
   // clang-format off
@@ -145,12 +173,12 @@ autopas::TuningStrategyOption autopas::DeepReinforcementLearning::getOptionType(
 }
 
 void autopas::DeepReinforcementLearning::addEvidence(const Configuration &configuration, const Evidence &evidence) {
-  if (_state == TuningState::firstSearch) {
+  if (_history.find(configuration) == _history.end()) {
     // In the first search state, we simply collect evidence without any further processing.
-    _exploredConfigurations.insert(configuration);
+    _allowedConfigurations.insert(configuration);
     _history.emplace(configuration,
                      DRLHistoryData(_inputLength, static_cast<double>(evidence.value),
-                                    static_cast<double>(_exploredConfigurations.size()) / _numExplorationSamples));
+                                    static_cast<double>(_allowedConfigurations.size()) / _numExplorationSamples));
     _minEvidence = std::min(_minEvidence, static_cast<double>(evidence.value));
   } else {
     // In the exploration and exploitation state, we collect evidence and update the exploration samples.
@@ -185,9 +213,7 @@ bool autopas::DeepReinforcementLearning::optimizeSuggestions(std::vector<Configu
     }
 
     // Code for optimizing suggestions in the retraining state
-    if (_retrain) {
-      retrainNeuralNetwork();
-    }
+    retrainNeuralNetwork();
 
     // Clear the retraining data
     _retrainingInputData.clear();
@@ -226,10 +252,9 @@ bool autopas::DeepReinforcementLearning::reset(size_t iteration, size_t tuningPh
     history.ageData();
   }
 
-  // The first search may never contain an empty config queue.
-  optimizeSuggestions(configQueue, evidenceCollection);
+  _allowedConfigurations = {configQueue.begin(), configQueue.end()};
 
-  return false;
+  return optimizeSuggestions(configQueue, evidenceCollection);
 }
 
 std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorationSamples() const {
@@ -239,7 +264,7 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
       std::vector<std::pair<Configuration, double>> explorationPriority;
       double timeScale = 1.0 / _minEvidence;
 
-      for (const Configuration &config : _exploredConfigurations) {
+      for (const Configuration &config : _allowedConfigurations) {
         // Calculate the priority based on when the configuration was last tested.
         double lastTuningPhase = _history.at(config).lastSearched();
 
@@ -264,14 +289,14 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
 
     case ExplorationMethod::random: {
       // Implementation for random exploration
-      return _rand.randomSubset(_exploredConfigurations, _numExplorationSamples);
+      return _rand.randomSubset(_allowedConfigurations, _numExplorationSamples);
     }
 
     case ExplorationMethod::longestAgo: {
       // Implementation for longest ago exploration
       std::vector<std::pair<Configuration, size_t>> sortedHistory;
-      for (const auto &[config, history] : _history) {
-        sortedHistory.emplace_back(config, history.lastSearched());
+      for (const auto config : _allowedConfigurations) {
+        sortedHistory.emplace_back(config, _history.at(config).lastSearched());
       }
 
       // Shuffle the array to prevent order-based preferences in case of multiple algorithms with the same age.
@@ -313,12 +338,12 @@ double autopas::DeepReinforcementLearning::evaluate(const DRLHistoryData &sample
 
 std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExploitationSamples() const {
   // Handle invalid input sizes
-  if (_numExploitationSamples > _exploredConfigurations.size()) {
+  if (_numExploitationSamples > _allowedConfigurations.size()) {
     AutoPasLog(WARN,
                "DeepReinforcementLearning: The number of exploitation samples ({}) is larger than the number of "
-               "explored configurations ({}).",
-               _numExploitationSamples, _exploredConfigurations.size());
-    return _exploredConfigurations;  // Return the entire search space if samples exceed size
+               "allowed configurations ({}).",
+               _numExploitationSamples, _allowedConfigurations.size());
+    return _allowedConfigurations;  // Return the entire search space if samples exceed size
   }
 
   // Collect the exploitation samples based on the history
@@ -326,8 +351,8 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExploita
   std::vector<std::pair<Configuration, double>> sortedConfigs;
 
   // Choose the best configurations based on the minimum evaluate(history[config])
-  for (const auto &[config, DRLHistoryData] : _history) {
-    double score = evaluate(DRLHistoryData);
+  for (const auto config : _allowedConfigurations) {
+    double score = evaluate(_history.at(config));
     sortedConfigs.emplace_back(config, score);
   }
 
@@ -350,6 +375,11 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExploita
 }
 
 void autopas::DeepReinforcementLearning::retrainNeuralNetwork() {
+  const auto oldOutputLayer = _outputLayer;
+  const auto oldOutputLayerBias = _outputLayerBias;
+  const auto oldHiddenLayer = _hiddenLayer;
+  const auto oldHiddenLayerBias = _hiddenLayerBias;
+
   for (size_t i = 0; i < _retrainingIterations; i++) {
     for (size_t j = 0; j < _retrainingInputData.size(); j++) {
       // Forward propagate
@@ -391,4 +421,10 @@ void autopas::DeepReinforcementLearning::retrainNeuralNetwork() {
       _hiddenLayerBias -= _learningRate * dHiddenLayerBias;
     }
   }
+
+  // Blend the old and new weights to prevent overfitting to the small retraining dataset
+  _outputLayer = oldOutputLayer * (1.0 - _updateWeight) + _outputLayer * _updateWeight;
+  _outputLayerBias = oldOutputLayerBias * (1.0 - _updateWeight) + _outputLayerBias * _updateWeight;
+  _hiddenLayer = oldHiddenLayer * (1.0 - _updateWeight) + _hiddenLayer * _updateWeight;
+  _hiddenLayerBias = oldHiddenLayerBias * (1.0 - _updateWeight) + _hiddenLayerBias * _updateWeight;
 }

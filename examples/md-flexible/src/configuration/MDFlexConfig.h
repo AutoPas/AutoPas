@@ -16,9 +16,11 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/EnergySensorOption.h"
+#include "autopas/options/ExplorationMethodOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
+#include "autopas/options/ReinforcementModelOption.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
@@ -108,9 +110,7 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
+      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
       return retStruct;
     }
   };
@@ -433,6 +433,88 @@ class MDFlexConfig {
       "For predictive based tuning strategies: The extrapolation method that calculates the prediction. Possible "
       "Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::ExtrapolationMethodOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
+   * drlRetrainingIterations
+   */
+  MDFlexOption<unsigned int, __LINE__> drlRetrainingIterations{
+      34, "drl-retraining-iterations", true,
+      "For the deep reinforcement learning tuning strategy: Number of iterations for retraining (updating) the neural "
+      "network."};
+  /**
+   * drlLearningRate
+   */
+  MDFlexOption<double, __LINE__> drlLearningRate{
+      1.771665733218049020e-09, "drl-learning-rate", true,
+      "For the deep reinforcement learning tuning strategy: Learning rate for the neural network update. This value "
+      "has to be greater than 0."};
+  /**
+   * drlNumExplorationSamples
+   */
+  MDFlexOption<unsigned int, __LINE__> drlNumExplorationSamples{
+      4, "drl-num-exploration-samples", true,
+      "For the deep reinforcement learning tuning strategy: Number of configurations to explore during the exploration "
+      "phase. This value has to be greater than one."};
+  /**
+   * drlNumExploitationSamples
+   */
+  MDFlexOption<unsigned int, __LINE__> drlNumExploitationSamples{
+      1, "drl-num-exploitation-samples", true,
+      "For the deep reinforcement learning tuning strategy: Number of configurations to explore during the "
+      "exploitation phase. This value has to be greater than zero."};
+  /**
+   * drlPhaseScale
+   */
+  MDFlexOption<double, __LINE__> drlPhaseScale{
+      1.162197398643888948e-05, "drl-phase-scale", true,
+      "For the deep reinforcement learning tuning strategy: Scale for the phase value used in the exploration sample "
+      "selection when the polynomial method is being used for selecting the exploration samples."};
+  /**
+   * drlUpdateWeight
+   */
+  MDFlexOption<double, __LINE__> drlUpdateWeight{
+      0.5, "drl-update-weight", true,
+      "For the deep reinforcement learning tuning strategy: The weight used for updating the neural network in the "
+      "reinforcement learning process."};
+  /**
+   * drlExplorationMethod
+   */
+  MDFlexOption<autopas::ExplorationMethodOption, __LINE__> drlExplorationMethod{
+      autopas::ExplorationMethodOption::polynomial, "drl-exploration-method", true,
+      "For the deep reinforcement learning tuning strategy: The method used for selecting the exploration samples. "
+      "Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::ExplorationMethodOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
+   * rlLearningRate
+   */
+  MDFlexOption<double, __LINE__> rlLearningRate{
+      0.8, "rl-learning-rate", true,
+      "For the reinforcement learning tuning strategy: Learning rate for the reinforcement learning algorithm. This "
+      "value has to be between 0 and 1 (exclusive)."};
+  /**
+   * rlDiscountFactor
+   */
+  MDFlexOption<double, __LINE__> rlDiscountFactor{
+      0.8, "rl-discount-factor", true,
+      "For the reinforcement learning tuning strategy: Discount factor for the reinforcement learning algorithm. This "
+      "value has to be between 0 and 1 (exclusive)."};
+  /**
+   * rlExplorationSamples
+   */
+  MDFlexOption<unsigned int, __LINE__> rlExplorationSamples{
+      4, "rl-exploration-samples", true,
+      "For the reinforcement learning tuning strategy: Number of configurations to explore during the exploration "
+      "phase. This value has to be greater than one."};
+  /**
+   * rlModel
+   */
+  MDFlexOption<autopas::ReinforcementModelOption, __LINE__> rlModel{
+      autopas::ReinforcementModelOption::SARSA, "rl-model", true,
+      "For the reinforcement learning tuning strategy: The model used for the reinforcement learning algorithm. "
+      "Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::ReinforcementModelOption::getAllOptions(), " ", {"(", ")"})};
+
   /**
    * vtkOutputFolder
    */
@@ -503,37 +585,6 @@ class MDFlexConfig {
       "For Bayesian based tuning strategies: Function to determine the predicted knowledge gain when testing a given "
       "configuration. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), " ", {"(", ")"})};
-
-  /**
-   * learningRate
-   */
-  MDFlexOption<double, __LINE__> learningRate{
-      0.8, "learning-rate", true,
-      "For the reinforcement learning tuning strategy: Learning rate for the reinforcement learning algorithm. This "
-      "value has to be between 0 and 1 (exclusive)."};
-
-  /**
-   * discountFactor
-   */
-  MDFlexOption<double, __LINE__> discountFactor{
-      0.8, "discount-factor", true,
-      "For the reinforcement learning tuning strategy: Discount factor for the "
-      "reinforcement learning algorithm. This value has to be between 0 and 1 (exclusive)."};
-
-  /**
-   * numExplorationSamples
-   */
-  MDFlexOption<unsigned int, __LINE__> numExplorationSamples{
-      4, "num-exploration-samples", true,
-      "For the deep reinforcement learning tuning strategy: Number of configurations to explore during the exploration "
-      "phase. This value has to be greater than one."};
-
-  /**
-   * doReinforcementUpdates
-   */
-  MDFlexOption<bool, __LINE__> doReinforcementUpdates{true, "do-reinforcement-update", true,
-                                                      "For the deep reinforcement learning tuning strategy: Whether to "
-                                                      "update the reinforcement learning model after each iteration."};
 
   // Simulation Options:
   /**

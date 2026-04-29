@@ -800,58 +800,144 @@ class AutoPas {
   }
 
   /**
-   * Get the learning rate for reinforcement learning tuning.
-   * @return The learning rate.
+   * Get the exploration method used for deep reinforcement learning based tuning.
+   * @return
    */
-  [[nodiscard]] double getLearningRate() const { return _tuningStrategyFactoryInfo.learningRate; }
-
-  /**
-   * Set the learning rate for reinforcement learning tuning.
-   * @param learningRate The learning rate.
-   */
-  void setLearningRate(double learningRate) { _tuningStrategyFactoryInfo.learningRate = learningRate; }
-
-  /**
-   * Get the discount factor for reinforcement learning tuning.
-   * @return The discount factor.
-   */
-  [[nodiscard]] double getDiscountFactor() const { return _tuningStrategyFactoryInfo.discountFactor; }
-
-  /**
-   * Set the discount factor for reinforcement learning tuning.
-   * @param discountFactor The discount factor.
-   */
-  void setDiscountFactor(double discountFactor) { _tuningStrategyFactoryInfo.discountFactor = discountFactor; }
-
-  /**
-   * Get the number of exploration samples for deep reinforcement learning.
-   * @return The number of exploration samples.
-   */
-  [[nodiscard]] unsigned int getNumExplorationSamples() const {
-    return _tuningStrategyFactoryInfo.numExplorationSamples;
+  [[nodiscard]] ExplorationMethodOption getDRLExplorationMethod() const {
+    return _tuningStrategyFactoryInfo.drlExplorationMethod;
   }
 
   /**
-   * Set the number of exploration samples for deep reinforcement learning.
-   * @param numExplorationSamples The number of exploration samples.
+   * Set the exploration method used for deep reinforcement learning based tuning.
+   * For possible exploration method choices see options::ExplorationMethodOption::Value.
+   * @param explorationMethodOption
    */
-  void setNumExplorationSamples(unsigned int numExplorationSamples) {
-    _tuningStrategyFactoryInfo.numExplorationSamples = numExplorationSamples;
+  void setDRLExplorationMethod(ExplorationMethodOption explorationMethodOption) {
+    _tuningStrategyFactoryInfo.drlExplorationMethod = explorationMethodOption;
   }
 
   /**
-   * Get if reinforcement training updates are being used for deep reinforcement learning.
-   * @return If reinforcement training updates are enabled.
+   * Get the number of retraining iterations for deep reinforcement learning based tuning.
+   * @return
    */
-  [[nodiscard]] bool getDoReinforcementUpdates() const { return _tuningStrategyFactoryInfo.doReinforcementUpdates; }
+  [[nodiscard]] unsigned int getDRLRetrainingIterations() const {
+    return _tuningStrategyFactoryInfo.drlRetrainingIterations;
+  }
 
   /**
-   * Set if reinforcement training updates are being used for deep reinforcement learning.
-   * @param doReinforcementUpdates If reinforcement training updates are enabled.
+   * Set the number of retraining iterations for deep reinforcement learning based tuning.
+   * @param drlRetrainingIterations
    */
-  void setDoReinforcementUpdates(bool doReinforcementUpdates) {
-    _tuningStrategyFactoryInfo.doReinforcementUpdates = doReinforcementUpdates;
+  void setDRLRetrainingIterations(unsigned int drlRetrainingIterations) {
+    _tuningStrategyFactoryInfo.drlRetrainingIterations = drlRetrainingIterations;
   }
+
+  /**
+   * Get the learning rate for deep reinforcement learning based tuning.
+   * @return
+   */
+  [[nodiscard]] double getDRLLearningRate() const { return _tuningStrategyFactoryInfo.drlLearningRate; }
+
+  /**
+   * Set the learning rate for deep reinforcement learning based tuning.
+   * @param drlLearningRate
+   */
+  void setDRLLearningRate(double drlLearningRate) { _tuningStrategyFactoryInfo.drlLearningRate = drlLearningRate; }
+
+  /**
+   * Get the number of exploration samples for deep reinforcement learning based tuning.
+   * @return
+   */
+  [[nodiscard]] unsigned int getDRLNumExplorationSamples() const {
+    return _tuningStrategyFactoryInfo.drlNumExplorationSamples;
+  }
+
+  /**
+   * Set the number of exploration samples for deep reinforcement learning based tuning.
+   * @param drlExplorationSamples
+   */
+  void setDRLNumExplorationSamples(unsigned int drlExplorationSamples) {
+    _tuningStrategyFactoryInfo.drlNumExplorationSamples = drlExplorationSamples;
+  }
+
+  /**
+   * Get the number of exploitation samples for deep reinforcement learning based tuning.
+   * @return
+   */
+  [[nodiscard]] unsigned int getDRLNumExploitationSamples() const {
+    return _tuningStrategyFactoryInfo.drlNumExploitationSamples;
+  }
+
+  /**
+   * Set the number of exploitation samples for deep reinforcement learning based tuning.
+   * @param drlExploitationSamples
+   */
+  void setDRLNumExploitationSamples(unsigned int drlExploitationSamples) {
+    _tuningStrategyFactoryInfo.drlNumExploitationSamples = drlExploitationSamples;
+  }
+
+  /**
+   * Get the phase scale for deep reinforcement learning based tuning.
+   * @return
+   */
+  [[nodiscard]] double getDRLPhaseScale() const { return _tuningStrategyFactoryInfo.drlPhaseScale; }
+
+  /**
+   * Set the phase scale for deep reinforcement learning based tuning.
+   * @param drlPhaseScale
+   */
+  void setDRLPhaseScale(double drlPhaseScale) { _tuningStrategyFactoryInfo.drlPhaseScale = drlPhaseScale; }
+
+  /**
+   * Get the learning rate for reinforcement learning based tuning.
+   * @return
+   */
+  [[nodiscard]] double getRLLearningRate() const { return _tuningStrategyFactoryInfo.rlLearningRate; }
+
+  /**
+   * Set the learning rate for reinforcement learning based tuning.
+   * @param rlLearningRate
+   */
+  void setRLLearningRate(double rlLearningRate) { _tuningStrategyFactoryInfo.rlLearningRate = rlLearningRate; }
+
+  /**
+   * Get the discount factor for reinforcement learning based tuning.
+   * @return
+   */
+  [[nodiscard]] double getRLDiscountFactor() const { return _tuningStrategyFactoryInfo.rlDiscountFactor; }
+
+  /**
+   * Set the discount factor for reinforcement learning based tuning.
+   * @param rlDiscountFactor
+   */
+  void setRLDiscountFactor(double rlDiscountFactor) { _tuningStrategyFactoryInfo.rlDiscountFactor = rlDiscountFactor; }
+
+  /**
+   * Get the number of exploration samples for reinforcement learning based tuning.
+   * @return
+   */
+  [[nodiscard]] unsigned int getRLExplorationSamples() const { return _tuningStrategyFactoryInfo.rlExplorationSamples; }
+
+  /**
+   * Set the number of exploration samples for reinforcement learning based tuning.
+   * @param rlExplorationSamples
+   */
+  void setRLExplorationSamples(unsigned int rlExplorationSamples) {
+    _tuningStrategyFactoryInfo.rlExplorationSamples = rlExplorationSamples;
+  }
+
+  /**
+   * Get the reinforcement update model for reinforcement learning based tuning.
+   * @return
+   */
+  [[nodiscard]] ReinforcementModelOption getRLModel() const { return _tuningStrategyFactoryInfo.rlModel; }
+
+  /**
+   * Set the reinforcement update model for reinforcement learning based tuning.
+   * For possible update model choices see options::ReinforcementModelOption::Value.
+   * @param rlModel
+   */
+  void setRLModel(ReinforcementModelOption rlModel) { _tuningStrategyFactoryInfo.rlModel = rlModel; }
 
   /**
    * Get extrapolation method for the prediction of the configuration performance.
