@@ -176,6 +176,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
   _autoPasContainer->setDeltaT(_configuration.deltaT.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
+  // TODO: (Deep) Reinforcement Learning
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
   _autoPasContainer->setOutputSuffix(outputSuffix);

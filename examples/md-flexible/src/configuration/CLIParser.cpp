@@ -46,6 +46,17 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   static const auto relevantOptions{std::make_tuple(
       // clang-format off
       config.acquisitionFunctionOption,
+      config.drlRetrainingIterations,
+      config.drlLearningRate,
+      config.drlNumExplorationSamples,
+      config.drlNumExploitationSamples,
+      config.drlPhaseScale,
+      config.drlUpdateWeight,
+      config.drlExplorationMethod,
+      config.rlLearningRate,
+      config.rlDiscountFactor,
+      config.rlExplorationSamples,
+      config.rlModel,
       config.boundaryOption,
       config.boxLength,
       config.cellSizeFactors,
@@ -177,6 +188,145 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         config.acquisitionFunctionOption.value = *parsedOptions.begin();
+        break;
+      }
+      case decltype(config.drlRetrainingIterations)::getoptChar: {
+        config.drlRetrainingIterations.value = stoul(strArg);
+        try {
+          if (config.drlRetrainingIterations.value <= 0) {
+            cerr << "DRL retraining iterations have to be a positive number!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing the DRL retraining iterations: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.drlLearningRate)::getoptChar: {
+        try {
+          config.drlLearningRate.value = stod(strArg);
+          if (config.drlLearningRate.value <= 0 || config.drlLearningRate.value >= 1) {
+            cerr << "DRL learning rate has to be a number between 0 and 1 (exclusive)!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing the DRL learning rate: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.drlNumExplorationSamples)::getoptChar: {
+        try {
+          config.drlNumExplorationSamples.value = stoul(strArg);
+          if (config.drlNumExplorationSamples.value < 2) {
+            cerr << "DRL exploration samples have to be greater than one!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing DRL exploration samples: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.drlNumExploitationSamples)::getoptChar: {
+        try {
+          config.drlNumExploitationSamples.value = stoul(strArg);
+          if (config.drlNumExploitationSamples.value < 1) {
+            cerr << "DRL exploitation samples have to be greater than zero!" << endl;
+            displayHelp = true;
+          }
+        } catch (const std::exception &e) {
+          std::cerr << "Error parsing DRL exploitation samples: " << optarg << std::endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.drlPhaseScale)::getoptChar: {
+        try {
+          config.drlPhaseScale.value = stod(strArg);
+          if (config.drlPhaseScale.value <= 0) {
+            cerr << "DRL phase scale has to be a positive number!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing the DRL phase scale: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.drlUpdateWeight)::getoptChar: {
+        try {
+          config.drlUpdateWeight.value = stod(strArg);
+          if (config.drlUpdateWeight.value < 0 || config.drlUpdateWeight.value > 1) {
+            cerr << "DRL update weight has to be a number between 0 and 1!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing the DRL update weight: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.drlExplorationMethod)::getoptChar: {
+        auto parsedOptions = autopas::ExplorationMethodOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one DRL exploration method." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.drlExplorationMethod.value = *parsedOptions.begin();
+        break;
+      }
+      case decltype(config.rlLearningRate)::getoptChar: {
+        try {
+          config.rlLearningRate.value = stod(strArg);
+          if (config.rlLearningRate.value <= 0 || config.rlLearningRate.value >= 1) {
+            cerr << "RL learning rate has to be a number between 0 and 1 (exclusive)!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing the RL learning rate: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.rlDiscountFactor)::getoptChar: {
+        try {
+          config.rlDiscountFactor.value = stod(strArg);
+          if (config.rlDiscountFactor.value < 0 || config.rlDiscountFactor.value > 1) {
+            cerr << "RL discount factor has to be a number between 0 and 1!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing the RL discount factor: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.rlExplorationSamples)::getoptChar: {
+        try {
+          config.rlExplorationSamples.value = stoul(strArg);
+          if (config.rlExplorationSamples.value < 2) {
+            cerr << "RL exploration samples have to be greater than one!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing RL exploration samples: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.rlModel)::getoptChar: {
+        auto parsedOptions = autopas::ReinforcementModelOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one RL model." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.rlModel.value = *parsedOptions.begin();
         break;
       }
       case decltype(config.cellSizeFactors)::getoptChar: {

@@ -458,6 +458,87 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one acquisition function option!"));
 
         config.acquisitionFunctionOption.value = *parsedOptions.begin();
+      } else if (key == config.drlLearningRate.name) {
+        expected = "Floating-point Value greater than 0.";
+        description = config.drlLearningRate.description;
+
+        config.drlLearningRate.value = node[key].as<double>();
+        if (config.drlLearningRate.value <= 0) {
+          throw std::runtime_error("DRL learning rate has to be greater than 0!");
+        }
+      } else if (key == config.drlNumExplorationSamples.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.drlNumExplorationSamples.description;
+
+        config.drlNumExplorationSamples.value = node[key].as<unsigned int>();
+        if (config.drlNumExplorationSamples.value < 2) {
+          throw std::runtime_error("The number of exploration samples has to be a positive integer >= 2!");
+        }
+      } else if (key == config.drlNumExploitationSamples.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.drlNumExploitationSamples.description;
+
+        config.drlNumExploitationSamples.value = node[key].as<unsigned int>();
+        if (config.drlNumExploitationSamples.value < 1) {
+          throw std::runtime_error("The number of exploitation samples has to be a positive integer >= 1!");
+        }
+      } else if (key == config.drlPhaseScale.name) {
+        expected = "Floating-point Value greater than 0.";
+        description = config.drlPhaseScale.description;
+
+        config.drlPhaseScale.value = node[key].as<double>();
+        if (config.drlPhaseScale.value <= 0) {
+          throw std::runtime_error("DRL phase scale has to be greater than 0!");
+        }
+      } else if (key == config.drlUpdateWeight.name) {
+        expected = "Floating-point Value between 0 and 1.";
+        description = config.drlUpdateWeight.description;
+
+        config.drlUpdateWeight.value = node[key].as<double>();
+        if (config.drlUpdateWeight.value < 0.0 or config.drlUpdateWeight.value > 1.0) {
+          throw std::runtime_error("DRL update weight has to be between 0 and 1!");
+        }
+      } else if (key == config.drlExplorationMethod.name) {
+        expected = "Exactly one DRL exploration method out of the possible values.";
+        description = config.drlExplorationMethod.description;
+
+        const auto parsedOptions = autopas::ExplorationMethodOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one DRL exploration method!"));
+
+        config.drlExplorationMethod.value = *parsedOptions.begin();
+
+      } else if (key == config.rlLearningRate.name) {
+        expected = "Floating-point Value between 0 and 1.";
+        description = config.rlLearningRate.description;
+
+        config.rlLearningRate.value = node[key].as<double>();
+        if (config.rlLearningRate.value <= 0.0 or config.rlLearningRate.value >= 1.0) {
+          throw std::runtime_error("RL learning rate has to be between 0 and 1!");
+        }
+      } else if (key == config.rlDiscountFactor.name) {
+        expected = "Floating-point Value between 0 and 1.";
+        description = config.rlDiscountFactor.description;
+
+        config.rlDiscountFactor.value = node[key].as<double>();
+        if (config.rlDiscountFactor.value < 0.0 or config.rlDiscountFactor.value >= 1.0) {
+          throw std::runtime_error("RL discount factor has to be between 0 and 1!");
+        }
+      } else if (key == config.rlExplorationSamples.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.rlExplorationSamples.description;
+
+        config.rlExplorationSamples.value = node[key].as<unsigned int>();
+        if (config.rlExplorationSamples.value < 1) {
+          throw std::runtime_error("The number of RL exploration samples has to be a positive integer >= 1!");
+        }
+      } else if (key == config.rlModel.name) {
+        expected = "Exactly one RL model out of the possible values.";
+        description = config.rlModel.description;
+
+        const auto parsedOptions = autopas::ReinforcementModelOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one RL model!"));
+
+        config.rlModel.value = *parsedOptions.begin();
       } else if (key == config.logLevel.name) {
         expected = "Log level out of the possible values.";
         description = config.logLevel.description;
