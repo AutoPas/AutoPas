@@ -15,6 +15,13 @@
 namespace autopas::utils {
 
 /**
+ * high_resolution_clock is not guaranteed to be monotonous in time, which can lead to negative duration times.
+ * Swap to steady_clock then, which is usually the same precision or precise enough.
+ */
+using bestSteadyClock = std::conditional_t<std::chrono::high_resolution_clock::is_steady,
+                                           std::chrono::high_resolution_clock, std::chrono::steady_clock>;
+
+/**
  * Timer class to stop times.
  */
 class Timer {
@@ -70,7 +77,7 @@ class Timer {
   /**
    * Time point of last call of start().
    */
-  std::chrono::high_resolution_clock::time_point _startTime;
+  bestSteadyClock::time_point _startTime;
 
   /**
    * Accumulated total time.
