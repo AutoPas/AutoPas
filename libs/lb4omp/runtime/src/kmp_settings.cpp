@@ -76,7 +76,8 @@ static unsigned int __kmp_readstr_with_sentinel(char *dest, char const *src,
 /// __kmp_convert_to_double_vector - Splits a text by a delimeter, converts the
 /// numbers to doubles and adds into a vector. \param phrase \param delimiter
 /// \return a vector
-static std::vector<double>
+// AutoPas: mark unused to suppress build warning.
+__attribute__((unused)) static std::vector<double>
 __kmp_convert_to_double_vector(char const *phrase,
                                std::string const &delimiter) {
   std::vector<double> list;
@@ -5247,8 +5248,8 @@ static kmp_setting_t __kmp_stg_table[] = {
      0},
     {"OMP_TOOL_LIBRARIES", __kmp_stg_parse_omp_tool_libraries,
      __kmp_stg_print_omp_tool_libraries, NULL, 0, 0},
-#endif
 
+    // AutoPas LB4OMP-custom: the below extensions are not declared for OMP <5, move them into the OMP 5 condition.
     //------------------LB4OMP_extensions------------------
    // {"KMP_MIN", __kmp_stg_parse_env_min, __kmp_stg_print_env_min, NULL, 0, 0},
     {"KMP_MU", __kmp_stg_parse_env_mu, __kmp_stg_print_env_mu, NULL, 0, 0},
@@ -5265,7 +5266,7 @@ static kmp_setting_t __kmp_stg_table[] = {
     {"KMP_WEIGHTS", __kmp_stg_parse_env_weights, __kmp_stg_print_env_weights,
      NULL, 0, 0},
     //------------------LB4OMP_extensions------------------
-
+#endif
     {"", NULL, NULL, NULL, 0, 0}}; // settings
 
 static int const __kmp_stg_count =

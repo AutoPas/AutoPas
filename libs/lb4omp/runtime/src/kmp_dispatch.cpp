@@ -488,7 +488,8 @@ double DlbISDegraded(double deltaLB) {
         return 1;
     } else if ((deltaLB < 3) && (deltaLB >= 0)) {
         return 0.33 * deltaLB;
-    } else if ((deltaLB <= 0)) {
+    } else {
+        // AutoPas: removed always-true condition (deltaLB <= 0) to suppress no return warnings.
         return 0;
     }
 
@@ -500,7 +501,8 @@ double DlbISImproved(double deltaLB) {
         return 1;
     } else if ((deltaLB >= -3) && (deltaLB <= -0)) {
         return -0.33 * deltaLB;
-    } else if ((deltaLB >= 0)) {
+    } else {
+        // AutoPas: removed always-true condition (deltaLB >= 0) to suppress no return warnings.
         return 0;
     }
 
@@ -514,7 +516,8 @@ double DlbISNoChange(double deltaLB) {
         return 0.66 * deltaLB + 2;
     } else if ((deltaLB >= -1.5) && (deltaLB <= 1.5)) {
         return 1;
-    } else if ((deltaLB > 1.5) && (deltaLB <= 3)) {
+    } else {
+        // AutoPas: removed always-true condition ((deltaLB < -3) || (deltaLB > 3)) to suppress no return warnings.
         return -0.66 * deltaLB + 2;
     }
 }
@@ -535,14 +538,15 @@ double DlbISNoChange(double deltaLB) {
 
 double DTparISNoChange(double DTpar) {
 
-    if ((DTpar < -1) || (DTpar > 1)) {
-        return 0;
-    } else if ((DTpar >= -1) && (DTpar <= -0.5)) {
+    if ((DTpar >= -1) && (DTpar <= -0.5)) {
         return 2 * DTpar + 2;
     } else if ((DTpar >= -0.5) && (DTpar <= 0.5)) {
         return 1;
     } else if ((DTpar > 0.5) && (DTpar < 1)) {
         return -2 * DTpar + 2;
+    } else {
+        // AutoPas: removed always-true condition ((DTpar < -1) || (DTpar > 1)) to suppress no return warnings.
+        return 0;
     }
 }
 
@@ -552,7 +556,8 @@ double DTparISDegraded(double DTpar) {
         return 0;
     } else if ((DTpar <= 3) && (DTpar >= 0.5)) {
         return 0.4 * DTpar - 0.2;
-    } else if ((DTpar >= 3)) {
+    } else {
+        // AutoPas: removed always-true condition (DTpar >= 3) to suppress no return warnings.
         return 1;
     }
 
@@ -564,7 +569,8 @@ double DTparISImproved(double DTpar) {
         return 0;
     } else if ((DTpar >= -3) && (DTpar <= -0.5)) {
         return -0.4 * DTpar - 0.2;
-    } else if ((DTpar <= -3)) {
+    } else {
+        // AutoPas: removed always-true condition (DTpar <= -3) to suppress no return warnings.
         return 1;
     }
 
@@ -596,14 +602,15 @@ double TparISLong(double Tpar) {
 
 double TparISMedium(double Tpar) {
 
-    if ((Tpar < 0) || (Tpar > 10)) {
-        return 0;
-    } else if ((Tpar >= 0) && (Tpar < 0.1)) {
+    if ((Tpar >= 0) && (Tpar < 0.1)) {
         return 10 * Tpar;
     } else if ((Tpar >= 0.1) && (Tpar <= 1.0)) {
         return 1;
     } else if ((Tpar > 1) && (Tpar < 10)) {
         return -0.11 * Tpar + 1.11;
+    } else {
+        // AutoPas: removed always-true condition ((Tpar < 0) || (Tpar > 10)) to suppress no return warnings.
+        return 0;
     }
 
 }
@@ -646,14 +653,15 @@ double LBISHigh(double LB) {
 
 double LBISModerate(double LB) {
 
-    if ((LB < 1) || (LB > 5)) {
-        return 0;
-    } else if ((LB >= 1) && (LB < 2)) {
+    if ((LB >= 1) && (LB < 2)) {
         return LB - 1;
     } else if ((LB >= 2) && (LB <= 4)) {
         return 1;
     } else if ((LB > 4) && (LB < 5)) {
         return -1 * LB + 5;
+    } else {
+        // AutoPas: removed always-true condition ((LB < 1) || (LB > 5)) to suppress no return warnings.
+        return 0;
     }
 
 }
@@ -905,13 +913,14 @@ void autoFuzzySearch(int N, int P) {
 // Identifies the best DLS technique based on loop execution time
 // Considers loop execution time and load imbalance measure by percent imbalance
 // Supports different search/optimization methods
-// 1. Exhaustive search
-// 2. Binary search
-// 3. Random
-// 4. Expert (fuzzy logic)
 //
-// ...Search/optimization method is changed using chunk parameter with auto, i.e., auto,1 is exhaustive search and auto,4 is expert.
-// Original LLVM auto can be used by using auto,5
+// ...Search/optimization method is changed using chunk parameter with auto, i.e., auto,1
+//
+// - (auto, 2) Random search
+// - (auto, 3) Exhaustive search
+// - (auto, 4) Binary search
+// - (auto, 5) Expert (fuzzy logic)
+// - (auto, 6) -> (auto, 15) Reinforcement Learning search methods (see below for details)
 //
 //
 // Input
@@ -960,7 +969,6 @@ void auto_DLS_Search(int gtid, int N, int P, int option) {
      * (12): QVLearner
      * (13): RLearner
      * (14): DeepQLearner
-     * (15): ChunkLearner
      * */
     {
 #if (DISPATCH_DEBUG > 1)
@@ -1048,7 +1056,7 @@ void end_auto_loop_timer(int nproc, int tid) {
     clock_gettime(CLOCK_MONOTONIC, &timeend);
     autoTimerEnd = static_cast<double>(timeend.tv_sec * 1000.0) + static_cast<double>(timeend.tv_nsec) / 1e6;
     time[tid] = autoTimerEnd - autoTimerInit;
-    
+
 
     // time[tid] -= autoTimerInit;
 
@@ -2311,7 +2319,8 @@ typedef typename traits_t<T>::signed_t ST;
                     std::vector<double> sET(nproc, 0.0);
                     std::vector<double> w;
                     //check initial weights
-                    if (__kmp_env_weights.size() == nproc) { w = __kmp_env_weights; }
+                    // AutoPas: converted nproc to an unsigned type to suppress sign comparison warnings.
+                    if (__kmp_env_weights.size() == std::make_unsigned_t<T>(nproc)) { w = __kmp_env_weights; }
                     else {
                         std::vector<double> defaultweights(nproc, 1.0);
                         w = defaultweights;
@@ -4961,7 +4970,8 @@ if((int)tid == 0){
 
                 // last thread to enter
                 int count = std::atomic_fetch_add(&AWFCounter, 1);
-                if (count == (nproc - 1)) {
+                // AutoPas: converted nproc to an unsigned type to suppress sign comparison warnings.
+                if(std::make_unsigned_t<int>(count) == std::make_unsigned_t<T>((nproc - 1))) {
                     AWFEnter = 0; //reset flag
                     AWFWait = 1; //reset flag
                     AWFCounter = 0; //reset flag

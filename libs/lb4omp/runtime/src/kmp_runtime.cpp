@@ -2838,7 +2838,8 @@ void __kmp_set_schedule(int gtid, kmp_sched_t kind, int chunk) {
         __kmp_sch_map[kind - kmp_sched_lower_ext + kmp_sched_upper_std -
                       kmp_sched_lower - 2];
   }
-  if (kind == kmp_sched_auto || chunk < 1) {
+  // AutoPas: Auto4OMP uses (auto, 2) ... (auto, 15) as a aliases for their algorithm selection methods
+  if ((kind == kmp_sched_auto && (chunk < 2 || chunk > 15)) || chunk < 1) {
     // ignore parameter chunk for schedule auto
     thread->th.th_current_task->td_icvs.sched.chunk = KMP_DEFAULT_CHUNK;
   } else {

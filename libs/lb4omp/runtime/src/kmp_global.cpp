@@ -227,6 +227,8 @@ enum sched_type __kmp_sch_map[kmp_sched_upper - kmp_sched_lower_ext +
     kmp_sch_guided_chunked, // ==> kmp_sched_guided            = 3
     kmp_sch_auto, // ==> kmp_sched_auto              = 4
     kmp_sch_trapezoidal, // ==> kmp_sched_trapezoidal       = 101
+    // AutoPas: added static steal here. Otherwise, I believe static steal cannot be used.
+    kmp_sch_static_steal, // ==> kmp_sched_static_steal       = 102
     //--------------LB4OMP_extensions----------------
     kmp_sch_fsc, // ==> kmp_sched_fsc        = 103
     kmp_sch_tap, // ==> kmp_sch_tap          = 104

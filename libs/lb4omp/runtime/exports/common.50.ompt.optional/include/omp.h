@@ -42,12 +42,40 @@
 #       endif
 #   endif
 
+    // AutoPas: extend to include LB4OMP's scheduling techniques.
     /* schedule kind constants */
     typedef enum omp_sched_t {
-	omp_sched_static  = 1,
-	omp_sched_dynamic = 2,
-	omp_sched_guided  = 3,
-	omp_sched_auto    = 4
+    omp_sched_static  = 1,
+    omp_sched_dynamic = 2,
+    omp_sched_guided  = 3,
+    omp_sched_auto    = 4,
+        omp_sched_trapezoidal = 101,
+        omp_sched_static_steal = 102,
+        //--------------LB4OMP_extensions----------------
+        omp_sched_fsc = 103,
+        omp_sched_tap = 104,
+        omp_sched_fac = 105,
+        omp_sched_faca = 106,
+        omp_sched_fac2 = 107,
+        omp_sched_fac2a = 108,
+        omp_sched_wf = 109,
+        omp_sched_bold = 110,
+        omp_sched_awf_b = 111,
+        omp_sched_awf_c = 112,
+        omp_sched_awf_d = 113,
+        omp_sched_awf_e = 114,
+        omp_sched_af = 115,
+        omp_sched_af_a = 116,
+        omp_sched_profiling = 117,
+        omp_sched_awf = 118,
+        omp_sched_pls=119,
+        omp_sched_tfss = 120,
+        omp_sched_mfsc = 121,
+        omp_sched_fiss = 122,
+        omp_sched_viss = 123,
+        omp_sched_rnd = 124,
+        omp_sched_fac2b = 125
+        //--------------LB4OMP_extensions----------------
     } omp_sched_t;
 
     /* set API functions */

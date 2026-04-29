@@ -11,6 +11,7 @@
 #include "utils.h"
 
 #include <unordered_map>
+#include <vector>
 
 // std::unordered_map <std::string, LoopData> autoLoopData;
 
@@ -129,7 +130,8 @@ double sum(const double *array, int length) {
  * Searches for the best action (index) for a given state (using the Q-Values).
  * */
 int argmax(double **ref_table, int next_state, int size) {
-    double actions_avg[size] = {0};
+    std::vector<double> actions_avg{};
+    actions_avg.reserve(size);
     double best_current = -9999;
     int best_index = 0;
 
