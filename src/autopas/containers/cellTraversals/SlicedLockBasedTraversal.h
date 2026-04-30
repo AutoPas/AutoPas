@@ -42,10 +42,6 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Funct
                                                     useNewton3, spaciallyForward) {}
 
  protected:
-  /**
-   * whether to use static or dynamic scheduling.
-   */
-  bool _dynamic = true;
 
   /**
    * The main traversal of the sliced traversal.
@@ -81,13 +77,10 @@ void SlicedLockBasedTraversal<ParticleCell, Functor>::slicedTraversal(LoopBody &
   timers.resize(numSlices);
   threadTimes.resize(numSlices);
 
-#ifdef AUTOPAS_USE_OPENMP
-  if (this->_dynamic) {
-    omp_set_schedule(omp_sched_dynamic, 1);
-  } else {
-    omp_set_schedule(omp_sched_static, 1);
-  }
-#endif
+
+  // SlicedBalanced traversals
+  autopas_set_schedule(TraversalInterface::_ompConfig);
+
   AUTOPAS_OPENMP(parallel for schedule(runtime))
   for (size_t slice = 0; slice < numSlices; ++slice) {
     timers[slice].start();

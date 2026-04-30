@@ -1057,7 +1057,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       autopas_set_schedule(*(ParticleContainerInterface<Particle_T>::_ompConfig));
     }
 
-    /// @todo: find sensible chunksize
     AUTOPAS_OPENMP(parallel for schedule(runtime) collapse(2))
     for (size_t x = 0; x < towersPerDimX; x++) {
       for (size_t y = 0; y < towersPerDimY; y++) {
