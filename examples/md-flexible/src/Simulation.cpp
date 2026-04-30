@@ -179,6 +179,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
   _autoPasContainer->setOutputSuffix(outputSuffix);
+  _autoPasContainer->setOpenMPDefaultChunkSize(_configuration.openMPChunkSize.value);
+  _autoPasContainer->setOpenMPDefaultKind(_configuration.openMPKind.value);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 
   _autoPasContainer->init();

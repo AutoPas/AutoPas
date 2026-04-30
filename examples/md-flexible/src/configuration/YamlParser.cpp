@@ -194,7 +194,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "YAML-sequence of floats.";
         description = config.cellSizeFactors.description;
 
-        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(
+        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet<double>(
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
 
         if (config.cellSizeFactors.value->isEmpty()) {
@@ -292,6 +292,22 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.newton3Options3B.value.empty()) {
           throw std::runtime_error("Unknown Newton3 option!");
         }
+      } else if (key == config.openMPChunkSize.name) {
+        expected = "Integer >= 0.";
+        description = config.openMPChunkSize.description;
+
+        config.openMPChunkSize.value = node[key].as<int>();
+      } else if (key == config.openMPKind.name) {
+        expected = "Name of an OpenMP scheduling kind, LB4OMP scheduling technique, or Auto4OMP selection method.";
+        description = config.openMPKind.description;
+
+        const auto parsedOptions = autopas::OpenMPKindOption::parseOptions(autopas::OpenMPKindOption::toNewName(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one OpenMP kind!")));
+        if (parsedOptions.size() != 1) {
+          throw std::runtime_error("Unknown OpenMP kind option!");
+        }
+
+        config.openMPKind.value = *parsedOptions.begin();
       } else if (key == config.deltaT.name) {
         expected = "Positive floating point value.";
         description = config.deltaT.description;

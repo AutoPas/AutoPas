@@ -53,6 +53,8 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 
       _soa.resizeArrays(offsets.back());
 
+      autopas_set_schedule(TraversalInterface::_ompConfig);
+
       AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
         _functor->SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
