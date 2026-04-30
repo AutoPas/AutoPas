@@ -194,7 +194,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "YAML-sequence of floats.";
         description = config.cellSizeFactors.description;
 
-        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(
+        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet<double>(
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
 
         if (config.cellSizeFactors.value->isEmpty()) {

@@ -15,6 +15,7 @@
 #include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/NumberSetFinite.h"
+#include "autopas/utils/NumericConcept.h"
 
 namespace autopas::utils::StringUtils {
 
@@ -152,25 +153,45 @@ inline std::vector<std::string> tokenize(const std::string &searchString, const 
 }
 
 /**
- * Converts a string to std::array<double,3>.
+ * Converts a string to a single number of type T.
+ * @tparam T Type. Must be arithemetic.
+ * @param str String to be converted
+ * @return str as a number of type T.
+ * ToDo this needs a test!
+ */
+template <Numeric T>
+T parseNumber(const std::string_view str) {
+  T value;
+  const auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+
+  if (ec == std::errc::invalid_argument or ec == std::errc::result_out_of_range) {
+    ExceptionHandler::exception("parseNumber: Cannot convert string to number: " + std::string(str));
+  }
+  return value;
+}
+
+/**
+ * Converts a string to std::array<T,3>.
  * Allowed delimiters can be found in autopas::utils::StringUtils::delimiters.
  *
- * String format: 3 doubles(or ints) separated by delimiters (examples: 10.,10.,10.)
+ * String format: 3 numbers separated by delimiters (examples: 10.,10.,10.)
  *
+ * @tparam T arithmetic type.
  * @param string String to parse.
  * @return
  */
-inline std::array<double, 3> parseArrayD3(const std::string &string) {
-  std::array<double, 3> parsedArray{};
+template <Numeric T>
+inline std::array<T, 3> parseArray3D(const std::string &string) {
+  std::array<T, 3> parsedArray{};
   auto strings = tokenize(string, delimiters);
   if (strings.size() > 3) {
-    autopas::utils::ExceptionHandler::exception("parseArrayD3(): found {} instead of 3 array fields.", strings.size());
+    autopas::utils::ExceptionHandler::exception("parseArray3D(): found {} instead of 3 array fields.", strings.size());
   }
   for (int i = 0; i < 3; i++) {
     try {
-      parsedArray[i] = std::stod(strings[i]);
+      parsedArray[i] = parseNumber<T>(strings[i]);
     } catch (const std::exception &e) {
-      autopas::utils::ExceptionHandler::exception("parseArrayD3(): could not convert {} to a double: \n{}", strings[i],
+      autopas::utils::ExceptionHandler::exception("parseArray3D(): could not convert {} to a double: \n{}", strings[i],
                                                   e.what());
     }
   }
@@ -197,40 +218,45 @@ inline bool parseBoolOption(const std::string &booleanOption) {
 }
 
 /**
- * Converts a string to a set of doubles.
- * @param doubleString String containing doubles.
+ * Converts a string to a set of numbers.
+ * @tparam T Arithmetic type.
+ * @param string String containing numbers.
  * @return Set of doubles. If no valid double was found the empty set is returned.
  */
-inline std::set<double> parseDoubles(const std::string &doubleString) {
-  std::set<double> doubles;
+template <Numeric T>
+inline std::set<T> parseNumbers(const std::string &string) {
+  std::set<T> numbers;
 
+  // We use regexDouble, as it is inclusive of what would be needed for integers
   std::regex regexDouble(regexDoubleStr);
 
-  // use regex iter to find all doubles in the string.
-  for (auto number = std::sregex_iterator(doubleString.begin(), doubleString.end(), regexDouble);
+  // use regex iter to find all numbers in the string.
+  for (auto number = std::sregex_iterator(string.begin(), string.end(), regexDouble);
        number != std::sregex_iterator(); ++number) {
     try {
-      double value = stod(number->str());
-      doubles.insert(value);
+      T value = parseNumber<T>(number->str());
+      numbers.insert(value);
     } catch (const std::exception &) {
-      autopas::utils::ExceptionHandler::exception("Failed to parse a double from: {}", number->str());
+      autopas::utils::ExceptionHandler::exception("parseNumbers: Failed to parse a number from: {}", number->str());
     }
   }
 
-  return doubles;
+  return numbers;
 }
 
 /**
- * Converts a string to a NumberSet<double>.
+ * Converts a string to a NumberSet<T>.
  *
  * @note Formats:
  * NumberSetFinite [x,y,z]
  * NumberInterval x-y
  *
+ * @tparam T Arithmetic type
  * @param setString String containing the set.
  * @return NumberSet<double>. If no valid double was found the empty set is returned.
  */
-inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::string &setString) {
+template <Numeric T>
+inline std::unique_ptr<autopas::NumberSet<T>> parseNumberSet(const std::string &setString) {
   // try to match an interval x-y
   std::regex regexInterval("("                 // start of 1. capture
                            + regexDoubleStr +  // a double
@@ -246,16 +272,16 @@ inline std::unique_ptr<autopas::NumberSet<double>> parseNumberSet(const std::str
   if (std::regex_match(setString, matches, regexInterval)) {
     try {
       // matchers has whole string as str(0) so start at 1
-      double min = stod(matches.str(1));
-      double max = stod(matches.str(2));
-      return std::make_unique<autopas::NumberInterval<double>>(min, max);
+      double min = parseNumber<T>(matches.str(1));
+      double max = parseNumber<T>(matches.str(2));
+      return std::make_unique<autopas::NumberInterval<T>>(min, max);
     } catch (const std::exception &) {
-      // try parseDoubles instead
+      // try parseNumbers instead
     }
   }
 
-  std::set<double> values = autopas::utils::StringUtils::parseDoubles(setString);
-  return std::make_unique<autopas::NumberSetFinite<double>>(values);
+  std::set<T> values = autopas::utils::StringUtils::parseNumbers<T>(setString);
+  return std::make_unique<autopas::NumberSetFinite<T>>(values);
 }
 
 /**
