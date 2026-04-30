@@ -90,6 +90,7 @@ class LJFunctorHWY
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
+    _soaThreadData.resize(autopas::autopas_get_max_threads());
 
     if constexpr (countFLOPs) {
       AutoPasLog(DEBUG, "Using LJFunctorHWY with countFLOPs but FLOP counting is not implemented.");
@@ -891,16 +892,29 @@ class LJFunctorHWY
     const auto *const typeID1Ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
     const auto *const typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
-    // Sorted-path caches. Declared always; allocated only when sorted=true.
-    // TODO: move these into class members to avoid constant reallocation
-    std::vector<std::pair<double, size_t>> projIdx1, projIdx2;
-    std::vector<double, autopas::AlignedAllocator<double>> x1s, y1s, z1s, x2s, y2s, z2s;
-    std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> ownership1s, ownership2s;
-    std::vector<size_t, autopas::AlignedAllocator<size_t>> typeID1s, typeID2s;
+    // Sorted-path caches. Member variables reused across calls to avoid reallocation.
+    auto &td = _soaThreadData[autopas::autopas_get_thread_num()];
+    auto &projIdx1 = td.projIdx1;
+    auto &projIdx2 = td.projIdx2;
+    auto &x1s = td.x1s;
+    auto &y1s = td.y1s;
+    auto &z1s = td.z1s;
+    auto &x2s = td.x2s;
+    auto &y2s = td.y2s;
+    auto &z2s = td.z2s;
+    auto &ownership1s = td.ownership1s;
+    auto &ownership2s = td.ownership2s;
+    auto &typeID1s = td.typeID1s;
+    auto &typeID2s = td.typeID2s;
     // Force accumulators in sorted-index space. Zero-initialized because handleNewton3Reduction
     // does a load-subtract-store sequence (fx2[j] -= fx), so the sorted cache must start at 0.
-    std::vector<double, autopas::AlignedAllocator<double>> fx1s, fy1s, fz1s, fx2s, fy2s, fz2s;
-    std::vector<double> projVals2;
+    auto &fx1s = td.fx1s;
+    auto &fy1s = td.fy1s;
+    auto &fz1s = td.fz1s;
+    auto &fx2s = td.fx2s;
+    auto &fy2s = td.fy2s;
+    auto &fz2s = td.fz2s;
+    auto &projVals2 = td.projVals2;
 
     if constexpr (sorted) {
       // Step 1: 1D projection, sort indices ascending.
@@ -1022,7 +1036,6 @@ class LJFunctorHWY
     }
 
     // Step 5: scatter accumulated forces back to the original SoA order (sorted only).
-    // TODO: Try to vectorize scatter
     if constexpr (sorted) {
       for (size_t k = 0; k < n1; ++k) {
         const size_t origIdx = projIdx1[k].second;
@@ -1627,6 +1640,15 @@ class LJFunctorHWY
   };
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
+  struct SoAThreadData {
+    std::vector<std::pair<double, size_t>> projIdx1, projIdx2;
+    std::vector<double, autopas::AlignedAllocator<double>> x1s, y1s, z1s, x2s, y2s, z2s;
+    std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> ownership1s, ownership2s;
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> typeID1s, typeID2s;
+    std::vector<double, autopas::AlignedAllocator<double>> fx1s, fy1s, fz1s, fx2s, fy2s, fz2s;
+    std::vector<double, autopas::AlignedAllocator<double>> projVals2;
+  };
+
   // cutoff squared used in the AoS functor.
   const double _cutoffSquareAoS{0.};
   // epsilon, sigma and shift6 used in the AoS functor.
@@ -1640,6 +1662,7 @@ class LJFunctorHWY
   double _potentialEnergySum{0.};
   std::array<double, 3> _virialSum{0., 0., 0.};
   std::vector<AoSThreadData> _aosThreadData{};
+  std::vector<SoAThreadData> _soaThreadData{};
 
   // flag to indicate whether post-processing has been performed.
   bool _postProcessed{false};
