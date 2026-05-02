@@ -257,24 +257,41 @@ class Functor {
     if (cell.isEmpty()) return;
 
     /**
-     * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
+     * Store the start address of all computed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
      * in the following loop.
      */
     // maybe_unused necessary because gcc doesn't understand that pointer is used later
     [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getComputedAttr()[I]>()...);
 
-    auto cellIter = cell.begin();
-    // write values in SoAs back to particles
-    for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
-      /**
-       * The following statement writes the value of all attributes defined in computedAttr back into the particle.
-       * I represents the index inside computedAttr.
-       * The whole expression is folded sizeof...(I) times over the comma operator. E.g. like this
-       * (std::index_sequence<I...> = 0, 1):
-       * (cellIter->template set<Functor_T::getComputedAttr()[0]>(std::get<0>(pointer)[i]),
-       * cellIter->template set<Functor_T::getComputedAttr()[1]>(std::get<1>(pointer)[i]))
-       */
-      (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
+    // If the functor loads ptr in getNeededAttr(), the SoA columns may have been permuted in-place
+    // (e.g. by SoAFunctorPairSorted). Use the ptr column to write each force value to the correct
+    // particle rather than relying on positional cell order.
+    constexpr bool usePtrExtraction = []() constexpr {
+      for (auto attr : Functor_T::getNeededAttr()) {
+        if (attr == Particle_T::AttributeNames::ptr) return true;
+      }
+      return false;
+    }();
+
+    if constexpr (usePtrExtraction) {
+      auto *const ptrCol = soa.template begin<Particle_T::AttributeNames::ptr>();
+      for (size_t i = offset; i < offset + cell.size(); ++i) {
+        (ptrCol[i]->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
+      }
+    } else {
+      auto cellIter = cell.begin();
+      // write values in SoAs back to particles
+      for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
+        /**
+         * The following statement writes the value of all attributes defined in computedAttr back into the particle.
+         * I represents the index inside computedAttr.
+         * The whole expression is folded sizeof...(I) times over the comma operator. E.g. like this
+         * (std::index_sequence<I...> = 0, 1):
+         * (cellIter->template set<Functor_T::getComputedAttr()[0]>(std::get<0>(pointer)[i]),
+         * cellIter->template set<Functor_T::getComputedAttr()[1]>(std::get<1>(pointer)[i]))
+         */
+        (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
+      }
     }
   }
 

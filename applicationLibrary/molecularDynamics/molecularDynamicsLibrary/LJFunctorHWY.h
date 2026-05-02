@@ -892,28 +892,10 @@ class LJFunctorHWY
     const auto *const typeID1Ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
     const auto *const typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
-    // Sorted-path caches. Member variables reused across calls to avoid reallocation.
+    // Per-thread scratch buffers, reused across calls to avoid reallocation.
     auto &td = _soaThreadData[autopas::autopas_get_thread_num()];
     auto &projIdx1 = td.projIdx1;
     auto &projIdx2 = td.projIdx2;
-    auto &x1s = td.x1s;
-    auto &y1s = td.y1s;
-    auto &z1s = td.z1s;
-    auto &x2s = td.x2s;
-    auto &y2s = td.y2s;
-    auto &z2s = td.z2s;
-    auto &ownership1s = td.ownership1s;
-    auto &ownership2s = td.ownership2s;
-    auto &typeID1s = td.typeID1s;
-    auto &typeID2s = td.typeID2s;
-    // Force accumulators in sorted-index space. Zero-initialized because handleNewton3Reduction
-    // does a load-subtract-store sequence (fx2[j] -= fx), so the sorted cache must start at 0.
-    auto &fx1s = td.fx1s;
-    auto &fy1s = td.fy1s;
-    auto &fz1s = td.fz1s;
-    auto &fx2s = td.fx2s;
-    auto &fy2s = td.fy2s;
-    auto &fz2s = td.fz2s;
     auto &projVals2 = td.projVals2;
 
     if constexpr (sorted) {
@@ -931,67 +913,36 @@ class LJFunctorHWY
       std::sort(projIdx1.begin(), projIdx1.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
       std::sort(projIdx2.begin(), projIdx2.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
 
-      // Step 2: pack into contiguous caches in sorted order.
-      x1s.resize(n1);
-      y1s.resize(n1);
-      z1s.resize(n1);
-      x2s.resize(n2);
-      y2s.resize(n2);
-      z2s.resize(n2);
-      ownership1s.assign(n1, autopas::OwnershipState::dummy);
-      ownership2s.assign(n2, autopas::OwnershipState::dummy);
-      typeID1s.assign(n1, 0);
-      typeID2s.assign(n2, 0);
-      fx1s.assign(n1, 0.0);
-      fy1s.assign(n1, 0.0);
-      fz1s.assign(n1, 0.0);
-      if constexpr (newton3) {
-        fx2s.assign(n2, 0.0);
-        fy2s.assign(n2, 0.0);
-        fz2s.assign(n2, 0.0);
-      }
-      for (size_t i = 0; i < n1; ++i) {
-        const size_t idx = projIdx1[i].second;
-        x1s[i] = x1Ptr[idx];
-        y1s[i] = y1Ptr[idx];
-        z1s[i] = z1Ptr[idx];
-        ownership1s[i] = ownedStatePtr1[idx];
-        typeID1s[i] = typeID1Ptr[idx];
-      }
-      for (size_t j = 0; j < n2; ++j) {
-        const size_t idx = projIdx2[j].second;
-        x2s[j] = x2Ptr[idx];
-        y2s[j] = y2Ptr[idx];
-        z2s[j] = z2Ptr[idx];
-        ownership2s[j] = ownedStatePtr2[idx];
-        typeID2s[j] = typeID2Ptr[idx];
-      }
+      // Step 2: apply the sort permutation in-place on all SoA columns.
+      // ptr is permuted alongside positions and forces so that ptrCol[i] always identifies the
+      // particle whose force lives at index i — the ptr-based SoAExtractor relies on this invariant.
+      auto permute = [&]<typename T>(T *col, std::vector<T, autopas::AlignedAllocator<T>> &tmp,
+                                    const std::vector<std::pair<double, size_t>> &perm, size_t n) {
+        tmp.resize(n);
+        for (size_t i = 0; i < n; ++i) tmp[i] = col[perm[i].second];
+        std::copy_n(tmp.data(), n, col);
+      };
+
+      auto permuteSoAColumns = [&](auto &soa, const auto &perm, size_t n) {
+        permute(soa.template begin<Particle_T::AttributeNames::posX>(),          td.tmpDouble,    perm, n);
+        permute(soa.template begin<Particle_T::AttributeNames::posY>(),          td.tmpDouble,    perm, n);
+        permute(soa.template begin<Particle_T::AttributeNames::posZ>(),          td.tmpDouble,    perm, n);
+        permute(soa.template begin<Particle_T::AttributeNames::forceX>(),        td.tmpDouble,    perm, n);
+        permute(soa.template begin<Particle_T::AttributeNames::forceY>(),        td.tmpDouble,    perm, n);
+        permute(soa.template begin<Particle_T::AttributeNames::forceZ>(),        td.tmpDouble,    perm, n);
+        permute(soa.template begin<Particle_T::AttributeNames::ownershipState>(), td.tmpOwnership, perm, n);
+        permute(soa.template begin<Particle_T::AttributeNames::typeId>(),         td.tmpTypeID,    perm, n);
+        permute(soa.template begin<Particle_T::AttributeNames::ptr>(),            td.tmpPtr,       perm, n);
+      };
+
+      permuteSoAColumns(soa1, projIdx1, n1);
+      permuteSoAColumns(soa2, projIdx2, n2);
 
       // Step 3: extract sorted projection values for the in-loop upper-bound check.
       projVals2.resize(n2);
-      for (size_t j = 0; j < n2; ++j) {
-        projVals2[j] = projIdx2[j].first;
-      }
+      std::transform(projIdx2.begin(), projIdx2.end(), projVals2.begin(),
+                     [](const auto &p) { return p.first; });
     }
-
-    // After packing, data pointers alias either sorted caches or original SoA arrays.
-    const double *const x1Data = sorted ? x1s.data() : x1Ptr;
-    const double *const y1Data = sorted ? y1s.data() : y1Ptr;
-    const double *const z1Data = sorted ? z1s.data() : z1Ptr;
-    const double *const x2Data = sorted ? x2s.data() : x2Ptr;
-    const double *const y2Data = sorted ? y2s.data() : y2Ptr;
-    const double *const z2Data = sorted ? z2s.data() : z2Ptr;
-    const auto *const owned1Data = sorted ? ownership1s.data() : ownedStatePtr1;
-    const auto *const owned2Data = sorted ? ownership2s.data() : ownedStatePtr2;
-    const size_t *const typeID1Data = sorted ? typeID1s.data() : typeID1Ptr;
-    const size_t *const typeID2Data = sorted ? typeID2s.data() : typeID2Ptr;
-    // For sorted+newton3=false, fx2 writes go to fx1s as a harmless stand-in.
-    double *const fx1Data = sorted ? fx1s.data() : fx1Ptr;
-    double *const fy1Data = sorted ? fy1s.data() : fy1Ptr;
-    double *const fz1Data = sorted ? fz1s.data() : fz1Ptr;
-    double *const fx2Data = sorted ? (newton3 ? fx2s.data() : fx1s.data()) : fx2Ptr;
-    double *const fy2Data = sorted ? (newton3 ? fy2s.data() : fy1s.data()) : fy2Ptr;
-    double *const fz2Data = sorted ? (newton3 ? fz2s.data() : fz1s.data()) : fz2Ptr;
 
     VectorDouble virialSumX = highway::Zero(tag_double);
     VectorDouble virialSumY = highway::Zero(tag_double);
@@ -1021,35 +972,17 @@ class LJFunctorHWY
     std::ptrdiff_t i = 0;
     for (; checkFirstLoopCondition<false, vecPattern>(i, n1); incrementFirstLoop<vecPattern>(i)) {
       handleILoopBody<false, newton3, false, sorted, vecPattern>(
-          i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data, owned2Data, fx1Data, fy1Data, fz1Data, fx2Data,
-          fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, 0, n2,
+          i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr,
+          fy2Ptr, fz2Ptr, typeID1Ptr, typeID2Ptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, n2,
           projVal1(i, _vecLengthDouble), projVals2Ptr(), sortingCutoff);
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       const int restI = obtainILoopRemainderLength<false>(i, n1);
       if (restI > 0) {
         handleILoopBody<false, newton3, true, sorted, vecPattern>(
-            i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data, owned2Data, fx1Data, fy1Data, fz1Data,
-            fx2Data, fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, restI, n2,
+            i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr,
+            fx2Ptr, fy2Ptr, fz2Ptr, typeID1Ptr, typeID2Ptr, virialSumX, virialSumY, virialSumZ, uPotSum, restI, n2,
             projVal1(i, static_cast<size_t>(restI)), projVals2Ptr(), sortingCutoff);
-      }
-    }
-
-    // Step 5: scatter accumulated forces back to the original SoA order (sorted only).
-    if constexpr (sorted) {
-      for (size_t k = 0; k < n1; ++k) {
-        const size_t origIdx = projIdx1[k].second;
-        fx1Ptr[origIdx] += fx1s[k];
-        fy1Ptr[origIdx] += fy1s[k];
-        fz1Ptr[origIdx] += fz1s[k];
-      }
-      if constexpr (newton3) {
-        for (size_t k = 0; k < n2; ++k) {
-          const size_t origIdx = projIdx2[k].second;
-          fx2Ptr[origIdx] += fx2s[k];
-          fy2Ptr[origIdx] += fy2s[k];
-          fz2Ptr[origIdx] += fz2s[k];
-        }
       }
     }
 
@@ -1484,15 +1417,16 @@ class LJFunctorHWY
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
-                                                              Particle_T::AttributeNames::posX,
-                                                              Particle_T::AttributeNames::posY,
-                                                              Particle_T::AttributeNames::posZ,
-                                                              Particle_T::AttributeNames::forceX,
-                                                              Particle_T::AttributeNames::forceY,
-                                                              Particle_T::AttributeNames::forceZ,
-                                                              Particle_T::AttributeNames::typeId,
-                                                              Particle_T::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 10>{Particle_T::AttributeNames::ptr,
+                                                               Particle_T::AttributeNames::id,
+                                                               Particle_T::AttributeNames::posX,
+                                                               Particle_T::AttributeNames::posY,
+                                                               Particle_T::AttributeNames::posZ,
+                                                               Particle_T::AttributeNames::forceX,
+                                                               Particle_T::AttributeNames::forceY,
+                                                               Particle_T::AttributeNames::forceZ,
+                                                               Particle_T::AttributeNames::typeId,
+                                                               Particle_T::AttributeNames::ownershipState};
   }
 
   /**
@@ -1641,12 +1575,15 @@ class LJFunctorHWY
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
   struct SoAThreadData {
+    // (projection value, original index) pairs used to compute the sorted permutation.
     std::vector<std::pair<double, size_t>> projIdx1, projIdx2;
-    std::vector<double, autopas::AlignedAllocator<double>> x1s, y1s, z1s, x2s, y2s, z2s;
-    std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> ownership1s, ownership2s;
-    std::vector<size_t, autopas::AlignedAllocator<size_t>> typeID1s, typeID2s;
-    std::vector<double, autopas::AlignedAllocator<double>> fx1s, fy1s, fz1s, fx2s, fy2s, fz2s;
+    // Sorted projection values of soa2, used for the j-loop early-exit bound.
     std::vector<double, autopas::AlignedAllocator<double>> projVals2;
+    // Scratch buffers for in-place column permutation — one per element type, shared between soa1 and soa2.
+    std::vector<double, autopas::AlignedAllocator<double>> tmpDouble;
+    std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> tmpOwnership;
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> tmpTypeID;
+    std::vector<Particle_T *, autopas::AlignedAllocator<Particle_T *>> tmpPtr;
   };
 
   // cutoff squared used in the AoS functor.
