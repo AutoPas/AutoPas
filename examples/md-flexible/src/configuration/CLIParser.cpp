@@ -301,13 +301,15 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.functorOption)::getoptChar: {
         if (strArg.find("avx") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
+        } else if (strArg.find("kokkos") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_KOKKOS;
         } else if (strArg.find("sve") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
           cerr << "Unknown functor: " << strArg << endl;
-          cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals', 'Lennard-Jones-AVX' or 'Lennard-Jones-SVE'"
+          cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-AVX', 'Lennard-Jones-SVE' or 'Lennard-Jones-Kokkos'"
                << endl;
           displayHelp = true;
         }

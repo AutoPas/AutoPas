@@ -11,6 +11,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "autopas/utils/StringUtils.h"
@@ -211,3 +212,15 @@ class Option {
 };
 }  // namespace options
 }  // namespace autopas
+
+#include <spdlog/fmt/bundled/format.h>
+
+template <typename T>
+struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<autopas::options::Option<T>, T>, char>> {
+  constexpr auto parse(fmt::format_parse_context &ctx) const -> decltype(ctx.begin()) { return ctx.begin(); }
+  template <typename FormatContext>
+  auto format(const T &option, FormatContext &ctx) const -> decltype(ctx.out()) {
+    const auto str = option.to_string();
+    return std::copy(str.begin(), str.end(), ctx.out());
+  }
+};
