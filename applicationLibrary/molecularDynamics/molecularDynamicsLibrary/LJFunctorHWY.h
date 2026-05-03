@@ -276,6 +276,12 @@ class LJFunctorHWY
       case VectorizationPattern::p1xVec:
         dispatch.template operator()<VectorizationPattern::p1xVec>();
         break;
+      case VectorizationPattern::p2xVecDiv2:
+        dispatch.template operator()<VectorizationPattern::p2xVecDiv2>();
+        break;
+      case VectorizationPattern::pVecDiv2x2:
+        dispatch.template operator()<VectorizationPattern::pVecDiv2x2>();
+        break;
       case VectorizationPattern::pVecx1:
         dispatch.template operator()<VectorizationPattern::pVecx1>();
         break;
@@ -1001,12 +1007,30 @@ class LJFunctorHWY
     // Projection value helpers — return meaningful data when sorted, zero/nullptr otherwise.
     // Both are eliminated at compile time when sorted=false.
     //
-    // For pVecx1, the outer i-loop covers a block of _vecLengthDouble particles. The j-exit condition
-    // must use the MAX projection in that block (projIdx1[i + blockSize - 1]) so that the j-loop only
-    // exits once ALL particles in the i-block are definitely beyond sortingCutoff of j.
+    // For patterns that process multiple i-particles per outer-loop step, the j-exit condition must
+    // use the MAX projection in that block so the j-loop only exits once ALL particles in the step
+    // are definitely beyond sortingCutoff of j:
+    //   pVecx1:    W   i-particles → projIdx1[i + W - 1]
+    //   p2xVecDiv2: 2  i-particles → projIdx1[i + 1]
+    //   pVecDiv2x2: W/2 i-particles → projIdx1[i + W/2 - 1]
+    // The main loop always passes blockSize = _vecLengthDouble; remainder passes restI.
     auto projVal1 = [&](std::ptrdiff_t i, size_t blockSize) -> double {
       if constexpr (sorted) {
         if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+          return projIdx1[i + blockSize - 1].first;
+        } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+          // Full step processes i and i+1; use i+1 (larger projection) as the bound.
+          // blockSize == 1 signals the remainder iteration (only particle i is valid).
+          if (blockSize >= 2) {
+            return projIdx1[i + 1].first;
+          }
+          return projIdx1[i].first;
+        } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+          // Full step processes W/2 i-particles; use the last (largest projection) as the bound.
+          // The main loop passes blockSize = W (>= W/2); remainder passes restI (< W/2).
+          if (blockSize >= _vecLengthDouble) {
+            return projIdx1[i + _vecLengthDouble / 2 - 1].first;
+          }
           return projIdx1[i + blockSize - 1].first;
         }
         return projIdx1[i].first;
