@@ -848,6 +848,8 @@ class LJFunctorHWY
    * @param soa2
    * @param sortingDirection Normalized axis for 1D projection (sorted path only).
    * @param sortingCutoff    1D cutoff for the upper-bound computation (sorted path only).
+   *
+   * @todo Add support for p2xVecDiv2 patterns
    */
   template <bool newton3, bool sorted, VectorizationPattern vecPattern>
   inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
@@ -906,37 +908,50 @@ class LJFunctorHWY
       projIdx1.resize(n1);
       projIdx2.resize(n2);
       for (size_t i = 0; i < n1; ++i) {
-        projIdx1[i] = {x1Ptr[i] * sortingDirection[0] + y1Ptr[i] * sortingDirection[1] +
-                           z1Ptr[i] * sortingDirection[2],
+        projIdx1[i] = {x1Ptr[i] * sortingDirection[0] + y1Ptr[i] * sortingDirection[1] + z1Ptr[i] * sortingDirection[2],
                        i};
       }
       for (size_t j = 0; j < n2; ++j) {
-        projIdx2[j] = {x2Ptr[j] * sortingDirection[0] + y2Ptr[j] * sortingDirection[1] +
-                           z2Ptr[j] * sortingDirection[2],
+        projIdx2[j] = {x2Ptr[j] * sortingDirection[0] + y2Ptr[j] * sortingDirection[1] + z2Ptr[j] * sortingDirection[2],
                        j};
       }
       std::sort(projIdx1.begin(), projIdx1.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
       std::sort(projIdx2.begin(), projIdx2.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
 
       // Step 2: pack into contiguous caches in sorted order.
-      x1s.resize(n1); y1s.resize(n1); z1s.resize(n1);
-      x2s.resize(n2); y2s.resize(n2); z2s.resize(n2);
+      x1s.resize(n1);
+      y1s.resize(n1);
+      z1s.resize(n1);
+      x2s.resize(n2);
+      y2s.resize(n2);
+      z2s.resize(n2);
       ownership1s.assign(n1, autopas::OwnershipState::dummy);
       ownership2s.assign(n2, autopas::OwnershipState::dummy);
-      typeID1s.assign(n1, 0); typeID2s.assign(n2, 0);
-      fx1s.assign(n1, 0.0); fy1s.assign(n1, 0.0); fz1s.assign(n1, 0.0);
+      typeID1s.assign(n1, 0);
+      typeID2s.assign(n2, 0);
+      fx1s.assign(n1, 0.0);
+      fy1s.assign(n1, 0.0);
+      fz1s.assign(n1, 0.0);
       if constexpr (newton3) {
-        fx2s.assign(n2, 0.0); fy2s.assign(n2, 0.0); fz2s.assign(n2, 0.0);
+        fx2s.assign(n2, 0.0);
+        fy2s.assign(n2, 0.0);
+        fz2s.assign(n2, 0.0);
       }
       for (size_t i = 0; i < n1; ++i) {
         const size_t idx = projIdx1[i].second;
-        x1s[i] = x1Ptr[idx]; y1s[i] = y1Ptr[idx]; z1s[i] = z1Ptr[idx];
-        ownership1s[i] = ownedStatePtr1[idx]; typeID1s[i] = typeID1Ptr[idx];
+        x1s[i] = x1Ptr[idx];
+        y1s[i] = y1Ptr[idx];
+        z1s[i] = z1Ptr[idx];
+        ownership1s[i] = ownedStatePtr1[idx];
+        typeID1s[i] = typeID1Ptr[idx];
       }
       for (size_t j = 0; j < n2; ++j) {
         const size_t idx = projIdx2[j].second;
-        x2s[j] = x2Ptr[idx]; y2s[j] = y2Ptr[idx]; z2s[j] = z2Ptr[idx];
-        ownership2s[j] = ownedStatePtr2[idx]; typeID2s[j] = typeID2Ptr[idx];
+        x2s[j] = x2Ptr[idx];
+        y2s[j] = y2Ptr[idx];
+        z2s[j] = z2Ptr[idx];
+        ownership2s[j] = ownedStatePtr2[idx];
+        typeID2s[j] = typeID2Ptr[idx];
       }
 
       // Step 3: compute max_index[i] (exclusive upper bound on inner-loop j). Single-pass since
@@ -953,16 +968,16 @@ class LJFunctorHWY
     }
 
     // After packing, data pointers alias either sorted caches or original SoA arrays.
-    const double *const x1Data      = sorted ? x1s.data()         : x1Ptr;
-    const double *const y1Data      = sorted ? y1s.data()         : y1Ptr;
-    const double *const z1Data      = sorted ? z1s.data()         : z1Ptr;
-    const double *const x2Data      = sorted ? x2s.data()         : x2Ptr;
-    const double *const y2Data      = sorted ? y2s.data()         : y2Ptr;
-    const double *const z2Data      = sorted ? z2s.data()         : z2Ptr;
-    const auto   *const owned1Data  = sorted ? ownership1s.data() : ownedStatePtr1;
-    const auto   *const owned2Data  = sorted ? ownership2s.data() : ownedStatePtr2;
-    const size_t *const typeID1Data = sorted ? typeID1s.data()    : typeID1Ptr;
-    const size_t *const typeID2Data = sorted ? typeID2s.data()    : typeID2Ptr;
+    const double *const x1Data = sorted ? x1s.data() : x1Ptr;
+    const double *const y1Data = sorted ? y1s.data() : y1Ptr;
+    const double *const z1Data = sorted ? z1s.data() : z1Ptr;
+    const double *const x2Data = sorted ? x2s.data() : x2Ptr;
+    const double *const y2Data = sorted ? y2s.data() : y2Ptr;
+    const double *const z2Data = sorted ? z2s.data() : z2Ptr;
+    const auto *const owned1Data = sorted ? ownership1s.data() : ownedStatePtr1;
+    const auto *const owned2Data = sorted ? ownership2s.data() : ownedStatePtr2;
+    const size_t *const typeID1Data = sorted ? typeID1s.data() : typeID1Ptr;
+    const size_t *const typeID2Data = sorted ? typeID2s.data() : typeID2Ptr;
     // For sorted+newton3=false, fx2 writes go to fx1s as a harmless stand-in.
     double *const fx1Data = sorted ? fx1s.data() : fx1Ptr;
     double *const fy1Data = sorted ? fy1s.data() : fy1Ptr;
@@ -976,8 +991,17 @@ class LJFunctorHWY
     VectorDouble virialSumZ = highway::Zero(tag_double);
     VectorDouble uPotSum = highway::Zero(tag_double);
 
-    // Step 4: vectorized interaction loop.
+    // Step 4: Preprune the start of the loop.
+    // We start at the leftmost particle that still interacts with any particle in soa2
     std::ptrdiff_t i = 0;
+    if constexpr (sorted) {
+      std::ptrdiff_t tmp = n1;
+      while (tmp > 0 && projIdx1[tmp - 1].first + sortingCutoff > projIdx2[0].first) {
+        --tmp;
+      }
+      i = tmp;
+    }
+    // Step 5: vectorized interaction loop.
     for (; checkFirstLoopCondition<false, vecPattern>(i, n1); incrementFirstLoop<vecPattern>(i)) {
       size_t jVecEnd;
       if constexpr (sorted) {
@@ -987,22 +1011,21 @@ class LJFunctorHWY
         jVecEnd = n2;
       }
       handleILoopBody<false, newton3, false, vecPattern>(
-          i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data, owned2Data, fx1Data, fy1Data, fz1Data,
-          fx2Data, fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, 0, jVecEnd);
+          i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data, owned2Data, fx1Data, fy1Data, fz1Data, fx2Data,
+          fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, 0, jVecEnd);
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       // Rest I can't occur in 1xVec case
       const int restI = obtainILoopRemainderLength<false>(i, n1);
       if (restI > 0) {
-        handleILoopBody<false, newton3, true, vecPattern>(
-            i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data, owned2Data, fx1Data, fy1Data, fz1Data,
-            fx2Data, fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, restI,
-            n2);
+        handleILoopBody<false, newton3, true, vecPattern>(i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data,
+                                                          owned2Data, fx1Data, fy1Data, fz1Data, fx2Data, fy2Data,
+                                                          fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY,
+                                                          virialSumZ, uPotSum, restI, n2);
       }
     }
 
-    // Step 5: scatter accumulated forces back to the original SoA order (sorted only).
-    // TODO: Try to vectorize scatter
+    // Step 6: scatter accumulated forces back to the original SoA order (sorted only).
     if constexpr (sorted) {
       for (size_t k = 0; k < n1; ++k) {
         const size_t origIdx = projIdx1[k].second;
