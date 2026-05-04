@@ -68,7 +68,7 @@ class EvidenceCollection {
    * Retrieve the configuration with the best total evidence. Rebuild + Traversal.
    * @return The optimal configuration and corresponding evidence
    */
-  std::tuple<Configuration, Evidence> getBestConfigNotReduced() const;
+  std::tuple<Configuration, Evidence> getBestConfigWithRebuild() const;
 
   /**
    * Retrieve the configuration with the lowest evidence value for the given tuning phase.

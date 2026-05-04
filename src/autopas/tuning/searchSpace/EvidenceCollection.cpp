@@ -36,7 +36,7 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigForContaine
   return getOptimalConfiguration(_latestTuningPhase, EvidenceMode::REDUCED, containerOption);
 }
 
-std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigNotReduced() const {
+std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigWithRebuild() const {
   return getOptimalConfiguration(_latestTuningPhase, EvidenceMode::TOTAL, std::nullopt);
 }
 
@@ -60,6 +60,9 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(
         return e.traversalValue;
       case EvidenceMode::TOTAL:
         return e.rebuildValue + e.traversalValue;
+      default:
+        utils::ExceptionHandler::exception(
+            "Trying to determine the optimal configuration with an unknown EvidenceMode {}!", mode);
     }
     return std::numeric_limits<long>::max();
   };

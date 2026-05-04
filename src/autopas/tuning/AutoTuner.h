@@ -281,7 +281,7 @@ class AutoTuner {
   void handleEndOfTuningPhase(size_t tuningPhase);
 
   /**
-   * Selects the best configuration for the current container from the evidence collection.
+   * Selects the best configuration, given the current container, from the evidence collection.
    */
   void selectBestConfiguration(size_t tuningPhase);
 

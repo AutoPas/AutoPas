@@ -143,13 +143,13 @@ void TuningManager::setOptimalConfigurations() {
   // 1. Check the potential time if we switch container with every functor call
   long bestTotalValue = 0;
   for (const auto &tuner : _autoTuners | std::views::values) {
-    auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigNotReduced();
+    auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigWithRebuild();
     bestTotalValue += evidence.rebuildValue + evidence.traversalValue;
   }
 
   // 2. Check the potential time if we keep all interaction types fixed to the same container (and save rebuilds)
   long bestCommonContainerValue = std::numeric_limits<long>::max();
-  auto commonContainerOptions = setCommonContainerOption();
+  auto commonContainerOptions = getCommonContainerOption();
 
   std::optional<ContainerOption> bestContainer = std::nullopt;
 
@@ -179,7 +179,7 @@ void TuningManager::setOptimalConfigurations() {
                "TuningManager::setOptimalConfigurations: Each AutoTuner will run their individually best rebuild + "
                "traversal configuration");
     for (const auto &tuner : _autoTuners | std::views::values) {
-      auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigNotReduced();
+      auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigWithRebuild();
       tuner->forceOptimalConfiguration(optConf);
     }
   } else {
@@ -194,7 +194,7 @@ void TuningManager::setOptimalConfigurations() {
   }
 }
 
-std::set<ContainerOption> TuningManager::setCommonContainerOption() {
+std::set<ContainerOption> TuningManager::getCommonContainerOption() {
   if (_autoTuners.empty()) return {};
 
   // Calculate Intersection of Supported Containers for all interaction types

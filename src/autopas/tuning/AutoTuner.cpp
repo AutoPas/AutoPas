@@ -197,10 +197,6 @@ void AutoTuner::forceOptimalConfiguration(const Configuration &optimalConfig) {
   _configQueue.clear();
   _configQueue.push_back(optimalConfig);
 
-  // Fill up sample buffers to indicate we are not collecting samples anymore
-  _samplesRebuildingNeighborLists.resize(_maxSamples);
-  _samplesTraverseInteractions.resize(_maxSamples);
-
   _endOfTuningPhase = true;
   _isTuning = false;
 }
@@ -329,8 +325,8 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles,
 bool AutoTuner::willRebuildNeighborLists() const {
   // This function should return true if the next call to tuneConfiguration() will lead to a new configuration being
   // selected. A new configuration will be selected if:
-  //  The current configuration has finished collecting samples (either _maxSamples reached or early stopping).
-  //  We prepare for a forced retuning.
+  // - The current configuration has finished collecting samples (either _maxSamples reached or early stopping).
+  // - We prepare for a forced retuning.
   return _forceRetune or (_isTuning and (_earlyStoppingOfResampling or (getCurrentNumSamples() >= _maxSamples)));
 }
 

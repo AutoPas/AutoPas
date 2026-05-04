@@ -164,7 +164,7 @@ class TuningManager {
   /**
    * Find all container options that are part of all currently managed AutoTuner instances.
    */
-  std::set<ContainerOption> setCommonContainerOption();
+  std::set<ContainerOption> getCommonContainerOption();
 
   /**
    * Calculate whether we are about to start a new tuning phase based on the current iteration and tuning interval.
