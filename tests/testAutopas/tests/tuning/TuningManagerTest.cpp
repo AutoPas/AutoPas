@@ -938,12 +938,11 @@ TEST_F(TuningManagerTest, testLiveInfoRouting) {
   // We need a tuner that actually requests LiveInfo to test the gatekeeper
   const autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3};
 
-  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-
-  // Create and add a dummy tuning strategy that actually requests live info
-  class DummyTuningStrategy : public autopas::TuningStrategyInterface {
+  // Dummy strategy 1: Only needs standard LiveInfo (at the start of a phase)
+  class DummyStrategyLiveInfo : public autopas::TuningStrategyInterface {
+   public:
     bool needsLiveInfo() const override { return true; }
-
+    bool needsDomainSimilarityStatistics() const override { return false; }
     autopas::TuningStrategyOption getOptionType() const override { return autopas::TuningStrategyOption::fullSearch; }
     bool optimizeSuggestions(std::vector<autopas::Configuration> &configQueue,
                              const autopas::EvidenceCollection &evidenceCollection) override {
@@ -955,22 +954,59 @@ TEST_F(TuningManagerTest, testLiveInfoRouting) {
     }
   };
 
-  tuningStrategies.emplace_back(std::make_unique<DummyTuningStrategy>());
+  // Dummy strategy 2: Only needs Domain Similarity Statistics (before a phase begins)
+  class DummyStrategyDomainStats : public autopas::TuningStrategyInterface {
+   public:
+    bool needsLiveInfo() const override { return false; }
+    bool needsDomainSimilarityStatistics() const override { return true; }
+    autopas::TuningStrategyOption getOptionType() const override { return autopas::TuningStrategyOption::fullSearch; }
+    bool optimizeSuggestions(std::vector<autopas::Configuration> &configQueue,
+                             const autopas::EvidenceCollection &evidenceCollection) override {
+      return true;
+    }
+    bool reset(size_t iteration, size_t tuningPhase, std::vector<autopas::Configuration> &configQueue,
+               const autopas::EvidenceCollection &evidenceCollection) override {
+      return true;
+    }
+  };
 
-  auto autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, 20, "");
+  // Loop over all 4 permutations:
+  // [None, Only LiveInfoStrat, Only DomainStatsStrat, Both]
+  for (const bool includeLiveInfoStrat : {false, true}) {
+    for (const bool includeDomainStatsStrat : {false, true}) {
+      autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  const auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
-  tunerManager->addAutoTuner(std::move(autoTuner), autopas::InteractionTypeOption::pairwise);
+      if (includeLiveInfoStrat) {
+        tuningStrategies.emplace_back(std::make_unique<DummyStrategyLiveInfo>());
+      }
+      if (includeDomainStatsStrat) {
+        tuningStrategies.emplace_back(std::make_unique<DummyStrategyDomainStats>());
+      }
 
-  // Iteration 0: Start of Phase -> Should need info
-  EXPECT_TRUE(tunerManager->needsLiveInfo(0)) << "Manager should request LiveInfo at the start of a phase.";
+      auto autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, 20, "");
 
-  // Iteration 50: Middle of Phase -> Should NOT need info
-  EXPECT_FALSE(tunerManager->needsLiveInfo(50)) << "Manager should block LiveInfo mid-phase.";
+      const auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+      tunerManager->addAutoTuner(std::move(autoTuner), autopas::InteractionTypeOption::pairwise);
 
-  // Iteration 95: Phase about to begin (within 10 steps of interval 100) -> Should need info
-  EXPECT_TRUE(tunerManager->needsLiveInfo(95)) << "Manager should request LiveInfo when a phase is about to begin.";
+      // Iteration 0: Start of Phase -> Should need info ONLY if a strategy requests LiveInfo
+      EXPECT_EQ(tunerManager->needsLiveInfo(0), includeLiveInfoStrat)
+          << "Failed at Iteration 0 with includeLiveInfoStrat=" << includeLiveInfoStrat
+          << " and includeDomainStatsStrat=" << includeDomainStatsStrat;
 
-  // Iteration 100: Start of new Phase -> Should need info
-  EXPECT_TRUE(tunerManager->needsLiveInfo(100)) << "Manager should request LiveInfo at interval boundary.";
+      // Iteration 50: Middle of Phase -> Should ALWAYS be false, regardless of strategies
+      EXPECT_FALSE(tunerManager->needsLiveInfo(50))
+          << "Failed at Iteration 50 with includeLiveInfoStrat=" << includeLiveInfoStrat
+          << " and includeDomainStatsStrat=" << includeDomainStatsStrat;
+
+      // Iteration 95: Phase about to begin -> Should need info ONLY if a strategy requests DomainStats
+      EXPECT_EQ(tunerManager->needsLiveInfo(95), includeDomainStatsStrat)
+          << "Failed at Iteration 95 with includeLiveInfoStrat=" << includeLiveInfoStrat
+          << " and includeDomainStatsStrat=" << includeDomainStatsStrat;
+
+      // Iteration 100: Start of new Phase -> Should need info ONLY if a strategy requests LiveInfo
+      EXPECT_EQ(tunerManager->needsLiveInfo(100), includeLiveInfoStrat)
+          << "Failed at Iteration 100 with includeLiveInfoStrat=" << includeLiveInfoStrat
+          << " and includeDomainStatsStrat=" << includeDomainStatsStrat;
+    }
+  }
 }

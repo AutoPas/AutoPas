@@ -209,9 +209,9 @@ class TuningManager {
   size_t _lastTuningIteration{std::numeric_limits<size_t>::max()};
 
   /**
-   * Intermediate value to signal that tuning just finished, and we need to select our optimal set-up.
+   * Boolean flag that is only true between the last tuning iteration and the next non-tuning iteration.
    */
-  bool _transitionToOptimalConfigurations = false;
+  bool _tuningFinishedLastIteration = false;
 
   /**
    * Flag to indicate that a retune has been forced and a new tuning phase should start

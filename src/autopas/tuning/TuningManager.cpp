@@ -104,9 +104,7 @@ bool TuningManager::allSearchSpacesAreTrivial() const {
   return true;
 }
 
-bool TuningManager::tuningPhaseJustFinished() const {
-  return _tuningFinished and (not _transitionToOptimalConfigurations);
-}
+bool TuningManager::tuningPhaseJustFinished() const { return _tuningFinishedLastIteration; }
 
 bool TuningManager::isStartOfTuningPhase(const size_t currentIteration) const {
   // If it's a multiple of the interval, or if a retune was forced
@@ -134,11 +132,11 @@ void TuningManager::tuneConfigurations(const size_t currentIteration) {
     const bool stillTuning = tuner->tuneConfiguration(currentIteration, _tuningPhase, isStart);
     allTunersFinished = allTunersFinished and (not stillTuning);
   }
-  _transitionToOptimalConfigurations = false;
+  _tuningFinishedLastIteration = false;
   if (allTunersFinished and (not _tuningFinished)) {
     // Save the best container results before changing container
     setOptimalConfigurations();
-    _transitionToOptimalConfigurations = true;
+    _tuningFinishedLastIteration = true;
   }
   _tuningFinished = allTunersFinished;
 }
@@ -162,7 +160,7 @@ void TuningManager::setOptimalConfigurations() {
     long totalValueForContainerAndCSF = 0;
     bool containerWithCSFIsValid = true;
 
-    for (const auto &tuner : _autoTuners | std::views::values) {
+    for (const auto &[interactionType, tuner] : _autoTuners) {
       try {
         auto [optConf, evidence] =
             tuner->getEvidenceCollection().getBestConfigForContainerAndCSF(container, cellSizeFactor);

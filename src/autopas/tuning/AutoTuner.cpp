@@ -370,7 +370,7 @@ std::tuple<long, long, long> AutoTuner::estimateRuntimeFromSamples() const {
 
 bool AutoTuner::needsLiveInfo() const { return _needsLiveInfo; }
 
-bool AutoTuner::needsDomainSimilarityStatistics() const { return _needsLiveInfo; }
+bool AutoTuner::needsDomainSimilarityStatistics() const { return _needsDomainSimilarityStatistics; }
 
 const std::vector<Configuration> &AutoTuner::getConfigQueue() const { return _configQueue; }
 
