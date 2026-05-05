@@ -91,12 +91,16 @@ class AutoTuner {
   void receiveLiveInfo(const LiveInfo &liveInfo, bool isStartOfTuningPhase);
 
   /**
-   * Returns true if the AutoTuner needs live info. This occurs if any strategy requires this and AutoPas is beginning
-   * a tuning phase or if a strategy requires domain similarity statistics (taken from LiveInfo) and AutoPas is within
-   * 10 iterations of a tuning phase.
+   * Returns true if the AutoTuner needs live info.
    * @return True if the AutoTuner needs live info.
    */
   [[nodiscard]] bool needsLiveInfo() const;
+
+  /**
+   * Returns true if the AutoTuner needs domain similarity statistics.
+   * @return True if the AutoTuner needs live info.
+   */
+  [[nodiscard]] bool needsDomainSimilarityStatistics() const;
 
   /**
    * Returns whether rebuildNeighborLists() should be triggered in the next iteration.
@@ -240,8 +244,9 @@ class AutoTuner {
    * tuning phase. If the currently sampled configuration is worse than the current best configuration by more than the
    * earlyStoppingFactor factor, it will not be sampled again this tuning phase. Uses the _estimateRuntimeFromSamples()
    * function to estimate the runtimes.
+   * @param tuningPhase Current tuning phase number.
    */
-  void checkEarlyStoppingCondition();
+  void checkEarlyStoppingCondition(size_t tuningPhase);
 
   /**
    * Tune available algorithm configurations.
@@ -263,7 +268,7 @@ class AutoTuner {
    * isolation.
    * @param optimalConfig The configuration to be used from now on until the next tuning phase.
    */
-  void forceOptimalConfiguration(const Configuration &optimalConfig);
+  void setOptimalConfiguration(const Configuration &optimalConfig);
 
   /**
    * Get the set of all container types present in the search space.
@@ -299,15 +304,16 @@ class AutoTuner {
   size_t getCurrentNumSamples() const;
 
   /**
-   * Estimate the runtime from the current samples according to the SelectorStrategy and rebuild frequency.
-   * Samples are weighted so that we normalize to the expected number of (non-)rebuild iterations and then divide by the
-   * rebuild frequency.
-   * @return estimate time for one iteration
+   * Estimate the runtime from the current samples according to the SelectorStrategy.
+   * The function also weights the samples to normalize to the expected number of (non-)rebuild iterations and then
+   * divide by the rebuild frequency. Returns the effective/normalized value as well as the pure rebuild and traversal
+   * values.
+   * @return tuple with estimated times for one iteration <effectiveRuntime, rebuildTime, traverseTime>
    */
   [[nodiscard]] std::tuple<long, long, long> estimateRuntimeFromSamples() const;
 
   /**
-   * Strategy how to reduce the sampled values to one value.
+   * Strategy how to aggregate the sampled values to one value.
    */
   SelectorStrategyOption _selectorStrategy;
 

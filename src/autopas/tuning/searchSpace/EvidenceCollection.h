@@ -48,7 +48,7 @@ class EvidenceCollection {
    * @param configuration
    * @return If there is evidence a const pointer to the vector of collected evidence, otherwise nullptr.
    */
-  const std::vector<Evidence> *getEvidence(const Configuration &configuration) const;
+  [[nodiscard]] const std::vector<Evidence> *getEvidence(const Configuration &configuration) const;
 
   /**
    * Returns a modifiable reference to the last evidence of a given configuration.
@@ -63,14 +63,14 @@ class EvidenceCollection {
    * @param cellSizeFactor The cellSizeFactor to limit our configurations to.
    * @return The optimal configuration and corresponding evidence
    */
-  std::tuple<Configuration, Evidence> getBestConfigForContainerAndCSF(ContainerOption containerOption,
-                                                                      double cellSizeFactor) const;
+  [[nodiscard]] std::tuple<Configuration, Evidence> getBestConfigForContainerAndCSF(ContainerOption containerOption,
+                                                                                    double cellSizeFactor) const;
 
   /**
    * Retrieve the configuration with the best total evidence. Rebuild + Traversal.
    * @return The optimal configuration and corresponding evidence
    */
-  std::tuple<Configuration, Evidence> getBestConfigWithRebuild() const;
+  [[nodiscard]] std::tuple<Configuration, Evidence> getBestConfigWithRebuild() const;
 
   /**
    * Retrieve the configuration with the lowest evidence value for the given tuning phase.
@@ -80,7 +80,7 @@ class EvidenceCollection {
    * @param csfConstraint The cell size factor for which the optimum should be returned. Default = none
    * @return The optimal configuration.
    */
-  std::tuple<Configuration, Evidence> getOptimalConfiguration(
+  [[nodiscard]] std::tuple<Configuration, Evidence> getOptimalConfiguration(
       size_t tuningPhase, EvidenceMode mode = EFFECTIVE,
       std::optional<ContainerOption> containerConstraint = std::nullopt,
       std::optional<double> csfConstraint = std::nullopt) const;
@@ -90,13 +90,14 @@ class EvidenceCollection {
    *
    * @return The optimal configuration.
    */
-  std::tuple<Configuration, Evidence> getLatestOptimalConfiguration() const;
+  [[nodiscard]] std::tuple<Configuration, Evidence> getLatestOptimalConfiguration() const;
 
   /**
    * Report if there is any evidence in the collection.
+   * @param tuningPhase Optionally pass a tuning phase to check whether there is no evidence for this particular phase.
    * @return True if there is no evidence in the collection.
    */
-  bool empty() const;
+  [[nodiscard]] bool empty(std::optional<size_t> tuningPhase = std::nullopt) const;
 
  private:
   /**

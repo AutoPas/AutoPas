@@ -293,7 +293,7 @@ TEST_F(AutoTunerTest, testForceOptimalConfiguration) {
   EXPECT_TRUE(autoTuner.inTuningPhase());
 
   // The TuningManager steps in and forces a specific config
-  autoTuner.forceOptimalConfiguration(_confDs_seq_noN3);
+  autoTuner.setOptimalConfiguration(_confDs_seq_noN3);
 
   // Assert the state machine correctly aborted tuning and locked in the choice
   EXPECT_FALSE(autoTuner.inTuningPhase()) << "Tuner should not be tuning after an optimal config is forced.";

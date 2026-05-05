@@ -39,7 +39,8 @@ class TuningManager {
   void addAutoTuner(std::unique_ptr<AutoTuner> tuner, InteractionTypeOption::Value interactionType);
 
   /**
-   *
+   * This method is the backbone of the TuningManager. It handles tuning phases and orchestrates between all active
+   * AutoTuners.
    * @param currentIteration Current LogicHandler iteration number.
    * @param info LiveInfo object to be passed to AutoTuners if relevant.
    * @return true, if at least one AutoTuner is still in tuning state.
@@ -98,7 +99,10 @@ class TuningManager {
   bool requiresRebuilding(size_t currentIteration);
 
   /**
-   *
+   * Returns true if at least one AutoTuner needs LiveInfo.
+   * This occurs if any strategy requires this and AutoPas is beginning
+   * a tuning phase or if a strategy requires domain similarity statistics (taken from LiveInfo) and AutoPas is within
+   * 10 iterations of a tuning phase.
    * @param currentIteration Current LogicHandler iteration number.
    * @return true, if at least one AutoTuner needs live information for tuning.
    */

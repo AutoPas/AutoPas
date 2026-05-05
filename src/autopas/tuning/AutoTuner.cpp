@@ -192,7 +192,7 @@ void AutoTuner::selectBestConfiguration(const size_t tuningPhase) {
   _samplesTraverseInteractions.resize(_maxSamples);
 }
 
-void AutoTuner::forceOptimalConfiguration(const Configuration &optimalConfig) {
+void AutoTuner::setOptimalConfiguration(const Configuration &optimalConfig) {
   _configQueue.clear();
   _configQueue.push_back(optimalConfig);
 
@@ -230,6 +230,16 @@ Configuration AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool 
                                             [](const auto &conf) { return conf.toShortString(false); }));
   });
 
+  // let all strategies optimize the queue in the order they are defined.
+  // If any is still tuning consider the tuning phase still ongoing.
+  std::ranges::for_each(_tuningStrategies, [&](auto &tuningStrategy) {
+    tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
+    AutoPasLog(DEBUG, "ConfigQueue after applying {}::optimizeSuggestions(): (Size={}) {}",
+               tuningStrategy->getOptionType().to_string(), _configQueue.size(),
+               utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
+                                            [](const auto &conf) { return conf.toShortString(false); }));
+  });
+
   if (_configQueue.empty()) {
     handleEndOfTuningPhase(tuningPhase);
   }
@@ -258,7 +268,7 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles,
   }
   _samplesTraverseInteractions.push_back(sampleTraverseParticles);
 
-  checkEarlyStoppingCondition();
+  checkEarlyStoppingCondition(tuningPhase);
 
   // if this was the last sample for this configuration:
   //  - calculate the evidence from the collected samples
@@ -358,7 +368,9 @@ std::tuple<long, long, long> AutoTuner::estimateRuntimeFromSamples() const {
   return {effectiveValue, optimumRebuild, optimumTraversal};
 }
 
-bool AutoTuner::needsLiveInfo() const { return (_needsLiveInfo or _needsDomainSimilarityStatistics); }
+bool AutoTuner::needsLiveInfo() const { return _needsLiveInfo; }
+
+bool AutoTuner::needsDomainSimilarityStatistics() const { return _needsLiveInfo; }
 
 const std::vector<Configuration> &AutoTuner::getConfigQueue() const { return _configQueue; }
 
@@ -414,8 +426,8 @@ bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
 
 void AutoTuner::setRebuildFrequency(double rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
 
-void AutoTuner::checkEarlyStoppingCondition() {
-  if (_evidenceCollection.empty()) {
+void AutoTuner::checkEarlyStoppingCondition(const size_t tuningPhase) {
+  if (_evidenceCollection.empty(tuningPhase)) {
     // Since there is no prior evidence, we must fully evaluate the first configuration.
     return;
   }

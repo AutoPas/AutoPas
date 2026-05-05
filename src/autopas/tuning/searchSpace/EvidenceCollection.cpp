@@ -105,5 +105,18 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getLatestOptimalConfigur
   return getOptimalConfiguration(_latestTuningPhase);
 }
 
-bool EvidenceCollection::empty() const { return _evidenceMap.empty(); }
+bool EvidenceCollection::empty(std::optional<size_t> tuningPhase) const {
+  if (not tuningPhase.has_value()) {
+    return _evidenceMap.empty();
+  }
+  for (const auto &evidenceVec : _evidenceMap | std::views::values) {
+    // Check if any evidence in this vector matches the tuning phase
+    if (std::ranges::any_of(evidenceVec,
+                            [&](const auto &evidence) { return evidence.tuningPhase == tuningPhase.value(); })) {
+      return false;
+    }
+  }
+  // No existing evidence was found.
+  return true;
+}
 }  // namespace autopas

@@ -87,8 +87,12 @@ bool TuningManager::requiresRebuilding(const size_t currentIteration) {
 bool TuningManager::needsLiveInfo(const size_t currentIteration) {
   const bool isStart = isStartOfTuningPhase(currentIteration);
   const bool aboutToBegin = tuningPhaseAboutToBegin(currentIteration);
-  return (isStart or aboutToBegin) and
-         std::ranges::any_of(_autoTuners, [&](const auto &tuner) { return tuner.second->needsLiveInfo(); });
+  const bool needLiveInfo =
+      isStart and std::ranges::any_of(_autoTuners, [&](const auto &tuner) { return tuner.second->needsLiveInfo(); });
+  const bool needDomainStats = aboutToBegin and std::ranges::any_of(_autoTuners, [&](const auto &tuner) {
+                                 return tuner.second->needsDomainSimilarityStatistics();
+                               });
+  return needLiveInfo or needDomainStats;
 }
 
 bool TuningManager::allSearchSpacesAreTrivial() const {
@@ -184,7 +188,7 @@ void TuningManager::setOptimalConfigurations() {
                "traversal configuration");
     for (const auto &tuner : _autoTuners | std::views::values) {
       auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigWithRebuild();
-      tuner->forceOptimalConfiguration(optConf);
+      tuner->setOptimalConfiguration(optConf);
     }
   } else {
     AutoPasLog(DEBUG,
@@ -194,7 +198,7 @@ void TuningManager::setOptimalConfigurations() {
     for (const auto &tuner : _autoTuners | std::views::values) {
       auto [optConf, evidence] =
           tuner->getEvidenceCollection().getBestConfigForContainerAndCSF(bestContainer.value(), bestCSF.value());
-      tuner->forceOptimalConfiguration(optConf);
+      tuner->setOptimalConfiguration(optConf);
     }
   }
 }
