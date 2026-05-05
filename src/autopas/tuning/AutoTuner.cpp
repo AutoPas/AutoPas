@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <iterator>
-#include <numeric>
 #include <vector>
 
 #include "autopas/tuning/selectors/OptimumSelector.h"
@@ -67,7 +66,7 @@ void AutoTuner::logTuningResult(const long tuningTime, const size_t currentItera
     // This string is part of several older scripts, hence it is not recommended to change it.
     const auto [conf, optimalEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
     AutoPasLog(DEBUG, "Selected Configuration {}", conf.toString());
-    _tuningResultLogger.logTuningResult(conf, currentIteration, tuningTime, optimalEvidence.reducedValue);
+    _tuningResultLogger.logTuningResult(conf, currentIteration, tuningTime, optimalEvidence.effectiveValue);
   }
 }
 
@@ -185,8 +184,8 @@ void AutoTuner::selectBestConfiguration(const size_t tuningPhase) {
   // If there are still queued up configurations, clear them.
   _configQueue.clear();
   // Find and push_back the optimal configuration for the current container.
-  const auto [optConf, optEvidence] =
-      _evidenceCollection.getOptimalConfiguration(tuningPhase, EvidenceCollection::EvidenceMode::REDUCED, std::nullopt);
+  const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(
+      tuningPhase, EvidenceCollection::EvidenceMode::EFFECTIVE, std::nullopt);
   _configQueue.push_back(optConf);
 
   _samplesRebuildingNeighborLists.resize(_maxSamples);
@@ -266,19 +265,19 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles,
   //  - log what was collected
   //  - remove the configuration from the queue
   if (getCurrentNumSamples() >= _maxSamples or _earlyStoppingOfResampling) {
-    const auto [reducedValue, rebuildValue, traversalValue] = estimateRuntimeFromSamples();
+    const auto [effectiveValue, rebuildValue, traversalValue] = estimateRuntimeFromSamples();
     _evidenceCollection.addEvidence(currentConfig,
-                                    {iteration, tuningPhase, reducedValue, rebuildValue, traversalValue});
+                                    {iteration, tuningPhase, effectiveValue, rebuildValue, traversalValue});
 
     // If LOESS-based smoothening is enabled, use it to smooth evidence to remove high outliers. If smoothing results in
     // a higher value or if LOESS-based smoothening is disabled, use the original value.
     const auto smoothedValue =
         _useLOESSSmoothening
-            ? std::min(reducedValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5))
-            : reducedValue;
+            ? std::min(effectiveValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5))
+            : effectiveValue;
 
     // replace collected evidence with smoothed value to improve next smoothing
-    _evidenceCollection.modifyLastEvidence(currentConfig).reducedValue = smoothedValue;
+    _evidenceCollection.modifyLastEvidence(currentConfig).effectiveValue = smoothedValue;
 
     for (const auto &tuningStrategy : _tuningStrategies) {
       tuningStrategy->addEvidence(getCurrentConfig(), _evidenceCollection.modifyLastEvidence(currentConfig));
@@ -318,7 +317,7 @@ void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles,
     samplesTraverseInteractions.resize(_maxSamples, -1);
 
     _tuningDataLogger.logTuningData(currentConfig, samplesRebuildingNeighborLists, samplesTraverseInteractions,
-                                    iteration, reducedValue, smoothedValue, _rebuildFrequency);
+                                    iteration, effectiveValue, smoothedValue, _rebuildFrequency);
   }
 }
 
@@ -349,12 +348,14 @@ size_t AutoTuner::getCurrentNumSamples() const {
 }
 
 std::tuple<long, long, long> AutoTuner::estimateRuntimeFromSamples() const {
-  // reduce samples for rebuild and non-rebuild iterations with the given selector strategy
+  // Aggregate samples for rebuild and non-rebuild iterations with the given selector strategy
   const auto optimumRebuild = OptimumSelector::optimumValue(_samplesRebuildingNeighborLists, _selectorStrategy);
   const auto optimumTraversal = OptimumSelector::optimumValue(_samplesTraverseInteractions, _selectorStrategy);
 
-  // Calculate weighted average as if there was exactly one sample for each iteration in the rebuild interval.
-  return {optimumRebuild / _rebuildFrequency + optimumTraversal, optimumRebuild, optimumTraversal};
+  // Calculate the amortized runtime/energy as if there was exactly one sample for each iteration in the rebuild
+  // interval.
+  const auto effectiveValue = static_cast<long>(optimumRebuild / _rebuildFrequency) + optimumTraversal;
+  return {effectiveValue, optimumRebuild, optimumTraversal};
 }
 
 bool AutoTuner::needsLiveInfo() const { return (_needsLiveInfo or _needsDomainSimilarityStatistics); }
@@ -424,7 +425,7 @@ void AutoTuner::checkEarlyStoppingCondition() {
   auto [_, bestEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
 
   double slowdownFactor =
-      static_cast<double>(std::get<0>(preliminaryValues)) / static_cast<double>(bestEvidence.reducedValue);
+      static_cast<double>(std::get<0>(preliminaryValues)) / static_cast<double>(bestEvidence.effectiveValue);
 
   if (slowdownFactor > _earlyStoppingFactor) {
     AutoPasLog(DEBUG,

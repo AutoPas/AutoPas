@@ -26,11 +26,11 @@ class EvidenceCollection {
    * Helper enum to switch between evidence measurements modes.
    */
   enum EvidenceMode {
-    // Evidence of rebuild and traversal measurement combined taking into account the rebuild frequency.
-    REDUCED,
+    // Calculate the effective measurement for an average iteration
+    EFFECTIVE,
     // Evidence of only the traversal measurement.
     TRAVERSAL,
-    // Evidence of the rebuild + traversal measurement.
+    // Evidence of the rebuild + traversal measurement for a single iteration where a rebuild actually occurred.
     TOTAL
   };
 
@@ -81,7 +81,7 @@ class EvidenceCollection {
    * @return The optimal configuration.
    */
   std::tuple<Configuration, Evidence> getOptimalConfiguration(
-      size_t tuningPhase, EvidenceMode mode = REDUCED,
+      size_t tuningPhase, EvidenceMode mode = EFFECTIVE,
       std::optional<ContainerOption> containerConstraint = std::nullopt,
       std::optional<double> csfConstraint = std::nullopt) const;
 

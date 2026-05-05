@@ -158,11 +158,11 @@ void TuningManager::setOptimalConfigurations() {
     long totalValueForContainerAndCSF = 0;
     bool containerWithCSFIsValid = true;
 
-    for (const auto &[interactionType, tuner] : _autoTuners) {
+    for (const auto &tuner : _autoTuners | std::views::values) {
       try {
         auto [optConf, evidence] =
             tuner->getEvidenceCollection().getBestConfigForContainerAndCSF(container, cellSizeFactor);
-        totalValueForContainerAndCSF += evidence.reducedValue;
+        totalValueForContainerAndCSF += evidence.effectiveValue;
       } catch (const std::exception &e) {
         containerWithCSFIsValid = false;
         AutoPasLog(DEBUG, "No evidence for the interaction type {} with container {} and cell size factor {}",

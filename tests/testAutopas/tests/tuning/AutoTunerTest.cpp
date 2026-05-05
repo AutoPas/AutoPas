@@ -151,7 +151,7 @@ TEST_F(AutoTunerTest, testSampleWeightingOneRebuild) {
   autoTuner.addMeasurement(0, sampleNonRebuild, false, 2, 0);
 
   constexpr long expectedEvidence = sampleRebuild / rebuildFrequency + sampleNonRebuild;
-  EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().reducedValue);
+  EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().effectiveValue);
 }
 
 /**
@@ -179,7 +179,7 @@ TEST_F(AutoTunerTest, testSampleWeightingTwoRebuild) {
   autoTuner.addMeasurement(0, sampleNonRebuild, false, 4, 0);
 
   constexpr long expectedEvidence = sampleRebuild / rebuildFrequency + sampleNonRebuild;
-  EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().reducedValue);
+  EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().effectiveValue);
 }
 
 /**

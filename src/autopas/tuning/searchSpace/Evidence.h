@@ -23,9 +23,10 @@ class Evidence {
    */
   size_t tuningPhase;
   /**
-   * Value of the measurement (time, energy, ...) for the rebuild and traversal time combined.
+   * Value of the effective measurement (time, energy, ...) combining rebuild and traversal, given the current rebuild
+   * frequency.
    */
-  long reducedValue;
+  long effectiveValue;
   /**
    * Value of the measurement for only the rebuilding step.
    */

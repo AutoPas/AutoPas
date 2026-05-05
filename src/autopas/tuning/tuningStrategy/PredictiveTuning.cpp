@@ -102,14 +102,14 @@ long PredictiveTuning::linePrediction(size_t iteration, size_t tuningPhase, cons
       const auto &evidenceTraversal1 = evidenceVec[evidenceVec.size() - 1];
       const auto &evidenceTraversal2 = evidenceVec[evidenceVec.size() - 2];
 
-      const auto gradient = static_cast<double>(evidenceTraversal1.reducedValue - evidenceTraversal2.reducedValue) /
+      const auto gradient = static_cast<double>(evidenceTraversal1.effectiveValue - evidenceTraversal2.effectiveValue) /
                             static_cast<double>(evidenceTraversal1.iteration - evidenceTraversal2.iteration);
       const auto delta = static_cast<double>(iteration) - static_cast<double>(evidenceTraversal1.iteration);
 
       const auto change = static_cast<long>(utils::Math::safeMul(gradient, delta));
 
       // this might overflow so use safeAdd.
-      const long prediction = utils::Math::safeAdd(evidenceTraversal1.reducedValue, change, _predictionUnderflowValue,
+      const long prediction = utils::Math::safeAdd(evidenceTraversal1.effectiveValue, change, _predictionUnderflowValue,
                                                    _predictionOverflowValue);
       // Do not accept values smaller zero.
       const auto predictionUnderflowChecked = prediction < 0 ? _predictionUnderflowValue : prediction;
@@ -117,7 +117,7 @@ long PredictiveTuning::linePrediction(size_t iteration, size_t tuningPhase, cons
       // update _predictionFunctionParameters
       functionParams.clear();
       functionParams.emplace_back(gradient);
-      functionParams.emplace_back(evidenceTraversal1.reducedValue);
+      functionParams.emplace_back(evidenceTraversal1.effectiveValue);
 
       return predictionUnderflowChecked;
     } else {

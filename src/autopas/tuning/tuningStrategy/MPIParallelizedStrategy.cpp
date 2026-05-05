@@ -36,7 +36,7 @@ bool MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &co
   // before the other's data is there.
   const auto [myBestConf, myBestEvidence] = evidenceCollection.getLatestOptimalConfiguration();
   const auto globallyBestConfig = utils::AutoPasConfigurationCommunicator::findGloballyBestConfiguration(
-      _bucket, myBestConf, myBestEvidence.reducedValue);
+      _bucket, myBestConf, myBestEvidence.effectiveValue);
 
   const auto myQueueSize = static_cast<unsigned int>(configQueue.size());
   unsigned int globallyLongestQueueSize{};

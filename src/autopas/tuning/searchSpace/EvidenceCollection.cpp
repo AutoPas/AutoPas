@@ -33,7 +33,7 @@ Evidence &EvidenceCollection::modifyLastEvidence(const Configuration &configurat
 
 std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigForContainerAndCSF(ContainerOption containerOption,
                                                                                         double cellSizeFactor) const {
-  return getOptimalConfiguration(_latestTuningPhase, EvidenceMode::REDUCED, containerOption, cellSizeFactor);
+  return getOptimalConfiguration(_latestTuningPhase, EvidenceMode::EFFECTIVE, containerOption, cellSizeFactor);
 }
 
 std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigWithRebuild() const {
@@ -55,8 +55,8 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(
   // Helper lambda to fetch the metric as determined by the EvidenceMode
   auto getValue = [mode](const Evidence &e) -> long {
     switch (mode) {
-      case EvidenceMode::REDUCED:
-        return e.reducedValue;
+      case EvidenceMode::EFFECTIVE:
+        return e.effectiveValue;
       case EvidenceMode::TRAVERSAL:
         return e.traversalValue;
       case EvidenceMode::TOTAL:
