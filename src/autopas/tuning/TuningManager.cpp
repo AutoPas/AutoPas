@@ -149,32 +149,36 @@ void TuningManager::setOptimalConfigurations() {
 
   // 2. Check the potential time if we keep all interaction types fixed to the same container (and save rebuilds)
   long bestCommonContainerValue = std::numeric_limits<long>::max();
-  auto commonContainerOptions = getCommonContainerOption();
+  auto commonContainerAndCellSizeFactorOptions = getCommonContainerAndCellSizeFactors();
 
   std::optional<ContainerOption> bestContainer = std::nullopt;
+  std::optional<double> bestCSF = std::nullopt;
 
-  for (const auto &container : commonContainerOptions) {
-    long totalValueForContainer = 0;
-    bool containerIsValid = true;
+  for (const auto &[container, cellSizeFactor] : commonContainerAndCellSizeFactorOptions) {
+    long totalValueForContainerAndCSF = 0;
+    bool containerWithCSFIsValid = true;
 
     for (const auto &[interactionType, tuner] : _autoTuners) {
       try {
-        auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigForContainer(container);
-        totalValueForContainer += evidence.reducedValue;
+        auto [optConf, evidence] =
+            tuner->getEvidenceCollection().getBestConfigForContainerAndCSF(container, cellSizeFactor);
+        totalValueForContainerAndCSF += evidence.reducedValue;
       } catch (const std::exception &e) {
-        containerIsValid = false;
-        AutoPasLog(DEBUG, "No evidence for the interaction type {} with container: {}", interactionType, container);
+        containerWithCSFIsValid = false;
+        AutoPasLog(DEBUG, "No evidence for the interaction type {} with container {} and cell size factor {}",
+                   interactionType, container, cellSizeFactor);
         break;
       }
     }
-    if (containerIsValid and totalValueForContainer < bestCommonContainerValue) {
-      bestCommonContainerValue = totalValueForContainer;
+    if (containerWithCSFIsValid and totalValueForContainerAndCSF < bestCommonContainerValue) {
+      bestCommonContainerValue = totalValueForContainerAndCSF;
       bestContainer = container;
+      bestCSF = cellSizeFactor;
     }
   }
 
   // 3. Evaluate our options
-  if ((not bestContainer.has_value()) or bestTotalValue < bestCommonContainerValue) {
+  if ((not bestContainer.has_value()) or (not bestCSF.has_value()) or bestTotalValue < bestCommonContainerValue) {
     AutoPasLog(DEBUG,
                "TuningManager::setOptimalConfigurations: Each AutoTuner will run their individually best rebuild + "
                "traversal configuration");
@@ -188,33 +192,59 @@ void TuningManager::setOptimalConfigurations() {
                "container option",
                bestContainer.value());
     for (const auto &tuner : _autoTuners | std::views::values) {
-      auto [optConf, evidence] = tuner->getEvidenceCollection().getBestConfigForContainer(bestContainer.value());
+      auto [optConf, evidence] =
+          tuner->getEvidenceCollection().getBestConfigForContainerAndCSF(bestContainer.value(), bestCSF.value());
       tuner->forceOptimalConfiguration(optConf);
     }
   }
 }
 
-std::set<ContainerOption> TuningManager::getCommonContainerOption() {
+std::set<std::pair<ContainerOption, double>> TuningManager::getCommonContainerAndCellSizeFactors() const {
   if (_autoTuners.empty()) return {};
 
   // Calculate Intersection of Supported Containers for all interaction types
+  std::set<ContainerOption> commonContainers;
+  std::set<double> commonCellSizeFactors;
   bool first = true;
-  std::set<ContainerOption> intersectionSet;
+  std::set<std::pair<ContainerOption, double>> intersectionSet;
 
   for (const auto &tuner : _autoTuners | std::views::values) {
     std::set<ContainerOption> tunerContainers = tuner->getSearchSpaceContainers();
+    std::set<double> tunerCellSizeFactors = tuner->getSearchSpaceCellSizeFactors();
 
     if (first) {
-      intersectionSet = tunerContainers;
+      commonContainers = std::move(tunerContainers);
+      commonCellSizeFactors = std::move(tunerCellSizeFactors);
       first = false;
     } else {
-      std::set<ContainerOption> result;
-      std::ranges::set_intersection(intersectionSet, tunerContainers, std::inserter(result, result.begin()));
-      intersectionSet = result;
+      // Intersect Container Options
+      std::set<ContainerOption> resultContainers;
+      std::ranges::set_intersection(commonContainers, tunerContainers,
+                                    std::inserter(resultContainers, resultContainers.begin()));
+      commonContainers = std::move(resultContainers);
+
+      // Intersect Cell Size Factors
+      std::set<double> resultFactors;
+      std::ranges::set_intersection(commonCellSizeFactors, tunerCellSizeFactors,
+                                    std::inserter(resultFactors, resultFactors.begin()));
+      commonCellSizeFactors = std::move(resultFactors);
+    }
+
+    // Early exit if either common set becomes empty
+    if (commonContainers.empty() || commonCellSizeFactors.empty()) {
+      return {};
     }
   }
 
-  return intersectionSet;
+  // Generate the combinations (Cartesian product) of the remaining valid elements
+  std::set<std::pair<ContainerOption, double>> finalCombinations;
+  for (const auto &container : commonContainers) {
+    for (const auto &factor : commonCellSizeFactors) {
+      finalCombinations.emplace(container, factor);
+    }
+  }
+
+  return finalCombinations;
 }
 
 bool TuningManager::tuningPhaseAboutToBegin(const size_t currentIteration) const {

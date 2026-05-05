@@ -58,11 +58,13 @@ class EvidenceCollection {
   Evidence &modifyLastEvidence(const Configuration &configuration);
 
   /**
-   * Retrieve the configuration with the best reduced evidence for a particular container.
+   * Retrieve the configuration with the best reduced evidence for a particular container plus cell size factor.
    * @param containerOption The container option to limit our configurations to.
+   * @param cellSizeFactor The cellSizeFactor to limit our configurations to.
    * @return The optimal configuration and corresponding evidence
    */
-  std::tuple<Configuration, Evidence> getBestConfigForContainer(ContainerOption containerOption) const;
+  std::tuple<Configuration, Evidence> getBestConfigForContainerAndCSF(ContainerOption containerOption,
+                                                                      double cellSizeFactor) const;
 
   /**
    * Retrieve the configuration with the best total evidence. Rebuild + Traversal.
@@ -75,11 +77,13 @@ class EvidenceCollection {
    * @param tuningPhase The tuning phase for which the optimum should be returned.
    * @param mode The Evidence criterion to look at (REDUCED, TRAVERSAL or TOTAL). Default = REDUCED
    * @param containerConstraint The container for which the optimum should be returned. Default = none
+   * @param csfConstraint The cell size factor for which the optimum should be returned. Default = none
    * @return The optimal configuration.
    */
   std::tuple<Configuration, Evidence> getOptimalConfiguration(
       size_t tuningPhase, EvidenceMode mode = REDUCED,
-      std::optional<ContainerOption> containerConstraint = std::nullopt) const;
+      std::optional<ContainerOption> containerConstraint = std::nullopt,
+      std::optional<double> csfConstraint = std::nullopt) const;
 
   /**
    * Retrieve the configuration with the lowest evidence value for the latest tuning phase.

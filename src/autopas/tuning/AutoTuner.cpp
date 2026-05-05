@@ -442,4 +442,12 @@ std::set<ContainerOption> AutoTuner::getSearchSpaceContainers() const {
   }
   return containers;
 }
+
+std::set<double> AutoTuner::getSearchSpaceCellSizeFactors() const {
+  std::set<double> factors;
+  for (const auto &conf : _searchSpace) {
+    factors.insert(conf.cellSizeFactor);
+  }
+  return factors;
+}
 }  // namespace autopas

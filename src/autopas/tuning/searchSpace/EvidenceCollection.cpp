@@ -31,9 +31,9 @@ Evidence &EvidenceCollection::modifyLastEvidence(const Configuration &configurat
   return _evidenceMap[configuration].back();
 }
 
-std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigForContainer(
-    ContainerOption containerOption) const {
-  return getOptimalConfiguration(_latestTuningPhase, EvidenceMode::REDUCED, containerOption);
+std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigForContainerAndCSF(ContainerOption containerOption,
+                                                                                        double cellSizeFactor) const {
+  return getOptimalConfiguration(_latestTuningPhase, EvidenceMode::REDUCED, containerOption, cellSizeFactor);
 }
 
 std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigWithRebuild() const {
@@ -41,7 +41,8 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getBestConfigWithRebuild
 }
 
 std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(
-    const size_t tuningPhase, const EvidenceMode mode, const std::optional<ContainerOption> containerConstraint) const {
+    const size_t tuningPhase, const EvidenceMode mode, const std::optional<ContainerOption> containerConstraint,
+    const std::optional<double> csfConstraint) const {
   if (_evidenceMap.empty()) {
     utils::ExceptionHandler::exception(
         "EvidenceCollection::getOptimalConfiguration(): Trying to determine the optimal configuration but there "
@@ -69,6 +70,9 @@ std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(
 
   for (const auto &[conf, evidenceVec] : _evidenceMap) {
     if (containerConstraint.has_value() and conf.container != containerConstraint.value()) {
+      continue;
+    }
+    if (csfConstraint.has_value() and conf.cellSizeFactor != csfConstraint.value()) {
       continue;
     }
     // reverse iteration of the evidence vector because we are probably interested in the latest evidence.
