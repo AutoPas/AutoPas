@@ -1381,7 +1381,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _sortingThreshold, config.loadEstimator);
+                            _verletClusterSize, _sortingThreshold, config.loadEstimator,_logicHandlerInfo.hGridMaxCutoffPerLevel);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.
