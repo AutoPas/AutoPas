@@ -192,7 +192,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle_T>, public FullPartic
    * Get the assigned id of this leaf node
    * @return An ID (or -1 if there was no ID assigned to this node)
    */
-  int getID() { return _id; }
+  int getID() const { return _id; }
 
   /**
    * Set the ID of this node
