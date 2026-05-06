@@ -8,6 +8,7 @@
 
 #include <spdlog/async.h>
 
+#include "autopas/options/TuningMetricOption.h"
 #include "autopas/tuning/Configuration.h"
 
 namespace autopas {
@@ -25,8 +26,10 @@ class TuningResultLogger {
   /**
    * Constructor initializes the logger and sets the output file name.
    * @param outputSuffix Suffix for all output files produced by this class.
+   * @param tuningMetric Tuning metric (time or energy) used for the current simulation.
    */
-  explicit TuningResultLogger(const std::string &outputSuffix = "");
+  explicit TuningResultLogger(const std::string &outputSuffix = "",
+                              TuningMetricOption tuningMetric = TuningMetricOption::time);
 
   /**
    * Destructor drops the logger from the spd registry.

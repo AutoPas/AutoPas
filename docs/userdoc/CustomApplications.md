@@ -54,7 +54,7 @@ The critical elements to implement are:
   This function should return the name of the functor as a `std::string`.
 
 As an example for a pairwise functor see [`SPHCalcDensityFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/sph/SPHLibrary/SPHCalcDensityFunctor.h).
-As an example for a triwise functor see [`AxilrodTellerFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/AxilrodTellerFunctor.h).
+As an example for a triwise functor see [`AxilrodTellerMutoFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h).
 
 ### Using multiple functors
 AutoPas is able to work with simulation setups that use multiple functors of the same or different interaction types to describe different forces.
@@ -80,7 +80,5 @@ There exist some caveats that have to be considered when using multiple functors
   It is recommended, to only mark the most expensive functor as relevant.
 
 ## Related Files and Folders
-- Functor.h
-- PairwiseFunctor.h
-- TriwiseFunctor.h
-- ParticleBase.h
+- ContainerIterator.h
+- IteratorBehavior.h

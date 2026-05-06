@@ -9,11 +9,13 @@
 #include "autopas/LogicHandler.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/particles/OwnershipState.h"
+#include "testingHelpers/ParticleMatcher.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::Combine;
 using ::testing::Return;
 using ::testing::UnorderedElementsAreArray;
+using ::testing::UnorderedPointwise;
 using ::testing::ValuesIn;
 
 /**
@@ -144,9 +146,9 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
     FAIL();
   }
 
-  EXPECT_THAT(afterListInner, UnorderedElementsAreArray(beforeListInner));
-  EXPECT_THAT(afterListHaloWithinCutoff, UnorderedElementsAreArray(beforeListHaloWithinCutoff));
-  EXPECT_THAT(afterListHaloOutsideCutoff, UnorderedElementsAreArray(beforeListHaloOutsideCutoff));
+  EXPECT_THAT(afterListInner, UnorderedPointwise(ParticleEq(), beforeListInner));
+  EXPECT_THAT(afterListHaloWithinCutoff, UnorderedPointwise(ParticleEq(), beforeListHaloWithinCutoff));
+  EXPECT_THAT(afterListHaloOutsideCutoff, UnorderedPointwise(ParticleEq(), beforeListHaloOutsideCutoff));
 
   // Reset tuning, so third iteration should swap back to firstContainerType
   tunerMap[autopas::InteractionTypeOption::pairwise]->forceRetune();
@@ -171,9 +173,9 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
     FAIL();
   }
 
-  EXPECT_THAT(after2ListInner, UnorderedElementsAreArray(afterListInner));
-  EXPECT_THAT(after2ListHaloWithinCutoff, UnorderedElementsAreArray(afterListHaloWithinCutoff));
-  EXPECT_THAT(after2ListHaloOutsideCutoff, UnorderedElementsAreArray(afterListHaloOutsideCutoff));
+  EXPECT_THAT(after2ListInner, UnorderedPointwise(ParticleEq(), afterListInner));
+  EXPECT_THAT(after2ListHaloWithinCutoff, UnorderedPointwise(ParticleEq(), afterListHaloWithinCutoff));
+  EXPECT_THAT(after2ListHaloOutsideCutoff, UnorderedPointwise(ParticleEq(), afterListHaloOutsideCutoff));
 }
 
 std::vector<autopas::Configuration> containerConfigs = {

@@ -9,7 +9,7 @@
 namespace mdLib {
 KokkosMoleculeLJ::KokkosMoleculeLJ(const std::array<ParticleSoAFloatPrecision, 3> &pos, const std::array<ParticleSoAFloatPrecision, 3> &v, unsigned long moleculeId,
                        unsigned long typeId)
-    : autopas::ParticleBaseFP32(pos, v, moleculeId), _typeId(typeId) {}
+    : autopas::ParticleBaseFP64(pos, v, moleculeId), _typeId(typeId) {}
 
 const std::array<KokkosMoleculeLJ::ParticleSoAFloatPrecision, 3> &KokkosMoleculeLJ::getOldF() const {
   return _oldF;

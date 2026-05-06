@@ -1,5 +1,5 @@
 /**
- * @file ATFunctorTest.h
+ * @file ATMFunctorTest.h
  * @author muehlhaeusser
  * @date 29.08.23
  */
@@ -10,12 +10,12 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
+#include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
-class ATFunctorTest : public AutoPasTestBase {
+class ATMFunctorTest : public AutoPasTestBase {
  public:
-  ATFunctorTest() : AutoPasTestBase() {}
+  ATMFunctorTest() : AutoPasTestBase() {}
 
   enum InteractionType { own, pair12, pair21, triple, verlet };
   // Where to place 3 particles. Inside or outside the domain.
@@ -46,18 +46,18 @@ class ATFunctorTest : public AutoPasTestBase {
 
 // typedefs to hide clutter
 template <bool mixing, bool globals>
-using ATFunMol = mdLib::AxilrodTellerFunctor<Molecule, mixing, autopas::FunctorN3Modes::Both, globals>;
+using ATMFunMol = mdLib::AxilrodTellerMutoFunctor<Molecule, mixing, autopas::FunctorN3Modes::Both, globals>;
 
 // struct aliasing for readable names
-struct ATFunMixNoGlob : public ATFunMol<true, false> {
-  using ATFunMol<true, false>::AxilrodTellerFunctor;
+struct ATMFunMixNoGlob : public ATMFunMol<true, false> {
+  using ATMFunMol<true, false>::AxilrodTellerMutoFunctor;
 };
-struct ATFunNoMixNoGlob : public ATFunMol<false, false> {
-  using ATFunMol<false, false>::AxilrodTellerFunctor;
+struct ATMFunNoMixNoGlob : public ATMFunMol<false, false> {
+  using ATMFunMol<false, false>::AxilrodTellerMutoFunctor;
 };
-struct ATFunMixGlob : public ATFunMol<true, true> {
-  using ATFunMol<true, true>::AxilrodTellerFunctor;
+struct ATMFunMixGlob : public ATMFunMol<true, true> {
+  using ATMFunMol<true, true>::AxilrodTellerMutoFunctor;
 };
-struct ATFunNoMixGlob : public ATFunMol<false, true> {
-  using ATFunMol<false, true>::AxilrodTellerFunctor;
+struct ATMFunNoMixGlob : public ATMFunMol<false, true> {
+  using ATMFunMol<false, true>::AxilrodTellerMutoFunctor;
 };

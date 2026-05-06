@@ -54,7 +54,7 @@ IMAGE_PATH             = @PROJECT_SOURCE_DIR@/docs/graphics
 TEMPLATE_RELATIONS     = YES
 HAVE_DOT               = YES
 GENERATE_XML           = YES
-USE_MATHJAX            = YES # default NO - Needed for latex equation rendering. Used e.g. in AxilrodTellerFunctor.h
+USE_MATHJAX            = YES # default NO - Needed for latex equation rendering. Used e.g. in AxilrodTellerMutoFunctor.h
 
 EXCLUDE                = @PROJECT_SOURCE_DIR@/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/  \
                          @PROJECT_SOURCE_DIR@/src/autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/
