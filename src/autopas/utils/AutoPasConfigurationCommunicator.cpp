@@ -7,9 +7,7 @@
 #include "AutoPasConfigurationCommunicator.h"
 
 #include "ThreeDimensionalMapping.h"
-#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
 #include "autopas/utils/logging/Logger.h"
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
