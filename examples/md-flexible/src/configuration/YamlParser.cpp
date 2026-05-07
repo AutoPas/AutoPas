@@ -458,6 +458,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one acquisition function option!"));
 
         config.acquisitionFunctionOption.value = *parsedOptions.begin();
+      } else if (key == config.drlRetrainingIterations.name) {
+        expected = "Unsigned Integer >= 1";
+        description = config.drlRetrainingIterations.description;
+
+        config.drlRetrainingIterations.value = node[key].as<unsigned int>();
+        if (config.drlRetrainingIterations.value < 1) {
+          throw std::runtime_error("The number of DRL retraining iterations has to be a positive integer >= 1!");
+        }
       } else if (key == config.drlLearningRate.name) {
         expected = "Floating-point Value greater than 0.";
         description = config.drlLearningRate.description;

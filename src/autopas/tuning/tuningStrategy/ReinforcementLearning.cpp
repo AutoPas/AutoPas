@@ -46,7 +46,14 @@ void autopas::ReinforcementLearning::addEvidence(const Configuration &configurat
       _state.at(configuration) = oldState + _learningRate * (-evidence.value + _discountFactor * oldState - oldState);
     } else if (_model == ReinforcementModel::QLearning) {
       double oldState = _state.at(configuration);
-      _state.at(configuration) = oldState + _learningRate * (-evidence.value + _discountFactor * oldState - oldState);
+      double maxFutureEvidence = -std::numeric_limits<double>::infinity();
+      for (const auto &config : _allowedConfigurations) {
+        if (_state.find(config) != _state.end()) {
+          maxFutureEvidence = std::max(maxFutureEvidence, _state.at(config));
+        }
+      }
+      _state.at(configuration) =
+          oldState + _learningRate * (-evidence.value + _discountFactor * maxFutureEvidence - oldState);
     }
   }
 
