@@ -14,12 +14,25 @@
 
 namespace autopas {
 
+/**
+ * This class defines the traversal typically used by the KokkosDirectSumContainer
+ *
+ * @tparam Functor
+ * @tparam Particle_T
+ */
 template <class Functor, class Particle_T>
 class KokkosDsNaiveParallelTraversal : public TraversalInterface, public DSKokkosTraversalInterface<Particle_T> {
 
 public:
-
-    explicit KokkosDsNaiveParallelTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3, size_t teamSize, size_t chunkSize)
+  /**
+   * Constructor for the KokkkosDSNaiveParallelTraversal
+   * @param functor the functor that defines the interaction of particles
+   * @param dataLayout The data layout wth which this traversal should be initialized
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not
+   * @param teamSize TODO
+   * @param chunkSize TODO
+   */
+explicit KokkosDsNaiveParallelTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3, size_t teamSize, size_t chunkSize)
         : TraversalInterface(dataLayout, useNewton3), DSKokkosTraversalInterface<Particle_T>(), _functor{functor}, _teamSize(teamSize), _chunkSize(chunkSize) {}
 
     [[nodiscard]] TraversalOption getTraversalType() const final { return TraversalOption::kokkos_ds_naive_parallel; }

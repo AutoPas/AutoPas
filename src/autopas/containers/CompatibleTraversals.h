@@ -45,6 +45,10 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
   return s;
 }
 
+/**
+ * Lists all traversal options applicable for the Kokkos Direct Sum container
+ * @return set of all applicable traversal options
+ */
 [[maybe_unused]] static const std::set<TraversalOption> &allKokkosDSCompatibleTraversals() {
   static const auto s = filterAllOptions("kokkos_ds_", InteractionTypeOption::pairwise);
   return s;
@@ -59,6 +63,10 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
   return s;
 }
 
+/**
+ * Lists all triwise traversal options applicable for the Kokkos Direct Sum container
+ * @return set of all applicable traversal options
+ */
 [[maybe_unused]] static const std::set<TraversalOption> &allKokkosDSCompatibleTraversals3B() {
   static const auto s = filterAllOptions("kokkos_ds_", InteractionTypeOption::triwise);
   return s;

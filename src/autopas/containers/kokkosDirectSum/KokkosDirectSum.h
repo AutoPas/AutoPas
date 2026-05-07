@@ -18,6 +18,19 @@
 
 namespace autopas {
 
+/**
+ * This class stores all owned particles in a single list (meaning no cells or spatial decomposition)
+ * The particle interactions are calculated directly, such that each particle interacts with every other particle
+ * As a consequence, we discourage the use of this container for larger numbers of particles
+ *
+ * So far, the surrounding volume is not decomposed and also stored in a single list of particles (this can be subject
+ * to change in future implemenetations.
+ *
+ * The most interesting feature of this class is that it allows to store particle data also in the SoA format and not
+ * only AoS. For further information, we refer to the KokkosStorage class
+ *
+ * @tparam Particle_T AoS Particle type that is used with this container
+ */
 template <class Particle_T>
     class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
 
@@ -122,7 +135,7 @@ template <class Particle_T>
               if (behavior & 0b10) {
                 number += numberOfHalo;
               }
-              // TODO: other behaviors (Actually, dummies can be somewhere in both? lists)
+              // TODO: other behaviors (Actually, dummies can be somewhere in both(?) lists)
               // maybe find dummies in owned list with the help of reduceKokkos()
               return number;
             }
@@ -199,7 +212,7 @@ template <class Particle_T>
                 utils::optRef<typename ContainerIterator<Particle_T, false, true>::ParticleVecType> additionalVectors =
                     std::nullopt) const override {
                 // Copy from DirectSum.h
-                // TODO: think about how to handle case when particles are stored in SoA Format, or mark this as discouraged
+                // TODO: think about how to handle case when particles are stored in SoA Format, or mark this as discouraged (Problem: const qualifier prohibits data conversions...)
                 return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
             }
 
@@ -210,6 +223,12 @@ template <class Particle_T>
                     const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
                 // TODO
             }
+
+            template <typename Lambda>
+            void forEachInRegionKokkos(Lambda forEachLambda, const std::array<double, 3> &lowerCorner, const std::array<double, 3>& higherCorner, IteratorBehavior behavior) {
+              // TODO: this will still require to pass the all particle's indices to the lambda clause with a preceeding check if the current particle is within the requested region in addition to the test for the ownershipstate
+            }
+
 
             template <typename Lambda>
             void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
@@ -234,12 +253,14 @@ template <class Particle_T>
               if (behavior & 0b1) {
                 auto& owned = _ownedParticles;
                 Kokkos::parallel_for("forEachKokkosOwned", Kokkos::RangePolicy<ExecSpace>(0, numberOfOwned), KOKKOS_LAMBDA(int i)  {
+                  // TODO: here, also a dummy check is required
                   forEachLambda(i, owned);
                 });
               }
               if (behavior & 0b10) {
                 auto& halo = _haloParticles;
                 Kokkos::parallel_for("forEachKokkosHalo", Kokkos::RangePolicy<ExecSpace>(0, numberOfHalo), KOKKOS_LAMBDA(int i)  {
+                  // TODO: here, also a dummy check is required
                   forEachLambda(i, halo);
                 });
               }

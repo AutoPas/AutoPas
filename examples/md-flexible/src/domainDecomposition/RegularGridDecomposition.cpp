@@ -312,7 +312,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     auto reflect = [&](bool isUpper) {
       const auto boundaryPosition = isUpper ? reflSkinMax[dimensionIndex] : reflSkinMin[dimensionIndex];
 
-      // TODO: forEachKokkos()
+      // TODO: forEachInRegionKokkos() -> mainly not to unleash GPU power but more to avoid data conversions
       for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
            p.isValid(); ++p) {
         // Check that particle is within 6th root of 2 * sigma

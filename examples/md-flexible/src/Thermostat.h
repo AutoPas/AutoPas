@@ -18,6 +18,7 @@
  */
 namespace Thermostat {
 
+// TODO: it might make sense to outsource this to a common location to avoid redefining this over and over again
 #ifdef KOKKOS_ENABLE_CUDA
 using DeviceSpace = Kokkos::CudaSpace;
 constexpr bool ForEachHostFlag = false;
@@ -39,6 +40,7 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
   // kinetic energy times 2
   double kineticEnergyMul2 = 0;
+  // TODO: reduceKokkos()
   AUTOPAS_OPENMP(parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary))
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     const auto vel = iter->getV();
@@ -103,7 +105,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     numParticleMap[typeID] = 0ul;
   }
 
-  // TODO: forEachKokkos
+  // TODO: forEachKokkos()
   AUTOPAS_OPENMP(parallel) {
     // create aggregators for each thread
     std::map<size_t, double> kineticEnergyMul2MapThread;
@@ -208,6 +210,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 #endif
   }
 
+  // TODO: forEachKokkos()
   AUTOPAS_OPENMP(parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)) {
     // we use a constant seed for repeatability.
     // we need one random engine and distribution per thread
@@ -289,7 +292,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
   } else {
     autopas.template forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
 
-    }, autopas::IteratorBehavior::owned); // TODO: decide iterator behavior
+    }, autopas::IteratorBehavior::owned); // TODO: decide iterator behavior, figure out how to handle scalingMap
   }
   const auto currentTemperatures = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 }

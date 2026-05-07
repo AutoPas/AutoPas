@@ -100,6 +100,9 @@ using MemSpace = Kokkos::CudaSpace;
 using MemSpace = Kokkos::HostSpace;
 #endif
 
+/**
+ * Type of LJFunctorTypeKokkos used in md-flexible
+ */
 using LJFunctorTypeKokkos = mdLib::LJFunctorKokkos<MemSpace, ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)

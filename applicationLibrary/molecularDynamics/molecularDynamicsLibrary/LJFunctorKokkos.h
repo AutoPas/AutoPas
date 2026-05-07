@@ -12,6 +12,19 @@
 #include "autopas/utils/SoAView.h"
 
 namespace mdLib {
+
+/**
+ * A functor to handle lennard-jones interactions between two particles (molecules)
+ * @tparam MemSpace TODO
+ * @tparam Particle_T The type of the particle
+ * @tparam applyShift Switch for the lj potential to be truncated shifted
+ * @tparam useMixing Switch for the functor to be used with multiple particle types
+ * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted
+ * @tparam useNewton3 Switch for the functor to support newton3 on, off, or both. See FunctorN3Modes for possible values
+ * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial)
+ * @tparam countFLOPs counts FLOPs and hitrate
+ * @tparam relevantForTuning Whether of not the auto-tuner should consider this functor
+ */
 template <class MemSpace, class Particle_T, bool applyShift = false, bool useMixing = false,
     autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
     bool countFLOPs = false, bool relevantForTuning = true>
@@ -19,8 +32,19 @@ class LJFunctorKokkos : public autopas::PairwiseFunctor<Particle_T, LJFunctorKok
         calculateGlobals, countFLOPs, relevantForTuning>, MemSpace> {
 
 public:
+  /**
+   * Structure of the SoAs defined by the particle
+   */
   using SoAArraysType = typename Particle_T::SoAArraysType;
+
+ /**
+  * Precision of SoA entries
+  */
   using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
+
+  /**
+   * TODO
+   */
   using MemberType = typename Kokkos::TeamPolicy<typename MemSpace::execution_space>::member_type;
 
   explicit LJFunctorKokkos(double cutoff, ParticlePropertiesLibrary<FloatPrecision, size_t> &)

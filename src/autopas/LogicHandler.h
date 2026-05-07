@@ -41,6 +41,7 @@
 
 namespace autopas {
 
+// TODO: it might make sense to outsource this to a common location to avoid duplication
 #ifdef KOKKOS_ENABLE_CUDA
   using DeviceSpace = Kokkos::CudaSpace;
   constexpr bool ForEachHostFlag = false;

@@ -240,6 +240,9 @@ class MDFlexConfig {
       "List of data layout options to use for the pairwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
 
+  /**
+   * containerLayoutOptions
+   */
   MDFlexOption<std::set<autopas::DataLayoutOption>, __LINE__> containerLayoutOptions{
     autopas::DataLayoutOption::getMostOptions(), "container-layout", true, "List of data layout options to use for the storage in the container. Possible Values: " +
       autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
