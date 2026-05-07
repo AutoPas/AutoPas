@@ -8,9 +8,9 @@
 #include <algorithm>
 
 #include "TypeDefinitions.h"
-#include <autopas/AutoPasDecl.h>
-#include <autopas/utils/WrapMPI.h>
-#include <autopas/utils/WrapOpenMP.h>
+#include "autopas/AutoPasDecl.h"
+#include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 // Declare the main AutoPas class and the computeInteractions() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.

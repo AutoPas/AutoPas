@@ -13,7 +13,7 @@
 
 #include "GlobalVariableLogger.h"
 #include "TimeDiscretization.h"
-#include <autopas/AutoPasDecl.h>
+#include "autopas/AutoPasDecl.h"
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
