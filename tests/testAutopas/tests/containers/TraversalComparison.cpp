@@ -92,6 +92,7 @@ template <bool globals>
 std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> TraversalComparison::calculateForces(
     autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
+    autopas::OpenMPKindOption ompKindOption, size_t ompChunkSize,
     mykey_t key, bool useSorting) {
   auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, _ /*globals*/,
         interactionType] = key;
@@ -104,14 +105,14 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
         functor{_cutoff};
     functor.setParticleProperties(_eps * 24, _sig * _sig);
     std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
-        functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
+        functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, ompKindOption, ompChunkSize, key, useSorting);
   } else if (interactionType == autopas::InteractionTypeOption::triwise) {
     mdLib::AxilrodTellerMutoFunctor<Molecule, false /*useMixing*/, autopas::FunctorN3Modes::Both,
                                     globals /*calculateGlobals*/>
         functor{_cutoff};
     functor.setParticleProperties(_nu);
     std::tie(calculatedForces, calculatedGlobals) = calculateForcesImpl<decltype(functor), globals>(
-        functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, useSorting);
+        functor, containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, ompKindOption, ompChunkSize, key, useSorting);
   }
 
   return {calculatedForces, calculatedGlobals};
@@ -135,6 +136,7 @@ template <typename Functor, bool globals>
 std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> TraversalComparison::calculateForcesImpl(
     Functor functor, autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
+    autopas::OpenMPKindOption ompKindOption, size_t ompChunkSize,
     mykey_t key, bool useSorting) {
   auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, _ /*globals*/,
         interactionType] = key;
@@ -157,7 +159,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   EXPECT_EQ(container->size(), numParticles + numHaloParticles) << "Wrong number of halo molecules inserted!";
   const auto config =
       autopas::Configuration{containerOption,  cellSizeFactor, traversalOption, autopas::LoadEstimatorOption::none,
-                             dataLayoutOption, newton3Option,  interactionType};
+                             dataLayoutOption, newton3Option,  ompKindOption, ompChunkSize, interactionType};
 
   auto traversal = autopas::TraversalSelector::generateTraversalFromConfig<Molecule, decltype(functor)>(
       config, functor, container->getTraversalSelectorInfo());
@@ -214,11 +216,11 @@ void TraversalComparison::generateReference(mykey_t key) {
     if (interactionType == autopas::InteractionTypeOption::pairwise) {
       std::tie(calculatedForces, calculatedGlobals) =
           calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
-                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, 1., key, false);
+                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, 1., autopas::OpenMPKindOption::omp_dynamic, 1, key, false);
     } else if (interactionType == autopas::InteractionTypeOption::triwise) {
       std::tie(calculatedForces, calculatedGlobals) =
           calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c01,
-                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 1., key, false);
+                                   autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 1., autopas::OpenMPKindOption::omp_dynamic, 1, key, false);
     }
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
@@ -229,7 +231,7 @@ void TraversalComparison::generateReference(mykey_t key) {
  * This tests a given configuration against a reference configuration.
  */
 TEST_P(TraversalComparison, traversalTest) {
-  auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
+  auto [containerOption, traversalOption, dataLayoutOption, newton3Option, ompKindOption, ompChunkSize, numParticles, numHaloParticles, boxMax,
         cellSizeFactor, doSlightShift, particleDeletionPosition, globals, interactionType] = GetParam();
   // Todo: Remove this when the AxilrodTeller functor implements SoA
   if (interactionType == autopas::InteractionTypeOption::triwise and
@@ -250,11 +252,11 @@ TEST_P(TraversalComparison, traversalTest) {
   Globals calculatedGlobals;
   if (globals) {
     std::tie(calculatedForces, calculatedGlobals) = calculateForces<true>(
-        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, true);
+        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, ompKindOption, ompChunkSize, key, true);
     generateReference<true>(key);
   } else {
     std::tie(calculatedForces, calculatedGlobals) = calculateForces<false>(
-        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, key, true);
+        containerOption, traversalOption, dataLayoutOption, newton3Option, cellSizeFactor, ompKindOption, ompChunkSize, key, true);
     generateReference<false>(key);
   }
 
@@ -287,13 +289,14 @@ TEST_P(TraversalComparison, traversalTest) {
  * Lambda to generate a readable string out of the parameters of this test.
  */
 static auto toString = [](const auto &info) {
-  auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
+  auto [containerOption, traversalOption, dataLayoutOption, newton3Option, ompKindOption, ompChunkSize, numParticles, numHaloParticles, boxMax,
         cellSizeFactor, doSlightShift, particleDeletionPosition, globals, interactionType] = info.param;
   std::stringstream resStream;
   resStream << containerOption.to_string() << "_" << traversalOption.to_string()
             << (interactionType == autopas::InteractionTypeOption::triwise ? "_3B" : "") << "_"
             << dataLayoutOption.to_string() << "_"
-            << (newton3Option == autopas::Newton3Option::enabled ? "_N3" : "_noN3") << "_NP" << numParticles << "_NH"
+            << (newton3Option == autopas::Newton3Option::enabled ? "_N3" : "_noN3") << "_"
+            << ompKindOption.to_string() << "_Chunk_" << std::to_string(ompChunkSize) << "_NP" << numParticles << "_NH"
             << numHaloParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << "_CSF_" << cellSizeFactor
             << "_" << (doSlightShift ? "withShift" : "noshift")
             << (particleDeletionPosition == DeletionPosition::never ? "_NoDeletions" : "")
@@ -318,18 +321,23 @@ auto TraversalComparison::getTestParams() {
            autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType)) {
         for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
           for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
-            for (auto numParticles : params[interactionType].numParticles) {
-              for (auto boxMax : params[interactionType].boxMax) {
-                for (double cellSizeFactor : params[interactionType].cellSizeFactors) {
-                  for (auto numHalo : params[interactionType].numHaloParticles) {
-                    for (bool slightMove : {true, false}) {
-                      for (bool globals : {true, /*false*/}) {
-                        for (DeletionPosition particleDeletionPosition :
-                             {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
-                              DeletionPosition::beforeAndAfterLists}) {
-                          testParams.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option,
-                                                  numParticles, numHalo, boxMax, cellSizeFactor, slightMove,
-                                                  particleDeletionPosition, globals, interactionType);
+            for (auto ompKindOption : autopas::OpenMPKindOption::getAllOptions()) {
+              for (auto ompChunkSize : std::set<size_t>({1, 2, 250})) {
+                for (auto numParticles : params[interactionType].numParticles) {
+                  for (auto boxMax : params[interactionType].boxMax) {
+                    for (double cellSizeFactor : params[interactionType].cellSizeFactors) {
+                      for (auto numHalo : params[interactionType].numHaloParticles) {
+                        for (bool slightMove : {true, false}) {
+                          for (bool globals : {true, /*false*/}) {
+                            for (DeletionPosition particleDeletionPosition :
+                                 {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
+                                  DeletionPosition::beforeAndAfterLists}) {
+                              testParams.emplace_back(containerOption, traversalOption, dataLayoutOption, newton3Option,
+                                                      ompKindOption, ompChunkSize,
+                                                      numParticles, numHalo, boxMax, cellSizeFactor, slightMove,
+                                                      particleDeletionPosition, globals, interactionType);
+                                  }
+                          }
                         }
                       }
                     }

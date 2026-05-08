@@ -31,7 +31,7 @@ void LogicHandlerTest::initLogicHandler() {
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
-        autopas::InteractionTypeOption::pairwise}});
+        autopas::OpenMPKindOption::omp_dynamic, 1, autopas::InteractionTypeOption::pairwise}});
   _tunerMap.emplace(
       autopas::InteractionTypeOption::pairwise,
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));

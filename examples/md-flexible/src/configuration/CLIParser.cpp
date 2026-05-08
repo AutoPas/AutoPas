@@ -79,8 +79,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.MPITuningWeightForMaxDensity,
       config.newton3Options,
       config.newton3Options3B,
-      config.openMPChunkSize,
-      config.openMPKind,
+      config.openMPChunkSizes,
+      config.openMPKindOptions,
       config.outputSuffix,
       config.particleSpacing,
       config.particlesPerDim,
@@ -443,6 +443,21 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
+      case decltype(config.openMPChunkSizes)::getoptChar: {
+        config.openMPChunkSizes.value = autopas::utils::StringUtils::parseNumberSet<size_t>(strArg);
+        if (config.cellSizeFactors.value->isEmpty()) {
+          cerr << "Error parsing OpenMP Chunk Sizes (must have a least one chunk size)" << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.openMPKindOptions)::getoptChar: {
+        config.openMPKindOptions.value = autopas::OpenMPKindOption::parseOptions(strArg);
+        if (config.openMPKindOptions.value.empty()) {
+          cerr << "Unknown OpenMP Schedule Kind: " << strArg << endl;
+          displayHelp = true;
+        }
+      }
       case decltype(config.particlesPerDim)::getoptChar: {
         try {
           config.particlesPerDim.value = stoul(strArg);
@@ -738,24 +753,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.loadBalancingInterval)::getoptChar: {
         config.loadBalancingInterval.value = (unsigned int)stoul(strArg);
-        break;
-      }
-      case decltype(config.openMPChunkSize)::getoptChar: {
-        try {
-          config.openMPChunkSize.value = stoi(strArg);
-        } catch (const exception &) {
-          cerr << "Error parsing OpenMP chunk size: " << optarg << endl;
-          displayHelp = true;
-        }
-        break;
-      }
-      case decltype(config.openMPKind)::getoptChar: {
-        auto parsedOptions = autopas::OpenMPKindOption::parseOptions(autopas::OpenMPKindOption::toNewName(strArg));
-        if (parsedOptions.size() != 1) {
-          cerr << "Error parsing OpenMP kind: " << strArg << endl;
-          displayHelp = true;
-        }
-        config.openMPKind.value = *parsedOptions.begin();
         break;
       }
 

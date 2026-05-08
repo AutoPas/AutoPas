@@ -11,6 +11,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <charconv>
 
 #include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSet.h"
@@ -191,7 +192,7 @@ inline std::array<T, 3> parseArray3D(const std::string &string) {
     try {
       parsedArray[i] = parseNumber<T>(strings[i]);
     } catch (const std::exception &e) {
-      autopas::utils::ExceptionHandler::exception("parseArray3D(): could not convert {} to a double: \n{}", strings[i],
+      autopas::utils::ExceptionHandler::exception("parseArray3D(): could not convert {} to the specified numeric type: \n{}", strings[i],
                                                   e.what());
     }
   }
@@ -253,7 +254,7 @@ inline std::set<T> parseNumbers(const std::string &string) {
  *
  * @tparam T Arithmetic type
  * @param setString String containing the set.
- * @return NumberSet<double>. If no valid double was found the empty set is returned.
+ * @return NumberSet<T>. If no valid number of type T was found the empty set is returned.
  */
 template <Numeric T>
 inline std::unique_ptr<autopas::NumberSet<T>> parseNumberSet(const std::string &setString) {
@@ -272,8 +273,8 @@ inline std::unique_ptr<autopas::NumberSet<T>> parseNumberSet(const std::string &
   if (std::regex_match(setString, matches, regexInterval)) {
     try {
       // matchers has whole string as str(0) so start at 1
-      double min = parseNumber<T>(matches.str(1));
-      double max = parseNumber<T>(matches.str(2));
+      T min = parseNumber<T>(matches.str(1));
+      T max = parseNumber<T>(matches.str(2));
       return std::make_unique<autopas::NumberInterval<T>>(min, max);
     } catch (const std::exception &) {
       // try parseNumbers instead

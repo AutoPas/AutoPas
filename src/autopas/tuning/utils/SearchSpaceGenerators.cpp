@@ -19,11 +19,13 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
-    const NumberSet<double> *allowedCellSizeFactors, const InteractionTypeOption &interactionType) {
-  if (allowedCellSizeFactors->isInterval()) {
-    utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
+    const NumberSet<double> *allowedCellSizeFactors, const std::set<OpenMPKindOption> &allowedOpenMPKindOptions,
+    const NumberSet<size_t> *allowedOpenMPChunkSizes, const InteractionTypeOption &interactionType) {
+  if (allowedCellSizeFactors->isInterval() or allowedOpenMPChunkSizes->isInterval()) {
+    utils::ExceptionHandler::exception("Cross product does not work with number intervals!");
   }
   const auto cellSizeFactors = allowedCellSizeFactors->getAll();
+  const auto ompChunkSizes = allowedOpenMPChunkSizes->getAll();
 
   std::set<Configuration> searchSet;
   // generate all potential configs
@@ -44,10 +46,14 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
         for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
           for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
             for (const auto &newton3Option : allowedNewton3Options) {
-              const Configuration configuration{containerOption,  csf,           traversalOption, loadEstimatorOption,
-                                                dataLayoutOption, newton3Option, interactionType};
-              if (configuration.hasCompatibleValues()) {
-                searchSet.insert(configuration);
+              for (const auto &ompKind : allowedOpenMPKindOptions) {
+                for (const auto &ompChunkSize : ompChunkSizes) {
+                  const Configuration configuration{containerOption,  csf,           traversalOption, loadEstimatorOption,
+                                  dataLayoutOption, newton3Option, ompKind, ompChunkSize, interactionType};
+                  if (configuration.hasCompatibleValues()) {
+                    searchSet.insert(configuration);
+                  }
+                }
               }
             }
           }
@@ -65,12 +71,14 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
 SearchSpaceGenerators::OptionSpace SearchSpaceGenerators::inferOptionDimensions(
     const std::set<Configuration> &searchSet) {
   OptionSpace optionSpace;
-  for (const auto &[container, traversal, loadEst, dataLayout, newton3, csf, interactT] : searchSet) {
+  for (const auto &[container, traversal, loadEst, dataLayout, newton3, csf, ompKind, ompChunkSize, interactT] : searchSet) {
     optionSpace.containerOptions.insert(container);
     optionSpace.traversalOptions.insert(traversal);
     optionSpace.loadEstimatorOptions.insert(loadEst);
     optionSpace.dataLayoutOptions.insert(dataLayout);
     optionSpace.newton3Options.insert(newton3);
+    optionSpace.openMPKindOptions.insert(ompKind);
+    optionSpace.openMPChunkSizes.insert(ompChunkSize);
     optionSpace.cellSizeFactors.insert(csf);
   }
   return optionSpace;

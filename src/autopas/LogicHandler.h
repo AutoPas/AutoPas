@@ -1148,6 +1148,8 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 
   functor.endTraversal(newton3);
 
+  // ToDo: We need to reset the OMP config
+
   const auto [energyWatts, energyJoules, energyDeltaT, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
 

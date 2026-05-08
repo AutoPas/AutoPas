@@ -292,22 +292,24 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.newton3Options3B.value.empty()) {
           throw std::runtime_error("Unknown Newton3 option!");
         }
-      } else if (key == config.openMPChunkSize.name) {
-        expected = "Integer >= 0.";
-        description = config.openMPChunkSize.description;
+      } else if (key == config.openMPChunkSizes.name) {
+        expected = "YAML-sequence of unsigned integers.";
+        description = config.openMPChunkSizes.description;
 
-        config.openMPChunkSize.value = node[key].as<int>();
-      } else if (key == config.openMPKind.name) {
-        expected = "Name of an OpenMP scheduling kind, LB4OMP scheduling technique, or Auto4OMP selection method.";
-        description = config.openMPKind.description;
+        config.openMPChunkSizes.value = autopas::utils::StringUtils::parseNumberSet<size_t>(
+          autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
 
-        const auto parsedOptions = autopas::OpenMPKindOption::parseOptions(autopas::OpenMPKindOption::toNewName(
-            parseSequenceOneElementExpected(node[key], "Pass Exactly one OpenMP kind!")));
-        if (parsedOptions.size() != 1) {
-          throw std::runtime_error("Unknown OpenMP kind option!");
+        if (config.openMPChunkSizes.value->isEmpty()) {
+          throw std::runtime_error("Parsed openmp-chunk-sizes is empty.");
         }
+      } else if (key == config.openMPKindOptions.name) {
+        expected = "YAML-sequence of possible OpenMP Schedule kinds, LB4OMP scheduling techniques, or a Auto4OMP selection method.";
+        description = config.openMPKindOptions.description;
 
-        config.openMPKind.value = *parsedOptions.begin();
+        config.openMPKindOptions.value = autopas::OpenMPKindOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+        if (config.openMPKindOptions.value.empty()) {
+          throw std::runtime_error("Parsed openmp-schedule-kinds is empty.");
+        }
       } else if (key == config.deltaT.name) {
         expected = "Positive floating point value.";
         description = config.deltaT.description;

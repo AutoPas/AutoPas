@@ -32,6 +32,10 @@ FeatureVectorTest::FeatureVectorTest() {
   for (const auto &n3 : autopas::Newton3Option::getAllOptions()) {
     allNewton3.push_back(n3);
   }
+
+  for (const auto &ompKind : OpenMPKindOption::getAllOptions()) {
+    allOMPKinds.push_back(ompKind);
+  }
 }
 
 /**
@@ -42,7 +46,8 @@ TEST_F(FeatureVectorTest, lhsSampleFeature) {
   size_t n = 100;
 
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
-                               autopas::NumberInterval<double>(1., 2.), InteractionTypeOption::pairwise);
+                               autopas::NumberInterval<double>(1., 2.), allOMPKinds, NumberSetFinite(std::set<size_t>({1, 2, 250})),
+                               InteractionTypeOption::pairwise);
   auto vecList = encoder.lhsSampleFeatures(n, rand);
 
   EXPECT_EQ(vecList.size(), n);
@@ -57,7 +62,7 @@ TEST_F(FeatureVectorTest, lhsSampleFeatureCluster) {
   double iteration = 0;
 
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
-                               autopas::NumberInterval<double>(1., 2.), InteractionTypeOption::pairwise);
+                               autopas::NumberInterval<double>(1., 2.), allOMPKinds, NumberSetFinite(std::set<size_t>({1, 2, 250})), InteractionTypeOption::pairwise);
   auto vecList = encoder.lhsSampleFeatureCluster(n, rand, iteration);
 
   EXPECT_EQ(vecList.size(), n);
@@ -65,13 +70,13 @@ TEST_F(FeatureVectorTest, lhsSampleFeatureCluster) {
 
 TEST_F(FeatureVectorTest, distanceTest) {
   autopas::FeatureVector f1(ContainerOption::linkedCells, 1., TraversalOption::lc_c01, LoadEstimatorOption::none,
-                            DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise);
+                            DataLayoutOption::aos, Newton3Option::enabled, OpenMPKindOption::omp_dynamic, 1, InteractionTypeOption::pairwise);
   autopas::FeatureVector f2(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
-                            DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise);
+                            DataLayoutOption::aos, Newton3Option::enabled, OpenMPKindOption::omp_dynamic, 1, InteractionTypeOption::pairwise);
   autopas::FeatureVector f3(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
-                            DataLayoutOption::soa, Newton3Option::enabled, InteractionTypeOption::pairwise);
+                            DataLayoutOption::soa, Newton3Option::enabled, OpenMPKindOption::omp_dynamic, 1,InteractionTypeOption::pairwise);
   autopas::FeatureVector f4(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
-                            DataLayoutOption::soa, Newton3Option::disabled, InteractionTypeOption::pairwise);
+                            DataLayoutOption::soa, Newton3Option::disabled, OpenMPKindOption::omp_dynamic, 1,InteractionTypeOption::pairwise);
 
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f1 - f1).squaredNorm(), 0);
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f2 - f2).squaredNorm(), 0);
@@ -100,7 +105,7 @@ TEST_F(FeatureVectorTest, distanceTest) {
 TEST_F(FeatureVectorTest, onehot) {
   autopas::Random rand;
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
-                               NumberInterval<double>(0., 1.), InteractionTypeOption::pairwise);
+                               NumberInterval<double>(0., 1.), allOMPKinds, NumberSetFinite(std::set<size_t>({1, 2, 250})), InteractionTypeOption::pairwise);
   auto vecList = encoder.lhsSampleFeatures(100, rand);
 
   for (auto fv : vecList) {
@@ -124,20 +129,23 @@ TEST_F(FeatureVectorTest, clusterEncode) {
   auto cellSizeFactor = 1.0;
   auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
   auto newtons = autopas::Newton3Option::getAllOptions();
+  const auto ompKinds = OpenMPKindOption::getAllOptions();
+  const std::set<size_t> ompChunkSizes{1, 2, 250};
 
-  std::vector<DataLayoutOption> dataLayoutsVec(dataLayouts.begin(), dataLayouts.end());
-  std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
-
-  FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, dataLayoutsVec, newtonsVec,
-                               NumberSetFinite<double>({cellSizeFactor}), InteractionTypeOption::pairwise);
+  FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
+                               NumberSetFinite<double>({cellSizeFactor}), allOMPKinds, NumberSetFinite(ompChunkSizes), InteractionTypeOption::pairwise);
 
   // generate all possible combinations
   std::vector<FeatureVector> vecList;
   for (const auto &[container, traversal, estimator] : allCompatibleContainerTraversalEstimators) {
     for (const auto &dataLayout : dataLayouts) {
       for (const auto &newton3 : newtons) {
-        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3,
+        for (const auto &ompKind : ompKinds) {
+          for (const auto &ompChunkSize : ompChunkSizes) {
+            vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, ompKind, ompChunkSize,
                              InteractionTypeOption::pairwise);
+          }
+        }
       }
     }
   }
@@ -147,8 +155,8 @@ TEST_F(FeatureVectorTest, clusterEncode) {
     auto encoded = encoder.convertToCluster(fv, iteration);
 
     // check expected size of discrete and continuous tuples
-    EXPECT_EQ(encoded.first.size(), FeatureVectorEncoder::tunableDiscreteDims);
-    EXPECT_EQ(encoded.second.size(), FeatureVectorEncoder::tunableContinuousDims + 1);
+    EXPECT_EQ(encoded.first.size(), FeatureVectorEncoder::numTunableOneHotIndices);
+    EXPECT_EQ(encoded.second.size(), FeatureVectorEncoder::numTunableContinuousDims + 1);
 
     // check if decoding leads to intial vector
     auto decoded = encoder.convertFromCluster(encoded);
@@ -157,96 +165,104 @@ TEST_F(FeatureVectorTest, clusterEncode) {
 }
 
 /**
- * Check clusterNeighboursManhattan1 generates unique and correct number of neighbours.
+ * Check clusterNeighborsManhattan1 generates unique and correct number of neighbors.
  */
-TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
+TEST_F(FeatureVectorTest, clusterNeighborsManhattan1) {
   double iteration = 42.;
   auto cellSizeFactor = 1.0;
   auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
   auto newtons = autopas::Newton3Option::getAllOptions();
+  const auto ompKinds = OpenMPKindOption::getAllOptions();
+  const std::set<size_t> ompChunkSizes{1, 2, 250};
 
-  std::vector<DataLayoutOption> dataLayoutsVec(dataLayouts.begin(), dataLayouts.end());
-  std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
-
-  FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, dataLayoutsVec, newtonsVec,
-                               NumberSetFinite<double>({cellSizeFactor}), InteractionTypeOption::pairwise);
+  FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
+                               NumberSetFinite<double>({cellSizeFactor}), allOMPKinds, NumberSetFinite(ompChunkSizes), InteractionTypeOption::pairwise);
 
   std::vector<int> dimRestriction = {static_cast<int>(allCompatibleContainerTraversalEstimators.size()),
-                                     static_cast<int>(dataLayouts.size()), static_cast<int>(newtons.size())};
+                                     static_cast<int>(dataLayouts.size()), static_cast<int>(newtons.size()),
+                                     static_cast<int>(ompKinds.size())};
 
   // generate all possible combinations
   std::vector<FeatureVector> vecList;
-  for (auto [container, traversal, estimator] : allCompatibleContainerTraversalEstimators) {
-    for (auto dataLayout : dataLayouts) {
-      for (auto newton3 : newtons) {
-        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3,
+  for (const auto &[container, traversal, estimator] : allCompatibleContainerTraversalEstimators) {
+    for (const auto &dataLayout : dataLayouts) {
+      for (const auto &newton3 : newtons) {
+        for (const auto &ompKind : ompKinds) {
+          for (const auto &ompChunkSize : ompChunkSizes) {
+            vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, ompKind, ompChunkSize,
                              InteractionTypeOption::pairwise);
+          }
+        }
       }
     }
   }
 
   for (auto fv : vecList) {
-    // get neighbours of encoded vector
+    // get neighbors of encoded vector
     auto [encodedDiscrete, encodedContinuous] = encoder.convertToCluster(fv, iteration);
-    auto neighbours = encoder.clusterNeighboursManhattan1(encodedDiscrete);
+    auto neighbors = encoder.clusterNeighborsManhattan1(encodedDiscrete);
 
-    // neighbours should contain all container-traversals-estimator + all datalayouts + all newtons - 3 (initial vector
+    // neighbors should contain all container-traversals-estimator + all datalayouts + all newtons + all OMP kinds - 3 (initial vector
     // is counted trice)
-    EXPECT_EQ(neighbours.size(),
-              allCompatibleContainerTraversalEstimators.size() + dataLayouts.size() + newtons.size() - 3);
+    EXPECT_EQ(neighbors.size(),
+              allCompatibleContainerTraversalEstimators.size() + dataLayouts.size() + newtons.size() + ompKinds.size() - 3);
 
-    // neighbours should be unique
-    for (size_t i = 0; i < neighbours.size(); ++i) {
-      for (size_t j = i + 1; j < neighbours.size(); ++j) {
-        EXPECT_NE(neighbours[i].first, neighbours[j].first);
+    // neighbors should be unique
+    for (size_t i = 0; i < neighbors.size(); ++i) {
+      for (size_t j = i + 1; j < neighbors.size(); ++j) {
+        EXPECT_NE(neighbors[i].first, neighbors[j].first);
       }
     }
   }
 }
 
 /**
- * Check clusterNeighboursManhattan1Container generates unique and correct number of neighbours.
+ * Check clusterNeighborsManhattan1Container generates unique and correct number of neighbors.
  */
-TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
+TEST_F(FeatureVectorTest, clusterNeighborsManhattan1Container) {
   double iteration = 123.;
   auto cellSizeFactor = 1.0;
   auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
   auto newtons = autopas::Newton3Option::getAllOptions();
+  const auto ompKinds = OpenMPKindOption::getAllOptions();
+  const std::set<size_t> ompChunkSizes{1, 2, 250};
 
-  std::vector<DataLayoutOption> dataLayoutsVec(dataLayouts.begin(), dataLayouts.end());
-  std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
-
-  FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, dataLayoutsVec, newtonsVec,
-                               NumberSetFinite<double>({cellSizeFactor}), InteractionTypeOption::pairwise);
+  FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
+                               NumberSetFinite<double>({cellSizeFactor}), allOMPKinds, NumberSetFinite(ompChunkSizes), InteractionTypeOption::pairwise);
 
   std::vector<int> dimRestriction = {static_cast<int>(allCompatibleContainerTraversalEstimators.size()),
-                                     static_cast<int>(dataLayouts.size()), static_cast<int>(newtons.size())};
+                                     static_cast<int>(dataLayouts.size()), static_cast<int>(newtons.size()),
+                                     static_cast<int>(ompKinds.size())};
 
   // generate all possible combinations
   std::vector<FeatureVector> vecList;
-  for (auto [container, traversal, estimator] : allCompatibleContainerTraversalEstimators) {
-    for (auto dataLayout : dataLayouts) {
-      for (auto newton3 : newtons) {
-        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3,
+  for (const auto &[container, traversal, estimator] : allCompatibleContainerTraversalEstimators) {
+    for (const auto &dataLayout : dataLayouts) {
+      for (const auto &newton3 : newtons) {
+        for (const auto &ompKind : ompKinds) {
+          for (const auto &ompChunkSize : ompChunkSizes) {
+            vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, ompKind, ompChunkSize,
                              InteractionTypeOption::pairwise);
+          }
+        }
       }
     }
   }
 
   for (auto fv : vecList) {
-    // get neighbours of encoded vector
+    // get neighbors of encoded vector
     auto [encodedDiscrete, encodedContinuous] = encoder.convertToCluster(fv, iteration);
-    auto neighbours = encoder.clusterNeighboursManhattan1Container(encodedDiscrete);
+    auto neighbors = encoder.clusterNeighborsManhattan1Container(encodedDiscrete);
 
-    // neighbours should contain all container-traversals-estimator + all datalayouts + all newtons - 3 (initial vector
+    // neighbors should contain all container-traversals-estimator + all datalayouts + all newtons - 3 (initial vector
     // is counted trice)
-    EXPECT_EQ(neighbours.size(),
-              allCompatibleContainerTraversalEstimators.size() + dataLayouts.size() + newtons.size() - 3);
+    EXPECT_EQ(neighbors.size(),
+              allCompatibleContainerTraversalEstimators.size() + dataLayouts.size() + newtons.size() + ompKinds.size() - 3);
 
     // neighbours should be unique
-    for (size_t i = 0; i < neighbours.size(); ++i) {
-      for (size_t j = i + 1; j < neighbours.size(); ++j) {
-        EXPECT_NE(neighbours[i].first, neighbours[j].first);
+    for (size_t i = 0; i < neighbors.size(); ++i) {
+      for (size_t j = i + 1; j < neighbors.size(); ++j) {
+        EXPECT_NE(neighbors[i].first, neighbors[j].first);
       }
     }
   }

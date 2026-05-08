@@ -45,9 +45,13 @@ SerializedConfiguration serializeConfiguration(Configuration configuration) {
   config[2] = castToByte(configuration.loadEstimator);
   config[3] = castToByte(configuration.dataLayout);
   config[4] = castToByte(configuration.newton3);
-  config[5] = castToByte(configuration.interactionType);
+  config[5] = castToByte(configuration.ompKind);
+  config[6] = castToByte(configuration.interactionType);
   // Doubles can't be easily truncated, so store all 8 bytes via memcpy
-  std::memcpy(&config[6], &configuration.cellSizeFactor, sizeof(double));
+  std::memcpy(&config[7], &configuration.cellSizeFactor, sizeof(double));
+  // Convert size_t chunk size into smaller unsigned short int
+  const auto unsignedShortChunkSize = static_cast<unsigned short int>(configuration.ompChunkSize);
+  std::memcpy(&config[15], &unsignedShortChunkSize, sizeof(unsigned short int));
   return config;
 }
 
@@ -66,12 +70,15 @@ std::vector<std::byte> serializeConfigurations(const std::vector<Configuration> 
 
 Configuration deserializeConfiguration(SerializedConfiguration config) {
   double cellSizeFactor{0.};
-  std::memcpy(&cellSizeFactor, &config[6], sizeof(double));
+  std::memcpy(&cellSizeFactor, &config[7], sizeof(double));
+  unsigned short int unsignedShortChunkSize{};
+  std::memcpy(&unsignedShortChunkSize, &config[15], sizeof(unsigned short int));
   return {
       static_cast<ContainerOption::Value>(config[0]),       cellSizeFactor,
       static_cast<TraversalOption::Value>(config[1]),       static_cast<LoadEstimatorOption::Value>(config[2]),
       static_cast<DataLayoutOption::Value>(config[3]),      static_cast<Newton3Option::Value>(config[4]),
-      static_cast<InteractionTypeOption::Value>(config[5]),
+      static_cast<OpenMPKindOption::Value>(config[5]),      static_cast<size_t>(unsignedShortChunkSize),
+      static_cast<InteractionTypeOption::Value>(config[6]),
   };
 }
 
@@ -84,7 +91,7 @@ std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte
   for (size_t i = 0; i < configurationsSerialized.size(); i += serializedConfSize) {
     // copy the bytes of one configuration into a dedicated buffer
     SerializedConfiguration serializedConfig{};
-    std::copy(configurationsSerialized.begin() + i, configurationsSerialized.begin() + i + serializedConfSize,
+    std::copy_n(configurationsSerialized.begin() + i, serializedConfSize,
               serializedConfig.begin());
     // turn the byte buffer into a config and store it in the return vector
     configurations.push_back(deserializeConfiguration(serializedConfig));
@@ -121,7 +128,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, d
   // sort all values
   std::sort(similarityMetrics.begin(), similarityMetrics.end());
 
-  // calculate absolute differences between neighbouring values
+  // calculate absolute differences between neighboring values
   std::vector<double> differences;
   std::adjacent_difference(similarityMetrics.begin(), similarityMetrics.end(), std::back_inserter(differences));
 

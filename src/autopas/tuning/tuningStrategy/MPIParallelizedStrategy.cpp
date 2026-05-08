@@ -11,6 +11,7 @@
 #include "autopas/tuning/Configuration.h"
 #include "options/DataLayoutOption.h"
 #include "options/Newton3Option.h"
+#include "options/OpenMPKindOption.h"
 #include "utils/AutoPasConfigurationCommunicator.h"
 #include "utils/WrapMPI.h"
 
@@ -74,6 +75,8 @@ Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::se
                                LoadEstimatorOption::none,
                                DataLayoutOption::aos,
                                Newton3Option::disabled,
+                               OpenMPKindOption::omp_dynamic,
+                               1,
                                interactionType};
 
   if (interactionType == InteractionTypeOption::triwise) {

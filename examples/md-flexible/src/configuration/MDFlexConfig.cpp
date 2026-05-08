@@ -247,8 +247,6 @@ std::string MDFlexConfig::to_string() const {
   }
 
   printOption(tuningStrategyOptions);
-  printOption(openMPChunkSize);
-  printOption(openMPKind);
 
   // helper function to check if any options of a given list is in the tuningStrategyOptions.
   auto tuningStrategyOptionsContainAnyOf = [&](const std::vector<autopas::TuningStrategyOption> &needles) {
@@ -352,11 +350,13 @@ std::string MDFlexConfig::to_string() const {
     os << indent;
     printOption(newton3Options3B, -indentWidth);
   }
+  printOption(openMPKindOptions);
+  printOption(openMPChunkSizes);
+  printOption(cellSizeFactors);
 
   printOption(cutoff);
   printOption(boxMin);
   printOption(boxMax);
-  printOption(cellSizeFactors);
   printOption(deltaT);
   printOption(pauseSimulationDuringTuning);
   printOption(sortingThreshold);

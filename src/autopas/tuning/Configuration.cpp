@@ -12,7 +12,8 @@ std::string autopas::Configuration::toString() const {
   return "{Interaction Type: " + interactionType.to_string() + " , Container: " + container.to_string() +
          " , CellSizeFactor: " + std::to_string(cellSizeFactor) + " , Traversal: " + traversal.to_string() +
          " , Load Estimator: " + loadEstimator.to_string() + " , Data Layout: " + dataLayout.to_string() +
-         " , Newton 3: " + newton3.to_string() + "}";
+         " , Newton 3: " + newton3.to_string() + " , OpenMP Schedule Kind: " + ompKind.to_string() +
+         " , OpenMPChunkSize: " + std::to_string(ompChunkSize) + "}";
 }
 
 std::string autopas::Configuration::getCSVHeader() const { return getCSVRepresentation(true); }
@@ -85,6 +86,12 @@ bool autopas::Configuration::hasCompatibleValues() const {
   if (dataLayout == DataLayoutOption::soa) {
     const auto soaTraversals = compatibleTraversals::allTraversalsSupportingOnlyAoS();
     if (soaTraversals.find(traversal) != soaTraversals.end()) {
+      return false;
+    }
+  }
+  if (ompKind != OpenMPKindOption::omp_static or ompChunkSize != 1) {
+    const auto static1OnlyTraversals = compatibleTraversals::allTraversalsSupportingOnlyStatic1Scheduling();
+    if (static1OnlyTraversals.contains(traversal)) {
       return false;
     }
   }

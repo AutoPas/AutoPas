@@ -46,6 +46,8 @@ class BayesianSearch final : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
+   * @param allowedOpenMPKindOptions
+   * @param allowedOpenMPChunkSizes
    * @param allowedCellSizeFactors
    * @param predAcqFunction acquisition function used for prediction while tuning.
    * @param predNumLHSamples number of samples used for prediction while tuning.
@@ -53,13 +55,12 @@ class BayesianSearch final : public TuningStrategyInterface {
    * @param seed seed of random number generator (should only be used for tests)
    */
   explicit BayesianSearch(
-      const InteractionTypeOption &interactionType,
-      const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
-      const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
-      const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
-      const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
-      const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
+      const InteractionTypeOption &interactionType, const std::set<ContainerOption> &allowedContainerOptions,
+      const NumberSet<double> &allowedCellSizeFactors, const std::set<TraversalOption> &allowedTraversalOptions,
+      const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+      const std::set<Newton3Option> &allowedNewton3Options, const std::set<OpenMPKindOption> &allowedOpenMPKindOptions,
+      const NumberSet<size_t> &allowedOpenMPChunkSizes, size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()());
 
@@ -99,6 +100,8 @@ class BayesianSearch final : public TuningStrategyInterface {
   std::vector<DataLayoutOption> _dataLayoutOptions;
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
+  std::vector<OpenMPKindOption> _ompKinds;
+  std::unique_ptr<NumberSet<size_t>> _ompChunkSizes;
   FeatureVectorEncoder _encoder;
 
   /**

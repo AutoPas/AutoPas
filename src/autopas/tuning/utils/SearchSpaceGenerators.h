@@ -54,6 +54,14 @@ struct OptionSpace {
    * Available discrete cellSizeFactors options.
    */
   std::set<double> cellSizeFactors;
+  /**
+   * Available OpenMP Kind options.
+   */
+  std::set<OpenMPKindOption> openMPKindOptions;
+  /**
+   * Available OpenMP Chunk Sizes.
+   */
+  std::set<size_t> openMPChunkSizes;
 };
 
 /**
@@ -65,6 +73,8 @@ struct OptionSpace {
  * @param allowedDataLayoutOptions
  * @param allowedNewton3Options
  * @param allowedCellSizeFactors
+ * @param allowedOpenMPKindOptions
+ * @param allowedOpenMPChunkSizes
  * @param interactionType
  * @return A set containing all valid configurations.
  */
@@ -74,6 +84,8 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
+                                         const std::set<OpenMPKindOption> &allowedOpenMPKindOptions,
+                                         const NumberSet<size_t> *allowedOpenMPChunkSizes,
                                          const InteractionTypeOption &interactionType);
 
 /**

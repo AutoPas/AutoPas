@@ -25,9 +25,21 @@
 namespace autopas::utils::AutoPasConfigurationCommunicator {
 
 /**
- * type definition for the serialization of configurations. A serialized config is an array of 14 bytes.
+ * type definition for the serialization of configurations. A serialized config is an array of 16 bytes:
+ * - container: 1 byte (<= less than 256 containers)
+ * - traversal: 1 byte (<= less than 256 traversals)
+ * - load estimator: 1 byte (<= less than 256 load estimators)
+ * - data layout: 1 byte (<= less than 256 data layouts)
+ * - newton3: 1 byte (<= less than 256 newton3 options)
+ * - ompKind: 1 byte (<= less than 256 ompKind options)
+ * - interactionType: 1 byte (<= less than interaction types)
+ * Todo we probably don't need to send this as both sender and receiver should know interaction type
+ * - cell size factor: 8 byte double
+ * ToDo We probably don't need this to be so high precision. I wouldn't be surprised if a single byte suffices.
+ * - omp chunk size: 2 byte unsigned short int (< 65536 => a reasonable assumption -> there's a good chance we only
+ *   need 1 byte.)
  * */
-using SerializedConfiguration = std::array<std::byte, 14>;
+using SerializedConfiguration = std::array<std::byte, 17>;
 
 /**
  * Simply a shorter way of static_casting from Option to std::byte.

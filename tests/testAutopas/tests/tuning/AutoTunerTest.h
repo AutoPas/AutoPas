@@ -10,6 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/options/OpenMPKindOption.h"
 
 class AutoTunerTest : public AutoPasTestBase {
  public:
@@ -23,47 +24,56 @@ class AutoTunerTest : public AutoPasTestBase {
       autopas::ContainerOption::directSum,     _cellSizeFactor,
       autopas::TraversalOption::ds_sequential, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,          autopas::Newton3Option::enabled,
+      autopas::OpenMPKindOption::omp_static,   1,
       autopas::InteractionTypeOption::pairwise};
   const autopas::Configuration _confDs_seq_noN3{
       autopas::ContainerOption::directSum,     _cellSizeFactor,
       autopas::TraversalOption::ds_sequential, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
+      autopas::OpenMPKindOption::omp_static,   1,
       autopas::InteractionTypeOption::pairwise};
   const autopas::Configuration _confLc_c01_noN3{
       autopas::ContainerOption::linkedCells,   _cellSizeFactor,
       autopas::TraversalOption::lc_c01,        autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
+      autopas::OpenMPKindOption::omp_static,   1,
       autopas::InteractionTypeOption::pairwise};
   const autopas::Configuration _confLc_c18_noN3{
       autopas::ContainerOption::linkedCells,   _cellSizeFactor,
       autopas::TraversalOption::lc_c18,        autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
+      autopas::OpenMPKindOption::omp_dynamic,   1,
       autopas::InteractionTypeOption::pairwise};
   const autopas::Configuration _confLc_c18_N3{
       autopas::ContainerOption::linkedCells,   _cellSizeFactor,
       autopas::TraversalOption::lc_c18,        autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,          autopas::Newton3Option::enabled,
+      autopas::OpenMPKindOption::omp_dynamic,   1,
       autopas::InteractionTypeOption::pairwise};
   const autopas::Configuration _confLc_c08_N3{
       autopas::ContainerOption::linkedCells,   _cellSizeFactor,
       autopas::TraversalOption::lc_c08,        autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,          autopas::Newton3Option::enabled,
+      autopas::OpenMPKindOption::omp_guided,   1,
       autopas::InteractionTypeOption::pairwise};
   const autopas::Configuration _confLc_c08_noN3{
       autopas::ContainerOption::linkedCells,   _cellSizeFactor,
       autopas::TraversalOption::lc_c08,        autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
+      autopas::OpenMPKindOption::omp_guided,   1,
       autopas::InteractionTypeOption::pairwise};
   // Triwise configs:
   const autopas::Configuration _confLc_c01_3b_noN3{
       autopas::ContainerOption::linkedCells,  _cellSizeFactor,
       autopas::TraversalOption::lc_c01,       autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,         autopas::Newton3Option::disabled,
+    autopas::OpenMPKindOption::omp_dynamic,   1,
       autopas::InteractionTypeOption::triwise};
   const autopas::Configuration _confDs_3b_N3{
       autopas::ContainerOption::directSum,     _cellSizeFactor,
       autopas::TraversalOption::ds_sequential, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
+    autopas::OpenMPKindOption::omp_dynamic,   1,
       autopas::InteractionTypeOption::triwise};
 
   /**

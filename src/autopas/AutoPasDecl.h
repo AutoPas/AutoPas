@@ -960,6 +960,22 @@ class AutoPas {
       _allowedNewton3Options[interactionType] = allowedNewton3Options;
     }
   }
+  
+  /**
+   * Set allowed OpenMP chunk sizes.
+   * @param allowedChunkSizes A set of allowed OpenMP chunk sizes. If 1 is not included, some traversals which must
+   * use static, 1 scheduling will never be selected.
+   */
+  void setAllowedOpenMPChunkSizes(const NumberSet<size_t> &allowedChunkSizes ) {
+    _allowedOpenMPChunkSizes = std::move(allowedChunkSizes.clone());
+  }
+
+  /**
+   * Set allowed OpenMP scheduling kind.
+   * @param allowedKinds A set of allowed OpenMP Scheduler kinds. If static is not included, some traversals which must
+   * use static, 1 scheduling will never be selected. (It is highly recommended to not include only static.)
+   */
+  void setAllowedOpenMPScheduleKinds(const std::set<OpenMPKindOption> &allowedKinds) { _allowedOpenMPKinds = allowedKinds; }
 
   /**
    * Set the list of allowed interaction types.
@@ -1115,18 +1131,6 @@ class AutoPas {
   void setSortingThreshold(size_t sortingThreshold) { _sortingThreshold = sortingThreshold; }
 
   /**
-   * OpenMP default chunk size setter.
-   * @param s OpenMP default chunk size
-   */
-  void setOpenMPDefaultChunkSize(int s) { openMPDefaultChunkSize = s; }
-
-  /**
-   * OpenMP default scheduling kind setter.
-   * @param k OpenMP default kind
-   */
-  void setOpenMPDefaultKind(OpenMPKindOption k) { openMPDefaultKind = k; }
-
-  /**
    * Get the sorting-threshold for traversals that use the CellFunctor.
    * @return sorting-threshold
    */
@@ -1202,6 +1206,17 @@ class AutoPas {
    * VLCSlicedBalancedTraversal).
    */
   std::set<LoadEstimatorOption> _allowedLoadEstimators{LoadEstimatorOption::getAllOptions()};
+  /**
+   * Allowed OpenMP Schedule Kind options. May include options that may not be usable with a given version of OpenMP.
+   * These should be filtered out as invalid configurations during tuning.
+   */
+  std::set<OpenMPKindOption> _allowedOpenMPKinds{OpenMPKindOption::getAllOptions()};
+  /**
+   * Allowed OpenMP chunks sizes. 
+   */
+  std::unique_ptr<NumberSet<size_t>> _allowedOpenMPChunkSizes{
+      std::make_unique<NumberSetFinite<size_t>>(std::set<size_t>({1}))
+  };
   /**
    * LogicHandler of autopas.
    */

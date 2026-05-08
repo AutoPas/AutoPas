@@ -15,6 +15,7 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(
     const NumberSet<double> &allowedCellSizeFactors, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
+    const std::set<OpenMPKindOption> &allowedOpenMPKindOptions, const NumberSet<size_t> &allowedOpenMPChunkSizes,
     size_t maxEvidence, AcquisitionFunctionOption predAcqFunction, const std::string &outputSuffix,
     size_t predNumLHSamples, unsigned long seed)
     : _interactionType(interactionType),
@@ -22,13 +23,15 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
       _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
       _cellSizeFactors(allowedCellSizeFactors.clone()),
+      _ompKindOptions(allowedOpenMPKindOptions.begin(), allowedOpenMPKindOptions.end()),
+      _ompChunkSizes(allowedOpenMPChunkSizes.clone()),
       _encoder(),
       _invalidConfigs(),
       _rng(seed),
       _gaussianCluster({}, continuousDims, GaussianCluster::WeightFunction::evidenceMatchingScaledProbabilityGM, sigma,
                        _rng, GaussianCluster::defaultVecToString, outputSuffix),
       _neighbourFun([this](const Eigen::VectorXi &target) -> std::vector<std::pair<Eigen::VectorXi, double>> {
-        return _encoder.clusterNeighboursManhattan1Container(target);
+        return _encoder.clusterNeighborsManhattan1Container(target);
       }),
       _maxEvidence(maxEvidence),
       _predAcqFunction(predAcqFunction),
@@ -129,7 +132,7 @@ bool autopas::BayesianClusterSearch::searchSpaceIsEmpty() const {
 
 void autopas::BayesianClusterSearch::updateOptions() {
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                             *_cellSizeFactors);
+                             *_cellSizeFactors, _ompKindOptions, *_ompChunkSizes);
 
   auto newRestrictions = _encoder.getDiscreteRestrictions();
   _gaussianCluster.setDimensions(std::vector<int>(newRestrictions.begin(), newRestrictions.end()));

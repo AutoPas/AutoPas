@@ -45,6 +45,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
 
     /**
      * Runtime: uses the scheduling kind set by the OMP_SCHEDULE environment variable.
+     * ToDo maybe remove
      */
     omp_runtime,
 
