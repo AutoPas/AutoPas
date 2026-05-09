@@ -886,7 +886,7 @@ class LogicHandler {
   size_t _iteration{std::numeric_limits<size_t>::max()};
 
   /**
-   * The iteration number at the end of last tuning phase.
+   * The iteration number after the last tuning phase has ended.
    */
   size_t _iterationAfterLastTuningPhase{0};
 
