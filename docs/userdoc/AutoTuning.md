@@ -10,6 +10,7 @@ Therefore, AutoPas offers a bunch of [Tuning Strategies](https://github.com/Auto
 To better understand what the strategies do, we first take a look at the way AutoPas does its tuning.
 
 The basic idea is that the [AutoTuner](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/tuning/AutoTuner.h) class determines a configuration, which the [LogicHandler](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/LogicHandler.h) then assembles and applies to the [ParticleContainer](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/containers/ParticleContainerInterface.h).
+Since the AutoTuner's whole responsibility is providing the next configuration to trial, the [TuningManager](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/tuning/TuningManager.h) acts as a middleman between the LogicHandler and AutoTuner.
 In order to determine the optimal configuration, the AutoTuner has a queue of candidates that it tries out by using it for one interaction computation in order to measure their performance.
 Those iterations while candidate configurations are evaluated are referred to as a tuning phase.
 AutoPas works on the assumption that particle simulations evolve very slow and thus the simulation state of subsequent iterations is sufficiently similar to compare the configurations' performances.
@@ -50,11 +51,12 @@ See [Building](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/Build
 
 ## Multiple Interaction Types
 Since PR [751](https://github.com/AutoPas/AutoPas/pull/751), AutoPas also supports algorithms for 3-body interactions.
-Oftentimes, these are used additionally to standard pairwise interactions. For such simulations, AutoPas runs two separate AutoTuners, one for pairwise and one for triwise interaction.
-Both AutoTuners will start their tuning phases at the same iterations by setting the start of the tuning interval when both AutoTuners finish tuning over their search space.  
-_Note: Performance may vary if the AutoTuners end up with configurations that use a different [container option](https://github.com/AutoPas/AutoPas/blob/tuningDoc/src/autopas/options/ContainerOption.h). 
-In this case, AutoPas has to rebuild neighbor lists every time the interaction type changes._
+Oftentimes, these are used additionally to standard pairwise interactions.
+For such simulations, the TuningManager orchestrates between two separate AutoTuners, one for pairwise and one for triwise interaction.
+After both AutoTuners have finished tuning, the optimal configurations are determined by aiming for an overall shortest runtime per time step.
+This takes into account that AutoPas would need to rebuild between every single Functor call in the case where the pairwise and triwise configurations use a different container or cell size factor.
 
 ## Related Files and Folders
+- TuningManager.h
 - AutoTuner.h
 - TuningStrategyInterface.h
