@@ -426,8 +426,6 @@ class ParticleContainerInterface {
    */
   virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
 
-  // TODO: missing forEachInRegion?
-
  protected:
   /**
    * Stores the number of time-steps since last neighbor list rebuild

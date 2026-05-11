@@ -28,7 +28,7 @@ class VerletListHelpers;
  * @tparam Particle_T the type of Particle
  * @tparam CRTP_T the actual type of the functor
  */
-template <class Particle_T, class CRTP_T, class MemSpace = Kokkos::HostSpace>
+template <class Particle_T, class CRTP_T>
 class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
  public:
   /**
@@ -37,8 +37,6 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   using SoAArraysType = typename Particle_T::SoAArraysType;
 
   using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
-
-  using MemberType = typename Kokkos::TeamPolicy<typename MemSpace::execution_space>::member_type;
 
   /**
    * Constructor

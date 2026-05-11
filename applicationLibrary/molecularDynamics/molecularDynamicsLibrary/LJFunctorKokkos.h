@@ -25,11 +25,11 @@ namespace mdLib {
  * @tparam countFLOPs counts FLOPs and hitrate
  * @tparam relevantForTuning Whether of not the auto-tuner should consider this functor
  */
-template <class MemSpace, class Particle_T, bool applyShift = false, bool useMixing = false,
+template <class Particle_T, bool applyShift = false, bool useMixing = false,
     autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
     bool countFLOPs = false, bool relevantForTuning = true>
-class LJFunctorKokkos : public autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos<MemSpace, Particle_T, applyShift, useMixing, useNewton3,
-        calculateGlobals, countFLOPs, relevantForTuning>, MemSpace> {
+class LJFunctorKokkos : public autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos<Particle_T, applyShift, useMixing, useNewton3,
+        calculateGlobals, countFLOPs, relevantForTuning>> {
 
 public:
   /**
@@ -42,13 +42,8 @@ public:
   */
   using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
-  /**
-   * TODO
-   */
-  using MemberType = typename Kokkos::TeamPolicy<typename MemSpace::execution_space>::member_type;
-
   explicit LJFunctorKokkos(double cutoff, ParticlePropertiesLibrary<FloatPrecision, size_t> &)
-      : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos, MemSpace>(cutoff),
+      : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos>(cutoff),
       _cutoffSquared{static_cast<FloatPrecision>(cutoff * cutoff)}
   {}
 

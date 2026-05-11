@@ -41,6 +41,7 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
   // kinetic energy times 2
   double kineticEnergyMul2 = 0;
   // TODO: reduceKokkos()
+  // here, only the use of the ppl for accessing the mass prevents porting to Kokkos foreach
   AUTOPAS_OPENMP(parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary))
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     const auto vel = iter->getV();
@@ -106,6 +107,9 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
   }
 
   // TODO: forEachKokkos()
+  // here, the usage of ppl and kinetic mul map prevents to execution on the GPU
+  // possible workaround: maybe search for Kokkos built-in maps that can be stored on the GPU
+  // additionally, mass is already available in the particle storage as own attribute
   AUTOPAS_OPENMP(parallel) {
     // create aggregators for each thread
     std::map<size_t, double> kineticEnergyMul2MapThread;
@@ -128,6 +132,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
       numParticleMapThread.at(iter->getTypeId())++;
     }
     // manual reduction
+    // TODO: here, a kokkos reduction/critical section is necessary but apart from that, porting is possible
     AUTOPAS_OPENMP(critical) {
       for (int typeID = 0; typeID < numberComponents; typeID++) {
         kineticEnergyMul2Map[typeID] += kineticEnergyMul2MapThread[typeID];
@@ -211,6 +216,8 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
   }
 
   // TODO: forEachKokkos()
+  // translational vel scale map requires Kokkos version
+  // does random engine work on the GPU?
   AUTOPAS_OPENMP(parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)) {
     // we use a constant seed for repeatability.
     // we need one random engine and distribution per thread
@@ -278,6 +285,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
   }
 
   // TODO: forEachKokkos()
+  // scaling map not stored on the GPU prevents Kokkos porting so far
   bool kokkosForEach = autopas.containerAllowsKokkos();
   if (!kokkosForEach) {
     // Scale velocities (and angular velocities) with the scaling map

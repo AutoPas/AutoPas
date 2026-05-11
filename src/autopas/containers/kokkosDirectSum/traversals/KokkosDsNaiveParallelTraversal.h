@@ -29,8 +29,8 @@ public:
    * @param functor the functor that defines the interaction of particles
    * @param dataLayout The data layout wth which this traversal should be initialized
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not
-   * @param teamSize TODO
-   * @param chunkSize TODO
+   * @param teamSize Size of the Kokkos Teams (irrelevant for the flat traversal) (TODO: delete when traversal integration is done)
+   * @param chunkSize Size of the Chunks for the Kokkos Teams. One team works one chunkSize consecutive i-particles (irrelevant for the flat traversal) (TODO: delete when traversal integration is done)
    */
 explicit KokkosDsNaiveParallelTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3, size_t teamSize, size_t chunkSize)
         : TraversalInterface(dataLayout, useNewton3), DSKokkosTraversalInterface<Particle_T>(), _functor{functor}, _teamSize(teamSize), _chunkSize(chunkSize) {}

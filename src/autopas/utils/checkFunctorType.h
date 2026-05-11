@@ -22,8 +22,8 @@ std::false_type isPairwiseFunctorImpl(...);
  * @tparam FunctorT
  * @return true
  */
-template <typename Particle_T, typename FunctorT, class MemSpace>
-std::true_type isPairwiseFunctorImpl(const autopas::PairwiseFunctor<Particle_T, FunctorT, MemSpace> &);
+template <typename Particle_T, typename FunctorT>
+std::true_type isPairwiseFunctorImpl(const autopas::PairwiseFunctor<Particle_T, FunctorT> &);
 
 /**
  * Returns false for any types that are not a TriwiseFunctor
