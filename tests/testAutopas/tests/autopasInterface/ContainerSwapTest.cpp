@@ -69,7 +69,6 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
       .boxMin{bBoxMin},
       .boxMax{bBoxMax},
       .cutoff = cutoff,
-      .verletSkin = verletSkin,
   };
   constexpr autopas::AutoTunerInfo autoTunerInfo{
       .maxSamples = 1,

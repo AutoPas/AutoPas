@@ -40,7 +40,6 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       .boxMin{0., 0., 0.},
       .boxMax{8., 8., 8.},
       .cutoff = 1.8,
-      .verletSkin = .2,
   };
   const autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,

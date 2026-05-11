@@ -19,7 +19,6 @@ void LogicHandlerTest::initLogicHandler() {
       .boxMin{0., 0., 0.},
       .boxMax{10., 10., 10.},
       .cutoff = 2.5,
-      .verletSkin = 0.5,
   };
   const autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 10000,

@@ -28,10 +28,6 @@ class LogicHandlerInfo {
    */
   double cutoff{1.};
   /**
-   * Length added to the cutoff for the Verlet lists' skin.
-   */
-  double verletSkin{0.4};
-  /**
    * Number of particles in a cluster to use in VCL.
    */
   unsigned int verletClusterSize{4};

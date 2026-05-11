@@ -547,7 +547,7 @@ class AutoPas {
    * This function only handles short-range interactions.
    * @return _verletSkin
    */
-  double getVerletSkin() { return _logicHandlerInfo.verletSkin; };
+  double getVerletSkin() { return _allowedVerletSkinValues->getMin(); };
 
   /**
    * Returns the number of particles in this container.
@@ -664,7 +664,6 @@ class AutoPas {
     if (verletSkin < 0.0) {
       utils::ExceptionHandler::exception("Error: verlet skin has to be non-negative! {} < 0.0!", verletSkin);
     }
-    _logicHandlerInfo.verletSkin = verletSkin;
     _allowedVerletSkinValues = std::make_unique<NumberSetFinite<double>>(std::set<double>{verletSkin});
   }
 
@@ -1212,7 +1211,7 @@ class AutoPas {
    * Verlet skin values to be used while tuning.
    */
   std::unique_ptr<NumberSet<double>> _allowedVerletSkinValues{
-      std::make_unique<NumberSetFinite<double>>(std::set<double>({_logicHandlerInfo.verletSkin}))};
+      std::make_unique<NumberSetFinite<double>>(std::set<double>({0.}))};
   /**
    * Load estimation algorithm to be used for efficient parallelization (only relevant for LCSlicedBalancedTraversal and
    * VLCSlicedBalancedTraversal).
