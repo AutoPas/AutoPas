@@ -6,22 +6,33 @@
 
 #include "FeatureVectorEncoder.h"
 
+#include "autopas/utils/NumberSetFinite.h"
+
 autopas::FeatureVectorEncoder::FeatureVectorEncoder() = default;
 
 autopas::FeatureVectorEncoder::FeatureVectorEncoder(
     const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
     const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-    const autopas::NumberSet<double> &cellSizeFactors, const InteractionTypeOption &interactionType)
+    const autopas::NumberSet<double> &cellSizeFactors, const autopas::NumberSet<double> &verletSkins,
+    const InteractionTypeOption &interactionType)
     : _interactionType(interactionType) {
-  setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors);
+  setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors,
+                    verletSkins);
 }
+
+autopas::FeatureVectorEncoder::FeatureVectorEncoder(
+    const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
+    const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
+    const autopas::NumberSet<double> &cellSizeFactors, const InteractionTypeOption &interactionType)
+    : FeatureVectorEncoder(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors,
+                           NumberSetFinite<double>({0.}), interactionType) {}
 
 autopas::FeatureVectorEncoder::~FeatureVectorEncoder() = default;
 
 void autopas::FeatureVectorEncoder::setAllowedOptions(
     const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
     const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-    const autopas::NumberSet<double> &cellSizeFactors) {
+    const autopas::NumberSet<double> &cellSizeFactors, const autopas::NumberSet<double> &verletSkins) {
   _containerTraversalEstimatorOptions = containerTraversalEstimatorOptions;
   _dataLayoutOptions = dataLayoutOptions;
   _newton3Options = newton3Options;
@@ -35,6 +46,15 @@ void autopas::FeatureVectorEncoder::setAllowedOptions(
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::newton3)] = _newton3Options.size();
 
   _continuousRestrictions[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = cellSizeFactors.clone();
+  _continuousRestrictions[static_cast<size_t>(ContinuousIndices::verletSkin)] = verletSkins.clone();
+}
+
+void autopas::FeatureVectorEncoder::setAllowedOptions(
+    const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
+    const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
+    const autopas::NumberSet<double> &cellSizeFactors) {
+  setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors,
+                    NumberSetFinite<double>({0.}));
 }
 
 size_t autopas::FeatureVectorEncoder::getOneHotDims() const { return _oneHotDims; }
@@ -269,6 +289,7 @@ autopas::FeatureVectorEncoder::convertToTunable(const autopas::FeatureVector &ve
 
   ContinuousDimensionType continuousValues;
   continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = vec.cellSizeFactor;
+  continuousValues[static_cast<size_t>(ContinuousIndices::verletSkin)] = vec.verletSkin;
 
   return std::make_pair(discreteValues, continuousValues);
 }
@@ -283,6 +304,8 @@ autopas::FeatureVector autopas::FeatureVectorEncoder::convertFromTunable(
   auto newton3 = _newton3Options[discreteValues[static_cast<size_t>(DiscreteIndices::newton3)]];
 
   auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
+  auto verletSkin = continuousValues[static_cast<size_t>(ContinuousIndices::verletSkin)];
 
-  return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, _interactionType);
+  return FeatureVector(container, cellSizeFactor, verletSkin, traversal, estimator, dataLayout, newton3,
+                       _interactionType);
 }

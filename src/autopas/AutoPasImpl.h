@@ -85,12 +85,20 @@ void AutoPas<Particle_T>::init() {
     }
   }();
 
+  const auto verletSkins = [&]() -> NumberSetFinite<double> {
+    if (const auto *verletSkinIntervalPtr = dynamic_cast<NumberInterval<double> *>(_allowedVerletSkinValues.get())) {
+      return {std::set<double>{verletSkinIntervalPtr->getMin(), verletSkinIntervalPtr->getMax()}};
+    } else {
+      return {_allowedVerletSkinValues->getAll()};
+    }
+  }();
+
   // Create autotuners for each interaction type
   for (const auto &interactionType : _allowedInteractionTypeOptions) {
     const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
         _allowedContainers, _allowedTraversals[interactionType], _allowedLoadEstimators,
         _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors,
-        interactionType);
+        &verletSkins, interactionType);
 
     AutoTuner::TuningStrategiesListType tuningStrategies;
     tuningStrategies.reserve(_tuningStrategyOptions.size());

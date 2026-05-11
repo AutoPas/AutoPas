@@ -35,23 +35,48 @@ class Configuration {
    *
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
+   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, double _verletSkin,
+                           TraversalOption _traversal,
+                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
+                           InteractionTypeOption _interactionType)
+       : container(_container),
+         traversal(_traversal),
+         loadEstimator(_loadEstimator),
+         dataLayout(_dataLayout),
+         newton3(_newton3),
+         cellSizeFactor(_cellSizeFactor),
+         verletSkin(_verletSkin),
+         interactionType(_interactionType) {}
+
+  /**
+   * Constructor keeping backwards compatibility when no dedicated verlet skin value is given.
+   * @param _container
+   * @param _cellSizeFactor
+   * @param _traversal
+   * @param _loadEstimator
+   * @param _dataLayout
+   * @param _newton3
+   * @param _interactionType
+   */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
                           InteractionTypeOption _interactionType)
-      : container(_container),
-        traversal(_traversal),
-        loadEstimator(_loadEstimator),
-        dataLayout(_dataLayout),
-        newton3(_newton3),
-        cellSizeFactor(_cellSizeFactor),
-        interactionType(_interactionType) {}
+      : Configuration(_container, _cellSizeFactor, 0., _traversal, _loadEstimator, _dataLayout, _newton3,
+                      _interactionType) {}
 
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration()
-      : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.), interactionType() {}
+      : container(),
+        traversal(),
+        loadEstimator(),
+        dataLayout(),
+        newton3(),
+        cellSizeFactor(-1.),
+        verletSkin(-1.),
+        interactionType() {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
@@ -66,7 +91,8 @@ class Configuration {
    */
   [[nodiscard]] std::string toShortString(bool fixedLength = true) const {
     return "{" + interactionType.to_string(interactionType) + " , " + container.to_string(fixedLength) + " , " +
-           std::to_string(cellSizeFactor) + " , " + traversal.to_string(fixedLength) + " , " +
+           std::to_string(cellSizeFactor) + " , " + std::to_string(verletSkin) + " , " +
+           traversal.to_string(fixedLength) + " , " +
            loadEstimator.to_string(fixedLength) + " , " + dataLayout.to_string(fixedLength) + " , " +
            newton3.to_string(fixedLength) + "}";
   }
@@ -137,6 +163,10 @@ class Configuration {
    */
   double cellSizeFactor;
   /**
+   * VerletSkin
+   */
+  double verletSkin;
+  /**
    * Interaction type of the configuration.
    */
   InteractionTypeOption interactionType;
@@ -186,7 +216,8 @@ bool operator!=(const Configuration &lhs, const Configuration &rhs);
  * Comparison operator for Configuration objects. This is mainly used for configurations to have a sane ordering in e.g.
  * sets.
  *
- * Configurations are compared member wise in the order: container, cellSizeFactor, traversal, loadEstimator,
+ * Configurations are compared member wise in the order: container, cellSizeFactor, verletSkin, traversal,
+ * loadEstimator,
  * dataLayout, newton3.
  *
  * @param lhs
@@ -211,7 +242,8 @@ struct ConfigHash {
                            static_cast<std::size_t>(configuration.loadEstimator) * 1000 +
                            static_cast<std::size_t>(configuration.traversal) * 10000 +
                            static_cast<std::size_t>(configuration.container) * 100000;
-    std::size_t doubleHash = std::hash<double>{}(configuration.cellSizeFactor);
+    std::size_t doubleHash =
+        std::hash<double>{}(configuration.cellSizeFactor) ^ (std::hash<double>{}(configuration.verletSkin) << 1);
 
     return enumHash ^ doubleHash;
   }

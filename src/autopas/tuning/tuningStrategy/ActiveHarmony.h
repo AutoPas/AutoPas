@@ -41,12 +41,24 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param interactionType
    * @param allowedContainerOptions
    * @param allowedCellSizeFactors
+   * @param allowedVerletSkinValues
    * @param allowedTraversalOptions
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param mpiDivideAndConquer
    * @param comm
+   */
+  ActiveHarmony(const InteractionTypeOption &interactionType, const std::set<ContainerOption> &allowedContainerOptions,
+                 const NumberSet<double> &allowedCellSizeFactors,
+                 const NumberSet<double> &allowedVerletSkinValues,
+                 const std::set<TraversalOption> &allowedTraversalOptions,
+                 const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                 const std::set<Newton3Option> &allowedNewton3Options, bool mpiDivideAndConquer, AutoPas_MPI_Comm comm);
+
+  /**
+   * Backwards-compatible constructor using a fixed verlet skin value of 0.
    */
   ActiveHarmony(const InteractionTypeOption &interactionType, const std::set<ContainerOption> &allowedContainerOptions,
                 const NumberSet<double> &allowedCellSizeFactors,
@@ -99,6 +111,7 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   std::set<ContainerOption> _allowedContainerOptions;
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;
+  std::unique_ptr<NumberSet<double>> _allowedVerletSkinValues;
   std::set<TraversalOption> _allowedTraversalOptions;
   std::set<LoadEstimatorOption> _allowedLoadEstimatorOptions;
   std::set<DataLayoutOption> _allowedDataLayoutOptions;
@@ -154,6 +167,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   static constexpr const char *loadEstimatorOptionName = "loadEstimatorOption";
   static constexpr const char *dataLayoutOptionName = "dataLayoutOption";
   static constexpr const char *cellSizeFactorsName = "cellSizeFactor";
+  static constexpr const char *verletSkinName = "verletSkin";
   static constexpr const char *newton3OptionName = "newton3Option";
 };
 

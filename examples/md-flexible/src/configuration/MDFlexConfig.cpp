@@ -355,6 +355,7 @@ std::string MDFlexConfig::to_string() const {
   printOption(boxMin);
   printOption(boxMax);
   printOption(cellSizeFactors);
+  printOption(verletSkinTuningValues);
   printOption(deltaT);
   printOption(pauseSimulationDuringTuning);
   printOption(sortingThreshold);

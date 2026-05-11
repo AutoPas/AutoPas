@@ -9,12 +9,14 @@
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/utils/NumberSetFinite.h"
 
 namespace autopas {
 
 ActiveHarmony::ActiveHarmony(const InteractionTypeOption &interactionType,
                              const std::set<ContainerOption> &allowedContainerOptions,
                              const NumberSet<double> &allowedCellSizeFactors,
+                             const NumberSet<double> &allowedVerletSkinValues,
                              const std::set<TraversalOption> &allowedTraversalOptions,
                              const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
@@ -23,6 +25,7 @@ ActiveHarmony::ActiveHarmony(const InteractionTypeOption &interactionType,
     : _interactionType(interactionType),
       _allowedContainerOptions(allowedContainerOptions),
       _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
+      _allowedVerletSkinValues(allowedVerletSkinValues.clone()),
       _allowedTraversalOptions(allowedTraversalOptions),
       _allowedLoadEstimatorOptions(allowedLoadEstimatorOptions),
       _allowedDataLayoutOptions(allowedDataLayoutOptions),
@@ -41,6 +44,18 @@ ActiveHarmony::ActiveHarmony(const InteractionTypeOption &interactionType,
   }
 #endif
 }
+
+ActiveHarmony::ActiveHarmony(const InteractionTypeOption &interactionType,
+                             const std::set<ContainerOption> &allowedContainerOptions,
+                             const NumberSet<double> &allowedCellSizeFactors,
+                             const std::set<TraversalOption> &allowedTraversalOptions,
+                             const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+                             const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                             const std::set<Newton3Option> &allowedNewton3Options, bool mpiDivideAndConquer,
+                             AutoPas_MPI_Comm comm)
+    : ActiveHarmony(interactionType, allowedContainerOptions, allowedCellSizeFactors, NumberSetFinite<double>({0.}),
+                    allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
+                    allowedNewton3Options, mpiDivideAndConquer, comm) {}
 
 ActiveHarmony::~ActiveHarmony() {
 #ifdef AUTOPAS_ENABLE_HARMONY
@@ -105,7 +120,18 @@ Configuration ActiveHarmony::fetchConfiguration() {
     cellSizeFactor = ah_get_real(htask, cellSizeFactorsName);
   }
 
-  return {containerOption,  cellSizeFactor, traversalOption, loadEstimatorOption,
+  double verletSkin = 0;
+  if (_allowedVerletSkinValues->isFinite()) {
+    if (_allowedVerletSkinValues->size() == 1) {
+      verletSkin = _allowedVerletSkinValues->getMin();
+    } else if (_allowedVerletSkinValues->size() > 1) {
+      verletSkin = std::strtod(ah_get_enum(htask, verletSkinName), nullptr);
+    }
+  } else {
+    verletSkin = ah_get_real(htask, verletSkinName);
+  }
+
+  return {containerOption,  cellSizeFactor, verletSkin, traversalOption, loadEstimatorOption,
           dataLayoutOption, newton3Option,  _interactionType};
 #else
   return {};
@@ -274,6 +300,7 @@ bool ActiveHarmony::searchSpaceIsTrivial() const {
 
   return _allowedContainerOptions.size() == 1 and
          (_allowedCellSizeFactors->isFinite() and _allowedCellSizeFactors->size() == 1) and
+         (_allowedVerletSkinValues->isFinite() and _allowedVerletSkinValues->size() == 1) and
          _allowedTraversalOptions.size() == 1 and _allowedDataLayoutOptions.size() == 1 and
          _allowedNewton3Options.size() == 1;
 }
@@ -281,6 +308,7 @@ bool ActiveHarmony::searchSpaceIsTrivial() const {
 bool ActiveHarmony::searchSpaceIsEmpty() const {
   return _allowedContainerOptions.empty() or
          (_allowedCellSizeFactors->isFinite() and _allowedCellSizeFactors->size() == 0) or
+         (_allowedVerletSkinValues->isFinite() and _allowedVerletSkinValues->size() == 0) or
          _allowedTraversalOptions.empty() or _allowedDataLayoutOptions.empty() or _allowedNewton3Options.empty();
 }
 
@@ -313,6 +341,30 @@ void ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
                     (_allowedCellSizeFactors->getMax() - _allowedCellSizeFactors->getMin()) / cellSizeSamples,
                     nullptr) != 0) {
       utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining real \"{}\"", cellSizeFactorsName);
+    }
+  }
+  if (_allowedVerletSkinValues->isFinite()) {
+    if (_allowedVerletSkinValues->size() == 1) {
+      AutoPasLog(DEBUG, "ActiveHarmony::reset: Skipping trivial parameter {}", verletSkinName);
+    } else if (_allowedVerletSkinValues->size() > 1) {
+      AutoPasLog(DEBUG, "ActiveHarmony::reset: Finite verlet skin values; defining parameter as enum");
+      if (ah_def_enum(hdef, verletSkinName, nullptr) != 0) {
+        utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum \"{}\"",
+                                           verletSkinName);
+      }
+      for (auto verletSkin : _allowedVerletSkinValues->getAll()) {
+        if (ah_def_enum_value(hdef, verletSkinName, std::to_string(verletSkin).c_str()) != 0) {
+          utils::ExceptionHandler::exception(
+              "ActiveHarmony::configureTuningParameter: Error defining enum value for enum \"{}\"", verletSkinName);
+        }
+      }
+    }
+  } else {
+    AutoPasLog(DEBUG, "ActiveHarmony::reset: Infinite verlet skin values; defining parameter as real");
+    if (ah_def_real(hdef, verletSkinName, _allowedVerletSkinValues->getMin(), _allowedVerletSkinValues->getMax(),
+                    (_allowedVerletSkinValues->getMax() - _allowedVerletSkinValues->getMin()) / cellSizeSamples,
+                    nullptr) != 0) {
+      utils::ExceptionHandler::exception("ActiveHarmony::reset: Error defining real \"{}\"", verletSkinName);
     }
   }
   // set up other parameters

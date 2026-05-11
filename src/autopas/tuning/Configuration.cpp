@@ -10,9 +10,9 @@
 
 std::string autopas::Configuration::toString() const {
   return "{Interaction Type: " + interactionType.to_string() + " , Container: " + container.to_string() +
-         " , CellSizeFactor: " + std::to_string(cellSizeFactor) + " , Traversal: " + traversal.to_string() +
-         " , Load Estimator: " + loadEstimator.to_string() + " , Data Layout: " + dataLayout.to_string() +
-         " , Newton 3: " + newton3.to_string() + "}";
+         " , CellSizeFactor: " + std::to_string(cellSizeFactor) + " , VerletSkin: " + std::to_string(verletSkin) +
+         " , Traversal: " + traversal.to_string() + " , Load Estimator: " + loadEstimator.to_string() +
+         " , Data Layout: " + dataLayout.to_string() + " , Newton 3: " + newton3.to_string() + "}";
 }
 
 std::string autopas::Configuration::getCSVHeader() const { return getCSVRepresentation(true); }
@@ -20,7 +20,7 @@ std::string autopas::Configuration::getCSVHeader() const { return getCSVRepresen
 std::string autopas::Configuration::getCSVLine() const { return getCSVRepresentation(false); }
 
 bool autopas::Configuration::hasValidValues() const {
-  return container != ContainerOption() and cellSizeFactor != -1 and traversal != TraversalOption() and
+  return container != ContainerOption() and cellSizeFactor != -1 and verletSkin != -1 and traversal != TraversalOption() and
          loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option() and
          interactionType != InteractionTypeOption();
 }
@@ -102,7 +102,7 @@ bool autopas::Configuration::equalsDiscreteOptions(const autopas::Configuration 
 }
 
 bool autopas::Configuration::equalsContinuousOptions(const autopas::Configuration &rhs, double epsilon) const {
-  return std::abs(cellSizeFactor - rhs.cellSizeFactor) < epsilon;
+  return std::abs(cellSizeFactor - rhs.cellSizeFactor) < epsilon and std::abs(verletSkin - rhs.verletSkin) < epsilon;
 }
 
 bool autopas::operator==(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
@@ -114,9 +114,10 @@ bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Confi
 }
 
 bool autopas::operator<(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
-  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3,
-                  lhs.interactionType) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator,
-                                                  rhs.dataLayout, rhs.newton3, rhs.interactionType);
+  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.verletSkin, lhs.traversal, lhs.loadEstimator, lhs.dataLayout,
+                  lhs.newton3, lhs.interactionType) <
+         std::tie(rhs.container, rhs.cellSizeFactor, rhs.verletSkin, rhs.traversal, rhs.loadEstimator, rhs.dataLayout,
+                  rhs.newton3, rhs.interactionType);
 }
 
 std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &configuration) {
@@ -127,6 +128,8 @@ std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &conf
   in >> configuration.container;
   in.ignore(max, ':');
   in >> configuration.cellSizeFactor;
+  in.ignore(max, ':');
+  in >> configuration.verletSkin;
   in.ignore(max, ':');
   in >> configuration.traversal;
   in.ignore(max, ':');

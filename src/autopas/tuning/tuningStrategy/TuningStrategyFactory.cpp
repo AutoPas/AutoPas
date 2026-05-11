@@ -61,7 +61,8 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
       const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
       tuningStrategy = std::make_unique<BayesianSearch>(
           interactionType, searchSpaceDimensions.containerOptions,
-          NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
+          NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors},
+          NumberSetFinite<double>{searchSpaceDimensions.verletSkins}, searchSpaceDimensions.traversalOptions,
           searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
           searchSpaceDimensions.newton3Options, info.maxEvidence, info.acquisitionFunctionOption);
       break;
@@ -71,7 +72,8 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
       const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
       tuningStrategy = std::make_unique<BayesianClusterSearch>(
           interactionType, searchSpaceDimensions.containerOptions,
-          NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
+          NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors},
+          NumberSetFinite<double>{searchSpaceDimensions.verletSkins}, searchSpaceDimensions.traversalOptions,
           searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
           searchSpaceDimensions.newton3Options, info.maxEvidence, info.acquisitionFunctionOption, outputSuffix);
       break;
@@ -88,7 +90,8 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
       const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
       tuningStrategy = std::make_unique<ActiveHarmony>(
           interactionType, searchSpaceDimensions.containerOptions,
-          NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
+          NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors},
+          NumberSetFinite<double>{searchSpaceDimensions.verletSkins}, searchSpaceDimensions.traversalOptions,
           searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
           searchSpaceDimensions.newton3Options, info.mpiDivideAndConquer, info.autopasMpiCommunicator);
       break;

@@ -28,7 +28,7 @@ class FeatureVectorEncoder {
   /**
    * Indices of the continuous part of convertToTunable().
    */
-  enum class ContinuousIndices { cellSizeFactor, TOTALNUMBER };
+  enum class ContinuousIndices { cellSizeFactor, verletSkin, TOTALNUMBER };
 
  public:
   /**
@@ -65,7 +65,17 @@ class FeatureVectorEncoder {
    * @param dataLayoutOptions
    * @param newton3Options
    * @param cellSizeFactors
+   * @param verletSkins
    * @param interactionType
+   */
+  FeatureVectorEncoder(
+      const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
+      const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
+      const NumberSet<double> &cellSizeFactors, const NumberSet<double> &verletSkins,
+      const InteractionTypeOption &interactionType);
+
+  /**
+   * Backwards-compatible constructor using a fixed verlet skin value of 0.
    */
   FeatureVectorEncoder(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
@@ -80,6 +90,15 @@ class FeatureVectorEncoder {
    * @param dataLayoutOptions
    * @param newton3Options
    * @param cellSizeFactors
+   * @param verletSkins
+   */
+  void setAllowedOptions(
+      const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
+      const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
+      const NumberSet<double> &cellSizeFactors, const NumberSet<double> &verletSkins);
+
+  /**
+   * Backwards-compatible overload using a fixed verlet skin value of 0.
    */
   void setAllowedOptions(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,

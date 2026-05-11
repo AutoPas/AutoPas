@@ -639,10 +639,34 @@ class AutoPas {
   }
 
   /**
+   * Get allowed verlet skin values.
+   * @return
+   */
+  [[nodiscard]] const NumberSet<double> &getAllowedVerletSkinValues() const { return *_allowedVerletSkinValues; }
+
+  /**
+   * Set allowed verlet skin values.
+   * @param allowedVerletSkinValues
+   */
+  void setAllowedVerletSkinValues(const NumberSet<double> &allowedVerletSkinValues) {
+    if (allowedVerletSkinValues.getMin() < 0.0) {
+      utils::ExceptionHandler::exception("Error: minimum verlet skin has to be non-negative {} < 0.0!",
+                                         allowedVerletSkinValues.getMin());
+    }
+    _allowedVerletSkinValues = std::move(allowedVerletSkinValues.clone());
+  }
+
+  /**
    * Set length added to the cutoff for the Verlet lists' skin per timestep.
    * @param verletSkin
    */
-  void setVerletSkin(double verletSkin) { _logicHandlerInfo.verletSkin = verletSkin; }
+  void setVerletSkin(double verletSkin) {
+    if (verletSkin < 0.0) {
+      utils::ExceptionHandler::exception("Error: verlet skin has to be non-negative! {} < 0.0!", verletSkin);
+    }
+    _logicHandlerInfo.verletSkin = verletSkin;
+    _allowedVerletSkinValues = std::make_unique<NumberSetFinite<double>>(std::set<double>{verletSkin});
+  }
 
   /**
    * Set time step of the simulation.
@@ -1184,6 +1208,11 @@ class AutoPas {
    */
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors{
       std::make_unique<NumberSetFinite<double>>(std::set<double>({1.}))};
+  /**
+   * Verlet skin values to be used while tuning.
+   */
+  std::unique_ptr<NumberSet<double>> _allowedVerletSkinValues{
+      std::make_unique<NumberSetFinite<double>>(std::set<double>({_logicHandlerInfo.verletSkin}))};
   /**
    * Load estimation algorithm to be used for efficient parallelization (only relevant for LCSlicedBalancedTraversal and
    * VLCSlicedBalancedTraversal).

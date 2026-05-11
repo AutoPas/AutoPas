@@ -12,7 +12,8 @@
 
 autopas::BayesianClusterSearch::BayesianClusterSearch(
     const InteractionTypeOption &interactionType, const std::set<ContainerOption> &allowedContainerOptions,
-    const NumberSet<double> &allowedCellSizeFactors, const std::set<TraversalOption> &allowedTraversalOptions,
+    const NumberSet<double> &allowedCellSizeFactors, const NumberSet<double> &allowedVerletSkinValues,
+    const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
     size_t maxEvidence, AcquisitionFunctionOption predAcqFunction, const std::string &outputSuffix,
@@ -22,6 +23,7 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
       _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
       _cellSizeFactors(allowedCellSizeFactors.clone()),
+      _verletSkinValues(allowedVerletSkinValues.clone()),
       _encoder(),
       _invalidConfigs(),
       _rng(seed),
@@ -73,6 +75,18 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(
       });
 }
 
+autopas::BayesianClusterSearch::BayesianClusterSearch(
+    const InteractionTypeOption &interactionType, const std::set<ContainerOption> &allowedContainerOptions,
+    const NumberSet<double> &allowedCellSizeFactors, const std::set<TraversalOption> &allowedTraversalOptions,
+    const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+    const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
+    size_t maxEvidence, AcquisitionFunctionOption predAcqFunction, const std::string &outputSuffix,
+    size_t predNumLHSamples, unsigned long seed)
+    : BayesianClusterSearch(interactionType, allowedContainerOptions, allowedCellSizeFactors,
+                            NumberSetFinite<double>({0.}), allowedTraversalOptions, allowedLoadEstimatorOptions,
+                            allowedDataLayoutOptions, allowedNewton3Options, maxEvidence, predAcqFunction, outputSuffix,
+                            predNumLHSamples, seed) {}
+
 autopas::BayesianClusterSearch::~BayesianClusterSearch() = default;
 
 void autopas::BayesianClusterSearch::addEvidence(const Configuration &configuration, const Evidence &evidence) {
@@ -123,13 +137,14 @@ bool autopas::BayesianClusterSearch::reset(size_t iteration, size_t tuningPhase,
 bool autopas::BayesianClusterSearch::searchSpaceIsEmpty() const {
   // if one enum is empty return true
   return _containerTraversalEstimatorOptions.empty() or
-         (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or _dataLayoutOptions.empty() or
+         (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or
+         (_verletSkinValues->isFinite() and _verletSkinValues->size() == 0) or _dataLayoutOptions.empty() or
          _newton3Options.empty();
 }
 
 void autopas::BayesianClusterSearch::updateOptions() {
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                             *_cellSizeFactors);
+                             *_cellSizeFactors, *_verletSkinValues);
 
   auto newRestrictions = _encoder.getDiscreteRestrictions();
   _gaussianCluster.setDimensions(std::vector<int>(newRestrictions.begin(), newRestrictions.end()));

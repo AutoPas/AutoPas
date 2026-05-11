@@ -5,9 +5,11 @@
  */
 
 #pragma once
+#include <algorithm>
 #include <atomic>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <tuple>
 #include <type_traits>
@@ -80,7 +82,7 @@ class LogicHandler {
                                                             _logicHandlerInfo.boxMax,
                                                             _logicHandlerInfo.cutoff,
                                                             configuration.cellSizeFactor,
-                                                            _logicHandlerInfo.verletSkin,
+                                                            configuration.verletSkin,
                                                             _verletClusterSize,
                                                             _sortingThreshold,
                                                             configuration.loadEstimator};
@@ -90,7 +92,10 @@ class LogicHandler {
     }
 
     // initialize locks needed for remainder traversal
-    const auto interactionLength = logicHandlerInfo.cutoff + logicHandlerInfo.verletSkin;
+    const auto maxVerletSkin = std::transform_reduce(
+        autotuners.begin(), autotuners.end(), 0., [](double a, double b) { return std::max(a, b); },
+        [](const auto &entry) { return entry.second->getCurrentConfig().verletSkin; });
+    const auto interactionLength = logicHandlerInfo.cutoff + maxVerletSkin;
     const auto interactionLengthInv = 1. / interactionLength;
     const auto boxLengthWithHalo = logicHandlerInfo.boxMax - logicHandlerInfo.boxMin + (2 * interactionLength);
     initSpatialLocks(boxLengthWithHalo, interactionLengthInv);
@@ -1094,7 +1099,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     // Fetch the needed information for estimating the rebuild frequency from _logicHandlerInfo
     // and estimate the current rebuild frequency using the velocity method.
     double rebuildFrequencyEstimate =
-        getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
+        getVelocityMethodRFEstimate(_currentContainer->getVerletSkin(), _logicHandlerInfo.deltaT);
     double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
     // The user defined rebuild frequency is considered as the upper bound.
     // If velocity method estimate exceeds upper bound, set the rebuild frequency to the user defined value.
@@ -1203,7 +1208,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 #ifdef AUTOPAS_LOG_LIVEINFO
   auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
   info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
-              _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+              _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _currentContainer->getVerletSkin());
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
 
@@ -1226,7 +1231,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     if (info.get().empty()) {
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
       info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
-                  _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+                  _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _currentContainer->getVerletSkin());
     }
     autoTuner.receiveLiveInfo(info);
   }
@@ -1380,7 +1385,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   std::unique_ptr<ParticleContainerInterface<Particle_T>> containerPtr{nullptr};
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
-                            _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
+                            _currentContainer->getCutoff(), config.cellSizeFactor, config.verletSkin,
                             _verletClusterSize, _sortingThreshold, config.loadEstimator);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new

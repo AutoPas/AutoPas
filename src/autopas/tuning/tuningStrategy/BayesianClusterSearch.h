@@ -18,6 +18,7 @@
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/utils/FeatureVectorEncoder.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/NumberSetFinite.h"
 
 namespace autopas {
 
@@ -76,12 +77,26 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const InteractionTypeOption &interactionType,
       const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
       const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
+      const NumberSet<double> &allowedVerletSkinValues = NumberSetFinite<double>({0.}),
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()());
+
+  /**
+   * Backwards-compatible constructor using a fixed verlet skin value of 0.
+   */
+  explicit BayesianClusterSearch(
+      const InteractionTypeOption &interactionType, const std::set<ContainerOption> &allowedContainerOptions,
+      const NumberSet<double> &allowedCellSizeFactors, const std::set<TraversalOption> &allowedTraversalOptions,
+      const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+      const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+      const std::set<Newton3Option> &allowedNewton3Options, size_t maxEvidence = 10,
+      AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
+      const std::string &outputSuffix = "", size_t predNumLHSamples = 50,
+      unsigned long seed = std::random_device()());
 
   ~BayesianClusterSearch() override;
 
@@ -130,6 +145,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   std::vector<DataLayoutOption> _dataLayoutOptions;
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
+  std::unique_ptr<NumberSet<double>> _verletSkinValues;
   FeatureVectorEncoder _encoder;
 
   /**

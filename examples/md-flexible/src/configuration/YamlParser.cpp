@@ -6,6 +6,7 @@
 #include "YamlParser.h"
 
 #include "autopas/options/TuningMetricOption.h"
+#include "autopas/utils/NumberSetFinite.h"
 
 const std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node node,
                                                                             const std::string &errMsg) {
@@ -199,6 +200,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         if (config.cellSizeFactors.value->isEmpty()) {
           throw std::runtime_error("Parsed cell-size-factor-list is empty.");
+        }
+      } else if (key == config.verletSkinTuningValues.name) {
+        expected = "YAML-sequence of floats.";
+        description = config.verletSkinTuningValues.description;
+
+        config.verletSkinTuningValues.value = autopas::utils::StringUtils::parseNumberSet(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.verletSkinTuningValues.value->isEmpty()) {
+          throw std::runtime_error("Parsed verlet-skin-tuning list is empty.");
         }
       } else if (key == config.dataLayoutOptions.name) {
         expected = "YAML-sequence of possible values.";
@@ -542,6 +553,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.verletSkinRadius.description;
 
         config.verletSkinRadius.value = node[key].as<double>();
+        config.verletSkinTuningValues.value =
+            std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{config.verletSkinRadius.value});
       } else if (key == config.fastParticlesThrow.name) {
         expected = "Boolean Value";
         description = config.fastParticlesThrow.description;

@@ -19,11 +19,16 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
-    const NumberSet<double> *allowedCellSizeFactors, const InteractionTypeOption &interactionType) {
+    const NumberSet<double> *allowedCellSizeFactors, const NumberSet<double> *allowedVerletSkins,
+    const InteractionTypeOption &interactionType) {
   if (allowedCellSizeFactors->isInterval()) {
     utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
   }
+  if (allowedVerletSkins->isInterval()) {
+    utils::ExceptionHandler::exception("Cross product does not work with continuous verlet skin values!");
+  }
   const auto cellSizeFactors = allowedCellSizeFactors->getAll();
+  const auto verletSkins = allowedVerletSkins->getAll();
 
   std::set<Configuration> searchSet;
   // generate all potential configs
@@ -41,13 +46,15 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
       const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
           loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, allowedLoadEstimatorOptions);
       for (const auto csf : cellSizeFactors) {
-        for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
-          for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
-            for (const auto &newton3Option : allowedNewton3Options) {
-              const Configuration configuration{containerOption,  csf,           traversalOption, loadEstimatorOption,
-                                                dataLayoutOption, newton3Option, interactionType};
-              if (configuration.hasCompatibleValues()) {
-                searchSet.insert(configuration);
+        for (const auto verletSkin : verletSkins) {
+          for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
+            for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
+              for (const auto &newton3Option : allowedNewton3Options) {
+                const Configuration configuration{containerOption,  csf,            verletSkin, traversalOption,
+                                                  loadEstimatorOption, dataLayoutOption, newton3Option, interactionType};
+                if (configuration.hasCompatibleValues()) {
+                  searchSet.insert(configuration);
+                }
               }
             }
           }
@@ -65,13 +72,14 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
 SearchSpaceGenerators::OptionSpace SearchSpaceGenerators::inferOptionDimensions(
     const std::set<Configuration> &searchSet) {
   OptionSpace optionSpace;
-  for (const auto &[container, traversal, loadEst, dataLayout, newton3, csf, interactT] : searchSet) {
+  for (const auto &[container, traversal, loadEst, dataLayout, newton3, csf, verletSkin, interactT] : searchSet) {
     optionSpace.containerOptions.insert(container);
     optionSpace.traversalOptions.insert(traversal);
     optionSpace.loadEstimatorOptions.insert(loadEst);
     optionSpace.dataLayoutOptions.insert(dataLayout);
     optionSpace.newton3Options.insert(newton3);
     optionSpace.cellSizeFactors.insert(csf);
+    optionSpace.verletSkins.insert(verletSkin);
   }
   return optionSpace;
 }

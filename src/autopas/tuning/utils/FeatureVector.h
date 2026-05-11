@@ -22,10 +22,10 @@ class FeatureVector : public Configuration {
  public:
   /**
    * Number of tune-able dimensions.
-   * container-traversal-estimator + dataLayout + newton3 + cellSizeFactor
+   * container-traversal-estimator + dataLayout + newton3 + cellSizeFactor + verletSkin
    * Interaction type is not a tunable dimension.
    */
-  static constexpr size_t featureSpaceDims = 4;
+  static constexpr size_t featureSpaceDims = 5;
 
   /**
    * Consider Container, Traversal and LoadEstimator options as one dimension.
@@ -47,10 +47,19 @@ class FeatureVector : public Configuration {
    * @param cellSizeFactor
    * @param interactionType
    */
+  FeatureVector(ContainerOption container, double cellSizeFactor, double verletSkin, TraversalOption traversal,
+                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3,
+                InteractionTypeOption interactionType)
+      : Configuration(container, cellSizeFactor, verletSkin, traversal, loadEstimator, dataLayout, newton3,
+                      interactionType) {}
+
+  /**
+   * Backwards-compatible constructor using a verlet skin of 0.
+   */
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
                 LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3,
                 InteractionTypeOption interactionType)
-      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType) {}
+      : Configuration(container, cellSizeFactor, 0., traversal, loadEstimator, dataLayout, newton3, interactionType) {}
 
   /**
    * Construct from Configuration.
@@ -67,7 +76,7 @@ class FeatureVector : public Configuration {
    */
   Eigen::VectorXd operator-(const FeatureVector &other) const {
     Eigen::VectorXd result(featureSpaceDims);
-    result << cellSizeFactor - other.cellSizeFactor,
+    result << cellSizeFactor - other.cellSizeFactor, verletSkin - other.verletSkin,
         (container == other.container and traversal == other.traversal and loadEstimator == other.loadEstimator) ? 0.
                                                                                                                  : 1.,
         dataLayout == other.dataLayout ? 0. : 1., newton3 == other.newton3 ? 0. : 1.;

@@ -54,6 +54,10 @@ struct OptionSpace {
    * Available discrete cellSizeFactors options.
    */
   std::set<double> cellSizeFactors;
+  /**
+   * Available discrete verletSkin options.
+   */
+  std::set<double> verletSkins;
 };
 
 /**
@@ -65,6 +69,7 @@ struct OptionSpace {
  * @param allowedDataLayoutOptions
  * @param allowedNewton3Options
  * @param allowedCellSizeFactors
+ * @param allowedVerletSkins
  * @param interactionType
  * @return A set containing all valid configurations.
  */
@@ -74,7 +79,24 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
+                                         const NumberSet<double> *allowedVerletSkins,
                                          const InteractionTypeOption &interactionType);
+
+/**
+ * Backwards-compatible overload using a fixed verlet skin of 0.
+ */
+inline std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowedContainerOptions,
+                                                const std::set<TraversalOption> &allowedTraversalOptions,
+                                                const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+                                                const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                                                const std::set<Newton3Option> &allowedNewton3Options,
+                                                const NumberSet<double> *allowedCellSizeFactors,
+                                                const InteractionTypeOption &interactionType) {
+  static const NumberSetFinite<double> defaultVerletSkins({0.});
+  return cartesianProduct(allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions,
+                          allowedDataLayoutOptions, allowedNewton3Options, allowedCellSizeFactors,
+                          &defaultVerletSkins, interactionType);
+}
 
 /**
  * Crudely trying to reconstruct the dimensions of the search space from a given set of options.

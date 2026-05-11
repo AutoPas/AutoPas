@@ -295,6 +295,12 @@ class MDFlexConfig {
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.}), "cell-size", true,
       "Factor for the interaction length to determine the cell size."};
   /**
+   * verletSkinTuningValues
+   */
+  MDFlexOption<std::shared_ptr<autopas::NumberSet<double>>, __LINE__> verletSkinTuningValues{
+      std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{0.2}), "verlet-skin-tuning", true,
+      "List or range of verlet skin values used in tuning."};
+  /**
    * logFileName
    */
   MDFlexOption<std::string, __LINE__> logFileName{"", "log-file", true,

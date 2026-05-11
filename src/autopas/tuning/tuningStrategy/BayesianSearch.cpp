@@ -14,7 +14,8 @@
 
 autopas::BayesianSearch::BayesianSearch(
     const InteractionTypeOption &interactionType, const std::set<ContainerOption> &allowedContainerOptions,
-    const autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<TraversalOption> &allowedTraversalOptions,
+    const autopas::NumberSet<double> &allowedCellSizeFactors, const autopas::NumberSet<double> &allowedVerletSkinValues,
+    const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
     size_t maxEvidence, autopas::AcquisitionFunctionOption predAcqFunction, size_t predNumLHSamples, unsigned long seed)
@@ -23,6 +24,7 @@ autopas::BayesianSearch::BayesianSearch(
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
       _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
       _cellSizeFactors(allowedCellSizeFactors.clone()),
+      _verletSkinValues(allowedVerletSkinValues.clone()),
       _encoder(),
       _invalidConfigs(),
       _rng(seed),
@@ -59,9 +61,21 @@ autopas::BayesianSearch::BayesianSearch(
   }
 
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                             *_cellSizeFactors);
+                             *_cellSizeFactors, *_verletSkinValues);
   _gaussianProcess.setDimension(_encoder.getOneHotDims());
 }
+
+autopas::BayesianSearch::BayesianSearch(
+    const InteractionTypeOption &interactionType, const std::set<ContainerOption> &allowedContainerOptions,
+    const autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<TraversalOption> &allowedTraversalOptions,
+    const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+    const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
+    size_t maxEvidence, autopas::AcquisitionFunctionOption predAcqFunction, size_t predNumLHSamples,
+    unsigned long seed)
+    : BayesianSearch(interactionType, allowedContainerOptions, allowedCellSizeFactors,
+                     autopas::NumberSetFinite<double>({0.}), allowedTraversalOptions, allowedLoadEstimatorOptions,
+                     allowedDataLayoutOptions, allowedNewton3Options, maxEvidence, predAcqFunction, predNumLHSamples,
+                     seed) {}
 
 bool autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                                   const EvidenceCollection &evidenceCollection) {
@@ -138,7 +152,8 @@ std::vector<autopas::FeatureVector> autopas::BayesianSearch::sampleAcquisitions(
 bool autopas::BayesianSearch::searchSpaceIsEmpty() const {
   // if one enum is empty return true
   return _containerTraversalEstimatorOptions.empty() or
-         (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or _dataLayoutOptions.empty() or
+         (_cellSizeFactors->isFinite() and _cellSizeFactors->size() == 0) or
+         (_verletSkinValues->isFinite() and _verletSkinValues->size() == 0) or _dataLayoutOptions.empty() or
          _newton3Options.empty();
 }
 

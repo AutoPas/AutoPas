@@ -14,6 +14,7 @@ data-layout-3b                       :  [AoS, SoA]
 # General options
 verlet-rebuild-frequency             :  20
 verlet-skin-radius                   :  0.2
+verlet-skin-tuning                  :  [0.2]
 verlet-cluster-size                  :  4
 selector-strategy                    :  Fastest-Absolute-Value
 tuning-metric                        :  time # alternatively: energy

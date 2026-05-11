@@ -11,6 +11,8 @@
 #include <any>
 #include <fstream>
 
+#include "autopas/utils/NumberSetFinite.h"
+
 // anonymous namespace to hide helper function
 namespace {
 
@@ -49,6 +51,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.boundaryOption,
       config.boxLength,
       config.cellSizeFactors,
+      config.verletSkinTuningValues,
       config.fastParticlesThrow,
       config.checkpointfile,
       config.containerOptions,
@@ -183,6 +186,14 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(strArg);
         if (config.cellSizeFactors.value->isEmpty()) {
           cerr << "Error parsing cell size factors: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.verletSkinTuningValues)::getoptChar: {
+        config.verletSkinTuningValues.value = autopas::utils::StringUtils::parseNumberSet(strArg);
+        if (config.verletSkinTuningValues.value->isEmpty()) {
+          cerr << "Error parsing verlet skin tuning values: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -506,6 +517,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.verletSkinRadius)::getoptChar: {
         try {
           config.verletSkinRadius.value = stod(strArg);
+          config.verletSkinTuningValues.value =
+              std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{config.verletSkinRadius.value});
         } catch (const exception &) {
           cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
           displayHelp = true;
