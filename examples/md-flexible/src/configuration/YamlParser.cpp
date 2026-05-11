@@ -842,6 +842,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "unsigned integer > 0";
         description = config.kokkosTeamSize.description;
         try {
+          config.kokkosTeamSize.value.clear();
           auto intermediate = autopas::utils::StringUtils::parseNumberSet(
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))->getAll();
           for (auto& item : intermediate) {
@@ -854,6 +855,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "unsigned integer > 0";
         description = config.kokkosChunkSize.description;
         try {
+          config.kokkosChunkSize.value.clear();
           auto intermediate = autopas::utils::StringUtils::parseNumberSet(
             autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))->getAll();
           for (auto& item : intermediate) {

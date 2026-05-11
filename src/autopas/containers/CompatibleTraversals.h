@@ -50,7 +50,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  * @return set of all applicable traversal options
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allKokkosDSCompatibleTraversals() {
-  static const auto s = filterAllOptions("kokkos_ds_", InteractionTypeOption::pairwise);
+  static const auto s = filterAllOptions("ds_kokkos_", InteractionTypeOption::pairwise);
   return s;
 }
 
@@ -68,7 +68,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  * @return set of all applicable traversal options
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allKokkosDSCompatibleTraversals3B() {
-  static const auto s = filterAllOptions("kokkos_ds_", InteractionTypeOption::triwise);
+  static const auto s = filterAllOptions("ds_kokkos_", InteractionTypeOption::triwise);
   return s;
 }
 
