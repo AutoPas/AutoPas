@@ -14,7 +14,7 @@
 #include "autopas/utils/KokkosAoS.h"
 #include "autopas/utils/KokkosSoA.h"
 #include "autopas/utils/KokkosStorage.h"
-#include "traversals/KokkosDsNaiveParallelTraversal.h"
+#include "traversals/KokkosDsFlatTraversal.h"
 
 namespace autopas {
 

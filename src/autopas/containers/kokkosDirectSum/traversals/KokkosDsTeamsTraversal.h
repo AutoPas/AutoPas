@@ -1,5 +1,5 @@
 /**
- * @file KokkosDsNaiveParallelTraversal.h
+ * @file KokkosDsTeamsTraversal.h
  * @date 31. October 2025
  * @author Luis Gall
  */
@@ -21,7 +21,7 @@ namespace autopas {
  * @tparam Particle_T
  */
 template <class Functor, class Particle_T>
-class KokkosDsNaiveParallelTraversal : public TraversalInterface, public DSKokkosTraversalInterface<Particle_T> {
+class KokkosDsTeamsTraversal : public TraversalInterface, public DSKokkosTraversalInterface<Particle_T> {
 
 public:
   /**
@@ -29,13 +29,12 @@ public:
    * @param functor the functor that defines the interaction of particles
    * @param dataLayout The data layout wth which this traversal should be initialized
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not
-   * @param teamSize Size of the Kokkos Teams (irrelevant for the flat traversal) (TODO: delete when traversal integration is done)
-   * @param chunkSize Size of the Chunks for the Kokkos Teams. One team works one chunkSize consecutive i-particles (irrelevant for the flat traversal) (TODO: delete when traversal integration is done)
+   * @param teamSize Size of the Kokkos Teams
    */
-explicit KokkosDsNaiveParallelTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3, size_t teamSize, size_t chunkSize)
-        : TraversalInterface(dataLayout, useNewton3), DSKokkosTraversalInterface<Particle_T>(), _functor{functor}, _teamSize(teamSize), _chunkSize(chunkSize) {}
+explicit KokkosDsTeamsTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3, size_t teamSize)
+        : TraversalInterface(dataLayout, useNewton3), DSKokkosTraversalInterface<Particle_T>(), _functor{functor}, _teamSize(teamSize) {}
 
-    [[nodiscard]] TraversalOption getTraversalType() const final { return TraversalOption::kokkos_ds_naive_parallel; }
+    [[nodiscard]] TraversalOption getTraversalType() const final { return TraversalOption::ds_kokkos_teams; }
 
     [[nodiscard]] bool isApplicable() const final { 
         // TODO
@@ -45,7 +44,7 @@ explicit KokkosDsNaiveParallelTraversal(Functor *functor, DataLayoutOption dataL
     void initTraversal() final {
     }
 
-    void traverseParticles() final {
+  void traverseParticles() final {
       const bool newton3 = _useNewton3;
       const auto func = _functor;
 
@@ -53,9 +52,9 @@ explicit KokkosDsNaiveParallelTraversal(Functor *functor, DataLayoutOption dataL
 
       // TODO: this should only be executed on the CPU
       if (_dataLayout == DataLayoutOption::aos) {
-#ifdef KOKKOS_ENABLE_CUDA
+    #ifdef KOKKOS_ENABLE_CUDA
         return; // TODO: log error / exception
-#else
+    #else
         Kokkos::parallel_for("traverseParticlesAoS", Kokkos::RangePolicy<Kokkos::HostSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
           for (int j = (newton3 ? i+1 : 0); j < N; ++j) {
             if (newton3 or i != j) {
@@ -69,7 +68,7 @@ explicit KokkosDsNaiveParallelTraversal(Functor *functor, DataLayoutOption dataL
 
         // TODO: consider halo particles
         // Maybe even execute halo traversal simultaneously on the host with some sort of result merge mechanism in the end
-#endif
+    #endif
       }
       else if (_dataLayout == DataLayoutOption::soa) {
         auto& ownedSoA = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA();
@@ -114,15 +113,11 @@ private:
     auto func = _functor;
     FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
 
-    //auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, Kokkos::AUTO, Kokkos::AUTO);
-    //using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
+    auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, _teamSize, Kokkos::AUTO);
+    using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
+    Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
+      const int i = teamHandle.league_rank();
 
-    auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
-    rangePolicy.set_chunk_size(_chunkSize);
-    // Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
-    // const int i = teamHandle.league_rank();
-
-    Kokkos::parallel_for("traversal", rangePolicy, KOKKOS_LAMBDA(const int i) {
       FloatPrecision fxAcc = 0.;
       FloatPrecision fyAcc = 0.;
       FloatPrecision fzAcc = 0.;
@@ -131,23 +126,27 @@ private:
       const auto y1 = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
       const auto z1 = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
 
-      /*
-      // Kokkos::parallel_reduce(Kokkos::TeamVectorRange(teamHandle, M), [&](int j,
+      Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamHandle, M), [&](int j,
           FloatPrecision& localFxAcc,
           FloatPrecision& localFyAcc,
           FloatPrecision& localFzAcc) {
-          */
-      for (int j = 0; j < M; ++j) {
-        func->SoAKernelKokkos(x1, y1, z1, soa2, fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
-      }
-        //}, fxAcc, fyAcc, fzAcc);
+            func->SoAKernelKokkos(x1, y1, z1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
+        }, fxAcc, fyAcc, fzAcc);
 
-        //Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
-          // int index = teamHandle.league_rank();
-          soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(i) += fxAcc;
-          soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(i) += fyAcc;
-          soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(i) += fzAcc;
-        // });
+        Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
+          int index = teamHandle.league_rank();
+          const FloatPrecision oldFx = soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index);
+          const FloatPrecision oldFy = soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index);
+          const FloatPrecision oldFz = soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index);
+
+          const FloatPrecision newFx = oldFx + fxAcc;
+          const FloatPrecision newFy = oldFy + fyAcc;
+          const FloatPrecision newFz = oldFz + fzAcc;
+
+          soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index) = newFx;
+          soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) = newFy;
+          soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) = newFz;
+        });
     });
   }
 
@@ -165,8 +164,6 @@ private:
   Functor *_functor;
 
   const size_t _teamSize {0};
-
-  const size_t _chunkSize {0};
 };
 
 }

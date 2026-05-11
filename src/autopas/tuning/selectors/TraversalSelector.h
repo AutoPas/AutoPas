@@ -12,7 +12,9 @@
 #include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
-#include "autopas/containers/kokkosDirectSum/traversals/KokkosDsNaiveParallelTraversal.h"
+#include "autopas/containers/kokkosDirectSum/traversals/KokkosDsFlatTraversal.h"
+#include "autopas/containers/kokkosDirectSum/traversals/KokkosDsTeamsTraversal.h"
+#include "autopas/containers/kokkosDirectSum/traversals/KokkosDsChunksTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
@@ -136,9 +138,19 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
       break;
     }
     // Kokkos Direct sum
-    case TraversalOption::kokkos_ds_naive_parallel: {
-      traversal = std::make_unique<KokkosDsNaiveParallelTraversal<PairwiseFunctor_T, typename ParticleCell_T::ParticleType>>(
-        &pairwiseFunctor, dataLayout, useNewton3, kokkosTeamSize, kokkosChunkSize);
+    case TraversalOption::ds_kokkos_flat: {
+      traversal = std::make_unique<KokkosDsFlatTraversal<PairwiseFunctor_T, typename ParticleCell_T::ParticleType>>(
+        &pairwiseFunctor, dataLayout, useNewton3);
+      break;
+    }
+    case TraversalOption::ds_kokkos_teams: {
+      traversal = std::make_unique<KokkosDsTeamsTraversal<PairwiseFunctor_T, typename ParticleCell_T::ParticleType>>(
+        &pairwiseFunctor, dataLayout, useNewton3, kokkosTeamSize);
+      break;
+    }
+    case TraversalOption::ds_kokkos_chunks: {
+      traversal = std::make_unique<KokkosDsChunksTraversal<PairwiseFunctor_T, typename ParticleCell_T::ParticleType>>(
+        &pairwiseFunctor, dataLayout, useNewton3, kokkosChunkSize, kokkosChunkSize);
       break;
     }
     // Linked cell

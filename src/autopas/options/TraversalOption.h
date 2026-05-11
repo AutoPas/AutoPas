@@ -30,7 +30,20 @@ class TraversalOption : public Option<TraversalOption> {
     ds_sequential,
 
     // KokkosDirectSum Traversals:
-    kokkos_ds_naive_parallel,
+    /**
+     * KokkosDsFlatTraversal : TOOD
+     */
+    ds_kokkos_flat,
+
+    /**
+     * KokkosDsTeamsTraversal : TODO
+     */
+    ds_kokkos_teams,
+
+    /**
+     * KokkosDsChunksTraversal : TODO
+     */
+    ds_kokkos_chunks,
 
     // LinkedCell Traversals:
     /**
@@ -290,7 +303,9 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::ds_sequential, "ds_sequential"},
 
         // KokkosDirectSum Traversals:
-        {TraversalOption::kokkos_ds_naive_parallel, "kokkos_ds_naive_parallel"},
+        {TraversalOption::ds_kokkos_flat, "ds_kokkos_flat"},
+        {TraversalOption::ds_kokkos_teams, "ds_kokkos_teams"},
+        {TraversalOption::ds_kokkos_chunks, "ds_kokkos_chunks"},
 
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},
