@@ -515,7 +515,7 @@ class LJFunctorAVX
                                     ? _mm256_castpd_si256(_mm256_maskload_pd(
                                           reinterpret_cast<double const *>(&ownedStatePtr2[j]), _masks[rest - 1]))
                                     : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr2[j]));
-    // This requires that dummy is the first entry in OwnershipState!
+    // This requires that dummy is the first entry in OwnershipState! (TODO: Rethink that constraint)
     const __m256d dummyMask = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _zero, _CMP_NEQ_UQ);
     const __m256d cutoffDummyMask = _mm256_and_pd(cutoffMask, dummyMask);
 

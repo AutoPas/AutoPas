@@ -14,7 +14,7 @@
 #include "autopas/utils/KokkosAoS.h"
 #include "autopas/utils/KokkosSoA.h"
 #include "autopas/utils/KokkosStorage.h"
-#include "traversals/KokkosDsFlatTraversal.h"
+#include "autopas/containers/kokkosDirectSum/traversals/DSKokkosTraversalInterface.h"
 
 namespace autopas {
 
@@ -219,27 +219,31 @@ template <class Particle_T>
             /* TODO: End of Code Crime */
 
             template <typename Lambda>
+            void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
+              // TODO: decide if we really want to use this/if we can merge it with the Kokkos functions
+            }
+
+            template <typename Lambda>
             void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                     const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-                // TODO
-            }
-
-            template <typename Lambda>
-            void forEachInRegionKokkos(Lambda forEachLambda, const std::array<double, 3> &lowerCorner, const std::array<double, 3>& higherCorner, IteratorBehavior behavior) {
-              // TODO: this will still require to pass the all particle's indices to the lambda clause with a preceeding check if the current particle is within the requested region in addition to the test for the ownershipstate
-            }
-
-
-            template <typename Lambda>
-            void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
-              // TODO
+              // TODO: decide if we really want to use this/if we can merge it with the Kokkos functions
             }
 
             template <class ExecSpace, typename Lambda>
             void forEachKokkos(Lambda& forEachLambda, IteratorBehavior behavior) {
 
+              auto& boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
+              auto& boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
+
+              forEachInRegionKokkos<ExecSpace, false>(forEachLambda, behavior, boxMin, boxMax);
+            }
+
+              template <class ExecSpace, bool regionIter, typename Lambda>
+            void forEachInRegionKokkos(Lambda forEachLambda, IteratorBehavior behavior, const std::array<double, 3> &lowerCorner, const std::array<double, 3>& higherCorner) {
+              // TODO: this will still require to pass the all particle's indices to the lambda clause with a preceeding check if the current particle is within the requested region in addition to the test for the ownershipstate
+
               if (_dataLayout == DataLayoutOption::aos) {
-                convertToAoS();
+                convertToAoS(); /* this guarantees syncing to the Host (AoS must not run on CUDA - so far) */
                 _soaUpToDate = false;
               }
               else if (_dataLayout == DataLayoutOption::soa) {
@@ -250,21 +254,36 @@ template <class Particle_T>
               }
 
               // TODO: make sure that no AoS runs on Cuda
-              if (behavior & 0b1) {
+              // TODO: decide on how to deduce this template parameters based on the ExecSpace
+              constexpr bool host = false;
+
+              /* owned or dummies; this basically filters out only halo, sequential, container only */
+              if (behavior & 0b101) {
                 auto& owned = _ownedParticles;
                 Kokkos::parallel_for("forEachKokkosOwned", Kokkos::RangePolicy<ExecSpace>(0, numberOfOwned), KOKKOS_LAMBDA(int i)  {
-                  // TODO: here, also a dummy check is required
-                  forEachLambda(i, owned);
+
+                  if (owned.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCorner, higherCorner)) {
+                    forEachLambda(i, owned);
+                  }
                 });
               }
-              if (behavior & 0b10) {
+              /* halo or dummies; this basically filters out only owned, sequential, container only */
+              if (behavior & 0b110)  {
                 auto& halo = _haloParticles;
                 Kokkos::parallel_for("forEachKokkosHalo", Kokkos::RangePolicy<ExecSpace>(0, numberOfHalo), KOKKOS_LAMBDA(int i)  {
-                  // TODO: here, also a dummy check is required
-                  forEachLambda(i, halo);
+                  if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCorner, higherCorner)) {
+                    forEachLambda(i, halo);
+                  }
                 });
               }
-              // TODO: consider other behavior such as dummies, container only, ...
+              /* force sequential (sequential yes, but which particles? all? only owned? */
+              if (behavior & 0b1000) {
+                // TODO: implement
+              }
+              /* container only (whatever that means...) */
+              if (behavior & 0b10000) {
+                // TODO: implement
+              }
 
               if (_dataLayout == DataLayoutOption::soa) {
                 _ownedParticles.template markModified<ExecSpace>();
@@ -275,6 +294,14 @@ template <class Particle_T>
             template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
             void reduceKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior) {
 
+              auto& boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
+              auto& boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
+
+              reduceInRegionKokkos<ExecSpace, false, Result, Reduction>(reduceLambda, result, behavior, boxMin, boxMax);
+            }
+
+            template<class ExecSpace, bool regionIter, typename Result, typename Reduction, typename Lambda>
+            void reduceInRegionKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior, const std::array<double, 3>& lowerCorner, const std::array<double, 3>& higherCorner) {
               if (_dataLayout == DataLayoutOption::aos) {
                 convertToAoS();
               }
@@ -283,18 +310,35 @@ template <class Particle_T>
                 _ownedParticles.template sync<ExecSpace>();
                 _haloParticles.template sync<ExecSpace>();
               }
+              // TODO: make sure that no AoS runs on Cuda
+              // TODO: decide on how to deduce this template parameters based on the ExecSpace
+              constexpr bool host = false;
 
-              if (behavior & 0b1) {
+              /* owned or dummies; this basically filters out only halo, sequential, container only */
+              if (behavior & 0b101) {
                 auto& owned = _ownedParticles;
                 Kokkos::parallel_reduce("reduceKokkosOwned", Kokkos::RangePolicy<ExecSpace>(0, numberOfOwned), KOKKOS_LAMBDA(int i, Result& localResult)  {
-                  reduceLambda(i, owned, localResult);
+                  if (owned.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCorner, higherCorner)) {
+                    reduceLambda(i, owned, localResult);
+                  }
                 }, Reduction(result));
               }
-              if (behavior & 0b10) {
+              /* halo or dummies; this basically filters out only owned, sequential, container only */
+              if (behavior & 0b110) {
                 auto& halo = _haloParticles;
                 Kokkos::parallel_reduce("reduceKokkosHalo", Kokkos::RangePolicy<ExecSpace>(0, numberOfHalo), KOKKOS_LAMBDA(int i, Result& localResult)  {
-                  reduceLambda(i, halo, localResult);
+                  if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCorner, higherCorner)) {
+                    reduceLambda(i, halo, localResult);
+                  }
                 }, Reduction(result));
+              }
+              /* force sequential (sequential yes, but which particles? all? only owned? */
+              if (behavior & 0b1000) {
+                // TODO: implement
+              }
+              /* container only (whatever that means...) */
+              if (behavior & 0b10000) {
+                // TODO: implement
               }
               // TODO: consider other behavior such as dummies, container only, ...
             }

@@ -20,6 +20,9 @@ enum class OwnershipState : int64_t {
   /// Dummy or deleted state, a particle with this state is not an actual particle!
   /// @note LJFunctorAVX requires that the Dummy state should always be the integer zero and the state with the lowest
   /// value.
+  /* TODO: check whether it might be possible to relax the prev constraint and have it as the highest value 0b100 as this would align to the IteratorBehaviors */
+  /* TODO: Yes, LJFunctorAVX wants dummy to be 0 BUT it does not need to be the lowest value (at least I did not see why) */
+  /* TODO: maybe change first value to an unused entry such that dummy can be 0b0100 */
   dummy = 0b0000,  // 0
   /// Owned state, a particle with this state is an actual particle and owned by the current AutoPas object!
   owned = 0b0001,  // 1

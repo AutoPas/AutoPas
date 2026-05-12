@@ -11,6 +11,8 @@
 #include "KokkosAoS.h"
 #include "KokkosDataLayoutConverter.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/IteratorBehavior.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas::utils {
 
@@ -95,6 +97,28 @@ namespace autopas::utils {
           return storageAoS.template operator()<attribute, offset>(i);
         }
       }
+    }
+
+    template <bool regionIter, bool host, typename T>
+    KOKKOS_INLINE_FUNCTION
+    bool fulfillsIteratorRequirements(int index, autopas::options::IteratorBehavior behavior, const std::array<T, 3>& lowerCorner, const std::array<T, 3>& upperCorner) const {
+
+      if constexpr (regionIter) {
+        std::array<T, 3> positions {
+          operator()<Particle_T::AttributeNames::posX, true, host>(index),
+          operator()<Particle_T::AttributeNames::posY, true, host>(index),
+          operator()<Particle_T::AttributeNames::posZ, true, host>(index),
+        };
+
+        if (not autopas::utils::inBox(positions, lowerCorner, upperCorner)) {
+          return false;
+        }
+      }
+
+      auto ownershipState = operator()<Particle_T::AttributeNames::ownershipState, true, host>(index);
+
+      // TODO: this will require checks for edge cases and sync with the changes for dummy particles
+      return static_cast<unsigned int>(ownershipState) & static_cast<unsigned int>(behavior);
     }
 
     Particle_T& getParticle(int i) const {
