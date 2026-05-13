@@ -105,7 +105,7 @@ std::ostream &autopas::operator<<(std::ostream &os, const autopas::Configuration
 
 bool autopas::Configuration::equalsDiscreteOptions(const autopas::Configuration &rhs) const {
   return container == rhs.container and traversal == rhs.traversal and loadEstimator == rhs.loadEstimator and
-         dataLayout == rhs.dataLayout and newton3 == rhs.newton3 and interactionType == rhs.interactionType;
+         dataLayout == rhs.dataLayout and newton3 == rhs.newton3 and ompKind == rhs.ompKind and ompChunkSize == rhs.ompChunkSize and interactionType == rhs.interactionType;
 }
 
 bool autopas::Configuration::equalsContinuousOptions(const autopas::Configuration &rhs, double epsilon) const {
@@ -121,9 +121,9 @@ bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Confi
 }
 
 bool autopas::operator<(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
-  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3,
+  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3, lhs.ompKind, lhs.ompChunkSize,
                   lhs.interactionType) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator,
-                                                  rhs.dataLayout, rhs.newton3, rhs.interactionType);
+                                                  rhs.dataLayout, rhs.newton3, rhs.ompKind, rhs.ompChunkSize, rhs.interactionType);
 }
 
 std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &configuration) {
@@ -142,5 +142,9 @@ std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &conf
   in >> configuration.dataLayout;
   in.ignore(max, ':');
   in >> configuration.newton3;
+  in.ignore(max, ':');
+  in >> configuration.ompKind;
+  in.ignore(max, ':');
+  in >> configuration.ompChunkSize;
   return in;
 }
