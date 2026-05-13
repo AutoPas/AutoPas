@@ -38,7 +38,7 @@ class TuningResultLogger {
 
   /**
    * Log the result of a tuning phase.
-   * @Note In the case of multiple AutoTuners, the logged results are not necessarily correct.
+   * @note In the case of multiple AutoTuners, the logged results are not necessarily correct.
    * (see https://github.com/AutoPas/AutoPas/issues/1141)
    * @param configuration
    * @param iteration
