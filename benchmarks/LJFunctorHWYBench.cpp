@@ -1,29 +1,32 @@
 /**
  * @file LJFunctorHWYBench.cpp
  *
- * Micro-benchmarks for every public entry point of mdLib::LJFunctorHWY:
- *   - AoSFunctor
- *   - SoAFunctorSingle
- *   - SoAFunctorPair (all four VectorizationPatterns)
- *   - SoAFunctorPairSorted
- *   - SoAFunctorVerlet
+ * Micro-benchmarks for mdLib::LJFunctorHWY, organised around two focused questions:
  *
- * Each case is parameterised by particle count and (where meaningful) by the
- * newton3 flag so both code paths are exercised. Particle data is generated
- * once per benchmark instance; force accumulators are reset between iterations
- * to keep the numeric range bounded.
+ *   1. Ratio study — how does the interaction ratio (fraction of pairs within cutoff)
+ *      affect SoAFunctorPair vs SoAFunctorPairSorted?
+ *      VectorizationPattern fixed to p1xVec; ratio and N swept.
+ *
+ *   2. VecPattern study — how do the four VectorizationPatterns compare for
+ *      SoAFunctorPair and SoAFunctorPairSorted?
+ *      Ratio fixed at 50 %; vecPattern and N swept.
+ *
+ *   3. Context baselines — AoSFunctor, SoAFunctorSingle, SoAFunctorVerlet
+ *      with varying N and newton3.
+ *
+ * Approximate run count: ~1050 (down from ~4730 in the previous layout).
  */
 
 #include <benchmark/benchmark.h>
 
 #include <array>
-#include <random>
 #include <vector>
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/TwoCellsInteractionRatioGenerator.h"
 #include "autopasTools/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
@@ -39,22 +42,29 @@ constexpr double kEpsilon = 1.0;
 constexpr double kSigma = 1.0;
 constexpr std::array<double, 3> kLow{0.0, 0.0, 0.0};
 constexpr std::array<double, 3> kHigh{8.0, 8.0, 8.0};
+constexpr double kBoundary = 8.0;   // x-coordinate of the shared cell boundary
+constexpr double kCellSizeX = 8.0;  // x-extent of each pair cell (> 1.5 * kCutoff = 4.5)
 
-/// Default template parameters used for every benchmark: single-site LJ,
-/// shifted potential, no mixing, Newton3 supported, globals disabled so the
-/// reduction does not pollute the kernel measurement, no FLOP counting.
+// N values shared across all benchmarks: spans the interesting range without
+// dense sampling where the scaling curve is already flat.
+const std::vector<int64_t> kNValues = {10, 25, 50, 75, 100, 200, 250};
+
+// vecPattern used for the ratio-study benchmarks (fixed so ratio is the only variable).
+constexpr int kFixedVecPattern = static_cast<int>(VectorizationPattern::p1xVec);
+
+// Interaction ratio (integer percent) used for the vecPattern-study benchmarks.
+constexpr int kFixedRatioPct = 50;
+
 using BenchFunctor = mdLib::LJFunctorHWY<Molecule, /*shifting=*/true, /*useMixing=*/false,
                                          autopas::FunctorN3Modes::Both, /*calculateGlobals=*/false,
                                          /*countFLOPs=*/false>;
 
-/// Fill a single cell uniformly.
 void fillCell(FMCell &cell, const std::array<double, 3> &low, const std::array<double, 3> &high, std::size_t n,
               unsigned seed) {
   const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cell, defaultParticle, low, high, n, seed);
 }
 
-/// Build a plain O(n^2) neighbor list within one cell for the Verlet path.
 std::vector<std::vector<std::size_t, autopas::AlignedAllocator<std::size_t>>> buildNeighborLists(const FMCell &cell,
                                                                                                  double interactionLen,
                                                                                                  bool newton3) {
@@ -73,8 +83,6 @@ std::vector<std::vector<std::size_t, autopas::AlignedAllocator<std::size_t>>> bu
   return lists;
 }
 
-/// Reset force accumulators on an SoA buffer. Keeping forces bounded prevents
-/// drift when the same kernel is run thousands of times on identical inputs.
 template <class SoA>
 void resetForces(SoA &soa) {
   auto *fx = soa.template begin<Molecule::AttributeNames::forceX>();
@@ -109,7 +117,6 @@ static void BM_AoSFunctor(benchmark::State &state) {
   functor.initTraversal();
 
   for (auto _ : state) {
-    // reset forces each iteration
     for (auto &p : cell) p.setF({0.0, 0.0, 0.0});
     for (std::size_t i = 0; i < n; ++i) {
       for (std::size_t j = newton3 ? i + 1 : 0; j < n; ++j) {
@@ -120,18 +127,11 @@ static void BM_AoSFunctor(benchmark::State &state) {
     benchmark::DoNotOptimize(cell);
   }
   functor.endTraversal(newton3);
-  // Report "pair evaluations per second" for a more intuitive metric.
-  const double pairs = newton3 ? static_cast<double>(n) * (n - 1) / 2.0 : static_cast<double>(n) * (n - 1);
-  state.counters["pairs/s"] = benchmark::Counter(pairs, benchmark::Counter::kIsIterationInvariantRate);
 }
-BENCHMARK(BM_AoSFunctor)
-    ->ArgsProduct({{32, 128, 512}, {0, 1}})
-    ->ArgNames({"N", "n3"})
-    ->Repetitions(5)
-    ->Name("BM_AoS_Functor_Single");
+BENCHMARK(BM_AoSFunctor)->ArgsProduct({kNValues, {0, 1}})->ArgNames({"N", "n3"})->Repetitions(5)->Name("BM_AoS");
 
 // -----------------------------------------------------------------------------
-// SoAFunctorSingle: one cell, self-interaction (internal newton3-like loop).
+// SoAFunctorSingle: one cell, self-interaction.
 // -----------------------------------------------------------------------------
 static void BM_SoAFunctorSingle(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
@@ -152,22 +152,27 @@ static void BM_SoAFunctorSingle(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 BENCHMARK(BM_SoAFunctorSingle)
-    ->ArgsProduct({{32, 128, 512, 2048}, {0, 1}})
+    ->ArgsProduct({kNValues, {0, 1}})
     ->ArgNames({"N", "n3"})
     ->Repetitions(5)
-    ->Name("BM_SoA_Functor_Single");
+    ->Name("BM_SoA_Single");
 
 // -----------------------------------------------------------------------------
-// SoAFunctorPair: two cells side by side, all four vectorization patterns.
+// SoAFunctorPair — ratio study and vecPattern study share one benchmark body.
+// Registration 1: vecPattern fixed, ratio swept  (core contribution comparison)
+// Registration 2: ratio fixed at 50%, vecPattern swept  (pattern sensitivity)
 // -----------------------------------------------------------------------------
 static void BM_SoAFunctorPair(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double ratio = state.range(3) / 100.0;
 
   FMCell cell1, cell2;
-  fillCell(cell1, kLow, {kHigh[0] / 2.0, kHigh[1], kHigh[2]}, n, 42);
-  fillCell(cell2, {kHigh[0] / 2.0, kLow[1], kLow[2]}, kHigh, n, 1337);
+  const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  autopasTools::generators::TwoCellsInteractionRatioGenerator::fillWithParticles(
+      cell1, cell2, kLow, {kBoundary, kHigh[1], kHigh[2]}, {kBoundary, kLow[1], kLow[2]},
+      {kBoundary + kCellSizeX, kHigh[1], kHigh[2]}, n, ratio, kCutoff, defaultParticle, /*seed=*/42);
 
   auto functor = makeFunctor();
   functor.setVecPattern(pattern);
@@ -185,29 +190,37 @@ static void BM_SoAFunctorPair(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 BENCHMARK(BM_SoAFunctorPair)
-    ->ArgsProduct({{32, 128, 512},
+    ->ArgsProduct({kNValues, {0, 1}, {kFixedVecPattern}, {0, 25, 50, 75, 100}})
+    ->ArgNames({"N", "n3", "vecPat", "ratio%"})
+    ->Repetitions(5)
+    ->Name("BM_SoA_Pair_Ratio");
+BENCHMARK(BM_SoAFunctorPair)
+    ->ArgsProduct({kNValues,
                    {0, 1},
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2),
-                    static_cast<int>(VectorizationPattern::pVecx1)}})
-    ->ArgNames({"N", "n3", "vecPat"})
+                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
+                   {kFixedRatioPct}})
+    ->ArgNames({"N", "n3", "vecPat", "ratio%"})
     ->Repetitions(5)
-    ->Name("BM_SoA_Functor_Pair");
+    ->Name("BM_SoA_Pair_VecPatterns");
 
 // -----------------------------------------------------------------------------
-// SoAFunctorPairSorted: Gonnet-style pre-pruned SIMD. Only p1xVec is specialised
-// internally; other patterns fall back to SoAFunctorPair.
+// SoAFunctorPairSorted — same two-registration pattern as SoAFunctorPair.
 // -----------------------------------------------------------------------------
 static void BM_SoAFunctorPairSorted(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
+  const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double ratio = state.range(3) / 100.0;
 
   FMCell cell1, cell2;
-  fillCell(cell1, kLow, {kHigh[0] / 2.0, kHigh[1], kHigh[2]}, n, 42);
-  fillCell(cell2, {kHigh[0] / 2.0, kLow[1], kLow[2]}, kHigh, n, 1337);
+  const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  autopasTools::generators::TwoCellsInteractionRatioGenerator::fillWithParticles(
+      cell1, cell2, kLow, {kBoundary, kHigh[1], kHigh[2]}, {kBoundary, kLow[1], kLow[2]},
+      {kBoundary + kCellSizeX, kHigh[1], kHigh[2]}, n, ratio, kCutoff, defaultParticle, /*seed=*/42);
 
   auto functor = makeFunctor();
-  functor.setVecPattern(VectorizationPattern::p1xVec);
+  functor.setVecPattern(pattern);
   functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
   functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
   functor.initTraversal();
@@ -225,13 +238,22 @@ static void BM_SoAFunctorPairSorted(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 BENCHMARK(BM_SoAFunctorPairSorted)
-    ->ArgsProduct({{32, 128, 512}, {0, 1}})
-    ->ArgNames({"N", "n3"})
+    ->ArgsProduct({kNValues, {0, 1}, {kFixedVecPattern}, {0, 25, 50, 75, 100}})
+    ->ArgNames({"N", "n3", "vecPat", "ratio%"})
     ->Repetitions(5)
-    ->Name("BM_SoA_Functor_SortedPair");
+    ->Name("BM_SoA_PairSorted_Ratio");
+BENCHMARK(BM_SoAFunctorPairSorted)
+    ->ArgsProduct({kNValues,
+                   {0, 1},
+                   {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
+                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
+                   {kFixedRatioPct}})
+    ->ArgNames({"N", "n3", "vecPat", "ratio%"})
+    ->Repetitions(5)
+    ->Name("BM_SoA_PairSorted_VecPatterns");
 
 // -----------------------------------------------------------------------------
-// SoAFunctorVerlet: full verlet sweep over an O(n^2) built neighbor list.
+// SoAFunctorVerlet: Verlet sweep over an O(n^2)-built neighbor list.
 // -----------------------------------------------------------------------------
 static void BM_SoAFunctorVerlet(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
@@ -257,9 +279,9 @@ static void BM_SoAFunctorVerlet(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 BENCHMARK(BM_SoAFunctorVerlet)
-    ->ArgsProduct({{32, 128, 512}, {0, 1}})
+    ->ArgsProduct({kNValues, {0, 1}})
     ->ArgNames({"N", "n3"})
     ->Repetitions(5)
-    ->Name("BM_SoA_Functor_Verlet");
+    ->Name("BM_SoA_Verlet");
 
 BENCHMARK_MAIN();
