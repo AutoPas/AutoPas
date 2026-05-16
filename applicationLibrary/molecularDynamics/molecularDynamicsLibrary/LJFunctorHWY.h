@@ -902,6 +902,7 @@ class LJFunctorHWY
     auto &fy2s = td.fy2s;
     auto &fz2s = td.fz2s;
     auto &maxIndex = td.maxIndex;
+    std::ptrdiff_t start_i = 0;
 
     if constexpr (sorted) {
       // Step 1: 1D projection, sort indices ascending.
@@ -954,11 +955,18 @@ class LJFunctorHWY
         typeID2s[j] = typeID2Ptr[idx];
       }
 
-      // Step 3: compute max_index[i] (exclusive upper bound on inner-loop j). Single-pass since
+      // Step 3 Compute start_i -> leftmost particle (by sorted projection) that can still interact with at least one
+      // particle in soa2
+      const double threshold = projIdx2[0].first - sortingCutoff;
+      auto it = std::upper_bound(projIdx1.begin(), projIdx1.end(), threshold,
+                                 [](double val, const auto &elem) { return val < elem.first; });
+      start_i = it - projIdx1.begin();
+
+      // Step 4: compute max_index[i] (exclusive upper bound on inner-loop j). Single-pass since
       // max_index[] is monotonically non-decreasing in i when both arrays are sorted ascending.
       maxIndex.resize(n1, 0);
       size_t jUpper = 0;
-      for (size_t i = 0; i < n1; ++i) {
+      for (size_t i = start_i; i < n1; ++i) {
         const double upperLimit = projIdx1[i].first + sortingCutoff;
         while (jUpper < n2 and projIdx2[jUpper].first <= upperLimit) {
           ++jUpper;
@@ -991,22 +999,13 @@ class LJFunctorHWY
     VectorDouble virialSumZ = highway::Zero(tag_double);
     VectorDouble uPotSum = highway::Zero(tag_double);
 
-    // Step 4: Preprune the start of the loop.
-    // We start at the leftmost particle that still interacts with any particle in soa2
-    std::ptrdiff_t i = 0;
-    if constexpr (sorted) {
-      std::ptrdiff_t tmp = n1;
-      while (tmp > 0 && projIdx1[tmp - 1].first + sortingCutoff > projIdx2[0].first) {
-        --tmp;
-      }
-      i = tmp;
-    }
     // Step 5: vectorized interaction loop.
+    std::ptrdiff_t i = start_i;
     for (; checkFirstLoopCondition<false, vecPattern>(i, n1); incrementFirstLoop<vecPattern>(i)) {
       size_t jVecEnd;
       if constexpr (sorted) {
         jVecEnd = maxIndex[i];
-        if (jVecEnd == 0 || owned1Data[i] == autopas::OwnershipState::dummy) continue;
+        if (owned1Data[i] == autopas::OwnershipState::dummy) continue;
       } else {
         jVecEnd = n2;
       }
