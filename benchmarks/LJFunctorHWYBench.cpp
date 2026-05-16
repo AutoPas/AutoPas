@@ -83,18 +83,6 @@ std::vector<std::vector<std::size_t, autopas::AlignedAllocator<std::size_t>>> bu
   return lists;
 }
 
-template <class SoA>
-void resetForces(SoA &soa) {
-  auto *fx = soa.template begin<Molecule::AttributeNames::forceX>();
-  auto *fy = soa.template begin<Molecule::AttributeNames::forceY>();
-  auto *fz = soa.template begin<Molecule::AttributeNames::forceZ>();
-  for (std::size_t i = 0; i < soa.size(); ++i) {
-    fx[i] = 0.0;
-    fy[i] = 0.0;
-    fz[i] = 0.0;
-  }
-}
-
 BenchFunctor makeFunctor() {
   BenchFunctor f(kCutoff);
   f.setParticleProperties(kEpsilon * 24.0, kSigma * kSigma);
@@ -117,7 +105,6 @@ static void BM_AoSFunctor(benchmark::State &state) {
   functor.initTraversal();
 
   for (auto _ : state) {
-    for (auto &p : cell) p.setF({0.0, 0.0, 0.0});
     for (std::size_t i = 0; i < n; ++i) {
       for (std::size_t j = newton3 ? i + 1 : 0; j < n; ++j) {
         if (i == j) continue;
@@ -141,12 +128,12 @@ static void BM_SoAFunctorSingle(benchmark::State &state) {
   fillCell(cell, kLow, kHigh, n, 42);
 
   auto functor = makeFunctor();
-  functor.SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize=*/false);
   functor.initTraversal();
 
   for (auto _ : state) {
-    resetForces(cell._particleSoABuffer);
+    functor.SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize=*/false);
     functor.SoAFunctorSingle(cell._particleSoABuffer, newton3);
+    functor.SoAExtractor(cell, cell._particleSoABuffer, 0);
     benchmark::DoNotOptimize(cell._particleSoABuffer);
   }
   functor.endTraversal(newton3);
@@ -176,14 +163,14 @@ static void BM_SoAFunctorPair(benchmark::State &state) {
 
   auto functor = makeFunctor();
   functor.setVecPattern(pattern);
-  functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
-  functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
   functor.initTraversal();
 
   for (auto _ : state) {
-    resetForces(cell1._particleSoABuffer);
-    resetForces(cell2._particleSoABuffer);
+    functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
+    functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
     functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+    functor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    functor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
     benchmark::DoNotOptimize(cell1._particleSoABuffer);
     benchmark::DoNotOptimize(cell2._particleSoABuffer);
   }
@@ -221,17 +208,17 @@ static void BM_SoAFunctorPairSorted(benchmark::State &state) {
 
   auto functor = makeFunctor();
   functor.setVecPattern(pattern);
-  functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
-  functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
   functor.initTraversal();
 
   const std::array<double, 3> sortingDirection{1.0, 0.0, 0.0};
 
   for (auto _ : state) {
-    resetForces(cell1._particleSoABuffer);
-    resetForces(cell2._particleSoABuffer);
+    functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
+    functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
     functor.SoAFunctorPairSorted(cell1._particleSoABuffer, cell2._particleSoABuffer, sortingDirection, kCutoff,
                                  newton3);
+    functor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    functor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
     benchmark::DoNotOptimize(cell1._particleSoABuffer);
     benchmark::DoNotOptimize(cell2._particleSoABuffer);
   }
@@ -266,14 +253,14 @@ static void BM_SoAFunctorVerlet(benchmark::State &state) {
   const auto lists = buildNeighborLists(cell, kCutoff + skin, newton3);
 
   auto functor = makeFunctor();
-  functor.SoALoader(cell, cell._particleSoABuffer, 0, false);
   functor.initTraversal();
 
   for (auto _ : state) {
-    resetForces(cell._particleSoABuffer);
+    functor.SoALoader(cell, cell._particleSoABuffer, 0, false);
     for (std::size_t i = 0; i < n; ++i) {
       functor.SoAFunctorVerlet(cell._particleSoABuffer, i, lists[i], newton3);
     }
+    functor.SoAExtractor(cell, cell._particleSoABuffer, 0);
     benchmark::DoNotOptimize(cell._particleSoABuffer);
   }
   functor.endTraversal(newton3);
