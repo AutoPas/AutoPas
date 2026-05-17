@@ -77,10 +77,6 @@ void SlicedLockBasedTraversal<ParticleCell, Functor>::slicedTraversal(LoopBody &
   timers.resize(numSlices);
   threadTimes.resize(numSlices);
 
-
-  // SlicedBalanced traversals
-  autopas_set_schedule(TraversalInterface::_ompConfig);
-
   AUTOPAS_OPENMP(parallel for schedule(runtime))
   for (size_t slice = 0; slice < numSlices; ++slice) {
     timers[slice].start();

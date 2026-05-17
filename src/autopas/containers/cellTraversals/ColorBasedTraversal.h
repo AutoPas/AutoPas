@@ -134,9 +134,6 @@ inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTrav
     const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  // Sets OpenMP's runtime schedule using the OpenMP configurator.
-  autopas_set_schedule(TraversalInterface::_ompConfig);
-
   AUTOPAS_OPENMP(parallel) {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
     for (unsigned long col = 0; col < numColors; ++col) {

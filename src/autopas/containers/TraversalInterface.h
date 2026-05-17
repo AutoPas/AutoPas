@@ -79,10 +79,5 @@ class TraversalInterface {
    * If this traversal makes use of newton3.
    */
   bool _useNewton3;
-
-  /**
-   * The OpenMP configurator.
-   */
-  OpenMPConfigurator _ompConfig;
 };
 }  // namespace autopas

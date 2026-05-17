@@ -1412,6 +1412,10 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     setCurrentContainer(std::move(containerPtr));
   }
 
+  // Set OMP Configuration - todo, this is maybe over complicated -> we maybe want to handle this inside AUTOPAS_OPENMP wrapper
+  const OpenMPConfigurator ompConfig(config.ompKind, config.ompChunkSize);
+  autopas_set_schedule(ompConfig);
+
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};
 }
 

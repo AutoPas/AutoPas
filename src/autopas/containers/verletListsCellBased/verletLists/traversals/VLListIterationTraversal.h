@@ -53,9 +53,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 
       _soa.resizeArrays(offsets.back());
 
-      autopas_set_schedule(TraversalInterface::_ompConfig);
-
-      AUTOPAS_OPENMP(parallel for schedule(runtime))
+      AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
         _functor->SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
       }
@@ -81,8 +79,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         // If we use parallelization,
         if (not _useNewton3) {
           size_t buckets = aosNeighborLists.bucket_count();
-          /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic))
+          AUTOPAS_OPENMP(parallel for schedule(runtime))
           for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
             auto endIter = aosNeighborLists.end(bucketId);
             for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
