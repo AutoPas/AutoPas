@@ -40,6 +40,7 @@ constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     mdLib::MultisiteMoleculeLJ::AttributeNames::typeId,
     mdLib::MultisiteMoleculeLJ::AttributeNames::ownershipState};
 #else
+// TODO: why do we not use the Particle_T definition!?
 constexpr std::array<typename ParticleType::AttributeNames, 16> Attributes = {
     ParticleType::AttributeNames::id,
     ParticleType::AttributeNames::posX,
@@ -54,9 +55,10 @@ constexpr std::array<typename ParticleType::AttributeNames, 16> Attributes = {
     ParticleType::AttributeNames::oldForceX,
     ParticleType::AttributeNames::oldForceY,
     ParticleType::AttributeNames::oldForceZ,
-    ParticleType::AttributeNames::typeId,
     ParticleType::AttributeNames::mass,
-    ParticleType::AttributeNames::ownershipState};
+    ParticleType::AttributeNames::typeId,
+    ParticleType::AttributeNames::ownershipState
+};
 #endif
 
 /**

@@ -56,8 +56,8 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
     oldForceX,
     oldForceY,
     oldForceZ,
-    typeId,
     mass,
+    typeId,
     ownershipState
   };
 
@@ -146,19 +146,19 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
       return _oldF[1];
     } else if constexpr (attribute == oldForceZ) {
       return _oldF[2];
-    } else if constexpr (attribute == typeId) {
-      return _typeId;
     } else if constexpr (attribute == mass) {
       return _mass;
+    } else if constexpr (attribute == typeId) {
+      return _typeId;
     } else if constexpr (attribute == ownershipState) {
       return _ownershipState;
     } else {
-      //autopas::utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
     }
   }
 
   template <AttributeNames attribute, std::enable_if_t<attribute != ptr, bool> = true>
-    constexpr std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    constexpr const std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
         if constexpr (attribute == id) {
             return _id;
         } else if constexpr (attribute == posX) {
@@ -195,14 +195,14 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
             return _oldF[1];
         } else if constexpr (attribute == oldForceZ) {
             return _oldF[2];
+        } else if constexpr (attribute == mass) {
+          return _mass;
         } else if constexpr (attribute == typeId) {
             return _typeId;
-        } else if constexpr (attribute == mass) {
-            return _mass;
         } else if constexpr (attribute == ownershipState) {
             return _ownershipState;
         } else {
-            // autopas::utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
+            autopas::utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
         }
     }
 
@@ -244,14 +244,14 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
             _oldF[1] = value;
         } else if constexpr (attribute == oldForceZ) {
             _oldF[2] = value;
+        } else if constexpr (attribute == mass) {
+          _mass = value;
         } else if constexpr (attribute == typeId) {
             _typeId = value;
-        } else if constexpr (attribute == mass) {
-            _mass = value;
         } else if constexpr (attribute == ownershipState) {
-           _ownershipState = value;
+           _ownershipState = static_cast<autopas::OwnershipState>(value);
         } else {
-            // autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
+            autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
         }
     }
 

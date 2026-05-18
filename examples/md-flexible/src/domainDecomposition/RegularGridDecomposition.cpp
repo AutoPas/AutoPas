@@ -21,6 +21,15 @@
 #include "src/ParticleCommunicator.h"
 #include "src/TypeDefinitions.h"
 
+// TODO: it might make sense to outsource this to a common location to avoid duplication
+#ifdef KOKKOS_ENABLE_CUDA
+  using DeviceSpace = Kokkos::CudaSpace;
+constexpr bool ForEachHostFlag = false;
+#else
+using DeviceSpace = Kokkos::HostSpace;
+constexpr bool ForEachHostFlag = true;
+#endif
+
 RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
     : _loadBalancerOption(configuration.loadBalancer.value),
       _cutoffWidth(configuration.cutoff.value),
@@ -313,7 +322,9 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
       const auto boundaryPosition = isUpper ? reflSkinMax[dimensionIndex] : reflSkinMin[dimensionIndex];
 
       // TODO: forEachInRegionKokkos() -> mainly not to unleash GPU power but more to avoid data conversions
-      for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
+
+      if (!autoPasContainer.containerAllowsKokkos()) {
+              for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
            p.isValid(); ++p) {
         // Check that particle is within 6th root of 2 * sigma
         const auto pos = p->getR();
@@ -443,6 +454,15 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
           }
 #endif
         }
+      }
+      } else {
+        /*
+        autoPasContainer.forEachInRegionKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
+
+          // TODO: implement
+
+        }, reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
+        */
       }
     };
 

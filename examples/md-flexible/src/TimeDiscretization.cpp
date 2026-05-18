@@ -25,10 +25,6 @@ namespace TimeDiscretization {
   using DeviceSpace = Kokkos::HostSpace;
   constexpr bool ForEachHostFlag = true;
 #endif
-/*
-using DeviceSpace = Kokkos::HostSpace;
-constexpr bool ForEachHostFlag = true;
-*/
 
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
@@ -86,7 +82,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   } else {
    autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
     //auto m = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
-    ParticleType::ParticleSoAFloatPrecision m = 1.; // TODO: extract particle mass
+    ParticleType::ParticleSoAFloatPrecision m = storage.template operator()<ParticleType::AttributeNames::mass, true, ForEachHostFlag>(i);
     ParticleType::ParticleSoAFloatPrecision vX = storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i);
     ParticleType::ParticleSoAFloatPrecision vY = storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i);
     ParticleType::ParticleSoAFloatPrecision vZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i);
@@ -236,7 +232,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
 
     autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
       //const auto mass = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
-      const ParticleType::ParticleSoAFloatPrecision mass = 1.;
+      const ParticleType::ParticleSoAFloatPrecision mass = storage.template operator()<ParticleType::AttributeNames::mass, true, ForEachHostFlag>(i);
       const ParticleType::ParticleSoAFloatPrecision vX = storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i);
       const ParticleType::ParticleSoAFloatPrecision vY = storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i);
       const ParticleType::ParticleSoAFloatPrecision vZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i);
