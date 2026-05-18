@@ -205,8 +205,11 @@ bool autopas::DeepReinforcementLearning::optimizeSuggestions(std::vector<Configu
         // If the sample is not in the history, add it to the config queue.
         configQueue.push_back(sample);
       }
+      _state = TuningState::continuedExploration;
     }
 
+    return false;
+  } else if (_state == TuningState::continuedExploration) {
     // Search the exploration samples
     if (not configQueue.empty()) {
       return false;
@@ -264,8 +267,16 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
       std::vector<std::pair<Configuration, double>> explorationPriority;
       double timeScale = 1.0 / _minEvidence;
 
+      // Generate the subset
+      std::set<Configuration> subset;
+
       for (const Configuration &config : _allowedConfigurations) {
         // Calculate the priority based on when the configuration was last tested.
+        if (_history.find(config) == _history.end()) {
+          subset.emplace(config);
+          continue;
+        }
+
         double lastTuningPhase = _history.at(config).lastSearched();
 
         const auto priority =
@@ -277,10 +288,7 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
       // Sort the configuration queue
       std::ranges::sort(explorationPriority, [](const auto &a, const auto &b) { return a.second > b.second; });
 
-      // Generate the subset
-      std::set<Configuration> subset;
-
-      for (size_t i = 0; i < _numExplorationSamples; i++) {
+      for (size_t i = 0; i < _numExplorationSamples and i < explorationPriority.size(); i++) {
         subset.emplace(explorationPriority[i].first);
       }
 
@@ -288,14 +296,34 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
     }
 
     case ExplorationMethod::random: {
+      std::set<Configuration> subset;
+      std::set<Configuration> searchedConfigs;
+      for (const Configuration &config : _allowedConfigurations) {
+        // Calculate the priority based on when the configuration was last tested.
+        if (_history.find(config) == _history.end()) {
+          subset.emplace(config);
+          continue;
+        }
+
+        searchedConfigs.emplace(config);
+      }
+
+      const std::set<Configuration> randomSubset = _rand.randomSubset(searchedConfigs, _numExplorationSamples);
+
       // Implementation for random exploration
-      return _rand.randomSubset(_allowedConfigurations, _numExplorationSamples);
+      return randomSubset;
     }
 
     case ExplorationMethod::longestAgo: {
       // Implementation for longest ago exploration
       std::vector<std::pair<Configuration, size_t>> sortedHistory;
+      std::set<Configuration> ret;
       for (const auto config : _allowedConfigurations) {
+        if (_history.find(config) == _history.end()) {
+          ret.emplace(config);
+          continue;
+        }
+
         sortedHistory.emplace_back(config, _history.at(config).lastSearched());
       }
 
@@ -303,8 +331,7 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExplorat
       std::ranges::shuffle(sortedHistory, _rand);
       std::ranges::sort(sortedHistory, [](const auto &a, const auto &b) { return a.second < b.second; });
 
-      std::set<Configuration> ret;
-      for (size_t i = 0; i < _numExplorationSamples; i++) {
+      for (size_t i = 0; i < _numExplorationSamples and i < sortedHistory.size(); i++) {
         ret.emplace(sortedHistory[i].first);
       }
 
@@ -352,6 +379,9 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExploita
 
   // Choose the best configurations based on the minimum evaluate(history[config])
   for (const auto config : _allowedConfigurations) {
+    if (_history.find(config) == _history.end()) {
+      continue;
+    }
     double score = evaluate(_history.at(config));
     sortedConfigs.emplace_back(config, score);
   }
@@ -359,8 +389,8 @@ std::set<autopas::Configuration> autopas::DeepReinforcementLearning::getExploita
   // Sort the configurations by their scores
   std::ranges::sort(sortedConfigs, [](const auto &a, const auto &b) { return a.second < b.second; });
 
-  // Select the top configurations (no overflow possible due to the input validation)
-  for (size_t i = 0; i < _numExploitationSamples; i++) {
+  // Select the top configurations
+  for (size_t i = 0; i < _numExploitationSamples and i < sortedConfigs.size(); i++) {
     const Configuration config = sortedConfigs[i].first;
 
     // Prevent duplicate searches

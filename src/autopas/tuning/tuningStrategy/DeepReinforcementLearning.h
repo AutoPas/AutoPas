@@ -47,6 +47,11 @@ class DeepReinforcementLearning final : public TuningStrategyInterface {
      */
     exploration,
     /**
+     * The continued exploration phase, where the algorithm continues to explore the search space, to gather more
+     * information.
+     */
+    continuedExploration,
+    /**
      * The exploitation phase, where the algorithm exploits the information gained in the exploration phase.
      */
     exploitation,
