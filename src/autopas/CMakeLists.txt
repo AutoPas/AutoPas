@@ -28,7 +28,6 @@ target_link_libraries(
     PUBLIC
         $<$<NOT:$<PLATFORM_ID:Darwin>>:rt> # required for Time.h, on macOS not needed
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
-        $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         $<$<BOOL:${AUTOPAS_AUTO4OMP}>:auto4omp::omp>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
