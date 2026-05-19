@@ -115,6 +115,11 @@ class Simulation {
   size_t _iteration = 0;
 
   /**
+   * If the current iteration is a respa iteration (calculates both slow and fast forces)
+   */
+  bool _is_respa_iteration = true;
+
+  /**
    * Counts completed iterations that were used for tuning
    */
   size_t _numTuningIterations = 0;

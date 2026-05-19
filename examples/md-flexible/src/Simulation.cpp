@@ -52,7 +52,7 @@ size_t getTerminalWidth() {
   // test all std pipes to get the current terminal width
   for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
     if (isatty(fd)) {
-      struct winsize w {};
+      struct winsize w{};
       ioctl(fd, TIOCGWINSZ, &w);
       terminalWidth = w.ws_col;
       break;
@@ -224,6 +224,8 @@ void Simulation::run() {
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
       _timers.vtk.stop();
     }
+
+    _is_respa_iteration = _iteration % 4;
 
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
@@ -457,7 +459,7 @@ void Simulation::updatePositionsAndResetForces() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
+      _configuration.globalForce.value, _configuration.fastParticlesThrow.value, _is_respa_iteration);
   _timers.positionUpdate.stop();
 }
 
@@ -831,11 +833,14 @@ void Simulation::loadParticles() {
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   const double cutoff = _configuration.cutoff.value;
+  const double fast_cutoff = 1.0;  // @TODO split this into configuration
+  const double slow_cutoff = 3.0;
+
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-      return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+      return f(LJFunctorTypeAutovec{fast_cutoff, slow_cutoff, _is_respa_iteration, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "
