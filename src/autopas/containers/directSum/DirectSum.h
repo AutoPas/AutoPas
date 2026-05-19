@@ -218,6 +218,11 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     // No Op
   }
 
+  template <class, bool, typename Lambda>
+  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3>&, const std::array<double, 3>&) {
+    // No Op
+  }
+
   template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
   void reduceKokkos(Lambda, Result&, IteratorBehavior) {
     // No Op

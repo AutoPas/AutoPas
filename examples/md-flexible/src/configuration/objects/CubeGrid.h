@@ -27,7 +27,7 @@ class CubeGrid : public Object {
    */
   CubeGrid(const std::array<double, 3> &velocity, unsigned long typeId, const std::array<size_t, 3> &particlesPerDim,
            double particleSpacing, const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity, typeId),
+      : Object(velocity, typeId, 1. /* TODO: mass */),
         _particlesPerDim(particlesPerDim),
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner) {}

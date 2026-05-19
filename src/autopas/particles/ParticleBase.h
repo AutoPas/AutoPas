@@ -99,6 +99,9 @@ class ParticleBase {
    */
   idType _id;
 
+  /*
+   * Particle mass.
+  */
   floatType _mass;
 
   /**
@@ -297,6 +300,10 @@ class ParticleBase {
     _v.at(1) = static_cast<floatType>(v.at(1));
     _v.at(2) = static_cast<floatType>(v.at(2));
     */
+  }
+
+  void setMass(floatType mass) {
+    _mass = mass;
   }
 
   /**

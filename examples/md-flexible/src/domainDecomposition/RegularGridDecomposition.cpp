@@ -312,6 +312,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
                                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
   using autopas::utils::Math::isNearRel;
+  // TODO: replace both arrays with Kokkos version
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
@@ -456,13 +457,68 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         }
       }
       } else {
-        /*
+
         autoPasContainer.forEachInRegionKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
 
-          // TODO: implement
+          ParticleType::ParticleSoAFloatPrecision position = 42.;
+
+          if (dimensionIndex == 0) {
+            position = storage.template operator()<ParticleType::AttributeNames::posX, true, ForEachHostFlag>(i);
+          } else if (dimensionIndex == 1) {
+            position = storage.template operator()<ParticleType::AttributeNames::posY, true, ForEachHostFlag>(i);
+          } else if (dimensionIndex == 2) {
+            position = storage.template operator()<ParticleType::AttributeNames::posZ, true, ForEachHostFlag>(i);
+          } else {
+            position = 42.; // TODO; throw expection in this case as this should never happen
+          }
+
+          const auto distanceToBoundary = position - boundaryPosition;
+
+          const auto LJKernel = [] (ParticleType::ParticleSoAFloatPrecision sitePosition, ParticleType::ParticleSoAFloatPrecision mirrorPosition,
+            ParticleType::ParticleSoAFloatPrecision sigmaSquared, ParticleType::ParticleSoAFloatPrecision epsilon24) {
+
+            const auto displacement = sitePosition - mirrorPosition;
+            const auto distanceSquared = displacement * displacement;
+
+            const auto inverseDistanceSquared = 1./distanceSquared;
+
+            const auto lj2 = sigmaSquared * inverseDistanceSquared;
+            const auto lj6 = lj2 * lj2 * lj2;
+            const auto lj12 = lj6 * lj6;
+            const auto lj12m6 = lj12 - lj6;
+
+            const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * inverseDistanceSquared;
+
+            return displacement * scalarMultiple;
+          };
+
+          // TODO: extract sigma
+          const ParticleType::ParticleSoAFloatPrecision sigma = 1.;
+
+          const bool reflectMoleculeFlag = distanceToBoundary < sixthRootOfTwo * 0.5 * sigma;
+
+          if (reflectMoleculeFlag) {
+            const auto displacementToBoundary = boundaryPosition - position;
+            const auto mirrorPosition = position + 2 * displacementToBoundary;
+
+            const auto sigmaSquared = 1.; // TODO: obtain somehow from somewhere
+            const auto epsilon24 = 24.; // TODO: obtain somehow from somewhere
+
+            const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
+
+            if (dimensionIndex == 0) {
+              storage.template operator()<ParticleType::AttributeNames::forceX, true, ForEachHostFlag>(i) += force;
+            } else if (dimensionIndex == 1) {
+              storage.template operator()<ParticleType::AttributeNames::forceY, true, ForEachHostFlag>(i) += force;
+            } else if (dimensionIndex == 2) {
+              storage.template operator()<ParticleType::AttributeNames::forceZ, true, ForEachHostFlag>(i) += force;
+            } else {
+              // TODO: throw exception in this case as this should never happen
+            }
+          }
 
         }, reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
-        */
+
       }
     };
 

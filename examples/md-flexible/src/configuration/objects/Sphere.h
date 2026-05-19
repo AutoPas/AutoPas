@@ -23,7 +23,7 @@ class Sphere : public Object {
    */
   Sphere(const std::array<double, 3> &velocity, unsigned long typeId, const std::array<double, 3> &center, int radius,
          double particleSpacing)
-      : Object(velocity, typeId), _center(center), _radius(radius), _particleSpacing(particleSpacing) {}
+      : Object(velocity, typeId, 1. /* TODO: mass */), _center(center), _radius(radius), _particleSpacing(particleSpacing) {}
 
   /**
    * Getter for center of Sphere

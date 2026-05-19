@@ -702,6 +702,8 @@ class MDFlexConfig {
    * site-type-id in a single-site simulation and molecule-type-id in a multi-site simulation.
    */
   static inline const char *const particleTypeStr{"particle-type-id"};
+
+  static inline const char *const particleMassStr{"particle-mass"};
   /**
    * bottomLeftBackCornerStr
    */

@@ -777,6 +777,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.cubeUniformObjects.empty() and config.sphereObjects.empty() and config.cubeClosestPackedObjects.empty()) {
     // common settings for any object type:
     unsigned int typeID = 0;
+    double mass = 1.;
     std::array<double, 3> bottomLeftCorner = {0, 0, 0};
     std::array<double, 3> velocity = {0, 0, 0};
 
@@ -812,7 +813,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case MDFlexConfig::GeneratorOption::closestPacked: {
-        CubeClosestPacked cubeClosestPacked(velocity, typeID, config.particleSpacing.value,
+        CubeClosestPacked cubeClosestPacked(velocity, typeID, mass, config.particleSpacing.value,
                                             {config.boxLength.value, config.boxLength.value, config.boxLength.value},
                                             bottomLeftCorner);
         config.cubeClosestPackedObjects.push_back(cubeClosestPacked);

@@ -102,13 +102,16 @@ const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const M
   const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
   const auto particleType =
       parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  // TODO: the following changes also need to be ported to the other generators
+  // TODO: it might also make sense to think about how to handle that in a better way
+  const auto particleMass = parseComplexTypeValueSingle<double>(node, MDFlexConfig::particleMassStr, objectErrors);
   const auto particleSpacing =
       parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
   const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
-  const CubeClosestPacked cubeClosestPacked(velocity, particleType, particleSpacing, boxLength, bottomLeftCorner);
+  const CubeClosestPacked cubeClosestPacked(velocity, particleType, particleMass, particleSpacing, boxLength, bottomLeftCorner);
 
   return cubeClosestPacked;
 }

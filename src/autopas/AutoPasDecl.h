@@ -435,7 +435,7 @@ class AutoPas {
  */
   template <class ExecSpace, typename Lambda>
   void forEachInRegionKokkos(Lambda forEachLambda, const std::array<double, 3>& lowerCorner, const std::array<double, 3>& higherCorner, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(getContainer(), [&](auto &container) { container.template forEachInRegionKokkos<ExecSpace>(forEachLambda, behavior, lowerCorner, higherCorner, higherCorner); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.template forEachInRegionKokkos<ExecSpace, true>(forEachLambda, behavior, lowerCorner, higherCorner); });
   }
 
   /**
