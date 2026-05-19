@@ -61,10 +61,12 @@ class LJFunctor
    * @param cutoff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctor(double cutoff, void * /*dummy*/)
+  explicit LJFunctor(double cutoff, double slow_cutoff, bool is_respa_iteration, void * /*dummy*/)
       : autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
                                                        countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
+        _slow_cutoffSquared{slow_cutoff * slow_cutoff},
+        _is_respa_iteration{is_respa_iteration},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _postProcessed{false} {
@@ -85,7 +87,8 @@ class LJFunctor
    *
    * @param cutoff
    */
-  explicit LJFunctor(double cutoff) : LJFunctor(cutoff, nullptr) {
+  explicit LJFunctor(double cutoff, double slow_cutoff, bool is_respa_iteration)
+      : LJFunctor(cutoff, slow_cutoff, is_respa_iteration, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -97,8 +100,9 @@ class LJFunctor
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJFunctor(cutoff, nullptr) {
+  explicit LJFunctor(double cutoff, double slow_cutoff, bool is_respa_iteration,
+                     ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : LJFunctor(cutoff, slow_cutoff, is_respa_iteration, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -143,7 +147,11 @@ class LJFunctor
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
-    if (dr2 > _cutoffSquared) {
+    if (dr2 > _slow_cutoffSquared) {
+      return;
+    }
+
+    if (!_is_respa_iteration && dr2 > _cutoffSquared) {
       return;
     }
 
@@ -154,10 +162,18 @@ class LJFunctor
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = dr * fac;
-    i.addF(f);
-    if (newton3) {
-      // only if we use newton 3 here, we want to
-      j.subF(f);
+
+    if (_is_respa_iteration && dr2 >= _cutoffSquared) {
+      i.addF_slow(f);
+      if (newton3) {
+        j.subF_slow(f);
+      }
+    } else {
+      i.addF_fast(f);
+      if (newton3) {
+        // only if we use newton 3 here, we want to
+        j.subF_fast(f);
+      }
     }
 
     if constexpr (countFLOPs) {
@@ -267,7 +283,9 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsSum)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
+                               numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
+                               numGlobalCalcsSum)
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
         SoAFloatPrecision shift6 = const_shift6;
         SoAFloatPrecision sigmaSquared = const_sigmaSquared;
@@ -457,7 +475,9 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
+                               numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
+                               numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
@@ -908,7 +928,9 @@ class LJFunctor
           ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
         // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
+                               numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
+                               numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
           if constexpr (useMixing) {
             sigmaSquared = sigmaSquareds[j];
@@ -1196,6 +1218,9 @@ class LJFunctor
   static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
   const double _cutoffSquared;
+  const double _slow_cutoffSquared;
+  const bool _is_respa_iteration;
+
   // not const because they might be reset through PPL
   double _epsilon24, _sigmaSquared, _shift6 = 0;
 
