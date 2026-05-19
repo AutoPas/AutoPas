@@ -34,7 +34,7 @@ namespace TimeDiscretization {
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                       const double &deltaT, const std::array<double, 3> &globalForce,
-                                      bool fastParticlesThrow);
+                                      bool fastParticlesThrow, const bool reset_slow_forces);
 
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
