@@ -28,8 +28,9 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
    * @param moleculeId Unique Id of the molecule.
    * @param typeId TypeId of the molecule.
    */
-  KokkosMoleculeLJ(const std::array<ParticleSoAFloatPrecision, 3> &pos, const std::array<ParticleSoAFloatPrecision, 3> &v, unsigned long moleculeId,
-             unsigned long typeId = 0);
+  KokkosMoleculeLJ(const std::array<ParticleSoAFloatPrecision, 3> &pos,
+                   const std::array<ParticleSoAFloatPrecision, 3> &v, unsigned long moleculeId,
+                   unsigned long typeId = 0);
 
   ~KokkosMoleculeLJ() override = default;
 
@@ -68,22 +69,31 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
    * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
-  using SoAArraysType =
-      autopas::utils::SoAType<KokkosMoleculeLJ *, size_t /*id*/, ParticleSoAFloatPrecision /*x*/, ParticleSoAFloatPrecision /*y*/, ParticleSoAFloatPrecision /*z*/,
+  using SoAArraysType = autopas::utils::SoAType<
+      KokkosMoleculeLJ *, size_t /*id*/, ParticleSoAFloatPrecision /*x*/, ParticleSoAFloatPrecision /*y*/,
+      ParticleSoAFloatPrecision /*z*/,
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-                                       ParticleSoAFloatPrecision /*rebuildX*/, ParticleSoAFloatPrecision /*rebuildY*/, ParticleSoAFloatPrecision /*rebuildZ*/,
+      ParticleSoAFloatPrecision /*rebuildX*/, ParticleSoAFloatPrecision /*rebuildY*/,
+      ParticleSoAFloatPrecision /*rebuildZ*/,
 #endif
-                                       ParticleSoAFloatPrecision /*vx*/, ParticleSoAFloatPrecision /*vy*/, ParticleSoAFloatPrecision /*vz*/, ParticleSoAFloatPrecision /*fx*/, ParticleSoAFloatPrecision /*fy*/,
-                                       ParticleSoAFloatPrecision /*fz*/, ParticleSoAFloatPrecision /*oldFx*/, ParticleSoAFloatPrecision /*oldFy*/, ParticleSoAFloatPrecision /*oldFz*/,
-                                       ParticleSoAFloatPrecision /*mass*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+      ParticleSoAFloatPrecision /*vx*/, ParticleSoAFloatPrecision /*vy*/, ParticleSoAFloatPrecision /*vz*/,
+      ParticleSoAFloatPrecision /*fx*/, ParticleSoAFloatPrecision /*fy*/, ParticleSoAFloatPrecision /*fz*/,
+      ParticleSoAFloatPrecision /*oldFx*/, ParticleSoAFloatPrecision /*oldFy*/, ParticleSoAFloatPrecision /*oldFz*/,
+      ParticleSoAFloatPrecision /*mass*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
-  using KokkosSoAArraysType = autopas::utils::KokkosSoA<size_t* /*id*/, ParticleSoAFloatPrecision* /*x*/, ParticleSoAFloatPrecision* /*y*/, ParticleSoAFloatPrecision* /*z*/,
+  using KokkosSoAArraysType =
+      autopas::utils::KokkosSoA<size_t * /*id*/, ParticleSoAFloatPrecision * /*x*/, ParticleSoAFloatPrecision * /*y*/,
+                                ParticleSoAFloatPrecision * /*z*/,
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-                                       ParticleSoAFloatPrecision* /*rebuildX*/, ParticleSoAFloatPrecision* /*rebuildY*/, ParticleSoAFloatPrecision* /*rebuildZ*/,
+                                ParticleSoAFloatPrecision * /*rebuildX*/, ParticleSoAFloatPrecision * /*rebuildY*/,
+                                ParticleSoAFloatPrecision * /*rebuildZ*/,
 #endif
-                                       ParticleSoAFloatPrecision* /*vx*/, ParticleSoAFloatPrecision* /*vy*/, ParticleSoAFloatPrecision* /*vz*/, ParticleSoAFloatPrecision* /*fx*/, ParticleSoAFloatPrecision* /*fy*/,
-                                       ParticleSoAFloatPrecision* /*fz*/, ParticleSoAFloatPrecision* /*oldFx*/, ParticleSoAFloatPrecision* /*oldFy*/, ParticleSoAFloatPrecision* /*oldFz*/,
-                                       ParticleSoAFloatPrecision* /*mass*/, size_t* /*typeid*/, autopas::OwnershipState* /*ownershipState*/>;
+                                ParticleSoAFloatPrecision * /*vx*/, ParticleSoAFloatPrecision * /*vy*/,
+                                ParticleSoAFloatPrecision * /*vz*/, ParticleSoAFloatPrecision * /*fx*/,
+                                ParticleSoAFloatPrecision * /*fy*/, ParticleSoAFloatPrecision * /*fz*/,
+                                ParticleSoAFloatPrecision * /*oldFx*/, ParticleSoAFloatPrecision * /*oldFy*/,
+                                ParticleSoAFloatPrecision * /*oldFz*/, ParticleSoAFloatPrecision * /*mass*/,
+                                size_t * /*typeid*/, autopas::OwnershipState * /*ownershipState*/>;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -92,7 +102,7 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
    */
 
   template <AttributeNames attribute>
-  constexpr auto& operator() () {
+  constexpr auto &operator()() {
     auto value = get<attribute>();
     return value;
   }
@@ -109,7 +119,7 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
    * @note Moving this function to the .cpp leads to undefined references
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != ptr, bool> = true>
-      constexpr std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+  constexpr std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
     if constexpr (attribute == id) {
       return _id;
     } else if constexpr (attribute == posX) {
@@ -158,102 +168,102 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
   }
 
   template <AttributeNames attribute, std::enable_if_t<attribute != ptr, bool> = true>
-    constexpr const std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
-        if constexpr (attribute == id) {
-            return _id;
-        } else if constexpr (attribute == posX) {
-            return _r[0];
-        } else if constexpr (attribute == posY) {
-            return _r[1];
-        } else if constexpr (attribute == posZ) {
-            return _r[2];
-        }
-    #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-        else if constexpr (attribute == rebuildX) {
-            return _rAtRebuild[0];
-        } else if constexpr (attribute == rebuildY) {
-            return _rAtRebuild[1];
-        } else if constexpr (attribute == rebuildZ) {
-            return _rAtRebuild[2];
-        }
-#endif
-        else if constexpr (attribute == velocityX) {
-            return _v[0];
-        } else if constexpr (attribute == velocityY) {
-            return _v[1];
-        } else if constexpr (attribute == velocityZ) {
-            return _v[2];
-        } else if constexpr (attribute == forceX) {
-            return _f[0];
-        } else if constexpr (attribute == forceY) {
-          return _f[1];
-        } else if constexpr (attribute == forceZ) {
-            return _f[2];
-        } else if constexpr (attribute == oldForceX) {
-            return _oldF[0];
-        } else if constexpr (attribute == oldForceY) {
-            return _oldF[1];
-        } else if constexpr (attribute == oldForceZ) {
-            return _oldF[2];
-        } else if constexpr (attribute == mass) {
-          return _mass;
-        } else if constexpr (attribute == typeId) {
-            return _typeId;
-        } else if constexpr (attribute == ownershipState) {
-            return _ownershipState;
-        } else {
-            autopas::utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
-        }
+  constexpr const std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    if constexpr (attribute == id) {
+      return _id;
+    } else if constexpr (attribute == posX) {
+      return _r[0];
+    } else if constexpr (attribute == posY) {
+      return _r[1];
+    } else if constexpr (attribute == posZ) {
+      return _r[2];
     }
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    else if constexpr (attribute == rebuildX) {
+      return _rAtRebuild[0];
+    } else if constexpr (attribute == rebuildY) {
+      return _rAtRebuild[1];
+    } else if constexpr (attribute == rebuildZ) {
+      return _rAtRebuild[2];
+    }
+#endif
+    else if constexpr (attribute == velocityX) {
+      return _v[0];
+    } else if constexpr (attribute == velocityY) {
+      return _v[1];
+    } else if constexpr (attribute == velocityZ) {
+      return _v[2];
+    } else if constexpr (attribute == forceX) {
+      return _f[0];
+    } else if constexpr (attribute == forceY) {
+      return _f[1];
+    } else if constexpr (attribute == forceZ) {
+      return _f[2];
+    } else if constexpr (attribute == oldForceX) {
+      return _oldF[0];
+    } else if constexpr (attribute == oldForceY) {
+      return _oldF[1];
+    } else if constexpr (attribute == oldForceZ) {
+      return _oldF[2];
+    } else if constexpr (attribute == mass) {
+      return _mass;
+    } else if constexpr (attribute == typeId) {
+      return _typeId;
+    } else if constexpr (attribute == ownershipState) {
+      return _ownershipState;
+    } else {
+      autopas::utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
+    }
+  }
 
-    template <AttributeNames attribute>
-    constexpr void set(std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
-        if constexpr (attribute == id) {
-            _id = value;
-        } else if constexpr (attribute == posX) {
-            _r[0] = value;
-        } else if constexpr (attribute == posY) {
-            _r[1] = value;
-        } else if constexpr (attribute == posZ) {
-            _r[2] = value;
-        }
-    #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-        else if constexpr (attribute == rebuildX) {
-            _rAtRebuild[0] = value;
-        } else if constexpr (attribute == rebuildY) {
-            _rAtRebuild[1] = value;
-        } else if constexpr (attribute == rebuildZ) {
-            _rAtRebuild[2] = value;
-        }
-#endif
-        else if constexpr (attribute == velocityX) {
-            _v[0] = value;
-        } else if constexpr (attribute == velocityY) {
-            _v[1] = value;
-        } else if constexpr (attribute == velocityZ) {
-            _v[2] = value;
-        } else if constexpr (attribute == forceX) {
-            _f[0] = value;
-        } else if constexpr (attribute == forceY) {
-            _f[1] = value;
-        } else if constexpr (attribute == forceZ) {
-            _f[2] = value;
-        } else if constexpr (attribute == oldForceX) {
-            _oldF[0] = value;
-        } else if constexpr (attribute == oldForceY) {
-            _oldF[1] = value;
-        } else if constexpr (attribute == oldForceZ) {
-            _oldF[2] = value;
-        } else if constexpr (attribute == mass) {
-          _mass = value;
-        } else if constexpr (attribute == typeId) {
-            _typeId = value;
-        } else if constexpr (attribute == ownershipState) {
-           _ownershipState = static_cast<autopas::OwnershipState>(value);
-        } else {
-            autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
-        }
+  template <AttributeNames attribute>
+  constexpr void set(std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+    if constexpr (attribute == id) {
+      _id = value;
+    } else if constexpr (attribute == posX) {
+      _r[0] = value;
+    } else if constexpr (attribute == posY) {
+      _r[1] = value;
+    } else if constexpr (attribute == posZ) {
+      _r[2] = value;
     }
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    else if constexpr (attribute == rebuildX) {
+      _rAtRebuild[0] = value;
+    } else if constexpr (attribute == rebuildY) {
+      _rAtRebuild[1] = value;
+    } else if constexpr (attribute == rebuildZ) {
+      _rAtRebuild[2] = value;
+    }
+#endif
+    else if constexpr (attribute == velocityX) {
+      _v[0] = value;
+    } else if constexpr (attribute == velocityY) {
+      _v[1] = value;
+    } else if constexpr (attribute == velocityZ) {
+      _v[2] = value;
+    } else if constexpr (attribute == forceX) {
+      _f[0] = value;
+    } else if constexpr (attribute == forceY) {
+      _f[1] = value;
+    } else if constexpr (attribute == forceZ) {
+      _f[2] = value;
+    } else if constexpr (attribute == oldForceX) {
+      _oldF[0] = value;
+    } else if constexpr (attribute == oldForceY) {
+      _oldF[1] = value;
+    } else if constexpr (attribute == oldForceZ) {
+      _oldF[2] = value;
+    } else if constexpr (attribute == mass) {
+      _mass = value;
+    } else if constexpr (attribute == typeId) {
+      _typeId = value;
+    } else if constexpr (attribute == ownershipState) {
+      _ownershipState = static_cast<autopas::OwnershipState>(value);
+    } else {
+      autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
+    }
+  }
 
   /**
    * Get the old force.
