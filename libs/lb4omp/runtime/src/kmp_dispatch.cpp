@@ -6909,6 +6909,11 @@ See @ref __kmpc_dispatch_fini_4
 void __kmpc_dispatch_fini_8u(ident_t *loc, kmp_int32 gtid) {
     __kmp_dispatch_finish<kmp_uint64>(gtid, loc);
 }
+
+// Stub added for compatibility with Clang 14+ which emits a call to this
+// after every schedule(runtime) loop. LB4OMP is based on older LLVM where
+// this no-op deinit hook did not exist yet.
+void __kmpc_dispatch_deinit(ident_t * /*loc*/, kmp_int32 /*gtid*/) {}
 /*! @} */
 
 //-----------------------------------------------------------------------------
