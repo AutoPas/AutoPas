@@ -257,11 +257,32 @@ class Functor {
     if (cell.isEmpty()) return;
 
     /**
-     * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
+     * Store the start address of all computed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
      * in the following loop.
      */
     // maybe_unused necessary because gcc doesn't understand that pointer is used later
     [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getComputedAttr()[I]>()...);
+
+    // If the functor loads ptr in getNeededAttr() AND the ptr column is populated (non-null), the SoA
+    // columns may have been permuted in-place by SoAFunctorPairSorted. Use ptr to write each computed
+    // value to the correct particle regardless of positional order.
+    // Falls back to positional extraction when ptr was not loaded (e.g. SoA loaded by a different functor).
+    constexpr bool hasPtrAttr = []() constexpr {
+      for (auto attr : Functor_T::getNeededAttr()) {
+        if (attr == Particle_T::AttributeNames::ptr) return true;
+      }
+      return false;
+    }();
+
+    if constexpr (hasPtrAttr) {
+      auto *const ptrCol = soa.template begin<Particle_T::AttributeNames::ptr>();
+      if (ptrCol[offset] != nullptr) {
+        for (size_t i = offset; i < offset + cell.size(); ++i) {
+          (ptrCol[i]->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
+        }
+        return;
+      }
+    }
 
     auto cellIter = cell.begin();
     // write values in SoAs back to particles

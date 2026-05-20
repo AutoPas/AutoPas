@@ -367,10 +367,15 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsSorted(bool newton3, b
   ljFunctorHWY.SoAFunctorPairSorted(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, sortingDirection,
                                     _cutoff, newton3);
 
-  EXPECT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
-      << "Cells 1 not equal after applying functor.";
-  EXPECT_TRUE(checkSoAParticlesAreEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
-      << "Cells 2 not equal after applying functor.";
+  // In-place sorting permutes the SoA buffer, so a positional SoA comparison is meaningless here.
+  // Extract forces back to cell particles and compare at the AoS level instead.
+  ljFunctor.SoAExtractor(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0);
+  ljFunctor.SoAExtractor(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0);
+  ljFunctorHWY.SoAExtractor(cell1HWY, cell1HWY._particleSoABuffer, 0);
+  ljFunctorHWY.SoAExtractor(cell2HWY, cell2HWY._particleSoABuffer, 0);
+
+  EXPECT_TRUE(checkAoSParticlesAreEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after applying functor.";
+  EXPECT_TRUE(checkAoSParticlesAreEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after applying functor.";
 
   ljFunctorHWY.endTraversal(newton3);
   ljFunctor.endTraversal(newton3);
