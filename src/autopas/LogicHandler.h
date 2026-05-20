@@ -1148,6 +1148,8 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 
   functor.endTraversal(newton3);
 
+  // ToDo: We need to reset the OMP config
+
   const auto [energyWatts, energyJoules, energyDeltaT, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
 
@@ -1409,6 +1411,10 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     _currentContainerSelectorInfo = containerInfo;
     setCurrentContainer(std::move(containerPtr));
   }
+
+  // Set OMP Configuration - todo, this is maybe over complicated -> we maybe want to handle this inside AUTOPAS_OPENMP wrapper
+  const OpenMPConfigurator ompConfig(config.ompKind, config.ompChunkSize);
+  autopas_set_schedule(ompConfig);
 
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};
 }

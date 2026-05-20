@@ -33,6 +33,7 @@ using ::testing::_;
 
 TEST_F(AutoTunerTest, testAllConfigurations) {
   const autopas::NumberSetFinite<double> cellSizeFactors({1});
+  const autopas::NumberSetFinite<size_t> ompChunkSizes({1, 2, 250});
   const double verletSkin = 0;
   const unsigned int verletRebuildFrequency = 20;
   const unsigned int verletClusterSize = 64;
@@ -64,7 +65,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::InteractionTypeOption::pairwise);
+      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::OpenMPKindOption::getAllOptions(),
+      &ompChunkSizes, autopas::InteractionTypeOption::pairwise);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
   tunerMap.emplace(
@@ -77,6 +79,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   auto prevConfig = autopas::Configuration();
 
   std::map<autopas::ContainerOption, size_t> configsPerContainer;
+
+  // ToDo OpenMP tuning branch before merge. Come back here and fix.
 
   // number of configs manually counted:
   //

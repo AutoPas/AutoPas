@@ -7,154 +7,11 @@
 #include "AutoPasConfigurationCommunicator.h"
 
 #include "ThreeDimensionalMapping.h"
-#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
 #include "autopas/utils/logging/Logger.h"
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
 
-size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, const NumberSet<double> &cellSizeFactors,
-                          const std::set<TraversalOption> &traversalOptions,
-                          const std::set<LoadEstimatorOption> &loadEstimatorOptions,
-                          const std::set<DataLayoutOption> &dataLayoutOptions,
-                          const std::set<Newton3Option> &newton3Options,
-                          const InteractionTypeOption &interactionTypeOption) {
-  // only take into account finite sets of cellSizeFactors.
-  const size_t cellSizeFactorArraySize = cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1;
-
-  size_t numConfigs{0};
-  for (const auto &containerOption : containerOptions) {
-    // get all traversals of the container and restrict them to the allowed ones.
-    const std::set<TraversalOption> &allContainerTraversals =
-        compatibleTraversals::allCompatibleTraversals(containerOption, interactionTypeOption);
-    std::set<TraversalOption> allowedAndApplicableTraversalOptions;
-    std::set_intersection(
-        traversalOptions.begin(), traversalOptions.end(), allContainerTraversals.begin(), allContainerTraversals.end(),
-        std::inserter(allowedAndApplicableTraversalOptions, allowedAndApplicableTraversalOptions.begin()));
-
-    for (const auto &traversalOption : allowedAndApplicableTraversalOptions) {
-      // if load estimators are not applicable LoadEstimatorOption::none is returned.
-      const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
-          loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, loadEstimatorOptions);
-      numConfigs += cellSizeFactorArraySize * allowedAndApplicableLoadEstimators.size() * dataLayoutOptions.size() *
-                    newton3Options.size();
-    }
-  }
-  return numConfigs;
-}
-
-/**
- * Calculates which Options the current rank should handle based on the total number of options and ranks.
- * @param numConfigs in
- * @param commSize in
- * @param rank in
- * @param containerOptions inout
- * @param cellSizeFactors inout
- * @param traversalOptions inout
- * @param loadEstimatorOptions inout
- * @param dataLayoutOptions inout
- * @param newton3Options inout
- * @param interactionType Handle configurations for this interaction type
- */
-void generateDistribution(const int numConfigs, const int commSize, const int rank,
-                          std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
-                          std::set<TraversalOption> &traversalOptions,
-                          std::set<LoadEstimatorOption> &loadEstimatorOptions,
-                          std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                          const InteractionTypeOption interactionType) {
-  // ============== setup ======================================================
-
-  // These will be set to the Options specific to this rank and will overwrite the input sets.
-  auto newContainerOptions = std::set<ContainerOption>();
-  auto newCellSizeFactors = std::set<double>();
-  auto newTraversalOptions = std::set<TraversalOption>();
-  auto newLoadEstimatorOptions = std::set<LoadEstimatorOption>();
-  auto newDataLayoutOptions = std::set<DataLayoutOption>();
-  auto newNewton3Options = std::set<Newton3Option>();
-
-  // Distribution works only with finite sets of cellSizeFactors.
-  // If the set is infinite a dummy value will be used and replaced later on.
-  std::set<double> finiteCellSizeFactors;
-  if (cellSizeFactors.isFinite()) {
-    finiteCellSizeFactors = cellSizeFactors.getAll();
-  } else {
-    // Dummy value which makes the code simpler in case the cellSizeFactors are not a finite set.
-    finiteCellSizeFactors = std::set<double>{-1};
-  }
-
-  // ============== main computation ===========================================
-
-  ConfigurationAndRankIteratorHandler iteratorHandler(containerOptions, finiteCellSizeFactors, traversalOptions,
-                                                      loadEstimatorOptions, dataLayoutOptions, newton3Options,
-                                                      interactionType, numConfigs, commSize);
-
-  while (iteratorHandler.getRankIterator() < rank) {
-    iteratorHandler.advanceIterators(numConfigs, commSize);
-  }
-
-  // Only important for infinite cellSizeFactors if commSize > numConfigs.
-  const int infiniteCellSizeFactorsOffset = iteratorHandler.getInfiniteCellSizeFactorsOffset();
-  const int infiniteCellSizeFactorsBlockSize = iteratorHandler.getInfiniteCellSizeFactorsBlockSize();
-
-  while (iteratorHandler.getRankIterator() == rank) {
-    // std::set handles duplicate elements.
-    newContainerOptions.emplace(*iteratorHandler.getContainerIterator());
-    newCellSizeFactors.emplace(*iteratorHandler.getCellSizeFactorIterator());
-    newTraversalOptions.emplace(*iteratorHandler.getTraversalIterator());
-    newLoadEstimatorOptions.emplace(*iteratorHandler.getLoadEstimatorIterator());
-    newDataLayoutOptions.emplace(*iteratorHandler.getDataLayoutIterator());
-    newNewton3Options.emplace(*iteratorHandler.getNewton3Iterator());
-
-    iteratorHandler.advanceIterators(numConfigs, commSize);
-  }
-
-  // ============== assigning to local search space ============================
-
-  containerOptions = newContainerOptions;
-  if (not cellSizeFactors.isFinite()) {
-    const double min = cellSizeFactors.getMin();
-    const double max = cellSizeFactors.getMax();
-    const double delta = (max - min) / infiniteCellSizeFactorsBlockSize;
-    std::set<double> values{min + delta * infiniteCellSizeFactorsOffset,
-                            min + delta * (infiniteCellSizeFactorsOffset + 1)};
-    cellSizeFactors.resetValues(values);
-  } else {
-    cellSizeFactors.resetValues(newCellSizeFactors);
-  }
-  traversalOptions = newTraversalOptions;
-  loadEstimatorOptions = newLoadEstimatorOptions;
-  dataLayoutOptions = newDataLayoutOptions;
-  newton3Options = newNewton3Options;
-}
-
-void distributeConfigurations(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
-                              std::set<TraversalOption> &traversalOptions,
-                              std::set<LoadEstimatorOption> &loadEstimatorOptions,
-                              std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              InteractionTypeOption interactionType, const int rank, const int commSize) {
-  const auto numConfigs =
-      static_cast<int>(getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                          dataLayoutOptions, newton3Options, interactionType));
-
-  if (numConfigs == 0) {
-    utils::ExceptionHandler::exception("Could not generate valid configurations, aborting");
-    return;
-  }
-
-  // Creates a set for each option and each rank containing the serialized versions (std::byte or double) of all
-  // options assigned to that rank.
-  generateDistribution(numConfigs, commSize, rank, containerOptions, cellSizeFactors, traversalOptions,
-                       loadEstimatorOptions, dataLayoutOptions, newton3Options, interactionType);
-
-  AutoPasLog(DEBUG,
-             "After distributing: {} containers, {} cellSizeFactors, {} traversals, {} dataLayouts, {} newton3s"
-             " => {} total configs",
-             containerOptions.size(), /*cellSizeFactorsSize*/ (cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1),
-             traversalOptions.size(), dataLayoutOptions.size(), newton3Options.size(),
-             getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                dataLayoutOptions, newton3Options, interactionType));
-}
 
 Configuration findGloballyBestConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig,
                                             long localOptimalTime) {
@@ -188,9 +45,13 @@ SerializedConfiguration serializeConfiguration(Configuration configuration) {
   config[2] = castToByte(configuration.loadEstimator);
   config[3] = castToByte(configuration.dataLayout);
   config[4] = castToByte(configuration.newton3);
-  config[5] = castToByte(configuration.interactionType);
+  config[5] = castToByte(configuration.ompKind);
+  config[6] = castToByte(configuration.interactionType);
   // Doubles can't be easily truncated, so store all 8 bytes via memcpy
-  std::memcpy(&config[6], &configuration.cellSizeFactor, sizeof(double));
+  std::memcpy(&config[7], &configuration.cellSizeFactor, sizeof(double));
+  // Convert size_t chunk size into smaller unsigned short int
+  const auto unsignedShortChunkSize = static_cast<unsigned short int>(configuration.ompChunkSize);
+  std::memcpy(&config[15], &unsignedShortChunkSize, sizeof(unsigned short int));
   return config;
 }
 
@@ -209,12 +70,15 @@ std::vector<std::byte> serializeConfigurations(const std::vector<Configuration> 
 
 Configuration deserializeConfiguration(SerializedConfiguration config) {
   double cellSizeFactor{0.};
-  std::memcpy(&cellSizeFactor, &config[6], sizeof(double));
+  std::memcpy(&cellSizeFactor, &config[7], sizeof(double));
+  unsigned short int unsignedShortChunkSize{};
+  std::memcpy(&unsignedShortChunkSize, &config[15], sizeof(unsigned short int));
   return {
       static_cast<ContainerOption::Value>(config[0]),       cellSizeFactor,
       static_cast<TraversalOption::Value>(config[1]),       static_cast<LoadEstimatorOption::Value>(config[2]),
       static_cast<DataLayoutOption::Value>(config[3]),      static_cast<Newton3Option::Value>(config[4]),
-      static_cast<InteractionTypeOption::Value>(config[5]),
+      static_cast<OpenMPKindOption::Value>(config[5]),      static_cast<size_t>(unsignedShortChunkSize),
+      static_cast<InteractionTypeOption::Value>(config[6]),
   };
 }
 
@@ -227,7 +91,7 @@ std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte
   for (size_t i = 0; i < configurationsSerialized.size(); i += serializedConfSize) {
     // copy the bytes of one configuration into a dedicated buffer
     SerializedConfiguration serializedConfig{};
-    std::copy(configurationsSerialized.begin() + i, configurationsSerialized.begin() + i + serializedConfSize,
+    std::copy_n(configurationsSerialized.begin() + i, serializedConfSize,
               serializedConfig.begin());
     // turn the byte buffer into a config and store it in the return vector
     configurations.push_back(deserializeConfiguration(serializedConfig));
@@ -264,7 +128,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, d
   // sort all values
   std::sort(similarityMetrics.begin(), similarityMetrics.end());
 
-  // calculate absolute differences between neighbouring values
+  // calculate absolute differences between neighboring values
   std::vector<double> differences;
   std::adjacent_difference(similarityMetrics.begin(), similarityMetrics.end(), std::back_inserter(differences));
 

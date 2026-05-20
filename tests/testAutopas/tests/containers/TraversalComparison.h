@@ -13,6 +13,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/Newton3Option.h"
+#include "autopas/options/OpenMPKindOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
@@ -30,7 +31,7 @@ enum DeletionPosition {
 
 using TestingTuple =
     std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption, autopas::Newton3Option,
-               size_t /*numParticles*/, size_t /*numHaloParticles*/, std::array<double, 3> /*boxMaxVec*/,
+               autopas::OpenMPKindOption, size_t /*ompChunkSize*/, size_t /*numParticles*/, size_t /*numHaloParticles*/, std::array<double, 3> /*boxMaxVec*/,
                double /*cellSizeFactor*/, bool /*doSlightShift*/, DeletionPosition /*particleDeletionPosition*/,
                bool /*globals*/, autopas::InteractionTypeOption>;
 
@@ -85,13 +86,13 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static std::tuple<std::vector<std::array<double, 3>>, Globals> calculateForces(
       autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
       autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
-      mykey_t key, bool useSorting);
+      autopas::OpenMPKindOption ompKindOption, size_t ompChunkSize, mykey_t key, bool useSorting);
 
   template <typename Functor, bool globals>
   static std::tuple<std::vector<std::array<double, 3>>, Globals> calculateForcesImpl(
       Functor functor, autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
       autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, double cellSizeFactor,
-      mykey_t key, bool useSorting);
+      autopas::OpenMPKindOption ompKindOption, size_t ompChunkSize, mykey_t key, bool useSorting);
 
   static constexpr std::array<double, 3> _boxMin{0, 0, 0};
   static constexpr double _cutoff{1.};

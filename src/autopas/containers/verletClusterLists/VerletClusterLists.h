@@ -26,6 +26,7 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -892,8 +893,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   template <class Functor>
   void loadParticlesIntoSoAs(Functor *functor) {
     const auto numTowers = _towerBlock.size();
+
+
     /// @todo: find sensible chunksize
-    AUTOPAS_OPENMP(parallel for schedule(dynamic))
+    AUTOPAS_OPENMP(parallel for schedule(runtime))
     for (size_t index = 0; index < numTowers; index++) {
       _towerBlock[index].loadSoA(functor);
     }
@@ -907,8 +910,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   template <class Functor>
   void extractParticlesFromSoAs(Functor *functor) {
     const auto numTowers = _towerBlock.size();
-    /// @todo: find sensible chunksize
-    AUTOPAS_OPENMP(parallel for schedule(dynamic))
+
+    AUTOPAS_OPENMP(parallel for schedule(runtime))
     for (size_t index = 0; index < numTowers; index++) {
       _towerBlock[index].extractSoA(functor);
     }
@@ -1038,8 +1041,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   void traverseClustersParallel(LoopBody &&loopBody) {
     const auto towersPerDimX = _towerBlock.getTowersPerDim()[0];
     const auto towersPerDimY = _towerBlock.getTowersPerDim()[1];
-    /// @todo: find sensible chunksize
-    AUTOPAS_OPENMP(parallel for schedule(dynamic) collapse(2))
+
+    AUTOPAS_OPENMP(parallel for schedule(runtime) collapse(2))
     for (size_t x = 0; x < towersPerDimX; x++) {
       for (size_t y = 0; y < towersPerDimY; y++) {
         auto &tower = _towerBlock.getTowerByIndex2D(x, y);

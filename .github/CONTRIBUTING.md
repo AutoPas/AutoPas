@@ -172,12 +172,10 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * For Bayesian based tuning strategies your option will also have to be integrated into [`FeatureVector`](/src/autopas/tuning/utils/FeatureVector.h) and [`FeatureVectorEncoder`](/src/autopas/tuning/utils/FeatureVectorEncoder.h).
   * Extend [`FeatureVectorEncoder`](/src/autopas/tuning/utils/FeatureVectorEncoder.h) by modifying `setAllowedOptions()`, `convertToTunable()` and `convertFromTunable()`. If the new option wasn't merged with another one you may have to add a new index to `DiscreteIndices` or `ContinuousIndices`
   * Make sure to declare your option by calling `configureTuningParameter()` in [`ActiveHarmony::resetHarmony()`](/src/autopas/tuning/tuningStrategy/ActiveHarmony.cpp).
+  * Update the `fallBackConfig` in [`MPIParallelizedStrategy::createFallBackConfiguration`](/src/autopas/tuning/tuningStrategy/MPIParallelizedStrategy.cpp).
 * In [`AutoPasConfigurationCommunicator`](/src/autopas/utils/AutoPasConfigurationCommunicator.h):
   * Change the size and (de-)serialization of SerializedConfiguration
   * Add the new option to all appropriate functions and adjust their functioning respectively.
-* In [`ConfigurationAndRankIteratorHandler`](/src/autopas/utils/ConfigurationAndRankIteratorHandler.h):
-  * Add the new option wherever appropriate.
-  * If the new options depends on others, implement it similarly to traversals, containers, and load estimators.
 * Adjust any tests that are affected by these changes. The following tests will definitely require changes:
   * [`AutoPasInterfaceTest`](/tests/testAutopas/tests/autopasInterface/AutoPasInterfaceTest.cpp)
   * [`AutoTunerTest`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp)

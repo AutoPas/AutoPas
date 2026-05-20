@@ -350,11 +350,13 @@ std::string MDFlexConfig::to_string() const {
     os << indent;
     printOption(newton3Options3B, -indentWidth);
   }
+  printOption(openMPKindOptions);
+  printOption(openMPChunkSizes);
+  printOption(cellSizeFactors);
 
   printOption(cutoff);
   printOption(boxMin);
   printOption(boxMax);
-  printOption(cellSizeFactors);
   printOption(deltaT);
   printOption(pauseSimulationDuringTuning);
   printOption(sortingThreshold);

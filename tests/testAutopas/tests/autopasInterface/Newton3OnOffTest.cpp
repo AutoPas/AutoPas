@@ -18,12 +18,12 @@ using ::testing::ValuesIn;
 
 // Parse combination strings and call actual test function
 TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
-  auto [containerOption, traversalOption, dataLayoutOption, interactionTypeOption] = GetParam();
+  auto [containerOption, traversalOption, dataLayoutOption, ompKindOption, ompChunkSize, interactionTypeOption] = GetParam();
 
   if (interactionTypeOption == autopas::InteractionTypeOption::pairwise) {
-    countFunctorCalls<MPairwiseFunctor>(containerOption, traversalOption, dataLayoutOption);
+    countFunctorCalls<MPairwiseFunctor>(containerOption, traversalOption, dataLayoutOption, ompKindOption, ompChunkSize);
   } else if (interactionTypeOption == autopas::InteractionTypeOption::triwise) {
-    countFunctorCalls<MTriwiseFunctor>(containerOption, traversalOption, dataLayoutOption);
+    countFunctorCalls<MTriwiseFunctor>(containerOption, traversalOption, dataLayoutOption, ompKindOption, ompChunkSize);
   }
 }
 
@@ -31,9 +31,9 @@ TEST_P(Newton3OnOffTest, countFunctorCallsTest) {
 INSTANTIATE_TEST_SUITE_P(
     Generated, Newton3OnOffTest,
     ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption,
-                                            autopas::DataLayoutOption, autopas::InteractionTypeOption>> {
+                                            autopas::DataLayoutOption, autopas::OpenMPKindOption, size_t, autopas::InteractionTypeOption>> {
       std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption,
-                             autopas::InteractionTypeOption>>
+                             autopas::OpenMPKindOption, size_t, autopas::InteractionTypeOption>>
           applicableCombinations;
 
       // container factory info
@@ -49,49 +49,53 @@ INSTANTIATE_TEST_SUITE_P(
         for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
           for (auto interactionType : autopas::InteractionTypeOption::getMostOptions()) {
             for (auto traversalOption : containerPtr->getAllTraversals(interactionType)) {
-              bool configOk = false;
+              for (auto ompKindOption : autopas::OpenMPKindOption::getAllOptions()) {
+                for (auto ompChunkSize : std::set<size_t>({1, 2, 250})) {
+                  bool configOk = false;
 
-              autopas::Configuration configN3 = {containerOption,  Newton3OnOffTest::getCellSizeFactor(),
-                                                 traversalOption,  autopas::LoadEstimatorOption::none,
-                                                 dataLayoutOption, autopas::Newton3Option::enabled,
-                                                 interactionType};
-              autopas::Configuration configNoN3 = {containerOption,  Newton3OnOffTest::getCellSizeFactor(),
-                                                   traversalOption,  autopas::LoadEstimatorOption::none,
-                                                   dataLayoutOption, autopas::Newton3Option::disabled,
-                                                   interactionType};
+                  autopas::Configuration configN3 = {containerOption,  Newton3OnOffTest::getCellSizeFactor(),
+                                                     traversalOption,  autopas::LoadEstimatorOption::none,
+                                                     dataLayoutOption, autopas::Newton3Option::enabled,
+                                                     ompKindOption, ompChunkSize, interactionType};
+                  autopas::Configuration configNoN3 = {containerOption,  Newton3OnOffTest::getCellSizeFactor(),
+                                                       traversalOption,  autopas::LoadEstimatorOption::none,
+                                                       dataLayoutOption, autopas::Newton3Option::disabled,
+                                                       ompKindOption, ompChunkSize, interactionType};
 
-              if (interactionType == autopas::InteractionTypeOption::pairwise) {
-                MockPairwiseFunctor<ParticleFP64> functor;
-                // generate both newton3 versions of the same traversal and check that both are applicable
-                auto traversalWithN3 =
-                    autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64,
-                                                                            MockPairwiseFunctor<ParticleFP64>>(
-                        configN3, functor, containerPtr->getTraversalSelectorInfo());
+                  if (interactionType == autopas::InteractionTypeOption::pairwise) {
+                    MockPairwiseFunctor<ParticleFP64> functor;
+                    // generate both newton3 versions of the same traversal and check that both are applicable
+                    auto traversalWithN3 =
+                        autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64,
+                                                                                MockPairwiseFunctor<ParticleFP64>>(
+                            configN3, functor, containerPtr->getTraversalSelectorInfo());
 
-                auto traversalWithoutN3 =
-                    autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64,
-                                                                            MockPairwiseFunctor<ParticleFP64>>(
-                        configNoN3, functor, containerPtr->getTraversalSelectorInfo());
+                    auto traversalWithoutN3 =
+                        autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64,
+                                                                                MockPairwiseFunctor<ParticleFP64>>(
+                            configNoN3, functor, containerPtr->getTraversalSelectorInfo());
 
-                configOk = (traversalWithN3 and traversalWithoutN3);
-              } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-                MockTriwiseFunctor<ParticleFP64> functor;
-                // generate both newton3 versions of the same traversal and check that both are applicable
-                auto traversalWithN3 =
-                    autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64,
-                                                                            MockTriwiseFunctor<ParticleFP64>>(
-                        configN3, functor, containerPtr->getTraversalSelectorInfo());
+                    configOk = (traversalWithN3 and traversalWithoutN3);
+                  } else if (interactionType == autopas::InteractionTypeOption::triwise) {
+                    MockTriwiseFunctor<ParticleFP64> functor;
+                    // generate both newton3 versions of the same traversal and check that both are applicable
+                    auto traversalWithN3 =
+                        autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64,
+                                                                                MockTriwiseFunctor<ParticleFP64>>(
+                            configN3, functor, containerPtr->getTraversalSelectorInfo());
 
-                auto traversalWithoutN3 =
-                    autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64,
-                                                                            MockTriwiseFunctor<ParticleFP64>>(
-                        configNoN3, functor, containerPtr->getTraversalSelectorInfo());
+                    auto traversalWithoutN3 =
+                        autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64,
+                                                                                MockTriwiseFunctor<ParticleFP64>>(
+                            configNoN3, functor, containerPtr->getTraversalSelectorInfo());
 
-                configOk = (traversalWithN3 and traversalWithoutN3);
-              }
-              if (configOk) {
-                applicableCombinations.emplace_back(containerOption, traversalOption, dataLayoutOption,
-                                                    interactionType);
+                    configOk = (traversalWithN3 and traversalWithoutN3);
+                  }
+                  if (configOk) {
+                    applicableCombinations.emplace_back(containerOption, traversalOption, dataLayoutOption,
+                                                        ompKindOption, ompChunkSize, interactionType);
+                  }
+                }
               }
             }
           }
@@ -106,7 +110,9 @@ INSTANTIATE_TEST_SUITE_P(
 template <typename FunctorType>
 void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
                                          autopas::TraversalOption traversalOption,
-                                         autopas::DataLayoutOption dataLayout) {
+                                         autopas::DataLayoutOption dataLayout,
+                                         autopas::OpenMPKindOption ompKindOption,
+                                         size_t ompChunkSize) {
   // TODO: Make test possible for direct sum SoA
   if (containerOption == autopas::ContainerOption::directSum and dataLayout == autopas::DataLayoutOption::soa) {
     return;
@@ -162,9 +168,9 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   // "SC" = single cell
   const auto [callsNewton3SC, callsNewton3Pair, callsNewton3Triple] =
-      eval(dataLayout, /*useNewton3*/ true, *container, traversalOption, mockFunctor);
+      eval(dataLayout, /*useNewton3*/ true, *container, traversalOption, ompKindOption, ompChunkSize, mockFunctor);
   const auto [callsNonNewton3SC, callsNonNewton3Pair, callsNonNewton3Triple] =
-      eval(dataLayout, /*useNewton3*/ false, *container, traversalOption, mockFunctor);
+      eval(dataLayout, /*useNewton3*/ false, *container, traversalOption, ompKindOption, ompChunkSize, mockFunctor);
 
   EXPECT_GT(callsNewton3Triple + callsNewton3Pair + callsNewton3SC, 0)
       << "No interactions were found WITH Newton3. Are the generated particles too far apart?";
@@ -207,6 +213,7 @@ template <class Functor, class Container>
 std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataLayout, bool useNewton3,
                                                           Container &container,
                                                           autopas::TraversalOption traversalOption,
+                                                          autopas::OpenMPKindOption ompKindOption, size_t ompChunkSize,
                                                           Functor &mockFunctor) {
   // set up counters for particle interactions
   std::atomic<unsigned int> callsSC(0ul);
@@ -303,6 +310,8 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOpt
                                    autopas::LoadEstimatorOption::none,
                                    dataLayout,
                                    n3Option,
+                                   ompKindOption,
+                                   ompChunkSize,
                                    interactionType};
 
   // simulate iteration

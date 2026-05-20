@@ -11,6 +11,10 @@ data-layout-3b                       :  [AoS]
 #newton3                              :  [enabled, disabled]
 #data-layout                          :  [AoS, SoA]
 
+cell-size                            :  [1]
+openmp-schedule-kinds                :  [omp_static, omp_dynamic, omp_guided, omp_auto, lb4omp_trapezoidal, lb4omp_fac2a, lb4omp_static_steal, lb4omp_awf_b, lb4omp_awf_c, lb4omp_awf_d, lb4omp_awf_e, lb4omp_awf_e]
+openmp-chunk-sizes                   :  [1, 2, 4, 8, 16, 32, 64]
+
 verlet-rebuild-frequency             :  10
 verlet-skin-radius      :  0.2
 selector-strategy                    :  Fastest-Absolute-Value
@@ -20,7 +24,6 @@ tuning-samples                       :  3
 tuning-max-evidence                  :  10
 
 cutoff                               :  2.5
-cell-size                            :  [1]
 deltaT                               :  0.002
 iterations                           :  50
 boundary-type                        :  [periodic, periodic, periodic]

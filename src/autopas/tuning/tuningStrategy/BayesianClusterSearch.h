@@ -38,7 +38,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Dimensions of the continuous tuples.
    * FeatureVector continuous dimensions + 1 (time)
    */
-  constexpr static size_t continuousDims = FeatureVectorEncoder::tunableContinuousDims + 1;
+  constexpr static size_t continuousDims = FeatureVectorEncoder::numTunableContinuousDims + 1;
   /**
    * Fixed noise
    */
@@ -66,6 +66,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
+   * @param allowedOpenMPKindOptions
+   * @param allowedOpenMPChunkSizes
    * @param maxEvidence Stop tuning after given number of evidence provided.
    * @param predAcqFunction Acquisition function used for prediction while tuning.
    * @param outputSuffix Suffix for output logger.
@@ -74,12 +76,12 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    */
   explicit BayesianClusterSearch(
       const InteractionTypeOption &interactionType,
-      const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
-      const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
-      const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
-      const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
-      const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
+      const std::set<ContainerOption> &allowedContainerOptions, const NumberSet<double> &allowedCellSizeFactors,
+      const std::set<TraversalOption> &allowedTraversalOptions,
+      const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+      const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
+      const std::set<OpenMPKindOption> &allowedOpenMPKindOptions, const NumberSet<size_t> &allowedOpenMPChunkSizes,
+ size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()());
 
@@ -130,6 +132,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   std::vector<DataLayoutOption> _dataLayoutOptions;
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
+  std::vector<OpenMPKindOption> _ompKindOptions;
+  std::unique_ptr<NumberSet<size_t>> _ompChunkSizes;
   FeatureVectorEncoder _encoder;
 
   /**

@@ -63,7 +63,8 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
           interactionType, searchSpaceDimensions.containerOptions,
           NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
           searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
-          searchSpaceDimensions.newton3Options, info.maxEvidence, info.acquisitionFunctionOption);
+          searchSpaceDimensions.newton3Options, searchSpaceDimensions.openMPKindOptions,
+          NumberSetFinite<size_t>{searchSpaceDimensions.openMPChunkSizes}, info.maxEvidence, info.acquisitionFunctionOption);
       break;
     }
 
@@ -73,7 +74,8 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
           interactionType, searchSpaceDimensions.containerOptions,
           NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
           searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
-          searchSpaceDimensions.newton3Options, info.maxEvidence, info.acquisitionFunctionOption, outputSuffix);
+          searchSpaceDimensions.newton3Options, searchSpaceDimensions.openMPKindOptions,
+          NumberSetFinite<size_t>{searchSpaceDimensions.openMPChunkSizes}, info.maxEvidence, info.acquisitionFunctionOption, outputSuffix);
       break;
     }
 

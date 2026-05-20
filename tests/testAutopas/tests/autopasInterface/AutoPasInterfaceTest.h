@@ -32,6 +32,8 @@ class AutoPasInterfaceTest : public AutoPasTestBase, public ::testing::WithParam
       str += conf.dataLayout.to_string() + "_";
       str += "N3" + conf.newton3.to_string() + "_";
       str += std::string{"cellSizeFactor"} + std::to_string(conf.cellSizeFactor);
+      str += conf.ompKind.to_string() + "_";
+      str += std::string{"ompChunk"} + std::to_string(conf.ompChunkSize);
       std::replace(str.begin(), str.end(), '-', '_');
       std::replace(str.begin(), str.end(), '.', '_');
       return str;

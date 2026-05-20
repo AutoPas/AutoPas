@@ -22,10 +22,10 @@ class FeatureVector : public Configuration {
  public:
   /**
    * Number of tune-able dimensions.
-   * container-traversal-estimator + dataLayout + newton3 + cellSizeFactor
+   * container-traversal-estimator + dataLayout + newton3 + cellSizeFactor + OMP Schedule kind + OMP Chunk Size
    * Interaction type is not a tunable dimension.
    */
-  static constexpr size_t featureSpaceDims = 4;
+  static constexpr size_t featureSpaceDims = 6;
 
   /**
    * Consider Container, Traversal and LoadEstimator options as one dimension.
@@ -44,13 +44,15 @@ class FeatureVector : public Configuration {
    * @param loadEstimator
    * @param dataLayout
    * @param newton3
+   * @param ompKind
+   * @param ompChunkSize
    * @param cellSizeFactor
    * @param interactionType
    */
-  FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
-                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3,
-                InteractionTypeOption interactionType)
-      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType) {}
+  FeatureVector(const ContainerOption container, const double cellSizeFactor, const TraversalOption traversal,
+                const LoadEstimatorOption loadEstimator, const DataLayoutOption dataLayout, const Newton3Option newton3,
+                const OpenMPKindOption ompKind, const size_t ompChunkSize, const InteractionTypeOption interactionType)
+      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, ompKind, ompChunkSize, interactionType) {}
 
   /**
    * Construct from Configuration.

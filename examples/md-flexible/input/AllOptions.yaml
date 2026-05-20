@@ -10,6 +10,10 @@ functor-3b                           :  axilrod-teller
 traversal-3b                         :  [ds_sequential, lc_c01]
 newton3-3b                           :  [enabled, disabled]
 data-layout-3b                       :  [AoS, SoA]
+# Other tunable options
+cell-size                            :  [1]
+openmp-schedule-kinds                :  [omp_static, omp_dynamic, omp_guided, omp_auto, lb4omp_trapezoidal, lb4omp_fac2a, lb4omp_static_steal, lb4omp_awf_b, lb4omp_awf_c, lb4omp_awf_d, lb4omp_awf_e, lb4omp_awf_e]
+openmp-chunk-sizes                   :  [1, 2, 4, 8, 16, 32, 64]
 
 # General options
 verlet-rebuild-frequency             :  20
@@ -27,7 +31,6 @@ energy-sensor                        :  rapl  # alternatively: likwid
 cutoff                               :  1
 box-min                              :  [-1.75, -1.75, -1.75]
 box-max                              :  [7.25, 7.25, 7.25]
-cell-size                            :  [1]
 deltaT                               :  0.000001
 pause-simulation-during-tuning       :  true
 sorting-threshold                    :  8

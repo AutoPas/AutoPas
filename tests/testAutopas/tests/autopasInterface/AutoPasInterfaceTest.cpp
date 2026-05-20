@@ -498,12 +498,18 @@ using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
+// Note: Thought behind chunk sizes of 1, 2, 250 is: chunk size 1 is standard, 2 is something non-standard, 250 is a
+// stress-test for correctness at a very large chunk size
+// Todo: Once merging with PR#1071, move this note
+
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
                          ::testing::ValuesIn(autopas::SearchSpaceGenerators::cartesianProduct(
                              autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
                              autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
                              autopas::Newton3Option::getAllOptions(),
                              std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get(),
+                             autopas::OpenMPKindOption::getAllOptions(),
+                             std::make_unique<autopas::NumberSetFinite<size_t>>(std::set<size_t>{1, 2, 250}).get(),
                              autopas::InteractionTypeOption::pairwise)),
                          AutoPasInterfaceTest::PrintToStringParamName());
 

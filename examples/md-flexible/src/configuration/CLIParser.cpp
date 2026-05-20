@@ -79,6 +79,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.MPITuningWeightForMaxDensity,
       config.newton3Options,
       config.newton3Options3B,
+      config.openMPChunkSizes,
+      config.openMPKindOptions,
       config.outputSuffix,
       config.particleSpacing,
       config.particlesPerDim,
@@ -180,7 +182,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.cellSizeFactors)::getoptChar: {
-        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(strArg);
+        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet<double>(strArg);
         if (config.cellSizeFactors.value->isEmpty()) {
           cerr << "Error parsing cell size factors: " << optarg << endl;
           displayHelp = true;
@@ -440,6 +442,21 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         break;
+      }
+      case decltype(config.openMPChunkSizes)::getoptChar: {
+        config.openMPChunkSizes.value = autopas::utils::StringUtils::parseNumberSet<size_t>(strArg);
+        if (config.cellSizeFactors.value->isEmpty()) {
+          cerr << "Error parsing OpenMP Chunk Sizes (must have a least one chunk size)" << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.openMPKindOptions)::getoptChar: {
+        config.openMPKindOptions.value = autopas::OpenMPKindOption::parseOptions(strArg);
+        if (config.openMPKindOptions.value.empty()) {
+          cerr << "Unknown OpenMP Schedule Kind: " << strArg << endl;
+          displayHelp = true;
+        }
       }
       case decltype(config.particlesPerDim)::getoptChar: {
         try {

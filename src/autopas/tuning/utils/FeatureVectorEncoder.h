@@ -21,37 +21,44 @@ namespace autopas {
  */
 class FeatureVectorEncoder {
   /**
-   * Indices of the discrete part of convertToTunable().
+   * One-hot encoded indices of convertToTunable(). These are categorical components of the configuration which
+   * should not be treated as ordinal values (e.g., mapping Linked Cell C01 to 0.0, C08 to 1.0, and Verlet Lists
+   * to 2.0 would be semantically incorrect). Instead, one-hot encoding is used: for each categorical option,
+   * there is one binary dimension per possible value—exactly one dimension is 1 if the FeatureVector represents
+   * that choice, and all others are 0.
    */
-  enum class DiscreteIndices { containerTraversalEstimator, dataLayout, newton3, TOTALNUMBER };
+  enum class OneHotEncodedIndices { containerTraversalEstimator, dataLayout, newton3, ompKind, TOTALNUMBER };
 
   /**
    * Indices of the continuous part of convertToTunable().
+   * Does not have to represent a continuous variable, but rather something where it makes sense to map to a continuous
+   * variable rather than using one-hot encoding.
    */
-  enum class ContinuousIndices { cellSizeFactor, TOTALNUMBER };
+  enum class ContinuousIndices { cellSizeFactor, ompChunkSize, TOTALNUMBER };
 
  public:
   /**
-   * Number of tunable discrete dimensions.
+   * Number of tunable one-hot dimensions.
    */
-  static constexpr size_t tunableDiscreteDims{static_cast<size_t>(DiscreteIndices::TOTALNUMBER)};
+  static constexpr size_t numTunableOneHotIndices{static_cast<size_t>(OneHotEncodedIndices::TOTALNUMBER)};
 
   /**
    * Number of tunable continuous dimensions.
    */
-  static constexpr size_t tunableContinuousDims{static_cast<size_t>(ContinuousIndices::TOTALNUMBER)};
+  static constexpr size_t numTunableContinuousDims{static_cast<size_t>(ContinuousIndices::TOTALNUMBER)};
 
  private:
   /**
-   * Generalized form of all discrete vector representations. Every representation of discrete values should be able to
-   * be brought to and from this form.
+   * Generalized form of all one-hot vector representations. Every representation of one-hot values should be able to
+   * be brought to and from this form. Note: this is not the one-hot form, just simply a form where integers are used
+   * instead of e.g. enums, for each index.
    */
-  using DiscreteDimensionType = std::array<int, tunableDiscreteDims>;
+  using OneHotIndicesType = std::array<int, numTunableOneHotIndices>;
   /**
    * Generalized form of all continuous vector representations. Any representation of continuous values should be able
    * to be brought to and from this form.
    */
-  using ContinuousDimensionType = std::array<double, tunableContinuousDims>;
+  using ContinuousIndicesType = std::array<double, numTunableContinuousDims>;
 
  public:
   /**
@@ -65,12 +72,15 @@ class FeatureVectorEncoder {
    * @param dataLayoutOptions
    * @param newton3Options
    * @param cellSizeFactors
+   * @param ompKindOptions
+   * @param ompChunkSizes
    * @param interactionType
    */
   FeatureVectorEncoder(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
       const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-      const NumberSet<double> &cellSizeFactors, const InteractionTypeOption &interactionType);
+      const NumberSet<double> &cellSizeFactors, const std::vector<OpenMPKindOption> &ompKindOptions,
+      const NumberSet<size_t> &ompChunkSizes, const InteractionTypeOption &interactionType);
 
   ~FeatureVectorEncoder();
 
@@ -80,11 +90,14 @@ class FeatureVectorEncoder {
    * @param dataLayoutOptions
    * @param newton3Options
    * @param cellSizeFactors
+   * @param ompKindOptions
+   * @param ompChunkSizes
    */
   void setAllowedOptions(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
       const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-      const NumberSet<double> &cellSizeFactors);
+      const NumberSet<double> &cellSizeFactors, const std::vector<OpenMPKindOption> &ompKindOptions,
+      const NumberSet<size_t> &ompChunkSizes);
 
   /**
    * Get the dimensions of a one-hot encoded vector.
@@ -96,7 +109,7 @@ class FeatureVectorEncoder {
    * Get the number of allowed options of each discrete dimension.
    * @return
    */
-  [[nodiscard]] const std::array<int, tunableDiscreteDims> &getDiscreteRestrictions() const;
+  [[nodiscard]] const std::array<int, numTunableOneHotIndices> &getDiscreteRestrictions() const;
 
   /**
    * Encode FeatureVector to Eigen::VectorXd using one-hot-encoding.
@@ -132,21 +145,21 @@ class FeatureVectorEncoder {
   [[nodiscard]] FeatureVector convertFromCluster(const std::pair<Eigen::VectorXi, Eigen::VectorXd> &vec);
 
   /**
-   * Get cluster-encoded neighbours of given target with fixed weight.
-   * Neighbours are all configurations which differ in at most one configuration from target.
+   * Get cluster-encoded neighbors of given target with fixed weight.
+   * Neighbors are all configurations which differ in at most one configuration from target.
    * @param target
    * @return
    */
-  [[nodiscard]] std::vector<std::pair<Eigen::VectorXi, double>> clusterNeighboursManhattan1(
+  [[nodiscard]] std::vector<std::pair<Eigen::VectorXi, double>> clusterNeighborsManhattan1(
       const Eigen::VectorXi &target);
 
   /**
-   * Get cluster-encoded neighbours of given target. Neighbours are all configurations which differ
+   * Get cluster-encoded neighbors of given target. Neighbors are all configurations which differ
    * in at most one configuration from target. The weight is lowered if container is changed.
    * @param target
    * @return
    */
-  [[nodiscard]] std::vector<std::pair<Eigen::VectorXi, double>> clusterNeighboursManhattan1Container(
+  [[nodiscard]] std::vector<std::pair<Eigen::VectorXi, double>> clusterNeighborsManhattan1Container(
       const Eigen::VectorXi &target);
 
   /**
@@ -176,7 +189,7 @@ class FeatureVectorEncoder {
    * @param vec
    * @return
    */
-  [[nodiscard]] std::pair<DiscreteDimensionType, ContinuousDimensionType> convertToTunable(
+  [[nodiscard]] std::pair<OneHotIndicesType, ContinuousIndicesType> convertToTunable(
       const FeatureVector &vec) const;
 
   /**
@@ -186,8 +199,8 @@ class FeatureVectorEncoder {
    * @param continuousValues
    * @return
    */
-  [[nodiscard]] FeatureVector convertFromTunable(const DiscreteDimensionType &discreteValues,
-                                                 const ContinuousDimensionType &continuousValues) const;
+  [[nodiscard]] FeatureVector convertFromTunable(const OneHotIndicesType &discreteValues,
+                                                 const ContinuousIndicesType &continuousValues) const;
 
   /**
    * Get position of a value in provided list.
@@ -208,16 +221,17 @@ class FeatureVectorEncoder {
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions{};
   std::vector<DataLayoutOption> _dataLayoutOptions{};
   std::vector<Newton3Option> _newton3Options{};
+  std::vector<OpenMPKindOption> _openMPKindOptions{};
   InteractionTypeOption _interactionType;
   /**
    * Number of allowed options of each discrete dimension.
    */
-  std::array<int, tunableDiscreteDims> _discreteRestrictions{};
+  std::array<int, numTunableOneHotIndices> _discreteRestrictions{};
 
   /**
    * Allowed values of each continuous dimension.
    */
-  std::array<std::unique_ptr<NumberSet<double>>, tunableContinuousDims> _continuousRestrictions{};
+  std::array<std::unique_ptr<NumberSet<double>>, numTunableContinuousDims> _continuousRestrictions{};
 
   /**
    * Dimensions of a one-hot-encoded vector.

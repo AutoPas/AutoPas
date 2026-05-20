@@ -79,8 +79,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         // If we use parallelization,
         if (not _useNewton3) {
           size_t buckets = aosNeighborLists.bucket_count();
-          /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic))
+          AUTOPAS_OPENMP(parallel for schedule(runtime))
           for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
             auto endIter = aosNeighborLists.end(bucketId);
             for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
