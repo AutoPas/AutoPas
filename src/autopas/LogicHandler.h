@@ -651,17 +651,35 @@ class LogicHandler {
    * @param deltaT is the time step
    * @return estimate of the current rebuild frequency
    */
-  double getVelocityMethodRFEstimate(const double skin, const double deltaT) const {
+  double getVelocityMethodRFEstimate(const double skin, const double deltaT) {
     using autopas::utils::ArrayMath::dot;
     // Initialize the maximum velocity to zero
     double maxVelocity = 0;
     // Iterate over the owned particles in container to determine maximum velocity
-    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
-    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-      std::array<double, 3> tempVel = iter->getV();
-      double tempVelAbs = sqrt(dot(tempVel, tempVel));
-      maxVelocity = std::max(tempVelAbs, maxVelocity);
+    if (!getContainer().allowsKokkos()) {
+      AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
+      for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+        std::array<double, 3> tempVel = iter->getV();
+        double tempVelAbs = sqrt(dot(tempVel, tempVel));
+        maxVelocity = std::max(tempVelAbs, maxVelocity);
+      }
+    } else {
+
+      auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage, double &localMaxVelocity) {
+        const auto velX = storage.template operator()<Particle_T::AttributeNames::velocityX, true, ForEachHostFlag>(i);
+        const auto velY = storage.template operator()<Particle_T::AttributeNames::velocityY, true, ForEachHostFlag>(i);
+        const auto velZ = storage.template operator()<Particle_T::AttributeNames::velocityZ, true, ForEachHostFlag>(i);
+
+        const auto tempVelAbs = Kokkos::sqrt(velX*velX + velY*velY + velZ*velZ);
+
+        localMaxVelocity = Kokkos::max(tempVelAbs, localMaxVelocity);
+      };
+
+      withStaticContainerType(getContainer(), [&lambda, &maxVelocity](auto& actualContainer) {
+        actualContainer.template reduceKokkos<DeviceSpace::execution_space, double, Kokkos::Max<double>>(lambda, maxVelocity, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+      });
     }
+
     // return the rebuild frequency estimate
     return skin / maxVelocity / deltaT / 2;
   }
