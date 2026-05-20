@@ -108,9 +108,7 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
+      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
       return retStruct;
     }
   };
@@ -509,6 +507,22 @@ class MDFlexConfig {
    * cutoff
    */
   MDFlexOption<double, __LINE__> cutoff{2., "cutoff", true, "Lennard-Jones force cutoff."};
+
+  /**
+   * slow cutoff
+   */
+  MDFlexOption<double, __LINE__> slow_cutoff{2.0, "slow_cutoff", true, "Lennard-Jones slow force cutoff"};
+
+  /**
+   * fast cutoff
+   */
+  MDFlexOption<double, __LINE__> fast_cutoff{1.0, "fast_cutoff", true, "Lennard-Jones fast force cutoff"};
+
+  /**
+   * Amount of iterations between recalculation of fast forces
+   */
+  MDFlexOption<size_t, __LINE__> slow_frequency{10, "slow_frequency", true, "frequency of recalculating slow forces"};
+
   /**
    * functorOption
    */

@@ -225,7 +225,7 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    _is_respa_iteration = _iteration % 4;
+    _is_respa_iteration = _iteration % _configuration.slow_frequency.value;
 
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
@@ -833,8 +833,8 @@ void Simulation::loadParticles() {
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   const double cutoff = _configuration.cutoff.value;
-  const double fast_cutoff = 1.0;  // @TODO split this into configuration
-  const double slow_cutoff = 3.0;
+  const double fast_cutoff = _configuration.fast_cutoff.value;  // @TODO split this into configuration
+  const double slow_cutoff = _configuration.slow_cutoff.value;
 
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption.value) {

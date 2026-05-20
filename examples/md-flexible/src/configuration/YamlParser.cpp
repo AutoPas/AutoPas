@@ -190,6 +190,30 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.cutoff.value <= 0) {
           throw std::runtime_error("Cutoff has to be > 0!");
         }
+      } else if (key == config.slow_cutoff.name) {
+        expected = "Positive floating point value > 0.";
+        description = config.slow_cutoff.description;
+
+        config.slow_cutoff.value = node[key].as<double>();
+        if (config.slow_cutoff.value <= 0) {
+          throw std::runtime_error("Slow Cutoff has to be > 0!");
+        }
+      } else if (key == config.fast_cutoff.name) {
+        expected = "Positive floating point value > 0.";
+        description = config.fast_cutoff.description;
+
+        config.fast_cutoff.value = node[key].as<double>();
+        if (config.fast_cutoff.value <= 0) {
+          throw std::runtime_error("Fast Cutoff has to be > 0!");
+        }
+      } else if (key == config.slow_frequency.name) {
+        expected = "Positive int value > 0";
+        description = config.slow_frequency.description;
+
+        config.slow_frequency.value = node[key].as<size_t>();
+        if (config.slow_frequency.value <= 0) {
+          throw std::runtime_error("Slow frequency has to be > 0!");
+        }
       } else if (key == config.cellSizeFactors.name) {
         expected = "YAML-sequence of floats.";
         description = config.cellSizeFactors.description;
