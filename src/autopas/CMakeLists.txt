@@ -59,16 +59,22 @@ target_compile_definitions(
         _USE_MATH_DEFINES
 )
 
+# -fopenmp enables pragma recognition and __kmpc_* code generation (required for LB4OMP dispatch).
+# Must be in compile_options (not link_options) so the compiler emits __kmpc_dispatch_* calls without
+# also implicitly linking system libomp — only LB4OMP's libomp.so (from auto4omp::omp) is linked.
+# -fopenmp-version=45 restricts to OMP 4.5 to avoid calling functions absent from LB4OMP's older LLVM base.
+target_compile_options(autopas PUBLIC
+        $<$<BOOL:${AUTOPAS_OPENMP}>:-fopenmp -fopenmp-version=45>)
+
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)
 
 if (AUTOPAS_AUTO4OMP)
-    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_SOURCE_DIR}/runtime/src) # For kmp.h, etc.
-    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_BINARY_DIR}/runtime/src) # For kmp_config.h.
+    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_SOURCE_DIR}/runtime/src)
+    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_BINARY_DIR}/runtime/src)
 
-    # Provide libomp.sp.5 for systems with modern OpenMP.
-    add_custom_command(
-            TARGET autopas PRE_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink libomp.so libomp.so.5
-            WORKING_DIRECTORY "${auto4omp_BINARY_DIR}/runtime/src"
-    )
+    # Ensure Auto4OMP's libomp.so is searched before the system's at both link and runtime
+    target_link_directories(autopas BEFORE PUBLIC ${auto4omp_BINARY_DIR}/runtime/src)
+    set_target_properties(autopas PROPERTIES BUILD_RPATH "${auto4omp_BINARY_DIR}/runtime/src")
 endif ()
+

@@ -127,7 +127,7 @@ else ()
 
     # Auto4OMP's CMake variables:
 
-    set(LIBOMP_ENABLE_SHARED OFF CACHE INTERNAL "Shared library instead of static library? For AutoPas discouraged")
+    set(LIBOMP_ENABLE_SHARED ON CACHE INTERNAL "Shared library instead of static library? For AutoPas discouraged")
 
     ## OpenMP version:
     ### AutoPas supports up to OpenMP 4.5. Pass this to Auto4OMP.
@@ -349,7 +349,7 @@ else ()
         FetchContent_Declare(
                 auto4omp
                 URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-custom.zip
-                URL_HASH MD5=addecfa50c64aec9a1f01b325a4c1c56 # Calculated with the md5sum command.
+                URL_HASH MD5=209ef0308e11aebb0c65a8bf0003068a # Calculated with the md5sum command.
         )
     endif ()
 
