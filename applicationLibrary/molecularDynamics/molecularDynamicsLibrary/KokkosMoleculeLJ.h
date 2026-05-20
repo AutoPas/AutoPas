@@ -95,16 +95,18 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
                                 ParticleSoAFloatPrecision * /*oldFz*/, ParticleSoAFloatPrecision * /*mass*/,
                                 size_t * /*typeid*/, autopas::OwnershipState * /*ownershipState*/>;
 
-  /**
-   * Non-const getter for the pointer of this object.
-   * @tparam attribute Attribute name.
-   * @return this.
-   */
+  template <AttributeNames attribute>
+  constexpr decltype(auto) operator()() {
+    if constexpr (attribute == ptr) {
+      return this;
+    } else {
+      return getRef<attribute>();
+    }
+  }
 
   template <AttributeNames attribute>
-  constexpr auto &operator()() {
-    auto value = get<attribute>();
-    return value;
+  constexpr auto operator()() const {
+    return get<attribute>();
   }
 
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
@@ -164,6 +166,53 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
       return _ownershipState;
     } else {
       autopas::utils::ExceptionHandler::exception("MoleculeLJ::get() unknown attribute {}", attribute);
+    }
+  }
+
+  template <AttributeNames attribute, std::enable_if_t<attribute != ptr, bool> = true>
+  constexpr decltype(auto) getRef() {
+    if constexpr (attribute == id) {
+      return (_id);
+    } else if constexpr (attribute == posX) {
+      return (_r[0]);
+    } else if constexpr (attribute == posY) {
+      return (_r[1]);
+    } else if constexpr (attribute == posZ) {
+      return (_r[2]);
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    } else if constexpr (attribute == rebuildX) {
+      return (_rAtRebuild[0]);
+    } else if constexpr (attribute == rebuildY) {
+      return (_rAtRebuild[1]);
+    } else if constexpr (attribute == rebuildZ) {
+      return (_rAtRebuild[2]);
+#endif
+    } else if constexpr (attribute == velocityX) {
+      return (_v[0]);
+    } else if constexpr (attribute == velocityY) {
+      return (_v[1]);
+    } else if constexpr (attribute == velocityZ) {
+      return (_v[2]);
+    } else if constexpr (attribute == forceX) {
+      return (_f[0]);
+    } else if constexpr (attribute == forceY) {
+      return (_f[1]);
+    } else if constexpr (attribute == forceZ) {
+      return (_f[2]);
+    } else if constexpr (attribute == oldForceX) {
+      return (_oldF[0]);
+    } else if constexpr (attribute == oldForceY) {
+      return (_oldF[1]);
+    } else if constexpr (attribute == oldForceZ) {
+      return (_oldF[2]);
+    } else if constexpr (attribute == mass) {
+      return (_mass);
+    } else if constexpr (attribute == typeId) {
+      return (_typeId);
+    } else if constexpr (attribute == ownershipState) {
+      return (_ownershipState);
+    } else {
+      autopas::utils::ExceptionHandler::exception("KokkosMoleculeLJ::getRef() unknown attribute {}", attribute);
     }
   }
 
