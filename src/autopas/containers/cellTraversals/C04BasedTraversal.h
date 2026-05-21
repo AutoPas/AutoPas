@@ -57,6 +57,6 @@ inline void C04BasedTraversal<ParticleCell, Functor, collapseDepth>::c04Traversa
   const auto end = this->_cellsPerDimension - this->_overlap;
   auto stride = this->_overlap + 1ul;
   stride[0] = 1;
-  this->colorTraversal(std::forward<LoopBody>(loopBody), end, stride);
+  this->template colorTraversal<4>(std::forward<LoopBody>(loopBody), end, stride);
 }
 }  // namespace autopas

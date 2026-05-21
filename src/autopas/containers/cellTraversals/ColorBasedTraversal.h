@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <utility>
+
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/options/InteractionTypeOption.h"
@@ -86,6 +88,11 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
  protected:
   /**
    * The main traversal of the ColorBasedTraversal.
+   *
+   * The number of colors is a compile-time parameter; each color is processed as a distinct template
+   * instantiation via a variadic index sequence rather than as iterations of a runtime loop.
+   *
+   * @tparam numColors The number of colors used by the calling traversal (e.g. 1, 4, 8, 18).
    * @tparam LoopBody type of the loop body
    * @param loopBody The body of the loop as a function. Normally a lambda function, that takes as parameters
    * (x,y,z). If you need additional input from outside, please use captures (by reference).
@@ -93,7 +100,7 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
    * @param stride Distance (in cells) to the next cell of the same color.
    * @param offset initial offset (in cells) in which cell to start the traversal.
    */
-  template <typename LoopBody>
+  template <unsigned long numColors, typename LoopBody>
   inline void colorTraversal(LoopBody &&loopBody, const std::array<unsigned long, 3> &end,
                              const std::array<unsigned long, 3> &stride,
                              const std::array<unsigned long, 3> &offset = {0ul, 0ul, 0ul});
@@ -122,34 +129,34 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
 
  private:
   /**
-   * Data Layout Converter to be used with this traversal
+   * Processes all cells belonging to color col.
+   *
+   * Placing the omp-for inside a method of a struct templated on col (rather than in a function template
+   * whose col is a function-level parameter) ensures that col appears as a class template argument in the
+   * OpenMP ident_t psource string. Clang includes class template arguments but not function template
+   * arguments in psource, so this gives Auto4OMP a unique loop identity for each color.
    */
-  utils::DataLayoutConverter<Functor> _dataLayoutConverter;
-};
+  template <std::size_t col>
+  struct ColorWorker {
+    template <typename LoopBody>
+    static void work(ColorBasedTraversal &self, LoopBody &loopBody, const std::array<unsigned long, 3> &end,
+                     const std::array<unsigned long, 3> &stride, const std::array<unsigned long, 3> &offset) {
+      using namespace autopas::utils::ArrayMath::literals;
 
-template <class ParticleCell, class Functor, int collapseDepth>
-template <typename LoopBody>
-inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTraversal(
-    LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
-    const std::array<unsigned long, 3> &offset) {
-  using namespace autopas::utils::ArrayMath::literals;
-
-  AUTOPAS_OPENMP(parallel) {
-    const unsigned long numColors = stride[0] * stride[1] * stride[2];
-    for (unsigned long col = 0; col < numColors; ++col) {
       AUTOPAS_OPENMP(single) {
-        // barrier at omp for of previous loop iteration, so fine to change it for everyone!
-        notifyColorChange(col);
-        // implicit barrier at end of function.
+        // barrier at omp for of previous color, so fine to change it for everyone!
+        self.notifyColorChange(static_cast<unsigned long>(col));
+        // implicit barrier at end of single.
       }
-      const std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
+      const std::array<unsigned long, 3> startWithoutOffset(
+          utils::ThreeDimensionalMapping::oneToThreeD(static_cast<unsigned long>(col), stride));
       const std::array<unsigned long, 3> start(startWithoutOffset + offset);
 
       // intel compiler demands following:
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
-      if (collapseDepth == 2) {
+      if constexpr (collapseDepth == 2) {
         AUTOPAS_OPENMP(for schedule(runtime) collapse(2))
         for (unsigned long z = start_z; z < end_z; z += stride_z) {
           for (unsigned long y = start_y; y < end_y; y += stride_y) {
@@ -171,6 +178,39 @@ inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTrav
         }
       }
     }
+  };
+
+  /**
+   * Expands color processing over the compile-time index sequence Colors... and wraps all colors in a single
+   * OpenMP parallel region so that barriers between colors synchronize the thread team.
+   */
+  template <typename LoopBody, std::size_t... Colors>
+  inline void colorTraversalImpl(LoopBody &loopBody, const std::array<unsigned long, 3> &end,
+                                 const std::array<unsigned long, 3> &stride,
+                                 const std::array<unsigned long, 3> &offset, std::index_sequence<Colors...>);
+
+  /**
+   * Data Layout Converter to be used with this traversal
+   */
+  utils::DataLayoutConverter<Functor> _dataLayoutConverter;
+};
+
+template <class ParticleCell, class Functor, int collapseDepth>
+template <unsigned long numColors, typename LoopBody>
+inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTraversal(
+    LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
+    const std::array<unsigned long, 3> &offset) {
+  colorTraversalImpl(loopBody, end, stride, offset, std::make_index_sequence<numColors>{});
+}
+
+template <class ParticleCell, class Functor, int collapseDepth>
+template <typename LoopBody, std::size_t... Colors>
+inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTraversalImpl(
+    LoopBody &loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
+    const std::array<unsigned long, 3> &offset, std::index_sequence<Colors...>) {
+  AUTOPAS_OPENMP(parallel) {
+    (ColorWorker<Colors>::work(*this, loopBody, end, stride, offset), ...);
   }
 }
+
 }  // namespace autopas

@@ -66,7 +66,7 @@ inline void C18BasedTraversal<ParticleCell, Functor>::c18Traversal(LoopBody &&lo
   if (not allCells) {
     end[2] -= this->_overlap[2];
   }
-  this->colorTraversal(std::forward<LoopBody>(loopBody), end, stride);
+  this->template colorTraversal<18>(std::forward<LoopBody>(loopBody), end, stride);
 }
 
 }  // namespace autopas
