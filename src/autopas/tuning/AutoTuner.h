@@ -271,18 +271,10 @@ class AutoTuner {
   void setOptimalConfiguration(const Configuration &optimalConfig);
 
   /**
-   * Get the set of all container types present in the search space.
-   * Used by the Coordinator to calculate the intersection.
-   * @return set of all container types present in the search space.
+   * Return the search space as a const reference.
+   * @return the search space.
    */
-  std::set<ContainerOption> getSearchSpaceContainers() const;
-
-  /**
-   * Get the set of all possible cell size factors present in the search space.
-   * Used by the Coordinator to calculate the intersection between multiple AutoTuners.
-   * @return set of all cell size factors present in the search space.
-   */
-  std::set<double> getSearchSpaceCellSizeFactors() const;
+  const std::set<Configuration> &getSearchSpace() const;
 
  private:
   /**

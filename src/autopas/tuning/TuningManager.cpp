@@ -72,9 +72,11 @@ void TuningManager::forceRetune() {
   }
 }
 
-void TuningManager::logTuningResult(long tuningTime, size_t currentIteration,
-                                    InteractionTypeOption::Value interactionType) const {
-  _autoTuners.at(interactionType)->logTuningResult(tuningTime, currentIteration);
+void TuningManager::logTuningResult(const long tuningTime, const size_t currentIteration,
+                                    const InteractionTypeOption::Value interactionType) const {
+  if (_tuningFinishedLastIteration) {
+    _autoTuners.at(interactionType)->logTuningResult(tuningTime, currentIteration);
+  }
 }
 
 bool TuningManager::requiresRebuilding(const size_t currentIteration) {
@@ -204,49 +206,36 @@ void TuningManager::setOptimalConfigurations() {
 std::set<std::pair<ContainerOption, double>> TuningManager::getCommonContainerAndCellSizeFactors() const {
   if (_autoTuners.empty()) return {};
 
-  // Calculate Intersection of Supported Containers for all interaction types
-  std::set<ContainerOption> commonContainers;
-  std::set<double> commonCellSizeFactors;
-  bool first = true;
-  std::set<std::pair<ContainerOption, double>> intersectionSet;
+  auto tunersView = _autoTuners | std::views::values;
+  auto tunerIterator = tunersView.begin();
 
-  for (const auto &tuner : _autoTuners | std::views::values) {
-    std::set<ContainerOption> tunerContainers = tuner->getSearchSpaceContainers();
-    std::set<double> tunerCellSizeFactors = tuner->getSearchSpaceCellSizeFactors();
+  std::set<std::pair<ContainerOption, double>> commonContainerAndCSFSet;
 
-    if (first) {
-      commonContainers = std::move(tunerContainers);
-      commonCellSizeFactors = std::move(tunerCellSizeFactors);
-      first = false;
-    } else {
-      // Intersect Container Options
-      std::set<ContainerOption> resultContainers;
-      std::ranges::set_intersection(commonContainers, tunerContainers,
-                                    std::inserter(resultContainers, resultContainers.begin()));
-      commonContainers = std::move(resultContainers);
+  // Initialize with the first tuner's options
+  const auto &firstSearchSpace = (*tunerIterator)->getSearchSpace();
+  for (const auto &config : firstSearchSpace) {
+    commonContainerAndCSFSet.emplace(config.container, config.cellSizeFactor);
+  }
 
-      // Intersect Cell Size Factors
-      std::set<double> resultFactors;
-      std::ranges::set_intersection(commonCellSizeFactors, tunerCellSizeFactors,
-                                    std::inserter(resultFactors, resultFactors.begin()));
-      commonCellSizeFactors = std::move(resultFactors);
-    }
-
-    // Early exit if either common set becomes empty
-    if (commonContainers.empty() || commonCellSizeFactors.empty()) {
+  // Intersect with further tuners
+  for (const auto &tuner : std::ranges::subrange(++tunerIterator, tunersView.end())) {
+    if (commonContainerAndCSFSet.empty()) {
       return {};
     }
-  }
+    const auto &tunerSearchSpace = tuner->getSearchSpace();
 
-  // Generate the combinations (Cartesian product) of the remaining valid elements
-  std::set<std::pair<ContainerOption, double>> finalCombinations;
-  for (const auto &container : commonContainers) {
-    for (const auto &factor : commonCellSizeFactors) {
-      finalCombinations.emplace(container, factor);
+    std::set<std::pair<ContainerOption, double>> tunerContainerAndCSF;
+    for (const auto &config : tunerSearchSpace) {
+      tunerContainerAndCSF.emplace(config.container, config.cellSizeFactor);
     }
+
+    std::set<std::pair<ContainerOption, double>> intersectionSet;
+    std::ranges::set_intersection(commonContainerAndCSFSet, tunerContainerAndCSF,
+                                  std::inserter(intersectionSet, intersectionSet.end()));
+    commonContainerAndCSFSet = std::move(intersectionSet);
   }
 
-  return finalCombinations;
+  return commonContainerAndCSFSet;
 }
 
 bool TuningManager::tuningPhaseAboutToBegin(const size_t currentIteration) const {

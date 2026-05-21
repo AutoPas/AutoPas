@@ -448,19 +448,5 @@ void AutoTuner::checkEarlyStoppingCondition(const size_t tuningPhase) {
   }
 }
 
-std::set<ContainerOption> AutoTuner::getSearchSpaceContainers() const {
-  std::set<ContainerOption> containers;
-  for (const auto &conf : _searchSpace) {
-    containers.insert(conf.container);
-  }
-  return containers;
-}
-
-std::set<double> AutoTuner::getSearchSpaceCellSizeFactors() const {
-  std::set<double> factors;
-  for (const auto &conf : _searchSpace) {
-    factors.insert(conf.cellSizeFactor);
-  }
-  return factors;
-}
+const std::set<Configuration> &AutoTuner::getSearchSpace() const { return _searchSpace; }
 }  // namespace autopas

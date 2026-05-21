@@ -188,11 +188,7 @@ class LogicHandler {
       // If velocity method estimate exceeds upper bound, set the rebuild frequency to the user defined value.
       // This is done because we currently use the user defined rebuild frequency as the upper bound to avoid expensive
       // buffer interactions.
-      if (rebuildFrequencyEstimate > userProvidedRF) {
-        _tuningManager->setRebuildFrequency(userProvidedRF);
-      } else {
-        _tuningManager->setRebuildFrequency(rebuildFrequencyEstimate);
-      }
+      _tuningManager->setRebuildFrequency(std::min(userProvidedRF, rebuildFrequencyEstimate));
     }
 #endif
     bool doDataStructureUpdate = not neighborListsAreValid();
