@@ -255,9 +255,14 @@ class LJFunctorHWY
    *      bound on interaction partners in the sorted soa2. Since both arrays
    *      are sorted ascending, max_index[] is monotonically non-decreasing and
    *      is obtained in a single O(n) pass.
-   *   4. Run the p1xVec SIMD kernel on the packed cache with the tight j-loop
-   *      bound. Out-of-cutoff pairs are still masked by the 3D cutoff check
-   *      inside the kernel (the 1D bound is only approximate).
+   *   4. Run the SIMD kernel on the packed cache with the tight j-loop bound.
+   *      Out-of-cutoff pairs are still masked by the 3D cutoff check inside
+   *      the kernel (the 1D bound is only approximate).
+   *      For patterns that process multiple i-particles per outer-loop step
+   *      (p2xVecDiv2, pVecDiv2x2, pVecx1), the j-bound for the block
+   *      [i, i + s - 1] is taken as max_index[i + s - 1]. Since max_index is
+   *      monotonically non-decreasing, this is exactly the maximum upper
+   *      bound across the block — no per-i max reduction is needed.
    *   5. Scatter accumulated forces back to the original SoA indices.
    *.
    */
@@ -267,14 +272,43 @@ class LJFunctorHWY
     if (soa1.size() == 0 or soa2.size() == 0) {
       return;
     }
-    if (_vecPattern != VectorizationPattern::p1xVec) {
-      SoAFunctorPair(soa1, soa2, newton3);
-      return;
-    }
-    if (newton3) {
-      SoAFunctorPairImpl<true, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingDirection, sortingCutoff);
-    } else {
-      SoAFunctorPairImpl<false, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingDirection, sortingCutoff);
+    switch (_vecPattern) {
+      case VectorizationPattern::p1xVec: {
+        if (newton3) {
+          SoAFunctorPairImpl<true, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingDirection, sortingCutoff);
+        } else {
+          SoAFunctorPairImpl<false, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingDirection, sortingCutoff);
+        }
+        break;
+      }
+      case VectorizationPattern::p2xVecDiv2: {
+        if (newton3) {
+          SoAFunctorPairImpl<true, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingDirection, sortingCutoff);
+        } else {
+          SoAFunctorPairImpl<false, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingDirection,
+                                                                            sortingCutoff);
+        }
+        break;
+      }
+      case VectorizationPattern::pVecDiv2x2: {
+        if (newton3) {
+          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingDirection, sortingCutoff);
+        } else {
+          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingDirection,
+                                                                            sortingCutoff);
+        }
+        break;
+      }
+      case VectorizationPattern::pVecx1: {
+        if (newton3) {
+          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingDirection, sortingCutoff);
+        } else {
+          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingDirection, sortingCutoff);
+        }
+        break;
+      }
+      default:
+        autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
     }
   }
 
@@ -843,13 +877,11 @@ class LJFunctorHWY
    *
    * @tparam newton3
    * @tparam sorted Whether to sort+pack particles before iterating.
-   * @tparam vecPattern Vectorization pattern.
+   * @tparam vecPattern Vectorization pattern. All four patterns are supported on both paths.
    * @param soa1
    * @param soa2
    * @param sortingDirection Normalized axis for 1D projection (sorted path only).
    * @param sortingCutoff    1D cutoff for the upper-bound computation (sorted path only).
-   *
-   * @todo Add support for p2xVecDiv2 patterns
    */
   template <bool newton3, bool sorted, VectorizationPattern vecPattern>
   inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
@@ -999,13 +1031,33 @@ class LJFunctorHWY
     VectorDouble virialSumZ = highway::Zero(tag_double);
     VectorDouble uPotSum = highway::Zero(tag_double);
 
+    // Number of i-particles processed per main-loop step. Local so the compiler can const-fold
+    // even when _vecLengthDouble is not constexpr on the target architecture (e.g. ARM SVE).
+    const size_t iStepSize = [&]() -> size_t {
+      if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+        return 1;
+      } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+        return 2;
+      } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+        return _vecLengthDouble / 2;
+      } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+        return _vecLengthDouble;
+      }
+      return 1;
+    }();
+
     // Step 5: vectorized interaction loop.
     std::ptrdiff_t i = start_i;
     for (; checkFirstLoopCondition<false, vecPattern>(i, n1); incrementFirstLoop<vecPattern>(i)) {
       size_t jVecEnd;
       if constexpr (sorted) {
-        jVecEnd = maxIndex[i];
-        if (owned1Data[i] == autopas::OwnershipState::dummy) continue;
+        // maxIndex is monotonically non-decreasing, so the tightest valid bound for the i-block
+        // [i, i + iStepSize - 1] is maxIndex of the last particle in the block. For p1xVec
+        // (iStepSize=1) this collapses to maxIndex[i].
+        jVecEnd = maxIndex[i + iStepSize - 1];
+        if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+          if (owned1Data[i] == autopas::OwnershipState::dummy) continue;
+        }
       } else {
         jVecEnd = n2;
       }
@@ -1017,10 +1069,12 @@ class LJFunctorHWY
       // Rest I can't occur in 1xVec case
       const int restI = obtainILoopRemainderLength<false>(i, n1);
       if (restI > 0) {
+        // Remainder block covers [i, i + restI - 1]. Same monotonicity argument as above.
+        const size_t jVecEnd = sorted ? maxIndex[i + restI - 1] : n2;
         handleILoopBody<false, newton3, true, vecPattern>(i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data,
                                                           owned2Data, fx1Data, fy1Data, fz1Data, fx2Data, fy2Data,
                                                           fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY,
-                                                          virialSumZ, uPotSum, restI, n2);
+                                                          virialSumZ, uPotSum, restI, jVecEnd);
       }
     }
 
