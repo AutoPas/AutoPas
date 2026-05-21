@@ -52,7 +52,7 @@ See [Building](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/Build
 ## Multiple Interaction Types
 Since PR [751](https://github.com/AutoPas/AutoPas/pull/751), AutoPas also supports algorithms for 3-body interactions.
 Oftentimes, these are used additionally to standard pairwise interactions.
-For such simulations, the TuningManager orchestrates between two separate AutoTuners, one for pairwise and one for triwise interaction.
+For such simulations, the TuningManager orchestrates over two separate AutoTuners, one for pairwise and one for triwise interaction.
 After both AutoTuners have finished tuning, the optimal configurations are determined by aiming for an overall shortest runtime per time step.
 This takes into account that AutoPas would need to rebuild between every single Functor call in the case where the pairwise and triwise configurations use a different container or cell size factor.
 
