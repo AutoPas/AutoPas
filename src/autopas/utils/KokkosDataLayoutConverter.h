@@ -16,6 +16,7 @@ class KokkosDataLayoutConverter {
 
   explicit KokkosDataLayoutConverter() {}
 
+  // TODO: this will have to run in parallel using Kokkos::parallel_for
   template <class Input, class Output, std::size_t... I>
   void convertToSoA(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...> seq) {
 
@@ -27,6 +28,7 @@ class KokkosDataLayoutConverter {
     dstParticles.template markAllModified<Kokkos::HostSpace::execution_space>(seq);
   }
 
+  // TODO: this will have to run in parallel using Kokkos::parallel_for
   template <class Input, class Output, std::size_t... I>
   void convertToAoS(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...> seq) {
 

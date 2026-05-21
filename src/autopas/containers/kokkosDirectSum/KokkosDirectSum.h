@@ -37,12 +37,6 @@ template <class Particle_T>
         public:
             KokkosDirectSum(DataLayoutOption dataLayout, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double skin)
                 : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin), _dataLayout(dataLayout) {
-              if (dataLayout == DataLayoutOption::aos) {
-                _aosUpToDate = true;
-              }
-              else if (dataLayout == DataLayoutOption::soa) {
-                _soaUpToDate = true;
-              }
               _ownedParticles.setLayout(dataLayout);
               _haloParticles.setLayout(dataLayout);
             }
@@ -66,28 +60,6 @@ template <class Particle_T>
 
             // If possible, a method for adding a whole vector would make more sense (first touch policy, etc.)
             // TODO: provide an additional function for this
-
-            void addParticleImpl(const Particle_T &p) override {
-
-              std::lock_guard<AutoPasLock> guard (ownedLock);
-
-              if (numberOfOwned >= capacityOwned) {
-                // TODO: resize
-                std::cout << "Problem" << std::endl;
-              }
-              _ownedParticles.addParticle(numberOfOwned++, p);
-            }
-
-            void addHaloParticleImpl(const Particle_T &haloP) override {
-
-              std::lock_guard<AutoPasLock> guard(haloLock);
-
-                if (numberOfHalo < capacityHalo) {
-                    _haloParticles.addParticle(numberOfHalo++, haloP);
-                } else {
-                    // TODO: resize
-                }
-            }
 
             bool updateHaloParticle(const Particle_T &haloParticle) override {
               _haloParticles.template sync<HostSpace::execution_space>();
@@ -119,10 +91,12 @@ template <class Particle_T>
             }
 
             void deleteHaloParticles() override {
+              // TODO: maybe also do some actual changes to the halo buffer (memory footprint and stuff)
                 numberOfHalo = 0;
             }
 
             void deleteAllParticles() override {
+              // TODO: maybe also do some actual changes to the halo buffer (memory footprint and stuff)
                 numberOfHalo = 0;
                 numberOfOwned = 0;
             }
@@ -184,7 +158,6 @@ template <class Particle_T>
                   std::nullopt) override {
                 // Copy from DirectSum.h
                 convertToAoS();
-                _soaUpToDate = false;
                 return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
             }
 
@@ -193,7 +166,7 @@ template <class Particle_T>
                 utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
                     std::nullopt) const override {
                 // Copy from DirectSum.h
-                // TODO: think about how to handle case when particles are stored in SoA Format, or mark this as discouraged
+                // TODO: think about how to handle case when particles are stored in SoA Format, or mark this as discouraged (Problem: const qualifier prohibits necessary data conversions/copies...)
                 return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
             }
 
@@ -203,7 +176,6 @@ template <class Particle_T>
                     std::nullopt) override {
                 // Copy from DirectSum.h
                 convertToAoS();
-                _soaUpToDate = false;
                 return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
             }
 
@@ -212,7 +184,7 @@ template <class Particle_T>
                 utils::optRef<typename ContainerIterator<Particle_T, false, true>::ParticleVecType> additionalVectors =
                     std::nullopt) const override {
                 // Copy from DirectSum.h
-                // TODO: think about how to handle case when particles are stored in SoA Format, or mark this as discouraged (Problem: const qualifier prohibits data conversions...)
+                // TODO: think about how to handle case when particles are stored in SoA Format, or mark this as discouraged (Problem: const qualifier prohibits necessary data conversions/copies...)
                 return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
             }
 
@@ -244,13 +216,12 @@ template <class Particle_T>
 
               if (_dataLayout == DataLayoutOption::aos) {
                 convertToAoS(); /* this guarantees syncing to the Host (AoS must not run on CUDA - so far) */
-                _soaUpToDate = false;
+                _ownedParticles.markLayoutModified(DataLayoutOption::aos);
               }
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
                 _ownedParticles.template sync<ExecSpace>();
                 _haloParticles.template sync<ExecSpace>();
-                _aosUpToDate = false;
               }
 
               // TODO: make sure that no AoS runs on Cuda
@@ -288,6 +259,7 @@ template <class Particle_T>
               if (_dataLayout == DataLayoutOption::soa) {
                 _ownedParticles.template markModified<ExecSpace>();
                 _haloParticles.template markModified<ExecSpace>();
+                _ownedParticles.markLayoutModified(DataLayoutOption::soa);
               }
             }
 
@@ -300,6 +272,7 @@ template <class Particle_T>
               reduceInRegionKokkos<ExecSpace, false, Result, Reduction>(reduceLambda, result, behavior, boxMin, boxMax);
             }
 
+            // TODO: declare that changes to particles is actually undefined behavior (as no memory syncs and data conversions are issued)
             template<class ExecSpace, bool regionIter, typename Result, typename Reduction, typename Lambda>
             void reduceInRegionKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior, const std::array<double, 3>& lowerCorner, const std::array<double, 3>& higherCorner) {
               if (_dataLayout == DataLayoutOption::aos) {
@@ -383,6 +356,35 @@ template <class Particle_T>
               storage.template operator()<Particle_T::AttributeNames::ownershipState, true, true>(particleIndex) = OwnershipState::dummy;
               return true;
             }
+
+protected:
+
+  void addParticleImpl(const Particle_T &p) override {
+
+    // TODO: check whether the target data layout is up to date
+
+    std::lock_guard<AutoPasLock> guard (ownedLock);
+
+    if (numberOfOwned >= capacityOwned) {
+      // TODO: resize
+      std::cout << "Problem" << std::endl;
+    }
+    _ownedParticles.addParticle(numberOfOwned++, p);
+  }
+
+  void addHaloParticleImpl(const Particle_T &haloP) override {
+
+    // TODO: check whether the target layout is up to date
+
+    std::lock_guard<AutoPasLock> guard(haloLock);
+
+    if (numberOfHalo < capacityHalo) {
+      _haloParticles.addParticle(numberOfHalo++, haloP);
+    } else {
+      // TODO: resize
+      std::cout << "Problem" << std::endl;
+    }
+  }
     
     private:
         
@@ -412,19 +414,15 @@ template <class Particle_T>
           if (kokkosDsTraversal) {
 
             auto targetLayout = traversal->getDataLayout();
-
+            _ownedParticles.markLayoutModified(targetLayout);
             kokkosDsTraversal->retrieveOwned(_ownedParticles);
 
             if (targetLayout == DataLayoutOption::aos) {
-              _soaUpToDate = false;
-              _aosUpToDate = true;
               if (_dataLayout != targetLayout) {
                 convertToSoA();
               }
             }
             else if (targetLayout == DataLayoutOption::soa) {
-              _aosUpToDate = false;
-              _soaUpToDate = true;
               if (_dataLayout != targetLayout) {
                 convertToAoS();
               }
@@ -445,27 +443,13 @@ template <class Particle_T>
         }
 
         void convertToSoA() {
-
-          if (_soaUpToDate) {
-            return;
-          }
-
-          _ownedParticles.convertToSoA(numberOfOwned);
-          _haloParticles.convertToSoA(numberOfHalo);
-
-          _soaUpToDate = true;
+          _ownedParticles.syncAoSToSoA();
+          _haloParticles.syncAoSToSoA();
         }
 
         void convertToAoS() {
-
-          if (_aosUpToDate) {
-            return;
-          }
-
-          _ownedParticles.convertToAoS(numberOfOwned);
-          _haloParticles.convertToAoS(numberOfHalo);
-
-          _aosUpToDate = true;
+          _ownedParticles.syncSoAToAoS();
+          _haloParticles.syncAoSToSoA();
         }
 
         // Nearly a clone of DirectSum::getParticleImpl to guarantee that we fulfill all the requirements from getParticle in the ParticleContainerInterface's method description
@@ -565,9 +549,10 @@ template <class Particle_T>
 
         DataLayoutOption _dataLayout {};
 
-        bool _aosUpToDate = false;
+        // TODO: find a better solution than having the flags in the container (maybe it makes sense to have them in the kokkosStorage
+        // bool _aosUpToDate = false;
 
-        bool _soaUpToDate = false;
+        // bool _soaUpToDate = false;
 
         utils::KokkosStorage<Particle_T> _ownedParticles {};
 

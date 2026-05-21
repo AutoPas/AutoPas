@@ -38,7 +38,7 @@ namespace autopas::utils {
     }
 
     void resize(size_t numParticles) {
-
+      // TODO: decide whether this makes the buffers dirty
       switch (_layout) {
         case DataLayoutOption::aos: {
           storageAoS.resize(numParticles);
@@ -54,32 +54,44 @@ namespace autopas::utils {
     void addParticle(size_t index, const Particle_T &p) {
       switch (_layout) {
         case DataLayoutOption::aos: {
+          syncSoAToAoS();
           storageAoS.addParticle(index, p);
+          _aosDirty = true;
           break;
         }
         case DataLayoutOption::soa: {
+          syncAoSToSoA();
           sync<Kokkos::HostSpace::execution_space>();
           storageSoA.addParticle(index, p);
           markModified<Kokkos::HostSpace::execution_space>();
+          _soaDirty = true;
           break;
         }
       }
     }
 
-    void convertToSoA(size_t size) {
-      constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
-      constexpr auto I = std::make_index_sequence<tupleSize>();
+    void syncAoSToSoA() {
+      if (_aosDirty) {
+        constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
+        constexpr auto I = std::make_index_sequence<tupleSize>();
 
-      storageSoA.resize(size);
-      _converter.convertToSoA(storageAoS, storageSoA, size, I);
+        const auto size = storageAoS.size();
+        storageSoA.resize(size);
+        _converter.convertToSoA(storageAoS, storageSoA, size, I);
+        _aosDirty = false;
+      }
     }
 
-    void convertToAoS(size_t size) {
-      constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
-      constexpr auto I = std::make_index_sequence<tupleSize>();
+    void syncSoAToAoS() {
+      if (_soaDirty) {
+        constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
+        constexpr auto I = std::make_index_sequence<tupleSize>();
 
-      storageAoS.resize(size);
-      _converter.convertToAoS(storageSoA, storageAoS, size, I);
+        const auto size = storageSoA.size();
+        storageAoS.resize(size);
+        _converter.convertToAoS(storageSoA, storageAoS, size, I);
+        _soaDirty = false;
+      }
     }
 
     template <size_t attribute, bool offset, bool host = false>
@@ -141,6 +153,15 @@ namespace autopas::utils {
       storageSoA.template markAllModified<Target>(I);
     }
 
+    // TODO: rethink this interface and when this should be used
+    void markLayoutModified(DataLayoutOption layout) {
+      if (layout == DataLayoutOption::soa) {
+        _soaDirty = true;
+      } else if (layout == DataLayoutOption::aos) {
+        _aosDirty = true;
+      }
+    }
+
     void setLayout(DataLayoutOption newLayout) {
       _layout = newLayout;
     }
@@ -190,6 +211,10 @@ namespace autopas::utils {
 
     KokkosAoS<Particle_T> storageAoS {};
     Particle_T::KokkosSoAArraysType storageSoA {};
+
+    // TODO: maybe think of a better concept for this in the future
+    bool _soaDirty {false};
+    bool _aosDirty {false};
   };
 
 }

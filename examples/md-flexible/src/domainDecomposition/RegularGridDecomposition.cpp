@@ -312,7 +312,6 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
                                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
   using autopas::utils::Math::isNearRel;
-  // TODO: replace both arrays with Kokkos version
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
@@ -321,8 +320,6 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 
     auto reflect = [&](bool isUpper) {
       const auto boundaryPosition = isUpper ? reflSkinMax[dimensionIndex] : reflSkinMin[dimensionIndex];
-
-      // TODO: forEachInRegionKokkos() -> mainly not to unleash GPU power but more to avoid data conversions
 
       if (!autoPasContainer.containerAllowsKokkos()) {
               for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
@@ -469,7 +466,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
           } else if (dimensionIndex == 2) {
             position = storage.template operator()<ParticleType::AttributeNames::posZ, true, ForEachHostFlag>(i);
           } else {
-            position = 42.; // TODO; throw expection in this case as this should never happen
+            position = 42.; // TODO; throw exception in this case as this should never happen
           }
 
           const auto distanceToBoundary = position - boundaryPosition;
@@ -492,7 +489,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
             return displacement * scalarMultiple;
           };
 
-          // TODO: extract sigma
+          // TODO: extract sigma somehow from somewhere
           const ParticleType::ParticleSoAFloatPrecision sigma = 1.;
 
           const bool reflectMoleculeFlag = distanceToBoundary < sixthRootOfTwo * 0.5 * sigma;
@@ -562,6 +559,7 @@ void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::ve
   }
 }
 
+// TODO: think about how to change signature to allow for Kokkos haloParticleBuffer
 void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasContainer, size_t direction,
                                                        const std::array<double, _dimensionCount> &boxMin,
                                                        const std::array<double, _dimensionCount> &boxMax,
@@ -580,18 +578,43 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
   // estimate the number of halo particles by calculating the fraction of the search box and scale it up by 10%
   haloParticlesBuffer.reserve(
       static_cast<size_t>(boxVolume / localBoxVolume * autoPasContainer.getNumberOfParticles() * 1.1));
-  // Collect the halo particles for the neighbor
-  for (auto particleIter = autoPasContainer.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
-       particleIter.isValid(); ++particleIter) {
-    haloParticlesBuffer.push_back(*particleIter);
+  // if (!autoPasContainer.containerAllowsKokkos()) {
+    // Collect the halo particles for the neighbor
+    for (auto particleIter = autoPasContainer.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
+     particleIter.isValid(); ++particleIter) {
+      haloParticlesBuffer.push_back(*particleIter);
 
-    // if the particle is outside the global box move it to the other side (periodic boundary)
-    if (atGlobalBoundary) {
-      auto position = particleIter->getR();
-      position[direction] = position[direction] + wrapAroundDistance;
-      haloParticlesBuffer.back().setR(position);
-    }
-  }
+      // if the particle is outside the global box move it to the other side (periodic boundary)
+      if (atGlobalBoundary) {
+        auto position = particleIter->getR();
+        position[direction] = position[direction] + wrapAroundDistance;
+        haloParticlesBuffer.back().setR(position);
+      }
+     }
+/*
+} else {
+
+    auto lambda = KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
+      // TODO: somehow push to halo buffer (Problem: so far, halo buffer is std::vector which required push_backs)
+      // TODO: although, as it is guaranteed that this will so far only happen serial on the CPU, it could also work with a std::vector
+      if (atGlobalBoundary) {
+
+        // TODO: change position in halo buffer
+        if (direction == 0) {
+
+        } else if (direction == 1) {
+
+        } else if (direction == 2) {
+
+        } else {
+          // TODO: throw exception as this should never happen
+        }
+      }
+
+    };
+
+    autoPasContainer.template forEachInRegionKokkos<Kokkos::Serial>(lambda, boxMin, boxMax, autopas::IteratorBehavior::owned);
+  }*/
 }
 
 void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(
