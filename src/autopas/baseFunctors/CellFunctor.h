@@ -16,12 +16,14 @@ namespace autopas::internal {
  * A cell functor. This functor is built from the normal Functor of the template
  * type ParticleFunctor. It is an internal object to handle interactions between
  * two cells of particles.
- * @tparam ParticleCell
- * @tparam ParticleFunctor the functor which
+ * @tparam ParticleCell_T
+ * @tparam ParticleFunctor_T the functor which
  * @tparam bidirectional if no newton3 is used processCellPair(cell1, cell2) should also handle processCellPair(cell2,
  * cell1)
+ * @tparam processHaloInteractions includes halo interactions if set to true
  */
-template <class ParticleCell, class ParticleFunctor, bool bidirectional = true>
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional = true,
+          bool processHaloInteractions = false>
 class CellFunctor {
  public:
   /**
@@ -33,14 +35,14 @@ class CellFunctor {
    * @param dataLayout The data layout to be used.
    * @param useNewton3 Parameter to specify whether newton3 is used or not.
    */
-  explicit CellFunctor(ParticleFunctor *f, const double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
+  explicit CellFunctor(ParticleFunctor_T *f, const double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
       : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**
    * Process the interactions inside one cell.
    * @param cell All pairwise interactions of particles inside this cell are calculated.
    */
-  void processCell(ParticleCell &cell);
+  void processCell(ParticleCell_T &cell);
 
   /**
    * Process the interactions between the particles of cell1 with particles of cell2.
@@ -49,7 +51,7 @@ class CellFunctor {
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2. If no parameter or {0, 0, 0} is
    * given, sorting will be disabled.
    */
-  void processCellPair(ParticleCell &cell1, ParticleCell &cell2,
+  void processCellPair(ParticleCell_T &cell1, ParticleCell_T &cell2,
                        const std::array<double, 3> &sortingDirection = {0., 0., 0.});
 
   /**
@@ -89,7 +91,7 @@ class CellFunctor {
    * newton3=false.
    * @param cell
    */
-  void processCellAoS(ParticleCell &cell);
+  void processCellAoS(ParticleCell_T &cell);
 
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
@@ -98,7 +100,8 @@ class CellFunctor {
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
-  void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
+  void processCellPairAoSN3(ParticleCell_T &cell1, ParticleCell_T &cell2,
+                            const std::array<double, 3> &sortingDirection);
 
   /**
    * Applies the functor to all particle pairs between cell1 and cell2
@@ -107,17 +110,18 @@ class CellFunctor {
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
-  void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
+  void processCellPairAoSNoN3(ParticleCell_T &cell1, ParticleCell_T &cell2,
+                              const std::array<double, 3> &sortingDirection);
 
-  void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2);
+  void processCellPairSoAN3(ParticleCell_T &cell1, ParticleCell_T &cell2);
 
-  void processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2);
+  void processCellPairSoANoN3(ParticleCell_T &cell1, ParticleCell_T &cell2);
 
-  void processCellSoAN3(ParticleCell &cell);
+  void processCellSoAN3(ParticleCell_T &cell);
 
-  void processCellSoANoN3(ParticleCell &cell);
+  void processCellSoANoN3(ParticleCell_T &cell);
 
-  ParticleFunctor *_functor;
+  ParticleFunctor_T *_functor;
 
   const double _sortingCutoff;
 
@@ -132,22 +136,26 @@ class CellFunctor {
   bool _useNewton3;
 };
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::setSortingThreshold(size_t sortingThreshold) {
+template <class ParticleCell, class ParticleFunctor, bool bidirectional, bool processHaloInteractions>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional, processHaloInteractions>::setSortingThreshold(
+    size_t sortingThreshold) {
   _sortingThreshold = sortingThreshold;
 }
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCell(ParticleCell &cell) {
+template <class ParticleCell, class ParticleFunctor, bool bidirectional, bool processHaloInteractions>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional, processHaloInteractions>::processCell(
+    ParticleCell &cell) {
   if ((_dataLayout == DataLayoutOption::soa and cell._particleSoABuffer.size() == 0) or
       (_dataLayout == DataLayoutOption::aos and cell.isEmpty())) {
     return;
   }
 
   // avoid force calculations if the cell contains only halo particles or if the cell is empty (=dummy)
-  const bool cellHasOwnedParticles = toInt64(cell.getPossibleParticleOwnerships() & OwnershipState::owned);
-  if (not cellHasOwnedParticles) {
-    return;
+  if constexpr (not processHaloInteractions) {
+    const bool cellHasOwnedParticles = toInt64(cell.getPossibleParticleOwnerships() & OwnershipState::owned);
+    if (not cellHasOwnedParticles) {
+      return;
+    }
   }
 
   // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
@@ -156,17 +164,13 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCell(Part
       processCellAoS(cell);
       break;
     case DataLayoutOption::soa:
-      if (_useNewton3) {
-        processCellSoAN3(cell);
-      } else {
-        processCellSoANoN3(cell);
-      }
+      _useNewton3 ? processCellSoAN3(cell) : processCellSoANoN3(cell);
       break;
   }
 }
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
+template <class ParticleCell, class ParticleFunctor, bool bidirectional, bool processHaloInteractions>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional, processHaloInteractions>::processCellPair(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   if ((_dataLayout == DataLayoutOption::soa and
        (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0)) or
@@ -176,12 +180,14 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
 
   // avoid force calculations if both cells can not contain owned particles or if newton3==false and cell1 does not
   // contain owned particles
-  const bool cell1HasOwnedParticles = toInt64(cell1.getPossibleParticleOwnerships() & OwnershipState::owned);
-  const bool cell2HasOwnedParticles = toInt64(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
+  if constexpr (not processHaloInteractions) {
+    const bool cell1HasOwnedParticles = toInt64(cell1.getPossibleParticleOwnerships() & OwnershipState::owned);
+    const bool cell2HasOwnedParticles = toInt64(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
 
-  if (((not cell1HasOwnedParticles) and (not _useNewton3) and (not bidirectional)) or
-      ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles))) {
-    return;
+    if (((not cell1HasOwnedParticles) and (not _useNewton3) and (not bidirectional)) or
+        ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles))) {
+      return;
+    }
   }
 
   // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
@@ -203,18 +209,24 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
   }
 }
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoS(ParticleCell &cell) {
+template <class ParticleCell, class ParticleFunctor, bool bidirectional, bool processHaloInteractions>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional, processHaloInteractions>::processCellAoS(
+    ParticleCell &cell) {
   // helper function
   const auto interactParticles = [&](auto &p1, auto &p2) {
     if (_useNewton3) {
       _functor->AoSFunctor(p1, p2, true);
     } else {
-      if (not p1.isHalo()) {
+      if constexpr (processHaloInteractions) {
         _functor->AoSFunctor(p1, p2, false);
-      }
-      if (not p2.isHalo()) {
         _functor->AoSFunctor(p2, p1, false);
+      } else {
+        if (not p1.isHalo()) {
+          _functor->AoSFunctor(p1, p2, false);
+        }
+        if (not p2.isHalo()) {
+          _functor->AoSFunctor(p2, p1, false);
+        }
       }
     }
   };
@@ -244,8 +256,8 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoS(P
   }
 }
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSN3(
+template <class ParticleCell, class ParticleFunctor, bool bidirectional, bool processHaloInteractions>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional, processHaloInteractions>::processCellPairAoSN3(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   if ((cell1.size() + cell2.size() > _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
     SortedCellView<ParticleCell> cell1Sorted(cell1, sortingDirection);
@@ -268,8 +280,8 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
   }
 }
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSNoN3(
+template <class ParticleCell, class ParticleFunctor, bool bidirectional, bool processHaloInteractions>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional, processHaloInteractions>::processCellPairAoSNoN3(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   // helper function
   const auto interactParticlesNoN3 = [&](auto &p1, auto &p2) {
@@ -300,28 +312,30 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairA
   }
 }
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairSoAN3(ParticleCell &cell1,
-                                                                                     ParticleCell &cell2) {
+template <class ParticleCell, class ParticleFunctor, bool bidirectional, bool processHaloInteractions>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional, processHaloInteractions>::processCellPairSoAN3(
+    ParticleCell &cell1, ParticleCell &cell2) {
   _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
 }
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairSoANoN3(ParticleCell &cell1,
-                                                                                       ParticleCell &cell2) {
+template <class ParticleCell, class ParticleFunctor, bool bidirectional, bool processHaloInteractions>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional, processHaloInteractions>::processCellPairSoANoN3(
+    ParticleCell &cell1, ParticleCell &cell2) {
   _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
   if constexpr (bidirectional) {
     _functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
   }
 }
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellSoAN3(ParticleCell &cell) {
+template <class ParticleCell, class ParticleFunctor, bool bidirectional, bool processHaloInteractions>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional, processHaloInteractions>::processCellSoAN3(
+    ParticleCell &cell) {
   _functor->SoAFunctorSingle(cell._particleSoABuffer, true);
 }
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellSoANoN3(ParticleCell &cell) {
+template <class ParticleCell, class ParticleFunctor, bool bidirectional, bool processHaloInteractions>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional, processHaloInteractions>::processCellSoANoN3(
+    ParticleCell &cell) {
   _functor->SoAFunctorSingle(cell._particleSoABuffer, false);  // the functor has to enable this...
 }
 }  // namespace autopas::internal

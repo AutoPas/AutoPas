@@ -8,7 +8,7 @@
 
 #include "LCC08CellHandler.h"
 #include "LCTraversalInterface.h"
-#include "autopas/baseFunctors/CellFunctorNeighborListBuild3B.h"
+#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
 
 namespace autopas {
@@ -62,8 +62,8 @@ class LCC08NeighborListBuilding3B : public C08BasedTraversal<ParticleCell, Pairw
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  LCC08CellHandler<ParticleCell, PairwiseFunctor,
-                   internal::CellFunctorNeighborListBuild3B<ParticleCell, PairwiseFunctor>, true>
+  LCC08CellHandler<ParticleCell, PairwiseFunctor, internal::CellFunctor<ParticleCell, PairwiseFunctor, true, true>,
+                   true>
       _cellHandler;
 };
 
