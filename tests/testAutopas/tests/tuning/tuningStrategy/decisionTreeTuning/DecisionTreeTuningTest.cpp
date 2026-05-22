@@ -70,10 +70,10 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                              autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise)};
 
-  std::string modelPath = "/tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning/test_model.pkl";
+  std::string modelPath = std::string(AUTOPAS_DT_TEST_MODEL_DIR) + "/test_model.pkl";
 
-  ASSERT_TRUE(std::filesystem::exists(std::string(AUTOPAS_SOURCE_DIR) + modelPath))
-      << "Test model file does not exist.";
+  ASSERT_TRUE(std::filesystem::exists(modelPath))
+      << "Test model file does not exist. Did the generate_dt_test_models target run?";
 
   autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise);
   MockLiveInfo mockLiveInfo;
@@ -118,9 +118,9 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
       autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise)};
 
-  std::string modelPath = "/tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning/test_model_invalid.pkl";
-  ASSERT_TRUE(std::filesystem::exists(std::string(AUTOPAS_SOURCE_DIR) + modelPath))
-      << "Invalid response test model file does not exist.";
+  std::string modelPath = std::string(AUTOPAS_DT_TEST_MODEL_DIR) + "/test_model_invalid.pkl";
+  ASSERT_TRUE(std::filesystem::exists(modelPath))
+      << "Invalid test model file does not exist. Did the generate_dt_test_models target run?";
   autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise);
 
   MockLiveInfo mockLiveInfo;
@@ -140,7 +140,7 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
-      std::runtime_error);
+      utils::ExceptionHandler::AutoPasException);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF";
 #endif
