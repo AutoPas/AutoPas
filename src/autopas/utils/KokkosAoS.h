@@ -37,17 +37,17 @@ namespace autopas::utils {
       view(index) = p;
     }
 
-    template <size_t attribute, bool>
+    template <size_t attribute>
     constexpr auto& operator() (int i) const {
       return view(i).template operator()<static_cast<Particle_T::AttributeNames>(attribute)>();
     }
 
-    template <size_t attribute, bool>
+    template <size_t attribute>
     auto get(size_t index) {
       return view(index).template get<static_cast<Particle_T::AttributeNames>(attribute)>();
     }
 
-    template <size_t attribute, bool>
+    template <size_t attribute>
     const auto get(size_t index) const {
       return view(index).template get<static_cast<Particle_T::AttributeNames>(attribute)>();
     }
@@ -56,7 +56,7 @@ namespace autopas::utils {
       return view;
     }
 
-    template <size_t attribute, bool, typename Type>
+    template <size_t attribute, typename Type>
     void set(Type value, size_t index) {
       view(index).template set<static_cast<Particle_T::AttributeNames>(attribute)>(value);
     }
@@ -76,6 +76,7 @@ namespace autopas::utils {
 
   private:
 
+    // TODO: think about converting this to a Kokkos::DualView and allow to store AoS particles on the GPU
     Kokkos::View<Particle_T*, Kokkos::HostSpace> view;
   };
 

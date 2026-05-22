@@ -99,16 +99,24 @@ namespace autopas::utils {
     constexpr auto& operator() (int i) const {
       switch (_layout) {
         case DataLayoutOption::aos: {
-          return storageAoS.template operator()<attribute, offset>(i);
+          return storageAoS.template operator()<attribute>(i);
         }
         case DataLayoutOption::soa: {
           return storageSoA.template operator()<attribute, offset, host>(i);
         }
         default: {
           // THIS SHOULD NEVER HAPPEN, TODO: log an error
-          return storageAoS.template operator()<attribute, offset>(i);
+          return storageAoS.template operator()<attribute>(i);
         }
       }
+    }
+
+    template <bool host>
+    void copyParticle(int targetIndex, const KokkosStorage<Particle_T>& otherStorage, int sourceIndex) const {
+      constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
+      constexpr auto I = std::make_index_sequence<tupleSize>();
+
+      this->template copyParticleImpl<host>(targetIndex, otherStorage, sourceIndex, I);
     }
 
     template <bool regionIter, bool host, typename T>
@@ -205,6 +213,20 @@ namespace autopas::utils {
     }
 
   private:
+
+    template <bool host, std::size_t... I>
+    void copyParticleImpl (int targetIndex, const KokkosStorage<Particle_T>& otherStorage, int sourceIndex, std::index_sequence<I...>) const {
+
+      switch (_layout) {
+        case DataLayoutOption::aos: {
+          ((this->storageAoS.template operator()<I+1>(targetIndex) = otherStorage.getAoS().template operator()<I+1>(sourceIndex)), ...);
+        }
+        case DataLayoutOption::soa: {
+          ((this->storageSoA.template operator()<I, false, host>(targetIndex) = otherStorage.getSoA().template operator()<I, false, host>(sourceIndex)), ...);
+        }
+      }
+    }
+
     KokkosDataLayoutConverter<Particle_T> _converter {};
 
     DataLayoutOption _layout {DataLayoutOption::aos};

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/kokkosDirectSum/KokkosDirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"

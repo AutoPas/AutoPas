@@ -24,7 +24,7 @@ namespace autopas {
  * As a consequence, we discourage the use of this container for larger numbers of particles
  *
  * So far, the surrounding volume is not decomposed and also stored in a single list of particles (this can be subject
- * to change in future implemenetations.
+ * to change in future implementations)
  *
  * The most interesting feature of this class is that it allows to store particle data also in the SoA format and not
  * only AoS. For further information, we refer to the KokkosStorage class
@@ -91,17 +91,18 @@ template <class Particle_T>
             }
 
             void deleteHaloParticles() override {
-              // TODO: maybe also do some actual changes to the halo buffer (memory footprint and stuff)
-                numberOfHalo = 0;
+              numberOfHalo = 0;
+              _haloParticles.resize(0);
             }
 
             void deleteAllParticles() override {
               // TODO: maybe also do some actual changes to the halo buffer (memory footprint and stuff)
-                numberOfHalo = 0;
-                numberOfOwned = 0;
+              numberOfHalo = 0;
+              numberOfOwned = 0;
             }
 
             size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const override {
+              // TODO: this should maybe better just count the number of particles in both lists that fulfill the behavior requirement
               size_t number = 0;
               if (behavior & 0b1) {
                 number += numberOfOwned;
@@ -109,8 +110,6 @@ template <class Particle_T>
               if (behavior & 0b10) {
                 number += numberOfHalo;
               }
-              // TODO: other behaviors (Actually, dummies can be somewhere in both(?) lists)
-              // maybe find dummies in owned list with the help of reduceKokkos()
               return number;
             }
 
@@ -134,14 +133,93 @@ template <class Particle_T>
             }
 
             [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
+
+              /* Prepare data structures */
+              utils::KokkosStorage<Particle_T> migrants;
+              migrants.setLayout(_ownedParticles.getLayout());
+              migrants.resize(_ownedParticles.size());
+
+              auto& boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
+              auto& boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
+
+              auto owned = _ownedParticles;
+
+              // TODO: change HostSpace to whatever other space
+              Kokkos::View<int*, HostSpace> migrantCounter;
+              Kokkos::resize(migrantCounter, 1);
+
+              // TODO: infer this from some other location/property
+              constexpr bool host = true;
+
               if (keepNeighborListsValid) {
-                // TODO: collect particles and mark non owned as dummy
                 // i.e.: those particles which are outside of the box shall be returned, halo particles should be marked as dummies
+                // TODO: think about the validity of this approach because in theory, the particles should still exist for neighbor lists being valid (but this is not the case for DirectSum as there are no neighbor lists)
+                numberOfHalo = 0;
+
+                // TODO: change HostSpace to whatever other space
+                // TODO: make sure that owned is synced to the right memory space
+                Kokkos::parallel_for("collectMigrants", Kokkos::RangePolicy<HostSpace::execution_space>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
+
+                  // TODO: make sure this logic is working, i.e. the correct particles are found, i.e. the owned particles outside of the box
+                  if ((not owned.template fulfillsIteratorRequirements<true, host>(i, IteratorBehavior::ownedOrHaloOrDummy, boxMin, boxMax))
+                     and owned.template fulfillsIteratorRequirements<false, host>(i, IteratorBehavior::owned, boxMin, boxMax)) {
+
+                    int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
+                    migrants.template copyParticle<host>(migrantIndex, owned, i);
+
+                    owned.template operator()<Particle_T::AttributeNames::ownershipState, true, host>(i) = OwnershipState::dummy;
+                  }
+
+                });
+
+                // TODO: sth else than host space
+                owned.template markModified<HostSpace::execution_space>();
+                owned.markLayoutModified(owned.getLayout());
+
+                // TODO: shrink to fit for migrants
+
+                // TODO: somehow get the migrants into a std::vector and return that
                 return {};
               }
               deleteHaloParticles();
-              // TODO: delete dummy particles
-              // TODO: determine those particles which are not inside of the box and return them
+
+              utils::KokkosStorage<Particle_T> survivors;
+              survivors.setLayout(_ownedParticles.getLayout());
+              survivors.resize(_ownedParticles.size());
+
+              // TODO: change HostSpace to whatever other space
+              Kokkos::View<int*, HostSpace> survivorCounter;
+              Kokkos::resize(survivorCounter, 1);
+
+              Kokkos::parallel_for("collectMigrantsAndReinsertOwned", Kokkos::RangePolicy<HostSpace::execution_space>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
+
+                if (owned.template fulfillsIteratorRequirements<false, host>(i, IteratorBehavior::owned, boxMin, boxMax)) {
+                  /* Particle is owned */
+
+                  if (owned.template fulfillsIteratorRequirements<true, host>(i, IteratorBehavior::owned, boxMin, boxMax)) {
+                    /* Particle is within the container */
+
+                    // TODO: this can lead to heavy contention on the locks... -> maybe think of a better approach
+                    int survivorIndex = Kokkos::atomic_fetch_inc(&survivorCounter(0));
+                    survivors.template copyParticle<host>(survivorIndex, owned, i);
+                  } else {
+                    /* Particle is outside the container boundary */
+
+                    int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
+                    migrants.template copyParticle<host>(migrantIndex, owned, i);
+                  }
+                }
+              });
+
+              // TODO: shrink to fit for migrants and survivors
+
+              // TODO: sth else than host space
+              survivors.template markModified<HostSpace::execution_space>();
+              survivors.markLayoutModified(survivors.getLayout());
+
+              _ownedParticles = survivors;
+
+              // TODO: somehow get the migrants into a std::vector and return that
 
               return {};
             }
