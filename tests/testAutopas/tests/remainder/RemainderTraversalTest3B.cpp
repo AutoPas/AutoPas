@@ -7,7 +7,6 @@
 #include "RemainderTraversalTest3B.h"
 
 #include "autopas/LogicHandler.h"
-#include "autopas/options/TuningMetricOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
@@ -22,8 +21,9 @@
  * @note Buffers need to have at least one (empty) cell. They must not be empty.
  *
  * @param particlesContainerOwned
- * @param particlesBuffer
- * @param particlesHaloBuffer
+ * @param particlesContainerHalo
+ * @param particlesBuffers
+ * @param particlesHaloBuffers
  * @param n3 Newton3 on or off
  */
 void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
@@ -49,13 +49,13 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
 
   constexpr double cellSizeFactor = 1.;
   constexpr unsigned int verletRebuildFrequency = 10;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
       .boxMax{10., 10., 10.},
       .cutoff = 2.5,
       .verletSkin = 0.5,
   };
-  const autopas::AutoTunerInfo autoTunerInfo{
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
       .maxSamples = 3,
   };
@@ -65,11 +65,12 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3,
         autopas::InteractionTypeOption::triwise}});
-  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::triwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
-  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tunerManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::triwise);
+
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 
   // Add particles. Calling add(Halo)Particle on a fresh logicHandler should place the particles directly in the
   // container.
@@ -97,14 +98,13 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
 
   // Expected displacements of particles. Signs can differ
   using namespace autopas::utils::ArrayMath::literals;
-  const std::array<double, 3> drij{-1., 1., 0.};
-  const std::array<double, 3> drki{1., 0., -1.};
-  const std::array<double, 3> drjk{0., -1., 1.};
+  constexpr std::array<double, 3> drij{-1., 1., 0.};
+  constexpr std::array<double, 3> drki{1., 0., -1.};
 
-  const double distSquared = 2.;  // Distance between every particle pair should be sqrt(2)
-  const double cosNum = -1.;      // e.g. dot(drij, drki)
-  const double cosAll = cosNum * cosNum * cosNum;
-  const double distSix = distSquared * distSquared * distSquared;
+  constexpr double distSquared = 2.;  // Distance between every particle pair should be sqrt(2)
+  constexpr double cosNum = -1.;      // e.g. dot(drij, drki)
+  constexpr double cosAll = cosNum * cosNum * cosNum;
+  constexpr double distSix = distSquared * distSquared * distSquared;
   const double invdr5 = nu / (distSix * distSix * std::sqrt(distSix));
 
   auto expectedFi = drij * (cosNum * cosNum - distSquared * distSquared + 5.0 * cosAll / distSquared) +
@@ -438,13 +438,13 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
   /// Setup AutoTuner
   constexpr double cellSizeFactor = 1.;
   constexpr unsigned int verletRebuildFrequency = 10;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
       .boxMax{10., 10., 10.},
       .cutoff = 2.5,
       .verletSkin = 0.5,
   };
-  const autopas::AutoTunerInfo autoTunerInfo{
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
       .maxSamples = 3,
   };
@@ -454,11 +454,12 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
         autopas::InteractionTypeOption::triwise}});
-  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::triwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
-  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tunerManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::triwise);
+
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 
   // fill the container with the given particles
   for (const auto &p : particles) {

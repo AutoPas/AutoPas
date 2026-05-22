@@ -113,22 +113,6 @@ class ParticleBase {
   friend std::ostream &operator<<(std::ostream &os, const autopas::ParticleBase<T, P> &D);
 
   /**
-   * Equality operator for ParticleBase class.
-   * @param rhs
-   * @return
-   */
-  bool operator==(const ParticleBase &rhs) const {
-    return std::tie(_r, _v, _f, _id) == std::tie(rhs._r, rhs._v, rhs._f, rhs._id);
-  }
-
-  /**
-   * Not-Equals operator for ParticleBase class.
-   * @param rhs
-   * @return
-   */
-  bool operator!=(const ParticleBase &rhs) const { return not(rhs == *this); }
-
-  /**
    * get the force acting on the particle
    * @return force
    */

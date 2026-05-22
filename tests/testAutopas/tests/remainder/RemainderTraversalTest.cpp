@@ -7,7 +7,6 @@
 #include "RemainderTraversalTest.h"
 
 #include "autopas/LogicHandler.h"
-#include "autopas/options/TuningMetricOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
@@ -22,9 +21,11 @@
  * @note Buffers need to have at least one (empty) cell. They must not be empty.
  *
  * @param particlesContainerOwned
- * @param particlesBuffer
- * @param particlesHaloBuffer
+ * @param particlesContainerHalo
+ * @param particlesBuffers
+ * @param particlesHaloBuffers
  * @param n3 Newton3 on or off
+ * @param dataLayout
  */
 void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
                               std::vector<Molecule> &particlesContainerHalo,
@@ -49,13 +50,13 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
 
   constexpr double cellSizeFactor = 1.;
   constexpr unsigned int verletRebuildFrequency = 10;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
       .boxMax{10., 10., 10.},
       .cutoff = 2.5,
       .verletSkin = 0.5,
   };
-  const autopas::AutoTunerInfo autoTunerInfo{
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
       .maxSamples = 3,
   };
@@ -64,11 +65,11 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, dataLayout, n3, autopas::InteractionTypeOption::pairwise}});
-  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::pairwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
-  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tunerManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 
   // Add particles. Calling add(Halo)Particle on a fresh logicHandler should place the particles directly in the
   // container.
@@ -368,13 +369,13 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   /// Setup AutoTuner
   constexpr double cellSizeFactor = 1.;
   constexpr unsigned int verletRebuildFrequency = 10;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
       .boxMax{9., 9., 9.},
       .cutoff = 2.5,
       .verletSkin = 0.5,
   };
-  const autopas::AutoTunerInfo autoTunerInfo{
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
       .maxSamples = 3,
   };
@@ -384,11 +385,11 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, dataLayout, autopas::Newton3Option::enabled,
         autopas::InteractionTypeOption::pairwise}});
-  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::pairwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
-  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tunerManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 
   // fill the container with the given particles
   for (const auto &p : particles) {
