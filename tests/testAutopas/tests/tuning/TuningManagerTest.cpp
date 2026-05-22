@@ -376,7 +376,8 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::VectorizationPatternOption::getAllOptions(), autopas::InteractionTypeOption::pairwise);
+      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::VectorizationPatternOption::getAllOptions(),
+      autopas::InteractionTypeOption::pairwise);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
@@ -387,7 +388,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
 
   std::map<autopas::ContainerOption, size_t> configsPerContainer;
 
-// number of configs manually counted:
+  // number of configs manually counted:
   //
   // Direct Sum:            ds_sequential               (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
   configsPerContainer[autopas::ContainerOption::directSum] = 16;
