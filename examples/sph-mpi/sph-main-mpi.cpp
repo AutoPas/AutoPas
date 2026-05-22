@@ -524,6 +524,7 @@ int main(int argc, char *argv[]) {
   Initialize(sphSystem);
 
   // 0.1 ---- GET INITIAL FORCES OF SYSTEM ----
+  sphSystem.updateContainer();
   densityPressureHydroForce(sphSystem, comm, globalBoxMin, globalBoxMax);
 
   std::cout << "\n----------------------------" << std::endl;
