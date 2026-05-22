@@ -188,7 +188,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     _soaListIsValid = false;
   }
 
-  /* Update the pair verlet lists for AoS usage
+  /**
+   * Update the pair verlet lists for AoS usage
    * @param useNewton3
    */
   virtual void updatePairVerletListsAoS3B(bool useNewton3) {
