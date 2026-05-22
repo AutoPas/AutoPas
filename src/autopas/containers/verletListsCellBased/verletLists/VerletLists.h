@@ -8,7 +8,6 @@
 
 #include "VerletListHelpers.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
-#include "autopas/containers/linkedCells/traversals/LCC08NeighborListBuilding3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
@@ -168,20 +167,13 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
                                            _buildVerletListType);
     }
 
-    if constexpr (interactionType == InteractionTypeOption::pairwise) {
-      auto pairwiseTraversal =
-          LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, interactionLength,
-              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
-      this->_linkedCells.computeInteractions(&pairwiseTraversal);
-    } else {
-      auto triwiseTraversal =
-          LCC08NeighborListBuilding3B<ParticleCellType,
-                                      typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, interactionLength,
-              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
-      this->_linkedCells.computeInteractions(&triwiseTraversal);
-    }
+    constexpr bool traverseHaloCells = (interactionType == InteractionTypeOption::triwise);
+    auto traversal =
+        LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor,
+                       traverseHaloCells>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f,
+                                          interactionLength, this->_linkedCells.getCellBlock().getCellLength(),
+                                          dataLayout, useNewton3);
+    this->_linkedCells.computeInteractions(&traversal);
 
     _soaListIsValid = false;
   }
