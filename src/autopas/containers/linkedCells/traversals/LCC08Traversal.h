@@ -61,7 +61,7 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, 
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
+  LCC08CellHandler<ParticleCell, PairwiseFunctor, internal::CellFunctor<ParticleCell, PairwiseFunctor>> _cellHandler;
 };
 
 template <class ParticleCell, class PairwiseFunctor>

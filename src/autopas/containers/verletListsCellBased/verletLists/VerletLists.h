@@ -194,8 +194,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     updateVerletListsAoS<InteractionTypeOption::triwise>(false);
     generateAoSNeighborPairsLists();
     const double interactionLength = this->getInteractionLength();
-    typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor f(_aosNeighborPairsLists,
-                                                                             interactionLength);
+    typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor f(_aosNeighborPairsLists, interactionLength);
 
     DataLayoutOption dataLayout;
     if (_buildVerletListType == BuildVerletListType::VerletAoS) {

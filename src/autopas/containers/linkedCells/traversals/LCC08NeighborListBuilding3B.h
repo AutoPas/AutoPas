@@ -6,9 +6,10 @@
 
 #pragma once
 
-#include "LCC08CellHandlerNeighborList3B.h"
+#include "LCC08CellHandler.h"
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellTraversals/C08BasedNeighborListBuilding3B.h"
+#include "autopas/baseFunctors/CellFunctorNeighborListBuild3B.h"
+#include "autopas/containers/cellTraversals/C08BasedTraversal.h"
 
 namespace autopas {
 
@@ -24,7 +25,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC08NeighborListBuilding3B : public C08BasedNeighborListBuilding3B<ParticleCell, PairwiseFunctor>,
+class LCC08NeighborListBuilding3B : public C08BasedTraversal<ParticleCell, PairwiseFunctor, true>,
                                     public LCTraversalInterface {
  public:
   /**
@@ -40,8 +41,8 @@ class LCC08NeighborListBuilding3B : public C08BasedNeighborListBuilding3B<Partic
   explicit LCC08NeighborListBuilding3B(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                        const double interactionLength, const std::array<double, 3> &cellLength,
                                        DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedNeighborListBuilding3B<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
-                                                                      cellLength, dataLayout, useNewton3),
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, true>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                               dataLayout, useNewton3),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}
 
@@ -61,7 +62,9 @@ class LCC08NeighborListBuilding3B : public C08BasedNeighborListBuilding3B<Partic
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  LCC08CellHandlerNeighborList3B<ParticleCell, PairwiseFunctor> _cellHandler;
+  LCC08CellHandler<ParticleCell, PairwiseFunctor,
+                   internal::CellFunctorNeighborListBuild3B<ParticleCell, PairwiseFunctor>, true>
+      _cellHandler;
 };
 
 template <class ParticleCell, class PairwiseFunctor>

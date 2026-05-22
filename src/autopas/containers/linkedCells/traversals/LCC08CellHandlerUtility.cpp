@@ -148,6 +148,132 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
   return resultOffsetsC08;
 }
 
+std::vector<OffsetPairSorting> computePairwiseCellOffsets3BNeighborList(
+    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
+    const std::array<unsigned long, 3> &overlap, double interactionLength) {
+  using namespace autopas::utils::ArrayMath::literals;
+
+  std::vector<OffsetPairSorting> cellPairOffsets;
+
+  //////////////////////////////
+  // @TODO: Replace following lines with vector to support asymmetric cells
+  const unsigned long ov1 = overlap[0] + 1;
+  const unsigned long ov1_squared = ov1 * ov1;
+  //////////////////////////////
+
+  const std::array<unsigned long, 3> overlap_1 = overlap + 1ul;
+
+  std::vector<unsigned long> cellOffsets;
+  cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
+
+  const auto interactionLengthSquare(interactionLength * interactionLength);
+
+  const double zero = 0.0;
+  const double one = 1.0;
+
+  for (unsigned long x = 0ul; x <= overlap[0]; ++x) {
+    for (unsigned long y = 0ul; y <= overlap[1]; ++y) {
+      for (unsigned long z = 0ul; z <= overlap[2]; ++z) {
+        cellOffsets.push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension));
+      }
+    }
+  }
+
+  for (unsigned long x = 0ul; x <= overlap[0]; ++x) {
+    for (unsigned long y = 0ul; y <= overlap[1]; ++y) {
+      for (unsigned long z = 0ul; z <= overlap[2]; ++z) {
+        const unsigned long offset = cellOffsets[ov1_squared * x + ov1 * y];
+        const std::array<double, 3> offsetVec =
+            utils::ArrayUtils::static_cast_copy_array<double>(
+                utils::ThreeDimensionalMapping::oneToThreeD(offset, cellsPerDimension)) *
+            cellLength;
+
+        // origin
+        {
+          const auto distVec =
+              std::array<double, 3>{std::max(zero, x - one), std::max(zero, y - one), std::max(zero, z - one)} *
+              cellLength;
+          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
+          if (distSquare <= interactionLengthSquare) {
+            const auto baseCellVec = utils::ArrayUtils::static_cast_copy_array<double>(
+                utils::ThreeDimensionalMapping::oneToThreeD(cellOffsets[z], cellsPerDimension));
+
+            auto sortingDir = offsetVec - baseCellVec;
+            if (x == 0 and y == 0 and z == 0) {
+              sortingDir = {1., 1., 1.};
+            }
+
+            cellPairOffsets.emplace_back(cellOffsets[z], offset, utils::ArrayMath::normalize(sortingDir));
+          }
+        }
+
+        // back left
+        if (y != overlap[1] and z != 0) {
+          const auto distVec = std::array<double, 3>{std::max(zero, x - one), std::max(zero, overlap[1] - y - one),
+                                                     std::max(zero, z - one)} *
+                               cellLength;
+          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
+          if (distSquare <= interactionLengthSquare) {
+            const auto baseCellVec = utils::ArrayUtils::static_cast_copy_array<double>(
+                utils::ThreeDimensionalMapping::oneToThreeD(cellOffsets[ov1_squared - ov1 + z], cellsPerDimension));
+
+            auto sortingDir = offsetVec - baseCellVec;
+            if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
+              sortingDir = {1., 1., 1.};
+            }
+            cellPairOffsets.emplace_back(cellOffsets[ov1_squared - ov1 + z], offset,
+                                         utils::ArrayMath::normalize(sortingDir));
+          }
+        }
+
+        // front right
+        if (x != overlap[0] and (y != 0 or z != 0)) {
+          const auto distVec = std::array<double, 3>{std::max(zero, overlap[0] - x - one), std::max(zero, y - one),
+                                                     std::max(zero, z - one)} *
+                               cellLength;
+          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
+          if (distSquare <= interactionLengthSquare) {
+            const auto baseCellVec =
+                utils::ArrayUtils::static_cast_copy_array<double>(utils::ThreeDimensionalMapping::oneToThreeD(
+                    cellOffsets[ov1_squared * overlap[0] + z], cellsPerDimension));
+
+            auto sortingDir = offsetVec - baseCellVec;
+            if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
+              sortingDir = {1., 1., 1.};
+            }
+            sortingDir = utils::ArrayMath::normalize(sortingDir);
+            cellPairOffsets.emplace_back(cellOffsets[ov1_squared * overlap[0] + z], offset,
+                                         utils::ArrayMath::normalize(sortingDir));
+          }
+        }
+
+        // back right
+        if (y != overlap[1] and x != overlap[0] and z != 0) {
+          const auto distVec = std::array<double, 3>{std::max(zero, overlap[0] - x - one),
+                                                     std::max(zero, overlap[1] - y - one), std::max(zero, z - one)} *
+                               cellLength;
+          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
+          if (distSquare <= interactionLengthSquare) {
+            const auto baseCellVec =
+                utils::ArrayUtils::static_cast_copy_array<double>(utils::ThreeDimensionalMapping::oneToThreeD(
+                    cellOffsets[ov1_squared * ov1 - ov1 + z], cellsPerDimension));
+
+            auto sortingDir = offsetVec - baseCellVec;
+            if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
+              sortingDir = {1., 1., 1.};
+            }
+
+            cellPairOffsets.emplace_back(cellOffsets[ov1_squared * ov1 - ov1 + z], offset,
+                                         utils::ArrayMath::normalize(sortingDir));
+          }
+        }
+      }
+    }
+  }
+
+  return cellPairOffsets;
+}
+
 /*
  * Explicit Template Instantation - Required since the definition of computePairwiseCellOffsetsC08(..)
  * is not in header file. However, the Mode variable is finite, and all instances can be created before
