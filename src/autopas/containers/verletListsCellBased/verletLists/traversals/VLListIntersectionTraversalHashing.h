@@ -70,7 +70,7 @@ class VLListIntersectionTraversalHashing : public TraversalInterface, public VLT
       case DataLayoutOption::aos: {
         /// @todo add parelelization
         if (not _useNewton3) {
-          size_t buckets = aosNeighborLists.bucket_count();
+          const size_t buckets = aosNeighborLists.bucket_count();
           /// @todo find a sensible chunk size
           AUTOPAS_OPENMP(parallel for schedule(dynamic))
           for (size_t bucketId = 0; bucketId < buckets; bucketId++) {

@@ -167,10 +167,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         } else {
           for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
             ParticleType &particle = *particlePtr;
-            if ((not _useNewton3) and (not particle.isOwned())) {
-              // skip Halo Particles for N3 disabled
-              continue;
-            }
+
             auto neighborPtrIter1 = neighborPtrList.begin();
             for (; neighborPtrIter1 != neighborPtrList.end(); ++neighborPtrIter1) {
               auto neighborPtrIter2 = neighborPtrIter1;

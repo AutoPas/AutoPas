@@ -43,7 +43,7 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell_T, Functor_T> 
  protected:
   /**
    * The main traversal of the C08Traversal.
-   * @copydetails C01BasedTraversal::c01Traversal()
+   * @copydetails autopas::C01BasedTraversal::c01Traversal()
    */
   template <typename LoopBody>
   inline void c08Traversal(LoopBody &&loopBody) {

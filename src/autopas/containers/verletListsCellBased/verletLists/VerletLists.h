@@ -111,8 +111,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       case TraversalOption::vl_list_intersection_sorted: {
         this->updateVerletListsAoS<InteractionTypeOption::triwise>(buildWithN3);
 
-        // sort neighborLists for efficient intersecting
-        /// @todo paralelize sorting
+        // sort neighbor lists for efficient intersecting
         const size_t buckets = _aosNeighborLists.bucket_count();
         AUTOPAS_OPENMP(parallel for schedule(dynamic))
         for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
