@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "VLTraversalInterface.h"
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {
@@ -19,12 +20,12 @@ namespace autopas {
  * This class provides a Traversal for the verlet lists container.
  * It requires the NeighborLists to be sorted.
  *
- * @tparam ParticleCell the type of cells
- * @tparam TriwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam ParticleCell_T the type of cells
+ * @tparam TriwiseFunctor_T The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class TriwiseFunctor>
-class VLListIntersectionTraversalSorted : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
-  using Particle = typename ParticleCell::ParticleType;
+template <class ParticleCell_T, class TriwiseFunctor_T>
+class VLListIntersectionTraversalSorted : public TraversalInterface, public VLTraversalInterface<ParticleCell_T> {
+  using ParticleType = typename ParticleCell_T::ParticleType;
 
  public:
   /**
@@ -33,7 +34,7 @@ class VLListIntersectionTraversalSorted : public TraversalInterface, public VLTr
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLListIntersectionTraversalSorted(TriwiseFunctor *triwiseFunctor, DataLayoutOption dataLayout,
+  explicit VLListIntersectionTraversalSorted(TriwiseFunctor_T *triwiseFunctor, DataLayoutOption dataLayout,
                                              bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _functor(triwiseFunctor) {}
 
@@ -70,17 +71,17 @@ class VLListIntersectionTraversalSorted : public TraversalInterface, public VLTr
       case DataLayoutOption::aos: {
         /// @todo add parelelization
         if (not _useNewton3) {
-          size_t buckets = aosNeighborLists.bucket_count();
+          const size_t buckets = aosNeighborLists.bucket_count();
 
           AUTOPAS_OPENMP(parallel) {
             // create a buffer per Thread for all intersections
-            auto intersectingNeighbors = std::vector<Particle *>();
+            auto intersectingNeighbors = std::vector<ParticleType *>();
 
             AUTOPAS_OPENMP(for schedule(dynamic))
             for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
               auto endIter = aosNeighborLists.end(bucketId);
               for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
-                Particle &particle = *(bucketIter->first);
+                ParticleType &particle = *(bucketIter->first);
                 if (not particle.isOwned()) {
                   // skip Halo particles as N3 is disabled
                   continue;
@@ -88,10 +89,10 @@ class VLListIntersectionTraversalSorted : public TraversalInterface, public VLTr
                 auto &neighborList = bucketIter->second;
                 auto neighborPtrIter1 = neighborList.begin();
                 for (; neighborPtrIter1 != neighborList.end(); ++neighborPtrIter1) {
-                  Particle &neighbor1 = *(*neighborPtrIter1);
+                  ParticleType &neighbor1 = *(*neighborPtrIter1);
                   auto &neighborList1 = (aosNeighborLists.find(&neighbor1))->second;
 
-                  std::size_t maxIntersectionSize = std::min(neighborList1.size(), neighborList.size());
+                  size_t maxIntersectionSize = std::min(neighborList1.size(), neighborList.size());
                   //  make sure the buffer has enough space
                   intersectingNeighbors.reserve(maxIntersectionSize);
 
@@ -102,7 +103,7 @@ class VLListIntersectionTraversalSorted : public TraversalInterface, public VLTr
 
                   for (auto neighborPtrIter2 = intersectingNeighbors.begin();
                        neighborPtrIter2 != intersectingNeighbors.end(); ++neighborPtrIter2) {
-                    Particle &neighbor2 = *(*neighborPtrIter2);
+                    ParticleType &neighbor2 = *(*neighborPtrIter2);
                     _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
                   }
 
@@ -139,12 +140,12 @@ class VLListIntersectionTraversalSorted : public TraversalInterface, public VLTr
   /**
    * Functor for Traversal
    */
-  TriwiseFunctor *_functor;
+  TriwiseFunctor_T *_functor;
 
   /**
    * SoA buffer of verlet lists.
    */
-  SoA<typename Particle::SoAArraysType> _soa;
+  SoA<typename ParticleType::SoAArraysType> _soa;
 };
 
 }  // namespace autopas

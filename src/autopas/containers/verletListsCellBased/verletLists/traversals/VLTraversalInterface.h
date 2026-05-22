@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 
@@ -60,7 +59,7 @@ class VLTraversalInterface {
    */
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> *_soaNeighborLists = nullptr;
   /**
-   * The AoS neighbor list of the verlet lists container.
+   * The AoS pair neighbor list of the verlet lists container.
    */
   typename VerletListHelpers<typename LinkedParticleCell::ParticleType>::NeighborPairsListAoSType
       *_aosNeighborPairsLists = nullptr;

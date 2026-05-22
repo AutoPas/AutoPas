@@ -57,13 +57,13 @@ class VerletListHelpers {
 
     bool allowsNewton3() override {
       utils::ExceptionHandler::exception(
-          "VLCAllCellsGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
+          "VerletListGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
       return true;
     }
 
     bool allowsNonNewton3() override {
       utils::ExceptionHandler::exception(
-          "VLCAllCellsGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+          "VerletListGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
       return true;
     }
 
@@ -217,13 +217,13 @@ class VerletListHelpers {
 
     bool allowsNewton3() override {
       utils::ExceptionHandler::exception(
-          "VLCAllCellsGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
+          "PairVerletListGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
       return true;
     }
 
     bool allowsNonNewton3() override {
       utils::ExceptionHandler::exception(
-          "VLCAllCellsGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+          "PairVerletListGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
       return true;
     }
 
@@ -233,15 +233,15 @@ class VerletListHelpers {
       if (i.isDummy() or j.isDummy() or k.isDummy()) {
         return;
       }
-      auto distIj = i.getR() - j.getR();
-      auto distIk = i.getR() - k.getR();
-      auto distJk = j.getR() - k.getR();
+      const auto distIJ = j.getR() - i.getR();
+      const auto distIK = k.getR() - i.getR();
+      const auto distJK = k.getR() - j.getR();
 
-      double distsquareIj = utils::ArrayMath::dot(distIj, distIj);
-      double distsquareIk = utils::ArrayMath::dot(distIk, distIk);
-      double distsquareJk = utils::ArrayMath::dot(distJk, distJk);
-      if (distsquareIj < _interactionLengthSquared and distsquareIk < _interactionLengthSquared and
-          distsquareJk < _interactionLengthSquared) {
+      const double distSquareIJ = utils::ArrayMath::dot(distIJ, distIJ);
+      const double distSquareIK = utils::ArrayMath::dot(distIK, distIK);
+      const double distSquareJK = utils::ArrayMath::dot(distJK, distJK);
+      if (distSquareIJ < _interactionLengthSquared and distSquareIK < _interactionLengthSquared and
+          distSquareJK < _interactionLengthSquared) {
         // this is thread safe, only if particle i is accessed by only one
         // thread at a time. which is ensured, as particle i resides in a
         // specific cell and each cell is only accessed by one thread at a time
@@ -249,7 +249,7 @@ class VerletListHelpers {
         // also the list is not allowed to be resized!
 
         _pairVerletListsAoS.at(&i).push_back(std::make_pair(&j, &k));
-        // no newton3 here, as AoSFunctor(j,i,k) andAoSFunctor (k,i,j) will also be called if newton3 is disabled.
+        // no newton3 here, as AoSFunctor(j,i,k) and AoSFunctor (k,i,j) will also be called if newton3 is disabled.
       }
     }
 

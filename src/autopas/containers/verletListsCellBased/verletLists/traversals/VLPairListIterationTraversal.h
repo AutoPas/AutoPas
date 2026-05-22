@@ -8,6 +8,7 @@
 #pragma once
 
 #include "VLTraversalInterface.h"
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {
@@ -15,12 +16,12 @@ namespace autopas {
 /**
  * This class provides a triwise traversal for the verlet lists container.
  *
- * @tparam ParticleCell the type of cells
- * @tparam TriwiseFunctor The functor that defines the interaction of three particles.
+ * @tparam ParticleCell_T the type of cells
+ * @tparam TriwiseFunctor_T The functor that defines the interaction of three particles.
  */
-template <class ParticleCell, class TriwiseFunctor>
-class VLPairListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
-  using Particle = typename ParticleCell::ParticleType;
+template <class ParticleCell_T, class TriwiseFunctor_T>
+class VLPairListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell_T> {
+  using ParticleType = ParticleCell_T::ParticleType;
 
  public:
   /**
@@ -29,7 +30,7 @@ class VLPairListIterationTraversal : public TraversalInterface, public VLTravers
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLPairListIterationTraversal(TriwiseFunctor *triwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit VLPairListIterationTraversal(TriwiseFunctor_T *triwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _functor(triwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_pair_list_iteration; }
@@ -57,45 +58,56 @@ class VLPairListIterationTraversal : public TraversalInterface, public VLTravers
   }
 
   void traverseParticles() override {
+    if constexpr (utils::isTriwiseFunctor<TriwiseFunctor_T>()) {
+      traverseParticleTriplets();
+    } else {
+      utils::ExceptionHandler::exception(
+          "VLPairListIterationTraversal::traverseParticles(): Functor {} is not of type TriwiseFunctor. The "
+          "VLPairListIterationTraversal is implemented only for triwise interactions.",
+          _functor->getName());
+    }
+  }
+
+  void traverseParticleTriplets() {
     auto &aosNeighborPairsLists = *(this->_aosNeighborPairsLists);
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
         if (not _useNewton3) {
-          size_t buckets = aosNeighborPairsLists.bucket_count();
+          const size_t buckets = aosNeighborPairsLists.bucket_count();
           /// @todo find a sensible chunk size
           AUTOPAS_OPENMP(parallel for schedule(dynamic))
           for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
             auto endIter = aosNeighborPairsLists.end(bucketId);
             for (auto bucketIter = aosNeighborPairsLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
-              Particle &particle = *(bucketIter->first);
+              ParticleType &particle = *(bucketIter->first);
               if (not particle.isOwned()) {
-                // skip Halo paraticles, as N3 is disabled
+                // skip Halo particles, as N3 is disabled
                 continue;
               }
 
               for (auto &neighborPairPtr : bucketIter->second) {
-                Particle &neighbor1 = *(neighborPairPtr.first);
-                Particle &neighbor2 = *(neighborPairPtr.second);
-                _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
+                auto &[neighborPtr1, neighborPtr2] = neighborPairPtr;
+                _functor->AoSFunctor(particle, *neighborPtr1, *neighborPtr2, false);
               }
             }
           }
         } else {
           utils::ExceptionHandler::exception(
-              "VLPairListIterationTraversal::traverseParticles(): VLPairListIterationTraversal does not support "
+              "VLPairListIterationTraversal::traverseParticleTriplets(): VLPairListIterationTraversal does not support "
               "Newton3.");
         }
         return;
       }
       case DataLayoutOption::soa: {
         utils::ExceptionHandler::exception(
-            "VLPairListIterationTraversal::traverseParticles(): SoA dataLayout not implemented yet for "
+            "VLPairListIterationTraversal::traverseParticleTriplets(): SoA dataLayout not implemented yet for "
             "VLPairListIterationTraversal.");
         return;
       }
       default: {
         utils::ExceptionHandler::exception(
-            "VLPairListIterationTraversal::traverseParticles(): VerletList dataLayout {} not available", _dataLayout);
+            "VLPairListIterationTraversal::traverseParticleTriplets(): VerletList dataLayout {} not available",
+            _dataLayout);
       }
     }
   }
@@ -104,7 +116,7 @@ class VLPairListIterationTraversal : public TraversalInterface, public VLTravers
   /**
    * Functor for Traversal
    */
-  TriwiseFunctor *_functor;
+  TriwiseFunctor_T *_functor;
 };
 
 }  // namespace autopas
