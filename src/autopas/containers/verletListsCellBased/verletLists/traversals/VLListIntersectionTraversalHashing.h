@@ -1,5 +1,5 @@
 /**
- * @file VLListIntersectionTraversalHashing3B.h
+ * @file VLListIntersectionTraversalHashing.h
  *
  * @date 18.12.2023
  * @author Alexander-Haberl-TUM
@@ -22,7 +22,7 @@ namespace autopas {
  * @tparam TriwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class TriwiseFunctor>
-class VLListIntersectionTraversalHashing3B : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
+class VLListIntersectionTraversalHashing : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
@@ -32,12 +32,12 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface, public V
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLListIntersectionTraversalHashing3B(TriwiseFunctor *triwiseFunctor, DataLayoutOption dataLayout,
-                                                bool useNewton3)
+  explicit VLListIntersectionTraversalHashing(TriwiseFunctor *triwiseFunctor, DataLayoutOption dataLayout,
+                                              bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _functor(triwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
-    return TraversalOption::vl_list_intersection_hashing_3b;
+    return TraversalOption::vl_list_intersection_hashing;
   }
 
   [[nodiscard]] bool isApplicable() const override {
@@ -48,8 +48,8 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface, public V
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
       utils::ExceptionHandler::exception(
-          "VLListIntersectionTraversalHashing3B::initTraversal(): SoA dataLayout not implemented yet for "
-          "VLListIntersectionTraversalHashing3B.");
+          "VLListIntersectionTraversalHashing::initTraversal(): SoA dataLayout not implemented yet for "
+          "VLListIntersectionTraversalHashing.");
     }
   }
 
@@ -57,8 +57,8 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface, public V
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
       utils::ExceptionHandler::exception(
-          "VLListIntersectionTraversalHashing3B::endTraversal(): SoA dataLayout not implemented yet for "
-          "VLListIntersectionTraversalHashing3B.");
+          "VLListIntersectionTraversalHashing::endTraversal(): SoA dataLayout not implemented yet for "
+          "VLListIntersectionTraversalHashing.");
     }
   }
 
@@ -103,7 +103,7 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface, public V
         } else {
           // list intersection does not work with the current way neighborlists are built for N3 case
           utils::ExceptionHandler::exception(
-              "VLListIntersectionTraversalHashing3B::traverseParticles(): VLListIntersectionTraversalHashing3B does "
+              "VLListIntersectionTraversalHashing::traverseParticles(): VLListIntersectionTraversalHashing does "
               "not support Newton3.");
         }
         return;
@@ -111,13 +111,13 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface, public V
 
       case DataLayoutOption::soa: {
         utils::ExceptionHandler::exception(
-            "VLListIntersectionTraversalHashing3B::traverseParticles(): SoA dataLayout not implemented yet for "
-            "VLListIntersectionTraversalHashing3B.");
+            "VLListIntersectionTraversalHashing::traverseParticles(): SoA dataLayout not implemented yet for "
+            "VLListIntersectionTraversalHashing.");
         return;
       }
       default: {
         utils::ExceptionHandler::exception(
-            "VLListIntersectionTraversalHashing3B::traverseParticles(): VerletList dataLayout {} not available",
+            "VLListIntersectionTraversalHashing::traverseParticles(): VerletList dataLayout {} not available",
             _dataLayout);
       }
     }

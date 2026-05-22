@@ -155,9 +155,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
           TraversalOption::vcl_c01_balanced,
           TraversalOption::vcl_cluster_iteration,
           TraversalOption::vl_list_iteration,
-          TraversalOption::vl_list_intersection_sorted_3b,
-          TraversalOption::vl_list_intersection_hashing_3b,
-          TraversalOption::vl_pair_list_iteration_3b,
+          TraversalOption::vl_list_intersection_sorted,
+          TraversalOption::vl_list_intersection_hashing,
+          TraversalOption::vl_pair_list_iteration,
           TraversalOption::vlc_c01,
           TraversalOption::vlp_c01};
 };
@@ -176,9 +176,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  */
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
   return {
-      TraversalOption::vl_pair_list_iteration_3b,
-      TraversalOption::vl_list_intersection_sorted_3b,
-      TraversalOption::vl_list_intersection_hashing_3b,
+      TraversalOption::vl_pair_list_iteration,
+      TraversalOption::vl_list_intersection_sorted,
+      TraversalOption::vl_list_intersection_hashing,
   };
 };
 /**

@@ -1,5 +1,5 @@
 /**
- * @file VLPairListIterationTraversal3B.h
+ * @file VLPairListIterationTraversal.h
  *
  * @date 18.12.2023
  * @author Alexander-Haberl-TUM
@@ -19,7 +19,7 @@ namespace autopas {
  * @tparam TriwiseFunctor The functor that defines the interaction of three particles.
  */
 template <class ParticleCell, class TriwiseFunctor>
-class VLPairListIterationTraversal3B : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
+class VLPairListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
@@ -29,10 +29,10 @@ class VLPairListIterationTraversal3B : public TraversalInterface, public VLTrave
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLPairListIterationTraversal3B(TriwiseFunctor *triwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit VLPairListIterationTraversal(TriwiseFunctor *triwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _functor(triwiseFunctor) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_pair_list_iteration_3b; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_pair_list_iteration; }
 
   [[nodiscard]] bool isApplicable() const override {
     return (not _useNewton3) and _dataLayout == DataLayoutOption::aos;
@@ -42,8 +42,8 @@ class VLPairListIterationTraversal3B : public TraversalInterface, public VLTrave
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
       utils::ExceptionHandler::exception(
-          "VLPairListIterationTraversal3B::initTraversal(): SoA dataLayout not implemented yet for "
-          "VLPairListIterationTraversal3B.");
+          "VLPairListIterationTraversal::initTraversal(): SoA dataLayout not implemented yet for "
+          "VLPairListIterationTraversal.");
     }
   }
 
@@ -51,8 +51,8 @@ class VLPairListIterationTraversal3B : public TraversalInterface, public VLTrave
     auto &cells = *(this->_cells);
     if (_dataLayout == DataLayoutOption::soa) {
       utils::ExceptionHandler::exception(
-          "VLPairListIterationTraversal3B::endTraversal(): SoA dataLayout not implemented yet for "
-          "VLPairListIterationTraversal3B.");
+          "VLPairListIterationTraversal::endTraversal(): SoA dataLayout not implemented yet for "
+          "VLPairListIterationTraversal.");
     }
   }
 
@@ -82,20 +82,20 @@ class VLPairListIterationTraversal3B : public TraversalInterface, public VLTrave
           }
         } else {
           utils::ExceptionHandler::exception(
-              "VLPairListIterationTraversal3B::traverseParticles(): VLPairListIterationTraversal3B does not support "
+              "VLPairListIterationTraversal::traverseParticles(): VLPairListIterationTraversal does not support "
               "Newton3.");
         }
         return;
       }
       case DataLayoutOption::soa: {
         utils::ExceptionHandler::exception(
-            "VLPairListIterationTraversal3B::traverseParticles(): SoA dataLayout not implemented yet for "
-            "VLPairListIterationTraversal3B.");
+            "VLPairListIterationTraversal::traverseParticles(): SoA dataLayout not implemented yet for "
+            "VLPairListIterationTraversal.");
         return;
       }
       default: {
         utils::ExceptionHandler::exception(
-            "VLPairListIterationTraversal3B::traverseParticles(): VerletList dataLayout {} not available", _dataLayout);
+            "VLPairListIterationTraversal::traverseParticles(): VerletList dataLayout {} not available", _dataLayout);
       }
     }
   }

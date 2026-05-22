@@ -111,7 +111,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
         this->updateVerletListsAoS<InteractionTypeOption::pairwise>(traversal->getUseNewton3());
         break;
       }
-      case TraversalOption::vl_list_intersection_sorted_3b: {
+      case TraversalOption::vl_list_intersection_sorted: {
         this->updateVerletListsAoS<InteractionTypeOption::triwise>(traversal->getUseNewton3());
 
         // sort neighborLists for efficient intersecting
@@ -128,7 +128,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
         }
         break;
       }
-      case TraversalOption::vl_pair_list_iteration_3b: {
+      case TraversalOption::vl_pair_list_iteration: {
         // build 3Body verletLists through VLIteration traversal
         this->updatePairVerletListsAoS3B(traversal->getUseNewton3());
         break;

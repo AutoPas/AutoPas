@@ -128,23 +128,26 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vl_list_iteration,
     /**
-     * VLListIntersectionTraversalSorted3b :  Distribute processing of neighbor lists dynamically to threads.
-     * Calls Functor for the Intersection of two Neighborlists. Finds intersection by sorting Neighborlists.
+     * VLListIntersectionTraversalSorted :  Distribute processing of neighbor lists dynamically to threads.
+     * Calls Functor for the Intersection of two neighbor lists. Finds intersection by sorting neighbor lists.
+     * Only viable for triwise interactions.
      * Does not support Newton3.
      */
-    vl_list_intersection_sorted_3b,
+    vl_list_intersection_sorted,
     /**
-     * VLListIntersectionTraversalHashing3b :  Distribute processing of neighbor lists dynamically to threads.
-     * Calls Functor for the Intersection of two Neighborlists. Finds intersection via hashing.
+     * VLListIntersectionTraversalHashing :  Distribute processing of neighbor lists dynamically to threads.
+     * Calls Functor for the Intersection of two neighbor lists. Finds intersection via hashing.
+     * Only viable for triwise interactions.
      * Does not support Newton3.
      */
-    vl_list_intersection_hashing_3b,
+    vl_list_intersection_hashing,
     /**
-     * VLListIntersectionTraversalHashing3b :  Distribute processing of neighbor lists dynamically to threads.
-     * Iterates over neighborlists that store all possible neighbor pairs.
+     * VLPairListIterationTraversal :  Distribute processing of neighbor lists dynamically to threads.
+     * Iterates over neighbor lists that store all possible neighbor pairs.
+     * Only viable for triwise interactions.
      * Does not support Newton3.
      */
-    vl_pair_list_iteration_3b,
+    vl_pair_list_iteration,
 
     // VerletListCells Traversals:
     /**
@@ -262,9 +265,9 @@ class TraversalOption : public Option<TraversalOption> {
     return {Value::ds_sequential,
             Value::lc_c01,
             Value::vl_list_iteration,
-            Value::vl_list_intersection_sorted_3b,
-            Value::vl_list_intersection_hashing_3b,
-            Value::vl_pair_list_iteration_3b};
+            Value::vl_list_intersection_sorted,
+            Value::vl_list_intersection_hashing,
+            Value::vl_pair_list_iteration};
   }
 
   /**
@@ -272,8 +275,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getAllTriwiseOnlyOptions() {
-    return {Value::vl_list_intersection_sorted_3b, Value::vl_list_intersection_hashing_3b,
-            Value::vl_pair_list_iteration_3b};
+    return {Value::vl_list_intersection_sorted, Value::vl_list_intersection_hashing, Value::vl_pair_list_iteration};
   }
 
   /**
@@ -349,9 +351,9 @@ class TraversalOption : public Option<TraversalOption> {
 
         // VerletList Traversals:
         {TraversalOption::vl_list_iteration, "vl_list_iteration"},
-        {TraversalOption::vl_list_intersection_sorted_3b, "vl_list_intersection_sorted_3b"},
-        {TraversalOption::vl_list_intersection_hashing_3b, "vl_list_intersection_hashing_3b"},
-        {TraversalOption::vl_pair_list_iteration_3b, "vl_pair_list_iteration_3b"},
+        {TraversalOption::vl_list_intersection_sorted, "vl_list_intersection_sorted"},
+        {TraversalOption::vl_list_intersection_hashing, "vl_list_intersection_hashing"},
+        {TraversalOption::vl_pair_list_iteration, "vl_pair_list_iteration"},
 
         // VerletListCells Traversals:
         {TraversalOption::vlc_sliced, "vlc_sliced"},

@@ -144,7 +144,7 @@ void CellFunctorNeighborListBuild3B<ParticleCell, ParticleFunctor, bidirectional
     return;
   }
 
-  switch (_dataLayout) {
+  switch (this->_dataLayout) {
     case DataLayoutOption::aos:
       processCellAoS(cell);
       break;
@@ -167,7 +167,7 @@ void CellFunctorNeighborListBuild3B<ParticleCell, ParticleFunctor, bidirectional
     return;
   }
 
-  switch (_dataLayout) {
+  switch (this->_dataLayout) {
     case DataLayoutOption::aos:
       if (_useNewton3) {
         processCellPairAoSN3(cell1, cell2, sortingDirection);

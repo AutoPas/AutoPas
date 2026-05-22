@@ -30,10 +30,10 @@
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedC02Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedTraversal.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/traversals/VVLAsBuildTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIntersectionTraversalHashing3B.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIntersectionTraversalSorted3B.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIntersectionTraversalHashing.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIntersectionTraversalSorted.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLPairListIterationTraversal3B.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLPairListIterationTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC01Traversal.h"
@@ -390,18 +390,18 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
                                                                                                dataLayout, useNewton3);
       break;
     }
-    case TraversalOption::vl_list_intersection_sorted_3b: {
-      traversal = std::make_unique<VLListIntersectionTraversalSorted3B<ParticleCell_T, TriwiseFunctor_T>>(
+    case TraversalOption::vl_list_intersection_sorted: {
+      traversal = std::make_unique<VLListIntersectionTraversalSorted<ParticleCell_T, TriwiseFunctor_T>>(
           &triwiseFunctor, dataLayout, useNewton3);
       break;
     }
-    case TraversalOption::vl_list_intersection_hashing_3b: {
-      traversal = std::make_unique<VLListIntersectionTraversalHashing3B<ParticleCell_T, TriwiseFunctor_T>>(
+    case TraversalOption::vl_list_intersection_hashing: {
+      traversal = std::make_unique<VLListIntersectionTraversalHashing<ParticleCell_T, TriwiseFunctor_T>>(
           &triwiseFunctor, dataLayout, useNewton3);
       break;
     }
-    case TraversalOption::vl_pair_list_iteration_3b: {
-      traversal = std::make_unique<VLPairListIterationTraversal3B<ParticleCell_T, TriwiseFunctor_T>>(
+    case TraversalOption::vl_pair_list_iteration: {
+      traversal = std::make_unique<VLPairListIterationTraversal<ParticleCell_T, TriwiseFunctor_T>>(
           &triwiseFunctor, dataLayout, useNewton3);
       break;
     }
