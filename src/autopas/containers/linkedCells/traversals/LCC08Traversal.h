@@ -47,8 +47,14 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, PairwiseFunctor_
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}
 
+  /**
+   * @copydoc autopas::TraversalInterface::traverseParticles
+   */
   void traverseParticles() override;
 
+  /**
+   * @copydoc autopas::TraversalInterface::getTraversalType
+   */
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08; }
 
   /**

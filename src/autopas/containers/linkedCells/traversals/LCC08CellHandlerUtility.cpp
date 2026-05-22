@@ -45,7 +45,7 @@ std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offse
   using namespace autopas::utils::ArrayMath::literals;
   // In case the sorting direction is 0, 0, 0 ==> fix to 1, 1, 1
   std::array<double, 3> sortDir = offset1Vector - offset2Vector;
-  if (std::all_of(sortDir.begin(), sortDir.end(), [](const auto &val) { return val == 0; })) {
+  if (std::ranges::all_of(sortDir, [](const auto &val) { return val == 0; })) {
     sortDir = {1., 1., 1.};
   }
 
@@ -72,7 +72,7 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
   const std::array<int, 3> &cellsPerDimIntegral = static_cast_copy_array<int>(cellsPerDimension);
 
   // Small constants used multiple times in the code below
-  // Note, Legacy: With ov1 --> No support for assymetric overlaps!
+  // Note, Legacy: With ov1 --> No support for asymmetric overlaps!
   const int ov1 = overlap[0] + 1;
   const double interactionLengthSquare{interactionLength * interactionLength};
 
@@ -81,11 +81,11 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
     resultOffsetsC08.resize(ov1);
   }
 
-  // Iteration to build the cell pairs required for the C08 base step, x, y, z reprent the spatial dimension
+  // Iteration to build the cell pairs required for the C08 base step, x, y, z represent the spatial dimension
   for (int x = 0; x <= overlap[0]; ++x) {
     for (int y = 0; y <= overlap[1]; ++y) {
       // Calculate the first partaking cell's offset relative to base cell. The first offset never has a z component
-      // These vertical interactions (along the z-axis) are all incoperated by the second cell's index
+      // These vertical interactions (along the z-axis) are all incorporated by the second cell's index
       const int offset1 = threeToOneD(x, y, 0, cellsPerDimIntegral);
       for (int z = 0; z <= overlap[2]; ++z) {
         // The z component is always calculated in the same way and does not depend on the direction
@@ -115,8 +115,8 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
             if (utils::ArrayMath::dot(distVec, distVec) <= interactionLengthSquare) {
               // Calculate the sorting direction if sorting is enabled
               if constexpr (Mode == C08OffsetMode::c08CellPairsSorting) {
-                // These are respectivley the 3D coordinates of the offsets of cell1 and cell2, as double elements
-                // The cellLength is utuilized to modfiy the direction of the sortingVector in case the cells
+                // These are respectively the 3D coordinates of the offsets of cell1 and cell2, as double elements
+                // The cellLength is utilized to modify the direction of the sortingVector in case the cells
                 // are less squarish, but more lengthy
                 const auto sortDir = computeSortingDirection(
                     {
@@ -148,134 +148,8 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
   return resultOffsetsC08;
 }
 
-std::vector<OffsetPairSorting> computePairwiseCellOffsets3BNeighborList(
-    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
-    const std::array<unsigned long, 3> &overlap, double interactionLength) {
-  using namespace autopas::utils::ArrayMath::literals;
-
-  std::vector<OffsetPairSorting> cellPairOffsets;
-
-  //////////////////////////////
-  // @TODO: Replace following lines with vector to support asymmetric cells
-  const unsigned long ov1 = overlap[0] + 1;
-  const unsigned long ov1_squared = ov1 * ov1;
-  //////////////////////////////
-
-  const std::array<unsigned long, 3> overlap_1 = overlap + 1ul;
-
-  std::vector<unsigned long> cellOffsets;
-  cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
-
-  const auto interactionLengthSquare(interactionLength * interactionLength);
-
-  const double zero = 0.0;
-  const double one = 1.0;
-
-  for (unsigned long x = 0ul; x <= overlap[0]; ++x) {
-    for (unsigned long y = 0ul; y <= overlap[1]; ++y) {
-      for (unsigned long z = 0ul; z <= overlap[2]; ++z) {
-        cellOffsets.push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension));
-      }
-    }
-  }
-
-  for (unsigned long x = 0ul; x <= overlap[0]; ++x) {
-    for (unsigned long y = 0ul; y <= overlap[1]; ++y) {
-      for (unsigned long z = 0ul; z <= overlap[2]; ++z) {
-        const unsigned long offset = cellOffsets[ov1_squared * x + ov1 * y];
-        const std::array<double, 3> offsetVec =
-            utils::ArrayUtils::static_cast_copy_array<double>(
-                utils::ThreeDimensionalMapping::oneToThreeD(offset, cellsPerDimension)) *
-            cellLength;
-
-        // origin
-        {
-          const auto distVec =
-              std::array<double, 3>{std::max(zero, x - one), std::max(zero, y - one), std::max(zero, z - one)} *
-              cellLength;
-          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
-          if (distSquare <= interactionLengthSquare) {
-            const auto baseCellVec = utils::ArrayUtils::static_cast_copy_array<double>(
-                utils::ThreeDimensionalMapping::oneToThreeD(cellOffsets[z], cellsPerDimension));
-
-            auto sortingDir = offsetVec - baseCellVec;
-            if (x == 0 and y == 0 and z == 0) {
-              sortingDir = {1., 1., 1.};
-            }
-
-            cellPairOffsets.emplace_back(cellOffsets[z], offset, utils::ArrayMath::normalize(sortingDir));
-          }
-        }
-
-        // back left
-        if (y != overlap[1] and z != 0) {
-          const auto distVec = std::array<double, 3>{std::max(zero, x - one), std::max(zero, overlap[1] - y - one),
-                                                     std::max(zero, z - one)} *
-                               cellLength;
-          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
-          if (distSquare <= interactionLengthSquare) {
-            const auto baseCellVec = utils::ArrayUtils::static_cast_copy_array<double>(
-                utils::ThreeDimensionalMapping::oneToThreeD(cellOffsets[ov1_squared - ov1 + z], cellsPerDimension));
-
-            auto sortingDir = offsetVec - baseCellVec;
-            if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
-              sortingDir = {1., 1., 1.};
-            }
-            cellPairOffsets.emplace_back(cellOffsets[ov1_squared - ov1 + z], offset,
-                                         utils::ArrayMath::normalize(sortingDir));
-          }
-        }
-
-        // front right
-        if (x != overlap[0] and (y != 0 or z != 0)) {
-          const auto distVec = std::array<double, 3>{std::max(zero, overlap[0] - x - one), std::max(zero, y - one),
-                                                     std::max(zero, z - one)} *
-                               cellLength;
-          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
-          if (distSquare <= interactionLengthSquare) {
-            const auto baseCellVec =
-                utils::ArrayUtils::static_cast_copy_array<double>(utils::ThreeDimensionalMapping::oneToThreeD(
-                    cellOffsets[ov1_squared * overlap[0] + z], cellsPerDimension));
-
-            auto sortingDir = offsetVec - baseCellVec;
-            if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
-              sortingDir = {1., 1., 1.};
-            }
-            sortingDir = utils::ArrayMath::normalize(sortingDir);
-            cellPairOffsets.emplace_back(cellOffsets[ov1_squared * overlap[0] + z], offset,
-                                         utils::ArrayMath::normalize(sortingDir));
-          }
-        }
-
-        // back right
-        if (y != overlap[1] and x != overlap[0] and z != 0) {
-          const auto distVec = std::array<double, 3>{std::max(zero, overlap[0] - x - one),
-                                                     std::max(zero, overlap[1] - y - one), std::max(zero, z - one)} *
-                               cellLength;
-          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
-          if (distSquare <= interactionLengthSquare) {
-            const auto baseCellVec =
-                utils::ArrayUtils::static_cast_copy_array<double>(utils::ThreeDimensionalMapping::oneToThreeD(
-                    cellOffsets[ov1_squared * ov1 - ov1 + z], cellsPerDimension));
-
-            auto sortingDir = offsetVec - baseCellVec;
-            if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
-              sortingDir = {1., 1., 1.};
-            }
-
-            cellPairOffsets.emplace_back(cellOffsets[ov1_squared * ov1 - ov1 + z], offset,
-                                         utils::ArrayMath::normalize(sortingDir));
-          }
-        }
-      }
-    }
-  }
-
-  return cellPairOffsets;
-}
-
 /*
- * Explicit Template Instantation - Required since the definition of computePairwiseCellOffsetsC08(..)
+ * Explicit Template Instantiation - Required since the definition of computePairwiseCellOffsetsC08(..)
  * is not in header file. However, the Mode variable is finite, and all instances can be created before
  * being used by explicit template instantiation
  */
@@ -285,12 +159,12 @@ template std::vector<OffsetPairSorting> computePairwiseCellOffsetsC08<C08OffsetM
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
 
-/** Template Sepcialization to return C08 cell paris without sorting */
+/** Template Specialization to return C08 cell paris without sorting */
 template std::vector<OffsetPair> computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairs>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
 
-/** Template Sepcialization to return C04 cell paris, i.e. C08 resolved on x axis */
+/** Template Specialization to return C04 cell paris, i.e. C08 resolved on x-axis */
 template std::vector<OffsetPairVector> computePairwiseCellOffsetsC08<C08OffsetMode::c04CellPairs>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
