@@ -93,6 +93,18 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   typename VerletListHelpers<Particle_T>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
+   * Build the pair neighbor list if necessary without fully rebuilding the other neighbor lists.
+   * @param traversal
+   */
+  void prepareForTraversal(TraversalInterface *traversal) override {
+    if (traversal->getTraversalType() == TraversalOption::vl_pair_list_iteration) {
+      if (not _pairListIsValid) {
+        this->updatePairVerletListsAoS3B(this->_verletBuiltNewton3);
+      }
+    }
+  }
+
+  /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
    * @note This function will be called in computeInteractions()
    * @param traversal
@@ -123,8 +135,10 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
         break;
       }
       case TraversalOption::vl_pair_list_iteration: {
-        // build 3Body Verlet lists through VLIteration traversal
-        this->updatePairVerletListsAoS3B(buildWithN3);
+        if (not _pairListIsValid) {
+          // build 3Body Verlet lists through VLIteration traversal
+          this->updatePairVerletListsAoS3B(buildWithN3);
+        }
         break;
       }
       // Default builds normal neighbor lists including halo particles.
@@ -174,6 +188,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
                                           dataLayout, useNewton3);
     this->_linkedCells.computeInteractions(&traversal);
 
+    _pairListIsValid = false;
     _soaListIsValid = false;
   }
 
@@ -197,13 +212,14 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       dataLayout = DataLayoutOption::aos;
     } else {
       utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS3B(): unsupported BuildVerletListType: {}",
-                                         _buildVerletListType);
+                                         static_cast<int>(_buildVerletListType));
     }
 
     auto traversal = VLListIterationTraversal<ParticleCellType,
                                               typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor>(
         &f, dataLayout, useNewton3);
     this->computeInteractions(&traversal);
+    _pairListIsValid = true;
   }
 
   /**
@@ -300,6 +316,11 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * Shows if the SoA neighbor list is currently valid.
    */
   bool _soaListIsValid{false};
+
+  /**
+   * Shows if the pair list for triwise interactions is currently valid.
+   */
+  bool _pairListIsValid{false};
 
   /**
    * Specifies for what data layout the verlet lists are build.
