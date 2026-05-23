@@ -23,12 +23,27 @@ endif ()
 
 add_library(autopas STATIC ${MY_SRC})
 
+set(AUTOPAS_OPENMP_TARGET "")
+if (AUTOPAS_OPENMP)
+    if (AUTOPAS_ENABLE_KOKKOS AND AUTOPAS_KOKKOS_BACKEND STREQUAL "HIP" AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_library(autopasOpenMP INTERFACE)
+        target_compile_options(autopasOpenMP INTERFACE "SHELL:-Xarch_host ${OpenMP_CXX_FLAGS}")
+        foreach (openmpLibName ${OpenMP_CXX_LIB_NAMES})
+            target_link_libraries(autopasOpenMP INTERFACE ${OpenMP_${openmpLibName}_LIBRARY})
+        endforeach ()
+        target_include_directories(autopasOpenMP INTERFACE ${OpenMP_CXX_INCLUDE_DIRS})
+        set(AUTOPAS_OPENMP_TARGET autopasOpenMP)
+    else ()
+        set(AUTOPAS_OPENMP_TARGET OpenMP::OpenMP_CXX)
+    endif ()
+endif ()
+
 target_link_libraries(
     autopas
     PUBLIC
         $<$<NOT:$<PLATFORM_ID:Darwin>>:rt> # required for Time.h, on macOS not needed
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
-        $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
+        $<$<BOOL:${AUTOPAS_OPENMP}>:${AUTOPAS_OPENMP_TARGET}>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>

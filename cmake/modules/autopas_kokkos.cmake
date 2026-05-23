@@ -5,7 +5,7 @@ set(AUTOPAS_KOKKOS_BACKEND "CUDA" CACHE STRING "Selects Kokkos device backend (S
 set_property(CACHE AUTOPAS_KOKKOS_BACKEND PROPERTY STRINGS SERIAL CUDA HIP SYCL OPENMP)
 
 
-if (NOT ${AUTOPAS_ENABLE_KOKKOS})
+if (NOT AUTOPAS_ENABLE_KOKKOS)
     return()
 endif ()
 
@@ -13,23 +13,24 @@ endif ()
 set(Kokkos_ENABLE_OPENMP ON)
 set(Kokkos_ENABLE_SERIAL ON)
 
-if (${AUTOPAS_KOKKOS_BACKEND} STREQUAL "CUDA")
+if (AUTOPAS_KOKKOS_BACKEND STREQUAL "CUDA")
     set(Kokkos_ENABLE_CUDA ON)
     #set(Kokkos_ARCH_AMPERE86 ON)
     #set(Kokkos_ARCH_PASCAL61 ON)
     set(Kokkos_ENABLE_CUDA_CONSTEXPR ON)
 
-elseif (${AUTOPAS_KOKKOS_BACKEND} STREQUAL "SERIAL")
+elseif (AUTOPAS_KOKKOS_BACKEND STREQUAL "SERIAL")
     set(Kokkos_ENABLE_SERIAL ON)
 
-elseif (${AUTOPAS_KOKKOS_BACKEND} STREQUAL "HIP")
+elseif (AUTOPAS_KOKKOS_BACKEND STREQUAL "HIP")
     set(Kokkos_ENABLE_HIP ON)
+    set(Kokkos_ENABLE_OPENMP OFF CACHE BOOL "Disable Kokkos OpenMP when building the HIP backend" FORCE)
 
-elseif (${AUTOPAS_KOKKOS_BACKEND} STREQUAL "SYCL")
+elseif (AUTOPAS_KOKKOS_BACKEND STREQUAL "SYCL")
     set(Kokkos_ENABLE_SYCL ON)
     set(Kokkos_ARCH_INTEL_GEN12LP ON)
 
-elseif (${AUTOPAS_KOKKOS_BACKEND} STREQUAL "OPENMP")
+elseif (AUTOPAS_KOKKOS_BACKEND STREQUAL "OPENMP")
     set(Kokkos_ENABLE_OPENMP ON)
 else ()
     message(FATAL_ERROR "Unsupported Kokkos backend selected: ${AUTOPAS_KOKKOS_BACKEND}. Supported are CUDA, HIP, SYCL, OPENMP.")
@@ -40,7 +41,7 @@ set(Kokkos_VERSION 4.7.01)
 
 #find_package(Kokkos ${Kokkos_VERSION} CONFIG QUIET)
 
-if (${Kokkos_FOUND})
+if (Kokkos_FOUND)
     message(STATUS "Found existing Kokkos libraries: ${Kokkos_DIR}")
 else ()
     message(STATUS "Using Kokkos from GitHub Release ${Kokkos_VERSION}")

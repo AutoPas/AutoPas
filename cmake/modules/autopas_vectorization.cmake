@@ -18,7 +18,8 @@ if (AUTOPAS_USE_VECTORIZATION)
         autopas
         PUBLIC
             # openmp simd
-            $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:-fopenmp-simd>
+            $<$<AND:$<CXX_COMPILER_ID:Clang>,$<BOOL:${AUTOPAS_ENABLE_KOKKOS}>,$<STREQUAL:${AUTOPAS_KOKKOS_BACKEND},HIP>>:SHELL:-Xarch_host -fopenmp-simd>
+            $<$<AND:$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>,$<NOT:$<AND:$<CXX_COMPILER_ID:Clang>,$<BOOL:${AUTOPAS_ENABLE_KOKKOS}>,$<STREQUAL:${AUTOPAS_KOKKOS_BACKEND},HIP>>>>:-fopenmp-simd>
             $<$<OR:$<CXX_COMPILER_ID:Intel>,$<CXX_COMPILER_ID:IntelLLVM>>:-qopenmp-simd>
             # vector instruction set
             $<$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},NATIVE>:-march=native>
