@@ -1429,15 +1429,15 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   const auto allContainerTraversals =
       compatibleTraversals::allCompatibleTraversals(config.container, config.interactionType);
   if (allContainerTraversals.find(config.traversal) == allContainerTraversals.end()) {
-    AutoPasLog(WARN, "Configuration rejected: Container {} does not support the traversal {}.", config.container,
-               config.traversal);
+    AutoPasLog(WARN, "Configuration rejected: Container {} does not support the traversal {}.",
+               config.container.to_string(), config.traversal.to_string());
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
   // Check if the functor supports the required Newton 3 mode
   if ((config.newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
       (config.newton3 == Newton3Option::disabled and not functor.allowsNonNewton3())) {
-    AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!", config.newton3);
+    AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!", config.newton3.to_string());
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 

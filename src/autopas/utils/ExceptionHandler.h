@@ -9,7 +9,10 @@
 #include <cstdlib>
 #include <functional>
 #include <mutex>
+#include <sstream>
 #include <string>
+#include <type_traits>
+#include <utility>
 
 #include "autopas/utils/logging/Logger.h"
 
@@ -107,6 +110,24 @@ class ExceptionHandler {
 
   static void nonThrowException(const std::exception &e);
 
+  template <typename T>
+  static auto formatArg(T &&arg) {
+    using DecayedT = std::decay_t<T>;
+    if constexpr (requires { std::forward<T>(arg).to_string(); }) {
+      return std::forward<T>(arg).to_string();
+    } else if constexpr (std::is_arithmetic_v<DecayedT> or std::is_convertible_v<T, std::string>) {
+      return std::forward<T>(arg);
+    } else if constexpr (requires(std::ostream &os) { os << std::forward<T>(arg); }) {
+      std::ostringstream ss;
+      ss << std::forward<T>(arg);
+      return ss.str();
+    } else if constexpr (std::is_enum_v<DecayedT>) {
+      return static_cast<std::underlying_type_t<DecayedT>>(arg);
+    } else {
+      return std::forward<T>(arg);
+    }
+  }
+
  public:
   /**
    * Default exception class for autopas exceptions.
@@ -155,8 +176,8 @@ void ExceptionHandler::exception(const char *const e);  // NOLINT
 
 template <typename First, typename... Args>
 void ExceptionHandler::exception(std::string exceptionString, First first, Args... args) {
-  //std::string s = fmt::format(fmt::runtime(exceptionString), first, args...);
-  exception(exceptionString);
+  std::string s = fmt::format(fmt::runtime(exceptionString), formatArg(first), formatArg(args)...);
+  exception(s);
 }
 
 }  // namespace autopas::utils
