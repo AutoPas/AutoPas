@@ -209,5 +209,16 @@ class Option {
     return in;
   }
 };
+
+/**
+ * Function required for modern fmt/spdlog integration (fmt v9+).
+ * @param opt
+ * @return string representation
+ */
+template <typename actualOption>
+inline std::string format_as(const Option<actualOption> &opt) {
+  return opt.to_string();
+}
+
 }  // namespace options
 }  // namespace autopas

@@ -163,7 +163,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
         break;
       default:
         utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
-                                           _buildVerletListType);
+                                           static_cast<int>(_buildVerletListType));
     }
 
     constexpr bool traverseHaloCells = (interactionType == InteractionTypeOption::triwise);
