@@ -213,6 +213,7 @@ class Option {
 /**
  * Function required for modern fmt/spdlog integration (fmt v9+).
  * @param opt
+ * @return string representation
  */
 template <typename actualOption>
 inline std::string format_as(const Option<actualOption> &opt) {

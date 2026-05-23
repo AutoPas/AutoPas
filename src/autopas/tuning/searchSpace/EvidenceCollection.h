@@ -118,6 +118,7 @@ class EvidenceCollection {
 /**
  * Enable readable logging for spdlog/fmt.
  * @param mode
+ * @return string representation
  */
 inline std::string format_as(EvidenceCollection::EvidenceMode mode) {
   switch (mode) {
