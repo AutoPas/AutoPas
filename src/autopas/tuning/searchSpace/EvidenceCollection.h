@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <spdlog/fmt/ostr.h>
+
 #include <map>
 #include <optional>
 #include <tuple>
@@ -112,4 +114,22 @@ class EvidenceCollection {
    */
   size_t _latestTuningPhase{0};
 };
+
+/**
+ * Enable readable logging for spdlog/fmt.
+ * @param mode
+ */
+inline std::string format_as(EvidenceCollection::EvidenceMode mode) {
+  switch (mode) {
+    case EvidenceCollection::EFFECTIVE:
+      return "Effective";
+    case EvidenceCollection::TRAVERSAL:
+      return "Traversal";
+    case EvidenceCollection::TOTAL:
+      return "Total";
+    default:
+      return "UnknownEvidenceMode";
+  }
+}
+
 }  // namespace autopas
