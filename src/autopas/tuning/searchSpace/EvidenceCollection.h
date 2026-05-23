@@ -6,10 +6,9 @@
 
 #pragma once
 
-#include <spdlog/fmt/ostr.h>
-
 #include <map>
 #include <optional>
+#include <string>
 #include <tuple>
 #include <vector>
 
