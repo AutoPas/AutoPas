@@ -509,6 +509,8 @@ template <class Particle_T>
 
 #ifdef KOKKOS_ENABLE_CUDA
   using DeviceSpace = Kokkos::CudaSpace;
+#elif defined(KOKKOS_ENABLE_HIP)
+  using DeviceSpace = Kokkos::HIPSpace;
 #else
   using DeviceSpace = Kokkos::HostSpace;
 #endif

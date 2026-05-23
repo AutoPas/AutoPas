@@ -53,6 +53,8 @@ explicit KokkosDsFlatTraversal(Functor *functor, DataLayoutOption dataLayout, bo
       if (_dataLayout == DataLayoutOption::aos) {
 #ifdef KOKKOS_ENABLE_CUDA
         return; // TODO: log error / exception
+#elif defined(KOKKOS_ENABLE_HIP)
+        return; // TODO: log error / exception
 #else
         Kokkos::parallel_for("traverseParticlesAoS", Kokkos::RangePolicy<Kokkos::HostSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
           for (int j = (newton3 ? i+1 : 0); j < N; ++j) {
@@ -135,6 +137,8 @@ private:
 
 #ifdef KOKKOS_ENABLE_CUDA
   using DeviceSpace = Kokkos::CudaSpace;
+#elif defined(KOKKOS_ENABLE_HIP)
+  using DeviceSpace = Kokkos::HIPSpace; 
 #else
   using DeviceSpace = Kokkos::HostSpace;
 #endif

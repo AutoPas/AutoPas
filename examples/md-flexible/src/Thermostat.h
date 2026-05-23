@@ -22,6 +22,9 @@ namespace Thermostat {
 #ifdef KOKKOS_ENABLE_CUDA
 using DeviceSpace = Kokkos::CudaSpace;
 constexpr bool ForEachHostFlag = false;
+#elif defined(KOKKOS_ENABLE_HIP)
+using DeviceSpace = Kokkos::HIPSpace;
+constexpr bool ForEachHostFlag = false;
 #else
 using DeviceSpace = Kokkos::HostSpace;
 constexpr bool ForEachHostFlag = true;

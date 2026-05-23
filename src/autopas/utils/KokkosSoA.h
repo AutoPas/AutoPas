@@ -130,6 +130,8 @@ namespace autopas::utils {
 
 #ifdef KOKKOS_ENABLE_CUDA
     std::tuple<Kokkos::DualView<Types, Kokkos::CudaSpace::device_type>...> views {};
+#elif defined(KOKKOS_ENABLE_HIP)
+    std::tuple<Kokkos::DualView<Types, Kokkos::HIPSpace::device_type>...> views {};
 #else
     std::tuple<Kokkos::DualView<Types, Kokkos::HostSpace::device_type>...> views {};
 #endif
