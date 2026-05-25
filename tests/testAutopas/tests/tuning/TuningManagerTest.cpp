@@ -153,6 +153,170 @@ TEST_F(TuningManagerTest, testMultipleTuners) {
 }
 
 /**
+ * Test that neighbor lists and containers are rebuilt correctly when multiple interaction types are used.
+ * - When the pairwise and triwise interactions use the SAME container type (e.g., Verlet Lists),
+ * the rebuild step needs to happen only once, and no automatic rebuild is triggered on functor change.
+ */
+TEST_F(TuningManagerTest, testMultipleTunersSameContainersRebuildLogic) {
+  using namespace autopas::utils::ArrayMath::literals;
+  constexpr unsigned int rebuildFrequency = 10;
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 1,
+  };
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies1{};
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies2{};
+
+  // Both Search Spaces use VerletLists.
+  const autopas::AutoTuner::SearchSpaceType pairwiseSpace{_confVl_list_iteration};
+  const autopas::AutoTuner::SearchSpaceType triwiseSpace{_confVl_list_iteration_3b, _confVl_pair_list_iteration_3b};
+
+  const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tuningManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies1, pairwiseSpace, autoTunerInfo, rebuildFrequency, "2B"),
+      autopas::InteractionTypeOption::pairwise);
+  tuningManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies2, triwiseSpace, autoTunerInfo, rebuildFrequency, "3B"),
+      autopas::InteractionTypeOption::triwise);
+
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
+      .boxMin{0., 0., 0.},
+      .boxMax{10., 10., 10.},
+  };
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> pairwiseFunctor{};
+  testing::NiceMock<MockTriwiseFunctor<Molecule>> triwiseFunctor{};
+
+  // Helper lambda to re-apply mock expectations after they are cleared
+  auto setupFunctorMocks = [&]() {
+    EXPECT_CALL(pairwiseFunctor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
+    EXPECT_CALL(triwiseFunctor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
+    EXPECT_CALL(pairwiseFunctor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+    EXPECT_CALL(triwiseFunctor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  };
+  setupFunctorMocks();
+
+  // Give the container some particles so traversals are generated internally without crashing
+  logicHandler.getContainer().addParticle((Molecule{{0.1, 0.1, 0.1}, {0., 0., 0.}, 0, 0}));
+  logicHandler.getContainer().addParticle((Molecule{{0.2, 0.1, 0.1}, {0., 0., 0.}, 1, 0}));
+  logicHandler.getContainer().addParticle((Molecule{{0.1, 0.2, 0.1}, {0., 0., 0.}, 2, 0}));
+
+  // --- Step 1: Initial computations (Particles close to each other) ---
+  logicHandler.updateContainer();
+  EXPECT_CALL(pairwiseFunctor, AoSFunctor).Times(6);
+  logicHandler.computeInteractionsPipeline(&pairwiseFunctor, autopas::InteractionTypeOption::pairwise);
+  ::testing::Mock::VerifyAndClearExpectations(&pairwiseFunctor);
+
+  // --- Step 2: Move particles and compute Triwise ---
+  // Move particles far apart. If a rebuild happens they would no longer be in each other's neighbor lists.
+  for (auto &p : logicHandler.getContainer()) {
+    p.setR(p.getR() * 40.);
+  }
+
+  // Pairwise and Triwise both use VerletLists.
+  // Because the container type is identical, no internal rebuild is triggered when switching functors.
+  // It uses the old neighbor lists, resulting in the expected 3 interactions despite the new distance.
+  EXPECT_CALL(triwiseFunctor, AoSFunctor).Times(3);
+  logicHandler.computeInteractionsPipeline(&triwiseFunctor, autopas::InteractionTypeOption::triwise);
+  ::testing::Mock::VerifyAndClearExpectations(&triwiseFunctor);
+
+  setupFunctorMocks();
+
+  for (auto &p : logicHandler.getContainer()) {
+    p.setR(p.getR() / 40.);
+  }
+
+  logicHandler.updateContainer();
+  EXPECT_CALL(pairwiseFunctor, AoSFunctor).Times(6);
+  logicHandler.computeInteractionsPipeline(&pairwiseFunctor, autopas::InteractionTypeOption::pairwise);
+  ::testing::Mock::VerifyAndClearExpectations(&pairwiseFunctor);
+
+  // Triwise traversal is Pair Verlet Lists. This is a special case, where new lists need to be built even though we use
+  // the same container still.
+  EXPECT_CALL(triwiseFunctor, AoSFunctor).Times(3);
+  logicHandler.computeInteractionsPipeline(&triwiseFunctor, autopas::InteractionTypeOption::triwise);
+  ::testing::Mock::VerifyAndClearExpectations(&triwiseFunctor);
+}
+
+/**
+ * Test that neighbor lists and containers are rebuilt correctly when multiple interaction types are used.
+ * - When the pairwise and triwise interactions use DIFFERENT container types,
+ * we need to rebuild every time the functor call switches the active container.
+ */
+TEST_F(TuningManagerTest, testMultipleTunersDifferentContainersRebuildLogic) {
+  using namespace autopas::utils::ArrayMath::literals;
+  constexpr unsigned int rebuildFrequency = 10;
+  constexpr autopas::AutoTunerInfo autoTunerInfo{};
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies1{};
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies2{};
+
+  // Pairwise Search Space: Uses LinkedCells.
+  const autopas::AutoTuner::SearchSpaceType pairwiseSpace{_confLc_c01_noN3};
+  // Triwise Search Space: Uses VerletLists.
+  const autopas::AutoTuner::SearchSpaceType triwiseSpace{_confVl_list_iteration_3b};
+
+  const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tuningManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies1, pairwiseSpace, autoTunerInfo, rebuildFrequency, "2B"),
+      autopas::InteractionTypeOption::pairwise);
+  tuningManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies2, triwiseSpace, autoTunerInfo, rebuildFrequency, "3B"),
+      autopas::InteractionTypeOption::triwise);
+
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
+      .boxMin{0., 0., 0.},
+      .boxMax{10., 10., 10.},
+  };
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> pairwiseFunctor{};
+  testing::NiceMock<MockTriwiseFunctor<Molecule>> triwiseFunctor{};
+
+  auto setupFunctorMocks = [&]() {
+    EXPECT_CALL(pairwiseFunctor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
+    EXPECT_CALL(triwiseFunctor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
+    EXPECT_CALL(pairwiseFunctor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+    EXPECT_CALL(triwiseFunctor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  };
+  setupFunctorMocks();
+
+  // Give the container some particles so traversals are generated internally without crashing
+  logicHandler.getContainer().addParticle((Molecule{{0.1, 0.1, 0.1}, {0., 0., 0.}, 0, 0}));
+  logicHandler.getContainer().addParticle((Molecule{{0.2, 0.1, 0.1}, {0., 0., 0.}, 1, 0}));
+  logicHandler.getContainer().addParticle((Molecule{{0.1, 0.2, 0.1}, {0., 0., 0.}, 2, 0}));
+
+  // --- Iteration 0 ---
+  // Check the expected interactions.
+  logicHandler.updateContainer();
+  EXPECT_CALL(pairwiseFunctor, AoSFunctor).Times(6);
+  logicHandler.computeInteractionsPipeline(&pairwiseFunctor, autopas::InteractionTypeOption::pairwise);
+  ::testing::Mock::VerifyAndClearExpectations(&pairwiseFunctor);
+
+  EXPECT_CALL(triwiseFunctor, AoSFunctor).Times(3);
+  logicHandler.computeInteractionsPipeline(&triwiseFunctor, autopas::InteractionTypeOption::triwise);
+  ::testing::Mock::VerifyAndClearExpectations(&triwiseFunctor);
+
+  setupFunctorMocks();
+
+  // --- Iteration 1 ---
+  logicHandler.updateContainer();
+  EXPECT_CALL(pairwiseFunctor, AoSFunctor).Times(6);
+  logicHandler.computeInteractionsPipeline(&pairwiseFunctor, autopas::InteractionTypeOption::pairwise);
+  ::testing::Mock::VerifyAndClearExpectations(&pairwiseFunctor);
+
+  // Move particles far apart. If a rebuild happens they would no longer be in each others neighbor lists.
+  for (auto &p : logicHandler.getContainer()) {
+    p.setR(p.getR() * 40.);
+  }
+
+  // Triwise requires a different container type. The switch forces the logicHandler to rebuild the container.
+  // Because it rebuilds, it processes the new far-apart coordinates and registers 0 interactions.
+  EXPECT_CALL(triwiseFunctor, AoSFunctor).Times(0);
+  logicHandler.computeInteractionsPipeline(&triwiseFunctor, autopas::InteractionTypeOption::triwise);
+  ::testing::Mock::VerifyAndClearExpectations(&triwiseFunctor);
+}
+
+/**
  * Test the behavior when the tuning phase takes more iterations than the specified tuning interval.
  */
 TEST_F(TuningManagerTest, testTuningPhaseLongerThanTuningInterval) {
