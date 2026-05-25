@@ -386,19 +386,22 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
       break;
     }
     case TraversalOption::lc_c04: {
-      return std::make_unique<LCC04Traversal<ParticleCell_T, TriwiseFunctor_T>>(
+      traversal = std::make_unique<LCC04Traversal<ParticleCell_T, TriwiseFunctor_T>>(
           traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
           dataLayout, useNewton3);
+      break;
     }
     case TraversalOption::lc_sliced: {
-      return std::make_unique<LCSlicedTraversal<ParticleCell_T, TriwiseFunctor_T>>(
+      traversal = std::make_unique<LCSlicedTraversal<ParticleCell_T, TriwiseFunctor_T>>(
           traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
           dataLayout, useNewton3);
+      break;
     }
     case TraversalOption::lc_sliced_c02: {
-      return std::make_unique<LCSlicedC02Traversal<ParticleCell_T, TriwiseFunctor_T>>(
+      traversal = std::make_unique<LCSlicedC02Traversal<ParticleCell_T, TriwiseFunctor_T>>(
           traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
           dataLayout, useNewton3);
+      break;
     }
     default: {
       utils::ExceptionHandler::exception("Traversal type {} is not a known triwise traversal type!",
