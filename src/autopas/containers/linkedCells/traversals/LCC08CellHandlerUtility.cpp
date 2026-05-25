@@ -212,14 +212,11 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
 
                     // check distance between cell 2 and cell 3
                     if (cellDistIsGreaterThanCutoff(x2, y2, z2, x3, y3, z3)) continue;
-                    const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(
-                        x1, y1, z1, cellsPerDimIntegral);
+                    const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(x1, y1, z1, cellsPerDimIntegral);
 
-                    const long offset2 = utils::ThreeDimensionalMapping::threeToOneD(
-                        x2, y2, z2, cellsPerDimIntegral);
+                    const long offset2 = utils::ThreeDimensionalMapping::threeToOneD(x2, y2, z2, cellsPerDimIntegral);
 
-                    const long offset3 = utils::ThreeDimensionalMapping::threeToOneD(
-                        x3, y3, z3, cellsPerDimIntegral);
+                    const long offset3 = utils::ThreeDimensionalMapping::threeToOneD(x3, y3, z3, cellsPerDimIntegral);
 
                     if (offset1 > offset2 or offset2 >= offset3) continue;
 
@@ -227,9 +224,8 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
                         (z1 == 0 or z2 == 0 or z3 == 0)) {
                       if constexpr (Mode == C08OffsetMode::sorting) {
                         const auto sortDirection = computeSortingDirection(
-                                                    {static_cast<double>(x1), static_cast<double>(y1), static_cast<double>(z1)},
-                                                    {static_cast<double>(x2), static_cast<double>(y2), static_cast<double>(z2)},
-                                                    cellLength);
+                            {static_cast<double>(x1), static_cast<double>(y1), static_cast<double>(z1)},
+                            {static_cast<double>(x2), static_cast<double>(y2), static_cast<double>(z2)}, cellLength);
                         resultOffsetsC08.emplace_back(offset1, offset2, offset3, sortDirection);
                       } else if constexpr (Mode == C08OffsetMode::c04NoSorting) {
                         resultOffsetsC08[x1].emplace_back(offset1, offset2, offset3);
