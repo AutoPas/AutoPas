@@ -202,14 +202,4 @@ template <C08OffsetMode Mode>
 OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
                                                      const std::array<double, 3> &cellLength, double interactionLength);
 
-/**
- * @copydoc autopas::LCC08CellHandlerUtility::computeTriwiseCellOffsetsC08()
- * @note This method uses another method to compute cell triplet offsets, which is faster for smaller cell sizes.
- * Currently, this function is not used/tested.
- */
-template <C08OffsetMode Mode>
-OffsetTripletType<Mode> computeTriwiseCellOffsetsC08Optimized(const std::array<unsigned long, 3> &cellsPerDimension,
-                                                              const std::array<double, 3> &cellLength,
-                                                              double interactionLength);
-
 }  // namespace autopas::LCC08CellHandlerUtility
