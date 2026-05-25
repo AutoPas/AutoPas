@@ -10,7 +10,8 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/options/IteratorBehavior.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopas/utils/WrapOpenMP.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "testingHelpers/EmptyPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -26,7 +27,7 @@ auto ContainerIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopas::Co
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.setCutoff(1);
-  autoPas.setVerletSkinPerTimestep(0.2);
+  autoPas.setVerletSkin(0.4);
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
@@ -47,10 +48,7 @@ auto ContainerIteratorTestBase::deleteParticles(AutoPasT &autopas, F predicate, 
                                                 const autopas::IteratorBehavior &behavior) {
   if constexpr (not constIter) {
     IteratorTestHelper::provideIterator<false>(autopas, behavior, useRegionIterator, [&](auto &autopas, auto getIter) {
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-      {
+      AUTOPAS_OPENMP(parallel) {
         for (auto iter = getIter(); iter.isValid(); ++iter) {
           const auto leID = iter->getID();
           if (predicate(leID)) {

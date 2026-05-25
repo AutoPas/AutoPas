@@ -6,21 +6,16 @@
 
 #include "AutoTunerTest.h"
 
-#include <cstddef>
 #include <vector>
 
-#include "autopas/AutoPasDecl.h"
 #include "autopas/LogicHandler.h"
-#include "autopas/LogicHandlerInfo.h"
-#include "autopas/cells/FullParticleCell.h"
-#include "autopas/options/ContainerOption.h"
+#include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/tuningStrategy/SlowConfigFilter.h"
+#include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
-#include "autopas/utils/WrapOpenMP.h"
-#include "autopas/utils/checkFunctorType.h"
-#include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**
@@ -30,539 +25,21 @@
 
 using ::testing::_;
 
-TEST_F(AutoTunerTest, testAllConfigurations) {
-  const autopas::NumberSetFinite<double> cellSizeFactors({1});
-  const double verletSkinPerTimestep = 0;
-  const unsigned int verletRebuildFrequency = 20;
-  const unsigned int verletClusterSize = 64;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
-      .boxMin{0., 0., 0.},
-      .boxMax{8., 8., 8.},
-      .cutoff = 1.8,
-      .verletSkinPerTimestep = .01,
-  };
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
-      .maxSamples = 2,
-  };
-
-  // the NiceMock wrapper suppresses warnings from uninteresting function calls
-  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  // Need to resize cells during loading, otherwise we get exceptions in SoAFunctors
-  EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Molecule> &>(_), _, _))
-      .Times(testing::AtLeast(1))
-      .WillRepeatedly(
-          testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
-  EXPECT_CALL(functor, SoALoader(::testing::Matcher<FMCell &>(_), _, _))
-      .Times(testing::AtLeast(1))
-      .WillRepeatedly(
-          testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
-  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
-      autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::InteractionTypeOption::pairwise);
-  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&autoTuner);
-  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
-  //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
-  bool stillTuning = true;
-  auto prevConfig = autopas::Configuration();
-
-  std::map<autopas::ContainerOption, size_t> configsPerContainer;
-
-  // number of configs manually counted:
-  //
-  // Direct Sum:            ds_sequential               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  configsPerContainer[autopas::ContainerOption::directSum] = 4;
-  // LinkedCells:           lc_c08                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_sliced                   (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_sliced_balanced          (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
-  //                        lc_sliced_c02               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_c18                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_c01                      (AoS <=> SoA, noNewton3)                             = 2
-  //                        lc_c01_combined_SoA         (SoA, noNewton3)                                     = 1
-  //                        lc_c04                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_c04_combined_SoA         (SoA, newton3 <=> noNewton3)                         = 2
-  //                        lc_c04_HCP                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  configsPerContainer[autopas::ContainerOption::linkedCells] = 37;
-  // same as linked Cells but load estimator stuff is currently missing
-  configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
-      configsPerContainer[autopas::ContainerOption::linkedCells] - 4;
-  // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                             = 2
-  configsPerContainer[autopas::ContainerOption::verletLists] = 2;
-  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics)   = 12
-  //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlc_c01                     (AoS <=> SoA, noNewton3)                             = 2
-  configsPerContainer[autopas::ContainerOption::verletListsCells] = 26;
-  // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                             = 2
-  //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3)                             = 2
-  //                        vcl_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vcl_sliced_c02              (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vcl_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
-  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 24;
-  // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
-
-  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
-  //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
-  //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
-  //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
-  //                        vlp_c01                     (AoS <=> SoA, noNewton3)                                     = 2
-  //                        vlp_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
-  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 22;
-
-  // Octree:                ot_c01                      (AoS <=> SoA, noNewton3)                             = 2
-  //                        ot_c18                      (AoS <=> SoA, newton3)                               = 2
-  configsPerContainer[autopas::ContainerOption::octree] = 4;
-
-  // check that there is an entry for every container.
-  ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size());
-
-  const size_t numberOfConfigs = std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
-                                                 [](auto acc, auto &pair) { return acc + pair.second; });
-  ASSERT_EQ(numberOfConfigs, searchSpace.size())
-      << "The calculated number of configurations is not equal to the cross product search space!";
-  // total number of possible configurations * number of samples + last iteration after tuning
-  const size_t expectedNumberOfIterations = numberOfConfigs * autoTunerInfo.maxSamples + 1;
-
-  int collectedSamples = 0;
-  int iterations = 0;
-  while (stillTuning) {
-    if (collectedSamples == autoTunerInfo.maxSamples) {
-      collectedSamples = 0;
-      logicHandler.getContainer().deleteAllParticles();
-      // add particles, so VerletClusterLists uses more than one tower, otherwise its traversals are invalid.
-      if (logicHandler.getContainer().getContainerType() == autopas::ContainerOption::verletClusterLists) {
-        const std::array<size_t, 3> particlesPerDim = {8, 16, 8};
-        const std::array<double, 3> spacing = {0.25, 0.25, 0.25};
-        const std::array<double, 3> offset = {0.125, 0.125, 0.125};
-        Molecule defaultParticle{};
-        autopasTools::generators::GridGenerator::fillWithParticles(logicHandler.getContainer(), particlesPerDim,
-                                                                   defaultParticle, spacing, offset);
-      }
-    }
-    stillTuning = logicHandler.iteratePairwisePipeline(&functor);
-    logicHandler.bumpIterationCounters();
-    autoTuner.bumpIterationCounters();
-    ++iterations;
-    ++collectedSamples;
-    const auto currentConfig = autoTuner.getCurrentConfig();
-    if (stillTuning) {
-      if (collectedSamples == 1) {
-        EXPECT_NE(currentConfig, prevConfig)
-            << "Iteration: " << iterations << " collectedSamples: " << collectedSamples;
-      } else {
-        EXPECT_EQ(currentConfig, prevConfig)
-            << "Iteration: " << iterations << " collectedSamples: " << collectedSamples;
-      }
-    }
-    prevConfig = currentConfig;
-  }
-
-  EXPECT_EQ(expectedNumberOfIterations, iterations);
-}
-
-TEST_F(AutoTunerTest, testWillRebuildDDL) {
-  // also check if rebuild is detected if next config is invalid
-
-  const double cellSizeFactor = 1.;
-  const unsigned int verletRebuildFrequency = 20;
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
-      .maxSamples = 2,
-  };
-  const autopas::LogicHandlerInfo logicHandlerInfo{
-      .boxMin{0., 0., 0.},
-      .boxMax{10., 10., 10.},
-  };
-  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-
-  const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_noN3,
-      _confDs_seq_N3,
-      _confLc_c08_noN3,
-  };
-
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&autoTuner);
-
-  EXPECT_EQ(*(searchSpace.rbegin()), autoTuner.getCurrentConfig());
-
-  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-
-  // Intended false positive
-  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
-  logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
-  autoTuner.bumpIterationCounters();
-  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
-  logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
-  autoTuner.bumpIterationCounters();
-  // Intended false positive
-  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
-  logicHandler.iteratePairwisePipeline(&functor);  // DS N3
-  autoTuner.bumpIterationCounters();
-  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
-  logicHandler.iteratePairwisePipeline(&functor);  // DS N3
-  autoTuner.bumpIterationCounters();
-  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
-  logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
-  autoTuner.bumpIterationCounters();
-  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
-  logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
-  autoTuner.bumpIterationCounters();
-  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
-  logicHandler.iteratePairwisePipeline(&functor);  // optimum
-  autoTuner.bumpIterationCounters();
-  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
-}
-
-/**
- * This test simulates that the next config (which is checked by willRebuildNeighborLists) is invalid.
- */
-TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
-  // also check if rebuild is detected if next config is invalid
-
-  const double cellSizeFactor = 1.;
-  const unsigned int verletRebuildFrequency = 20;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
-      .boxMin{0., 0., 0.},
-      .boxMax{10., 10., 10.},
-  };
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
-      .maxSamples = 2,
-  };
-  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-
-  const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_noN3,
-      _confDs_seq_N3,
-      _confLc_c08_N3,
-  };
-
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&autoTuner);
-
-  EXPECT_EQ(*(searchSpace.rbegin()), autoTuner.getCurrentConfig());
-
-  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
-
-  // Intended false positive
-  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
-  logicHandler.iteratePairwisePipeline(&functor);  // DS N3
-  autoTuner.bumpIterationCounters();
-  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
-  logicHandler.iteratePairwisePipeline(&functor);  // DS N3
-  autoTuner.bumpIterationCounters();
-  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
-  logicHandler.iteratePairwisePipeline(&functor);  // LC N3
-  autoTuner.bumpIterationCounters();
-  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
-  logicHandler.iteratePairwisePipeline(&functor);  // LC N3
-  autoTuner.bumpIterationCounters();
-  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
-  logicHandler.iteratePairwisePipeline(&functor);  // optimum
-  autoTuner.bumpIterationCounters();
-  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
-}
-
-TEST_F(AutoTunerTest, testWillRebuildDL) {
-  // also check if rebuild is detected if next config is invalid
-
-  const double cellSizeFactor = 1.;
-  const unsigned int verletRebuildFrequency = 20;
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
-      .maxSamples = 2,
-  };
-  const autopas::LogicHandlerInfo logicHandlerInfo{
-      .boxMin{0., 0., 0.},
-      .boxMax{10., 10., 10.},
-  };
-  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_noN3,
-      _confLc_c08_noN3,
-  };
-
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&autoTuner);
-
-  EXPECT_EQ(*(searchSpace.rbegin()), autoTuner.getCurrentConfig());
-
-  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-
-  // Intended false positive
-  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
-  logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
-  autoTuner.bumpIterationCounters();
-  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
-  logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
-  autoTuner.bumpIterationCounters();
-  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
-  logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
-  autoTuner.bumpIterationCounters();
-  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
-  logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
-  autoTuner.bumpIterationCounters();
-  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
-  logicHandler.iteratePairwisePipeline(&functor);  // optimum
-  autoTuner.bumpIterationCounters();
-  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
-}
-
-/**
- * Initialize a tuner, do a tuning phase, then instead of waiting for the full tuning interval restart the tuning
- * earlier via forceRetune.
- */
-TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
-  const unsigned int verletRebuildFrequency = 20;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
-      .boxMin{0., 0., 0.},
-      .boxMax{2, 4, 2},
-  };
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
-      .maxSamples = 3,
-  };
-
-  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c01_noN3, _confLc_c18_noN3, _confLc_c08_noN3};
-  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&autoTuner);
-
-  const size_t numExpectedTuningIterations = searchSpace.size() * autoTunerInfo.maxSamples;
-  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-
-  // expect a full tuning phase
-  for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
-    // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should still be tuning in iteration " << i;
-    autoTuner.bumpIterationCounters();
-  }
-  // first iteration after tuning phase
-  EXPECT_FALSE(logicHandler.iteratePairwisePipeline(&functor))
-      << "Tuner should be done be tuning in the first iteration after the tuning phase.";
-  autoTuner.bumpIterationCounters();
-
-  EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "No rebuilding expected here.";
-  // instead of waiting the full tuning interval restart tuning immediately
-  autoTuner.forceRetune();
-  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "willRebuildNeighborLists() does not recognize forceRetune()";
-
-  // expect a full tuning phase
-  for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
-    // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should still be tuning.";
-    autoTuner.bumpIterationCounters();
-  }
-  // first iteration after tuning phase
-  EXPECT_FALSE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should be done be tuning.";
-  autoTuner.bumpIterationCounters();
-}
-
-TEST_F(AutoTunerTest, testForceRetuneInPhase) {
-  const double cellSizeFactor = 1;
-  const unsigned int verletRebuildFrequency = 20;
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
-      .maxSamples = 3,
-  };
-  const autopas::LogicHandlerInfo logicHandlerInfo{
-      .boxMin{0., 0., 0.},
-      .boxMax{2, 4, 2},
-  };
-  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-
-  const auto searchSpace = {_confLc_c01_noN3, _confLc_c18_noN3, _confLc_c08_noN3};
-
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&autoTuner);
-
-  size_t numExpectedTuningIterations = searchSpace.size() * autoTunerInfo.maxSamples;
-  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-
-  // Do part of the tuning phase. After the loop we should be in the middle of sampling the second configuration.
-  ASSERT_GT(autoTunerInfo.maxSamples, 1);
-  ASSERT_GT(searchSpace.size(), 1);
-  size_t iteration = 0;
-  for (; iteration < autoTunerInfo.maxSamples + 1; ++iteration) {
-    // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should still be tuning.\n"
-                                                                   "Phase 1\n"
-                                                                   "Iteration "
-                                                                << iteration;
-    autoTuner.bumpIterationCounters();
-  }
-  // restart the full tuning phase
-  autoTuner.forceRetune();
-  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "willRebuildNeighborLists() does not recognize forceRetune()";
-
-  // expect a full tuning phase
-  for (size_t i = 0; i < numExpectedTuningIterations; ++i, ++iteration) {
-    // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should still be tuning.\n"
-                                                                   "Phase 2\n"
-                                                                   "Iteration "
-                                                                << iteration;
-    autoTuner.bumpIterationCounters();
-  }
-  // first iteration after tuning phase
-  EXPECT_FALSE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should be done be tuning.\n"
-                                                                  "Iteration "
-                                                               << iteration;
-}
-
 /**
  * Generates no configurations.
  */
 TEST_F(AutoTunerTest, testNoConfig) {
   // wrap experiment into lambda to make simpler EXPECT_THROW expression
   auto experiment = []() {
-    const unsigned int verletRebuildFrequency = 20;
-    const autopas::AutoTunerInfo autoTunerInfo{};
+    constexpr unsigned int rebuildFrequency = 20;
+    constexpr autopas::AutoTunerInfo autoTunerInfo{};
     autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-
     autopas::AutoTuner::SearchSpaceType searchSpace = {};
-    autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
+    autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, "");
   };
 
   EXPECT_THROW(experiment(), autopas::utils::ExceptionHandler::AutoPasException)
       << "The Constructor should catch empty search spaces.";
-}
-
-/**
- * Generates exactly one valid configuration.
- */
-TEST_F(AutoTunerTest, testOneConfig) {
-  const double cellSizeFactor = 1.;
-  const unsigned int verletRebuildFrequency = 20;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
-      .boxMin{0., 0., 0.},
-      .boxMax{10., 10., 10.},
-  };
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
-      .maxSamples = 3,
-  };
-  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const auto searchSpace = {_confLc_c08_noN3};
-  autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&tuner);
-
-  EXPECT_EQ(_confLc_c08_noN3, tuner.getCurrentConfig());
-
-  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-
-  size_t numSamples = 0;
-  for (int i = 0; i < 5; ++i) {
-    if (numSamples == autoTunerInfo.maxSamples) {
-      numSamples = 0;
-    }
-    logicHandler.iteratePairwisePipeline(&functor);
-    ++numSamples;
-    EXPECT_EQ(_confLc_c08_noN3, tuner.getCurrentConfig());
-  }
-}
-
-/**
- * Generates exactly one valid and one invalid configuration.
- */
-TEST_F(AutoTunerTest, testConfigSecondInvalid) {
-  const double cellSizeFactor = 1.;
-  const unsigned int verletRebuildFrequency = 20;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
-      .boxMin{0., 0., 0.},
-      .boxMax{10., 10., 10.},
-  };
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
-      .maxSamples = 3,
-  };
-  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const auto searchSpace = {_confLc_c08_noN3, _confLc_c08_N3};
-  autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&tuner);
-
-  EXPECT_EQ(*(std::rbegin(searchSpace)), tuner.getCurrentConfig());
-
-  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
-
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
-
-  logicHandler.iteratePairwisePipeline(&functor);
-  EXPECT_EQ(_confLc_c08_N3, tuner.getCurrentConfig());
-  logicHandler.iteratePairwisePipeline(&functor);
-  EXPECT_EQ(_confLc_c08_N3, tuner.getCurrentConfig());
-  logicHandler.iteratePairwisePipeline(&functor);
-  EXPECT_EQ(_confLc_c08_N3, tuner.getCurrentConfig());
-}
-
-/**
- * All generated configurations are thrown out at runtime.
- */
-TEST_F(AutoTunerTest, testLastConfigThrownOut) {
-  const unsigned int verletRebuildFrequency = 20;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
-      .boxMin{0., 0., 0.},
-      .boxMax{10., 10., 10.},
-  };
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
-      .maxSamples = 3,
-  };
-  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-
-  const auto searchSpace = {_confLc_c08_noN3, _confLc_c18_noN3};
-  autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&tuner);
-
-  EXPECT_EQ(*std::rbegin(searchSpace), tuner.getCurrentConfig());
-
-  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
-
-  EXPECT_THROW(logicHandler.iteratePairwisePipeline(&functor), autopas::utils::ExceptionHandler::AutoPasException);
 }
 
 /**
@@ -572,72 +49,336 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
  * Expect to choose the first because the second one is worse on average.
  */
 TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
-  const unsigned int verletRebuildFrequency = 20;
-  const autopas::LogicHandlerInfo logicHandlerInfo{
-      .boxMin{0., 0., 0.},
-      .boxMax{10., 10., 10.},
-  };
-  const autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
-      .maxSamples = 2,
-  };
+  constexpr unsigned int rebuildFrequency = 20;
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .selectorStrategy = autopas::options::SelectorStrategyOption::fastestMean,
+      .tuningInterval = 1000,
+      .maxSamples = 3};
   // Use configurations with N3, otherwise there are more calls to AoSFunctor
   const auto searchSpace = {_confLc_c08_N3, _confDs_seq_N3};
-  autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&tuner);
 
-  using ::testing::_;
-  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _))
-      .Times(testing::AtLeast(0));
-  EXPECT_CALL(functor, SoAExtractor(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _))
-      .Times(testing::AtLeast(0));
-  EXPECT_CALL(functor, SoAFunctorPair(_, _, _)).Times(testing::AtLeast(0));
-  EXPECT_CALL(functor, SoAFunctorSingle(_, _)).Times(testing::AtLeast(0));
-  logicHandler.getContainer().addParticle((Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0}));
-  logicHandler.getContainer().addParticle((Molecule{{2., 1., 1.}, {0., 0., 0.}, 1, 0}));
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
 
-  using namespace std::literals;
+  size_t iteration = 0;
+  size_t tuningPhase = 0;
 
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(100ms); }));
-  logicHandler.iteratePairwisePipeline(&functor);
-  tuner.bumpIterationCounters();
+  autopas::LiveInfo info{};
 
-  auto firstConfig = tuner.getCurrentConfig();
+  // Iteration 0, Config 0, Rebuilding Neighbor List
+  autoTuner.tuneConfiguration(iteration, tuningPhase, /*isStartOfTuningPhase*/ true);
+  const auto config0a = autoTuner.getCurrentConfig();
+  EXPECT_TRUE(autoTuner.inTuningPhase()) << "AutoTuner should be in tuning state after just one iteration.";
+  autoTuner.addMeasurement(200000, 25000, true, iteration, tuningPhase);
+  iteration++;
 
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(30ms); }));
-  logicHandler.iteratePairwisePipeline(&functor);
-  tuner.bumpIterationCounters();
+  // Iteration 1, Config 0, Not Rebuilding
+  autoTuner.tuneConfiguration(iteration, tuningPhase, /*isStartOfTuningPhase*/ false);
+  const auto config0b = autoTuner.getCurrentConfig();
+  // Sanity check that configuration didn't change
+  ASSERT_EQ(config0a, config0b);
+  EXPECT_TRUE(autoTuner.inTuningPhase()) << "AutoTuner should be in tuning state after second iteration.";
+  autoTuner.addMeasurement(0, 30000, false, iteration, tuningPhase);
+  iteration++;
 
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(30ms); }));
-  logicHandler.iteratePairwisePipeline(&functor);
-  tuner.bumpIterationCounters();
+  // Iteration 2, Config 0, Not Rebuilding
+  autoTuner.tuneConfiguration(iteration, tuningPhase, /*isStartOfTuningPhase*/ false);
+  const auto config0c = autoTuner.getCurrentConfig();
+  // Sanity check that configuration didn't change
+  ASSERT_EQ(config0a, config0c);
+  EXPECT_TRUE(autoTuner.inTuningPhase()) << "AutoTuner should be in tuning state after third iteration.";
+  autoTuner.addMeasurement(0, 35000, false, iteration, tuningPhase);
+  iteration++;
 
-  // Here, second config will start to be tuned
+  // Iteration 3, Config 1, Rebuilding Neighbor List
+  autoTuner.tuneConfiguration(iteration, tuningPhase, /*isStartOfTuningPhase*/ false);
+  const auto config1a = autoTuner.getCurrentConfig();
+  // Sanity check that configuration did change
+  ASSERT_NE(config0a, config1a);
+  EXPECT_TRUE(autoTuner.inTuningPhase()) << "AutoTuner should be in tuning state after fourth iteration.";
+  autoTuner.addMeasurement(5500000, 25000, true, iteration, tuningPhase);
+  iteration++;
 
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(300ms); }));
-  logicHandler.iteratePairwisePipeline(&functor);
-  tuner.bumpIterationCounters();
+  // Iteration 4, Config 1, Not Rebuilding
+  autoTuner.tuneConfiguration(iteration, tuningPhase, /*isStartOfTuningPhase*/ false);
+  const auto config1b = autoTuner.getCurrentConfig();
+  // Sanity check that configuration didn't change
+  ASSERT_EQ(config1a, config1b);
+  EXPECT_TRUE(autoTuner.inTuningPhase()) << "AutoTuner should be in tuning state after fifth iteration.";
+  autoTuner.addMeasurement(0, 25000, false, iteration, tuningPhase);
+  iteration++;
 
-  auto secondConfig = tuner.getCurrentConfig();
+  // Iteration 5, Config 1, Not Rebuilding
+  autoTuner.tuneConfiguration(iteration, tuningPhase, /*isStartOfTuningPhase*/ false);
+  const auto config1c = autoTuner.getCurrentConfig();
+  // Sanity check that configuration didn't change
+  ASSERT_EQ(config1a, config1c);
+  // This was the last tuning iteration. The AutoTuner stays in tuning mode until the next call to tuneConfiguration()
+  EXPECT_TRUE(autoTuner.inTuningPhase()) << "AutoTuner should be in tuning state after sixth iteration.";
+  autoTuner.addMeasurement(0, 15000, false, iteration, tuningPhase);
+  iteration++;
 
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
-  logicHandler.iteratePairwisePipeline(&functor);
-  tuner.bumpIterationCounters();
-  EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
-  logicHandler.iteratePairwisePipeline(&functor);
-  tuner.bumpIterationCounters();
+  autoTuner.tuneConfiguration(iteration, tuningPhase, /*isStartOfTuningPhase*/ false);
+  EXPECT_FALSE(autoTuner.inTuningPhase()) << "AutoTuner should no longer be in tuning state.";
 
-  // Here, tuning should be finished and first should have been chosen (100 + 2 * 30 = 160 < 350 = 300 + 2 * 25)
-  EXPECT_CALL(functor, AoSFunctor).Times(1);
-  logicHandler.iteratePairwisePipeline(&functor);
-  tuner.bumpIterationCounters();
+  // Expected Weighted Averages
+  // Config 1: (200000 + 0 + 0) / 3 / 20 + (25000 + 30000 + 35000) / 3 = 40000
+  // Config 2: (5500000 + 0 + 0) / 3 / 20 + (25000 + 25000 + 15000) / 3  = 113333.33
+  // => Config 1 is optimal
+  EXPECT_EQ(autoTuner.getCurrentConfig(), config0a);
+  EXPECT_NE(autoTuner.getCurrentConfig(), config1a);
+}
 
-  EXPECT_EQ(tuner.getCurrentConfig(), firstConfig);
-  EXPECT_NE(tuner.getCurrentConfig(), secondConfig);
+/**
+ *  Add fewer measurements than the rebuild frequency and check if the weighted average for the evidence is correct.
+ */
+TEST_F(AutoTunerTest, testSampleWeightingOneRebuild) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  const autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 3,
+  };
+  constexpr size_t rebuildFrequency = 10;
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  autoTuner.tuneConfiguration(0, 0, /*isStartOfTuningPhase*/ true);
+  const auto config = autoTuner.getCurrentConfig();
+
+  constexpr long sampleRebuild = 10;
+  constexpr long sampleNonRebuild = 2;
+  autoTuner.addMeasurement(sampleRebuild, sampleNonRebuild, true, 0, 0);
+  autoTuner.addMeasurement(0, sampleNonRebuild, false, 1, 0);
+  autoTuner.addMeasurement(0, sampleNonRebuild, false, 2, 0);
+
+  constexpr long expectedEvidence = sampleRebuild / rebuildFrequency + sampleNonRebuild;
+  EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().effectiveValue);
+}
+
+/**
+ *  Add more measurements than the rebuild frequency and check if the weighted average for the evidence is correct.
+ *  Version with two rebuilds during sampling.
+ */
+TEST_F(AutoTunerTest, testSampleWeightingTwoRebuild) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  const autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 5,
+  };
+  constexpr size_t rebuildFrequency = 3;
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  autoTuner.tuneConfiguration(0, 0, /*isStartOfTuningPhase*/ true);
+  const auto config = autoTuner.getCurrentConfig();
+
+  constexpr long sampleRebuild = 8;
+  constexpr long sampleNonRebuild = 2;
+  autoTuner.addMeasurement(sampleRebuild, sampleNonRebuild, true, 0, 0);
+  autoTuner.addMeasurement(0, sampleNonRebuild, false, 1, 0);
+  autoTuner.addMeasurement(0, sampleNonRebuild, false, 2, 0);
+  autoTuner.addMeasurement(sampleRebuild, sampleNonRebuild, true, 3, 0);
+  autoTuner.addMeasurement(0, sampleNonRebuild, false, 4, 0);
+
+  constexpr long expectedEvidence = sampleRebuild / rebuildFrequency + sampleNonRebuild;
+  EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().effectiveValue);
+}
+
+/**
+ * Test that if a tuning strategy wipes the whole config queue it is not applied.
+ */
+TEST_F(AutoTunerTest, testRestoreAfterWipe) {
+  // Create a tuning strategy that will always reject everything
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  // This strategy will throw out all configurations that are slower than 50% of the fastest
+  // (incl. fastest, yes this is bug abuse)
+  tuningStrategies.emplace_back(std::make_unique<autopas::SlowConfigFilter>(0.5));
+  tuningStrategies.emplace_back(std::make_unique<autopas::SortByName>());
+
+  // Set up the tuner
+  const autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 1,
+  };
+  constexpr size_t rebuildFrequency = 3;
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  size_t iteration = 0;
+  // Fill the search space with random data so the slow config filter can work
+  for (const auto conf : searchSpace) {
+    autoTuner.tuneConfiguration(iteration, 0, iteration == 0);
+    autoTuner.addMeasurement(10, 42, true, iteration, 0);
+    iteration++;
+  }
+
+  // Trigger the tuning process with evidence. Here the slow config filter would wipe out everything
+  autoTuner.tuneConfiguration(iteration, 0, false);
+
+  // The slow config filter should have been ignored
+  // But the second strategy should still have been applied reversing the order of configs
+  EXPECT_EQ(autoTuner.getConfigQueue()[0], _confLc_c01_noN3);
+  EXPECT_EQ(autoTuner.getConfigQueue()[1], _confLc_c08_noN3);
+}
+
+void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinitely) const {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+
+  constexpr autopas::AutoTunerInfo autoTunerInfo{.tuningInterval = 100, .maxSamples = 1};
+  constexpr unsigned int rebuildFrequency = 1;
+
+  const autopas::AutoTuner::SearchSpaceType searchSpace{
+      _confDs_seq_noN3,
+      _confDs_seq_N3,
+      _confLc_c08_N3,
+      _confLc_c18_N3,
+  };
+
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, "2B"};
+
+  size_t iteration = 0;
+  size_t tuningPhase = 0;
+
+  // 1) Sample first config (accepted).
+  autoTuner.tuneConfiguration(iteration, 0, true);
+  const auto config1 = autoTuner.getCurrentConfig();
+  autoTuner.addMeasurement(180, 20, /*neighborListRebuilt*/ true, iteration, tuningPhase);
+  iteration++;
+
+  // 2) Second config is rejected, should immediately get the next one.
+  autoTuner.tuneConfiguration(iteration, 0, false);
+  const auto config2 = autoTuner.getCurrentConfig();
+  const auto configAfterReject2 = autoTuner.rejectConfig(config2, /*indefinitely*/ rejectIndefinitely, tuningPhase);
+  // EXPECT_TRUE(stillTuningAfterReject2);
+
+  // 3) Sample third config (accepted). Make it faster than config1 so it becomes the optimum.
+  autoTuner.addMeasurement(90, 10, /*neighborListRebuilt*/ true, iteration, tuningPhase);
+  iteration++;
+
+  // 4) Final config is rejected.
+  autoTuner.tuneConfiguration(iteration, 0, false);
+  const auto config4 = autoTuner.getCurrentConfig();
+  const auto configAfterReject4 = autoTuner.rejectConfig(config4, /*indefinitely*/ rejectIndefinitely, tuningPhase);
+
+  const auto expectedBest = _confLc_c08_N3;
+  EXPECT_EQ(configAfterReject4, expectedBest);
+
+  iteration++;
+  autoTuner.tuneConfiguration(iteration, 0, false);
+  // We should be able to later call getCurrentConfig and receive the expectedBest
+  EXPECT_EQ(autoTuner.getCurrentConfig(), expectedBest);
+}
+
+/**
+ * Tests that ending a tuning phase with a reject configuration is handled correctly.
+ *
+ * Mimics an AutoTuner trialling four configurations. The second and the final configurations will be rejected. After
+ * the tuning phase is completed, the test should get the correct configuration upon calling `getNextConfig`
+ */
+TEST_F(AutoTunerTest, testEndingTuningPhaseWithRejectedConfig) {
+  testEndingTuningPhaseWithRejectedConfig(true);
+  testEndingTuningPhaseWithRejectedConfig(false);
+}
+
+/**
+ * Test that forcing an optimal configuration immediately ends the tuning phase,
+ * clears the config queue, and prevents further sampling.
+ */
+TEST_F(AutoTunerTest, testForceOptimalConfiguration) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  constexpr autopas::AutoTunerInfo autoTunerInfo{.maxSamples = 3};
+
+  // Provide a search space with multiple options
+  const auto searchSpace = {_confLc_c08_noN3, _confDs_seq_noN3, _confLc_c18_noN3};
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, 20, ""};
+
+  autoTuner.tuneConfiguration(0, 0, true);
+  EXPECT_TRUE(autoTuner.inTuningPhase());
+
+  // The TuningManager steps in and forces a specific config
+  autoTuner.setOptimalConfiguration(_confDs_seq_noN3);
+
+  // Assert the state machine correctly aborted tuning and locked in the choice
+  EXPECT_FALSE(autoTuner.inTuningPhase()) << "Tuner should not be tuning after an optimal config is forced.";
+  EXPECT_EQ(autoTuner.getCurrentConfig(), _confDs_seq_noN3) << "Current config does not match the forced config.";
+
+  // Assert that further calls to tune do not mistakenly restart it
+  const bool stillTuning = autoTuner.tuneConfiguration(1, 0, false);
+  EXPECT_FALSE(stillTuning) << "Tuner should refuse to continue tuning.";
+}
+
+/**
+ * Test the early stopping mechanic. If a configuration is significantly slower
+ * than the currently established optimum, its remaining samples should be skipped.
+ */
+TEST_F(AutoTunerTest, testEarlyStopping) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 3,
+      .earlyStoppingFactor = 2.0  // Stop if a config is > 2x slower than the current best
+  };
+  const auto searchSpace = {_confLc_c08_noN3, _confDs_seq_noN3};
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, 20, ""};
+
+  size_t iteration = 0;
+  size_t tuningPhase = 0;
+
+  // --- Evaluate First Config (Establish a fast baseline) ---
+  autoTuner.tuneConfiguration(iteration, tuningPhase, true);
+  const auto fastConfig = autoTuner.getCurrentConfig();
+
+  // Add 3 fast measurements (e.g., 100 ticks)
+  autoTuner.addMeasurement(10, 100, true, iteration, tuningPhase);
+  iteration++;
+  autoTuner.tuneConfiguration(iteration, tuningPhase, false);
+  autoTuner.addMeasurement(0, 100, false, iteration, tuningPhase);
+  iteration++;
+  autoTuner.tuneConfiguration(iteration, tuningPhase, false);
+  autoTuner.addMeasurement(0, 100, false, iteration, tuningPhase);
+  iteration++;
+
+  // --- Evaluate Second Config (The slow one) ---
+  autoTuner.tuneConfiguration(iteration, tuningPhase, false);  // Transition to next config
+  const auto slowConfig = autoTuner.getCurrentConfig();
+  EXPECT_NE(fastConfig, slowConfig);
+  EXPECT_TRUE(autoTuner.inTuningPhase());
+
+  // Add ONE terrible measurement (500 ticks, which is 5x slower than 100)
+  autoTuner.addMeasurement(50, 500, true, iteration, tuningPhase);
+  iteration++;
+
+  // The next call to tuneConfiguration will trigger checkEarlyStoppingCondition()
+  const bool stillTuning = autoTuner.tuneConfiguration(iteration, tuningPhase, false);
+
+  EXPECT_FALSE(stillTuning) << "Tuning should be aborted due to the second config being to slow.";
+
+  // Assert that the tuner instantly gave up on the slow config and ended the phase
+  // without asking for the 2nd and 3rd samples!
+  EXPECT_FALSE(autoTuner.inTuningPhase()) << "Early stopping failed to abort the tuning phase.";
+
+  // Assert it correctly fell back to the fastest known configuration
+  EXPECT_EQ(autoTuner.getCurrentConfig(), fastConfig);
+}
+
+/**
+ * Test that an AutoTuner initialized with a trivial search space (size == 1)
+ * never enters a tuning phase and simply acts as a static configuration provider.
+ */
+TEST_F(AutoTunerTest, testTrivialSearchSpace) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  constexpr autopas::AutoTunerInfo autoTunerInfo{.maxSamples = 3};
+
+  // Provide a search space with EXACTLY ONE option
+  const auto searchSpace = {_confLc_c08_noN3};
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, 20, ""};
+
+  // Assert that it immediately recognizes it has nothing to tune
+  EXPECT_FALSE(autoTuner.inTuningPhase()) << "Tuner with size 1 should never report being in a tuning phase.";
+
+  // Assert that explicitly commanding it to start a phase is safely ignored
+  const bool stillTuning = autoTuner.tuneConfiguration(0, 0, true);
+  EXPECT_FALSE(stillTuning) << "Tuner should refuse to start tuning when search space is trivial.";
+
+  // Assert it returns the only valid configuration
+  EXPECT_EQ(autoTuner.getCurrentConfig(), _confLc_c08_noN3);
+
+  EXPECT_FALSE(autoTuner.inTuningPhase())
+      << "Tuner should not have entered a tuning phase when search space is trivial.";
 }

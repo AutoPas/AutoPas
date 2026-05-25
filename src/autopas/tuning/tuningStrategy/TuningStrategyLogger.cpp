@@ -24,17 +24,23 @@ TuningStrategyLogger::TuningStrategyLogger(const std::string &outputSuffix) {
 TuningStrategyLogger::~TuningStrategyLogger() { _logOut.flush(); }
 
 void TuningStrategyLogger::addEvidence(const Configuration &configuration, const Evidence &evidence) {
-  _logOut << tuningLogEntry::writeEvidence(evidence.value, evidence.iteration, configuration) << std::endl;
+  _logOut << tuningLogEntry::writeEvidence(evidence.effectiveValue, evidence.iteration, configuration) << std::endl;
 }
 
-void TuningStrategyLogger::optimizeSuggestions(std::vector<Configuration> &configQueue,
+bool TuningStrategyLogger::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                                const EvidenceCollection &evidenceCollection) {
   _logOut << tuningLogEntry::writeTune() << std::endl;
+
+  // TuningStrategyLogger does no intentional config wipes
+  return false;
 }
 
-void TuningStrategyLogger::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+bool TuningStrategyLogger::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                                  const autopas::EvidenceCollection &evidenceCollection) {
   _logOut << tuningLogEntry::writeReset(iteration) << std::endl;
+
+  // TuningStrategyLogger does no intentional config wipes
+  return false;
 }
 
 bool TuningStrategyLogger::needsLiveInfo() const {
@@ -46,5 +52,5 @@ void TuningStrategyLogger::receiveLiveInfo(const LiveInfo &info) {
   _logOut << tuningLogEntry::writeLiveInfo(info) << std::endl;
 }
 
-TuningStrategyOption TuningStrategyLogger::getOptionType() { return TuningStrategyOption::tuningStrategyLogger; }
+TuningStrategyOption TuningStrategyLogger::getOptionType() const { return TuningStrategyOption::tuningStrategyLogger; }
 }  // namespace autopas

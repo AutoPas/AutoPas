@@ -5,9 +5,10 @@
  */
 #include "ParallelVtkWriter.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <ios>
-#include <iostream>
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -40,10 +41,9 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
 }
 
 void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
-                                       const RegularGridDecomposition &decomposition) {
+                                       const RegularGridDecomposition &decomposition) const {
   recordParticleStates(currentIteration, autoPasContainer);
-  // TODO: add 3-body configuration
-  auto currentConfig = *autoPasContainer.getCurrentConfig().begin();
+  const auto currentConfig = autoPasContainer.getCurrentConfigs();
   recordDomainSubdivision(currentIteration, currentConfig, decomposition);
 }
 
@@ -53,13 +53,13 @@ void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::A
  * The streams can be combined to a single output stream after iterating over the particles, once.
  */
 void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
-                                             const autopas::AutoPas<ParticleType> &autoPasContainer) {
+                                             const autopas::AutoPas<ParticleType> &autoPasContainer) const {
   if (_mpiRank == 0) {
-    createPvtuFile(currentIteration);
+    createParticlesPvtuFile(currentIteration);
   }
 
   std::ostringstream timestepFileName;
-  generateFilename("vtu", currentIteration, timestepFileName);
+  generateFilename("Particles", "vtu", currentIteration, timestepFileName);
 
   std::ofstream timestepFile;
   timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
@@ -80,7 +80,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   timestepFile
       << "        <DataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    auto v = particle->getV();
+    const auto v = particle->getV();
     timestepFile << "        " << v[0] << " " << v[1] << " " << v[2] << "\n";
   }
   timestepFile << "        </DataArray>\n";
@@ -88,7 +88,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   // print forces
   timestepFile << "        <DataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    auto f = particle->getF();
+    const auto f = particle->getF();
     timestepFile << "        " << f[0] << " " << f[1] << " " << f[2] << "\n";
   }
   timestepFile << "        </DataArray>\n";
@@ -98,7 +98,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   timestepFile
       << "        <DataArray Name=\"quaternions\" NumberOfComponents=\"4\" format=\"ascii\" type=\"Float32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    auto q = particle->getQuaternion();
+    const auto q = particle->getQuaternion();
     timestepFile << "        " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << "\n";
   }
   timestepFile << "        </DataArray>\n";
@@ -107,7 +107,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   timestepFile
       << "        <DataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    auto angVel = particle->getAngularVel();
+    const auto angVel = particle->getAngularVel();
     timestepFile << "        " << angVel[0] << " " << angVel[1] << " " << angVel[2] << "\n";
   }
   timestepFile << "        </DataArray>\n";
@@ -115,7 +115,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   // print torques
   timestepFile << "        <DataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    auto torque = particle->getTorque();
+    const auto torque = particle->getTorque();
     timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";
   }
   timestepFile << "        </DataArray>\n";
@@ -141,9 +141,52 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
 
   // print positions
   timestepFile << "        <DataArray Name=\"positions\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  const auto boxMax = autoPasContainer.getBoxMax();
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    auto pos = particle->getR();
-    timestepFile << "        " << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
+    // When we write to the file in ASCII, values are rounded to the precision of the filestream.
+    // Since a higher precision results in larger files because more characters are written,
+    // and mdflex is not intended as a perfectly precice tool for application scientists,
+    // we are fine with the rather low default precision.
+    // However, if a particle is very close to the domain border it can happen that the particle position is rounded
+    // exactly to the boundary position. This then causes problems when the checkpoint is loaded because boxMax is
+    // considered to be not part of the domain, hence such a particle would not be loaded and thus be lost.
+    // This function identifies these problematic values and raises the write precision just for this value high enough
+    // to be distinguishable from the boundary.
+    const auto writeWithDynamicPrecision = [&](double position, double border) {
+      const auto initialPrecision = timestepFile.precision();
+      // Simple and cheap check if we even need to do anything.
+      if (border - position < 0.1) {
+        using autopas::utils::Math::roundFloating;
+        using autopas::utils::Math::isNearAbs;
+        // As long as the used precision results in the two values being indistinguishable increase the precision
+        while (isNearAbs(roundFloating(position, timestepFile.precision()), border,
+                         std::pow(10, -timestepFile.precision()))) {
+          timestepFile << std::setprecision(timestepFile.precision() + 1);
+          // Abort if the numbers are indistinguishable beyond machine precision
+          constexpr auto machinePrecision = std::numeric_limits<double>::digits10;
+          if (timestepFile.precision() > machinePrecision) {
+            throw std::runtime_error(
+                "ParallelVtkWriter::writeWithDynamicPrecision(): "
+                "The two given numbers are identical up to " +
+                std::to_string(machinePrecision) +
+                " digits of precision!\n"
+                "Number: " +
+                std::to_string(position) + "\n" + particle->toString());
+          }
+        }
+      }
+      // Write with the new precision and then reset it
+      timestepFile << position << std::setprecision(initialPrecision);
+    };
+
+    const auto pos = particle->getR();
+    timestepFile << "        ";
+    writeWithDynamicPrecision(pos[0], boxMax[0]);
+    timestepFile << " ";
+    writeWithDynamicPrecision(pos[1], boxMax[1]);
+    timestepFile << " ";
+    writeWithDynamicPrecision(pos[2], boxMax[2]);
+    timestepFile << "\n";
   }
   timestepFile << "        </DataArray>\n";
 
@@ -158,15 +201,22 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   timestepFile.close();
 }
 
-void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
-                                                const autopas::Configuration &autoPasConfiguration,
-                                                const RegularGridDecomposition &decomposition) {
+void ParallelVtkWriter::recordDomainSubdivision(
+    size_t currentIteration,
+    const std::unordered_map<autopas::InteractionTypeOption::Value,
+                             std::reference_wrapper<const autopas::Configuration>> &autoPasConfigurations,
+    const RegularGridDecomposition &decomposition) const {
+  // Extract active interaction types to print them to the .pvtu file.
+  std::unordered_set<autopas::InteractionTypeOption::Value> interactionTypes;
+  interactionTypes.reserve(autoPasConfigurations.size());
+  std::transform(autoPasConfigurations.begin(), autoPasConfigurations.end(),
+                 std::inserter(interactionTypes, interactionTypes.end()), [&](const auto &pair) { return pair.first; });
   if (_mpiRank == 0) {
-    createPvtsFile(currentIteration, decomposition);
+    createRanksPvtuFile(currentIteration, decomposition, interactionTypes);
   }
 
   std::ostringstream timestepFileName;
-  generateFilename("vts", currentIteration, timestepFileName);
+  generateFilename("Ranks", "vtu", currentIteration, timestepFileName);
 
   std::ofstream timestepFile;
   timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
@@ -175,7 +225,6 @@ void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
     throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + timestepFileName.str() + "\"");
   }
 
-  const std::array<int, 6> wholeExtent = calculateWholeExtent(decomposition);
   const std::array<double, 3> localBoxMin = decomposition.getLocalBoxMin();
   const std::array<double, 3> localBoxMax = decomposition.getLocalBoxMax();
 
@@ -186,49 +235,63 @@ void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
   };
 
   timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
-  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"StructuredGrid\" version=\"0.1\">\n";
-  timestepFile << "  <StructuredGrid WholeExtent=\"" << wholeExtent[0] << " " << wholeExtent[1] << " " << wholeExtent[2]
-               << " " << wholeExtent[3] << " " << wholeExtent[4] << " " << wholeExtent[5] << "\">\n";
-  timestepFile << "    <Piece Extent=\"" << wholeExtent[0] << " " << wholeExtent[1] << " " << wholeExtent[2] << " "
-               << wholeExtent[3] << " " << wholeExtent[4] << " " << wholeExtent[5] << "\">\n";
+  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"UnstructuredGrid\" version=\"0.1\">\n";
+  timestepFile << "  <UnstructuredGrid>\n";
+  timestepFile << "    <Piece NumberOfPoints=\"8\" NumberOfCells=\"1\">\n";
   timestepFile << "      <CellData>\n";
   printDataArray(decomposition.getDomainIndex(), "Int32", "DomainId");
-  printDataArray(autoPasConfiguration.cellSizeFactor, "Float32", "CellSizeFactor");
-  printDataArray(static_cast<int>(autoPasConfiguration.container), "Int32", "Container");
-  printDataArray(static_cast<int>(autoPasConfiguration.dataLayout), "Int32", "DataLayout");
-  printDataArray(static_cast<int>(autoPasConfiguration.loadEstimator), "Int32", "LoadEstimator");
-  printDataArray(static_cast<int>(autoPasConfiguration.traversal), "Int32", "Traversal");
-  printDataArray(static_cast<int>(autoPasConfiguration.newton3), "Int32", "Newton3");
+
+  // General Configuration information
+  printDataArray(autoPasConfigurations.begin()->second.get().cellSizeFactor, "Float32", "CellSizeFactor");
+  printDataArray(static_cast<int>(autoPasConfigurations.begin()->second.get().container), "Int32", "Container");
+
+  // Pairwise Configuration
+  if (autoPasConfigurations.find(autopas::InteractionTypeOption::pairwise) != autoPasConfigurations.end()) {
+    auto pairwiseConfig = autoPasConfigurations.at(autopas::InteractionTypeOption::pairwise).get();
+    printDataArray(static_cast<int>(pairwiseConfig.dataLayout), "Int32", "DataLayout");
+    printDataArray(static_cast<int>(pairwiseConfig.loadEstimator), "Int32", "LoadEstimator");
+    printDataArray(static_cast<int>(pairwiseConfig.traversal), "Int32", "Traversal");
+    printDataArray(static_cast<int>(pairwiseConfig.newton3), "Int32", "Newton3");
+  }
+
+  // Triwise Configuration
+  if (autoPasConfigurations.find(autopas::InteractionTypeOption::triwise) != autoPasConfigurations.end()) {
+    auto triwiseConfig = autoPasConfigurations.at(autopas::InteractionTypeOption::triwise).get();
+    printDataArray(static_cast<int>(triwiseConfig.dataLayout), "Int32", "DataLayout-3B");
+    printDataArray(static_cast<int>(triwiseConfig.traversal), "Int32", "Traversal-3B");
+    printDataArray(static_cast<int>(triwiseConfig.newton3), "Int32", "Newton3-3B");
+  }
+
   printDataArray(_mpiRank, "Int32", "Rank");
   timestepFile << "      </CellData>\n";
   timestepFile << "      <Points>\n";
   timestepFile << "        <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n";
   timestepFile << "          " << localBoxMin[0] << " " << localBoxMin[1] << " " << localBoxMin[2] << "\n";
-  timestepFile << "          " << localBoxMax[0] << " " << localBoxMin[1] << " " << localBoxMin[2] << "\n";
-  timestepFile << "          " << localBoxMin[0] << " " << localBoxMax[1] << " " << localBoxMin[2] << "\n";
-  timestepFile << "          " << localBoxMax[0] << " " << localBoxMax[1] << " " << localBoxMin[2] << "\n";
   timestepFile << "          " << localBoxMin[0] << " " << localBoxMin[1] << " " << localBoxMax[2] << "\n";
-  timestepFile << "          " << localBoxMax[0] << " " << localBoxMin[1] << " " << localBoxMax[2] << "\n";
+  timestepFile << "          " << localBoxMin[0] << " " << localBoxMax[1] << " " << localBoxMin[2] << "\n";
   timestepFile << "          " << localBoxMin[0] << " " << localBoxMax[1] << " " << localBoxMax[2] << "\n";
+  timestepFile << "          " << localBoxMax[0] << " " << localBoxMin[1] << " " << localBoxMin[2] << "\n";
+  timestepFile << "          " << localBoxMax[0] << " " << localBoxMin[1] << " " << localBoxMax[2] << "\n";
+  timestepFile << "          " << localBoxMax[0] << " " << localBoxMax[1] << " " << localBoxMin[2] << "\n";
   timestepFile << "          " << localBoxMax[0] << " " << localBoxMax[1] << " " << localBoxMax[2] << "\n";
   timestepFile << "        </DataArray>\n";
   timestepFile << "      </Points>\n";
+  timestepFile << "      <Cells>\n";
+  timestepFile << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
+  timestepFile << "          0 1 2 3 4 5 6 7\n";  // These indices refer to the Points DataArray above.
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
+  timestepFile << "          8\n";  // The cell is defined by 8 points
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "        <DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
+  timestepFile << "          11\n";  // = VTK_VOXEL
+  timestepFile << "        </DataArray>\n";
+  timestepFile << "      </Cells>\n";
   timestepFile << "    </Piece>\n";
-  timestepFile << "  </StructuredGrid>\n";
+  timestepFile << "  </UnstructuredGrid>\n";
   timestepFile << "</VTKFile>\n";
 
   timestepFile.close();
-}
-
-std::array<int, 6> ParallelVtkWriter::calculateWholeExtent(const RegularGridDecomposition &domainDecomposition) {
-  std::array<int, 6> wholeExtent{};
-  std::array<int, 3> domainId = domainDecomposition.getDomainId();
-  std::array<int, 3> decomposition = domainDecomposition.getDecomposition();
-  for (size_t i = 0; i < domainId.size(); ++i) {
-    wholeExtent[2 * i] = domainId[i];
-    wholeExtent[2 * i + 1] = std::min(domainId[i] + 1, decomposition[i]);
-  }
-  return wholeExtent;
 }
 
 void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, const std::string &location) {
@@ -243,9 +306,9 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
   tryCreateFolder("data", _sessionFolderPath);
 }
 
-void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
+void ParallelVtkWriter::createParticlesPvtuFile(size_t currentIteration) const {
   std::ostringstream filename;
-  filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
+  filename << _sessionFolderPath << _sessionName << "_Particles_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
 
   std::ofstream timestepFile;
@@ -281,7 +344,7 @@ void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
   timestepFile << "    </PCells>\n";
 
   for (int i = 0; i < _numberOfRanks; ++i) {
-    timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_" << i << "_" << std::setfill('0')
+    timestepFile << "    <Piece Source=\"./data/" << _sessionName << "_Particles_" << i << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu\"/>\n";
   }
 
@@ -291,10 +354,12 @@ void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
   timestepFile.close();
 }
 
-void ParallelVtkWriter::createPvtsFile(size_t currentIteration, const RegularGridDecomposition &decomposition) {
+void ParallelVtkWriter::createRanksPvtuFile(
+    size_t currentIteration, const RegularGridDecomposition &decomposition,
+    const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes) const {
   std::ostringstream filename;
-  filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
-           << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvts";
+  filename << _sessionFolderPath << _sessionName << "_Ranks_" << std::setfill('0')
+           << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
 
   std::ofstream timestepFile;
   timestepFile.open(filename.str(), std::ios::out | std::ios::binary);
@@ -302,22 +367,34 @@ void ParallelVtkWriter::createPvtsFile(size_t currentIteration, const RegularGri
   if (not timestepFile.is_open()) {
     throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + filename.str() + "\"");
   }
-  const std::array<int, 3> wholeExtent = decomposition.getDecomposition();
-  const std::array<double, 3> globalBoxMin = decomposition.getGlobalBoxMin();
-  const std::array<double, 3> globalBoxMax = decomposition.getGlobalBoxMax();
+  const auto &globalBoxMin = decomposition.getGlobalBoxMin();
+  const auto &globalBoxMax = decomposition.getGlobalBoxMax();
   timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
-  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"PStructuredGrid\" version=\"0.1\">\n";
-  timestepFile << "  <PStructuredGrid WholeExtent=\"0 " << wholeExtent[0] << " 0 " << wholeExtent[1] << " 0 "
-               << wholeExtent[2] << "\" GhostLevel=\"0\">\n";
+  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"PUnstructuredGrid\" version=\"0.1\">\n";
+  timestepFile << "  <PUnstructuredGrid GhostLevel=\"0\">\n";
   timestepFile << "    <PPointData/>\n";
   timestepFile << "    <PCellData>\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"DomainId\" />\n";
+
+  // General configuration options
   timestepFile << "      <PDataArray type=\"Float32\" Name=\"CellSizeFactor\" />\n";
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"Container\" />\n";
-  timestepFile << "      <PDataArray type=\"Int32\" Name=\"DataLayout\" />\n";
-  timestepFile << "      <PDataArray type=\"Int32\" Name=\"LoadEstimator\" />\n";
-  timestepFile << "      <PDataArray type=\"Int32\" Name=\"Traversal\" />\n";
-  timestepFile << "      <PDataArray type=\"Int32\" Name=\"Newton3\" />\n";
+
+  // Pairwise configuration
+  if (interactionTypes.find(autopas::InteractionTypeOption::pairwise) != interactionTypes.end()) {
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"DataLayout\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"LoadEstimator\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"Traversal\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"Newton3\" />\n";
+  }
+
+  // Triwise configuration
+  if (interactionTypes.find(autopas::InteractionTypeOption::triwise) != interactionTypes.end()) {
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"DataLayout-3B\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"Traversal-3B\" />\n";
+    timestepFile << "      <PDataArray type=\"Int32\" Name=\"Newton3-3B\" />\n";
+  }
+
   timestepFile << "      <PDataArray type=\"Int32\" Name=\"Rank\" />\n";
   timestepFile << "    </PCellData>\n";
   timestepFile << "    <PPoints>\n";
@@ -334,15 +411,12 @@ void ParallelVtkWriter::createPvtsFile(size_t currentIteration, const RegularGri
   timestepFile << "    </PPoints>\n";
 
   for (int i = 0; i < _numberOfRanks; ++i) {
-    std::array<int, 6> pieceExtent = decomposition.getExtentOfSubdomain(i);
     timestepFile << "    <Piece "
-                 << "Extent=\"" << pieceExtent[0] << " " << pieceExtent[1] << " " << pieceExtent[2] << " "
-                 << pieceExtent[3] << " " << pieceExtent[4] << " " << pieceExtent[5] << "\" "
-                 << "Source=\"./data/" << _sessionName << "_" << i << "_" << std::setfill('0')
-                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vts\"/>\n";
+                 << "Source=\"./data/" << _sessionName << "_Ranks_" << i << "_" << std::setfill('0')
+                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".vtu\"/>\n";
   }
 
-  timestepFile << "  </PStructuredGrid>\n";
+  timestepFile << "  </PUnstructuredGrid>\n";
   timestepFile << "</VTKFile>\n";
 
   timestepFile.close();
@@ -356,13 +430,13 @@ void ParallelVtkWriter::tryCreateFolder(const std::string &name, const std::stri
     const auto newDirectoryPath{location + "/" + name};
     mkdir(newDirectoryPath.c_str(), 0777);
   } catch (const std::exception &ex) {
-    throw std::runtime_error("The output location " + location +
+    throw std::runtime_error("ParallelVtkWriter::tryCreateFolder(): The output location " + location +
                              " passed to ParallelVtkWriter is invalid: " + ex.what());
   }
 }
 
-void ParallelVtkWriter::generateFilename(const std::string &filetype, size_t currentIteration,
-                                         std::ostringstream &filenameStream) {
-  filenameStream << _dataFolderPath << _sessionName << "_" << _mpiRank << "_" << std::setfill('0')
-                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << "." << filetype;
+void ParallelVtkWriter::generateFilename(const std::string &tag, const std::string &fileExtension,
+                                         size_t currentIteration, std::ostringstream &filenameStream) const {
+  filenameStream << _dataFolderPath << _sessionName << "_" << tag << "_" << _mpiRank << "_" << std::setfill('0')
+                 << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << "." << fileExtension;
 }

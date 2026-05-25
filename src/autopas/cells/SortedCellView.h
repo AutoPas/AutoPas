@@ -22,15 +22,19 @@ namespace autopas {
  * The projected position of a particle as well as a pointer to the underlying particle are stored in a vector, which is
  * sorted by the projected positions.
  * @note Insertion, deletion and change of position of particles invalidates the view.
- * @tparam Particle
+ * @tparam ParticleCellType
  */
-template <class Particle, class ParticleCellType>
-class SortedCellView : public ParticleCell<Particle> {
+template <class ParticleCellType>
+class SortedCellView : public ParticleCell<typename ParticleCellType::ParticleType> {
  public:
+  /**
+   * The particle type for this view is the particle type from the cell.
+   */
+  using ParticleType = typename ParticleCellType::ParticleType;
   /**
    * Type that holds or refers to the actual particles.
    */
-  using StorageType = std::vector<Particle *>;
+  using StorageType = std::vector<ParticleType *>;
   /**
    * Constructs a FullSortedParticleCell.
    * @param cell Cell whose particles are sorted.
@@ -52,7 +56,7 @@ class SortedCellView : public ParticleCell<Particle> {
   /**
    * @copydoc ParticleCell::addParticle()
    */
-  void addParticle(const Particle &p) override {}
+  void addParticle(const ParticleType &p) override {}
 
   /**
    * @copydoc autopas::FullParticleCell::begin()
@@ -131,19 +135,19 @@ class SortedCellView : public ParticleCell<Particle> {
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  Particle &at(size_t index) { return _particles.at(index); }
+  ParticleType &at(size_t index) { return _particles.at(index); }
 
   /**
    * Returns the const particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  const Particle &at(size_t index) const { return _particles.at(index); }
+  const ParticleType &at(size_t index) const { return _particles.at(index); }
 
   /**
    * Sorted vector of projected positions and particle pointers.
    */
-  std::vector<std::pair<double, Particle *>> _particles;
+  std::vector<std::pair<double, ParticleType *>> _particles;
 
   /**
    * Underlying cell.

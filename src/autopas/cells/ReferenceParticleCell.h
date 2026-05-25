@@ -18,19 +18,19 @@ namespace autopas {
 
 /**
  * This class handles the storage of particles in their full form.
- * @tparam Particle
+ * @tparam Particle_T
  */
-template <class Particle>
-class ReferenceParticleCell : public ParticleCell<Particle> {
+template <class Particle_T>
+class ReferenceParticleCell : public ParticleCell<Particle_T> {
  public:
   /**
    * The structure of the SoAs is defined by the particle.
    */
-  using SoAArraysType = typename Particle::SoAArraysType;
+  using SoAArraysType = typename Particle_T::SoAArraysType;
   /**
    * Type that holds or refers to the actual particles.
    */
-  using StorageType = std::vector<Particle *>;
+  using StorageType = std::vector<Particle_T *>;
 
   /**
    * Constructs a new ReferenceParticleCell.
@@ -45,14 +45,14 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    */
   explicit ReferenceParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
 
-  void addParticle(const Particle &p) override {
+  void addParticle(const Particle_T &p) override {
     autopas::utils::ExceptionHandler::exception("Should use addParticleReference instead");
   }
 
   /**
    * @copydoc ParticleCell::addParticle()
    */
-  void addParticleReference(Particle *p) {
+  void addParticleReference(Particle_T *p) {
     // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: is a cell is a
     // dummy-cell, only dummies can be added, otherwise dummies can always be added
     if ((not toInt64(p->getOwnershipState() & this->_ownershipState)) and
@@ -95,7 +95,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
 
   /**
    * Executes code for every particle in this cell as defined by lambda function.
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on particles
    * @param behavior ownerships of particles that should be in-/excluded
    */
@@ -107,7 +107,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
 
   /**
    * Executes code for every particle in this cell as defined by lambda function.
-   * @tparam Lambda (Particle &p) -> void
+   * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on particles
    * @param lowerCorner lower corner of bounding box
    * @param higherCorner higher corner of bounding box
@@ -120,7 +120,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   }
   /**
    * Reduce properties of particles as defined by a lambda function.
-   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam Lambda (Particle_T p, A initialValue) -> void
    * @tparam A type of particle attribute to be reduced
    * @param reduceLambda code to reduce properties of particles
    * @param result reference to result of type A
@@ -134,7 +134,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
 
   /**
    * Reduce properties of particles as defined by a lambda function.
-   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam Lambda (Particle_T p, A initialValue) -> void
    * @tparam A type of particle attribute to be reduced
    * @param reduceLambda code to reduce properties of particles
    * @param result reference to result of type A
@@ -172,7 +172,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    * @param n Position of an element in the container
    * @return Reference to the element
    */
-  Particle &operator[](size_t n) { return *(_particles[n]); }
+  Particle_T &operator[](size_t n) { return *(_particles[n]); }
 
   /**
    * @copydoc ParticleCell::getParticleCellTypeAsEnum()
@@ -184,21 +184,21 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    * @param n Position of an element in the container
    * @return Reference to the element
    */
-  const Particle &operator[](size_t n) const { return *(_particles[n]); }
+  const Particle_T &operator[](size_t n) const { return *(_particles[n]); }
 
   /**
    * Returns the particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  [[nodiscard]] Particle &at(size_t index) { return *(_particles.at(index)); }
+  [[nodiscard]] Particle_T &at(size_t index) { return *(_particles.at(index)); }
 
   /**
    * Returns the const particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  [[nodiscard]] const Particle &at(size_t index) const { return *(_particles.at(index)); }
+  [[nodiscard]] const Particle_T &at(size_t index) const { return *(_particles.at(index)); }
 
   [[nodiscard]] bool isEmpty() const override { return size() == 0; }
 
@@ -233,7 +233,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    * @param n New container size
    * @param toInsert Particle to insert. This is needed to allow for non-default-constructible particles.
    */
-  void resize(size_t n, const Particle &toInsert) { _particles.resize(n, std::unique_ptr<Particle>(toInsert)); }
+  void resize(size_t n, const Particle_T &toInsert) { _particles.resize(n, std::unique_ptr<Particle_T>(toInsert)); }
 
   /**
    * Sort the particles in the cell by a dimension.
@@ -267,7 +267,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   void forEachImpl(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                    const std::array<double, 3> &higherCorner,
                    IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
-    for (Particle *p : _particles) {
+    for (Particle_T *p : _particles) {
       if (behavior.contains(*p)) {
         if ((not regionCheck) or utils::inBox(p->getR(), lowerCorner, higherCorner)) {
           forEachLambda(*p);
@@ -280,7 +280,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   void reduceImpl(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                   const std::array<double, 3> &higherCorner,
                   IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
-    for (Particle *p : _particles) {
+    for (Particle_T *p : _particles) {
       if ((not ownershipCheck) or behavior.contains(*p)) {
         if ((not regionCheck) or utils::inBox(p->getR(), lowerCorner, higherCorner)) {
           reduceLambda(*p, result);

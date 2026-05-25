@@ -1,21 +1,19 @@
 # Workflow for generating, checking, and deploying our doxygen documentation.
 name: Doxygen
 
-# Controls when the action will run.
+# This Workflow is triggered by any PR or a direct push to master.
 on:
   push:
-    # pushes to master
     branches: [ master ]
   pull_request:
-    # PRs to master
-    # branches: [ master ]
+
 # abort old runs if a new one is started
 concurrency:
   group: ${{ github.head_ref }}-doxygen
   cancel-in-progress: true
 
 jobs:
-  DocumentationCheck:
+  DoxygenCheck:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -28,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build documentation
         # writes all warnings to warnings.out

@@ -6,7 +6,16 @@
 
 #pragma once
 
+#include <sys/stat.h>
+
 #include <cstdlib>
+#include <fstream>
+
+#ifdef __APPLE__
+#include <mach/mach.h>
+#endif
+
+#include "autopas/utils/logging/Logger.h"
 
 namespace autopas::memoryProfiler {
 

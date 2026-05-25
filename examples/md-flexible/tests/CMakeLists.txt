@@ -16,13 +16,7 @@ file(
 # remove main to avoid duplicate two main functions
 list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*main.cpp")
 # remove files which are not needed for tests and expensive to compile
-list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/computeInteractionsLJFunctorAVX.cpp")
-list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/computeInteractionsLJFunctor.cpp")
-list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/computeInteractionsLJFunctorGlobals.cpp")
-list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/computeInteractionsLJFunctorSVE.cpp")
-list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/computeInteractionsATFunctor.cpp")
-list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/computeInteractionsFlopCounterFunctor.cpp")
-list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/computeInteractionsFlopCounterFunctor3B.cpp")
+list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/computeInteractions.*cpp")
 list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*Simulation.((cpp)|h)")
 
 add_executable(mdFlexTests ${MDFlexTest_SRC})

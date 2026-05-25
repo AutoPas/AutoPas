@@ -11,6 +11,7 @@
 #include <string>
 #include <tuple>
 
+#include "GlobalVariableLogger.h"
 #include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/ParallelVtkWriter.h"
@@ -42,6 +43,23 @@ class Simulation {
    *
    * If md-flexible is compiled for multi-site molecules, rotational integration is done with an implementation of the
    * the quaternion approach (A) as described in Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods.
+   *
+   * @note: An initial force calculation should actually take place before the first position update, according to
+   * Störmer Verlet the literature (Griebel et al., Numerical simulation in molecular dynamics: numerics, algorithms,
+   * parallelization, applications, 2007). In this implementation, the first position update is calculated with zero
+   * forces, if none are given initially, and only the velocity is used. This means that, essentially, the molecules do
+   * not start the simulation at the given positions but are already moved by one timestep in the direction of their
+   * initial velocity. If you want to observe the exact movement of particles, you should bear this in mind. The initial
+   * force calculation is omitted here for the following reasons:
+   * 1. The primary focus for md-flexible is to be a test application and demonstrator of how AutoPas can be used. Not
+   * to be a perfect simulator.
+   * 2. md-flexible is often used during development for performance measurements or memory analysis. An additional
+   * force calculation step would unnecessarily complicate the simulation loop and distort the statistics.
+   * 3. We also do not need an initial force calculation or the oldForce for checkpoint loading. Reason: In the last
+   * simulation step before saving the checkpoint, F was calculated, and a velocity update was performed with this F. In
+   * the first iteration after loading the checkpoint file, the position update is calculated with this F (loaded from
+   * the checkpoint file) from the last simulation step, then F_old is set to F and the new force is calculated. This
+   * automatically continues the Störmer Verlet algorithm seamlessly.
    */
   void run();
 
@@ -76,6 +94,21 @@ class Simulation {
   std::ostream *_outputStream;
 
   /**
+   * Variable to store total potential energy for the current iteration from both 2B and 3B interactions.
+   */
+  double _totalPotentialEnergy{};
+
+  /**
+   * Variable to store total virial sum for the current iteration from both 2B and 3B interactions.
+   */
+  double _totalVirialSum{};
+
+  /**
+   * Logger for global variables calculated by the Functor, eg. Virial, Potential Energy, etc.
+   */
+  std::unique_ptr<GlobalVariableLogger> _globalLogger;
+
+  /**
    * Number of completed iterations. Aka. number of current iteration.
    * The first iteration has number 0.
    */
@@ -92,6 +125,16 @@ class Simulation {
   size_t _numTuningPhasesCompleted = 0;
 
   /**
+   * Indicator if the current iteration was a tuning iteration.
+   */
+  bool _currentIterationIsTuningIteration = false;
+
+  /**
+   * Indicator if the simulation is paused due to the PauseDuringTuning option.
+   */
+  bool _simulationIsPaused = false;
+
+  /**
    * Indicator if the previous iteration was used for tuning.
    */
   bool _previousIterationWasTuningIteration = false;
@@ -100,11 +143,6 @@ class Simulation {
    * Precision of floating point numbers printed.
    */
   constexpr static auto _floatStringPrecision = 3;
-
-  /**
-   * Homogeneity of the scenario, calculated by the standard deviation of the density.
-   */
-  double _homogeneity = 0;
 
   /**
    * Struct containing all timers used for the simulation.
@@ -134,11 +172,6 @@ class Simulation {
      * Records the time used for the triwise force update of all particles.
      */
     autopas::utils::Timer forceUpdateTriwise;
-
-    /**
-     * Records the time used for the update of the global forces of all particles.
-     */
-    autopas::utils::Timer forceUpdateGlobal;
 
     /**
      * Records the time used for the force update of all particles during the tuning iterations.
@@ -218,24 +251,33 @@ class Simulation {
   };
 
   /**
+   * Sensor for energy measurement
+   */
+  autopas::utils::EnergySensor _totalEnergySensor;
+
+  /**
    * The timers used during the simulation.
    */
   struct Timers _timers;
 
   /**
-   * Parallel VTK file writer.
+   * Parallel VTK file writer. Optional.
    */
-  std::shared_ptr<ParallelVtkWriter> _vtkWriter;
-
-  /**
-   * Defines, if vtk files should be created or not.
-   */
-  bool _createVtkFiles;
+  std::optional<ParallelVtkWriter> _vtkWriter;
 
  private:
   /**
-   * Estimates the number of tuning iterations which ocurred during the simulation so far.
-   * @return an estimation of the number of tuning iterations which occured so far.
+   * Load particles from this object's config into this object's AutoPas container.
+   *
+   * @note This also clears all particles from the config file!
+   */
+  void loadParticles();
+
+  /**
+   * Returns the number of expected maximum number of iterations of the Simulation.
+   * This is exact if the number of iterations was specified, or an estimate based on the number of tuning iterations if
+   * the number of tuning phases is specified.
+   * @return <size_t, bool> Max number of iterations, bool whether it is an estimate.
    */
   [[nodiscard]] std::tuple<size_t, bool> estimateNumberOfIterations() const;
 
@@ -259,9 +301,10 @@ class Simulation {
                                                  long maxTime = 0ul);
 
   /**
-   * Updates the position of particles in the local AutoPas container.
+   * Updates the position of particles in the local AutoPas container. In addition, the oldForce is set to the value of
+   * the current forces and the force buffers of the particles are reset to the global force.
    */
-  void updatePositions();
+  void updatePositionsAndResetForces();
 
   /**
    * Update the quaternion orientation of the particles in the local AutoPas container.
@@ -272,7 +315,7 @@ class Simulation {
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
    * is used).
    */
-  void updateForces();
+  void updateInteractionForces();
 
   /**
    * Updates the velocities of particles in the local AutoPas container.
@@ -303,6 +346,11 @@ class Simulation {
   [[nodiscard]] static long accumulateTime(const long &time);
 
   /**
+   * Handles the pausing of the simulation and updates the _simulationIsPaused flag.
+   */
+  void updateSimulationPauseState();
+
+  /**
    * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
    */
   void logSimulationState();
@@ -321,7 +369,7 @@ class Simulation {
   bool calculatePairwiseForces();
 
   /**
-   * Calculates the 3-body forces between particles in the autopas container.
+   * Calculates the triwise forces between particles in the autopas container.
    * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
   bool calculateTriwiseForces();
@@ -356,24 +404,24 @@ class Simulation {
    * Apply the functor chosen and configured via _configuration to the given lambda function f(auto functor).
    * @note This templated function is private and hence implemented in the .cpp
    *
-   * @tparam T Return type of f.
-   * @tparam F Function type T f(auto functor).
+   * @tparam ReturnType Return type of f.
+   * @tparam FunctionType Function type ReturnType f(auto functor).
    * @param f lambda function.
    * @return Return value of f.
    */
-  template <class T, class F>
-  T applyWithChosenFunctor(F f);
+  template <class ReturnType, class FunctionType>
+  ReturnType applyWithChosenFunctor(FunctionType f);
 
   /**
    *
    * Apply the functor chosen and configured via _configuration to the given lambda function f(auto functor).
    * @note This templated function is private and hence implemented in the .cpp
    *
-   * @tparam T Return type of f.
-   * @tparam F Function type T f(auto functor).
+   * @tparam ReturnType Return type of f.
+   * @tparam FunctionType Function type ReturnType f(auto functor).
    * @param f lambda function.
    * @return Return value of f.
    */
-  template <class T, class F>
-  T applyWithChosenFunctor3B(F f);
+  template <class ReturnType, class FunctionType>
+  ReturnType applyWithChosenFunctor3B(FunctionType f);
 };

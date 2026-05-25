@@ -8,6 +8,7 @@ box-max                          :  [239.25, 239.25, 239.25]
 deltaT                           :  0.00182367
 iterations                       :  30000
 boundary-type                    :  [periodic, periodic, periodic]
+energy-sensor                    :  rapl
 Sites:
   0:
     epsilon                      :  1.

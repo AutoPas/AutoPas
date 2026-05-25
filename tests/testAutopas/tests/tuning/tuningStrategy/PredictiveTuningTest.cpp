@@ -108,6 +108,16 @@ TEST_P(PredictiveTuningTest, testPredictions) {
           0, {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
       break;
     }
+    case autopas::ExtrapolationMethodOption::lastResult: {
+      checkPredictions(extrapolationOption,
+                       {
+                           {{_configurationLC_C01, 94}, {_configurationLC_C08, 109}, {_configurationLC_Sliced, 101}},
+                           {{_configurationLC_C01, 97}, {_configurationLC_C08, 103}, {_configurationLC_Sliced, 101}},
+                       },
+                       // all predictions are evaluated for the seventh iteration (iteration==6)
+                       0, {{_configurationLC_C01, 97}, {_configurationLC_C08, 103}, {_configurationLC_Sliced, 101}});
+      break;
+    }
     default:
       GTEST_FAIL() << "No test implemented for extrapolation method " << extrapolationOption.to_string();
   }
@@ -124,6 +134,16 @@ TEST_P(PredictiveTuningTest, testPredictions) {
 TEST_P(PredictiveTuningTest, testUnderAndOverflow) {
   auto extrapolationOption = GetParam();
   constexpr auto maxLong = std::numeric_limits<long>::max();
+  const std::map<autopas::Configuration, long> expected = [&]() {
+    // since lastResult is not actually an exprapolation, we expect the last values as prediction
+    if (extrapolationOption == autopas::ExtrapolationMethodOption::lastResult) {
+      return std::map<autopas::Configuration, long>{
+          {_configurationLC_C01, 10}, {_configurationLC_C08, maxLong - 100}, {_configurationLC_Sliced, 101}};
+    } else {
+      return std::map<autopas::Configuration, long>{
+          {_configurationLC_C01, 1}, {_configurationLC_C08, maxLong - 1}, {_configurationLC_Sliced, 101}};
+    }
+  }();
   checkPredictions(
       extrapolationOption,
       {
@@ -131,7 +151,7 @@ TEST_P(PredictiveTuningTest, testUnderAndOverflow) {
           {{_configurationLC_C01, 10}, {_configurationLC_C08, maxLong - 100}, {_configurationLC_Sliced, 101}},
       },
       // all predictions are evaluated for the seventh iteration (iteration==6)
-      100, {{_configurationLC_C01, 1}, {_configurationLC_C08, maxLong - 1}, {_configurationLC_Sliced, 101}});
+      100, expected);
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, PredictiveTuningTest,

@@ -7,7 +7,7 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
-#include "autopas/particles/Particle.h"
+#include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/SoAType.h"
 

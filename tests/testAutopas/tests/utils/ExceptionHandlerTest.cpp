@@ -6,17 +6,13 @@
 
 #include "ExceptionHandlerTest.h"
 
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapMPI.h"
 
 using autopas::utils::ExceptionBehavior;
 using autopas::utils::ExceptionHandler;
 
-void ExceptionHandlerTest::SetUp() {
-  // autopas::Logger::create();
-}
-
 void ExceptionHandlerTest::TearDown() {
-  // autopas::Logger::unregister();
   // reset to default values
   ExceptionHandler::setBehavior(ExceptionBehavior::throwException);
   ExceptionHandler::setCustomAbortFunction(abort);
@@ -100,7 +96,7 @@ TEST_F(ExceptionHandlerTest, TestTryRethrow) {
   }
 }
 
-#ifdef AUTOPAS_OPENMP
+#ifdef AUTOPAS_USE_OPENMP
 
 #include <omp.h>
 

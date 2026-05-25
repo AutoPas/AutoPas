@@ -1,11 +1,3 @@
-# option for more verbose log messages.
-option(AUTOPAS_VERBOSE_LOGGING "Print Filename and line in every log line." OFF)
-
-if (AUTOPAS_VERBOSE_LOGGING)
-    target_compile_definitions(autopas PUBLIC AUTOPAS_VERBOSE_LOG)
-    message(STATUS "Verbose log messages enabled.")
-endif ()
-
 # option for colored log messages.
 option(AUTOPAS_COLORED_LOGGING "Print colored logging messages (only applies to cout and cerr)." OFF)
 if (AUTOPAS_COLORED_LOGGING)
@@ -28,10 +20,17 @@ if (AUTOPAS_LOG_PREDICTIONS OR AUTOPAS_LOG_ALL)
 endif ()
 
 # option for IterationLogger
-option(AUTOPAS_LOG_ITERATIONS "Generate a csv tracking the performance of iteratePairwise calls." ON)
+option(AUTOPAS_LOG_ITERATIONS "Generate a csv tracking the performance of computeInteractions calls." OFF)
 if (AUTOPAS_LOG_ITERATIONS OR AUTOPAS_LOG_ALL)
     target_compile_definitions(autopas PUBLIC AUTOPAS_LOG_ITERATIONS)
     message(STATUS "IterationLogger enabled.")
+endif ()
+
+# option for FLOPLogger
+option(AUTOPAS_LOG_FLOPS "Generate a csv tracking the FLOP count and hit rate." OFF)
+if (AUTOPAS_LOG_FLOPS OR AUTOPAS_LOG_ALL)
+    target_compile_definitions(autopas PUBLIC AUTOPAS_LOG_FLOPS)
+    message(STATUS "FLOPLogger enabled.")
 endif ()
 
 # option for TuningResultLogger
@@ -46,4 +45,11 @@ option(AUTOPAS_LOG_TUNINGDATA "Generate a csv tracking data collected by the aut
 if (AUTOPAS_LOG_TUNINGDATA OR AUTOPAS_LOG_ALL)
     target_compile_definitions(autopas PUBLIC AUTOPAS_LOG_TUNINGDATA)
     message(STATUS "TuningDataLogger enabled.")
+endif ()
+
+# option for LiveInfoLogger
+option(AUTOPAS_LOG_LIVEINFO "Generate a csv tracking the live information of the autopas object." OFF)
+if (AUTOPAS_LOG_LIVEINFO OR AUTOPAS_LOG_ALL)
+    target_compile_definitions(autopas PUBLIC AUTOPAS_LOG_LIVEINFO)
+    message(STATUS "LiveInfoLogger enabled.")
 endif ()

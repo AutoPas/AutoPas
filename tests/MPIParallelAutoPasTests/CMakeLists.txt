@@ -20,8 +20,6 @@ target_link_libraries(
     autopas
     autopasTools
     gmock
-    Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
-    harmony # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
     MPI::MPI_CXX
 )
 set(AUTOPAS_TESTS_NUM_MPI_RANKS 3 CACHE STRING "Number of MPI Ranks to run AutoPas tests with.")

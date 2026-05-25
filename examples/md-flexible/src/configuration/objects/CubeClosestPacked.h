@@ -7,10 +7,11 @@
 #pragma once
 
 #include <cmath>
-#include <functional>
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/PseudoContainer.h"
+#include "autopasTools/generators/ClosestPackingGenerator.h"
 
 /**
  * Class describing a cube of hexagonally closest packed particles.
@@ -32,8 +33,6 @@ class CubeClosestPacked : public Object {
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner),
         _topRightCorner(autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength)),
-        _spacingLayer(particleSpacing * sqrt(2. / 3.)),
-        _spacingRow(particleSpacing * sqrt(3. / 4.)),
         _xOffset(particleSpacing * 1. / 2.),
         _yOffset(particleSpacing * sqrt(1. / 12.)) {}
 
@@ -49,10 +48,14 @@ class CubeClosestPacked : public Object {
     // True if the total number of x-positions is odd.
     const bool xOdd = static_cast<int>(std::ceil(_boxLength[0] / _xOffset)) % 2 == 1;
 
+    // Distance between layers and rows
+    const auto spacingLayer = _particleSpacing * sqrt(2. / 3.);
+    const auto spacingRow = _particleSpacing * sqrt(3. / 4.);
+
     // Number of rows in an even layer.
-    const size_t yNumEven = std::ceil(_boxLength[1] / _spacingRow);
+    const size_t yNumEven = std::ceil(_boxLength[1] / spacingRow);
     // Number of rows in an odd layer.
-    const size_t yNumOdd = std::ceil((_boxLength[1] - _yOffset) / _spacingRow);
+    const size_t yNumOdd = std::ceil((_boxLength[1] - _yOffset) / spacingRow);
 
     // Number of particles in an even layer.
     const size_t evenLayer = xNumRow * yNumEven - std::floor(xOdd * yNumEven * 0.5);
@@ -60,7 +63,7 @@ class CubeClosestPacked : public Object {
     const size_t oddLayer = xNumRow * yNumOdd - std::ceil(xOdd * yNumOdd * 0.5);
 
     // Total number of layers.
-    const double numLayers = std::ceil(_boxLength[2] / _spacingLayer);
+    const double numLayers = std::ceil(_boxLength[2] / spacingLayer);
     // Add up all even and odd layers.
     return evenLayer * std::ceil(numLayers / 2.) + oddLayer * std::floor(numLayers / 2.);
   }
@@ -80,11 +83,11 @@ class CubeClosestPacked : public Object {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "particle-spacing"
-           << ":  " << _particleSpacing << std::endl;
+           << ":  " << _particleSpacing << "\n";
     output << std::setw(_valueOffset) << std::left << "box-length"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << "\n";
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << "\n";
     output << Object::to_string();
     return output.str();
   }
@@ -94,25 +97,14 @@ class CubeClosestPacked : public Object {
    * @param particles: The container, where the new particles get stored.
    */
   void generate(std::vector<ParticleType> &particles) const override {
-    ParticleType particle = getDummyParticle(particles.size());
+    // Wrapper so that std::vector can be used as an AutoPas::ParticleContainer
+    auto particlesWrapper = autopasTools::PseudoContainer(particles);
 
-    bool evenLayer = true;
+    // dummy particle used as a template with id of the first newly generated one
+    const ParticleType dummyParticle = getDummyParticle(particles.size());
 
-    for (double z = _bottomLeftCorner[2]; z < _topRightCorner[2]; z += _spacingLayer) {
-      double starty = evenLayer ? _bottomLeftCorner[1] : _bottomLeftCorner[1] + _yOffset;
-      bool evenRow = evenLayer;  // To ensure layers are alternating as for hexagonal close packed.
-      for (double y = starty; y < _topRightCorner[1]; y += _spacingRow) {
-        double startx = evenRow ? _bottomLeftCorner[0] : _bottomLeftCorner[0] + _xOffset;
-        for (double x = startx; x < _topRightCorner[0]; x += _particleSpacing) {
-          particle.setR({x, y, z});
-          particles.push_back(particle);
-
-          particle.setID(particle.getID() + 1);
-        }
-        evenRow = not evenRow;
-      }
-      evenLayer = not evenLayer;
-    }
+    autopasTools::generators::ClosestPackingGenerator::fillWithParticles(
+        particlesWrapper, _bottomLeftCorner, _topRightCorner, dummyParticle, _particleSpacing);
   }
 
  private:
@@ -135,16 +127,6 @@ class CubeClosestPacked : public Object {
    * Maximum box coordinates
    */
   std::array<double, 3> _topRightCorner;
-
-  /**
-   * Spacing in y direction when only moving 60° on the unit circle. Or the height in an equilateral triangle.
-   */
-  double _spacingRow;
-
-  /**
-   * Spacing in z direction. Height in an equilateral tetraeder.
-   */
-  double _spacingLayer;
 
   /**
    * Shorter part of the bisectrix when split at the intersection of all bisectrices.

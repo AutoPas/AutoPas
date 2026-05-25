@@ -9,8 +9,8 @@
 #include "LJFunctorSVETest.h"
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/particles/Particle.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopas/particles/ParticleDefinitions.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 
@@ -19,22 +19,22 @@ bool LJFunctorSVETest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::S
   EXPECT_GT(soa1.size(), 0);
   EXPECT_EQ(soa1.size(), soa2.size());
 
-  unsigned long *const __restrict idptr1 = soa1.template begin<Particle::AttributeNames::id>();
-  unsigned long *const __restrict idptr2 = soa2.template begin<Particle::AttributeNames::id>();
+  unsigned long *const __restrict idptr1 = soa1.template begin<Molecule::AttributeNames::id>();
+  unsigned long *const __restrict idptr2 = soa2.template begin<Molecule::AttributeNames::id>();
 
-  double *const __restrict xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
-  double *const __restrict yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
-  double *const __restrict zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
-  double *const __restrict xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
-  double *const __restrict yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
-  double *const __restrict zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
+  double *const __restrict xptr1 = soa1.template begin<Molecule::AttributeNames::posX>();
+  double *const __restrict yptr1 = soa1.template begin<Molecule::AttributeNames::posY>();
+  double *const __restrict zptr1 = soa1.template begin<Molecule::AttributeNames::posZ>();
+  double *const __restrict xptr2 = soa2.template begin<Molecule::AttributeNames::posX>();
+  double *const __restrict yptr2 = soa2.template begin<Molecule::AttributeNames::posY>();
+  double *const __restrict zptr2 = soa2.template begin<Molecule::AttributeNames::posZ>();
 
-  double *const __restrict fxptr1 = soa1.template begin<Particle::AttributeNames::forceX>();
-  double *const __restrict fyptr1 = soa1.template begin<Particle::AttributeNames::forceY>();
-  double *const __restrict fzptr1 = soa1.template begin<Particle::AttributeNames::forceZ>();
-  double *const __restrict fxptr2 = soa2.template begin<Particle::AttributeNames::forceX>();
-  double *const __restrict fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
-  double *const __restrict fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
+  double *const __restrict fxptr1 = soa1.template begin<Molecule::AttributeNames::forceX>();
+  double *const __restrict fyptr1 = soa1.template begin<Molecule::AttributeNames::forceY>();
+  double *const __restrict fzptr1 = soa1.template begin<Molecule::AttributeNames::forceZ>();
+  double *const __restrict fxptr2 = soa2.template begin<Molecule::AttributeNames::forceX>();
+  double *const __restrict fyptr2 = soa2.template begin<Molecule::AttributeNames::forceY>();
+  double *const __restrict fzptr2 = soa2.template begin<Molecule::AttributeNames::forceZ>();
 
   for (size_t i = 0; i < soa1.size(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
@@ -52,7 +52,7 @@ bool LJFunctorSVETest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::S
   // clang-format on
 }
 
-bool LJFunctorSVETest::particleEqual(Particle &p1, Particle &p2) {
+bool LJFunctorSVETest::particleEqual(Molecule &p1, Molecule &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
   double tolerance = 1e-8;
@@ -89,9 +89,9 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVETwoCells(bool newton3, bool do
   size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       cell1SVE, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       cell2SVE, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
 
   if (doDeleteSomeParticles) {
@@ -120,10 +120,10 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVETwoCells(bool newton3, bool do
   ASSERT_TRUE(AoSParticlesEqual(cell1SVE, cell1NoSVE)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2SVE, cell2NoSVE)) << "Cells 2 not equal after copy initialization.";
 
-  ljFunctorNoSVE.SoALoader(cell1NoSVE, cell1NoSVE._particleSoABuffer, 0);
-  ljFunctorNoSVE.SoALoader(cell2NoSVE, cell2NoSVE._particleSoABuffer, 0);
-  ljFunctorSVE.SoALoader(cell1SVE, cell1SVE._particleSoABuffer, 0);
-  ljFunctorSVE.SoALoader(cell2SVE, cell2SVE._particleSoABuffer, 0);
+  ljFunctorNoSVE.SoALoader(cell1NoSVE, cell1NoSVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorNoSVE.SoALoader(cell2NoSVE, cell2NoSVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorSVE.SoALoader(cell1SVE, cell1SVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorSVE.SoALoader(cell2SVE, cell2SVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   ASSERT_TRUE(SoAParticlesEqual(cell1SVE._particleSoABuffer, cell1NoSVE._particleSoABuffer))
       << "Cells 1 not equal after loading.";
@@ -167,8 +167,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEOneCell(bool newton3, bool doD
   size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
+                                                                numParticles);
 
   if (doDeleteSomeParticles) {
     for (auto &particle : cellSVE) {
@@ -190,8 +190,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEOneCell(bool newton3, bool doD
   ljFunctorSVE.initTraversal();
   ljFunctorNoSVE.initTraversal();
 
-  ljFunctorNoSVE.SoALoader(cellNoSVE, cellNoSVE._particleSoABuffer, 0);
-  ljFunctorSVE.SoALoader(cellSVE, cellSVE._particleSoABuffer, 0);
+  ljFunctorNoSVE.SoALoader(cellNoSVE, cellNoSVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorSVE.SoALoader(cellSVE, cellSVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   ASSERT_TRUE(SoAParticlesEqual(cellSVE._particleSoABuffer, cellNoSVE._particleSoABuffer))
       << "Cells not equal after loading.";
@@ -227,8 +227,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDe
   constexpr size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
+                                                                numParticles);
 
   if (doDeleteSomeParticles) {
     // mark some particles as deleted to test if the functor handles them correctly
@@ -268,8 +268,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDe
   ljFunctorSVE.initTraversal();
   ljFunctorNoSVE.initTraversal();
 
-  ljFunctorNoSVE.SoALoader(cellNoSVE, cellNoSVE._particleSoABuffer, 0);
-  ljFunctorSVE.SoALoader(cellSVE, cellSVE._particleSoABuffer, 0);
+  ljFunctorNoSVE.SoALoader(cellNoSVE, cellNoSVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorSVE.SoALoader(cellSVE, cellSVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   ASSERT_TRUE(SoAParticlesEqual(cellSVE._particleSoABuffer, cellNoSVE._particleSoABuffer))
       << "Cells not equal after loading.";
@@ -301,8 +301,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEAoS(bool newton3, bool doDelet
   constexpr size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
+                                                                numParticles);
 
   if (doDeleteSomeParticles) {
     // mark some particles as deleted to test if the functor handles them correctly

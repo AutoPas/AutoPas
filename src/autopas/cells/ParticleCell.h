@@ -43,17 +43,15 @@ enum class CellType {
  * Class for Cells of Particles.
  * The class handles to storage particles and provides an interface to add the
  * particles
- * @tparam Particle the type of particles to be stored in the cells
- * @tparam Iterator the type of the iterator iterate through the particles in
- * this cell
+ * @tparam Particle_T the type of particles to be stored in the cells
  */
-template <class Particle>
+template <class Particle_T>
 class ParticleCell {
  public:
   /**
-   * The particle type for this cell.
+   * The particle type for this cell. Used to refer to the Particle_T typename for an instantiation of ParticleCell.
    */
-  using ParticleType = Particle;
+  using ParticleType = Particle_T;
 
   /**
    * Default destructor.
@@ -81,7 +79,7 @@ class ParticleCell {
    * Adds a Particle to the cell.
    * @param p the particle to be added
    */
-  virtual void addParticle(const Particle &p) = 0;
+  virtual void addParticle(const Particle_T &p) = 0;
 
   /**
    * Get the number of all particles stored in this cell (owned, halo and dummy).

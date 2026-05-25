@@ -100,9 +100,9 @@ class Object {
   [[nodiscard]] virtual std::string to_string() const {
     std::ostringstream output;
     output << std::setw(_valueOffset) << std::left << "velocity"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_velocity) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_velocity) << "\n";
     output << std::setw(_valueOffset) << std::left << "particle-type-id"
-           << ":  " << _typeId << std::endl;
+           << ":  " << _typeId << "\n";
     return output.str();
   };
 

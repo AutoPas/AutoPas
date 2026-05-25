@@ -77,8 +77,8 @@ autopas::BayesianClusterSearch::~BayesianClusterSearch() = default;
 
 void autopas::BayesianClusterSearch::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   // store optimal evidence
-  if (evidence.value < _currentOptimalTime) {
-    _currentOptimalTime = evidence.value;
+  if (evidence.effectiveValue < _currentOptimalTime) {
+    _currentOptimalTime = evidence.effectiveValue;
     _currentOptimalConfig = configuration;
   }
 
@@ -86,14 +86,14 @@ void autopas::BayesianClusterSearch::addEvidence(const Configuration &configurat
   const auto vec = _encoder.convertToCluster(configuration, evidence.iteration * _iterationScale);
   // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
   // represent a maximization problem
-  _gaussianCluster.addEvidence(vec, -evidence.value * secondsPerMicroseconds);
+  _gaussianCluster.addEvidence(vec, -evidence.effectiveValue * secondsPerMicroseconds);
 
   _currentIteration = evidence.iteration;
   ++_currentNumEvidence;
   _currentAcquisitions.clear();
 }
 
-void autopas::BayesianClusterSearch::reset(size_t iteration, size_t tuningPhase,
+bool autopas::BayesianClusterSearch::reset(size_t iteration, size_t tuningPhase,
                                            std::vector<Configuration> &configQueue,
                                            const autopas::EvidenceCollection &evidenceCollection) {
   const auto iterationSinceLastEvidence = iteration - _currentIteration;
@@ -113,8 +113,11 @@ void autopas::BayesianClusterSearch::reset(size_t iteration, size_t tuningPhase,
   _firstTuningPhase = tuningPhase == 0 ? true : false;
 
   if (not _firstTuningPhase) {
-    optimizeSuggestions(configQueue, evidenceCollection);
+    return optimizeSuggestions(configQueue, evidenceCollection);
   }
+
+  // BayesianClusterSearch does no intentional config wipes to stop the tuning phase
+  return false;
 }
 
 bool autopas::BayesianClusterSearch::searchSpaceIsEmpty() const {
@@ -132,18 +135,18 @@ void autopas::BayesianClusterSearch::updateOptions() {
   _gaussianCluster.setDimensions(std::vector<int>(newRestrictions.begin(), newRestrictions.end()));
 }
 
-void autopas::BayesianClusterSearch::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                                         const EvidenceCollection &evidence) {
+bool autopas::BayesianClusterSearch::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                                         const EvidenceCollection &evidenceCollection) {
   // In the first tuning phase do nothing since we first need some data.
   if (_firstTuningPhase) {
-    return;
+    return false;
   }
 
   // no more tunings steps
   if (_currentNumEvidence >= _maxEvidence) {
     // select best config of current tuning phase
     configQueue.clear();
-    return;
+    return true;
   }
 
   // try to sample a valid vector which is expected to yield a good acquisition
@@ -181,6 +184,7 @@ void autopas::BayesianClusterSearch::optimizeSuggestions(std::vector<Configurati
       break;
     }
   }
+  return false;
 }
 
 std::vector<autopas::GaussianModelTypes::VectorPairDiscreteContinuous>
@@ -197,6 +201,6 @@ void autopas::BayesianClusterSearch::rejectConfiguration(const autopas::Configur
                                                          bool indefinitely) {
   _invalidConfigs.insert(configuration);
 }
-autopas::TuningStrategyOption autopas::BayesianClusterSearch::getOptionType() {
+autopas::TuningStrategyOption autopas::BayesianClusterSearch::getOptionType() const {
   return TuningStrategyOption::bayesianClusterSearch;
 }

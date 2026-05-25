@@ -16,3 +16,4 @@ Please describe the tests that you ran to verify your changes.
 
 - [ ] Test A
 - [ ] Test B
+- [ ] The coverage report shows all relevant lines are tested.

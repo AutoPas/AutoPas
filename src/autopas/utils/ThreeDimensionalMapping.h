@@ -27,7 +27,7 @@ namespace autopas::utils::ThreeDimensionalMapping {
  */
 template <typename T>
 constexpr T threeToOneD(T x, T y, T z, const std::array<T, 3> &dims) {
-  static_assert(std::is_integral<T>::value, "threeToOneD requires integral types");
+  static_assert(std::is_integral_v<T>, "threeToOneD requires integral types");
   return (z * dims[1] + y) * dims[0] + x;
 }
 
@@ -40,7 +40,7 @@ constexpr T threeToOneD(T x, T y, T z, const std::array<T, 3> &dims) {
  */
 template <typename T>
 constexpr T threeToOneD(const std::array<T, 3> &index3d, const std::array<T, 3> &dims) {
-  static_assert(std::is_integral<T>::value, "threeToOneD requires integral types");
+  static_assert(std::is_integral_v<T>, "threeToOneD requires integral types");
   return (index3d[2] * dims[1] + index3d[1]) * dims[0] + index3d[0];
 }
 
@@ -53,7 +53,7 @@ constexpr T threeToOneD(const std::array<T, 3> &index3d, const std::array<T, 3> 
  */
 template <typename T>
 constexpr std::array<T, 3> oneToThreeD(T ind, const std::array<T, 3> &dims) {
-  static_assert(std::is_integral<T>::value, "oneToThreeD requires integral types");
+  static_assert(std::is_integral_v<T>, "oneToThreeD requires integral types");
   std::array<T, 3> pos{};
   pos[2] = ind / (dims[0] * dims[1]);
   pos[1] = (ind - pos[2] * dims[0] * dims[1]) / dims[0];

@@ -136,6 +136,9 @@ void deserializeParticle(char *particleData, ParticleType &particle) {
 
 void deserializeParticles(std::vector<char> &particlesData, std::vector<ParticleType> &particles) {
   ParticleType particle;
+  // Reserve space for particles before deserializing them
+  const auto numParticles = particlesData.size() / AttributesSize;
+  particles.reserve(particles.size() + numParticles);
   for (size_t i = 0; i < particlesData.size(); i += AttributesSize) {
     deserializeParticle(&particlesData[i], particle);
     particles.push_back(particle);

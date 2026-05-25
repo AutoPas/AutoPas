@@ -1,10 +1,8 @@
 #pragma once
 
-#include <any>
-
 #include "RuleBasedProgramTree.h"
 
-namespace autopas::rule_syntax {
+namespace autopas::RuleSyntax {
 
 /**
  * Parses a rule program and produces an AST (RuleBasedProgramTree) and a corresponding CodeGenerationContext.
@@ -36,4 +34,4 @@ class RuleBasedProgramParser {
   std::map<std::string, DefineList> _lists;
 };
 
-}  // namespace autopas::rule_syntax
+}  // namespace autopas::RuleSyntax

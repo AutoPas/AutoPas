@@ -4,17 +4,14 @@
  * @date 17 Jan 2018
  * @author tchipevn
  */
-
 #pragma once
 
+#include <algorithm>
 #include <array>
 
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/TraversalInterface.h"
-
-#ifdef AUTOPAS_OPENMP
-#include <omp.h>
-#endif
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -22,10 +19,13 @@ namespace autopas {
 /**
  * The CellBasedParticleContainer class stores particles in some object and provides
  * methods to iterate over its particles.
- * @tparam ParticleCell Class for the particle cells
+ * @tparam ParticleCell_T Class for the particle cells
  */
-template <class ParticleCell>
-class CellBasedParticleContainer : public ParticleContainerInterface<typename ParticleCell::ParticleType> {
+template <class ParticleCell_T>
+class CellBasedParticleContainer : public ParticleContainerInterface<typename ParticleCell_T::ParticleType> {
+  using ParticleType = typename ParticleCell_T::ParticleType;
+  using ParticleCellType = ParticleCell_T;
+
  public:
   /**
    * Constructor of CellBasedParticleContainer
@@ -33,10 +33,17 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @param boxMax
    * @param cutoff
    * @param skin
+   * @param sortingThreshold
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                             const double cutoff, const double skin)
-      : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
+                             const double cutoff, const double skin, const size_t sortingThreshold)
+      : ParticleContainerInterface<ParticleType>(skin),
+        _cells(),
+        _boxMin(boxMin),
+        _boxMax(boxMax),
+        _cutoff(cutoff),
+        _skin(skin),
+        _sortingThreshold(sortingThreshold) {}
 
   /**
    * Destructor of CellBasedParticleContainer.
@@ -83,8 +90,8 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   [[nodiscard]] double getInteractionLength() const final { return _cutoff + _skin; }
   /**
-   * Returns the total verlet Skin length
-   * @return _skinPerTimestep * _rebuildFrequency
+   * Returns the verlet Skin length
+   * @return _skin
    */
   [[nodiscard]] double getVerletSkin() const final { return _skin; }
 
@@ -92,13 +99,11 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * Deletes all particles from the container.
    */
   void deleteAllParticles() override {
-#ifdef AUTOPAS_OPENMP
     /// @todo: find a sensible value for magic number
     /// numThreads should be at least 1 and maximal max_threads
-    int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 1000)));
-    AutoPasLog(TRACE, "Using {} threads", numThreads);
-#pragma omp parallel for num_threads(numThreads)
-#endif
+    AUTOPAS_OPENMP(parallel for num_threads(std::clamp(static_cast<int>(this->_cells.size()) / 1000,  \
+                                                       1,                                             \
+                                                       autopas::autopas_get_max_threads())))
     for (size_t i = 0; i < this->_cells.size(); ++i) {
       this->_cells[i].clear();
     }
@@ -109,13 +114,12 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     size_t numParticles = 0ul;
-#ifdef AUTOPAS_OPENMP
     // parallelizing this loop is only worth it if we have LOTS of cells.
     // numThreads should be at least 1 and maximal max_threads
-    const int numThreads = std::clamp(static_cast<int>(this->_cells.size() / 100000), 1, omp_get_max_threads());
-    AutoPasLog(TRACE, "CellBasedParticleContainer::getNumberOfParticles uses {} threads", numThreads);
-#pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)
-#endif
+    AUTOPAS_OPENMP(parallel for num_threads(std::clamp(static_cast<int>(this->_cells.size()) / 100000, \
+                                                       1,                                              \
+                                                       autopas::autopas_get_max_threads()))            \
+                                reduction(+ : numParticles))
     for (size_t index = 0; index < _cells.size(); ++index) {
       numParticles += _cells[index].getNumberOfParticles(behavior);
     }
@@ -128,13 +132,12 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   [[nodiscard]] size_t size() const override {
     size_t numParticles = 0ul;
-#ifdef AUTOPAS_OPENMP
     // parallelizing this loop is only worth it if we have LOTS of cells.
     // numThreads should be at least 1 and maximal max_threads
-    const int numThreads = std::clamp(static_cast<int>(this->_cells.size() / 100000), 1, omp_get_max_threads());
-    AutoPasLog(TRACE, "CellBasedParticleContainer::size uses {} threads", numThreads);
-#pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)
-#endif
+    AUTOPAS_OPENMP(parallel for num_threads(std::clamp(static_cast<int>(this->_cells.size()) / 100000, \
+                                                       1,                                              \
+                                                       autopas::autopas_get_max_threads()))            \
+                                reduction(+ : numParticles))
     for (size_t index = 0; index < _cells.size(); ++index) {
       numParticles += _cells[index].size();
     }
@@ -145,7 +148,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * Get immutable vector of cells.
    * @return immutable reference to _cells
    */
-  [[nodiscard]] const std::vector<ParticleCell> &getCells() const { return _cells; }
+  [[nodiscard]] const std::vector<ParticleCellType> &getCells() const { return _cells; }
 
  protected:
   /**
@@ -153,7 +156,12 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * All particle containers store their particles in ParticleCells. This is the
    * common vector for this purpose.
    */
-  std::vector<ParticleCell> _cells;
+  std::vector<ParticleCellType> _cells;
+  /**
+   * If the number of particles in a cell or cell pair exceeds this threshold, the particles will be sorted.
+   * To be forwarded to cell traversals.
+   */
+  size_t _sortingThreshold;
 
  private:
   std::array<double, 3> _boxMin;

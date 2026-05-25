@@ -27,27 +27,19 @@ namespace autopas {
  *
  * @tparam ParticleCell The type of cells.
  * @tparam Functor The functor that defines the interaction of two particles.
- * @tparam dataLayout
- * @tparam useNewton3
- * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
- * c08)
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
-class SlicedLockBasedTraversal
-    : public SlicedBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, spaciallyForward> {
+template <class ParticleCell, class Functor>
+class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Functor> {
  public:
   /**
    * Constructor of the sliced traversal.
-   * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
-   * y and z direction.
-   * @param functor The functor that defines the interaction of two particles.
-   * @param interactionLength Interaction length (cutoff + skin).
-   * @param cellLength cell length.
+   * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
   explicit SlicedLockBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
-                                    const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, spaciallyForward>(
-            dims, functor, interactionLength, cellLength) {}
+                                    const double interactionLength, const std::array<double, 3> &cellLength,
+                                    DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
+      : SlicedBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                    useNewton3, spaciallyForward) {}
 
  protected:
   /**
@@ -65,10 +57,9 @@ class SlicedLockBasedTraversal
   inline void slicedTraversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
+template <class ParticleCell, class Functor>
 template <typename LoopBody>
-void SlicedLockBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, spaciallyForward>::slicedTraversal(
-    LoopBody &&loopBody) {
+void SlicedLockBasedTraversal<ParticleCell, Functor>::slicedTraversal(LoopBody &&loopBody) {
   using std::array;
 
   auto numSlices = this->_sliceThickness.size();
@@ -77,8 +68,8 @@ void SlicedLockBasedTraversal<ParticleCell, Functor, interactionType, dataLayout
 
   // 0) check if applicable
   const auto overLapps23 = [&]() -> std::array<size_t, 2> {
-    if constexpr (spaciallyForward) {
-      return {this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
+    if (this->_spaciallyForward) {
+      return {this->_overlap[this->_dimsSortedByLength[1]], this->_overlap[this->_dimsSortedByLength[2]]};
     } else {
       return {0ul, 0ul};
     }
@@ -90,21 +81,19 @@ void SlicedLockBasedTraversal<ParticleCell, Functor, interactionType, dataLayout
   timers.resize(numSlices);
   threadTimes.resize(numSlices);
 
-#ifdef AUTOPAS_OPENMP
-  // although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
-  auto numThreads = static_cast<size_t>(autopas_get_max_threads());
+#ifdef AUTOPAS_USE_OPENMP
   if (this->_dynamic) {
     omp_set_schedule(omp_sched_dynamic, 1);
   } else {
     omp_set_schedule(omp_sched_static, 1);
   }
-#pragma omp parallel for schedule(runtime) num_threads(numThreads)
 #endif
+  AUTOPAS_OPENMP(parallel for schedule(runtime))
   for (size_t slice = 0; slice < numSlices; ++slice) {
     timers[slice].start();
     array<unsigned long, 3> myStartArray{0, 0, 0};
     for (size_t i = 0; i < slice; ++i) {
-      myStartArray[this->_dimsPerLength[0]] += this->_sliceThickness[i];
+      myStartArray[this->_dimsSortedByLength[0]] += this->_sliceThickness[i];
     }
 
     // all but the first slice need to lock their starting layers.
@@ -114,28 +103,28 @@ void SlicedLockBasedTraversal<ParticleCell, Functor, interactionType, dataLayout
         locks[lockBaseIndex + i].lock();
       }
     }
-    const auto lastLayer = myStartArray[this->_dimsPerLength[0]] + this->_sliceThickness[slice];
+    const auto lastLayer = myStartArray[this->_dimsSortedByLength[0]] + this->_sliceThickness[slice];
     for (unsigned long sliceOffset = 0ul; sliceOffset < this->_sliceThickness[slice]; ++sliceOffset) {
-      const auto dimSlice = myStartArray[this->_dimsPerLength[0]] + sliceOffset;
+      const auto dimSlice = myStartArray[this->_dimsSortedByLength[0]] + sliceOffset;
       // at the last layers request lock for the starting layer of the next
       // slice. Does not apply for the last slice.
       if (slice != numSlices - 1 and dimSlice >= lastLayer - this->_overlapLongestAxis) {
         locks[((slice + 1) * this->_overlapLongestAxis) - (lastLayer - dimSlice)].lock();
       }
-      for (unsigned long dimMedium = 0; dimMedium < this->_cellsPerDimension[this->_dimsPerLength[1]] - overLapps23[0];
-           ++dimMedium) {
-        for (unsigned long dimShort = 0; dimShort < this->_cellsPerDimension[this->_dimsPerLength[2]] - overLapps23[1];
-             ++dimShort) {
+      for (unsigned long dimMedium = 0;
+           dimMedium < this->_cellsPerDimension[this->_dimsSortedByLength[1]] - overLapps23[0]; ++dimMedium) {
+        for (unsigned long dimShort = 0;
+             dimShort < this->_cellsPerDimension[this->_dimsSortedByLength[2]] - overLapps23[1]; ++dimShort) {
           array<unsigned long, 3> idArray = {};
-          idArray[this->_dimsPerLength[0]] = dimSlice;
-          idArray[this->_dimsPerLength[1]] = dimMedium;
-          idArray[this->_dimsPerLength[2]] = dimShort;
+          idArray[this->_dimsSortedByLength[0]] = dimSlice;
+          idArray[this->_dimsSortedByLength[1]] = dimMedium;
+          idArray[this->_dimsSortedByLength[2]] = dimShort;
 
           loopBody(idArray[0], idArray[1], idArray[2]);
         }
       }
       // at the end of the first layers release the lock
-      if (slice > 0 and dimSlice < myStartArray[this->_dimsPerLength[0]] + this->_overlapLongestAxis) {
+      if (slice > 0 and dimSlice < myStartArray[this->_dimsSortedByLength[0]] + this->_overlapLongestAxis) {
         locks[lockBaseIndex + sliceOffset].unlock();
         // if lastLayer is reached within overlap area, unlock all following locks
         // this should never be the case if slice thicknesses are set up properly; thickness should always be

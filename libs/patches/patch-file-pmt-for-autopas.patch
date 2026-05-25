@@ -1,0 +1,201 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 426b10f..68b5eba 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -13,7 +13,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+ endif()
+ 
+ # Set CXX Standard
+-set(CMAKE_CXX_STANDARD 20)
++set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ set(CMAKE_CXX_EXTENSIONS OFF)
+ 
+diff --git a/common/PMT.cpp b/common/PMT.cpp
+index 5b8a6ab..3368d11 100644
+--- a/common/PMT.cpp
++++ b/common/PMT.cpp
+@@ -24,8 +24,6 @@ bool isNumber(const std::string &s) {
+ namespace pmt {
+ 
+ PMT::~PMT() {
+-  StopDump();
+-  StopThread();
+ };
+ 
+ double PMT::seconds(const Timestamp &timestamp) {
+@@ -79,39 +77,6 @@ float State::watts(int i) {
+   return watt_[i];
+ }
+ 
+-void PMT::StartThread() {
+-  SetMeasurementInterval();
+-
+-  thread_ = std::thread([&] {
+-    State state_previous = GetState();
+-    assert(state_previous.nr_measurements_ > 0);
+-    state_latest_ = state_previous;
+-
+-    if (dump_file_) {
+-      DumpHeader(state_previous);
+-    }
+-
+-    while (!thread_stop_) {
+-      std::this_thread::sleep_for(
+-          std::chrono::milliseconds(GetMeasurementInterval()));
+-      state_latest_ = GetState();
+-
+-      if (dump_file_ &&
+-          (1e3 * seconds(state_previous, state_latest_)) > GetDumpInterval()) {
+-        Dump(state_latest_);
+-        state_previous = state_latest_;
+-      }
+-    }
+-  });
+-}
+-
+-void PMT::StopThread() {
+-  thread_stop_ = true;
+-  if (thread_.joinable()) {
+-    thread_.join();
+-  }
+-}
+-
+ void PMT::StartDump(const char *filename) {
+   const char *filename_ = std::getenv(kDumpFilenameVariable.c_str());
+   if (filename_) {
+@@ -187,13 +152,8 @@ void PMT::SetMeasurementInterval(unsigned int milliseconds) {
+ Timestamp PMT::GetTime() { return std::chrono::system_clock::now(); }
+ 
+ State PMT::Read() {
+-  const int measurement_interval = GetMeasurementInterval();
+-  if (!thread_started_) {
+-    StartThread();
+-    thread_started_ = true;
+-    std::this_thread::sleep_for(
+-        std::chrono::milliseconds(measurement_interval));
+-  }
++  // Get the latest measurement
++  state_latest_ = GetState();
+   return state_latest_;
+ }
+ 
+diff --git a/common/PMT.h b/common/PMT.h
+index 269d549..19028b8 100644
+--- a/common/PMT.h
++++ b/common/PMT.h
+@@ -85,20 +85,11 @@ class PMT {
+   Timestamp GetTime();
+ 
+  private:
+-  unsigned int measurement_interval_ = 100;  // milliseconds
++  unsigned int measurement_interval_ = 1;  // milliseconds
+ 
+   // The last state set by the thread
+   State state_latest_;
+ 
+-  // This thread continuously call GetState to update state_latest_. It is
+-  // started automatically upon the first Read() call.
+-  std::thread thread_;
+-  volatile bool thread_started_ = false;
+-  volatile bool thread_stop_ = false;
+-
+-  void StartThread();
+-  void StopThread();
+-
+   void DumpHeader(const State &state);
+ 
+  protected:
+diff --git a/common/io.h b/common/io.h
+index 2794e2a..10696de 100644
+--- a/common/io.h
++++ b/common/io.h
+@@ -2,7 +2,6 @@
+ #define PMT_COMMON_IO_H_
+ 
+ #include <memory>
+-#include <span>
+ #include <sstream>
+ 
+ #include <sys/types.h>
+@@ -74,16 +73,14 @@ inline file_descriptor openat(int dirfd, const std::string& filename) {
+   }
+ }
+ 
+-inline size_t pread(int fd, const std::span<std::byte>& byte,
+-                    std::int64_t offset) {
++inline size_t pread(int fd, void* buffer, std::size_t size, std::int64_t offset) {
+   while (true) {
+     const ::ssize_t data_read =
+-        ::pread(fd, static_cast<void*>(byte.data()), byte.size(),
+-                static_cast<::off_t>(offset));
++        ::pread(fd, buffer, size, static_cast<::off_t>(offset));
+     if (data_read < 0) {
+-      const int errcode = take_and_reset_errno();
+-      if (errno == EINTR) {
+-        // interrupted system call
++      const int errcode = errno; // Capture the error code
++      if (errcode == EINTR) {
++        // interrupted system call, retry
+         continue;
+       }
+       throw std::system_error(
+diff --git a/rapl/RaplImpl.cpp b/rapl/RaplImpl.cpp
+index 369502c..ff000e4 100644
+--- a/rapl/RaplImpl.cpp
++++ b/rapl/RaplImpl.cpp
+@@ -52,7 +52,7 @@ std::string GetBasename(int package_id) {
+ std::string read_string(int fd) {
+   std::string result;
+   std::array<std::byte, 256> buffer;
+-  const std::size_t read_size = os::pread(fd, buffer, 0);
++  const std::size_t read_size = os::pread(fd, buffer.data(), buffer.size(), 0);
+   result.reserve(read_size);
+   for (std::size_t i = 0; i < read_size; ++i) {
+     const char c = static_cast<char>(buffer[i]);
+@@ -67,7 +67,7 @@ template <typename Numeric>
+ Numeric read_numerical_value(int fd) {
+   Numeric value = 0;
+   std::array<std::byte, 256> buffer;
+-  const std::size_t read_size = os::pread(fd, buffer, 0);
++  const std::size_t read_size = os::pread(fd, buffer.data(), buffer.size(), 0);
+   std::from_chars_result res = std::from_chars(
+       static_cast<const char*>(static_cast<void*>(buffer.data())),
+       static_cast<const char*>(static_cast<void*>(buffer.data() + read_size)),
+@@ -113,8 +113,9 @@ void RaplImpl::Init() {
+         message << "OS error: " << e.what();
+         std::cerr << message.str() << std::endl;
+         if (e.code().value() == EACCES) {
+-          std::cerr << "Please check the permission or try to run as 'root'"
+-                    << std::endl;
++          std::cerr<< "Please check the permission or try to run as 'root'"
++                   << std::endl;
++          std::abort();
+         }
+       }
+     }
+@@ -131,10 +132,11 @@ void RaplImpl::Init() {
+       uj_offset_[i] = 0;
+     }
+ 
+-  } catch (std::exception& e) {
++  } catch (const std::runtime_error& e) {
+     std::stringstream message;
+     message << "Unable to init rapl plugin: " << e.what();
+     std::cerr << message.str() << std::endl;
++    std::abort();
+   }
+ }
+ 
+diff --git a/rapl/RaplImpl.h b/rapl/RaplImpl.h
+index a13e32d..fb0bf25 100644
+--- a/rapl/RaplImpl.h
++++ b/rapl/RaplImpl.h
+@@ -5,6 +5,7 @@
+ #include <mutex>
+ #include <string>
+ #include <vector>
++#include <array>
+ 
+ #include "Rapl.h"
+ #include "common/PMT.h"

@@ -63,16 +63,17 @@ class BayesianSearch final : public TuningStrategyInterface {
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()());
 
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) override;
+  bool optimizeSuggestions(std::vector<Configuration> &configQueue,
+                           const EvidenceCollection &evidenceCollection) override;
 
-  bool needsSmoothedHomogeneityAndMaxDensity() const override;
+  bool needsDomainSimilarityStatistics() const override;
 
   void rejectConfiguration(const Configuration &configuration, bool indefinitely) override;
 

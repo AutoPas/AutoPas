@@ -6,7 +6,7 @@
 
 #include "SoATest.h"
 
-TEST_F(SoATest, testInitialization) { autopas::SoA<autopas::Particle::SoAArraysType> soa; }
+TEST_F(SoATest, testInitialization) { autopas::SoA<autopas::ParticleBaseFP64::SoAArraysType> soa; }
 
 TEST_F(SoATest, SoATypeTest) {
   static_assert(std::is_same<autopas::utils::SoAType<size_t, double, double, double>::Type,
@@ -84,43 +84,43 @@ TEST_F(SoATest, SoAStorageTestApply) {
 }
 
 TEST_F(SoATest, SoATestPush) {
-  // default soa using autopas::Particle
-  using autopas::Particle;
-  autopas::SoA<Particle::SoAArraysType> soa;
+  // default soa using autopas::ParticleBaseFP64
+  using autopas::ParticleBaseFP64;
+  autopas::SoA<ParticleBaseFP64::SoAArraysType> soa;
 
   EXPECT_EQ(soa.size(), 0);
 
-  soa.push<Particle::AttributeNames::id>(2);
-  soa.push<Particle::AttributeNames::posX>(0.3);
-  soa.push<Particle::AttributeNames::posY>(0.1);
-  soa.push<Particle::AttributeNames::posZ>(0.5);
-  soa.push<Particle::AttributeNames::forceX>(-0.2);
-  soa.push<Particle::AttributeNames::forceY>(0.7);
-  soa.push<Particle::AttributeNames::forceZ>(0.07);
+  soa.push<ParticleBaseFP64::AttributeNames::id>(2);
+  soa.push<ParticleBaseFP64::AttributeNames::posX>(0.3);
+  soa.push<ParticleBaseFP64::AttributeNames::posY>(0.1);
+  soa.push<ParticleBaseFP64::AttributeNames::posZ>(0.5);
+  soa.push<ParticleBaseFP64::AttributeNames::forceX>(-0.2);
+  soa.push<ParticleBaseFP64::AttributeNames::forceY>(0.7);
+  soa.push<ParticleBaseFP64::AttributeNames::forceZ>(0.07);
 
   EXPECT_EQ(soa.size(), 1);
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 0.3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 0.1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 0.5);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), -0.2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 0.7);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 0.07);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(0), 2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(0), 0.3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(0), 0.1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(0), 0.5);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(0), -0.2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(0), 0.7);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(0), 0.07);
 }
 
 TEST_F(SoATest, SoATestAppend) {
-  // default soa using autopas::Particle
-  using autopas::Particle;
-  std::array<autopas::SoA<Particle::SoAArraysType>, 2> soaBuffer;
+  // default soa using autopas::ParticleBaseFP64
+  using autopas::ParticleBaseFP64;
+  std::array<autopas::SoA<ParticleBaseFP64::SoAArraysType>, 2> soaBuffer;
 
-  soaBuffer[0].push<Particle::AttributeNames::id>(2);
-  soaBuffer[0].push<Particle::AttributeNames::posX>(0.3);
-  soaBuffer[0].push<Particle::AttributeNames::posY>(0.1);
-  soaBuffer[0].push<Particle::AttributeNames::posZ>(0.5);
-  soaBuffer[0].push<Particle::AttributeNames::forceX>(-0.2);
-  soaBuffer[0].push<Particle::AttributeNames::forceY>(0.7);
-  soaBuffer[0].push<Particle::AttributeNames::forceZ>(0.07);
+  soaBuffer[0].push<ParticleBaseFP64::AttributeNames::id>(2);
+  soaBuffer[0].push<ParticleBaseFP64::AttributeNames::posX>(0.3);
+  soaBuffer[0].push<ParticleBaseFP64::AttributeNames::posY>(0.1);
+  soaBuffer[0].push<ParticleBaseFP64::AttributeNames::posZ>(0.5);
+  soaBuffer[0].push<ParticleBaseFP64::AttributeNames::forceX>(-0.2);
+  soaBuffer[0].push<ParticleBaseFP64::AttributeNames::forceY>(0.7);
+  soaBuffer[0].push<ParticleBaseFP64::AttributeNames::forceZ>(0.07);
 
   EXPECT_EQ(soaBuffer[0].size(), 1);
   EXPECT_EQ(soaBuffer[1].size(), 0);
@@ -129,13 +129,13 @@ TEST_F(SoATest, SoATestAppend) {
   EXPECT_EQ(soaBuffer[0].size(), 1);
   EXPECT_EQ(soaBuffer[1].size(), 1);
 
-  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::id>(0), 2);
-  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::posX>(0), 0.3);
-  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::posY>(0), 0.1);
-  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::posZ>(0), 0.5);
-  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::forceX>(0), -0.2);
-  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::forceY>(0), 0.7);
-  EXPECT_EQ(soaBuffer[1].read<Particle::AttributeNames::forceZ>(0), 0.07);
+  EXPECT_EQ(soaBuffer[1].read<ParticleBaseFP64::AttributeNames::id>(0), 2);
+  EXPECT_EQ(soaBuffer[1].read<ParticleBaseFP64::AttributeNames::posX>(0), 0.3);
+  EXPECT_EQ(soaBuffer[1].read<ParticleBaseFP64::AttributeNames::posY>(0), 0.1);
+  EXPECT_EQ(soaBuffer[1].read<ParticleBaseFP64::AttributeNames::posZ>(0), 0.5);
+  EXPECT_EQ(soaBuffer[1].read<ParticleBaseFP64::AttributeNames::forceX>(0), -0.2);
+  EXPECT_EQ(soaBuffer[1].read<ParticleBaseFP64::AttributeNames::forceY>(0), 0.7);
+  EXPECT_EQ(soaBuffer[1].read<ParticleBaseFP64::AttributeNames::forceZ>(0), 0.07);
   // Append to filled buffer
   soaBuffer[0].append(soaBuffer[1]);
   EXPECT_EQ(soaBuffer[0].size(), 2);
@@ -143,91 +143,91 @@ TEST_F(SoATest, SoATestAppend) {
 }
 
 TEST_F(SoATest, SoATestSwap) {
-  // default soa using autopas::Particle
-  using autopas::Particle;
-  autopas::SoA<Particle::SoAArraysType> soa;
+  // default soa using autopas::ParticleBaseFP64
+  using autopas::ParticleBaseFP64;
+  autopas::SoA<ParticleBaseFP64::SoAArraysType> soa;
 
   soa.resizeArrays(2);
 
-  soa.begin<Particle::AttributeNames::id>()[0] = 3;
-  soa.begin<Particle::AttributeNames::posX>()[0] = 1.3;
-  soa.begin<Particle::AttributeNames::posY>()[0] = 1.1;
-  soa.begin<Particle::AttributeNames::posZ>()[0] = 1.5;
-  soa.begin<Particle::AttributeNames::forceX>()[0] = -1.2;
-  soa.begin<Particle::AttributeNames::forceY>()[0] = 1.7;
-  soa.begin<Particle::AttributeNames::forceZ>()[0] = 1.07;
+  soa.begin<ParticleBaseFP64::AttributeNames::id>()[0] = 3;
+  soa.begin<ParticleBaseFP64::AttributeNames::posX>()[0] = 1.3;
+  soa.begin<ParticleBaseFP64::AttributeNames::posY>()[0] = 1.1;
+  soa.begin<ParticleBaseFP64::AttributeNames::posZ>()[0] = 1.5;
+  soa.begin<ParticleBaseFP64::AttributeNames::forceX>()[0] = -1.2;
+  soa.begin<ParticleBaseFP64::AttributeNames::forceY>()[0] = 1.7;
+  soa.begin<ParticleBaseFP64::AttributeNames::forceZ>()[0] = 1.07;
 
-  soa.begin<Particle::AttributeNames::id>()[1] = 1;
-  soa.begin<Particle::AttributeNames::posX>()[1] = 10.3;
-  soa.begin<Particle::AttributeNames::posY>()[1] = 10.1;
-  soa.begin<Particle::AttributeNames::posZ>()[1] = 10.5;
-  soa.begin<Particle::AttributeNames::forceX>()[1] = -10.2;
-  soa.begin<Particle::AttributeNames::forceY>()[1] = 10.7;
-  soa.begin<Particle::AttributeNames::forceZ>()[1] = 10.07;
+  soa.begin<ParticleBaseFP64::AttributeNames::id>()[1] = 1;
+  soa.begin<ParticleBaseFP64::AttributeNames::posX>()[1] = 10.3;
+  soa.begin<ParticleBaseFP64::AttributeNames::posY>()[1] = 10.1;
+  soa.begin<ParticleBaseFP64::AttributeNames::posZ>()[1] = 10.5;
+  soa.begin<ParticleBaseFP64::AttributeNames::forceX>()[1] = -10.2;
+  soa.begin<ParticleBaseFP64::AttributeNames::forceY>()[1] = 10.7;
+  soa.begin<ParticleBaseFP64::AttributeNames::forceZ>()[1] = 10.07;
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 1.3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 1.1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 1.5);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), -1.2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 1.7);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 1.07);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(0), 3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(0), 1.3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(0), 1.1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(0), 1.5);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(0), -1.2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(0), 1.7);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(0), 1.07);
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(1), 1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(1), 10.3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(1), 10.1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(1), 10.5);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(1), -10.2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(1), 10.7);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(1), 10.07);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(1), 1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(1), 10.3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(1), 10.1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(1), 10.5);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(1), -10.2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(1), 10.7);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(1), 10.07);
 
   soa.swap(0, 1);
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(1), 3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(1), 1.3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(1), 1.1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(1), 1.5);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(1), -1.2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(1), 1.7);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(1), 1.07);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(1), 3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(1), 1.3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(1), 1.1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(1), 1.5);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(1), -1.2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(1), 1.7);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(1), 1.07);
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 10.3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 10.1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 10.5);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), -10.2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 10.7);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 10.07);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(0), 1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(0), 10.3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(0), 10.1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(0), 10.5);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(0), -10.2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(0), 10.7);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(0), 10.07);
 }
 
 TEST_F(SoATest, SoATestMultiWriteRead) {
-  // default soa using autopas::Particle
-  using autopas::Particle;
-  autopas::SoA<Particle::SoAArraysType> soa;
+  // default soa using autopas::ParticleBaseFP64
+  using autopas::ParticleBaseFP64;
+  autopas::SoA<ParticleBaseFP64::SoAArraysType> soa;
 
   soa.resizeArrays(1);
 
-  soa.begin<Particle::AttributeNames::id>()[0] = 1;
+  soa.begin<ParticleBaseFP64::AttributeNames::id>()[0] = 1;
 
   EXPECT_EQ(soa.size(), 1);
 
-  soa.writeMultiple<Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ>(
-      0, {4., 5., 6.});
+  soa.writeMultiple<ParticleBaseFP64::AttributeNames::posX, ParticleBaseFP64::AttributeNames::posY,
+                    ParticleBaseFP64::AttributeNames::posZ>(0, {4., 5., 6.});
 
   std::array<double, 3> f = {7., 8., 9.};
-  soa.writeMultiple<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-                    Particle::AttributeNames::forceZ>(0, f);
+  soa.writeMultiple<ParticleBaseFP64::AttributeNames::forceX, ParticleBaseFP64::AttributeNames::forceY,
+                    ParticleBaseFP64::AttributeNames::forceZ>(0, f);
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 4.);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 5.);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 6.);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), 7.);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 8.);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 9.);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(0), 1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(0), 4.);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(0), 5.);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(0), 6.);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(0), 7.);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(0), 8.);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(0), 9.);
 
-  auto res = soa.readMultiple<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-                              Particle::AttributeNames::forceZ>(0);
+  auto res = soa.readMultiple<ParticleBaseFP64::AttributeNames::forceX, ParticleBaseFP64::AttributeNames::forceY,
+                              ParticleBaseFP64::AttributeNames::forceZ>(0);
 
   static_assert(std::is_same<decltype(res), std::array<double, 3>>::value, "id type must be proper(size_t)");
 
@@ -238,117 +238,117 @@ TEST_F(SoATest, SoATestMultiWriteRead) {
 
 // this test makes certain that methods don't destroy the inner state of the test
 TEST_F(SoATest, SoATestComplicatedAccess) {
-  // default soa using autopas::Particle
-  using autopas::Particle;
-  autopas::SoA<Particle::SoAArraysType> soa;
+  // default soa using autopas::ParticleBaseFP64
+  using autopas::ParticleBaseFP64;
+  autopas::SoA<ParticleBaseFP64::SoAArraysType> soa;
 
   EXPECT_EQ(soa.size(), 0);
 
-  soa.push<Particle::AttributeNames::id>(2);
-  soa.push<Particle::AttributeNames::posX>(0.3);
-  soa.push<Particle::AttributeNames::posY>(0.1);
-  soa.push<Particle::AttributeNames::posZ>(0.5);
-  soa.push<Particle::AttributeNames::forceX>(-0.2);
-  soa.push<Particle::AttributeNames::forceY>(0.7);
-  soa.push<Particle::AttributeNames::forceZ>(0.07);
+  soa.push<ParticleBaseFP64::AttributeNames::id>(2);
+  soa.push<ParticleBaseFP64::AttributeNames::posX>(0.3);
+  soa.push<ParticleBaseFP64::AttributeNames::posY>(0.1);
+  soa.push<ParticleBaseFP64::AttributeNames::posZ>(0.5);
+  soa.push<ParticleBaseFP64::AttributeNames::forceX>(-0.2);
+  soa.push<ParticleBaseFP64::AttributeNames::forceY>(0.7);
+  soa.push<ParticleBaseFP64::AttributeNames::forceZ>(0.07);
 
   EXPECT_EQ(soa.size(), 1);
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 0.3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 0.1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 0.5);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), -0.2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 0.7);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 0.07);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(0), 2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(0), 0.3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(0), 0.1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(0), 0.5);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(0), -0.2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(0), 0.7);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(0), 0.07);
 
   soa.clear();
 
   EXPECT_EQ(soa.size(), 0);
 
-  soa.push<Particle::AttributeNames::id>(3);
-  soa.push<Particle::AttributeNames::posX>(1.3);
-  soa.push<Particle::AttributeNames::posY>(1.1);
-  soa.push<Particle::AttributeNames::posZ>(1.5);
-  soa.push<Particle::AttributeNames::forceX>(-1.2);
-  soa.push<Particle::AttributeNames::forceY>(1.7);
-  soa.push<Particle::AttributeNames::forceZ>(1.07);
+  soa.push<ParticleBaseFP64::AttributeNames::id>(3);
+  soa.push<ParticleBaseFP64::AttributeNames::posX>(1.3);
+  soa.push<ParticleBaseFP64::AttributeNames::posY>(1.1);
+  soa.push<ParticleBaseFP64::AttributeNames::posZ>(1.5);
+  soa.push<ParticleBaseFP64::AttributeNames::forceX>(-1.2);
+  soa.push<ParticleBaseFP64::AttributeNames::forceY>(1.7);
+  soa.push<ParticleBaseFP64::AttributeNames::forceZ>(1.07);
 
   EXPECT_EQ(soa.size(), 1);
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 1.3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 1.1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 1.5);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), -1.2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 1.7);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 1.07);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(0), 3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(0), 1.3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(0), 1.1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(0), 1.5);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(0), -1.2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(0), 1.7);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(0), 1.07);
 
   soa.resizeArrays(2);
 
-  soa.begin<Particle::AttributeNames::id>()[1] = 1;
-  soa.begin<Particle::AttributeNames::posX>()[1] = 10.3;
-  soa.begin<Particle::AttributeNames::posY>()[1] = 10.1;
-  soa.begin<Particle::AttributeNames::posZ>()[1] = 10.5;
-  soa.begin<Particle::AttributeNames::forceX>()[1] = -10.2;
-  soa.begin<Particle::AttributeNames::forceY>()[1] = 10.7;
-  soa.begin<Particle::AttributeNames::forceZ>()[1] = 10.07;
+  soa.begin<ParticleBaseFP64::AttributeNames::id>()[1] = 1;
+  soa.begin<ParticleBaseFP64::AttributeNames::posX>()[1] = 10.3;
+  soa.begin<ParticleBaseFP64::AttributeNames::posY>()[1] = 10.1;
+  soa.begin<ParticleBaseFP64::AttributeNames::posZ>()[1] = 10.5;
+  soa.begin<ParticleBaseFP64::AttributeNames::forceX>()[1] = -10.2;
+  soa.begin<ParticleBaseFP64::AttributeNames::forceY>()[1] = 10.7;
+  soa.begin<ParticleBaseFP64::AttributeNames::forceZ>()[1] = 10.07;
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 1.3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 1.1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 1.5);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), -1.2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 1.7);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 1.07);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(0), 3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(0), 1.3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(0), 1.1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(0), 1.5);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(0), -1.2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(0), 1.7);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(0), 1.07);
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(1), 1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(1), 10.3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(1), 10.1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(1), 10.5);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(1), -10.2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(1), 10.7);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(1), 10.07);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(1), 1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(1), 10.3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(1), 10.1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(1), 10.5);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(1), -10.2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(1), 10.7);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(1), 10.07);
 
   soa.swap(0, 1);
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(1), 3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(1), 1.3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(1), 1.1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(1), 1.5);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(1), -1.2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(1), 1.7);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(1), 1.07);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(1), 3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(1), 1.3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(1), 1.1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(1), 1.5);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(1), -1.2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(1), 1.7);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(1), 1.07);
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 10.3);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 10.1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 10.5);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), -10.2);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 10.7);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 10.07);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(0), 1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(0), 10.3);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(0), 10.1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(0), 10.5);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(0), -10.2);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(0), 10.7);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(0), 10.07);
 
   soa.pop_back();
 
   EXPECT_EQ(soa.size(), 1);
 
-  soa.writeMultiple<Particle::AttributeNames::posX, Particle::AttributeNames::posY, Particle::AttributeNames::posZ>(
-      0, {4., 5., 6.});
+  soa.writeMultiple<ParticleBaseFP64::AttributeNames::posX, ParticleBaseFP64::AttributeNames::posY,
+                    ParticleBaseFP64::AttributeNames::posZ>(0, {4., 5., 6.});
 
   std::array<double, 3> f = {7., 8., 9.};
-  soa.writeMultiple<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-                    Particle::AttributeNames::forceZ>(0, f);
+  soa.writeMultiple<ParticleBaseFP64::AttributeNames::forceX, ParticleBaseFP64::AttributeNames::forceY,
+                    ParticleBaseFP64::AttributeNames::forceZ>(0, f);
 
-  EXPECT_EQ(soa.read<Particle::AttributeNames::id>(0), 1);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posX>(0), 4.);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posY>(0), 5.);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::posZ>(0), 6.);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceX>(0), 7.);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceY>(0), 8.);
-  EXPECT_EQ(soa.read<Particle::AttributeNames::forceZ>(0), 9.);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::id>(0), 1);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(0), 4.);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posY>(0), 5.);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::posZ>(0), 6.);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceX>(0), 7.);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceY>(0), 8.);
+  EXPECT_EQ(soa.read<ParticleBaseFP64::AttributeNames::forceZ>(0), 9.);
 
-  auto res = soa.readMultiple<Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-                              Particle::AttributeNames::forceZ>(0);
+  auto res = soa.readMultiple<ParticleBaseFP64::AttributeNames::forceX, ParticleBaseFP64::AttributeNames::forceY,
+                              ParticleBaseFP64::AttributeNames::forceZ>(0);
 
   static_assert(std::is_same<decltype(res), std::array<double, 3>>::value, "id type must be proper(size_t)");
 

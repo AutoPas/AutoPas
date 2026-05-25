@@ -15,6 +15,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
@@ -126,12 +127,6 @@ class MDFlexConfig {
   void calcSimulationBox();
 
   /**
-   * Returns the particles generated based on the provided configuration file.
-   * @return a vector containing the generated particles.
-   */
-  std::vector<ParticleType> getParticles() { return _particles; }
-
-  /**
    * Returns the ParticlePropertiesLibrary containing the properties of the particle types used in this simulation.
    * @return the ParticlePropertiesLibrary
    */
@@ -150,17 +145,32 @@ class MDFlexConfig {
   void addInteractionType(autopas::InteractionTypeOption interactionType) { _interactionTypes.insert(interactionType); }
 
   /**
-   * Adds parameters of a LJ and AT site and checks if the siteId already exists.
-   *
+   * Adds a new site with specified mass and checks if the siteId already exists.
    * For single site simulations, the molecule's molId is used to look up the site with siteId = molId.
+   *
+   * @param siteId unique site type id
+   * @param mass
+   */
+  void addSiteType(unsigned long siteId, double mass);
+
+  /**
+   * Adds Lennard-Jones parameters to the specified site.
+   * Checks if the given site exists and if the parameters were already specified.
    *
    * @param siteId unique site type id
    * @param epsilon
    * @param sigma
-   * @param nu
-   * @param mass
    */
-  void addSiteType(unsigned long siteId, double epsilon, double sigma, double nu, double mass);
+  void addLJParametersToSite(unsigned long siteId, double epsilon, double sigma);
+
+  /**
+   * Adds the Axilrod-Teller-Muto parameter nu to the specified site.
+   * Checks if the given site exists and if the parameter was already specified.
+   *
+   * @param siteId unique site type id
+   * @param nu
+   */
+  void addATParametersToSite(unsigned long siteId, double nu);
 
   /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
@@ -183,21 +193,21 @@ class MDFlexConfig {
   /**
    * Loads the particles from the checkpoint file defined in the configuration file.
    * If the checkpoint has been recorded using multiple processes, the rank of the current process needs to be passed.
-   * The provided rank also needs to respect the domain decomposition. E. g. if the a regular grid decomposition is
-   * used,   * don't pass the MPI_COMM_WORLD rank, as it might differ from the grid rank derived in the decomposition
-   * scheme. The wrong rank might result in a very bad network topology and therefore increase communication cost.
+   * The provided rank also needs to respect the domain decomposition. E. g. if the regular grid decomposition is
+   * used, don't pass the MPI_COMM_WORLD rank, as it might differ from the grid rank derived in the decomposition
+   * scheme. The wrong rank might result in a very bad network topology and therefore increase communication costs.
    * @param rank: The MPI rank of the current process.
-   * @param communicatorSize: The size of the MPI communicator used for the simulation.
+   * @param numRanks: The size of the MPI communicator used for the simulation.
    */
-  void loadParticlesFromCheckpoint(const size_t &rank, const size_t &communicatorSize);
+  void loadParticlesFromCheckpoint(const size_t &rank, const size_t &numRanks);
 
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE };
 
   /**
-   * Choice of the 3-body functor
+   * Choice of the Triwise functor
    */
   enum class FunctorOption3B { none, at };
 
@@ -234,7 +244,7 @@ class MDFlexConfig {
    */
   MDFlexOption<std::set<autopas::DataLayoutOption>, __LINE__> dataLayoutOptions3B{
       autopas::DataLayoutOption::getMostOptions(), "data-layout-3b", true,
-      "List of data layout options to use for the 3-body interaction. Possible Values: " +
+      "List of data layout options to use for the triwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * selectorStrategy
@@ -276,7 +286,7 @@ class MDFlexConfig {
    */
   MDFlexOption<std::set<autopas::Newton3Option>, __LINE__> newton3Options3B{
       autopas::Newton3Option::getMostOptions(), "newton3-3b", true,
-      "List of newton3 options to use for the 3-body interaction. Possible Values: " +
+      "List of newton3 options to use for the triwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
   /**
    * cellSizeFactors
@@ -321,10 +331,23 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
+   * enerySensorOption
+   */
+  MDFlexOption<autopas::EnergySensorOption, __LINE__> energySensorOption{
+      autopas::EnergySensorOption::rapl, "energy-sensor", true,
+      "Sensor used for energy consumption measurement. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::EnergySensorOption::getAllOptions(), " ", {"(", ")"})};
+  /**
    * ruleFilename
    */
   MDFlexOption<std::string, __LINE__> ruleFilename{
       "", "rule-filename", true, "Path to a .rule file containing rules for the rule-based tuning method."};
+
+  /**
+   * fuzzyRuleFilename
+   */
+  MDFlexOption<std::string, __LINE__> fuzzyRuleFilename{
+      "", "fuzzy-rule-filename", true, "Path to a .frule file containing rules for the fuzzy-based tuning method."};
 
   /**
    * MPITuningMaxDifferenceForBucket
@@ -351,6 +374,21 @@ class MDFlexConfig {
    */
   MDFlexOption<unsigned int, __LINE__> tuningSamples{3, "tuning-samples", true,
                                                      "Number of samples to collect per configuration."};
+
+  /**
+   * EarlyStoppingFactor
+   */
+  MDFlexOption<double, __LINE__> earlyStoppingFactor{
+      std::numeric_limits<double>::infinity(), "early-stopping-factor", false,
+      "EarlyStoppingFactor for the auto-tuner. A configuration seeming to perform worse than the "
+      "previously best configuration "
+      "by this factor will not be sampled again during that tuning phase."};
+
+  /**
+   * useLOESSSmoothening
+   */
+  MDFlexOption<bool, __LINE__> useLOESSSmoothening{
+      false, "use-LOESS-smoothening", true, "Enables the smoothening of tuning data using a LOESS-based algorithm."};
   /**
    * tuningMaxEvidence
    */
@@ -420,19 +458,17 @@ class MDFlexConfig {
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
       15, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
   /**
-   * verletSkinRadiusPerTimeStep
-   */
-  MDFlexOption<double, __LINE__> verletSkinRadiusPerTimestep{
-      .2, "verlet-skin-radius-per-timestep", true,
-      "Skin added to the cutoff to form the interaction length. The total skin width is this number times "
-      "verletRebuildFrequency."};
-
-  /**
    * fastParticlesThrow
    */
-  MDFlexOption<bool, __LINE__> fastParticlesThrow{false, "fastParticlesThrow", false,
-                                                  "Decide if particles that move farther than skin/2/rebuildFrequency "
-                                                  "will throw an exception during the position update or not."};
+  MDFlexOption<bool, __LINE__> fastParticlesThrow{
+      false, "fastParticlesThrow", false,
+      "Decide if particles that move farther than skin/2/rebuildFrequency "
+      "will throw an exception during the position update or not for the case with statically rebuilding containers."};
+  /**
+   * verletSkinRadius
+   */
+  MDFlexOption<double, __LINE__> verletSkinRadius{
+      .2, "verlet-skin-radius", true, "Skin added to the cutoff avoid rebuilding containers every iteration."};
   /**
    * boxMin
    */
@@ -485,7 +521,8 @@ class MDFlexConfig {
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-      FunctorOption3B::none, "functor-3b", true, "3-Body force functor to use. Possible Values: (axilrod-teller)"};
+      FunctorOption3B::none, "functor-3b", true,
+      "Triwise force functor to use. Possible Values: (axilrod-teller-muto)"};
   /**
    * iterations
    */
@@ -507,10 +544,6 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions(), " ", {"(", ")"}) +
           " Default: {periodic, periodic, periodic}"};
   /**
-   * dontMeasureFlops
-   */
-  MDFlexOption<bool, __LINE__> dontMeasureFlops{true, "no-flops", false, "Set to omit the calculation of flops."};
-  /**
    * Omit the creation of a config file at the end of the Simulation.
    * This starts with a "not" such that it can be used as a flag with a sane default.
    */
@@ -527,6 +560,11 @@ class MDFlexConfig {
   MDFlexOption<double, __LINE__> deltaT{0.001, "deltaT", true,
                                         "Length of a timestep. Set to 0 to deactivate time integration."};
 
+  /**
+   * pauseSimulationDuringTuning
+   */
+  MDFlexOption<bool, __LINE__> pauseSimulationDuringTuning{false, "pause-simulation-during-tuning", false,
+                                                           "Pauses the update of the simulation during tuning phases."};
   /**
    * sortingThreshold
    * This value is used in traversal that use the CellFunctor. If the sum of the number of particles in two cells is
@@ -800,14 +838,14 @@ class MDFlexConfig {
    */
   static constexpr int valueOffset{33};
 
- private:
   /**
    * Stores the particles generated based on the provided configuration file
    * These particles can be added to the respective autopas container,
    * but have to be converted to the respective particle type, first.
    */
-  std::vector<ParticleType> _particles;
+  std::vector<ParticleType> particles{};
 
+ private:
   /**
    * Stores the physical properties of the particles used in the an MDFlexSimulation
    */

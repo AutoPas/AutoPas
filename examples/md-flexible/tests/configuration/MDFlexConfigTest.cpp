@@ -152,9 +152,22 @@ TEST_F(MDFlexConfigTest, correctSiteParsing) {
   EXPECT_EQ(configuration.epsilonMap.value.at(0), 1.);
   EXPECT_EQ(configuration.sigmaMap.value.at(0), 1.);
   EXPECT_EQ(configuration.massMap.value.at(0), 1.);
+  EXPECT_EQ(configuration.nuMap.value.at(0), 0.);
+
   EXPECT_EQ(configuration.epsilonMap.value.at(1), 1.2);
   EXPECT_EQ(configuration.sigmaMap.value.at(1), 0.8);
   EXPECT_EQ(configuration.massMap.value.at(1), 0.5);
+  EXPECT_EQ(configuration.nuMap.value.at(1), 0.);
+
+  EXPECT_EQ(configuration.epsilonMap.value.at(2), 0.8);
+  EXPECT_EQ(configuration.sigmaMap.value.at(2), 1.2);
+  EXPECT_EQ(configuration.massMap.value.at(2), 1.);
+  EXPECT_EQ(configuration.nuMap.value.at(2), 0.1);
+
+  EXPECT_EQ(configuration.epsilonMap.value.at(3), 0.);
+  EXPECT_EQ(configuration.sigmaMap.value.at(3), 0.);
+  EXPECT_EQ(configuration.massMap.value.at(3), 2.);
+  EXPECT_EQ(configuration.nuMap.value.at(3), 0.2);
 }
 
 /**

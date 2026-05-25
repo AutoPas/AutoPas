@@ -169,7 +169,7 @@ TEST(CellOwnershipTest, testOwnershipSortedCellView) {
 
     cell.setPossibleParticleOwnerships(ownershipState);
 
-    auto scv = autopas::SortedCellView<Molecule, autopas::FullParticleCell<Molecule>>(cell, {0., 0., 0.});
+    auto scv = autopas::SortedCellView<autopas::FullParticleCell<Molecule>>(cell, {0., 0., 0.});
 
     EXPECT_TRUE(scv.getPossibleParticleOwnerships() == ownershipState);
 

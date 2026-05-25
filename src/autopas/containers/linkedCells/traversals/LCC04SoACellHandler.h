@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/containers/cellTraversals/CellTraversal.h"
+#include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -25,10 +26,8 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
- * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor>
 class LCC04SoACellHandler {
  public:
   /**
@@ -38,17 +37,22 @@ class LCC04SoACellHandler {
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
+   * @param dataLayout The data layout with which this traversal should be initialized.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit LCC04SoACellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
-                               const double interactionLength, const std::array<double, 3> &cellLength,
+                               double interactionLength, const std::array<double, 3> &cellLength,
+                               DataLayoutOption dataLayout, bool useNewton3,
                                const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
       : _interactionLength(interactionLength),
         _cellLength(cellLength),
         _overlap(overlap),
         _cellsPerDimension(cellsPerDimension),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)),
-        _pairwiseFunctor(pairwiseFunctor) {
-    computeOffsets(cellsPerDimension);
+        _pairwiseFunctor(pairwiseFunctor),
+        _dataLayout(dataLayout),
+        _useNewton3(useNewton3) {
+    setupIntervals(cellsPerDimension);
   }
 
   /**
@@ -67,14 +71,6 @@ class LCC04SoACellHandler {
   void resizeBuffers();
 
  private:
-  /**
-   * Computes pairs for the block used in processBaseCell().
-   * The algorithm used to generate the cell pairs can be visualized with a python script, which can be found in
-   * docs/C08TraversalScheme.py
-   * @param cellsPerDimension
-   */
-  void computeOffsets(const std::array<unsigned long, 3> &cellsPerDimension);
-
   /**
    * Interaction Length (cutoff + skin).
    */
@@ -133,6 +129,16 @@ class LCC04SoACellHandler {
   PairwiseFunctor *_pairwiseFunctor;
 
   /**
+   * The datalayout used by this traversal.
+   */
+  DataLayoutOption _dataLayout;
+
+  /**
+   * If this traversal makes use of newton3.
+   */
+  bool _useNewton3;
+
+  /**
    * Writes buffer content back to cell.
    * @param cells
    * @param baseIndex Index of base cell.
@@ -162,14 +168,15 @@ class LCC04SoACellHandler {
 
   /**
    * Creates offset intervals (stored in offset) from cellPairOffsets.
-   * @param cellPairOffsets Source for interval creation.
+   * @param cellsPerDimension cells per dimension.
    */
-  void setupIntervals(std::vector<std::vector<std::pair<unsigned long, unsigned long>>> &cellPairOffsets);
+  void setupIntervals(const std::array<unsigned long, 3> &cellsPerDimension);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
-    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
+                                                                                unsigned long x, unsigned long y,
+                                                                                unsigned long z) {
   const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, _cellsPerDimension);
 
   // get all information for current thread
@@ -211,13 +218,13 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
         auto stripeView = cell1->_particleSoABuffer.constructView(0, numParticlesBaseCell);
         if (slice == currentSlice) {
           // Process stripe with itself
-          _pairwiseFunctor->SoAFunctorSingle(stripeView, useNewton3);
+          _pairwiseFunctor->SoAFunctorSingle(stripeView, _useNewton3);
 
           auto restView =
               cell1->_particleSoABuffer.constructView(numParticlesBaseCell, cell1->_particleSoABuffer.size());
-          _pairwiseFunctor->SoAFunctorPair(stripeView, restView, useNewton3);
-          if (not useNewton3) {
-            _pairwiseFunctor->SoAFunctorPair(restView, stripeView, useNewton3);
+          _pairwiseFunctor->SoAFunctorPair(stripeView, restView, _useNewton3);
+          if (not _useNewton3) {
+            _pairwiseFunctor->SoAFunctorPair(restView, stripeView, _useNewton3);
           }
           cell1ViewEnd = cell1->_particleSoABuffer.size();
           continue;
@@ -249,9 +256,9 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 
       auto cell1View = cell1->_particleSoABuffer.constructView(cell1ViewStart, cell1ViewEnd);
       auto currentCSView = currentCS._particleSoABuffer.constructView(currentCSViewStart, currentCSViewEnd);
-      _pairwiseFunctor->SoAFunctorPair(cell1View, currentCSView, useNewton3);
-      if (not useNewton3) {
-        _pairwiseFunctor->SoAFunctorPair(currentCSView, cell1View, useNewton3);
+      _pairwiseFunctor->SoAFunctorPair(cell1View, currentCSView, _useNewton3);
+      if (not _useNewton3) {
+        _pairwiseFunctor->SoAFunctorPair(currentCSView, cell1View, _useNewton3);
       }
     }
   }
@@ -268,8 +275,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::writeCellIntoBuffer(
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::writeCellIntoBuffer(
     const std::vector<ParticleCell> &cells, const unsigned long baseIndex, std::vector<ParticleCell> &combinationSlice,
     std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, const unsigned int bufferSlice,
     const unsigned int cellSlice) {
@@ -288,8 +295,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::writeBufferIntoCell(
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::writeBufferIntoCell(
     std::vector<ParticleCell> &cells, const unsigned long baseIndex, std::vector<ParticleCell> &combinationSlice,
     std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, const unsigned long bufferSlice,
     const unsigned long cellSlice) {
@@ -319,97 +326,20 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets(
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::setupIntervals(
     const std::array<unsigned long, 3> &cellsPerDimension) {
-  using namespace autopas::utils::ArrayMath::literals;
-  using std::make_pair;
-
-  std::vector<std::vector<std::pair<unsigned long, unsigned long>>> cellPairOffsets;
-
-  //////////////////////////////
-  // @TODO: Replace following lines with vector to support asymmetric cells
-  const unsigned long ov1 = _overlap[0] + 1;
-  const unsigned long ov1_squared = ov1 * ov1;
-  //////////////////////////////
-
-  _baseOffsets.resize(ov1);
-
-  const std::array<unsigned long, 3> overlap_1 = _overlap + 1ul;
-
-  std::vector<unsigned long> cellOffsets;
-  cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
-
-  cellPairOffsets.clear();
-  cellPairOffsets.resize(overlap_1[0]);
-
-  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
-
+  _baseOffsets.resize(_overlap[0] + 1);
   for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
     for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
       _baseOffsets[x].push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, 0ul, cellsPerDimension));
-      for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
-        cellOffsets.push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension));
-      }
     }
   }
-  for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
-    for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
-      for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
-        const unsigned long offset = cellOffsets[ov1_squared * x + ov1 * y];
-        // origin
-        {
-          // check whether cell is within cutoff radius
-          const auto distVec =
-              std::array<double, 3>{std::max(0.0, x - 1.0), std::max(0.0, y - 1.0), std::max(0.0, z - 1.0)} *
-              _cellLength;
-          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
-          if (distSquare <= interactionLengthSquare) {
-            cellPairOffsets[x].push_back(make_pair(cellOffsets[z], offset));
-          }
-        }
-        // back left
-        if (y != _overlap[1] and z != 0) {
-          // check whether cell is within cutoff radius
-          const auto distVec = std::array<double, 3>{std::max(0.0, x - 1.0), std::max(0.0, _overlap[1] - y - 1.0),
-                                                     std::max(0.0, z - 1.0)} *
-                               _cellLength;
-          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
-          if (distSquare <= interactionLengthSquare) {
-            cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared - ov1 + z], offset));
-          }
-        }
-        // front right
-        if (x != _overlap[0] and (y != 0 or z != 0)) {
-          // check whether cell is within cutoff radius
-          const auto distVec = std::array<double, 3>{std::max(0.0, _overlap[0] - x - 1.0), std::max(0.0, y - 1.0),
-                                                     std::max(0.0, z - 1.0)} *
-                               _cellLength;
-          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
-          if (distSquare <= interactionLengthSquare) {
-            cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared * _overlap[0] + z], offset));
-          }
-        }
-        // back right
-        if (y != _overlap[1] and x != _overlap[0] and z != 0) {
-          // check whether cell is within cutoff radius
-          const auto distVec = std::array<double, 3>{std::max(0.0, _overlap[0] - x - 1.0),
-                                                     std::max(0.0, _overlap[1] - y - 1.0), std::max(0.0, z - 1.0)} *
-                               _cellLength;
-          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
-          if (distSquare <= interactionLengthSquare) {
-            cellPairOffsets[x].push_back(make_pair(cellOffsets[ov1_squared * ov1 - ov1 + z], offset));
-          }
-        }
-      }
-    }
-  }
-  setupIntervals(cellPairOffsets);
-}
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::setupIntervals(
-    std::vector<std::vector<std::pair<unsigned long, unsigned long>>> &cellPairOffsets) {
+  std::vector<LCC08CellHandlerUtility::OffsetPairVector> cellPairOffsets =
+      LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<LCC08CellHandlerUtility::C08OffsetMode::c04CellPairs>(
+          cellsPerDimension, this->_cellLength, this->_interactionLength);
+
   // Create intervals
   const unsigned long numStripes = cellPairOffsets.size();
   _offsets.resize(numStripes);
@@ -444,8 +374,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::resizeBuffers() {
+template <class ParticleCell, class PairwiseFunctor>
+void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::resizeBuffers() {
   const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
   if (_combinationSlices.size() != numThreads) {
     _combinationSlices.resize(numThreads);

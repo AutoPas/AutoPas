@@ -6,13 +6,8 @@
 
 #include "MemoryProfiler.h"
 
-#include <sys/stat.h>
-
-#include <fstream>
-
-#include "autopas/utils/logging/Logger.h"
-
 size_t autopas::memoryProfiler::currentMemoryUsage() {
+#ifdef __linux__
   std::ifstream statusFile(statusFileName);
   if (statusFile.rdstate() != std::ifstream::goodbit) {
     // this seems non-critical so we don't throw an exception
@@ -32,4 +27,15 @@ size_t autopas::memoryProfiler::currentMemoryUsage() {
 
   AutoPasLog(ERROR, "Could not read memory usage!");
   return 0;
+#elif defined __APPLE__
+  mach_task_basic_info info{};
+  mach_msg_type_number_t infoCount = MACH_TASK_BASIC_INFO_COUNT;
+  if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&info), &infoCount) !=
+      KERN_SUCCESS) {
+    AutoPasLog(ERROR, "Error querying the resident memory size", statusFileName);
+    return 0;
+  }
+  // info.resident_size is the resident memory size in bytes, hence we divide by 1000 to return kilobytes
+  return static_cast<size_t>(info.resident_size / 1000);
+#endif
 }

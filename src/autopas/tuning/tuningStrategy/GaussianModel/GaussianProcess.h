@@ -16,7 +16,6 @@
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
-#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 

@@ -20,10 +20,11 @@ extern template bool autopas::AutoPas<NonConstructibleParticle>::computeInteract
 TEST_F(DifferentParticlesTest, testNonConstructibleParticle) {
   autopas::AutoPas<NonConstructibleParticle> autoPas;
   autoPas.setBoxMax({10., 10., 10.});
+  autoPas.setAllowedNewton3Options(std::set<autopas::Newton3Option>{autopas::Newton3Option::enabled});
   autoPas.init();
 
-  // We also check if iteratePairwise can be instantiated.
+  // We also check if computeInteractions can be instantiated.
   MockPairwiseFunctor<NonConstructibleParticle> functor;
-  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(false));
+  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   autoPas.computeInteractions(&functor);
 }

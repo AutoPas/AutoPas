@@ -16,20 +16,20 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
 target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
-option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
-option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
-option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
-option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." OFF)
-option(MD_FLEXIBLE_FUNCTOR_AT "Compile auto vectorized Axilrod Teller Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
+option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC "Compile auto vectorized Axilrod-Teller-Muto Functor." OFF)
+option(MD_FLEXIBLE_CALC_GLOBALS "Compiles md-flexible Functors with calculation of globals, including calculation of shift offset for LJ functors." OFF)
 
 target_compile_definitions(
         md-flexible
         PUBLIC
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC>
-        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
-        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AT}>:MD_FLEXIBLE_FUNCTOR_AT>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC>
+        $<$<BOOL:${MD_FLEXIBLE_CALC_GLOBALS}>:MD_FLEXIBLE_CALC_GLOBALS>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
@@ -41,8 +41,8 @@ if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     if (MD_FLEXIBLE_FUNCTOR_SVE)
         message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
     endif()
-    if (MD_FLEXIBLE_FUNCTOR_AT)
-        message(WARNING "Axilrod Teller functor has not been implemented for Multi-Site Molecules")
+    if (MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
+        message(WARNING "Axilrod-Teller-Muto functor has not been implemented for Multi-Site Molecules")
     endif()
 endif()
 
@@ -55,6 +55,7 @@ file(
         "*.py"
         "*.yaml"
         "*.rule"
+        "*.frule"
 )
 
 foreach (script ${SCRIPTS})
@@ -69,7 +70,6 @@ add_subdirectory(tests)
 # cmake-format: off
 
 # randomly generated imbalanced scenario tested with LC only
-# also tests the flop functor
 add_test(
         NAME md-flexible.test-static
         COMMAND
@@ -85,7 +85,7 @@ add_test(
         --particles-total 10
         --traversal c08,sliced
         --verlet-rebuild-frequency 5
-        --verlet-skin-radius-per-timestep 0
+        --verlet-skin-radius 0
         --boundary-type none
         --deltaT 0.
         --no-end-config
@@ -128,7 +128,6 @@ if (HAS_AVX)
             COMMAND
             md-flexible
             --no-end-config
-            --no-flops
             --functor "${TEST_FUNCTOR}"
             --deltaT 0
             --particle-generator uniform
@@ -137,6 +136,11 @@ if (HAS_AVX)
             --particles-total 71
             --no-progress-bar
             CONFIGURATIONS checkExamples
+    )
+    set_tests_properties(
+            md-flexible-avx.test-unaligned
+            PROPERTIES
+            ENVIRONMENT  "${LSAN_OPTIONS_STR}"
     )
 else ()
   message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
@@ -157,11 +161,10 @@ add_test(
         --particles-per-dimension 10
         --particle-spacing 1.1225
         --verlet-rebuild-frequency 4
-        --verlet-skin-radius-per-timestep 0.05
+        --verlet-skin-radius 0.2
         --boundary-type periodic
         --deltaT 0.005
         --no-end-config
-        --no-flops
         --no-progress-bar
         CONFIGURATIONS checkExamples
 )
@@ -172,6 +175,15 @@ add_test(
         CONFIGURATIONS checkExamples
 )
 # cmake-format: on
+
+set_tests_properties(
+        md-flexible.test-static
+        md-flexible.test-sim
+        md-flexMeasurePerf
+        # This adds lsanignoreList.txt to ignore MPI internal leaks
+        PROPERTIES
+            ENVIRONMENT  "${LSAN_OPTIONS_STR}"
+)
 
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples md-flexible)

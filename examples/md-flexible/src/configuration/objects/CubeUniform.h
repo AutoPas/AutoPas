@@ -5,10 +5,9 @@
  */
 #pragma once
 
-#include <random>
-
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/UniformGenerator.h"
 
 /**
  * Class describing an cuboid object filled with uniformly randomly distributed particles.
@@ -59,11 +58,11 @@ class CubeUniform : public Object {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "numberOfParticles"
-           << ":  " << _numParticles << std::endl;
+           << ":  " << _numParticles << "\n";
     output << std::setw(_valueOffset) << std::left << "box-length"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << "\n";
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << "\n";
     output << Object::to_string();
     return output.str();
   }
@@ -73,20 +72,17 @@ class CubeUniform : public Object {
    * @param particles The container where the generated particles will be stored.
    */
   void generate(std::vector<ParticleType> &particles) const override {
-    ParticleType particle = getDummyParticle(particles.size());
+    // Wrapper so that std::vector can be used as an AutoPas::ParticleContainer
+    auto particlesWrapper = autopasTools::PseudoContainer(particles);
 
-    // Set up random number generation
-    std::random_device randomDevice;
-    std::mt19937 randomNumberEngine(randomDevice());
-    std::uniform_real_distribution<double> distribution(0.0, 1.0);
+    using namespace autopas::utils::ArrayMath::literals;
+    const auto boxMax = _bottomLeftCorner + _boxLength;
 
-    for (unsigned long i = 0; i < _numParticles; ++i) {
-      particle.setR({_bottomLeftCorner[0] + distribution(randomNumberEngine) * _boxLength[0],
-                     _bottomLeftCorner[1] + distribution(randomNumberEngine) * _boxLength[1],
-                     _bottomLeftCorner[2] + distribution(randomNumberEngine) * _boxLength[2]});
-      particles.push_back(particle);
-      particle.setID(particle.getID() + 1);
-    }
+    // dummy particle used as a template with id of the first newly generated one
+    const ParticleType dummyParticle = getDummyParticle(particles.size());
+
+    autopasTools::generators::UniformGenerator::fillWithParticles(particlesWrapper, dummyParticle, _bottomLeftCorner,
+                                                                  boxMax, _numParticles);
   }
 
  private:

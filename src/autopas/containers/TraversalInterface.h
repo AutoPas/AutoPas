@@ -15,13 +15,19 @@ namespace autopas {
 /**
  * This interface serves as a common parent class for all traversals.
  */
-template <InteractionTypeOption::Value interactionType>
 class TraversalInterface {
  public:
   /**
    * Destructor of TraversalInterface
    */
   virtual ~TraversalInterface() = default;
+
+  /**
+   * Constructor of the TraversalInterface.
+   * @param dataLayout The data layout with which this traversal should be initialized.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
+   */
+  TraversalInterface(DataLayoutOption dataLayout, bool useNewton3) : _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**
    * Return a enum representing the name of the traversal class.
@@ -36,21 +42,14 @@ class TraversalInterface {
   [[nodiscard]] virtual bool isApplicable() const = 0;
 
   /**
-   * Return whether the traversal uses newton 3.
-   * @return true iff newton 3 is used.
-   */
-  [[nodiscard]] virtual bool getUseNewton3() const = 0;
-
-  /**
-   * Return the data layout option
-   * @return the data layout option
-   */
-  [[nodiscard]] virtual DataLayoutOption getDataLayout() const = 0;
-
-  /**
    * Initializes the traversal. Should be called before traverse().
    */
   virtual void initTraversal() = 0;
+
+  /**
+   * Traverse the particles by pairs, triplets etc. as determined by the Functor type.
+   */
+  virtual void traverseParticles() = 0;
 
   /**
    * Finalizes the traversal. Should be called after traverse().
@@ -58,24 +57,26 @@ class TraversalInterface {
   virtual void endTraversal() = 0;
 
   /**
-   * Traverses all particle pairs.
+   * Return whether the traversal uses newton 3.
+   * @return true iff newton 3 is used.
    */
-  virtual void traverseParticlePairs() {
-    utils::ExceptionHandler::exception(
-        "Error: TraversalInterface::traverseParticlePairs() is "
-        "not implemented for this traversal: {}!",
-        typeid(*this).name());
-  };
+  [[nodiscard]] bool getUseNewton3() const { return _useNewton3; }
 
   /**
-   * Traverses all particle triplets.
+   * Return the data layout option
+   * @return the data layout option
    */
-  virtual void traverseParticleTriplets() {
-    utils::ExceptionHandler::exception(
-        "Error: TraversalInterface::traverseParticleTriplets() is "
-        "not implemented for this traversal: {}!",
-        typeid(*this).name());
-  };
-};
+  [[nodiscard]] DataLayoutOption getDataLayout() const { return _dataLayout; }
 
+ protected:
+  /**
+   * The datalayout used by this traversal.
+   */
+  DataLayoutOption _dataLayout;
+
+  /**
+   * If this traversal makes use of newton3.
+   */
+  bool _useNewton3;
+};
 }  // namespace autopas

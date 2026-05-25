@@ -6,20 +6,34 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cstddef>
 #include <map>
+#include <optional>
+#include <tuple>
 #include <vector>
 
+#include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/Evidence.h"
 
 namespace autopas {
+
 /**
  * Class to manage all evidence.
  */
 class EvidenceCollection {
  public:
+  /**
+   * Helper enum to switch between evidence measurements modes.
+   */
+  enum EvidenceMode {
+    // Calculate the effective measurement for an average iteration
+    EFFECTIVE,
+    // Evidence of only the traversal measurement.
+    TRAVERSAL,
+    // Evidence of the rebuild + traversal measurement for a single iteration where a rebuild actually occurred.
+    TOTAL
+  };
+
   EvidenceCollection() = default;
 
   /**
@@ -34,7 +48,7 @@ class EvidenceCollection {
    * @param configuration
    * @return If there is evidence a const pointer to the vector of collected evidence, otherwise nullptr.
    */
-  const std::vector<Evidence> *getEvidence(const Configuration &configuration) const;
+  [[nodiscard]] const std::vector<Evidence> *getEvidence(const Configuration &configuration) const;
 
   /**
    * Returns a modifiable reference to the last evidence of a given configuration.
@@ -44,24 +58,46 @@ class EvidenceCollection {
   Evidence &modifyLastEvidence(const Configuration &configuration);
 
   /**
+   * Retrieve the configuration with the best reduced evidence for a particular container plus cell size factor.
+   * @param containerOption The container option to limit our configurations to.
+   * @param cellSizeFactor The cellSizeFactor to limit our configurations to.
+   * @return The optimal configuration and corresponding evidence
+   */
+  [[nodiscard]] std::tuple<Configuration, Evidence> getBestConfigForContainerAndCSF(ContainerOption containerOption,
+                                                                                    double cellSizeFactor) const;
+
+  /**
+   * Retrieve the configuration with the best total evidence. Rebuild + Traversal.
+   * @return The optimal configuration and corresponding evidence
+   */
+  [[nodiscard]] std::tuple<Configuration, Evidence> getBestConfigWithRebuild() const;
+
+  /**
    * Retrieve the configuration with the lowest evidence value for the given tuning phase.
    * @param tuningPhase The tuning phase for which the optimum should be returned.
+   * @param mode The Evidence criterion to look at (REDUCED, TRAVERSAL or TOTAL). Default = REDUCED
+   * @param containerConstraint The container for which the optimum should be returned. Default = none
+   * @param csfConstraint The cell size factor for which the optimum should be returned. Default = none
    * @return The optimal configuration.
    */
-  std::tuple<Configuration, Evidence> getOptimalConfiguration(size_t tuningPhase) const;
+  [[nodiscard]] std::tuple<Configuration, Evidence> getOptimalConfiguration(
+      size_t tuningPhase, EvidenceMode mode = EFFECTIVE,
+      std::optional<ContainerOption> containerConstraint = std::nullopt,
+      std::optional<double> csfConstraint = std::nullopt) const;
 
   /**
    * Retrieve the configuration with the lowest evidence value for the latest tuning phase.
    *
    * @return The optimal configuration.
    */
-  std::tuple<Configuration, Evidence> getLatestOptimalConfiguration() const;
+  [[nodiscard]] std::tuple<Configuration, Evidence> getLatestOptimalConfiguration() const;
 
   /**
    * Report if there is any evidence in the collection.
+   * @param tuningPhase Optionally pass a tuning phase to check whether there is no evidence for this particular phase.
    * @return True if there is no evidence in the collection.
    */
-  bool empty() const;
+  [[nodiscard]] bool empty(std::optional<size_t> tuningPhase = std::nullopt) const;
 
  private:
   /**

@@ -13,11 +13,16 @@ namespace autopas {
 
 /**
  * Variable Verlet Lists container with different neighbor lists.
- * @tparam Particle The particle type this container contains.
+ * @tparam Particle_T The particle type this container contains.
  * @tparam NeighborList The Neighbor List this Verlet Container uses.
  */
-template <class Particle, class NeighborList>
-class VarVerletLists : public VerletListsLinkedBase<Particle> {
+template <class Particle_T, class NeighborList>
+class VarVerletLists : public VerletListsLinkedBase<Particle_T> {
+  /**
+   * Type of Particle.
+   */
+  using ParticleType = Particle_T;
+
  public:
   /**
    * Constructor of the Variable VerletLists class.
@@ -25,22 +30,19 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
-   * @param skinPerTimestep The skin radius per Timestep.
-   * @param rebuildFrequency The rebuild Frequency.
+   * @param skin The skin radius per Timestep.
    * @param cellSizeFactor cell size factor relative to cutoff
    */
   VarVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                 const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
-                                        compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
-        _neighborList{} {}
+                 const double skin, const double cellSizeFactor = 1.0)
+      : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, cellSizeFactor), _neighborList{} {}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void computeInteractions(TraversalInterface *traversal) override {
     auto *traversalInterface = dynamic_cast<VVLTraversalInterface<NeighborList> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setNeighborListToTraverse(_neighborList);
@@ -50,7 +52,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -60,7 +62,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    */
   long getNumberOfNeighborPairs() const { return _neighborList.getNumberOfNeighborPairs(); }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     _neighborList.buildAoSNeighborList(this->_linkedCells, traversal->getUseNewton3());
     // the neighbor list is now valid

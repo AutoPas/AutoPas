@@ -19,14 +19,14 @@ void autopas::utils::Timer::start() {
     autopas::utils::ExceptionHandler::exception("Trying to start a timer that is already started!");
   }
   _currentlyRunning = true;
-  _startTime = high_resolution_clock::now();
+  _startTime = bestSteadyClock::now();
 }
 
 long autopas::utils::Timer::stop() {
-  const auto time(high_resolution_clock::now());
+  const auto time(bestSteadyClock::now());
 
   if (not _currentlyRunning) {
-    autopas::utils::ExceptionHandler::exception("Trying to stop a timer that was not started!");
+    ExceptionHandler::exception("Trying to stop a timer that was not started!");
   }
   _currentlyRunning = false;
 

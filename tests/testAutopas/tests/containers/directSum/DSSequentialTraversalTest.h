@@ -11,5 +11,9 @@
 
 class DSSequentialTraversalTest : public AutoPasTestBase {
  public:
-  void testTraversal(bool useSoA);
+  void testTraversalPairwise(bool useSoA);
+  void testTraversalTriwise(bool useSoA);
+
+ private:
+  std::vector<FPCell> fillParticleCells(size_t numParticles, size_t numHaloParticlesPerCell);
 };

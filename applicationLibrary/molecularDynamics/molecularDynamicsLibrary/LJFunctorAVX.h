@@ -29,7 +29,7 @@ namespace mdLib {
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
  * This Version is implemented using AVX intrinsics.
- * @tparam Particle The type of particle.
+ * @tparam Particle_T The type of particle.
  * @tparam ParticleCell The type of particlecell.
  * @tparam applyShift Switch for the lj potential to be truncated shifted.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
@@ -37,14 +37,15 @@ namespace mdLib {
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
+ * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
  */
-template <class Particle, bool applyShift = false, bool useMixing = false,
+template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
+          bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctorAVX
-    : public autopas::PairwiseFunctor<
-          Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
-  using SoAArraysType = typename Particle::SoAArraysType;
+    : public autopas::PairwiseFunctor<Particle_T, LJFunctorAVX<Particle_T, applyShift, useMixing, useNewton3,
+                                                               calculateGlobals, countFLOPs, relevantForTuning>> {
+  using SoAArraysType = typename Particle_T::SoAArraysType;
 
  public:
   /**
@@ -60,9 +61,8 @@ class LJFunctorAVX
    */
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
-      : autopas::PairwiseFunctor<
-            Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
-            cutoff),
+      : autopas::PairwiseFunctor<Particle_T, LJFunctorAVX<Particle_T, applyShift, useMixing, useNewton3,
+                                                          calculateGlobals, countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -72,11 +72,13 @@ class LJFunctorAVX
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
+    if constexpr (countFLOPs) {
+      AutoPasLog(DEBUG, "Using LJFunctorAVX with countFLOPs but FLOP counting is not implemented.");
+    }
   }
 #else
-      : autopas::Functor<
-            Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
-            cutoff) {
+      : autopas::Functor<Particle_T, LJFunctorAVX<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                  relevantForTuning>>(cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
@@ -109,12 +111,7 @@ class LJFunctorAVX
     _PPLibrary = &particlePropertiesLibrary;
   }
 
-  /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
-   * computeInteractions using different functors in the logs.
-   * @return name of functor.
-   */
-  std::string getName() { return "LJFunctorAVX"; }
+  std::string getName() final { return "LJFunctorAVX"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
@@ -126,7 +123,7 @@ class LJFunctorAVX
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+  inline void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
     if (i.isDummy() or j.isDummy()) {
       return;
@@ -161,28 +158,21 @@ class LJFunctorAVX
       j.subF(f);
     }
     if (calculateGlobals) {
+      // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
+      // Potential energy has an additional factor of 6, which is also handled in endTraversal().
+
       auto virial = dr * f;
-      // Here we calculate either the potential energy * 6 or the potential energy * 12.
-      // For newton3, this potential energy contribution is distributed evenly to the two molecules.
-      // For non-newton3, the full potential energy is added to the one molecule.
-      // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
       double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
-        if (newton3) {
-          _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-          _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
-        } else {
-          // for non-newton3 the division is in the post-processing step.
-          _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergy6;
-          _aosThreadData[threadnum].virialSumNoN3 += virial;
-        }
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
+        _aosThreadData[threadnum].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-        _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
+        _aosThreadData[threadnum].virialSum += virial;
       }
     }
   }
@@ -190,15 +180,8 @@ class LJFunctorAVX
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always do a newton3 like traversal of the soa.
-   * However, it still needs to know about newton3 to correctly add up the global values.
    */
-  inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-    if (newton3) {
-      SoAFunctorSingleImpl<true>(soa);
-    } else {
-      SoAFunctorSingleImpl<false>(soa);
-    }
-  }
+  inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final { SoAFunctorSingleImpl(soa); }
 
   // clang-format off
   /**
@@ -217,25 +200,23 @@ class LJFunctorAVX
  private:
   /**
    * Templatized version of SoAFunctorSingle actually doing what the latter should.
-   * @tparam newton3
    * @param soa
    */
-  template <bool newton3>
   inline void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
 #ifdef __AVX__
     if (soa.size() == 0) return;
 
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
 
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
-    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fxptr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict typeIDptr = soa.template begin<Particle_T::AttributeNames::typeId>();
 
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -270,15 +251,15 @@ class LJFunctorAVX
       // a & ~(b -1) == a - (a mod b)
       for (; j < (i & ~(vecLength - 1)); j += 4) {
         SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
-                               &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc,
+                               &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       // If b is a power of 2 the following holds:
       // a & (b -1) == a mod b
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
         SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                              zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
+                              zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc, &virialSumX,
                               &virialSumY, &virialSumZ, &potentialEnergySum, rest);
       }
 
@@ -325,19 +306,10 @@ class LJFunctorAVX
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
 
-      // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
-      // false, since for newton3 disabled we divide by two later on.
-      if constexpr (newton3) {
-        _aosThreadData[threadnum].virialSumN3[0] += globals[0] * 0.5;
-        _aosThreadData[threadnum].virialSumN3[1] += globals[1] * 0.5;
-        _aosThreadData[threadnum].virialSumN3[2] += globals[2] * 0.5;
-        _aosThreadData[threadnum].potentialEnergySumN3 += globals[3] * 0.5;
-      } else {
-        _aosThreadData[threadnum].virialSumNoN3[0] += globals[0];
-        _aosThreadData[threadnum].virialSumNoN3[1] += globals[1];
-        _aosThreadData[threadnum].virialSumNoN3[2] += globals[2];
-        _aosThreadData[threadnum].potentialEnergySumNoN3 += globals[3];
-      }
+      _aosThreadData[threadnum].virialSum[0] += globals[0];
+      _aosThreadData[threadnum].virialSum[1] += globals[1];
+      _aosThreadData[threadnum].virialSum[2] += globals[2];
+      _aosThreadData[threadnum].potentialEnergySum += globals[3];
     }
 #endif
   }
@@ -347,25 +319,25 @@ class LJFunctorAVX
 #ifdef __AVX__
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
-    const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z1ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict x2ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
 
-    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
-    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
 
-    auto *const __restrict fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
-    auto *const __restrict fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fx1ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fy1ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fz1ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fx2ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fy2ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fz2ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
-    const auto *const __restrict typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict typeID1ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
+    const auto *const __restrict typeID2ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
     __m256d virialSumX = _mm256_setzero_pd();
     __m256d virialSumY = _mm256_setzero_pd();
@@ -396,14 +368,14 @@ class LJFunctorAVX
       unsigned int j = 0;
       for (; j < (soa2.size() & ~(vecLength - 1)); j += 4) {
         SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
-                                  &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j], fxacc, fyacc,
+                                  fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       const int rest = (int)(soa2.size() & (vecLength - 1));
       if (rest > 0)
         SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
-                                 &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
+                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j], fxacc, fyacc,
+                                 fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -448,20 +420,10 @@ class LJFunctorAVX
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
 
-      // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
-      // that we do not add the energy multiple times!
-      if constexpr (newton3) {
-        // we count the energies partly to one of the two cells!
-        _aosThreadData[threadnum].virialSumN3[0] += globals[0] * 0.5;
-        _aosThreadData[threadnum].virialSumN3[1] += globals[1] * 0.5;
-        _aosThreadData[threadnum].virialSumN3[2] += globals[2] * 0.5;
-        _aosThreadData[threadnum].potentialEnergySumN3 += globals[3] * 0.5;
-      } else {
-        _aosThreadData[threadnum].virialSumNoN3[0] += globals[0];
-        _aosThreadData[threadnum].virialSumNoN3[1] += globals[1];
-        _aosThreadData[threadnum].virialSumNoN3[2] += globals[2];
-        _aosThreadData[threadnum].potentialEnergySumNoN3 += globals[3];
-      }
+      _aosThreadData[threadnum].virialSum[0] += globals[0];
+      _aosThreadData[threadnum].virialSum[1] += globals[1];
+      _aosThreadData[threadnum].virialSum[2] += globals[2];
+      _aosThreadData[threadnum].potentialEnergySum += globals[3];
     }
 #endif
   }
@@ -659,20 +621,20 @@ class LJFunctorAVX
   inline void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                    const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 #ifdef __AVX__
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
     if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
       return;
     }
 
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
 
-    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fxptr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict typeIDptr = soa.template begin<Particle_T::AttributeNames::typeId>();
 
     // accumulators
     __m256d virialSumX = _mm256_setzero_pd();
@@ -832,19 +794,10 @@ class LJFunctorAVX
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
 
-      // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
-      // false, since for newton3 disabled we divide by two later on.
-      if (newton3) {
-        _aosThreadData[threadnum].virialSumN3[0] += globals[0] * 0.5;
-        _aosThreadData[threadnum].virialSumN3[1] += globals[1] * 0.5;
-        _aosThreadData[threadnum].virialSumN3[2] += globals[2] * 0.5;
-        _aosThreadData[threadnum].potentialEnergySumN3 += globals[3] * 0.5;
-      } else {
-        _aosThreadData[threadnum].virialSumNoN3[0] += globals[0];
-        _aosThreadData[threadnum].virialSumNoN3[1] += globals[1];
-        _aosThreadData[threadnum].virialSumNoN3[2] += globals[2];
-        _aosThreadData[threadnum].potentialEnergySumNoN3 += globals[3];
-      }
+      _aosThreadData[threadnum].virialSum[0] += globals[0];
+      _aosThreadData[threadnum].virialSum[1] += globals[1];
+      _aosThreadData[threadnum].virialSum[2] += globals[2];
+      _aosThreadData[threadnum].potentialEnergySum += globals[3];
     }
     // interact with i with 4 neighbors
 #endif  // __AVX__
@@ -855,27 +808,33 @@ class LJFunctorAVX
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 9>{
-        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
+                                                              Particle_T::AttributeNames::posX,
+                                                              Particle_T::AttributeNames::posY,
+                                                              Particle_T::AttributeNames::posZ,
+                                                              Particle_T::AttributeNames::forceX,
+                                                              Particle_T::AttributeNames::forceY,
+                                                              Particle_T::AttributeNames::forceZ,
+                                                              Particle_T::AttributeNames::typeId,
+                                                              Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 6>{
-        Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 6>{
+        Particle_T::AttributeNames::id,     Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,   Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::typeId, Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 3>{
-        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
+    return std::array<typename Particle_T::AttributeNames, 3>{
+        Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY, Particle_T::AttributeNames::forceZ};
   }
 
   /**
@@ -883,24 +842,6 @@ class LJFunctorAVX
    * @return useMixing
    */
   constexpr static bool getMixing() { return useMixing; }
-
-  /**
-   * Get the number of flops used per kernel call for a given particle pair. This should count the
-   * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the
-   * distance.
-   * @param molAType molecule A's type id
-   * @param molBType molecule B's type id
-   * @param newton3 is newton3 applied.
-   * @note molAType and molBType make no difference for LJFunctor, but are kept to have a consistent interface for other
-   * functors where they may.
-   * @return the number of floating point operations
-   */
-  static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
-    // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply scale) sum
-    // Adding to particle forces: 6 or 3 depending newton3
-    // Total = 12 + (6 or 3) = 18 or 15
-    return newton3 ? 18ul : 15ul;
-  }
 
   /**
    * Reset the global values.
@@ -927,31 +868,21 @@ class LJFunctorAVX
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
-      // We distinguish between non-newton3 and newton3 functor calls. Newton3 calls are accumulated directly.
-      // Non-newton3 calls are accumulated temporarily and later divided by 2.
-      double potentialEnergySumNoN3Acc = 0;
-      std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        potentialEnergySumNoN3Acc += _aosThreadData[i].potentialEnergySumNoN3;
-        _potentialEnergySum += _aosThreadData[i].potentialEnergySumN3;
-
-        virialSumNoN3Acc += _aosThreadData[i].virialSumNoN3;
-        _virialSum += _aosThreadData[i].virialSumN3;
+        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
+        _virialSum += _aosThreadData[i].virialSum;
       }
-      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
-      // here.
-      potentialEnergySumNoN3Acc *= 0.5;
-      virialSumNoN3Acc *= 0.5;
+      // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
+      // contribution is only counted once per pair.
+      _potentialEnergySum *= 0.5;
+      _virialSum *= 0.5;
 
-      _potentialEnergySum += potentialEnergySumNoN3Acc;
-      _virialSum += virialSumNoN3Acc;
-
-      // we have always calculated 6*potentialEnergy, so we divide by 6 here!
+      // We have always calculated 6*potentialEnergy, so we divide by 6 here!
       _potentialEnergySum /= 6.;
       _postProcessed = true;
 
-      AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
-      AutoPasLog(TRACE, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+      AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
+      AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
     }
   }
 
@@ -1046,28 +977,19 @@ class LJFunctorAVX
    */
   class AoSThreadData {
    public:
-    AoSThreadData()
-        : virialSumNoN3{0., 0., 0.},
-          virialSumN3{0., 0., 0.},
-          potentialEnergySumNoN3{0.},
-          potentialEnergySumN3{0.},
-          __remainingTo64{} {}
+    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
     void setZero() {
-      virialSumNoN3 = {0., 0., 0.};
-      virialSumN3 = {0., 0., 0.};
-      potentialEnergySumNoN3 = 0.;
-      potentialEnergySumN3 = 0.;
+      virialSum = {0., 0., 0.};
+      potentialEnergySum = 0.;
     }
 
     // variables
-    std::array<double, 3> virialSumNoN3;
-    std::array<double, 3> virialSumN3;
-    double potentialEnergySumNoN3;
-    double potentialEnergySumN3;
+    std::array<double, 3> virialSum;
+    double potentialEnergySum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
+    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
   };
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");

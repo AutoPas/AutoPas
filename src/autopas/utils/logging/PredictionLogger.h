@@ -40,7 +40,7 @@ class PredictionLogger {
    * @param tuningPhaseCounter
    */
   void logAllPredictions(const std::unordered_map<Configuration, long, ConfigHash> &predictions,
-                         long predictionErrorValue, size_t tuningPhaseCounter);
+                         long predictionErrorValue, size_t tuningPhaseCounter) const;
 
  private:
   std::string _loggerName;

@@ -4,7 +4,6 @@
  * @date 24 Apr 2020
  * @author fischerv
  */
-
 #pragma once
 
 #include <array>
@@ -13,6 +12,7 @@
 #include "BalancedTraversal.h"
 #include "SlicedLockBasedTraversal.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -25,22 +25,19 @@ namespace autopas {
  *
  * @tparam ParticleCell The type of cells.
  * @tparam Functor The functor that defines the interaction between particles.
- * @tparam dataLayout
- * @tparam useNewton3
  */
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
-class SlicedBalancedBasedTraversal
-    : public SlicedLockBasedTraversal<ParticleCell, Functor, InteractionTypeOption::pairwise, dataLayout, useNewton3, spaciallyForward>,
-      public BalancedTraversal {
+template <class ParticleCell, class Functor>
+class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCell, Functor>, public BalancedTraversal {
  public:
   /**
    * Constructor of the balanced sliced traversal.
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
   explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
-                                        const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedLockBasedTraversal<ParticleCell, Functor, InteractionTypeOption::pairwise, dataLayout, useNewton3, spaciallyForward>(
-            dims, functor, interactionLength, cellLength) {
+                                        const double interactionLength, const std::array<double, 3> &cellLength,
+                                        DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
+      : SlicedLockBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                        useNewton3, spaciallyForward) {
     // As we create exactly one slice per thread, dynamic scheduling makes little sense.
     this->_dynamic = false;
   }
@@ -54,16 +51,14 @@ class SlicedBalancedBasedTraversal
     this->_sliceThickness.clear();
 
     // estimate loads along longest axis
-    auto maxDimension = this->_dimsPerLength[0];
-    auto maxDimensionLength = this->_cellsPerDimension[this->_dimsPerLength[0]];
+    auto maxDimension = this->_dimsSortedByLength[0];
+    auto maxDimensionLength = this->_cellsPerDimension[this->_dimsSortedByLength[0]];
 
     std::vector<unsigned long> loads;
     utils::Timer timer;
     timer.start();
     loads.resize(maxDimensionLength);
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for schedule(static, 1)
-#endif
+    AUTOPAS_OPENMP(parallel for schedule(static, 1))
     for (auto x = 0; x < maxDimensionLength; x++) {
       std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
       std::array<unsigned long, 3> upperCorner = this->_cellsPerDimension;
@@ -159,7 +154,7 @@ class SlicedBalancedBasedTraversal
       AutoPasLog(DEBUG, "Slice loads: [{}]", loadStr);
     }
 
-    if (spaciallyForward) {
+    if (this->_spaciallyForward) {
       // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
       this->_sliceThickness.back() -= this->_overlapLongestAxis;
     }

@@ -86,20 +86,22 @@ size_t getNumPiecesInCheckpoint(const std::string &filename) {
  * Loads the particles from a checkpoint written with a specific rank.
  * @param filename The name of the pvtu file.
  * @param rank The rank which created the respective vtu file.
- * @param particles Container for the particles recorded in the respective vts file.
+ * @param particles Container for the particles recorded in the respective vtu file.
  */
 void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, std::vector<ParticleType> &particles) {
+  // Parse filename into path and filename: some/long/path/filename
   const size_t endOfPath = filename.find_last_of('/');
   const auto filePath = filename.substr(0ul, endOfPath);
   const auto fileBasename = filename.substr(endOfPath + 1);
 
-  // infer checkpoint data from the filename
+  // infer checkpoint data from the filename: scenario_name_iteration.xxx
   const size_t endOfScenarioName = fileBasename.find_last_of('_');
   const auto checkpointScenarioName = fileBasename.substr(0, endOfScenarioName);
   // +1 because we want to skip the separating '_'
   const auto checkpointIteration =
       fileBasename.substr(endOfScenarioName + 1, fileBasename.find_last_of('.') - endOfScenarioName - 1);
 
+  // Reconstruct the expected vtu (=piece) name from what we parsed.
   std::string rankFilename{};
   rankFilename.append(filePath)
       .append("/data/")
@@ -129,39 +131,40 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
 
   findWord(inputStream, "velocities");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto velocities = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+  const auto velocities = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
   findWord(inputStream, "forces");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto forces = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+  const auto forces = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
 #if MD_FLEXIBLE_MODE == MULTISITE
   findWord(inputStream, "quaternions");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto quaternions = readPayload<std::array<double, 4>, 4>(inputStream, numParticles);
+  const auto quaternions = readPayload<std::array<double, 4>, 4>(inputStream, numParticles);
 
   findWord(inputStream, "angularVelocities");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto angularVelocities = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+  const auto angularVelocities = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
   findWord(inputStream, "torques");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto torques = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+  const auto torques = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 #endif
 
   findWord(inputStream, "typeIds");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto typeIds = readPayload<size_t, 1>(inputStream, numParticles);
+  const auto typeIds = readPayload<size_t, 1>(inputStream, numParticles);
 
   findWord(inputStream, "ids");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto ids = readPayload<size_t, 1>(inputStream, numParticles);
+  const auto ids = readPayload<size_t, 1>(inputStream, numParticles);
 
   findWord(inputStream, "positions");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto positions = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+  const auto positions = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
   // creating Particles from checkpoint:
+  particles.reserve(particles.size() + numParticles);
   for (auto i = 0ul; i < numParticles; ++i) {
     ParticleType particle;
 
@@ -229,9 +232,11 @@ std::string MDFlexConfig::to_string() const {
   printOption(containerOptions);
 
   // since all containers are rebuilt only periodically print Verlet config always.
-  printOption(verletRebuildFrequency);
-  printOption(verletSkinRadiusPerTimestep);
+#ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   printOption(fastParticlesThrow);
+#endif
+  printOption(verletRebuildFrequency);
+  printOption(verletSkinRadius);
   const auto passedContainerOptionsStr = autopas::utils::ArrayUtils::to_string(containerOptions.value);
   if (passedContainerOptionsStr.find("luster") != std::string::npos) {
     printOption(verletClusterSize);
@@ -260,8 +265,11 @@ std::string MDFlexConfig::to_string() const {
     printOption(MPITuningMaxDifferenceForBucket);
     printOption(MPITuningWeightForMaxDensity);
   }
+  printOption(tuningMetricOption);
   printOption(tuningInterval);
   printOption(tuningSamples);
+  printOption(earlyStoppingFactor);
+  printOption(useLOESSSmoothening);
   if (tuningStrategyOptionsContainAnyOf({
           autopas::TuningStrategyOption::randomSearch,
           autopas::TuningStrategyOption::bayesianSearch,
@@ -281,7 +289,11 @@ std::string MDFlexConfig::to_string() const {
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::ruleBasedTuning})) {
     printOption(ruleFilename);
   }
+  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::fuzzyTuning})) {
+    printOption(fuzzyRuleFilename);
+  }
 
+  // TODO: C++20 Use contains instead of count
   if (getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
     os << setw(valueOffset) << left << "PairwiseInteraction:" << endl;
     constexpr int indentWidth = 2;
@@ -305,10 +317,6 @@ std::string MDFlexConfig::to_string() const {
         os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
         break;
       }
-      case FunctorOption::lj12_6_Globals: {
-        os << "Lennard-Jones (12-6) with globals" << endl;
-        break;
-      }
     }
     os << indent;
     printOption(traversalOptions, -indentWidth);
@@ -318,7 +326,8 @@ std::string MDFlexConfig::to_string() const {
     printOption(newton3Options, -indentWidth);
   }
 
-  if (getInteractionTypes().count(autopas::InteractionTypeOption::threeBody)) {
+  // TODO c++20: use contains instead of count
+  if (getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
     os << setw(valueOffset) << left << "ThreeBodyInteraction:" << endl;
     constexpr int indentWidth = 2;
     const auto indent = std::string(indentWidth, ' ');
@@ -330,7 +339,7 @@ std::string MDFlexConfig::to_string() const {
         break;
       }
       case FunctorOption3B::at: {
-        os << "Axilrod-Teller" << endl;
+        os << "Axilrod-Teller-Muto" << endl;
         break;
       }
     }
@@ -347,6 +356,7 @@ std::string MDFlexConfig::to_string() const {
   printOption(boxMax);
   printOption(cellSizeFactors);
   printOption(deltaT);
+  printOption(pauseSimulationDuringTuning);
   printOption(sortingThreshold);
   // simulation length is either dictated by tuning phases or iterations
   if (tuningPhases.value > 0) {
@@ -436,17 +446,19 @@ std::string MDFlexConfig::to_string() const {
   os << setw(valueOffset) << left << logLevel.name << ":  " << spdlog::level::to_string_view(logLevel.value).data()
      << endl;
 
-  os << setw(valueOffset) << left << dontMeasureFlops.name << ":  " << (not dontMeasureFlops.value) << endl;
   os << setw(valueOffset) << left << dontCreateEndConfig.name << ":  " << (not dontCreateEndConfig.value) << endl;
   printOption(dontShowProgressBar);
   printOption(loadBalancer);
   printOption(loadBalancingInterval);
   printOption(subdivideDimension);
+  printOption(energySensorOption);
   return os.str();
 }
 
 void MDFlexConfig::calcSimulationBox() {
-  const double interactionLength = cutoff.value + verletSkinRadiusPerTimestep.value * verletRebuildFrequency.value;
+  const double interactionLength = cutoff.value + verletSkinRadius.value;
+  const auto preBoxMin = boxMin.value;
+  const auto preBoxMax = boxMax.value;
 
   // helper function so that we can do the same for every object collection
   // resizes the domain to the maximal extents of all objects
@@ -471,6 +483,10 @@ void MDFlexConfig::calcSimulationBox() {
   resizeToObjectLimits(sphereObjects);
   resizeToObjectLimits(cubeClosestPackedObjects);
 
+  if (boxMin.value != preBoxMin or boxMax.value != preBoxMax) {
+    std::cout << "WARNING: Simulation box increased due to particles being too close to the boundaries." << std::endl;
+  }
+
   // guarantee the box is at least of size interationLength
   for (int i = 0; i < 3; i++) {
     // needed for 2D Simulation, that BoxLength >= interactionLength for all Dimensions
@@ -483,23 +499,53 @@ void MDFlexConfig::calcSimulationBox() {
   }
 }
 
-void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigma, double nu, double mass) {
+void MDFlexConfig::addSiteType(unsigned long siteId, double mass) {
   // check if siteId is already existing and if there is no error in input
-  if (epsilonMap.value.count(siteId) == 1) {
+  if (massMap.value.count(siteId) == 1) {
     // check if type is already added
-    if (autopas::utils::Math::isNear(epsilonMap.value.at(siteId), epsilon) and
-        autopas::utils::Math::isNear(sigmaMap.value.at(siteId), sigma) and
-        autopas::utils::Math::isNear(nuMap.value.at(siteId), nu) and
-        autopas::utils::Math::isNear(massMap.value.at(siteId), mass)) {
+    if (autopas::utils::Math::isNearRel(massMap.value.at(siteId), mass)) {
       return;
     } else {  // wrong initialization:
       throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
     }
   } else {
-    epsilonMap.value.emplace(siteId, epsilon);
-    sigmaMap.value.emplace(siteId, sigma);
-    nuMap.value.emplace(siteId, nu);
     massMap.value.emplace(siteId, mass);
+  }
+}
+
+void MDFlexConfig::addLJParametersToSite(unsigned long siteId, double epsilon, double sigma) {
+  // check if siteId was already declared and mass was specified
+  if (massMap.value.count(siteId) == 1) {
+    if (epsilonMap.value.count(siteId) == 1) {
+      if (autopas::utils::Math::isNearRel(epsilonMap.value.at(siteId), epsilon) and
+          autopas::utils::Math::isNearRel(sigmaMap.value.at(siteId), sigma)) {
+        return;
+      } else {
+        throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
+      }
+    } else {
+      epsilonMap.value.emplace(siteId, epsilon);
+      sigmaMap.value.emplace(siteId, sigma);
+    }
+  } else {
+    throw std::runtime_error("Initializing LJ parameters to a non existing site-ID");
+  }
+}
+
+void MDFlexConfig::addATParametersToSite(unsigned long siteId, double nu) {
+  // check if siteId was already declared and mass was specified
+  if (massMap.value.count(siteId) == 1) {
+    if (nuMap.value.count(siteId) == 1) {
+      if (autopas::utils::Math::isNearRel(nuMap.value.at(siteId), nu)) {
+        return;
+      } else {
+        throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
+      }
+    } else {
+      nuMap.value.emplace(siteId, nu);
+    }
+  } else {
+    throw std::runtime_error("Initializing AT parameters to a non existing site-ID");
   }
 }
 
@@ -511,8 +557,8 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
   if (molToSiteIdMap.count(molId) == 1) {
     // check if type is already added
     if (autopas::utils::ArrayMath::isEqual(molToSiteIdMap.at(molId), siteIds) and
-        autopas::utils::ArrayMath::isNear(molToSitePosMap.at(molId), relSitePos) and
-        autopas::utils::ArrayMath::isNear(momentOfInertiaMap.at(molId), momentOfInertia)) {
+        autopas::utils::ArrayMath::isNearRel(molToSitePosMap.at(molId), relSitePos) and
+        autopas::utils::ArrayMath::isNearRel(momentOfInertiaMap.at(molId), momentOfInertia)) {
       return;
     } else {  // wrong initialization:
       throw std::runtime_error("Wrong Particle initialization: using same molId for different properties");
@@ -528,20 +574,28 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
 #endif
 }
 
-void MDFlexConfig::flushParticles() { _particles.clear(); }
+void MDFlexConfig::flushParticles() { particles.clear(); }
 
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
 
-  // check size of site level vectors match
-  if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
-    throw std::runtime_error("Number of site-level properties differ!");
+  // initialize site Ids with mandatory mass parameter
+  for (auto [siteTypeId, mass] : massMap.value) {
+    _particlePropertiesLibrary->addSiteType(siteTypeId, massMap.value.at(siteTypeId));
   }
-
-  // initialize at site level
+  // check size of LJ site parameter vectors match
+  if (epsilonMap.value.size() != sigmaMap.value.size()) {
+    throw std::runtime_error(
+        "MDFlexConfig::initializeParticlePropertiesLibrary(): Number of LJ site-level properties differ! Potentially "
+        "missing epsilon or sigma for some LJ sites.");
+  }
+  // initialize LJ parameters
   for (auto [siteTypeId, epsilon] : epsilonMap.value) {
-    _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId),
-                                            nuMap.value.at(siteTypeId), massMap.value.at(siteTypeId));
+    _particlePropertiesLibrary->addLJParametersToSite(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId));
+  }
+  // initialize AT parameters
+  for (auto [siteTypeId, nu] : nuMap.value) {
+    _particlePropertiesLibrary->addATMParametersToSite(siteTypeId, nu);
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level
@@ -562,24 +616,30 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 }
 
 void MDFlexConfig::initializeObjects() {
-  for (const auto &object : cubeGridObjects) {
-    object.generate(_particles);
-  }
-  for (const auto &object : cubeGaussObjects) {
-    object.generate(_particles);
-  }
-  for (const auto &object : cubeUniformObjects) {
-    object.generate(_particles);
-  }
-  for (const auto &object : sphereObjects) {
-    object.generate(_particles);
-  }
-  for (const auto &object : cubeClosestPackedObjects) {
-    object.generate(_particles);
+  // @todo: the object generators should only generate particles relevant for the current rank's domain
+  // All objects are generated on rank one. Particles are then distributed upon insertion.
+  int myRank{};
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
+  if (myRank == 0) {
+    for (const auto &object : cubeGridObjects) {
+      object.generate(particles);
+    }
+    for (const auto &object : cubeGaussObjects) {
+      object.generate(particles);
+    }
+    for (const auto &object : cubeUniformObjects) {
+      object.generate(particles);
+    }
+    for (const auto &object : sphereObjects) {
+      object.generate(particles);
+    }
+    for (const auto &object : cubeClosestPackedObjects) {
+      object.generate(particles);
+    }
   }
 }
 
-void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t &communicatorSize) {
+void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t &numRanks) {
   const std::string &filename = checkpointfile.value;
 
   std::ifstream inputStream(filename);
@@ -588,12 +648,18 @@ void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t 
     return;
   }
 
-  size_t checkpointCommunicatorSize{getNumPiecesInCheckpoint(filename)};
-  if (communicatorSize == checkpointCommunicatorSize) {
-    loadParticlesFromRankRecord(filename, rank, _particles);
-  } else {
-    for (size_t i = 0; i < checkpointCommunicatorSize; ++i) {
-      loadParticlesFromRankRecord(filename, i, _particles);
+  // If the checkpoint was written by a MPI parallel simulation the checkpoint is a pvtu file,
+  // that points to several vtu files, called pieces.
+  size_t numCheckpointPieces{getNumPiecesInCheckpoint(filename)};
+  // If the number of currently used ranks matches the number of pieces in the checkpoint,
+  // we assume that the domain layout matches and each rank only loads their own piece.
+  // If it doesn't match the overlap will be redistributed when particles are inserted into the AutoPas containers.
+  if (numRanks == numCheckpointPieces) {
+    loadParticlesFromRankRecord(filename, rank, particles);
+  } else if (rank == 0) {
+    // Otherwise, rank 0 loads everything and distributes it later.
+    for (size_t i = 0; i < numCheckpointPieces; ++i) {
+      loadParticlesFromRankRecord(filename, i, particles);
     }
   }
 }

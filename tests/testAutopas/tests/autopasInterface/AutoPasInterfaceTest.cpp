@@ -3,30 +3,27 @@
  * @author seckler
  * @date 13.05.19
  */
-
 #include "AutoPasInterfaceTest.h"
 
+#include <ranges>
+
 #include "autopas/AutoPasDecl.h"
-#include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
-#include "autopas/utils/StaticCellSelector.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
+#include "testingHelpers/ParticleMatcher.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-using LJFunctorGlobals =
-    mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ true>;
 extern template bool autopas::AutoPas<Molecule>::computeInteractions(LJFunctorGlobals *);
 
 constexpr double cutoff = 1.1;
-constexpr double skinPerTimestep = 0.1;
+constexpr double skin = 0.4;
 constexpr unsigned int rebuildFrequency = 4;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
@@ -38,7 +35,7 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setBoxMin(boxMin);
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
-  autoPas.setVerletSkinPerTimestep(skinPerTimestep);
+  autoPas.setVerletSkin(skin);
   autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setNumSamples(3);
 
@@ -59,7 +56,7 @@ void defaultInit(AutoPasT &autoPas1, AutoPasT &autoPas2, size_t direction) {
 
   for (auto &aP : {&autoPas1, &autoPas2}) {
     aP->setCutoff(cutoff);
-    aP->setVerletSkinPerTimestep(skinPerTimestep);
+    aP->setVerletSkin(skin);
     aP->setVerletRebuildFrequency(2);
     aP->setNumSamples(2);
     // init autopas
@@ -87,6 +84,9 @@ std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule> &le
       }
     }
     p.setR(pos);
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    p.resetRAtRebuild();
+#endif
   }
   return enteringParticles;
 }
@@ -136,6 +136,9 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule> &autoPas) {
              ++iter) {
           auto particleCopy = *iter;
           particleCopy.addR(shiftVec);
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+          particleCopy.resetRAtRebuild();
+#endif
           haloParticles.push_back(particleCopy);
         }
       }
@@ -186,8 +189,6 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas, Functor *functor) {
   // 4. computeInteractions
   autoPas.computeInteractions(functor);
 
-  // 5. updateCounters
-  autoPas.incrementIterationCounters();
   std::cout << "--------------------------------" << std::endl;
 }
 
@@ -228,10 +229,6 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Mol
   // 4. computeInteractions
   autoPas1.computeInteractions(functor1);
   autoPas2.computeInteractions(functor2);
-
-  // 5. update Counters
-  autoPas1.incrementIterationCounters();
-  autoPas2.incrementIterationCounters();
 }
 
 template <typename Functor>
@@ -345,26 +342,24 @@ void testSimulationLoop(const autopas::Configuration &conf) {
 
   LJFunctorGlobals functor(cutoff);
   functor.setParticleProperties(24.0, 1);
+
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
-
   doAssertions(autoPas, &functor, numParticles, __LINE__);
-
   moveParticlesAndResetF({autoPas.getVerletSkin() / 6, 0., 0.});
+
   addParticlePair({9.99, 1., 5.});
 
   // do second simulation loop
   doSimulationLoop(autoPas, &functor);
-
   doAssertions(autoPas, &functor, numParticles, __LINE__);
-
   moveParticlesAndResetF({-autoPas.getVerletSkin() / 6, 0., 0.});
+
   addParticlePair({9.99, 7., 5.});
   deleteIDs({2, 3});
 
   // do third simulation loop.
   doSimulationLoop(autoPas, &functor);
-
   doAssertions(autoPas, &functor, numParticles, __LINE__);
 
   // update positions a bit (outside of domain!) + reset F
@@ -372,7 +367,6 @@ void testSimulationLoop(const autopas::Configuration &conf) {
 
   // do fourth simulation loop, tests rebuilding of container.
   doSimulationLoop(autoPas, &functor);
-
   doAssertions(autoPas, &functor, numParticles, __LINE__);
 }
 
@@ -453,11 +447,11 @@ TEST_P(AutoPasInterfaceTest, SimulationLoopTest) {
  * comments of testHaloCalculation() for a more detailed description.
  */
 TEST_P(AutoPasInterfaceTest, HaloCalculationTest) {
-  auto conf = GetParam();
+  const auto conf = GetParam();
   try {
     testHaloCalculation(conf);
   } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
-    std::string str = autoPasException.what();
+    const std::string str = autoPasException.what();
     if (str.find("Rejected the only configuration in the search space!") != std::string::npos) {
       GTEST_SKIP() << "skipped with exception: " << autoPasException.what() << std::endl;
     } else {
@@ -479,23 +473,22 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   constexpr double skinLocal = .1;
   constexpr double interactionLength = cutoffLocal + skinLocal;
   constexpr unsigned int clusterSize = 4;
+  constexpr size_t sortingThreshold = 8;
   const std::array<double, 3> boxMinLocal{0., 0., 0.};
   const std::array<double, 3> boxMaxLocal{33., 11., 11.};
   const auto cellsPerDim = static_cast_copy_array<unsigned long>(ceil(boxMaxLocal * (1. / interactionLength)));
   const autopas::TraversalSelectorInfo traversalSelectorInfo{
       cellsPerDim, interactionLength, {interactionLength, interactionLength, interactionLength}, clusterSize};
   LJFunctorGlobals functor(cutoffLocal);
-  const autopas::ContainerSelectorInfo containerSelectorInfo{conf.cellSizeFactor, skinLocal, rebuildFrequency,
-                                                             clusterSize, conf.loadEstimator};
-  autopas::ContainerSelector<Molecule> containerSelector{boxMinLocal, boxMaxLocal, cutoffLocal};
-  containerSelector.selectContainer(conf.container, containerSelectorInfo);
-  auto traversalPtr = autopas::utils::withStaticCellType<Molecule>(
-      containerSelector.getCurrentContainer().getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::pairwise>::
-            generateTraversal(conf.traversal, functor, traversalSelectorInfo, conf.dataLayout, conf.newton3);
-      });
+  const autopas::ContainerSelectorInfo containerSelectorInfo{boxMinLocal,         boxMaxLocal,       cutoffLocal,
+                                                             conf.cellSizeFactor, skinLocal,         clusterSize,
+                                                             sortingThreshold,    conf.loadEstimator};
 
-  EXPECT_EQ(conf.hasCompatibleValues(), traversalPtr->isApplicable())
+  auto container = autopas::ContainerSelector<Molecule>::generateContainer(conf.container, containerSelectorInfo);
+  auto traversalPtr = autopas::TraversalSelector::generateTraversalFromConfig<Molecule, LJFunctorGlobals>(
+      conf, functor, traversalSelectorInfo);
+
+  EXPECT_EQ(conf.hasCompatibleValues(), traversalPtr != nullptr)
       << "Either the domain is chosen badly (fix this!) or hasCompatibleValues and isApplicable don't follow the same"
          "logic anymore.";
 }
@@ -522,7 +515,7 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
   autoPas.setBoxMin({0, 0, 0});
   autoPas.setBoxMax({10, 10, 10});
   autoPas.setCutoff(1);
-  autoPas.setVerletSkinPerTimestep(0.1);
+  autoPas.setVerletSkin(0.4);
 
   const auto &containerOp = GetParam();
   autoPas.setAllowedContainers({containerOp});
@@ -544,13 +537,18 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
 
   auto particlesOutside = autoPas.resizeBox(boxMinNew, boxMaxNew);
 
+  // Predicate to compare molecules with each other
+  const auto pred = [&](const auto &lhs, const auto &rhs) { return almostEqualParticles(lhs, rhs); };
+
   // remove particles that are now outside from the expectation
   for (auto &p : particlesOutside) {
-    auto pInExpected = std::find(expectedParticles.begin(), expectedParticles.end(), p);
-    EXPECT_NE(pInExpected, expectedParticles.end())
+    auto match = std::ranges::search(expectedParticles, std::views::single(p), pred);
+    auto ptr = match.begin();
+    EXPECT_NE(ptr, expectedParticles.end())
         << "Particle that was returned as \"outside\" is not one of the initially expected particles!";
-    if (pInExpected != expectedParticles.end()) {
-      expectedParticles.erase(pInExpected);
+
+    if (ptr != expectedParticles.end()) {
+      expectedParticles.erase(ptr);
     }
   }
 
@@ -563,7 +561,7 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
     particlesInsideAfterResize.push_back(p);
   }
 
-  EXPECT_THAT(particlesInsideAfterResize, ::testing::UnorderedElementsAreArray(expectedParticles));
+  EXPECT_THAT(particlesInsideAfterResize, ::testing::UnorderedPointwise(ParticleEq(), expectedParticles));
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface1ContainersTest, ValuesIn(getTestableContainerOptions()),
@@ -619,7 +617,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{skinPerTimestep * rebuildFrequency / 3., 0., 0.};
+    std::array<double, 3> moveVec{autoPas1.getVerletSkin() / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(iter->getR() + moveVec);
@@ -635,7 +633,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{-skinPerTimestep * rebuildFrequency / 3., 0., 0.};
+    std::array<double, 3> moveVec{-autoPas1.getVerletSkin() / 3., 0., 0.};  // VerletSkin is same for both containers
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(iter->getR() + moveVec);
@@ -651,7 +649,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{skinPerTimestep * rebuildFrequency / 3., 0., 0.};
+    std::array<double, 3> moveVec{autoPas1.getVerletSkin() / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(iter->getR() + moveVec);

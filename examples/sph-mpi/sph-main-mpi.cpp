@@ -479,7 +479,6 @@ MPI_Comm getDecomposition(const std::array<double, 3> &globalMin, const std::arr
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-  autopas::Logger::create();
 
   std::array<double, 3> globalBoxMin({0., 0., 0.}), globalBoxMax{};
   globalBoxMax[0] = 1.;
@@ -500,7 +499,7 @@ int main(int argc, char *argv[]) {
   sphSystem.setBoxMin(localBoxMin);
   sphSystem.setBoxMax(localBoxMax);
   sphSystem.setCutoff(cutoff);
-  sphSystem.setVerletSkinPerTimestep(skinToCutoffRatio * cutoff / rebuildFrequency);
+  sphSystem.setVerletSkin(skinToCutoffRatio * cutoff);
   sphSystem.setVerletRebuildFrequency(rebuildFrequency);
 
   std::set<autopas::ContainerOption> allowedContainers{
@@ -525,6 +524,7 @@ int main(int argc, char *argv[]) {
   Initialize(sphSystem);
 
   // 0.1 ---- GET INITIAL FORCES OF SYSTEM ----
+  sphSystem.updateContainer();
   densityPressureHydroForce(sphSystem, comm, globalBoxMin, globalBoxMax);
 
   std::cout << "\n----------------------------" << std::endl;
@@ -537,7 +537,7 @@ int main(int argc, char *argv[]) {
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
-  for (double time = 0.; time < t_end && step < 55; time += dt, ++step, sphSystem.incrementIterationCounters()) {
+  for (double time = 0.; time < t_end && step < 55; time += dt, ++step) {
     if (rank == 0) {
       std::cout << "\n-------------------------\ntime step " << step << "(t = " << time << ")..." << std::endl;
     }

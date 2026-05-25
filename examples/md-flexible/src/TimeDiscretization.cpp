@@ -5,6 +5,13 @@
  */
 #include "TimeDiscretization.h"
 
+#include <cmath>
+#include <iostream>
+#include <stdexcept>
+
+#include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/WrapOpenMP.h"
+
 namespace TimeDiscretization {
 
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
@@ -14,14 +21,16 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::dot;
   using namespace autopas::utils::ArrayMath::literals;
-
-  const auto maxAllowedDistanceMoved = autoPasContainer.getVerletSkinPerTimestep() / 2.;
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+  AUTOPAS_OPENMP(parallel)
+#else
+  const auto maxAllowedDistanceMoved =
+      autoPasContainer.getVerletSkin() / autoPasContainer.getVerletRebuildFrequency() / 2.;
   const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
 
   bool throwException = false;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(|| : throwException)
+  AUTOPAS_OPENMP(parallel reduction(|| : throwException))
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
@@ -32,27 +41,31 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     v *= deltaT;
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
-    // sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
-    if (maxAllowedDistanceMoved > 0) {
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    iter->addR(displacement);
+#else
+    // Sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
+    if (not iter->addRDistanceCheck(displacement, maxAllowedDistanceMovedSquared) and
+        maxAllowedDistanceMovedSquared > 0) {
+      const auto distanceMoved = std::sqrt(dot(displacement, displacement));
       // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
       // the whole rebuild frequency is farther than the skin we lose interactions.
-      const auto distanceMovedSquared = dot(displacement, displacement);
-      if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
-#pragma omp critical
-        std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared)
-                  << " > " << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
-                  << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
-        if (fastParticlesThrow) {
-          throwException = true;
-        }
+      AUTOPAS_OPENMP(critical)
+      std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << distanceMoved << " > "
+                << autoPasContainer.getVerletSkin() / autoPasContainer.getVerletRebuildFrequency()
+                << "/2 = " << maxAllowedDistanceMoved << "\n"
+                << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
+      if (fastParticlesThrow) {
+        throwException = true;
       }
     }
-    iter->addR(displacement);
+#endif
   }
-
+#ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (throwException) {
     throw std::runtime_error("At least one particle was too fast!");
   }
+#endif
 }
 
 void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
@@ -76,9 +89,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
   const double tol = 1e-13;  // tolerance given in paper
   const double tolSquared = tol * tol;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
+  AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     // Calculate Quaternions
     const auto q = iter->getQuaternion();
@@ -143,9 +154,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   // helper declarations for operations with vector
   using namespace autopas::utils::ArrayMath::literals;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
+  AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     const auto force = iter->getF();
@@ -163,9 +172,7 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
+  AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto torqueW = iter->getTorque();
     const auto q = iter->getQuaternion();

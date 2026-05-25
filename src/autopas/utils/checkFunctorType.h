@@ -18,12 +18,12 @@ namespace {
 std::false_type isPairwiseFunctorImpl(...);
 /**
  * Return true for a PairwiseFunctor type
- * @tparam ParticleT
+ * @tparam Particle_T
  * @tparam FunctorT
  * @return true
  */
-template <typename ParticleT, typename FunctorT>
-std::true_type isPairwiseFunctorImpl(autopas::PairwiseFunctor<ParticleT, FunctorT> const volatile &);
+template <typename Particle_T, typename FunctorT>
+std::true_type isPairwiseFunctorImpl(const autopas::PairwiseFunctor<Particle_T, FunctorT> &);
 
 /**
  * Returns false for any types that are not a TriwiseFunctor
@@ -32,12 +32,12 @@ std::true_type isPairwiseFunctorImpl(autopas::PairwiseFunctor<ParticleT, Functor
 std::false_type isTriwiseFunctorImpl(...);
 /**
  * Return true for a TriwiseFunctor type
- * @tparam ParticleT
+ * @tparam Particle_T
  * @tparam FunctorT
  * @return true
  */
-template <typename ParticleT, typename FunctorT>
-std::true_type isTriwiseFunctorImpl(autopas::TriwiseFunctor<ParticleT, FunctorT> const volatile &);
+template <typename Particle_T, typename FunctorT>
+std::true_type isTriwiseFunctorImpl(const autopas::TriwiseFunctor<Particle_T, FunctorT> &);
 }  // namespace
 
 namespace autopas::utils {
@@ -46,13 +46,13 @@ namespace autopas::utils {
  * @tparam FunctorT
  */
 template <typename FunctorT>
-using isPairwiseFunctor = decltype(isPairwiseFunctorImpl(std::declval<FunctorT &>()));
+using isPairwiseFunctor = decltype(isPairwiseFunctorImpl(std::declval<FunctorT>()));
 
 /**
  * Check whether a Functor Type is inheriting from TriwiseFunctor
  * @tparam FunctorT
  */
 template <typename FunctorT>
-using isTriwiseFunctor = decltype(isTriwiseFunctorImpl(std::declval<FunctorT &>()));
+using isTriwiseFunctor = decltype(isTriwiseFunctorImpl(std::declval<FunctorT>()));
 
 }  // namespace autopas::utils

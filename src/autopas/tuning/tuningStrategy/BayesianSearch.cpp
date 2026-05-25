@@ -63,12 +63,12 @@ autopas::BayesianSearch::BayesianSearch(
   _gaussianProcess.setDimension(_encoder.getOneHotDims());
 }
 
-void autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                                  const EvidenceCollection &evidence) {
+bool autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                                  const EvidenceCollection &evidenceCollection) {
   // if enough evidence was collected abort the tuning process.
   if (_gaussianProcess.numEvidence() >= _maxEvidence) {
     configQueue.clear();
-    return;
+    return true;
   }
 
   // Sample the search space, check that the samples are in the available configurations, and
@@ -106,6 +106,7 @@ void autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &co
       break;
     }
   }
+  return false;
 }
 
 std::vector<autopas::FeatureVector> autopas::BayesianSearch::sampleAcquisitions(size_t n,
@@ -150,17 +151,18 @@ void autopas::BayesianSearch::rejectConfiguration(const autopas::Configuration &
 void autopas::BayesianSearch::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
   // represent a maximization problem
-  _gaussianProcess.addEvidence(_encoder.oneHotEncode(configuration), -evidence.value * secondsPerMicroseconds, true);
+  _gaussianProcess.addEvidence(_encoder.oneHotEncode(configuration), -evidence.effectiveValue * secondsPerMicroseconds,
+                               true);
 }
 
-void autopas::BayesianSearch::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+bool autopas::BayesianSearch::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                                     const autopas::EvidenceCollection &evidenceCollection) {
   _gaussianProcess.clear();
-  optimizeSuggestions(configQueue, evidenceCollection);
+  return optimizeSuggestions(configQueue, evidenceCollection);
 }
 
-bool autopas::BayesianSearch::needsSmoothedHomogeneityAndMaxDensity() const { return false; }
+bool autopas::BayesianSearch::needsDomainSimilarityStatistics() const { return false; }
 
-autopas::TuningStrategyOption autopas::BayesianSearch::getOptionType() {
+autopas::TuningStrategyOption autopas::BayesianSearch::getOptionType() const {
   return autopas::TuningStrategyOption::bayesianSearch;
 }
