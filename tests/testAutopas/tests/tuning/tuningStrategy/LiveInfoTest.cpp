@@ -13,6 +13,116 @@
 #include "testingHelpers/commonTypedefs.h"
 
 /**
+ * Tests that the parametrized constructor creates the correct info mappings.
+ */
+TEST_F(LiveInfoTest, ParametrizedConstructorCreatesCorrectInfo) {
+  const std::vector<std::tuple<size_t, size_t, double, double, double, double, double, size_t, size_t, size_t, size_t,
+                               size_t, size_t, size_t, size_t, size_t, size_t, double, double, double, size_t, double,
+                               double, size_t, size_t, size_t, size_t, size_t, double, double, double>>
+      parameters = {
+          {10, 5,   2.0, 0.1,  10.0, 10.0, 10.0, 64, 4, 20, 8, 2, 1,   3,   2,   1,
+           3,  2.0, 0.5, 0.25, 100,  0.8,  0.05, 4,  1, 2,  1, 3, 2.0, 0.3, 0.15},
+          {50, 25,  3.0, 0.2, 20.0, 20.0, 20.0, 128, 8, 30, 16, 4, 2,   6,   4,  2,
+           6,  3.0, 1.0, 0.5, 200,  1.6,  0.1,  8,   2, 4,  2,  6, 3.0, 0.6, 0.3},
+          {25, 8,   0.750, 0.15, 15.0, 15.0, 15.0, 96, 6, 25, 12, 3, 1,   4,    3,  2,
+           4,  1.5, 0.75,  0.35, 150,  1.2,  0.08, 6,  1, 3,  1,  4, 1.5, 0.45, 0.2},
+          {19, 2,   1.1, 0.3, 10.0, 20.0, 30.0, 32, 1, 10, 5, 1, 0,   1,   1,  1,
+           1,  1.1, 0.3, 0.3, 50,   0.5,  0.02, 2,  0, 1,  0, 1, 1.1, 0.2, 0.2},
+      };
+
+  for (const auto &params : parameters) {
+    autopas::LiveInfo info(std::get<0>(params),   // numOwnedParticles
+                           std::get<1>(params),   // numHaloParticles
+                           std::get<2>(params),   // cutoff
+                           std::get<3>(params),   // skin
+                           std::get<4>(params),   // domainSizeX
+                           std::get<5>(params),   // domainSizeY
+                           std::get<6>(params),   // domainSizeZ
+                           std::get<7>(params),   // particleSize
+                           std::get<8>(params),   // threadCount
+                           std::get<9>(params),   // rebuildFrequency
+                           std::get<10>(params),  // numCells
+                           std::get<11>(params),  // numEmptyCells
+                           std::get<12>(params),  // minParticlesPerCell
+                           std::get<13>(params),  // maxParticlesPerCell
+                           std::get<14>(params),  // medianParticlesPerCell
+                           std::get<15>(params),  // lowerQuartileParticlesPerCell
+                           std::get<16>(params),  // upperQuartileParticlesPerCell
+                           std::get<17>(params),  // meanParticlesPerCell
+                           std::get<18>(params),  // particlesPerCellStdDev
+                           std::get<19>(params),  // relativeParticlesPerCellStdDev
+                           std::get<20>(params),  // estimatedNumNeighborInteractions
+                           std::get<21>(params),  // particleDependentBinMaxDensity
+                           std::get<22>(params),  // particleDependentBinDensityStdDev
+                           std::get<23>(params),  // maxParticlesPerBlurredBin
+                           std::get<24>(params),  // minParticlesPerBlurredBin
+                           std::get<25>(params),  // medianParticlesPerBlurredBin
+                           std::get<26>(params),  // lowerQuartileParticlesPerBlurredBin
+                           std::get<27>(params),  // upperQuartileParticlesPerBlurredBin
+                           std::get<28>(params),  // meanParticlesPerBlurredBin
+                           std::get<29>(params),  // particlesPerBlurredBinStdDev
+                           std::get<30>(params)   // relativeParticlesPerBlurredBinStdDev
+    );
+
+    EXPECT_EQ(info.get<size_t>("numOwnedParticles"), std::get<0>(params));
+    EXPECT_EQ(info.get<size_t>("numHaloParticles"), std::get<1>(params));
+    EXPECT_EQ(info.get<double>("cutoff"), std::get<2>(params));
+    EXPECT_EQ(info.get<double>("skin"), std::get<3>(params));
+    EXPECT_EQ(info.get<double>("domainSizeX"), std::get<4>(params));
+    EXPECT_EQ(info.get<double>("domainSizeY"), std::get<5>(params));
+    EXPECT_EQ(info.get<double>("domainSizeZ"), std::get<6>(params));
+    EXPECT_EQ(info.get<size_t>("particleSize"), std::get<7>(params));
+    EXPECT_EQ(info.get<size_t>("threadCount"), std::get<8>(params));
+    EXPECT_EQ(info.get<size_t>("rebuildFrequency"), std::get<9>(params));
+    EXPECT_EQ(info.get<size_t>("numCells"), std::get<10>(params));
+    EXPECT_EQ(info.get<size_t>("numEmptyCells"), std::get<11>(params));
+    EXPECT_EQ(info.get<size_t>("minParticlesPerCell"), std::get<12>(params));
+    EXPECT_EQ(info.get<size_t>("maxParticlesPerCell"), std::get<13>(params));
+    EXPECT_EQ(info.get<size_t>("medianParticlesPerCell"), std::get<14>(params));
+    EXPECT_EQ(info.get<size_t>("lowerQuartileParticlesPerCell"), std::get<15>(params));
+    EXPECT_EQ(info.get<size_t>("upperQuartileParticlesPerCell"), std::get<16>(params));
+    EXPECT_EQ(info.get<double>("meanParticlesPerCell"), std::get<17>(params));
+    EXPECT_EQ(info.get<double>("particlesPerCellStdDev"), std::get<18>(params));
+    EXPECT_EQ(info.get<double>("relativeParticlesPerCellStdDev"), std::get<19>(params));
+    EXPECT_EQ(info.get<size_t>("estimatedNumNeighborInteractions"), std::get<20>(params));
+    EXPECT_EQ(info.get<double>("particleDependentBinMaxDensity"), std::get<21>(params));
+    EXPECT_EQ(info.get<double>("particleDependentBinDensityStdDev"), std::get<22>(params));
+    EXPECT_EQ(info.get<size_t>("maxParticlesPerBlurredBin"), std::get<23>(params));
+    EXPECT_EQ(info.get<size_t>("minParticlesPerBlurredBin"), std::get<24>(params));
+    EXPECT_EQ(info.get<size_t>("medianParticlesPerBlurredBin"), std::get<25>(params));
+    EXPECT_EQ(info.get<size_t>("lowerQuartileParticlesPerBlurredBin"), std::get<26>(params));
+    EXPECT_EQ(info.get<size_t>("upperQuartileParticlesPerBlurredBin"), std::get<27>(params));
+    EXPECT_EQ(info.get<double>("meanParticlesPerBlurredBin"), std::get<28>(params));
+    EXPECT_EQ(info.get<double>("particlesPerBlurredBinStdDev"), std::get<29>(params));
+    EXPECT_EQ(info.get<double>("relativeParticlesPerBlurredBinStdDev"), std::get<30>(params));
+  }
+}
+
+/**
+ * Tests that the constructor that takes the live infos as arguments initializes all required infos.
+ *
+ * This test verifies that all live infos collected by the gather function are also set by the constructor which takes
+ * them as arguments.
+ */
+TEST_F(LiveInfoTest, ConstructorNumInfos) {
+  // The values here are arbitrary as we only test the number of infos collected.
+  autopas::LiveInfo infoCtor(1, 0, 0.1, 0.0, 1.0, 1.0, 1.0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 1, 0.0, 0.0, 1,
+                             0, 0, 0, 0, 0.0, 0.0, 0.0);
+  autopas::LiveInfo infoGather;
+  autopas::AutoPas<ParticleFP64> container;
+  container.setCutoff(0.5);
+  container.setVerletSkin(0.4);
+  container.setBoxMin({0., 0., 0.});
+  container.setBoxMax({20., 20., 20.});
+  container.setVerletRebuildFrequency(20);
+  container.init();
+  infoGather.gather(container.begin(), container.getVerletRebuildFrequency(), container.getNumberOfParticles(),
+                    container.getBoxMin(), container.getBoxMax(), container.getCutoff(), container.getVerletSkin());
+  EXPECT_EQ(infoCtor.get().size(), infoGather.get().size())
+      << "Number of infos in constructor and gather should match.";
+}
+
+/**
  * Tests Live Info in the following ways:
  * - Adds 50 owned, halo, and dummy particles to a 10x10x10 domain.
  * - Checks that the statistics calculated within LiveInfo directly are correct compared to expected "hand-calculated"

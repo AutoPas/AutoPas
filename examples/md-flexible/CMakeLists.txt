@@ -137,6 +137,11 @@ if (HAS_AVX)
             --no-progress-bar
             CONFIGURATIONS checkExamples
     )
+    set_tests_properties(
+            md-flexible-avx.test-unaligned
+            PROPERTIES
+            ENVIRONMENT  "${LSAN_OPTIONS_STR}"
+    )
 else ()
   message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
   set(TEST_FUNCTOR "Lennard-Jones")
@@ -170,6 +175,15 @@ add_test(
         CONFIGURATIONS checkExamples
 )
 # cmake-format: on
+
+set_tests_properties(
+        md-flexible.test-static
+        md-flexible.test-sim
+        md-flexMeasurePerf
+        # This adds lsanignoreList.txt to ignore MPI internal leaks
+        PROPERTIES
+            ENVIRONMENT  "${LSAN_OPTIONS_STR}"
+)
 
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples md-flexible)
