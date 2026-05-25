@@ -170,19 +170,37 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
 
   // Output of the function: Vector of triwise cell indices & projection axis
   OffsetTripletType<Mode> resultOffsetsC08{};
+  const std::array<int, 3> overlap{ceilAndCast(interactionLength / cellLength)};
+
+  // Precompute all valid cells in the overlap bounds
+  struct CellData {
+    long x, y, z;
+    long offset;
+  };
+  std::vector<CellData> cells;
+  cells.reserve((overlap[0] + 1) * (overlap[1] + 1) * (overlap[2] + 1));
+
+  for (long x = 0; x <= static_cast<long>(overlap[0]); ++x) {
+    for (long y = 0; y <= static_cast<long>(overlap[1]); ++y) {
+      for (long z = 0; z <= static_cast<long>(overlap[2]); ++z) {
+        cells.push_back({x, y, z, utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimIntegral)});
+      }
+    }
+  }
+
+  // Sort by offset to easily enforce offset1 <= offset2 < offset3 via loop bounds
+  std::sort(cells.begin(), cells.end(), [](const CellData &a, const CellData &b) { return a.offset < b.offset; });
 
   // Helper function to determine if two cells are more than interactionLength apart
-  auto cellDistIsGreaterThanCutoff = [&](const long x1, const long y1, const long z1, const long x2, const long y2,
-                                         const long z2) {
-    const std::array cellDistance = {std::max(0.0, static_cast<double>(std::abs(x1 - x2) - 1)) * cellLength[0],
-                                     std::max(0.0, static_cast<double>(std::abs(y1 - y2) - 1)) * cellLength[1],
-                                     std::max(0.0, static_cast<double>(std::abs(z1 - z2) - 1)) * cellLength[2]};
+  auto cellDistIsGreaterThanCutoff = [&](const CellData &c1, const CellData &c2) {
+    const std::array cellDistance = {std::max(0L, std::abs(c1.x - c2.x) - 1) * cellLength[0],
+                                     std::max(0L, std::abs(c1.y - c2.y) - 1) * cellLength[1],
+                                     std::max(0L, std::abs(c1.z - c2.z) - 1) * cellLength[2]};
     // Using >= because if cellLength == interactionLength, interacting particles are in neighboring cells only
     return utils::ArrayMath::dot(cellDistance, cellDistance) >= interactionLengthSquared;
   };
 
-  const std::array<int, 3> overlap{ceilAndCast(interactionLength / cellLength)};
-
+  // Initialize the result structure properly based on Mode
   if constexpr (Mode == C08OffsetMode::sorting) {
     resultOffsetsC08.emplace_back(0, 0, 0, std::array<double, 3>{1., 1., 1.});
   }  // Due to 2D output, we need to first resize the outer vector to the x dimension
@@ -193,50 +211,32 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
   }
 
   // offsets for the first cell
-  for (long x1 = 0; x1 <= static_cast<long>(overlap[0]); ++x1) {
-    for (long y1 = 0; y1 <= static_cast<long>(overlap[1]); ++y1) {
-      for (long z1 = 0; z1 <= static_cast<long>(overlap[2]); ++z1) {
-        // offsets for the second cell
-        for (long x2 = 0; x2 <= static_cast<long>(overlap[0]); ++x2) {
-          for (long y2 = 0; y2 <= static_cast<long>(overlap[1]); ++y2) {
-            for (long z2 = 0; z2 <= static_cast<long>(overlap[2]); ++z2) {
-              // check distance between cell 1 and cell 2
-              if (cellDistIsGreaterThanCutoff(x1, y1, z1, x2, y2, z2)) continue;
+  const size_t numCells = cells.size();
+  for (size_t i = 0; i < numCells; ++i) {
+    for (size_t j = i; j < numCells; ++j) {
+      if (cellDistIsGreaterThanCutoff(cells[i], cells[j])) continue;
+      // k starts at j + 1 because offset2 < offset3 (strict inequality)
+      for (size_t k = j + 1; k < numCells; ++k) {
+        // check distance between cell 1 and cell 2
+        if (cellDistIsGreaterThanCutoff(cells[i], cells[k])) continue;
+        if (cellDistIsGreaterThanCutoff(cells[j], cells[k])) continue;
 
-              // offsets for the third cell
-              for (long x3 = 0; x3 <= static_cast<long>(overlap[0]); ++x3) {
-                for (long y3 = 0; y3 <= static_cast<long>(overlap[1]); ++y3) {
-                  for (long z3 = 0; z3 <= static_cast<long>(overlap[2]); ++z3) {
-                    // check distance between cell 1 and cell 3
-                    if (cellDistIsGreaterThanCutoff(x1, y1, z1, x3, y3, z3)) continue;
+        const auto &c1 = cells[i];
+        const auto &c2 = cells[j];
+        const auto &c3 = cells[k];
 
-                    // check distance between cell 2 and cell 3
-                    if (cellDistIsGreaterThanCutoff(x2, y2, z2, x3, y3, z3)) continue;
-                    const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(x1, y1, z1, cellsPerDimIntegral);
-
-                    const long offset2 = utils::ThreeDimensionalMapping::threeToOneD(x2, y2, z2, cellsPerDimIntegral);
-
-                    const long offset3 = utils::ThreeDimensionalMapping::threeToOneD(x3, y3, z3, cellsPerDimIntegral);
-
-                    if (offset1 > offset2 or offset2 >= offset3) continue;
-
-                    if ((x1 == 0 or x2 == 0 or x3 == 0) and (y1 == 0 or y2 == 0 or y3 == 0) and
-                        (z1 == 0 or z2 == 0 or z3 == 0)) {
-                      if constexpr (Mode == C08OffsetMode::sorting) {
-                        const auto sortDirection = computeSortingDirection(
-                            {static_cast<double>(x1), static_cast<double>(y1), static_cast<double>(z1)},
-                            {static_cast<double>(x2), static_cast<double>(y2), static_cast<double>(z2)}, cellLength);
-                        resultOffsetsC08.emplace_back(offset1, offset2, offset3, sortDirection);
-                      } else if constexpr (Mode == C08OffsetMode::c04NoSorting) {
-                        resultOffsetsC08[x1].emplace_back(offset1, offset2, offset3);
-                      } else {
-                        resultOffsetsC08.emplace_back(offset1, offset2, offset3);
-                      }
-                    }
-                  }
-                }
-              }
-            }
+        // C08 logic: At least one cell per dimension has to be zero
+        if ((c1.x == 0 or c2.x == 0 or c3.x == 0) and (c1.y == 0 or c2.y == 0 or c3.y == 0) and
+            (c1.z == 0 or c2.z == 0 or c3.z == 0)) {
+          if constexpr (Mode == C08OffsetMode::sorting) {
+            const auto sortDirection = computeSortingDirection(
+                {static_cast<double>(c1.x), static_cast<double>(c1.y), static_cast<double>(c1.z)},
+                {static_cast<double>(c2.x), static_cast<double>(c2.y), static_cast<double>(c2.z)}, cellLength);
+            resultOffsetsC08.emplace_back(c1.offset, c2.offset, c3.offset, sortDirection);
+          } else if constexpr (Mode == C08OffsetMode::c04NoSorting) {
+            resultOffsetsC08[c1.x].emplace_back(c1.offset, c2.offset, c3.offset);
+          } else {
+            resultOffsetsC08.emplace_back(c1.offset, c2.offset, c3.offset);
           }
         }
       }
