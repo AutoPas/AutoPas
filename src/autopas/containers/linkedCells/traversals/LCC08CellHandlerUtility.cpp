@@ -165,6 +165,7 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
   using namespace internal;
   using utils::ArrayMath::ceilAndCast;
 
+  const auto cellsPerDimIntegral = utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension);
   const double interactionLengthSquared = interactionLength * interactionLength;
 
   // Output of the function: Vector of triwise cell indices & projection axis
@@ -212,24 +213,24 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
                     // check distance between cell 2 and cell 3
                     if (cellDistIsGreaterThanCutoff(x2, y2, z2, x3, y3, z3)) continue;
                     const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(
-                        x1, y1, z1, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
+                        x1, y1, z1, cellsPerDimIntegral);
 
                     const long offset2 = utils::ThreeDimensionalMapping::threeToOneD(
-                        x2, y2, z2, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
+                        x2, y2, z2, cellsPerDimIntegral);
 
                     const long offset3 = utils::ThreeDimensionalMapping::threeToOneD(
-                        x3, y3, z3, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
+                        x3, y3, z3, cellsPerDimIntegral);
 
                     if (offset1 > offset2 or offset2 >= offset3) continue;
 
                     if ((x1 == 0 or x2 == 0 or x3 == 0) and (y1 == 0 or y2 == 0 or y3 == 0) and
                         (z1 == 0 or z2 == 0 or z3 == 0)) {
                       if constexpr (Mode == C08OffsetMode::sorting) {
-                        const std::array sortDirection = {static_cast<double>(x1 + x2) * cellLength[0],
-                                                          static_cast<double>(y1 + y2) * cellLength[1],
-                                                          static_cast<double>(z1 + z2) * cellLength[2]};
-                        resultOffsetsC08.emplace_back(offset1, offset2, offset3,
-                                                      utils::ArrayMath::normalize(sortDirection));
+                        const auto sortDirection = computeSortingDirection(
+                                                    {static_cast<double>(x1), static_cast<double>(y1), static_cast<double>(z1)},
+                                                    {static_cast<double>(x2), static_cast<double>(y2), static_cast<double>(z2)},
+                                                    cellLength);
+                        resultOffsetsC08.emplace_back(offset1, offset2, offset3, sortDirection);
                       } else if constexpr (Mode == C08OffsetMode::c04NoSorting) {
                         resultOffsetsC08[x1].emplace_back(offset1, offset2, offset3);
                       } else {

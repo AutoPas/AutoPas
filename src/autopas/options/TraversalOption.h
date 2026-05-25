@@ -64,8 +64,8 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c18,
     /**
-     * + LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice interface.
-     * Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
+     * + LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice
+     * interface. Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
      */
     lc_sliced,
     /**
@@ -233,7 +233,9 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for triwise interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential, Value::lc_c01, Value::lc_c08, Value::lc_sliced, Value::lc_sliced_c02, Value::lc_c04}; }
+  static std::set<TraversalOption> getAllTriwiseOptions() {
+    return {Value::ds_sequential, Value::lc_c01, Value::lc_c08, Value::lc_sliced, Value::lc_sliced_c02, Value::lc_c04};
+  }
 
   /**
    * Set of all pairwise traversals without discouraged options.
