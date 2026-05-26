@@ -215,10 +215,9 @@ class Option {
  * @param opt
  * @return string representation
  */
-template <typename actualOption>
-inline std::string format_as(const Option<actualOption> &opt) {
 template <typename actualOption_T>
 inline std::string format_as(const Option<actualOption_T> &opt) {
+  return opt.to_string();
 }
 
 }  // namespace options
