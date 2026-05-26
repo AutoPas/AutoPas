@@ -212,6 +212,7 @@ class Option {
 
 /**
  * Function required for modern fmt/spdlog integration (fmt v9+).
+ * @tparam actualOption_T The Option type (Curiously recurring template pattern.)
  * @param opt
  * @return string representation
  */
