@@ -217,7 +217,8 @@ class Option {
  */
 template <typename actualOption>
 inline std::string format_as(const Option<actualOption> &opt) {
-  return opt.to_string();
+template <typename actualOption_T>
+inline std::string format_as(const Option<actualOption_T> &opt) {
 }
 
 }  // namespace options
