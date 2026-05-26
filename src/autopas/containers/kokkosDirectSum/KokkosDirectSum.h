@@ -132,6 +132,8 @@ template <class Particle_T>
                 finishTraversal(traversal);
             }
 
+            /* TODO: the current approach of massive contention locks is certainly not optimal but we can avoid costly data transfers to the CPU by doing everything on the GPU
+                For the future, it might make sense to improve here if it turns out that also for the other containers (!), this becomes a crucial bottleneck */
             [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
 
               /* Prepare data structures */
@@ -142,7 +144,7 @@ template <class Particle_T>
               auto& boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
               auto& boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
 
-              auto owned = _ownedParticles;
+              auto& owned = _ownedParticles;
 
               // TODO: change HostSpace to whatever other space
               Kokkos::View<int*, HostSpace> migrantCounter;
@@ -171,57 +173,56 @@ template <class Particle_T>
                   }
 
                 });
+              } else {
+                deleteHaloParticles();
 
-                // TODO: sth else than host space
-                owned.template markModified<HostSpace::execution_space>();
-                owned.markLayoutModified(owned.getLayout());
+                utils::KokkosStorage<Particle_T> survivors;
+                survivors.setLayout(_ownedParticles.getLayout());
+                survivors.resize(_ownedParticles.size());
 
-                // TODO: shrink to fit for migrants
+                // TODO: change HostSpace to whatever other space
+                Kokkos::View<int*, HostSpace> survivorCounter;
+                Kokkos::resize(survivorCounter, 1);
 
-                // TODO: somehow get the migrants into a std::vector and return that
-                return {};
-              }
-              deleteHaloParticles();
+                Kokkos::parallel_for("collectMigrantsAndReinsertOwned", Kokkos::RangePolicy<HostSpace::execution_space>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
 
-              utils::KokkosStorage<Particle_T> survivors;
-              survivors.setLayout(_ownedParticles.getLayout());
-              survivors.resize(_ownedParticles.size());
+                  if (owned.template fulfillsIteratorRequirements<false, host>(i, IteratorBehavior::owned, boxMin, boxMax)) {
+                    /* Particle is owned */
 
-              // TODO: change HostSpace to whatever other space
-              Kokkos::View<int*, HostSpace> survivorCounter;
-              Kokkos::resize(survivorCounter, 1);
+                    if (owned.template fulfillsIteratorRequirements<true, host>(i, IteratorBehavior::owned, boxMin, boxMax)) {
+                      /* Particle is within the container */
 
-              Kokkos::parallel_for("collectMigrantsAndReinsertOwned", Kokkos::RangePolicy<HostSpace::execution_space>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
+                      // TODO: this can lead to heavy contention on the locks... -> maybe think of a better approach
+                      int survivorIndex = Kokkos::atomic_fetch_inc(&survivorCounter(0));
+                      survivors.template copyParticle<host>(survivorIndex, owned, i);
+                    } else {
+                      /* Particle is outside the container boundary */
 
-                if (owned.template fulfillsIteratorRequirements<false, host>(i, IteratorBehavior::owned, boxMin, boxMax)) {
-                  /* Particle is owned */
-
-                  if (owned.template fulfillsIteratorRequirements<true, host>(i, IteratorBehavior::owned, boxMin, boxMax)) {
-                    /* Particle is within the container */
-
-                    // TODO: this can lead to heavy contention on the locks... -> maybe think of a better approach
-                    int survivorIndex = Kokkos::atomic_fetch_inc(&survivorCounter(0));
-                    survivors.template copyParticle<host>(survivorIndex, owned, i);
-                  } else {
-                    /* Particle is outside the container boundary */
-
-                    int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
-                    migrants.template copyParticle<host>(migrantIndex, owned, i);
+                      int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
+                      migrants.template copyParticle<host>(migrantIndex, owned, i);
+                    }
                   }
-                }
-              });
+                });
 
-              // TODO: shrink to fit for migrants and survivors
+                // TODO: make sure that survivorCounter is in accessible memory space
+                int numSurvivors = survivorCounter(0);
+                survivors.resize(numSurvivors);
+
+                _ownedParticles = survivors;
+              }
+
+              // TODO: make sure that migrantCounter is in accessible memory space
+              int numMigrants = migrantCounter(0);
+              migrants.resize(numMigrants);
 
               // TODO: sth else than host space
-              survivors.template markModified<HostSpace::execution_space>();
-              survivors.markLayoutModified(survivors.getLayout());
-
-              _ownedParticles = survivors;
+              _ownedParticles.template markModified<HostSpace::execution_space>();
+              _ownedParticles.markLayoutModified(owned.getLayout());
 
               // TODO: somehow get the migrants into a std::vector and return that
 
               return {};
+
             }
 
             [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
