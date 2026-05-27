@@ -256,7 +256,7 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputeTriwiseCellOffsetsC08Test_1x1x1) {
       std::make_tuple(1, 12, 157), std::make_tuple(1, 13, 144), std::make_tuple(1, 13, 156),
       std::make_tuple(1, 144, 145), std::make_tuple(1, 144, 156), std::make_tuple(1, 144, 157),
       std::make_tuple(1, 145, 156), std::make_tuple(1, 156, 157),
-      // 6 cell triplets incl. cell 12
+      // 7 cell triplets incl. cell 12
       std::make_tuple(12, 13, 144), std::make_tuple(12, 13, 145), std::make_tuple(12, 144, 145),
       std::make_tuple(12, 144, 156), std::make_tuple(12, 144, 157), std::make_tuple(12, 145, 156),
       std::make_tuple(12, 145, 157),

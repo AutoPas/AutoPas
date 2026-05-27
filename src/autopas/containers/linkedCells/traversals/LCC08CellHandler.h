@@ -20,9 +20,10 @@ namespace autopas {
  * between two cells for each spatial direction based on the baseIndex.
  * After executing the base step on all cells all pairwise interactions for
  * all cells are done.
+ * Similarly, this can be done for triwise interactions.
  *
  * @tparam ParticleCell_T the type of cells
- * @tparam Functor_T The functor that defines the interaction of two particles.
+ * @tparam Functor_T The functor that defines the interaction of two or three particles.
  */
 template <class ParticleCell_T, class Functor_T>
 class LCC08CellHandler {
@@ -117,7 +118,7 @@ class LCC08CellHandler {
   bool _useNewton3;
 
  private:
-  // CellFunctor type for either Pairwise or Triwise Functors.e
+  // CellFunctor type for either Pairwise or Triwise Functors.
   using CellFunctorType =
       std::conditional_t<decltype(utils::isPairwiseFunctor<Functor_T>())::value,
                          internal::CellFunctor<ParticleCell_T, Functor_T, /*bidirectional*/ true>,
@@ -148,7 +149,7 @@ inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCell(std::ve
     processBaseCellTriwise(cells, baseIndex);
   } else {
     utils::ExceptionHandler::exception(
-        "LCC01Traversal::processBaseCell(): Given Functor type is not of type PairwiseFunctor or TriwiseFunctor.");
+        "LCC08CellHandler::processBaseCell(): Given Functor type is not of type PairwiseFunctor or TriwiseFunctor.");
   }
 }
 
@@ -182,7 +183,7 @@ inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCellTriwise(
     ParticleCell_T &cell2 = cells[index2];
     ParticleCell_T &cell3 = cells[index3];
 
-    if (index1 == index2 and index1 == index3 and index2 == index3) {
+    if (index1 == index2 and index1 == index3) {
       this->_cellFunctor.processCell(cell1);
     } else if (index1 == index2 and index1 != index3) {
       this->_cellFunctor.processCellPair(cell1, cell3);
