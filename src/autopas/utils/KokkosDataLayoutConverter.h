@@ -18,6 +18,7 @@ class KokkosDataLayoutConverter {
 
   template <class Input, class Output, std::size_t... I>
   void convertToSoA(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...> seq) {
+    dstParticles.template syncAll<Kokkos::HostSpace::execution_space>(seq);
 
     // AoS to SoA
     for (size_t i = 0; i < numParticles; ++i) {

@@ -72,8 +72,8 @@ template <class Particle_T>
               std::lock_guard<AutoPasLock> guard (ownedLock);
 
               if (numberOfOwned >= capacityOwned) {
-                // TODO: resize
-                std::cout << "Problem" << std::endl;
+                capacityOwned = capacityOwned == 0 ? 1 : capacityOwned * 2;
+                _ownedParticles.resize(capacityOwned);
               }
               _ownedParticles.addParticle(numberOfOwned++, p);
             }
@@ -82,11 +82,11 @@ template <class Particle_T>
 
               std::lock_guard<AutoPasLock> guard(haloLock);
 
-              if (numberOfHalo < capacityHalo) {
-                  _haloParticles.addParticle(numberOfHalo++, haloP);
-              } else {
-                  // TODO: resize
+              if (numberOfHalo >= capacityHalo) {
+                capacityHalo = capacityHalo == 0 ? 1 : capacityHalo * 2;
+                _haloParticles.resize(capacityHalo);
               }
+              _haloParticles.addParticle(numberOfHalo++, haloP);
             }
 
             bool updateHaloParticle(const Particle_T &haloParticle) override {
@@ -238,16 +238,10 @@ template <class Particle_T>
             template <class ExecSpace, typename Lambda>
             void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior) {
 
-              if (_dataLayout == DataLayoutOption::aos) {
-                convertToAoS();
-                _soaUpToDate = false;
-              }
-              else if (_dataLayout == DataLayoutOption::soa) {
-                convertToSoA();
-                _ownedParticles.template sync<ExecSpace>();
-                _haloParticles.template sync<ExecSpace>();
-                _aosUpToDate = false;
-              }
+              convertToSoA();
+              _ownedParticles.template sync<ExecSpace>();
+              _haloParticles.template sync<ExecSpace>();
+              _aosUpToDate = false;
 
               // TODO: make sure that no AoS runs on Cuda
               if (behavior & 0b1) {
@@ -274,23 +268,18 @@ template <class Particle_T>
               }
               // TODO: consider other behavior such as dummies, container only, ...
 
-              if (_dataLayout == DataLayoutOption::soa) {
-                _ownedParticles.template markModified<ExecSpace>();
-                _haloParticles.template markModified<ExecSpace>();
-              }
+              _ownedParticles.template markModified<ExecSpace>();
+              _haloParticles.template markModified<ExecSpace>();
+              _soaUpToDate = true;
+              _aosUpToDate = false;
             }
 
             template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
             void reduceKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior) {
 
-              if (_dataLayout == DataLayoutOption::aos) {
-                convertToAoS();
-              }
-              else if (_dataLayout == DataLayoutOption::soa) {
-                convertToSoA();
-                _ownedParticles.template sync<ExecSpace>();
-                _haloParticles.template sync<ExecSpace>();
-              }
+              convertToSoA();
+              _ownedParticles.template sync<ExecSpace>();
+              _haloParticles.template sync<ExecSpace>();
 
               if (behavior & 0b1) {
                 if (numberOfOwned > 0 and not _ownedParticles.deviceViewsAllocated()) {
