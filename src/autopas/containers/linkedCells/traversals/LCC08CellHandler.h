@@ -186,11 +186,11 @@ inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCellTriwise(
     if (index1 == index2 and index1 == index3) {
       this->_cellFunctor.processCell(cell1);
     } else if (index1 == index2 and index1 != index3) {
-      this->_cellFunctor.processCellPair(cell1, cell3);
+      this->_cellFunctor.processCellPair(cell1, cell3, r);
     } else if (index1 != index2 and (index1 == index3 or index2 == index3)) {
-      this->_cellFunctor.processCellPair(cell1, cell2);
+      this->_cellFunctor.processCellPair(cell1, cell2, r);
     } else {
-      this->_cellFunctor.processCellTriple(cell1, cell2, cell3);
+      this->_cellFunctor.processCellTriple(cell1, cell2, cell3, r);
     }
   }
 }
