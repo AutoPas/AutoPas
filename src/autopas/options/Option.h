@@ -11,6 +11,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "autopas/utils/StringUtils.h"
