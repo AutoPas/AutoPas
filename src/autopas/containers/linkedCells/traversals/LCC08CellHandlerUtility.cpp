@@ -232,15 +232,10 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
         if ((c1.x == 0 or c2.x == 0 or c3.x == 0) and (c1.y == 0 or c2.y == 0 or c3.y == 0) and
             (c1.z == 0 or c2.z == 0 or c3.z == 0)) {
           if constexpr (Mode == C08OffsetMode::sorting) {
-            const auto sortDirection =
-                (c1 == c2)
-                    ? computeSortingDirection(
-                          {static_cast<double>(c3.x), static_cast<double>(c3.y), static_cast<double>(c3.z)},
-                          {static_cast<double>(c1.x), static_cast<double>(c1.y), static_cast<double>(c1.z)}, cellLength)
-                    : computeSortingDirection(
-                          {static_cast<double>(c2.x), static_cast<double>(c2.y), static_cast<double>(c2.z)},
-                          {static_cast<double>(c1.x), static_cast<double>(c1.y), static_cast<double>(c1.z)},
-                          cellLength);
+            const auto &sortCell = c1 == c2 ? c3 : c2;
+            const auto sortDirection = computeSortingDirection(
+                {static_cast<double>(sortCell.x), static_cast<double>(sortCell.y), static_cast<double>(sortCell.z)},
+                {static_cast<double>(c1.x), static_cast<double>(c1.y), static_cast<double>(c1.z)}, cellLength);
             resultOffsetsC08.emplace_back(c1.offset, c2.offset, c3.offset, sortDirection);
           } else if constexpr (Mode == C08OffsetMode::c04NoSorting) {
             resultOffsetsC08[c1.x].emplace_back(c1.offset, c2.offset, c3.offset);
