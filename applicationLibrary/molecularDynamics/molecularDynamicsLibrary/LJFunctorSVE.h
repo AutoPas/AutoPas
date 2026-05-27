@@ -22,6 +22,7 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "SimulationParticleTypes.h"
 
 namespace mdLib {
 
@@ -128,6 +129,9 @@ class LJFunctorSVE
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy()) {
+      return;
+    }
+    if (ParticleTypes::isWallWallPair(i.getTypeId(), j.getTypeId())) {
       return;
     }
     auto sigmaSquared = _sigmaSquaredAoS;
@@ -273,9 +277,12 @@ class LJFunctorSVE
                                svundef_u64(), pg_4, svundef_u64());
       }
 
-      fxptr[i] += svaddv(svptrue_b64(), fxacc);
-      fyptr[i] += svaddv(svptrue_b64(), fyacc);
-      fzptr[i] += svaddv(svptrue_b64(), fzacc);
+      // Wall particles must not receive force updates from the SoA path.
+      if (not ParticleTypes::isWall(typeIDptr[i])) {
+        fxptr[i] += svaddv(svptrue_b64(), fxacc);
+        fyptr[i] += svaddv(svptrue_b64(), fyacc);
+        fzptr[i] += svaddv(svptrue_b64(), fzacc);
+      }
     }
 
     if constexpr (calculateGlobals) {
@@ -356,9 +363,12 @@ class LJFunctorSVE
                                   pg_3, svundef_u64(), pg_4, svundef_u64());
       }
 
-      fx1ptr[i] += svaddv_f64(svptrue_b64(), fxacc);
-      fy1ptr[i] += svaddv_f64(svptrue_b64(), fyacc);
-      fz1ptr[i] += svaddv_f64(svptrue_b64(), fzacc);
+      // Wall particles must not receive force updates from the SoA path.
+      if (not ParticleTypes::isWall(typeID1ptr[i])) {
+        fx1ptr[i] += svaddv_f64(svptrue_b64(), fxacc);
+        fy1ptr[i] += svaddv_f64(svptrue_b64(), fyacc);
+        fz1ptr[i] += svaddv_f64(svptrue_b64(), fzacc);
+      }
     }
 
     if constexpr (calculateGlobals) {
@@ -676,9 +686,12 @@ class LJFunctorSVE
                                    epsilon24s_1, shift6s_1, lj6_1, fac_1);
     }
 
-    fxptr[indexFirst] += svaddv_f64(svptrue_b64(), fxacc);
-    fyptr[indexFirst] += svaddv_f64(svptrue_b64(), fyacc);
-    fzptr[indexFirst] += svaddv_f64(svptrue_b64(), fzacc);
+    // Wall particles must not receive force updates.
+    if (not ParticleTypes::isWall(typeIDptr[indexFirst])) {
+      fxptr[indexFirst] += svaddv_f64(svptrue_b64(), fxacc);
+      fyptr[indexFirst] += svaddv_f64(svptrue_b64(), fyacc);
+      fzptr[indexFirst] += svaddv_f64(svptrue_b64(), fzacc);
+    }
 
     if constexpr (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();

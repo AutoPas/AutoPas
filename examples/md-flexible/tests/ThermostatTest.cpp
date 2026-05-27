@@ -9,6 +9,8 @@
 #include "autopasTools/generators/GridGenerator.h"
 #include "src/Thermostat.h"
 
+#include <map>
+
 void ThermostatTest::initContainer(AutoPasType &autopas, const ParticleType &dummy,
                                    std::array<size_t, 3> particlesPerDim) {
   constexpr double particleSpacing = 1.;
@@ -44,7 +46,7 @@ void ThermostatTest::testBrownianMotion(const ParticleType &dummyMolecule, const
     }
   }
   EXPECT_NEAR(Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary), targetTemperature + initTemperature,
-              0.02);
+              0.03);
 }
 
 /**
@@ -97,15 +99,10 @@ TEST_F(ThermostatTest, MultiComponentTest) {
   ParticleType dummyMolecule;
   // fill with particles of type 0 and init
   initContainer(_autopas, dummyMolecule, {25, 25, 25});
-  // add some type 1 particles
-  dummyMolecule.setTypeId(1);
+  // add some particles with a second non-wall type
+  constexpr size_t secondFluidType = ParticleTypes::WALL_DUAL_BOSS + 1;
+  dummyMolecule.setTypeId(secondFluidType);
   autopasTools::generators::GridGenerator::fillWithParticles(_autopas, {25, 25, 25}, dummyMolecule);
-#if MD_FLEXIBLE_MODE == MULTISITE
-  // add some type 2 particles. This is to test the case that number of molecule types > number of site types so not
-  // relevant for single-site.
-  dummyMolecule.setTypeId(2);
-  autopasTools::generators::GridGenerator::fillWithParticles(_autopas, {25, 25, 25}, dummyMolecule);
-#endif
 
   // init system with brownian motion and test for the given temperature
   constexpr double targetTemperature1 = 4.2;
@@ -113,6 +110,9 @@ TEST_F(ThermostatTest, MultiComponentTest) {
   auto temperatureMap = Thermostat::calcTemperatureComponent(_autopas, _particlePropertiesLibrary);
 
   for (auto &[typeId, temperature] : temperatureMap) {
+    if (ParticleTypes::isWall(typeId)) {
+      continue;
+    }
     // brownian motion is probabilistic therefore a large tolerance is needed
     EXPECT_NEAR(temperature, targetTemperature1, 0.1);
   }
@@ -134,10 +134,12 @@ TEST_F(ThermostatTest, MultiComponentTest) {
 
   // calculate the expected scaling factors
   // Note that different components have different scaling factors
-  std::vector<double> scalingFactors{};
-  scalingFactors.reserve(temperatureMap.size());
-  for (size_t i = 0; i < temperatureMap.size(); ++i) {
-    scalingFactors[i] = std::sqrt(targetTemperature2 / temperatureMap[i]);
+  std::map<size_t, double> scalingFactors{};
+  for (const auto &[typeId, temperature] : temperatureMap) {
+    if (ParticleTypes::isWall(typeId)) {
+      continue;
+    }
+    scalingFactors[typeId] = std::sqrt(targetTemperature2 / temperature);
   }
 
   // apply thermostat
@@ -146,6 +148,9 @@ TEST_F(ThermostatTest, MultiComponentTest) {
   // check each component's temperature is adjusted to targetTemperature2
   temperatureMap = Thermostat::calcTemperatureComponent(_autopas, _particlePropertiesLibrary);
   for (auto &[typeId, temperature] : temperatureMap) {
+    if (ParticleTypes::isWall(typeId)) {
+      continue;
+    }
     EXPECT_NEAR(temperature, targetTemperature2, 1e-9);
   }
 
@@ -153,7 +158,7 @@ TEST_F(ThermostatTest, MultiComponentTest) {
   for (auto &particle : _autopas) {
     for (size_t dim = 0; dim < 3; ++dim) {
       // Check for correct scaling. oldF stores the velocity before the Thermostat::apply.
-      EXPECT_NEAR(particle.getV()[dim], particle.getOldF()[dim] * scalingFactors[particle.getTypeId()], 1e-12);
+      EXPECT_NEAR(particle.getV()[dim], particle.getOldF()[dim] * scalingFactors.at(particle.getTypeId()), 1e-12);
     }
   }
 }

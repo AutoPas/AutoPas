@@ -12,6 +12,7 @@
 #include <set>
 #include <vector>
 
+#include "SimulationParticleTypes.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -457,7 +458,13 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
         auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
 
         // epsilon
-        const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+        floatType mixedEpsilon = sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+        if (ParticleTypes::isFluidWallPair(firstIndex, secondIndex)) {
+          mixedEpsilon = static_cast<floatType>(ParticleTypes::FLUID_WALL_EPSILON_SCALE) *
+                         _epsilons[ParticleTypes::FLUID];
+        }
+
+        const floatType epsilon24 = 24 * mixedEpsilon;
         _computedLJMixingData[globalIndex].epsilon24 = epsilon24;
 
         // sigma

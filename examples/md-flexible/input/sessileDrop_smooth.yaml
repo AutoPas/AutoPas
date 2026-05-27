@@ -1,5 +1,5 @@
-# This yaml file is for single-site molecular simulation.
-## md-flexible wetting simulation with sessile droplet
+# This yaml file is generated automatically.
+# Surface type: smooth
 
 container                        :  [LinkedCells, VerletLists, VerletListsCells, VerletClusterLists]
 verlet-rebuild-frequency         :  10
@@ -18,11 +18,11 @@ newton3                          :  [disabled]
 cutoff                           :  3
 
 box-min                          :  [0, 0, 0]
-box-max                          :  [90, 90, 60]
+box-max                          :  [160, 160, 70]
 cell-size                        :  [1]
 
 deltaT                           :  0.0005
-iterations                       :  1000000
+iterations                       :  500000
 
 energy-sensor                    :  rapl
 boundary-type                    :  [reflective, reflective, reflective]
@@ -39,22 +39,40 @@ Sites:
     sigma                        :  1.
     mass                         :  1.
 
+  2:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+
+  3:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+
+  4:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+
+  5:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+
 Objects:
-  # Smooth solid surface
   CubeClosestPacked:
     0:
       particle-spacing           :  1.0
-      bottomLeftCorner           :  [5, 5, 1]
-      box-length                 :  [80, 80, 4]
+      bottomLeftCorner           :  [10, 10, 1]
+      box-length                 :  [140, 140, 4]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  1
-    # rough bosses begin here    
-    
 
-  # Liquid droplet
+
+
   Sphere:
     0:
-      center                     :  [45, 45, 25]
+      center                     :  [80, 80, 30]
       radius                     :  15
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
@@ -67,8 +85,8 @@ thermostat:
    thermostatInterval            :  10
    addBrownianMotion             :  false
 
-vtk-filename                     :  fallingDrop
-vtk-write-frequency              :  5000
-vtk-output-folder                :  vtkOutputFolder
+vtk-filename                     :  sessileDrop_smooth
+vtk-write-frequency              :  1000
+vtk-output-folder                :  vtkOutputFolder_smooth
 no-end-config                    :  true
 log-level                        :  info

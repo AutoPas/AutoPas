@@ -16,6 +16,7 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "SimulationParticleTypes.h"
 
 namespace mdLib {
 
@@ -186,6 +187,15 @@ class AxilrodTellerMutoFunctor
       return;
     }
 
+    const bool iIsWall = ParticleTypes::isWall(i.getTypeId());
+    const bool jIsWall = ParticleTypes::isWall(j.getTypeId());
+    const bool kIsWall = ParticleTypes::isWall(k.getTypeId());
+    // Skip interactions where two or more particles are wall particles.
+    // Fluid-fluid-wall is allowed; wall-wall-anything is not.
+    if ((iIsWall ? 1 : 0) + (jIsWall ? 1 : 0) + (kIsWall ? 1 : 0) >= 2) {
+      return;
+    }
+
     const auto threadnum = autopas::autopas_get_thread_num();
 
     if constexpr (countFLOPs) {
@@ -229,7 +239,7 @@ class AxilrodTellerMutoFunctor
         displacementKI * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK - 5.0 * allDotProducts / distSquaredKI);
 
     const auto forceI = (forceIDirectionJK + forceIDirectionIJ + forceIDirectionKI) * factor;
-    i.addF(forceI);
+    if (not iIsWall) i.addF(forceI);
 
     auto forceJ = forceI;
     auto forceK = forceI;
@@ -241,10 +251,10 @@ class AxilrodTellerMutoFunctor
           displacementJK * (IJDotKI * JKDotKI - distSquaredIJ * distSquaredKI + 5.0 * allDotProducts / distSquaredJK);
 
       forceJ = (forceJDirectionKI + forceJDirectionIJ + forceJDirectionJK) * factor;
-      j.addF(forceJ);
+      if (not jIsWall) j.addF(forceJ);
 
       forceK = (forceI + forceJ) * (-1.0);
-      k.addF(forceK);
+      if (not kIsWall) k.addF(forceK);
     }
 
     if constexpr (countFLOPs) {

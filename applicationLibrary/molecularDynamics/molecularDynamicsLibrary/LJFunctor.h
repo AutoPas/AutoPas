@@ -17,6 +17,7 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "SimulationParticleTypes.h"
 
 namespace mdLib {
 
@@ -123,6 +124,9 @@ class LJFunctor
     if (i.isDummy() or j.isDummy()) {
       return;
     }
+    if (ParticleTypes::isWallWallPair(i.getTypeId(), j.getTypeId())) {
+      return;
+    }
 
     const auto threadnum = autopas::autopas_get_thread_num();
 
@@ -143,7 +147,7 @@ class LJFunctor
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
-    if (dr2 > _cutoffSquared) {
+    if (dr2 <= 1e-12 or dr2 > _cutoffSquared) {
       return;
     }
 
@@ -292,11 +296,13 @@ class LJFunctor
 
         const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-        // Mask away if distance is too large or any particle is a dummy.
+        // Mask away if distance is too small / too large, any particle is a dummy, or both particles are wall types.
         // Particle ownedStateI was already checked previously.
-        const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+        const bool mask = dr2 > 1e-12 and dr2 <= cutoffSquared and
+                          ownedStateJ != autopas::OwnershipState::dummy and
+                          not ParticleTypes::isWallWallPair(typeptr[i], typeptr[j]);
 
-        const SoAFloatPrecision invdr2 = 1. / dr2;
+        const SoAFloatPrecision invdr2 = mask ? 1. / dr2 : 0.;
         const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
         const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
         const SoAFloatPrecision lj12 = lj6 * lj6;
@@ -479,11 +485,13 @@ class LJFunctor
 
         const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-        // Mask away if distance is too large or any particle is a dummy.
+        // Mask away if distance is too small / too large, any particle is a dummy, or both particles are wall types.
         // Particle ownedStateI was already checked previously.
-        const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+        const bool mask = dr2 > 1e-12 and dr2 <= cutoffSquared and
+                          ownedStateJ != autopas::OwnershipState::dummy and
+                          not ParticleTypes::isWallWallPair(typeptr1[i], typeptr2[j]);
 
-        const SoAFloatPrecision invdr2 = 1. / dr2;
+        const SoAFloatPrecision invdr2 = mask ? 1. / dr2 : 0.;
         const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
         const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
         const SoAFloatPrecision lj12 = lj6 * lj6;
@@ -931,11 +939,13 @@ class LJFunctor
 
           const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-          // Mask away if distance is too large or any particle is a dummy.
+          // Mask away if distance is too small / too large, any particle is a dummy, or both particles are wall types.
           // Particle ownedStateI was already checked previously.
-          const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+          const bool mask =
+              dr2 > 1e-12 and dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy and
+              not ParticleTypes::isWallWallPair(typeptr1[indexFirst], typeptr2[neighborListPtr[joff + j]]);
 
-          const SoAFloatPrecision invdr2 = 1. / dr2;
+          const SoAFloatPrecision invdr2 = mask ? 1. / dr2 : 0.;
           const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
           const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
           const SoAFloatPrecision lj12 = lj6 * lj6;
@@ -1004,7 +1014,12 @@ class LJFunctor
     // this loop goes over the remainder and uses no optimizations
     for (size_t jNeighIndex = joff; jNeighIndex < neighborListSize; ++jNeighIndex) {
       size_t j = neighborList[jNeighIndex];
-      if (indexFirst == j) continue;
+      if (indexFirst == j) {
+        continue;
+      }
+      if (ParticleTypes::isWallWallPair(typeptr1[indexFirst], typeptr2[j])) {
+        continue;
+      }
       if constexpr (useMixing) {
         sigmaSquared = _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[j]);
         epsilon24 = _PPLibrary->getMixing24Epsilon(typeptr1[indexFirst], typeptr2[j]);
@@ -1032,7 +1047,7 @@ class LJFunctor
         numDistanceCalculationSum += 1;
       }
 
-      if (dr2 > cutoffSquared) {
+      if (dr2 <= 1e-12 or dr2 > cutoffSquared) {
         continue;
       }
 

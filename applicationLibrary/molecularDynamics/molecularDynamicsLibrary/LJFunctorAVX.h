@@ -21,6 +21,7 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "SimulationParticleTypes.h"
 
 namespace mdLib {
 
@@ -126,6 +127,9 @@ class LJFunctorAVX
   inline void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
     if (i.isDummy() or j.isDummy()) {
+      return;
+    }
+    if (ParticleTypes::isWallWallPair(i.getTypeId(), j.getTypeId())) {
       return;
     }
     auto sigmaSquared = _sigmaSquaredAoS;
@@ -519,8 +523,25 @@ class LJFunctorAVX
     const __m256d dummyMask = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _zero, _CMP_NEQ_UQ);
     const __m256d cutoffDummyMask = _mm256_and_pd(cutoffMask, dummyMask);
 
+    // Wall-wall mask: zero lanes where both particle i and particle j are wall types.
+    __m256d cutoffDummyWallMask = cutoffDummyMask;
+    if (ParticleTypes::isWall(*typeID1ptr)) {
+      const int64_t l0 = ParticleTypes::isWall(*(typeID2ptr + 0)) ? 0LL : -1LL;
+      const int64_t l1 = (not remainderIsMasked or rest > 1)
+                             ? (ParticleTypes::isWall(*(typeID2ptr + 1)) ? 0LL : -1LL)
+                             : -1LL;
+      const int64_t l2 = (not remainderIsMasked or rest > 2)
+                             ? (ParticleTypes::isWall(*(typeID2ptr + 2)) ? 0LL : -1LL)
+                             : -1LL;
+      const int64_t l3 = not remainderIsMasked
+                             ? (ParticleTypes::isWall(*(typeID2ptr + 3)) ? 0LL : -1LL)
+                             : -1LL;
+      cutoffDummyWallMask = _mm256_and_pd(cutoffDummyMask,
+                                          _mm256_castsi256_pd(_mm256_set_epi64x(l3, l2, l1, l0)));
+    }
+
     // if everything is masked away return from this function.
-    if (_mm256_movemask_pd(cutoffDummyMask) == 0) {
+    if (_mm256_movemask_pd(cutoffDummyWallMask) == 0) {
       return;
     }
 
@@ -535,8 +556,9 @@ class LJFunctorAVX
     const __m256d fac = _mm256_mul_pd(lj12m6alj12e, invdr2);
 
     const __m256d facMasked =
-        remainderIsMasked ? _mm256_and_pd(fac, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
-                          : _mm256_and_pd(fac, cutoffDummyMask);
+        remainderIsMasked
+            ? _mm256_and_pd(fac, _mm256_and_pd(cutoffDummyWallMask, _mm256_castsi256_pd(_masks[rest - 1])))
+            : _mm256_and_pd(fac, cutoffDummyWallMask);
 
     const __m256d fx = _mm256_mul_pd(drx, facMasked);
     const __m256d fy = _mm256_mul_pd(dry, facMasked);
@@ -578,8 +600,9 @@ class LJFunctorAVX
 
       const __m256d potentialEnergyMasked =
           remainderIsMasked
-              ? _mm256_and_pd(potentialEnergy, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
-              : _mm256_and_pd(potentialEnergy, cutoffDummyMask);
+              ? _mm256_and_pd(potentialEnergy,
+                              _mm256_and_pd(cutoffDummyWallMask, _mm256_castsi256_pd(_masks[rest - 1])))
+              : _mm256_and_pd(potentialEnergy, cutoffDummyWallMask);
 
       __m256d ownedMaskI =
           _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateI), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
@@ -769,9 +792,12 @@ class LJFunctorAVX
     const double sumfy = sumfxfyVEC[1];
     const double sumfz = _mm_cvtsd_f64(sumfzVEC);
 
-    fxptr[indexFirst] += sumfx;
-    fyptr[indexFirst] += sumfy;
-    fzptr[indexFirst] += sumfz;
+    // Wall particles must not receive force updates.
+    if (not ParticleTypes::isWall(typeIDptr[indexFirst])) {
+      fxptr[indexFirst] += sumfx;
+      fyptr[indexFirst] += sumfy;
+      fzptr[indexFirst] += sumfz;
+    }
 
     if constexpr (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
