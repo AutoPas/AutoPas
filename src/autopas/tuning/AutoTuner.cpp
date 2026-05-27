@@ -179,19 +179,19 @@ const Configuration &AutoTuner::getCurrentConfig() const {
   return _configQueue.back();
 }
 
-std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
+std::tuple<Configuration, bool, bool> AutoTuner::getNextConfig() {
   // If we are not (yet) tuning or there is nothing to tune return immediately.
   if (not inTuningPhase()) {
-    return {getCurrentConfig(), false};
+    return {getCurrentConfig(), false, false};
   } else if (getCurrentNumSamples() < _maxSamples and not _earlyStoppingOfResampling) {
     // If we are still collecting samples from one config return immediately.
-    return {getCurrentConfig(), true};
+    return {getCurrentConfig(), true, false};
   } else {
     // This case covers any iteration in a tuning phase where a new configuration is needed (even the start of a phase)
     // If we are at the start of a phase tuneConfiguration() will also refill the queue and call reset on all strategies
     const bool stillTuning = tuneConfiguration();
     _earlyStoppingOfResampling = false;
-    return {getCurrentConfig(), stillTuning};
+    return {getCurrentConfig(), stillTuning, true};
   }
 }
 

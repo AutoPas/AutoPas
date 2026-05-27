@@ -349,7 +349,7 @@ else ()
         FetchContent_Declare(
                 auto4omp
                 URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-custom.zip
-                URL_HASH MD5=209ef0308e11aebb0c65a8bf0003068a # Calculated with the md5sum command.
+                URL_HASH MD5=1b10297fbf9dd5099182c48ef118d398 # Calculated with the md5sum command.
         )
     endif ()
 

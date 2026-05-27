@@ -130,9 +130,9 @@ class AutoTuner {
   /**
    * Ask the tuner for the next configuration to use.
    * This either returns the already selected config or triggers a step of the tuning process.
-   * @return Tuple<Next configuration to use, still tuning>.
+   * @return Tuple<Next configuration to use, still tuning, config changed>.
    */
-  [[nodiscard]] std::tuple<Configuration, bool> getNextConfig();
+  [[nodiscard]] std::tuple<Configuration, bool, bool> getNextConfig();
 
   /**
    * Tell the tuner that the given config is not applicable.
