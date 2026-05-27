@@ -574,13 +574,14 @@ class LogicHandler {
    * @tparam Functor
    * @param config
    * @param functor
+   * @param newConfig True if the configuration has been updated.
    * @return tuple<Traversal, rejectIndefinitely> Traversal is a nullptr if the configuration is not applicable
    * The bool rejectIndefinitely indicates if the configuration can be completely removed from the search space because
    * it will never be applicable.
    */
   template <class Functor>
   [[nodiscard]] std::tuple<std::unique_ptr<TraversalInterface>, bool> isConfigurationApplicable(
-      const Configuration &config, Functor &functor);
+      const Configuration &config, Functor &functor, bool newConfig);
 
   /**
    * Directly exchange the internal particle and halo buffers with the given vectors and update particle counters.
@@ -1212,7 +1213,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // if this iteration is not relevant, take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
     auto configuration = autoTuner.getCurrentConfig();
-    auto [traversalPtr, _] = isConfigurationApplicable(configuration, functor);
+    auto [traversalPtr, _] = isConfigurationApplicable(configuration, functor, false);
 
     if (not traversalPtr) {
       // TODO: Can we handle this case gracefully?
@@ -1237,12 +1238,12 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   utils::TraceTimer selectConfigurationTimer;
   selectConfigurationTimer.start();
 
-  auto [configuration, stillTuning] = autoTuner.getNextConfig();
+  auto [configuration, stillTuning, newConfig] = autoTuner.getNextConfig();
 
   // loop as long as we don't get a valid configuration
   do {
     // applicability check also sets the container
-    auto [traversalPtr, rejectIndefinitely] = isConfigurationApplicable(configuration, functor);
+    auto [traversalPtr, rejectIndefinitely] = isConfigurationApplicable(configuration, functor, newConfig);
     if (traversalPtr) {
       selectConfigurationTimer.stop();
       AutoPasLog(TRACE, "Select Configuration took {} ms. A total of {} configurations were rejected.",
@@ -1362,7 +1363,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
 template <typename Particle_T>
 template <class Functor>
 std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::isConfigurationApplicable(
-    const Configuration &config, Functor &functor) {
+    const Configuration &config, Functor &functor, const bool newConfig) {
   // Check if the container supports the traversal
   const auto allContainerTraversals =
       compatibleTraversals::allCompatibleTraversals(config.container, config.interactionType);
@@ -1412,9 +1413,12 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     setCurrentContainer(std::move(containerPtr));
   }
 
-  // Set OMP Configuration - todo, this is maybe over complicated -> we maybe want to handle this inside AUTOPAS_OPENMP wrapper
-  const OpenMPConfigurator ompConfig(config.ompKind, config.ompChunkSize);
-  autopas_set_schedule(ompConfig);
+  // Only set schedule if it is a new config. This is needed to reset Auto4OMP's tuning and is otherwise unnecessary.
+  if (newConfig) {
+    // Set OMP Configuration - todo, this is maybe over complicated -> we maybe want to handle this inside AUTOPAS_OPENMP wrapper
+    const OpenMPConfigurator ompConfig(config.ompKind, config.ompChunkSize);
+    autopas_set_schedule(ompConfig);
+  }
 
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};
 }
