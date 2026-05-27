@@ -301,7 +301,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
 #endif
     }
   } else {
-    autopas.template forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
+    autopas.template forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const auto& storage) {
 
     }, autopas::IteratorBehavior::owned); // TODO: decide iterator behavior, figure out how to handle scalingMap
   }

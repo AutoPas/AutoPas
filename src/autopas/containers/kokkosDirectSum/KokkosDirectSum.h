@@ -82,11 +82,11 @@ template <class Particle_T>
 
               std::lock_guard<AutoPasLock> guard(haloLock);
 
-                if (numberOfHalo < capacityHalo) {
-                    _haloParticles.addParticle(numberOfHalo++, haloP);
-                } else {
-                    // TODO: resize
-                }
+              if (numberOfHalo < capacityHalo) {
+                  _haloParticles.addParticle(numberOfHalo++, haloP);
+              } else {
+                  // TODO: resize
+              }
             }
 
             bool updateHaloParticle(const Particle_T &haloParticle) override {
@@ -236,7 +236,7 @@ template <class Particle_T>
             }
 
             template <class ExecSpace, typename Lambda>
-            void forEachKokkos(Lambda& forEachLambda, IteratorBehavior behavior) {
+            void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior) {
 
               if (_dataLayout == DataLayoutOption::aos) {
                 convertToAoS();
@@ -251,17 +251,25 @@ template <class Particle_T>
 
               // TODO: make sure that no AoS runs on Cuda
               if (behavior & 0b1) {
-                auto& owned = _ownedParticles;
+                if (numberOfOwned > 0 and not _ownedParticles.deviceViewsAllocated()) {
+                  utils::ExceptionHandler::exception("KokkosDirectSum::forEachKokkos: owned device views are not allocated.");
+                }
+                const auto owned = _ownedParticles.deviceView();
+                const auto lambda = forEachLambda;
                 Kokkos::parallel_for("forEachKokkosOwned", Kokkos::RangePolicy<ExecSpace>(0, numberOfOwned), KOKKOS_LAMBDA(int i)  {
                   // TODO: here, also a dummy check is required
-                  forEachLambda(i, owned);
+                  lambda(i, owned);
                 });
               }
               if (behavior & 0b10) {
-                auto& halo = _haloParticles;
+                if (numberOfHalo > 0 and not _haloParticles.deviceViewsAllocated()) {
+                  utils::ExceptionHandler::exception("KokkosDirectSum::forEachKokkos: halo device views are not allocated.");
+                }
+                const auto halo = _haloParticles.deviceView();
+                const auto lambda = forEachLambda;
                 Kokkos::parallel_for("forEachKokkosHalo", Kokkos::RangePolicy<ExecSpace>(0, numberOfHalo), KOKKOS_LAMBDA(int i)  {
                   // TODO: here, also a dummy check is required
-                  forEachLambda(i, halo);
+                  lambda(i, halo);
                 });
               }
               // TODO: consider other behavior such as dummies, container only, ...
@@ -285,15 +293,23 @@ template <class Particle_T>
               }
 
               if (behavior & 0b1) {
-                auto& owned = _ownedParticles;
+                if (numberOfOwned > 0 and not _ownedParticles.deviceViewsAllocated()) {
+                  utils::ExceptionHandler::exception("KokkosDirectSum::reduceKokkos: owned device views are not allocated.");
+                }
+                const auto owned = _ownedParticles.deviceView();
+                const auto lambda = reduceLambda;
                 Kokkos::parallel_reduce("reduceKokkosOwned", Kokkos::RangePolicy<ExecSpace>(0, numberOfOwned), KOKKOS_LAMBDA(int i, Result& localResult)  {
-                  reduceLambda(i, owned, localResult);
+                  lambda(i, owned, localResult);
                 }, Reduction(result));
               }
               if (behavior & 0b10) {
-                auto& halo = _haloParticles;
+                if (numberOfHalo > 0 and not _haloParticles.deviceViewsAllocated()) {
+                  utils::ExceptionHandler::exception("KokkosDirectSum::reduceKokkos: halo device views are not allocated.");
+                }
+                const auto halo = _haloParticles.deviceView();
+                const auto lambda = reduceLambda;
                 Kokkos::parallel_reduce("reduceKokkosHalo", Kokkos::RangePolicy<ExecSpace>(0, numberOfHalo), KOKKOS_LAMBDA(int i, Result& localResult)  {
-                  reduceLambda(i, halo, localResult);
+                  lambda(i, halo, localResult);
                 }, Reduction(result));
               }
               // TODO: consider other behavior such as dummies, container only, ...

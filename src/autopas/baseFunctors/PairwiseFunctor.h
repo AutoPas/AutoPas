@@ -79,9 +79,9 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   KOKKOS_INLINE_FUNCTION
-  virtual void SoAKernelKokkos(const FloatPrecision& xPos1, const FloatPrecision& yPos1, const FloatPrecision& zPos1, const Particle_T::KokkosSoAArraysType& soa2,
-    FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j) {
-    utils::ExceptionHandler::exception("{}::SoAKernelKokkos: not implemented", this->getName());
+  virtual void SoAKernelKokkos(const FloatPrecision& xPos1, const FloatPrecision& yPos1, const FloatPrecision& zPos1, const typename Particle_T::KokkosSoAArraysType::DeviceView& soa2,
+    FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j) const {
+    utils::ExceptionHandler::exception("SoAKernelKokkos: not implemented");
   }
 
   /**

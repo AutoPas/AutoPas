@@ -61,8 +61,14 @@ public:
   }
 
   KOKKOS_INLINE_FUNCTION
-  void SoAKernelKokkos(const FloatPrecision& x1, const FloatPrecision& y1, const FloatPrecision& z1, const Particle_T::KokkosSoAArraysType& soa2,
-    FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j) final {
+  void SoAKernelKokkos(const FloatPrecision& x1, const FloatPrecision& y1, const FloatPrecision& z1, const typename Particle_T::KokkosSoAArraysType::DeviceView& soa2,
+    FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j) const final {
+    SoAKernelKokkosStatic(x1, y1, z1, soa2, fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  static void SoAKernelKokkosStatic(const FloatPrecision& x1, const FloatPrecision& y1, const FloatPrecision& z1, const typename Particle_T::KokkosSoAArraysType::DeviceView& soa2,
+    FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j) {
 
       // const auto owned2 = soa2.template operator()<Particle_T::AttributeNames::ownershipState, true, false>(j);
 

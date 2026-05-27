@@ -111,26 +111,27 @@ private:
       return;
     }
 
-    auto func = _functor;
-    FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
+    FloatPrecision cutoffSquared = _functor->getCutoff() * _functor->getCutoff();
+    const auto soa1Device = soa1.deviceView();
+    const auto soa2Device = soa2.deviceView();
 
     auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
-    Kokkos::parallel_for("traversal", rangePolicy, KOKKOS_LAMBDA(const int i) {
+    Kokkos::parallel_for("ds_kokkos_flat", rangePolicy, KOKKOS_LAMBDA(const int i) {
       FloatPrecision fxAcc = 0.;
       FloatPrecision fyAcc = 0.;
       FloatPrecision fzAcc = 0.;
 
-      const auto x1 = soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
-      const auto y1 = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
-      const auto z1 = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
+      const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+      const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+      const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
 
       for (int j = 0; j < M; ++j) {
-        func->SoAKernelKokkos(x1, y1, z1, soa2, fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
+        Functor::SoAKernelKokkosStatic(x1, y1, z1, soa2Device, fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
       }
 
-      soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(i) += fxAcc;
-      soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(i) += fyAcc;
-      soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(i) += fzAcc;
+      soa1Device.template operator()<Particle_T::AttributeNames::forceX, true>(i) += fxAcc;
+      soa1Device.template operator()<Particle_T::AttributeNames::forceY, true>(i) += fyAcc;
+      soa1Device.template operator()<Particle_T::AttributeNames::forceZ, true>(i) += fzAcc;
     });
   }
 

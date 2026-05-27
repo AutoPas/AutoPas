@@ -297,7 +297,9 @@ class AutoPas {
 
   template <class ExecSpace, typename Lambda>
   void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(getContainer(), [&](auto &container) { container.template forEachKokkos<ExecSpace>(forEachLambda, behavior); });
+    const auto lambda = forEachLambda;
+    withStaticContainerType(getContainer(),
+                            [lambda, behavior](auto &container) { container.template forEachKokkos<ExecSpace>(lambda, behavior); });
   }
 
   bool containerAllowsKokkos() const { return getContainer().allowsKokkos(); }

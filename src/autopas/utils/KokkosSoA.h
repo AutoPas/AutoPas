@@ -8,6 +8,8 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
 #include <tuple>
+#include <type_traits>
+#include <utility>
 
 namespace autopas::utils {
 
@@ -15,6 +17,37 @@ namespace autopas::utils {
   class KokkosSoA {
 
   public:
+    template <typename... ViewTypes>
+    class ViewPack {
+     public:
+      explicit ViewPack(ViewTypes... views) : views{views...} {}
+
+      template <size_t attribute, bool offset, bool host = false>
+      KOKKOS_INLINE_FUNCTION
+      constexpr auto& operator() (int i) const {
+        return std::get<attribute - (offset ? 1 : 0)>(views)(i);
+      }
+
+      KOKKOS_INLINE_FUNCTION
+      size_t size() const {
+        return std::get<0>(views).extent(0);
+      }
+
+     private:
+      std::tuple<ViewTypes...> views;
+    };
+
+#ifdef KOKKOS_ENABLE_CUDA
+    using DeviceType = Kokkos::CudaSpace::device_type;
+#elif defined(KOKKOS_ENABLE_HIP)
+    using DeviceType = Kokkos::HIPSpace::device_type;
+#else
+    using DeviceType = Kokkos::HostSpace::device_type;
+#endif
+
+    using DualViewTuple = std::tuple<Kokkos::DualView<Types, DeviceType>...>;
+    using DeviceView =
+        ViewPack<std::decay_t<decltype(std::declval<Kokkos::DualView<Types, DeviceType>>().view_device())>...>;
 
     explicit KokkosSoA()
       : KokkosSoA(0) {}
@@ -71,6 +104,14 @@ namespace autopas::utils {
       }
     }
 
+    DeviceView deviceView() const {
+      return deviceViewImpl(std::make_index_sequence<std::tuple_size<decltype(views)>::value>{});
+    }
+
+    bool deviceViewsAllocated() const {
+      return deviceViewsAllocatedImpl(std::make_index_sequence<std::tuple_size<decltype(views)>::value>{});
+    }
+
     /* Meta Data */
     KOKKOS_INLINE_FUNCTION
     size_t size() const {
@@ -119,6 +160,16 @@ namespace autopas::utils {
 
   private:
     template <std::size_t... I>
+    DeviceView deviceViewImpl(std::index_sequence<I...>) const {
+      return DeviceView(std::get<I>(views).view_device()...);
+    }
+
+    template <std::size_t... I>
+    bool deviceViewsAllocatedImpl(std::index_sequence<I...>) const {
+      return ((std::get<I>(views).view_device().extent(0) == 0 or std::get<I>(views).view_device().data() != nullptr) and ...);
+    }
+
+    template <std::size_t... I>
     void resizeImpl(size_t numParticles, std::index_sequence<I...>) {
       (std::get<I>(views).resize(numParticles), ...);
     }
@@ -128,13 +179,7 @@ namespace autopas::utils {
       ((operator()<I, false, true>(position) = p.template get<static_cast<Particle_T::AttributeNames>(I+1)>()), ...);
     }
 
-#ifdef KOKKOS_ENABLE_CUDA
-    std::tuple<Kokkos::DualView<Types, Kokkos::CudaSpace::device_type>...> views {};
-#elif defined(KOKKOS_ENABLE_HIP)
-    std::tuple<Kokkos::DualView<Types, Kokkos::HIPSpace::device_type>...> views {};
-#else
-    std::tuple<Kokkos::DualView<Types, Kokkos::HostSpace::device_type>...> views {};
-#endif
+    DualViewTuple views {};
   };
 
 }

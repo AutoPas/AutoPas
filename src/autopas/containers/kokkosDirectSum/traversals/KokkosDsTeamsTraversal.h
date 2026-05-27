@@ -112,8 +112,9 @@ private:
       return;
     }
 
-    auto func = _functor;
-    FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
+    FloatPrecision cutoffSquared = _functor->getCutoff() * _functor->getCutoff();
+    const auto soa1Device = soa1.deviceView();
+    const auto soa2Device = soa2.deviceView();
 
     auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, _teamSize, Kokkos::AUTO);
     using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
@@ -124,30 +125,30 @@ private:
       FloatPrecision fyAcc = 0.;
       FloatPrecision fzAcc = 0.;
 
-      const auto x1 = soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
-      const auto y1 = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
-      const auto z1 = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
+      const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+      const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+      const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
 
       Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamHandle, M), [&](int j,
           FloatPrecision& localFxAcc,
           FloatPrecision& localFyAcc,
           FloatPrecision& localFzAcc) {
-            func->SoAKernelKokkos(x1, y1, z1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
+            Functor::SoAKernelKokkosStatic(x1, y1, z1, soa2Device, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
         }, fxAcc, fyAcc, fzAcc);
 
         Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
           int index = teamHandle.league_rank();
-          const FloatPrecision oldFx = soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index);
-          const FloatPrecision oldFy = soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index);
-          const FloatPrecision oldFz = soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index);
+          const FloatPrecision oldFx = soa1Device.template operator()<Particle_T::AttributeNames::forceX, true>(index);
+          const FloatPrecision oldFy = soa1Device.template operator()<Particle_T::AttributeNames::forceY, true>(index);
+          const FloatPrecision oldFz = soa1Device.template operator()<Particle_T::AttributeNames::forceZ, true>(index);
 
           const FloatPrecision newFx = oldFx + fxAcc;
           const FloatPrecision newFy = oldFy + fyAcc;
           const FloatPrecision newFz = oldFz + fzAcc;
 
-          soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index) = newFx;
-          soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) = newFy;
-          soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) = newFz;
+          soa1Device.template operator()<Particle_T::AttributeNames::forceX, true>(index) = newFx;
+          soa1Device.template operator()<Particle_T::AttributeNames::forceY, true>(index) = newFy;
+          soa1Device.template operator()<Particle_T::AttributeNames::forceZ, true>(index) = newFz;
         });
     });
   }

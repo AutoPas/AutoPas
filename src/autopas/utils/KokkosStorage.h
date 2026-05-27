@@ -141,6 +141,14 @@ namespace autopas::utils {
       return storageSoA;
     }
 
+    typename Particle_T::KokkosSoAArraysType::DeviceView deviceView() const {
+      return storageSoA.deviceView();
+    }
+
+    bool deviceViewsAllocated() const {
+      return storageSoA.deviceViewsAllocated();
+    }
+
     constexpr static size_t tupleSize() {
       return Particle_T::KokkosSoAArraysType::tupleSize();
     }

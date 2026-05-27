@@ -113,8 +113,9 @@ private:
       return;
     }
 
-    auto func = _functor;
-    FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
+    FloatPrecision cutoffSquared = _functor->getCutoff() * _functor->getCutoff();
+    const auto soa1Device = soa1.deviceView();
+    const auto soa2Device = soa2.deviceView();
 
     const size_t chunkSize = _chunkSize;
     const size_t numChunks = N / chunkSize;
@@ -135,17 +136,17 @@ private:
         FloatPrecision fyAcc = 0.;
         FloatPrecision fzAcc = 0.;
 
-        const auto x1 = soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i+offset);
-        const auto y1 = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i+offset);
-        const auto z1 = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i+offset);
+        const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i+offset);
+        const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i+offset);
+        const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i+offset);
 
         Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(teamHandle, M), [&](int j, FloatPrecision& localFxAcc, FloatPrecision& localFyAcc, FloatPrecision& localFzAcc) {
-          func->SoAKernelKokkos(x1, y1, z1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
+          Functor::SoAKernelKokkosStatic(x1, y1, z1, soa2Device, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i + offset, j);
         }, fxAcc, fyAcc, fzAcc);
 
-        soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(i+offset) += fxAcc;
-        soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(i+offset) += fyAcc;
-        soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(i+offset) += fzAcc;
+        soa1Device.template operator()<Particle_T::AttributeNames::forceX, true>(i+offset) += fxAcc;
+        soa1Device.template operator()<Particle_T::AttributeNames::forceY, true>(i+offset) += fyAcc;
+        soa1Device.template operator()<Particle_T::AttributeNames::forceZ, true>(i+offset) += fzAcc;
       });
     });
   }

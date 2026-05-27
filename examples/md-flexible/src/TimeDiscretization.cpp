@@ -87,7 +87,11 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 #endif
     }
   } else {
-   autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
+   const auto dt = deltaT;
+   const auto globalForceX = globalForce[0];
+   const auto globalForceY = globalForce[1];
+   const auto globalForceZ = globalForce[2];
+   autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const auto& storage) {
     //auto m = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
     ParticleType::ParticleSoAFloatPrecision m = 1.; // TODO: extract particle mass
     ParticleType::ParticleSoAFloatPrecision vX = storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i);
@@ -102,17 +106,17 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     storage.template operator()<ParticleType::AttributeNames::oldForceY, true, ForEachHostFlag>(i) = fY;
     storage.template operator()<ParticleType::AttributeNames::oldForceZ, true, ForEachHostFlag>(i) = fZ;
 
-    storage.template operator()<ParticleType::AttributeNames::forceX, true, ForEachHostFlag>(i) = globalForce[0];
-    storage.template operator()<ParticleType::AttributeNames::forceY, true, ForEachHostFlag>(i) = globalForce[1];
-    storage.template operator()<ParticleType::AttributeNames::forceZ, true, ForEachHostFlag>(i) = globalForce[2];
+    storage.template operator()<ParticleType::AttributeNames::forceX, true, ForEachHostFlag>(i) = globalForceX;
+    storage.template operator()<ParticleType::AttributeNames::forceY, true, ForEachHostFlag>(i) = globalForceY;
+    storage.template operator()<ParticleType::AttributeNames::forceZ, true, ForEachHostFlag>(i) = globalForceZ;
 
-    vX *= deltaT;
-    vY *= deltaT;
-    vZ *= deltaT;
+    vX *= dt;
+    vY *= dt;
+    vZ *= dt;
 
-    fX *= (deltaT * deltaT / (2 * m));
-    fY *= (deltaT * deltaT / (2 * m));
-    fZ *= (deltaT * deltaT / (2 * m));
+    fX *= (dt * dt / (2 * m));
+    fY *= (dt * dt / (2 * m));
+    fZ *= (dt * dt / (2 * m));
 
     const ParticleType::ParticleSoAFloatPrecision displacementX = vX + fX;
     const ParticleType::ParticleSoAFloatPrecision displacementY = vY + fY;
@@ -236,8 +240,9 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
     }
   }
   else {
+    const auto dt = deltaT;
 
-    autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
+    autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const auto& storage) {
       //const auto mass = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
       const ParticleType::ParticleSoAFloatPrecision mass = 1.;
       const ParticleType::ParticleSoAFloatPrecision vX = storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i);
@@ -252,9 +257,9 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
       const ParticleType::ParticleSoAFloatPrecision oldFy = storage.template operator()<ParticleType::AttributeNames::oldForceY, true, ForEachHostFlag>(i);
       const ParticleType::ParticleSoAFloatPrecision oldFz = storage.template operator()<ParticleType::AttributeNames::oldForceZ, true, ForEachHostFlag>(i);
 
-      const ParticleType::ParticleSoAFloatPrecision vUpdateX = (fX + oldFx) * (deltaT / (2 * mass));
-      const ParticleType::ParticleSoAFloatPrecision vUpdateY = (fY + oldFy) * (deltaT / (2 * mass));
-      const ParticleType::ParticleSoAFloatPrecision vUpdateZ = (fZ + oldFz) * (deltaT / (2 * mass));
+      const ParticleType::ParticleSoAFloatPrecision vUpdateX = (fX + oldFx) * (dt / (2 * mass));
+      const ParticleType::ParticleSoAFloatPrecision vUpdateY = (fY + oldFy) * (dt / (2 * mass));
+      const ParticleType::ParticleSoAFloatPrecision vUpdateZ = (fZ + oldFz) * (dt / (2 * mass));
 
       storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i) = vX + vUpdateX;
       storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i) = vY + vUpdateY;
