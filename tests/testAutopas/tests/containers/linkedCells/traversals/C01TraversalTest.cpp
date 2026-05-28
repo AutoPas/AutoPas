@@ -26,8 +26,8 @@ TEST_F(C01TraversalTest, testIsApplicable) {
                                                                      autopas::DataLayoutOption::soa, true);
   EXPECT_EQ(c01T_N3on.isApplicable(), false);
 
-  autopas::LCC01Traversal<FPCell, MPairwiseFunctor, true> c01T_N3off_combineSoA(
-      dims, pairwiseFunctor, 1., {1., 1., 1.}, autopas::DataLayoutOption::soa, false);
+  autopas::LCC01Traversal<FPCell, MPairwiseFunctor, true> c01T_N3off_combineSoA(dims, pairwiseFunctor, 1., {1., 1., 1.},
+                                                                                autopas::DataLayoutOption::soa, false);
   EXPECT_EQ(c01T_N3off_combineSoA.isApplicable(), true);
 
   autopas::LCC01Traversal<FPCell, MPairwiseFunctor, true> c01T_N3off_combineSoA_AoS(
