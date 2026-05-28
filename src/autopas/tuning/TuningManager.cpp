@@ -170,7 +170,7 @@ void TuningManager::setOptimalConfigurations() {
       } catch (const std::exception &e) {
         containerWithCSFIsValid = false;
         AutoPasLog(DEBUG, "No evidence for the interaction type {} with container {} and cell size factor {}",
-                   interactionType, container, cellSizeFactor);
+                   InteractionTypeOption{interactionType}, container, cellSizeFactor);
         break;
       }
     }
