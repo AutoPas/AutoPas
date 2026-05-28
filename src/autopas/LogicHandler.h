@@ -65,6 +65,7 @@ class LogicHandler {
         _remainderTriwiseInteractionHandler(_spatialLocks),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
+        _soaSortingThreshold(logicHandlerInfo.soaSortingThreshold),
         _iterationLogger(outputSuffix, std::any_of(autotuners.begin(), autotuners.end(),
                                                    [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
         _flopLogger(outputSuffix),
@@ -83,6 +84,7 @@ class LogicHandler {
                                                             _logicHandlerInfo.verletSkin,
                                                             _verletClusterSize,
                                                             _sortingThreshold,
+                                                            _soaSortingThreshold,
                                                             configuration.loadEstimator};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
@@ -836,6 +838,11 @@ class LogicHandler {
   size_t _sortingThreshold;
 
   /**
+   * Number of particles in two SoA buffers from which SoA sorting should be performed.
+   */
+  size_t _soaSortingThreshold;
+
+  /**
    * Reference to the map of AutoTuners which are managed by the AutoPas main interface.
    */
   std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &_autoTunerRefs;
@@ -1390,7 +1397,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _sortingThreshold, config.loadEstimator);
+                            _verletClusterSize, _sortingThreshold, _soaSortingThreshold, config.loadEstimator);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.

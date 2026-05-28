@@ -60,8 +60,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    */
   LinkedCellsReferences(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                         const double skin, const double cellSizeFactor = 1.0, const size_t sortingThreshold = 8,
+                        const size_t soaSortingThreshold = 8,
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold),
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold, soaSortingThreshold),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
@@ -183,6 +184,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
     if (traversalInterface && cellPairTraversal) {
       cellPairTraversal->setSortingThreshold(this->_sortingThreshold);
+      cellPairTraversal->setSoASortingThreshold(this->_soaSortingThreshold);
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       utils::ExceptionHandler::exception(

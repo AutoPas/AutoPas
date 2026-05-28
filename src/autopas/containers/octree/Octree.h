@@ -72,8 +72,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @param sortingThreshold The threshold for sorting
    */
   Octree(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-         const double skin, const double cellSizeFactor, const size_t sortingThreshold)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold) {
+         const double skin, const double cellSizeFactor, const size_t sortingThreshold, const size_t soaSortingThreshold = 8)
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold, soaSortingThreshold) {
     using namespace autopas::utils::ArrayMath::literals;
 
     // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624

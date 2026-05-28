@@ -78,6 +78,14 @@ class CellFunctor {
    */
   void setSortingThreshold(size_t sortingThreshold);
 
+  /**
+   * Set the SoA sorting-threshold.
+   * If the sum of the number of particles in two SoA buffers is greater than this value, the SoA path uses
+   * SoAFunctorPairSorted instead of SoAFunctorPair.
+   * @param soaSortingThreshold Sum of the number of particles in two cells from which SoA sorting should be enabled.
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold);
+
  private:
   /**
    * Applies the functor to all particle pairs exploiting newtons third law of motion.
@@ -128,10 +136,15 @@ class CellFunctor {
   const double _sortingCutoff;
 
   /**
-   * Min. number of particles to start sorting. This is the sum of the number of particles in two cells.
+   * Min. number of particles to start AoS sorting. This is the sum of the number of particles in two cells.
    * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
   size_t _sortingThreshold{8};
+
+  /**
+   * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
+   */
+  size_t _soaSortingThreshold{8};
 
   DataLayoutOption _dataLayout;
 
@@ -141,6 +154,11 @@ class CellFunctor {
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::setSortingThreshold(size_t sortingThreshold) {
   _sortingThreshold = sortingThreshold;
+}
+
+template <class ParticleCell, class ParticleFunctor, bool bidirectional>
+void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
+  _soaSortingThreshold = soaSortingThreshold;
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
@@ -201,7 +219,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
       break;
     case DataLayoutOption::soa:
       if (sortingDirection != std::array<double, 3>{0., 0., 0.} and
-          cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size() > _sortingThreshold) { // TODO: Utilize different sorting threshhold for soa then for aos.
+          cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size() > _soaSortingThreshold) {
         if (_useNewton3) {
           processCellPairSoASortedN3(cell1, cell2, sortingDirection);
         } else {

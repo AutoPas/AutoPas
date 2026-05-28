@@ -83,12 +83,19 @@ class CellFunctor3B {
   [[nodiscard]] bool getBidirectional() const { return bidirectional; }
 
   /**
-   * Set the sorting-threshold
+   * Set the sorting-threshold for AoS traversals.
    * If the sum of the number of particles in three cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
    * @param sortingThreshold Sum of the number of particles in three cells from which sorting should be enabled.
    */
   void setSortingThreshold(size_t sortingThreshold);
+
+  /**
+   * Set the SoA sorting-threshold.
+   * Stored for interface consistency with CellFunctor; CellFunctor3B does not currently apply SoA-level sorting.
+   * @param soaSortingThreshold Threshold value.
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold);
 
  private:
   /**
@@ -166,11 +173,17 @@ class CellFunctor3B {
   const double _sortingCutoff;
 
   /**
-   * Min. number of particles to start sorting. This is the sum of the number of particles of all involved cells.
+   * Min. number of particles to start AoS sorting. This is the sum of the number of particles of all involved cells.
    * The default threshold is (blindly) taken from CellFunctor.h. For some more details see:
    * https://github.com/AutoPas/AutoPas/pull/619
    */
   size_t _sortingThreshold{8};
+
+  /**
+   * Min. number of particles in two SoA buffers to start SoA-level sorting.
+   * Currently unused by CellFunctor3B (stored for interface consistency with CellFunctor).
+   */
+  size_t _soaSortingThreshold{8};
 
   DataLayoutOption _dataLayout;
 
@@ -180,6 +193,11 @@ class CellFunctor3B {
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::setSortingThreshold(size_t sortingThreshold) {
   _sortingThreshold = sortingThreshold;
+}
+
+template <class ParticleCell, class ParticleFunctor, bool bidirectional>
+void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
+  _soaSortingThreshold = soaSortingThreshold;
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
