@@ -252,22 +252,51 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
 
 /**
  * Checks that SoAFunctorPairSorted on HWY matches the (unsorted) SoAFunctorPair on the autovec functor.
- * Cells are arranged along x so the cell-pair axis is {1,0,0}. The HWY functor internally
- * projects, sorts, and scatters back; the reference result must match regardless.
+ * The cell-pair geometry is controlled by @p geometry:
+ *   face   — cells are face-adjacent along x; sortingDirection = {1,0,0}.
+ *   edge   — cells share an edge along z; sortingDirection = {1/√2, 1/√2, 0}.
+ *   corner — cells share a single corner; sortingDirection = {1/√3, 1/√3, 1/√3}.
  */
 template <bool mixing>
 void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsSorted(bool newton3, bool doDeleteSomeParticles,
-                                                                  VectorizationPattern pattern) {
+                                                                  VectorizationPattern pattern,
+                                                                  CellGeometry geometry) {
   FMCell cell1HWY;
   FMCell cell2HWY;
 
   const size_t numParticles = 23;
-
   const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
-      cell1HWY, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
-      cell2HWY, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
+
+  std::array<double, 3> cell1Low{}, cell1High{}, cell2Low{}, cell2High{}, sortingDirection{};
+
+  switch (geometry) {
+    case CellGeometry::face:
+      cell1Low = _lowCorner;
+      cell1High = {_highCorner[0] / 2, _highCorner[1], _highCorner[2]};
+      cell2Low = {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]};
+      cell2High = _highCorner;
+      sortingDirection = {1.0, 0.0, 0.0};
+      break;
+    case CellGeometry::edge:
+      cell1Low = _lowCorner;
+      cell1High = _highCorner;
+      cell2Low = {_highCorner[0], _highCorner[1], _lowCorner[2]};
+      cell2High = {2 * _highCorner[0], 2 * _highCorner[1], _highCorner[2]};
+      sortingDirection = {1.0 / std::sqrt(2.0), 1.0 / std::sqrt(2.0), 0.0};
+      break;
+    case CellGeometry::corner:
+      cell1Low = _lowCorner;
+      cell1High = _highCorner;
+      cell2Low = _highCorner;
+      cell2High = {2 * _highCorner[0], 2 * _highCorner[1], 2 * _highCorner[2]};
+      sortingDirection = {1.0 / std::sqrt(3.0), 1.0 / std::sqrt(3.0), 1.0 / std::sqrt(3.0)};
+      break;
+  }
+
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell1HWY, defaultParticle, cell1Low, cell1High,
+                                                                numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell2HWY, defaultParticle, cell2Low, cell2High,
+                                                                numParticles);
 
   for (auto &particle : cell1HWY) {
     if (doDeleteSomeParticles) {
@@ -332,15 +361,11 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsSorted(bool newton3, b
   EXPECT_TRUE(checkSoAParticlesAreEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
       << "Cells 2 not equal after loading.";
 
-  // Cell centers differ along x. Use the normalized cell-pair axis for sorting.
-  const std::array<double, 3> sortingDirection{1.0, 0.0, 0.0};
-  const double sortingCutoff = _cutoff;
-
   // Reference: unsorted pair on autovec functor.
   ljFunctor.SoAFunctorPair(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer, newton3);
   // Under test: sorted pair on HWY functor.
   ljFunctorHWY.SoAFunctorPairSorted(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, sortingDirection,
-                                    sortingCutoff, newton3);
+                                    _cutoff, newton3);
 
   EXPECT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
       << "Cells 1 not equal after applying functor.";
@@ -708,15 +733,41 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
 }
 
 /**
- * Checks that the HWY Functor's SoAFunctorPairSorted (Gonnet-style PsVL) produces the same result
- * as the AutoVec SoAFunctorPair.
+ * Checks that SoAFunctorPairSorted matches the autovec SoAFunctorPair for face-adjacent cells.
+ * Cell-pair axis is {1,0,0}.
  */
-TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSorted) {
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedFace) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testLJFunctorvsLJFunctorHWYTwoCellsSorted<true>(newton3, doDeleteSomeParticle, vecPattern);
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<true>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::face);
   } else {
-    testLJFunctorvsLJFunctorHWYTwoCellsSorted<false>(newton3, doDeleteSomeParticle, vecPattern);
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<false>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::face);
+  }
+}
+
+/**
+ * Checks that SoAFunctorPairSorted matches the autovec SoAFunctorPair for edge-adjacent cells.
+ * Cell-pair axis is {1/√2, 1/√2, 0}.
+ */
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedEdge) {
+  auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
+  if (mixing) {
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<true>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::edge);
+  } else {
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<false>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::edge);
+  }
+}
+
+/**
+ * Checks that SoAFunctorPairSorted matches the autovec SoAFunctorPair for corner-adjacent cells.
+ * Cell-pair axis is {1/√3, 1/√3, 1/√3}.
+ */
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedCorner) {
+  auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
+  if (mixing) {
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<true>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::corner);
+  } else {
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<false>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::corner);
   }
 }
 

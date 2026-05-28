@@ -52,18 +52,27 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
                                            VectorizationPattern pattern);
 
   /**
+   * Cell-pair adjacency geometry used by testLJFunctorvsLJFunctorHWYTwoCellsSorted.
+   *
+   * face   — cells share a face (sorting axis {1,0,0})
+   * edge   — cells share an edge (sorting axis {1/√2, 1/√2, 0})
+   * corner — cells share a corner (sorting axis {1/√3, 1/√3, 1/√3})
+   */
+  enum class CellGeometry { face, edge, corner };
+
+  /**
    * Checks that SoAFunctorPairSorted on HWY matches the (unsorted) SoAFunctorPair on the autovec functor.
-   * Cells are arranged along x, so sortingDirection is {1,0,0}. Particles are permuted inside each
-   * cell to exercise the sort path.
+   * The cell-pair geometry is controlled by @p geometry, which also determines the sorting direction.
    *
    * @tparam mixing
    * @param newton3
    * @param doDeleteSomeParticles
    * @param pattern
+   * @param geometry cell-pair adjacency type
    */
   template <bool mixing>
-  void testLJFunctorvsLJFunctorHWYTwoCellsSorted(bool newton3, bool doDeleteSomeParticles,
-                                                 VectorizationPattern pattern);
+  void testLJFunctorvsLJFunctorHWYTwoCellsSorted(bool newton3, bool doDeleteSomeParticles, VectorizationPattern pattern,
+                                                 CellGeometry geometry);
 
   /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
