@@ -80,7 +80,7 @@ template <class Particle_T>
                   const typename Particle_T::ParticleSoAFloatPrecision distanceSqr = dX*dX + dY*dY + dZ*dZ;
 
                   if (distanceSqr < skinHalf*skinHalf) {
-                    _haloParticles.addParticle(i, haloParticle);
+                    this->addHaloParticleImpl(haloParticle);
                     _haloParticles.template markModified<HostSpace::execution_space>();
                     return true;
                   }
@@ -92,6 +92,7 @@ template <class Particle_T>
 
             void deleteHaloParticles() override {
               numberOfHalo = 0;
+              capacityHalo = 0;
               _haloParticles.resize(0);
             }
 
@@ -137,9 +138,7 @@ template <class Particle_T>
             [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
 
               /* Prepare data structures */
-              utils::KokkosStorage<Particle_T> migrants;
-              migrants.setLayout(_ownedParticles.getLayout());
-              migrants.resize(_ownedParticles.size());
+              utils::KokkosStorage<Particle_T> migrants {_ownedParticles.getLayout(), numberOfOwned};
 
               auto& boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
               auto& boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
@@ -147,7 +146,7 @@ template <class Particle_T>
               auto& owned = _ownedParticles;
 
               // TODO: change HostSpace to whatever other space
-              Kokkos::View<int*, HostSpace> migrantCounter;
+              Kokkos::View<int*, HostSpace> migrantCounter {};
               Kokkos::resize(migrantCounter, 1);
 
               // TODO: infer this from some other location/property
@@ -160,13 +159,14 @@ template <class Particle_T>
 
                 // TODO: change HostSpace to whatever other space
                 // TODO: make sure that owned is synced to the right memory space
-                Kokkos::parallel_for("collectMigrants", Kokkos::RangePolicy<HostSpace::execution_space>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
+                Kokkos::parallel_for("collectMigrants", Kokkos::RangePolicy<HostSpace::execution_space>(0, numberOfOwned), KOKKOS_LAMBDA(int i) {
 
                   // TODO: make sure this logic is working, i.e. the correct particles are found, i.e. the owned particles outside of the box
                   if ((not owned.template fulfillsIteratorRequirements<true, host>(i, IteratorBehavior::ownedOrHaloOrDummy, boxMin, boxMax))
                      and owned.template fulfillsIteratorRequirements<false, host>(i, IteratorBehavior::owned, boxMin, boxMax)) {
 
                     int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
+                    auto id = owned.template operator()<Particle_T::AttributeNames::id, true, host>(i);
                     migrants.template copyParticle<host>(migrantIndex, owned, i);
 
                     owned.template operator()<Particle_T::AttributeNames::ownershipState, true, host>(i) = OwnershipState::dummy;
@@ -176,15 +176,13 @@ template <class Particle_T>
               } else {
                 deleteHaloParticles();
 
-                utils::KokkosStorage<Particle_T> survivors;
-                survivors.setLayout(_ownedParticles.getLayout());
-                survivors.resize(_ownedParticles.size());
+                utils::KokkosStorage<Particle_T> survivors {_ownedParticles.getLayout(), numberOfOwned};
 
                 // TODO: change HostSpace to whatever other space
-                Kokkos::View<int*, HostSpace> survivorCounter;
+                Kokkos::View<int*, HostSpace> survivorCounter {};
                 Kokkos::resize(survivorCounter, 1);
 
-                Kokkos::parallel_for("collectMigrantsAndReinsertOwned", Kokkos::RangePolicy<HostSpace::execution_space>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
+                Kokkos::parallel_for("collectMigrantsAndReinsertOwned", Kokkos::RangePolicy<HostSpace::execution_space>(0, numberOfOwned), KOKKOS_LAMBDA(int i) {
 
                   if (owned.template fulfillsIteratorRequirements<false, host>(i, IteratorBehavior::owned, boxMin, boxMax)) {
                     /* Particle is owned */
@@ -209,6 +207,8 @@ template <class Particle_T>
                 survivors.resize(numSurvivors);
 
                 _ownedParticles = survivors;
+                capacityOwned = numSurvivors;
+                numberOfOwned = numSurvivors;
               }
 
               // TODO: make sure that migrantCounter is in accessible memory space
@@ -219,10 +219,17 @@ template <class Particle_T>
               _ownedParticles.template markModified<HostSpace::execution_space>();
               _ownedParticles.markLayoutModified(owned.getLayout());
 
-              // TODO: somehow get the migrants into a std::vector and return that
+              migrants.syncSoAToAoS();
+              std::vector<Particle_T> migrantVector {};
+              migrantVector.reserve(numMigrants);
 
-              return {};
+              // TODO: make sure that we can access the migrant AoS from the CPU
+              for (int i = 0; i < numMigrants; ++i) {
+                Particle_T migrant = migrants.getAoS().getParticle(i);
+                migrantVector.push_back(migrant);
+              }
 
+              return migrantVector;
             }
 
             [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
@@ -445,8 +452,9 @@ protected:
     std::lock_guard<AutoPasLock> guard (ownedLock);
 
     if (numberOfOwned >= capacityOwned) {
-      // TODO: resize
-      std::cout << "Problem" << std::endl;
+      // TODO: think of a better reallocation strategy, i.e. one that also shrinks to fit somehow
+      _ownedParticles.resize(capacityOwned + 10);
+      capacityOwned += 10;
     }
     _ownedParticles.addParticle(numberOfOwned++, p);
   }
@@ -457,12 +465,12 @@ protected:
 
     std::lock_guard<AutoPasLock> guard(haloLock);
 
-    if (numberOfHalo < capacityHalo) {
-      _haloParticles.addParticle(numberOfHalo++, haloP);
-    } else {
-      // TODO: resize
-      std::cout << "Problem" << std::endl;
+    if (numberOfHalo >= capacityHalo) {
+      _haloParticles.resize(capacityHalo + 10);
+      capacityHalo += 10;
     }
+
+    _haloParticles.addParticle(numberOfHalo++, haloP);
   }
     
     private:
@@ -478,8 +486,8 @@ protected:
                 convertTo(targetLayout);
               }
 
-              kokkosDsTraversal->setOwnedToTraverse(_ownedParticles);
-              kokkosDsTraversal->setHaloToTraverse(_haloParticles);
+              kokkosDsTraversal->setOwnedToTraverse(_ownedParticles, targetLayout);
+              kokkosDsTraversal->setHaloToTraverse(_haloParticles, targetLayout);
             }
             else {
                 utils::ExceptionHandler::exception("The selected traversal is not compatible with the KokkosDirectSum container.");
@@ -528,7 +536,7 @@ protected:
 
         void convertToAoS() {
           _ownedParticles.syncSoAToAoS();
-          _haloParticles.syncAoSToSoA();
+          _haloParticles.syncSoAToAoS();
         }
 
         // Nearly a clone of DirectSum::getParticleImpl to guarantee that we fulfill all the requirements from getParticle in the ParticleContainerInterface's method description

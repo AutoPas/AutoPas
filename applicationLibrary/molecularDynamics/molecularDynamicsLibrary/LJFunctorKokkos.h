@@ -46,11 +46,11 @@ class LJFunctorKokkos
       : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos>(cutoff),
         _cutoffSquared{static_cast<FloatPrecision>(cutoff * cutoff)} {}
 
-  void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
+  void AoSFunctorKokkos(Particle_T &i, Particle_T &j, bool newton3) final {
     if (i.getOwnershipState() == autopas::OwnershipState::dummy or
         j.getOwnershipState() == autopas::OwnershipState::dummy) {
       return;
-    }
+        }
 
     FloatPrecision fx = 0.;
     FloatPrecision fy = 0.;
@@ -68,16 +68,31 @@ class LJFunctorKokkos
     }
   }
 
+  void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
+    AoSFunctorKokkos(i, j, newton3);
+  }
+
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     // No Op, TODO: make sure this is never used (also not in remainder traversal)
+
+    if (soa.size() == 0) {
+      return;
+    }
+
+    std::cout << "Trying to call non-existing function" << std::endl;
   }
 
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) final {
     // No Op, TODO: make sure this is never used (also not in remainder traversal)
+
+    if (soa1.size() == 0 or soa2.size() == 0) {
+      return;
+    }
+
+    std::cout << "Trying to call non-existing function" << std::endl;
   }
 
   KOKKOS_INLINE_FUNCTION
-
   void SoAKernelKokkos(const FloatPrecision &x1, const FloatPrecision &y1, const FloatPrecision &z1,
                        const Particle_T::KokkosSoAArraysType &soa2, FloatPrecision &fxAcc, FloatPrecision &fyAcc,
                        FloatPrecision &fzAcc, FloatPrecision cutoffSquared, int i, int j) final {

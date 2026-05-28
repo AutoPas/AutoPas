@@ -20,7 +20,12 @@ namespace autopas::utils {
   class KokkosStorage {
 
   public:
+    // TODO: think about deleting this constructor
     KokkosStorage() {}
+
+    KokkosStorage(DataLayoutOption layout, size_t numParticles) : _layout(layout) {
+      resize(numParticles);
+    }
 
     KokkosStorage(const KokkosStorage& other) {
       _layout = other.getLayout();
@@ -37,15 +42,29 @@ namespace autopas::utils {
       }
     }
 
+    void realloc(size_t numParticles) {
+      switch (_layout) {
+        case DataLayoutOption::aos: {
+          storageAoS.realloc(numParticles);
+          break;
+        }
+        case DataLayoutOption::soa: {
+          storageSoA.realloc(numParticles);
+          break;
+        }
+      }
+    }
+
     void resize(size_t numParticles) {
-      // TODO: decide whether this makes the buffers dirty
       switch (_layout) {
         case DataLayoutOption::aos: {
           storageAoS.resize(numParticles);
+          _aosDirty = true;
           break;
         }
         case DataLayoutOption::soa: {
           storageSoA.resize(numParticles);
+          _soaDirty = true;
           break;
         }
       }
@@ -220,9 +239,11 @@ namespace autopas::utils {
       switch (_layout) {
         case DataLayoutOption::aos: {
           ((this->storageAoS.template operator()<I+1>(targetIndex) = otherStorage.getAoS().template operator()<I+1>(sourceIndex)), ...);
+          break;
         }
         case DataLayoutOption::soa: {
           ((this->storageSoA.template operator()<I, false, host>(targetIndex) = otherStorage.getSoA().template operator()<I, false, host>(sourceIndex)), ...);
+          break;
         }
       }
     }

@@ -31,6 +31,14 @@ namespace autopas::utils {
     KokkosSoA(size_t N, const std::string& label) : views{Kokkos::DualView<Types>(label, N)...} {}
 
     /* Get/Set/Allocation */
+
+    void realloc(size_t numParticles) {
+      constexpr auto tupleSize = std::tuple_size<decltype(views)>::value;
+      constexpr auto I = std::make_index_sequence<tupleSize>{};
+
+      reallocImpl(numParticles, I);
+    }
+
     void resize(size_t numParticles) {
       if (numParticles == 0) {
         return;
@@ -121,6 +129,11 @@ namespace autopas::utils {
     template <std::size_t... I>
     void resizeImpl(size_t numParticles, std::index_sequence<I...>) {
       (std::get<I>(views).resize(numParticles), ...);
+    }
+
+    template <std::size_t... I>
+    void reallocImpl(size_t numParticles, std::index_sequence<I...>) {
+      (std::get<I>(views).realloc(numParticles), ...);
     }
 
     template <class Particle_T, std::size_t... I>

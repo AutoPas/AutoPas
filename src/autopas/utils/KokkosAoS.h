@@ -26,11 +26,15 @@ namespace autopas::utils {
     }
 
     /* Get/Set/Allocation */
+    void realloc(size_t numParticles) {
+      Kokkos::realloc(view, numParticles);
+    }
+
     void resize(size_t numParticles) {
       if (numParticles == 0) {
         return;
       }
-      Kokkos::realloc(view, numParticles);
+      Kokkos::resize(view, numParticles);
     }
 
     void addParticle(size_t index, const Particle_T& p) {
@@ -77,7 +81,7 @@ namespace autopas::utils {
   private:
 
     // TODO: think about converting this to a Kokkos::DualView and allow to store AoS particles on the GPU
-    Kokkos::View<Particle_T*, Kokkos::HostSpace> view;
+    Kokkos::View<Particle_T*, Kokkos::HostSpace> view {};
   };
 
 }

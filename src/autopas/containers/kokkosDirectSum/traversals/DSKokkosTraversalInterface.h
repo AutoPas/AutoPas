@@ -21,28 +21,26 @@ public:
 
   virtual ~DSKokkosTraversalInterface() = default;
 
-  void setOwnedToTraverse(utils::KokkosStorage<Particle_T>& input) {
+  void setOwnedToTraverse(utils::KokkosStorage<Particle_T>& input, DataLayoutOption targetLayout) {
 
-    auto storageLayout = input.getLayout();
-    _ownedParticles.setLayout(storageLayout);
+    _ownedParticles.setLayout(targetLayout);
 
-    if (storageLayout == DataLayoutOption::aos) {
+    if (targetLayout == DataLayoutOption::aos) {
       _ownedParticles.getAoS() = input.getAoS();
     }
-    else if (storageLayout == DataLayoutOption::soa) {
+    else if (targetLayout == DataLayoutOption::soa) {
       _ownedParticles.getSoA() = input.getSoA();
     }
   }
 
-  void setHaloToTraverse(utils::KokkosStorage<Particle_T>& input) {
+  void setHaloToTraverse(utils::KokkosStorage<Particle_T>& input, DataLayoutOption targetLayout) {
 
-    auto storageLayout = input.getLayout();
-    _haloParticles.setLayout(storageLayout);
+    _haloParticles.setLayout(targetLayout);
 
-    if (storageLayout == DataLayoutOption::aos) {
+    if (targetLayout == DataLayoutOption::aos) {
       _haloParticles.getAoS() = input.getAoS();
     }
-    else if (storageLayout == DataLayoutOption::soa) {
+    else if (targetLayout == DataLayoutOption::soa) {
       _haloParticles.getSoA() = input.getSoA();
     }
   }

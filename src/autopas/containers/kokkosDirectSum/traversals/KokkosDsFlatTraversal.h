@@ -70,6 +70,7 @@ explicit KokkosDsFlatTraversal(Functor *functor, DataLayoutOption dataLayout, bo
 #endif
       }
       else if (_dataLayout == DataLayoutOption::soa) {
+
         auto& ownedSoA = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA();
         auto& haloSoA = DSKokkosTraversalInterface<Particle_T>::_haloParticles.getSoA();
 

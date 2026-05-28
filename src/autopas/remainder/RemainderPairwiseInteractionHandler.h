@@ -84,7 +84,7 @@ class RemainderPairwiseInteractionHandler {
     // particleBuffer with all particles close in container
     // and haloParticleBuffer with owned, close particles in container.
     // This is always AoS-based because the container particles are found with region iterators,
-    // which don't have an SoA interface.
+    // which don't have an SoA interface. // TODO: this is actually not completely true any longer -> rethink that
     remainderHelperBufferContainerAoS<newton3>(f, container, particleBuffers, haloParticleBuffers);
 
     timerBufferContainer.stop();
@@ -185,6 +185,9 @@ class RemainderPairwiseInteractionHandler {
       for (auto &&p1 : particleBuffer) {
         const auto min = p1.getR() - cutoff;
         const auto max = p1.getR() + cutoff;
+
+        // TODO: forEachInRegionKokkos
+
         container.forEachInRegion(
             [&](auto &p2) {
               if constexpr (newton3) {
