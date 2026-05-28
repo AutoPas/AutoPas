@@ -118,6 +118,16 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
+ * Lists all traversal options applicable for the Kokkos Verlet Lists container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allKokkosVLCompatibleTraversals() {
+  static const auto s = filterAllOptions("vl_kokkos_", InteractionTypeOption::pairwise);
+  return s;
+}
+
+
+/**
  * Lists all traversal options applicable for the Verlet Lists Cells container.
  * @return set of all applicable traversal options.
  */
@@ -218,6 +228,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
         case ContainerOption::verletLists: {
           return allVLCompatibleTraversals();
+        }
+        case ContainerOption::verletListsKokkos: {
+          return allKokkosVLCompatibleTraversals();
         }
         case ContainerOption::verletListsCells: {
           return allVLCCompatibleTraversals();

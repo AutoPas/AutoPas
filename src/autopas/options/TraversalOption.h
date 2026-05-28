@@ -144,6 +144,12 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vl_list_iteration,
 
+    // VerletList traversal:
+    /**
+     * VerletList Kokkos flat traversal (renamed):
+     */
+    vl_kokkos_traversal_flat,
+
     // VerletListCells Traversals:
     /**
      * VLCC01Traversal : Equivalent to LCC01Traversal. Schedules all neighbor lists of one cell at once.
@@ -329,6 +335,7 @@ class TraversalOption : public Option<TraversalOption> {
 
         // VerletList Traversals:
         {TraversalOption::vl_list_iteration, "vl_list_iteration"},
+        {TraversalOption::vl_list_kokkos_traversal_flat, "vl_kokkos_traversal_flat"},
 
         // VerletListCells Traversals:
         {TraversalOption::vlc_sliced, "vlc_sliced"},

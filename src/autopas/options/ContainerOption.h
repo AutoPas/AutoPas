@@ -56,6 +56,8 @@ class ContainerOption : public Option<ContainerOption> {
      * fixed intervals. Memory access, also in SoA mode is scattered but high hit rate of particles in cutoff.
      */
     verletLists,
+
+    verletListsKokkos,
     /**
      * VerletListsCells : Similar to VerletLists but Lists are associated with the underlying cells to achieve location
      * information. Parallelization options similar to LinkedCells.
@@ -109,6 +111,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::linkedCells, "LinkedCells"},
         {ContainerOption::linkedCellsReferences, "LinkedCellsReferences"},
         {ContainerOption::verletLists, "VerletLists"},
+        {ContainerOption::verletListsKokkos, "VerletListsKokkos"},
         {ContainerOption::verletListsCells, "VerletListsCells"},
         {ContainerOption::verletClusterLists, "VerletClusterLists"},
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},

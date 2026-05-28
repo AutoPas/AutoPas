@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/kokkosDirectSum/KokkosDirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
@@ -16,6 +17,7 @@
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/containers/verletListsKokkos/VerletListsKokkos.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
@@ -80,6 +82,10 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
           boxMin, boxMax, cutoff, verletSkin, VerletLists<Particle_T>::BuildVerletListType::VerletSoA, cellSizeFactor);
       break;
     }
+      case ContainerOption::verletListsKokkos: {
+        container = std::make_unique<VerletListsKokkos<Particle_T>>(dataLayout, boxMin, boxMax, verletSkin);
+        break;
+      }
     case ContainerOption::verletListsCells: {
       container = std::make_unique<VerletListsCells<Particle_T, VLCAllCellsNeighborList<Particle_T>>>(
           boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, loadEstimator,
