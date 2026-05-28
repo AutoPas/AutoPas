@@ -8,6 +8,7 @@
 
 #include <map>
 #include <optional>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -112,4 +113,23 @@ class EvidenceCollection {
    */
   size_t _latestTuningPhase{0};
 };
+
+/**
+ * Enable readable logging for spdlog/fmt.
+ * @param mode
+ * @return string representation
+ */
+inline std::string format_as(EvidenceCollection::EvidenceMode mode) {
+  switch (mode) {
+    case EvidenceCollection::EFFECTIVE:
+      return "Effective";
+    case EvidenceCollection::TRAVERSAL:
+      return "Traversal";
+    case EvidenceCollection::TOTAL:
+      return "Total";
+    default:
+      return "UnknownEvidenceMode";
+  }
+}
+
 }  // namespace autopas

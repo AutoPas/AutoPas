@@ -9,6 +9,7 @@
 
 #include <bitset>
 #include <iostream>
+#include <string>
 
 namespace autopas {
 /**
@@ -56,27 +57,32 @@ constexpr OwnershipState operator|(const OwnershipState a, const OwnershipState 
 constexpr int64_t toInt64(const OwnershipState a) { return static_cast<int64_t>(a); }
 
 /**
+ * This function is needed to pass an ownership state to spdlog/fmt.
+ * @param state the OwnershipState to format
+ * @return string representation of the ownership state
+ */
+inline std::string format_as(const OwnershipState &state) {
+  switch (state) {
+    case OwnershipState::dummy:
+      return "dummy";
+    case OwnershipState::owned:
+      return "owned";
+    case OwnershipState::halo:
+      return "halo";
+    default:
+      return "unknown state: 0b" + std::bitset<4>(static_cast<int64_t>(state)).to_string();
+  }
+}
+
+/**
  * Insertion operator for OwnershipState.
  * This function enables passing ownershipState to an ostream via `<<`.
  * @param os
  * @param ownershipState
  * @return os
  */
-[[maybe_unused]] static std::ostream &operator<<(std::ostream &os, const OwnershipState &ownershipState) {
-  switch (ownershipState) {
-    case OwnershipState::dummy:
-      os << "dummy";
-      break;
-    case OwnershipState::owned:
-      os << "owned";
-      break;
-    case OwnershipState::halo:
-      os << "halo";
-      break;
-    default:
-      os << "unknown state: 0b" << std::bitset<4>(static_cast<int64_t>(ownershipState));
-      break;
-  }
-  return os;
+inline std::ostream &operator<<(std::ostream &os, const OwnershipState &ownershipState) {
+  // Reuse format_as to prevent duplicated logic
+  return os << format_as(ownershipState);
 }
 }  // namespace autopas

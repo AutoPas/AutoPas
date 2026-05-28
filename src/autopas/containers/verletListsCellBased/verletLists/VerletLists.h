@@ -131,7 +131,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       dataLayout = DataLayoutOption::soa;
     } else {
       utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
-                                         _buildVerletListType);
+                                         static_cast<int>(_buildVerletListType));
     }
     auto traversal =
         LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
