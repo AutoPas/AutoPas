@@ -230,6 +230,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else if (strArg.find("dem") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::dem;
         } else {
           throw std::runtime_error("Unrecognized pairwise functor!");
         }
@@ -594,6 +596,71 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.globalForce.description;
 
         config.globalForce.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
+      } else if (key == config.demElasticStiffness.name) {
+        expected = "Double Value";
+        description = config.demElasticStiffness.description;
+
+        config.demElasticStiffness.value = node[key].as<double>();
+      } else if (key == config.demNormalViscosity.name) {
+        expected = "Double Value";
+        description = config.demNormalViscosity.description;
+
+        config.demNormalViscosity.value = node[key].as<double>();
+      } else if (key == config.demFrictionViscosity.name) {
+        expected = "Double Value";
+        description = config.demFrictionViscosity.description;
+
+        config.demFrictionViscosity.value = node[key].as<double>();
+      } else if (key == config.demRollingViscosity.name) {
+        expected = "Double Value";
+        description = config.demRollingViscosity.description;
+
+        config.demRollingViscosity.value = node[key].as<double>();
+      } else if (key == config.demTorsionViscosity.name) {
+        expected = "Double Value";
+        description = config.demTorsionViscosity.description;
+
+        config.demTorsionViscosity.value = node[key].as<double>();
+      } else if (key == config.demStaticFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.demStaticFrictionCoeff.description;
+
+        config.demStaticFrictionCoeff.value = node[key].as<double>();
+      } else if (key == config.demDynamicFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.demDynamicFrictionCoeff.description;
+
+        config.demDynamicFrictionCoeff.value = node[key].as<double>();
+      } else if (key == config.demRollingFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.demRollingFrictionCoeff.description;
+
+        config.demRollingFrictionCoeff.value = node[key].as<double>();
+      } else if (key == config.demTorsionFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.demTorsionFrictionCoeff.description;
+
+        config.demTorsionFrictionCoeff.value = node[key].as<double>();
+      } else if (key == config.demHeatConductivity.name) {
+        expected = "Double Value";
+        description = config.demHeatConductivity.description;
+
+        config.demHeatConductivity.value = node[key].as<double>();
+      } else if (key == config.demHeatGenerationFactor.name) {
+        expected = "Double Value";
+        description = config.demHeatGenerationFactor.description;
+
+        config.demHeatGenerationFactor.value = node[key].as<double>();
+      } else if (key == config.demBackgroundForceFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.demBackgroundForceFrictionCoeff.description;
+
+        config.demBackgroundForceFrictionCoeff.value = node[key].as<double>();
+      } else if (key == config.demBackgroundTorqueFrictionCoeff.name) {
+        expected = "Double Value";
+        description = config.demBackgroundTorqueFrictionCoeff.description;
+
+        config.demBackgroundTorqueFrictionCoeff.value = node[key].as<double>();
       } else if (key == MDFlexConfig::siteStr) {
         expected = "See AllOptions.yaml for examples.";
         description = "";
@@ -603,6 +670,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.sigmaMap.value.clear();
         config.nuMap.value.clear();
         config.massMap.value.clear();
+        config.radiusMap.value.clear();
+        config.specificHeatMap.value.clear();
 
         int siteID = 0;
         std::vector<std::string> siteErrors;
@@ -635,6 +704,13 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           const auto nu =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.nuMap.name.c_str(), siteErrors, false);
           config.addATParametersToSite(siteID, nu);
+
+          // Check DEM parameters
+          const auto radius = parseComplexTypeValueSingle<double>(siteIterator->second, config.radiusMap.name.c_str(),
+                                                                  siteErrors, false);
+          const auto specificHeat = parseComplexTypeValueSingle<double>(
+              siteIterator->second, config.specificHeatMap.name.c_str(), siteErrors, false);
+          config.addDEMParametersToSite(siteID, radius, specificHeat);
         }
       } else if (key == MDFlexConfig::moleculesStr) {
         // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion

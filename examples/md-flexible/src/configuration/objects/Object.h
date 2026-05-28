@@ -51,6 +51,10 @@ class Object {
     particle.setQuaternion({1.0, 0.0, 0.0, 0.0});  // todo: add option for this to be set randomly
     particle.setAngularVel({0.0, 0.0, 0.0});
     particle.setTorque({0.0, 0.0, 0.0});
+#elif defined(MD_FLEXIBLE_FUNCTOR_DEM)
+    particle.setAngularVel({0.0, 0.0, 0.0});
+    particle.setTorque({0.0, 0.0, 0.0});
+    particle.setHeatFlux(0.0);
 #endif
 
     return particle;
