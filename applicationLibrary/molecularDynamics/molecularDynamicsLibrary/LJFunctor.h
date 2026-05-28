@@ -97,7 +97,7 @@ class LJFunctor
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<SoAFloatPrecision, size_t> &particlePropertiesLibrary)
       : LJFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
@@ -141,18 +141,18 @@ class LJFunctor
       }
     }
     auto dr = i.getR() - j.getR();
-    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+    SoAFloatPrecision dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquared) {
       return;
     }
 
-    double invdr2 = 1. / dr2;
-    double lj6 = sigmaSquared * invdr2;
+    SoAFloatPrecision invdr2 = 1. / dr2;
+    SoAFloatPrecision lj6 = sigmaSquared * invdr2;
     lj6 = lj6 * lj6 * lj6;
-    double lj12 = lj6 * lj6;
-    double lj12m6 = lj12 - lj6;
-    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    SoAFloatPrecision lj12 = lj6 * lj6;
+    SoAFloatPrecision lj12m6 = lj12 - lj6;
+    SoAFloatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = dr * fac;
     i.addF(f);
     if (newton3) {
@@ -173,7 +173,7 @@ class LJFunctor
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
       auto virial = dr * f;
-      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
+      SoAFloatPrecision potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;

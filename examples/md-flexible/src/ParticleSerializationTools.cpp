@@ -40,22 +40,25 @@ constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     mdLib::MultisiteMoleculeLJ::AttributeNames::typeId,
     mdLib::MultisiteMoleculeLJ::AttributeNames::ownershipState};
 #else
-constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
-    mdLib::MoleculeLJ::AttributeNames::id,
-    mdLib::MoleculeLJ::AttributeNames::posX,
-    mdLib::MoleculeLJ::AttributeNames::posY,
-    mdLib::MoleculeLJ::AttributeNames::posZ,
-    mdLib::MoleculeLJ::AttributeNames::velocityX,
-    mdLib::MoleculeLJ::AttributeNames::velocityY,
-    mdLib::MoleculeLJ::AttributeNames::velocityZ,
-    mdLib::MoleculeLJ::AttributeNames::forceX,
-    mdLib::MoleculeLJ::AttributeNames::forceY,
-    mdLib::MoleculeLJ::AttributeNames::forceZ,
-    mdLib::MoleculeLJ::AttributeNames::oldForceX,
-    mdLib::MoleculeLJ::AttributeNames::oldForceY,
-    mdLib::MoleculeLJ::AttributeNames::oldForceZ,
-    mdLib::MoleculeLJ::AttributeNames::typeId,
-    mdLib::MoleculeLJ::AttributeNames::ownershipState};
+// TODO: why do we not use the Particle_T definition!?
+constexpr std::array<typename ParticleType::AttributeNames, 16> Attributes = {
+    ParticleType::AttributeNames::id,
+    ParticleType::AttributeNames::posX,
+    ParticleType::AttributeNames::posY,
+    ParticleType::AttributeNames::posZ,
+    ParticleType::AttributeNames::velocityX,
+    ParticleType::AttributeNames::velocityY,
+    ParticleType::AttributeNames::velocityZ,
+    ParticleType::AttributeNames::forceX,
+    ParticleType::AttributeNames::forceY,
+    ParticleType::AttributeNames::forceZ,
+    ParticleType::AttributeNames::oldForceX,
+    ParticleType::AttributeNames::oldForceY,
+    ParticleType::AttributeNames::oldForceZ,
+    ParticleType::AttributeNames::mass,
+    ParticleType::AttributeNames::typeId,
+    ParticleType::AttributeNames::ownershipState
+};
 #endif
 
 /**
@@ -64,7 +67,7 @@ constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
 #if MD_FLEXIBLE_MODE == MULTISITE
 constexpr size_t AttributesSize = 200;
 #else
-constexpr size_t AttributesSize = 120;
+constexpr size_t AttributesSize = 128;
 #endif
 
 /**

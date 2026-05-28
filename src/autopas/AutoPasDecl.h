@@ -29,6 +29,7 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/WrapKokkos.h"
 
 namespace autopas {
 
@@ -285,29 +286,6 @@ class AutoPas {
   ConstIteratorT begin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
-   * execute code on all particles in parallel as defined by a lambda function
-   * @tparam Lambda (Particle_T &p) -> void
-   * @param forEachLambda code to be executed on all particles
-   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
-   * @note not actually parallel until kokkos integration
-   */
-  template <typename Lambda>
-  void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
-  }
-
-  /**
-   * @copydoc forEachParallel()
-   * @note const version
-   */
-  template <typename Lambda>
-  void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
-  }
-
-  /**
    * Execute code on all particles as defined by a lambda function.
    * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
@@ -317,6 +295,20 @@ class AutoPas {
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
   }
+
+  /**
+   * Execute code on all particles as defined bz a lambda function with Kokkos in the requested execution space
+   * @tparam ExecSpace Kokkos execution space
+   * @tparam Lambda (i, KokkosStorage<Particle_T>) -> void
+   * @param forEachLambda code to be executed on all particles
+   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
+   */
+  template <class ExecSpace, typename Lambda>
+  void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    withStaticContainerType(getContainer(), [&](auto &container) { container.template forEachKokkos<ExecSpace>(forEachLambda, behavior); });
+  }
+
+  bool containerAllowsKokkos() const { return getContainer().allowsKokkos(); }
 
   /**
    * @copydoc forEach()
@@ -350,6 +342,11 @@ class AutoPas {
   void reduceParallel(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO lgaertner: parallelize with kokkos integration
     withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
+  }
+
+  template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda forEachLambda, Result& result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    withStaticContainerType(getContainer(), [&](auto &container) { container.template reduceKokkos<ExecSpace, Result, Reduction>(forEachLambda, result, behavior); });
   }
 
   /**
@@ -414,39 +411,6 @@ class AutoPas {
                                          IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const;
 
   /**
-   * Execute code on all particles in a certain region in parallel as defined by a lambda function.
-   * @tparam Lambda (Particle_T &p) -> void
-   * @param forEachLambda code to be executed on all particles
-   * @param lowerCorner lower corner of bounding box
-   * @param higherCorner higher corner of bounding box
-   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownerOrHalo
-   * @note not actually parallel until kokkos integration
-   */
-  template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                               const std::array<double, 3> &higherCorner,
-                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    // TODO (lgaertner): parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) {
-      container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
-    });
-  }
-
-  /**
-   * @copydoc forEachInRegionParallel()
-   * @note const version
-   */
-  template <typename Lambda>
-  void forEachInRegionParallel(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                               const std::array<double, 3> &higherCorner,
-                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    // TODO (lgaertner): parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) {
-      container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
-    });
-  }
-
-  /**
    * Execute code on all particles in a certain region as defined by a lambda function.
    * @tparam Lambda (Particle_T &p) -> void
    * @param forEachLambda code to be executed on all particles
@@ -461,6 +425,18 @@ class AutoPas {
     withStaticContainerType(getContainer(), [&](auto &container) {
       container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     });
+  }
+
+  /**
+ * Execute code on all particles as defined bz a lambda function with Kokkos in the requested execution space
+ * @tparam ExecSpace Kokkos execution space
+ * @tparam Lambda (i, KokkosStorage<Particle_T>) -> void
+ * @param forEachLambda code to be executed on all particles
+ * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
+ */
+  template <class ExecSpace, typename Lambda>
+  void forEachInRegionKokkos(Lambda forEachLambda, const std::array<double, 3>& lowerCorner, const std::array<double, 3>& higherCorner, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
+    withStaticContainerType(getContainer(), [&](auto &container) { container.template forEachInRegionKokkos<ExecSpace, true>(forEachLambda, behavior, lowerCorner, higherCorner); });
   }
 
   /**
@@ -592,6 +568,10 @@ class AutoPas {
    * @param boxMax
    */
   void setBoxMax(const std::array<double, 3> &boxMax) { _logicHandlerInfo.boxMax = boxMax; }
+
+  void setKokkosChunkSize(const std::set<size_t>& kokkosChunkSize) { _allowedKokkosChunkSize = kokkosChunkSize; }
+
+  void setKokkosTeamSize(const std::set<size_t>& kokkosTeamSize) { _allowedKokkosTeamSize = kokkosTeamSize; }
 
   /**
    * Get cutoff radius.
@@ -914,6 +894,11 @@ class AutoPas {
     return _allowedDataLayouts.at(interactionType);
   }
 
+  const std::set<DataLayoutOption> &getAllowedContainerLayouts(
+    const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedContainerLayouts.at(interactionType);
+  }
+
   /**
    * Set the list of allowed data layouts.
    * For possible data layouts choices see options::DataLayoutOption::Value.
@@ -929,6 +914,17 @@ class AutoPas {
       }
     } else {
       _allowedDataLayouts[interactionType] = allowedDataLayouts;
+    }
+  }
+
+  void setAllowedContainerLayouts(const std::set<DataLayoutOption> &allowedDataLayouts,
+                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedContainerLayouts[iType] = allowedDataLayouts;
+      }
+    } else {
+      _allowedContainerLayouts[interactionType] = allowedDataLayouts;
     }
   }
 
@@ -1169,6 +1165,10 @@ class AutoPas {
   std::unordered_map<InteractionTypeOption::Value, std::set<DataLayoutOption>> _allowedDataLayouts{
       {InteractionTypeOption::pairwise, DataLayoutOption::getMostOptions()},
       {InteractionTypeOption::triwise, DataLayoutOption::getMostOptions()}};
+
+  std::unordered_map<InteractionTypeOption::Value, std::set<DataLayoutOption>> _allowedContainerLayouts{
+        {InteractionTypeOption::pairwise, DataLayoutOption::getMostOptions()},
+        {InteractionTypeOption::triwise, DataLayoutOption::getMostOptions()}};
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion for pairwise traversals.
    */
@@ -1212,6 +1212,11 @@ class AutoPas {
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
   size_t _sortingThreshold{8};
+
+  std::set<size_t> _allowedKokkosChunkSize{0};
+
+  std::set<size_t> _allowedKokkosTeamSize{0};
+
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
    * Triggers reserve() and provides a parallel loop with deliberate scheduling.

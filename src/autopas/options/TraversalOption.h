@@ -29,6 +29,22 @@ class TraversalOption : public Option<TraversalOption> {
      */
     ds_sequential,
 
+    // KokkosDirectSum Traversals:
+    /**
+     * KokkosDsFlatTraversal : TOOD
+     */
+    ds_kokkos_flat,
+
+    /**
+     * KokkosDsTeamsTraversal : TODO
+     */
+    ds_kokkos_teams,
+
+    /**
+     * KokkosDsChunksTraversal : TODO
+     */
+    ds_kokkos_chunks,
+
     // LinkedCell Traversals:
     /**
      * + LCC01Traversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
@@ -285,6 +301,11 @@ class TraversalOption : public Option<TraversalOption> {
     return {
         // DirectSum Traversals:
         {TraversalOption::ds_sequential, "ds_sequential"},
+
+        // KokkosDirectSum Traversals:
+        {TraversalOption::ds_kokkos_flat, "ds_kokkos_flat"},
+        {TraversalOption::ds_kokkos_teams, "ds_kokkos_teams"},
+        {TraversalOption::ds_kokkos_chunks, "ds_kokkos_chunks"},
 
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},

@@ -102,13 +102,16 @@ const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const M
   const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
   const auto particleType =
       parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  // TODO: the following changes also need to be ported to the other generators
+  // TODO: it might also make sense to think about how to handle that in a better way
+  const auto particleMass = parseComplexTypeValueSingle<double>(node, MDFlexConfig::particleMassStr, objectErrors);
   const auto particleSpacing =
       parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
   const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
-  const CubeClosestPacked cubeClosestPacked(velocity, particleType, particleSpacing, boxLength, bottomLeftCorner);
+  const CubeClosestPacked cubeClosestPacked(velocity, particleType, particleMass, particleSpacing, boxLength, bottomLeftCorner);
 
   return cubeClosestPacked;
 }
@@ -163,9 +166,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.loadBalancingInterval.description;
 
         config.loadBalancingInterval.value = node[key].as<int>();
-        if (config.loadBalancingInterval.value < 0) {
-          throw std::runtime_error("Load balancing interval must be a positive integer.");
-        }
       } else if (key == config.selectorStrategy.name) {
         expected = "Exactly one selector strategy out of the possible values.";
         description = config.selectorStrategy.description;
@@ -209,6 +209,15 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.dataLayoutOptions.value.empty()) {
           throw std::runtime_error("Parsed data-layouts-list is empty.");
         }
+      } else if (key == config.containerLayoutOptions.name) {
+        expected = "YAML-sequence of possible values.";
+        description = config.containerLayoutOptions.description;
+
+        config.containerLayoutOptions.value =
+            autopas::DataLayoutOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+        if (config.containerLayoutOptions.value.empty()) {
+          throw std::runtime_error("Parsed container-layouts-list is empty.");
+        }
       } else if (key == config.dataLayoutOptions3B.name) {
         expected = "YAML-sequence of possible values.";
         description = config.dataLayoutOptions3B.description;
@@ -226,6 +235,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
         if (strArg.find("avx") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
+        } else if (strArg.find("kokkos") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_KOKKOS;
         } else if (strArg.find("sve") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
@@ -260,9 +271,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.tuningPhases.description;
 
         config.tuningPhases.value = node[key].as<long>();
-        if (config.tuningPhases.value < 0) {
-          throw std::runtime_error("The number of tuning phases has to be a positive integer.");
-        }
       } else if (key == config.dontCreateEndConfig.name) {
         expected = "Boolean Value";
         description = config.dontCreateEndConfig.description;
@@ -552,9 +560,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.verletClusterSize.description;
 
         config.verletClusterSize.value = node[key].as<int>();
-        if (config.verletClusterSize.value < 0) {
-          throw std::runtime_error("Verlet cluster size has to be a positive integer!");
-        }
       } else if (key == config.vtkFileName.name) {
         expected = "String";
         description = config.vtkFileName.description;
@@ -607,14 +612,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         int siteID = 0;
         std::vector<std::string> siteErrors;
 
-        auto pushSiteError = [&](const std::string &error) {
-          std::stringstream ss;
-          ss << "YamlParser: Error parsing site with ID " << siteID << "." << std::endl
-             << "Message: " << error << std::endl
-             << "See AllOptions.yaml for examples." << std::endl;
-          errors.push_back(ss.str());
-        };
-
         for (auto siteIterator = node[MDFlexConfig::siteStr].begin(); siteIterator != node[MDFlexConfig::siteStr].end();
              ++siteIterator) {
           siteErrors.clear();
@@ -647,6 +644,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.molToSitePosMap.clear();
         config.momentOfInertiaMap.clear();
 
+#if MD_FLEXIBLE_MODE == MULTISITE
         int molID = 0;
         std::vector<std::string> molErrors;
 
@@ -658,7 +656,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           errors.push_back(ss.str());
         };
 
-#if MD_FLEXIBLE_MODE == MULTISITE
         for (auto molIterator = node[MDFlexConfig::moleculesStr].begin();
              molIterator != node[MDFlexConfig::moleculesStr].end(); ++molIterator) {
           molErrors.clear();
@@ -844,6 +841,32 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                         expected, description));
         }
 #endif
+      } else if (key == config.kokkosTeamSize.name) {
+        expected = "unsigned integer > 0";
+        description = config.kokkosTeamSize.description;
+        try {
+          config.kokkosTeamSize.value.clear();
+          auto intermediate = autopas::utils::StringUtils::parseNumberSet(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))->getAll();
+          for (auto& item : intermediate) {
+            config.kokkosTeamSize.value.emplace(static_cast<size_t>(item));
+          }
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
+      } else if (key == config.kokkosChunkSize.name) {
+        expected = "unsigned integer > 0";
+        description = config.kokkosChunkSize.description;
+        try {
+          config.kokkosChunkSize.value.clear();
+          auto intermediate = autopas::utils::StringUtils::parseNumberSet(
+            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))->getAll();
+          for (auto& item : intermediate) {
+            config.kokkosChunkSize.value.emplace(static_cast<size_t>(item));
+          }
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;

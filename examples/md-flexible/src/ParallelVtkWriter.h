@@ -41,7 +41,7 @@ class ParallelVtkWriter {
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    * @param decomposition: The decomposition of the global domain.
    */
-  void recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
+  void recordTimestep(size_t currentIteration, autopas::AutoPas<ParticleType> &autoPasContainer,
                       const RegularGridDecomposition &decomposition) const;
 
  private:
@@ -99,7 +99,7 @@ class ParallelVtkWriter {
    * @param currentIteration: The simulations current iteration.
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    */
-  void recordParticleStates(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer) const;
+  void recordParticleStates(size_t currentIteration, autopas::AutoPas<ParticleType> &autoPasContainer) const;
 
   /**
    * Writes the current domain subdivision into vtk files.

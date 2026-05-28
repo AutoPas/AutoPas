@@ -37,10 +37,8 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                              const double cutoff, const double skin, const size_t sortingThreshold)
-      : ParticleContainerInterface<ParticleType>(skin),
+      : ParticleContainerInterface<ParticleType>(boxMin, boxMax, skin),
         _cells(),
-        _boxMin(boxMin),
-        _boxMax(boxMax),
         _cutoff(cutoff),
         _skin(skin),
         _sortingThreshold(sortingThreshold) {}
@@ -66,16 +64,6 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   CellBasedParticleContainer &operator=(const CellBasedParticleContainer &other) = delete;
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::getBoxMax()
-   */
-  [[nodiscard]] const std::array<double, 3> &getBoxMax() const final { return _boxMax; }
-
-  /**
-   * @copydoc autopas::ParticleContainerInterface::getBoxMin()
-   */
-  [[nodiscard]] const std::array<double, 3> &getBoxMin() const final { return _boxMin; }
-
-  /**
    * @copydoc autopas::ParticleContainerInterface::getCutoff()
    */
   [[nodiscard]] double getCutoff() const final { return _cutoff; }
@@ -89,11 +77,6 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
   [[nodiscard]] double getInteractionLength() const final { return _cutoff + _skin; }
-  /**
-   * Returns the verlet Skin length
-   * @return _skin
-   */
-  [[nodiscard]] double getVerletSkin() const final { return _skin; }
 
   /**
    * Deletes all particles from the container.
@@ -164,8 +147,6 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   size_t _sortingThreshold;
 
  private:
-  std::array<double, 3> _boxMin;
-  std::array<double, 3> _boxMax;
   double _cutoff;
   double _skin;
 };

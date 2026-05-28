@@ -8,6 +8,8 @@
 #include <array>
 #include <cstddef>
 
+#include "src/TypeDefinitions.h"
+
 /**
  * Provides some functionality commonly used around rectangular domains.
  */
@@ -19,7 +21,7 @@ namespace DomainTools {
  * @param boxMax the maximum boundaries of the box domain.
  * @return true if the coordinates lie within the provided box.
  */
-bool isInsideDomain(const std::array<double, 3> &coordinates, const std::array<double, 3> &boxMin,
+bool isInsideDomain(const std::array<ParticleType::ParticleSoAFloatPrecision, 3> &coordinates, const std::array<double, 3> &boxMin,
                     const std::array<double, 3> &boxMax);
 
 /**

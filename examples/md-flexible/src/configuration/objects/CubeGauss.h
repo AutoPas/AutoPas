@@ -28,7 +28,7 @@ class CubeGauss : public Object {
   CubeGauss(const std::array<double, 3> &velocity, unsigned long typeId, size_t numParticles,
             const std::array<double, 3> &boxLength, const std::array<double, 3> &distributionMean,
             const std::array<double, 3> &distributionStdDev, const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity, typeId),
+      : Object(velocity, typeId, 1. /* TODO: mass */),
         _numParticles(numParticles),
         _boxLength(boxLength),
         _distributionMean(distributionMean),

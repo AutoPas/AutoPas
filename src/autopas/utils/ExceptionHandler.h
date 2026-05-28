@@ -155,8 +155,8 @@ void ExceptionHandler::exception(const char *const e);  // NOLINT
 
 template <typename First, typename... Args>
 void ExceptionHandler::exception(std::string exceptionString, First first, Args... args) {
-  std::string s = fmt::format(fmt::runtime(exceptionString), first, args...);
-  exception(s);
+  //std::string s = fmt::format(fmt::runtime(exceptionString), first, args...);
+  exception(exceptionString);
 }
 
 }  // namespace autopas::utils

@@ -48,8 +48,11 @@ LinguisticVariable::operator std::string() const {
                         return acc + "\t" + b.second->printBaseMembershipFunction() + "\n";
                       });
 
+  /*
   return fmt::format("LinguisticVariable: domain: \"{}\" range: ({}, {})\n{}", _name, range.first, range.second,
                      linguisticTermsStr);
+                     */
+  return "CUDA!";
 }
 
 }  // namespace autopas::FuzzyLogic

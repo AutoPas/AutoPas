@@ -24,7 +24,7 @@ class Object {
    * @param velocity
    * @param typeId
    */
-  Object(const std::array<double, 3> &velocity, unsigned long typeId) : _velocity(velocity), _typeId(typeId) {}
+  Object(const std::array<double, 3> &velocity, unsigned long typeId, double mass) : _velocity(velocity), _typeId(typeId), _mass(mass) {}
 
   virtual ~Object() = default;
 
@@ -44,7 +44,13 @@ class Object {
     particle.setID(particleId);
     particle.setTypeId(_typeId);
     particle.setOwnershipState(autopas::OwnershipState::owned);
-    particle.setV(_velocity);
+    std::array vel = {
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(_velocity.at(0)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(_velocity.at(1)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(_velocity.at(2)),
+    };
+    particle.setV(vel);
+    particle.setMass(_mass);
     particle.setF({0.0, 0.0, 0.0});
     particle.setOldF({0.0, 0.0, 0.0});
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -127,6 +133,9 @@ class Object {
    * multi-site simulations, this refers to the molId.
    */
   unsigned long _typeId;
+
+  double _mass;
+
   /**
    * valueOffset of MDFlexConfig - expected indent
    */

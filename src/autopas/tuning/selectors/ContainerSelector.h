@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/kokkosDirectSum/KokkosDirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
@@ -51,11 +52,17 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
   const auto &cellSizeFactor = containerInfo.cellSizeFactor;
   const auto &loadEstimator = containerInfo.loadEstimator;
   const auto &sortingThreshold = containerInfo.sortingThreshold;
+  const auto &dataLayout = containerInfo.dataLayout;
 
   std::unique_ptr<ParticleContainerInterface<Particle_T>> container;
   switch (containerChoice) {
     case ContainerOption::directSum: {
       container = std::make_unique<DirectSum<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, sortingThreshold);
+      break;
+    }
+
+    case ContainerOption::kokkosDirectSum: {
+      container = std::make_unique<KokkosDirectSum<Particle_T>>(dataLayout, boxMin, boxMax, verletSkin);
       break;
     }
 

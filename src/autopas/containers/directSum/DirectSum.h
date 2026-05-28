@@ -13,7 +13,6 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
-#include "autopas/containers/directSum/traversals/DSTraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/particles/OwnershipState.h"
@@ -81,6 +80,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    * @copydoc ParticleContainerInterface::getContainerType()
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::directSum; }
+
+  bool allowsKokkos() const override { return false; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     this->getOwnedCell().reserve(numParticles);
@@ -210,6 +211,21 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
       utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
           std::nullopt) const override {
     return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
+  }
+
+  template <class ExecSpace, typename Lambda>
+  void forEachKokkos(Lambda, IteratorBehavior) {
+    // No Op
+  }
+
+  template <class, bool, typename Lambda>
+  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3>&, const std::array<double, 3>&) {
+    // No Op
+  }
+
+  template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda, Result&, IteratorBehavior) {
+    // No Op
   }
 
   /**
@@ -499,7 +515,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    */
   template <typename Traversal>
   void prepareTraversal(Traversal &traversal) {
-    auto *dsTraversal = dynamic_cast<DSTraversalInterface *>(traversal);
+    auto *dsTraversal = dynamic_cast<TraversalInterface *>(traversal);
     auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCellType> *>(traversal);
     if (dsTraversal && cellTraversal) {
       cellTraversal->setSortingThreshold(this->_sortingThreshold);

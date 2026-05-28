@@ -38,7 +38,18 @@
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
+#include "autopas/utils/KokkosStorage.h"
+
 namespace autopas {
+
+// TODO: it might make sense to outsource this to a common location to avoid duplication
+#ifdef KOKKOS_ENABLE_CUDA
+  using DeviceSpace = Kokkos::CudaSpace;
+  constexpr bool ForEachHostFlag = false;
+#else
+  using DeviceSpace = Kokkos::HostSpace;
+  constexpr bool ForEachHostFlag = true;
+#endif
 
 /**
  * The LogicHandler takes care of the containers s.t. they are all in the same valid state.
@@ -85,7 +96,8 @@ class LogicHandler {
                                                             _logicHandlerInfo.verletSkin,
                                                             _verletClusterSize,
                                                             _sortingThreshold,
-                                                            configuration.loadEstimator};
+                                                            configuration.loadEstimator,
+                                                            configuration.containerDataLayout};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
@@ -642,17 +654,35 @@ class LogicHandler {
    * @param deltaT is the time step
    * @return estimate of the current rebuild frequency
    */
-  double getVelocityMethodRFEstimate(const double skin, const double deltaT) const {
+  double getVelocityMethodRFEstimate(const double skin, const double deltaT) {
     using autopas::utils::ArrayMath::dot;
     // Initialize the maximum velocity to zero
     double maxVelocity = 0;
     // Iterate over the owned particles in container to determine maximum velocity
-    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
-    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-      std::array<double, 3> tempVel = iter->getV();
-      double tempVelAbs = sqrt(dot(tempVel, tempVel));
-      maxVelocity = std::max(tempVelAbs, maxVelocity);
+    if (!getContainer().allowsKokkos()) {
+      AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
+      for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+        std::array<double, 3> tempVel = iter->getV();
+        double tempVelAbs = sqrt(dot(tempVel, tempVel));
+        maxVelocity = std::max(tempVelAbs, maxVelocity);
+      }
+    } else {
+
+      auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage, double &localMaxVelocity) {
+        const auto velX = storage.template operator()<Particle_T::AttributeNames::velocityX, true, ForEachHostFlag>(i);
+        const auto velY = storage.template operator()<Particle_T::AttributeNames::velocityY, true, ForEachHostFlag>(i);
+        const auto velZ = storage.template operator()<Particle_T::AttributeNames::velocityZ, true, ForEachHostFlag>(i);
+
+        const auto tempVelAbs = Kokkos::sqrt(velX*velX + velY*velY + velZ*velZ);
+
+        localMaxVelocity = Kokkos::max(tempVelAbs, localMaxVelocity);
+      };
+
+      withStaticContainerType(getContainer(), [&lambda, &maxVelocity](auto& actualContainer) {
+        actualContainer.template reduceKokkos<DeviceSpace::execution_space, double, Kokkos::Max<double>>(lambda, maxVelocity, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+      });
     }
+
     // return the rebuild frequency estimate
     return skin / maxVelocity / deltaT / 2;
   }
@@ -943,12 +973,30 @@ class LogicHandler {
 template <typename Particle_T>
 void LogicHandler<Particle_T>::updateRebuildPositions() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
-  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
-  // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel)
-  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-    iter->resetRAtRebuild();
+  if (!getContainer().allowsKokkos()) {
+    // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
+    // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
+    // require a rebuild of neighbor lists.
+    AUTOPAS_OPENMP(parallel)
+    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+      iter->resetRAtRebuild();
+    }
+  }
+  else {
+
+    auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage) {
+      const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, true, ForEachHostFlag>(i);
+      const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, true, ForEachHostFlag>(i);
+      const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, true, ForEachHostFlag>(i);
+
+      storage.template operator()<Particle_T::AttributeNames::rebuildX, true, ForEachHostFlag>(i) = pX;
+      storage.template operator()<Particle_T::AttributeNames::rebuildY, true, ForEachHostFlag>(i) = pY;
+      storage.template operator()<Particle_T::AttributeNames::rebuildZ, true, ForEachHostFlag>(i) = pZ;
+    };
+
+    withStaticContainerType(getContainer(), [&lambda] (auto& actualContainer) {
+      actualContainer.template forEachKokkos<DeviceSpace::execution_space>(lambda, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+    });
   }
 #endif
 }
@@ -988,19 +1036,54 @@ bool LogicHandler<Particle_T>::neighborListsAreValid() {
 template <typename Particle_T>
 void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+
+
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
-  const auto halfSkinSquare = skin * skin * 0.25;
+  const typename Particle_T::ParticleSoAFloatPrecision halfSkinSquare = skin * skin * 0.25;
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
-  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-    const auto distance = iter->calculateDisplacementSinceRebuild();
-    const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
-    _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
+  if (!getContainer().allowsKokkos()) {
+    AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
+    for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
+      const auto distance = iter->calculateDisplacementSinceRebuild();
+      const auto distanceSquare = utils::ArrayMath::dot(distance, distance);
+
+      _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
+    }
   }
+  else {
+
+    bool test = _neighborListInvalidDoDynamicRebuild;
+
+    auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage, bool& local) {
+
+        const typename Particle_T::ParticleSoAFloatPrecision pX = storage.template operator()<Particle_T::AttributeNames::posX, true, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision pY = storage.template operator()<Particle_T::AttributeNames::posY, true, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision pZ = storage.template operator()<Particle_T::AttributeNames::posZ, true, ForEachHostFlag>(i);
+
+        const typename Particle_T::ParticleSoAFloatPrecision rebuildX = storage.template operator()<Particle_T::AttributeNames::rebuildX, true, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision rebuildY = storage.template operator()<Particle_T::AttributeNames::rebuildY, true, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision rebuildZ = storage.template operator()<Particle_T::AttributeNames::rebuildZ, true, ForEachHostFlag>(i);
+
+        const typename Particle_T::ParticleSoAFloatPrecision dX = rebuildX - pX;
+        const typename Particle_T::ParticleSoAFloatPrecision dY = rebuildY - pY;
+        const typename Particle_T::ParticleSoAFloatPrecision dZ = rebuildZ - pZ;
+
+        const typename Particle_T::ParticleSoAFloatPrecision dSquared = dX * dX + dY * dY + dZ * dZ;
+
+        local |= dSquared >= halfSkinSquare;
+      };
+
+    withStaticContainerType(getContainer(), [&lambda, &test](auto& actualContainer) {
+      actualContainer.template reduceKokkos<DeviceSpace::execution_space, bool, Kokkos::LOr<bool>>(lambda, test, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+    });
+    _neighborListInvalidDoDynamicRebuild = test;
+
+  }
+
 #endif
 }
 
@@ -1065,6 +1148,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
           "supported. "
           "Please use a functor derived from "
           "PairwiseFunctor or TriwiseFunctor.");
+      return InteractionTypeOption::all;
     }
   }();
 
@@ -1083,7 +1167,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   // if lists are not valid -> rebuild;
   if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    this->updateRebuildPositions();
+     this->updateRebuildPositions();
 #endif
     _currentContainer->rebuildNeighborLists(&traversal);
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
@@ -1174,9 +1258,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
     if (not traversalPtr) {
       // TODO: Can we handle this case gracefully?
-      utils::ExceptionHandler::exception(
-          "LogicHandler: Functor {} is not relevant for tuning but the given configuration is not applicable!",
-          functor.getName());
+      utils::ExceptionHandler::exception("TODO: fmt");
     }
     return {configuration, std::move(traversalPtr), false};
   }
@@ -1341,7 +1423,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _sortingThreshold, config.loadEstimator);
+                            _verletClusterSize, _sortingThreshold, config.loadEstimator, config.containerDataLayout);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.

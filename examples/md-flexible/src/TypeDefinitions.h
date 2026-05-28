@@ -5,6 +5,7 @@
  */
 
 #pragma once
+#include "molecularDynamicsLibrary/LJFunctorKokkos.h"
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
@@ -17,6 +18,7 @@
 #else
 
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
+#include "molecularDynamicsLibrary/KokkosMoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 #include "molecularDynamicsLibrary/LJFunctor.h"
@@ -51,7 +53,7 @@ using FloatPrecision = double;
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
-using ParticleType = mdLib::MoleculeLJ;
+using ParticleType = mdLib::KokkosMoleculeLJ;
 #endif
 
 namespace mdFlexibleTypeDefs {
@@ -91,6 +93,17 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas:
 #endif
 
 #endif
+
+#ifdef KOKKOS_ENABLE_CUDA
+using MemSpace = Kokkos::CudaSpace;
+#else
+using MemSpace = Kokkos::HostSpace;
+#endif
+
+/**
+ * Type of LJFunctorTypeKokkos used in md-flexible
+ */
+using LJFunctorTypeKokkos = mdLib::LJFunctorKokkos<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**
@@ -132,7 +145,7 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
 #error "The Axilrod Teller functor does not have support for multisite molecules!"
 #else
 using ATMFunctor = mdLib::AxilrodTellerMutoFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
-                                                   mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif

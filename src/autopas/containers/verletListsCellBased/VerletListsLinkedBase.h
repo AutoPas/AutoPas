@@ -47,7 +47,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    */
   VerletListsLinkedBase(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                         const double skin, const double cellSizeFactor)
-      : ParticleContainerInterface<Particle_T>(skin),
+      : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin),
         _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       AutoPasLog(DEBUG, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
@@ -209,6 +209,21 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
       utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
           std::nullopt) const override {
     return _linkedCells.begin(behavior, additionalVectors);
+  }
+
+  template <class, typename Lambda>
+  void forEachKokkos(Lambda, IteratorBehavior) {
+    // No Op
+  }
+
+  template <class, bool, typename Lambda>
+  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3>&, const std::array<double, 3>&) {
+    // No Op
+  }
+
+  template<class, typename Result, typename, typename Lambda>
+  void reduceKokkos(Lambda, Result&, IteratorBehavior) {
+    // No Op
   }
 
   /**

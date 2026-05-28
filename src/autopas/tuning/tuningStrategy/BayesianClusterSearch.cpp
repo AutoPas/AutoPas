@@ -98,11 +98,11 @@ bool autopas::BayesianClusterSearch::reset(size_t iteration, size_t tuningPhase,
                                            const autopas::EvidenceCollection &evidenceCollection) {
   const auto iterationSinceLastEvidence = iteration - _currentIteration;
   if (static_cast<double>(iterationSinceLastEvidence) * _iterationScale > suggestedMaxDistance) {
-    AutoPasLog(WARN,
-               "BayesianClusterSearch: Time since the last evidence may be too long ({} > {}). "
-               "You should either decrease the number of iterations between tuning phases "
-               "or gather more evidence (currently: {}).",
-               iterationSinceLastEvidence, suggestedMaxDistance / _iterationScale, _maxEvidence);
+    //AutoPasLog(WARN,
+    //           "BayesianClusterSearch: Time since the last evidence may be too long ({} > {}). "
+    //           "You should either decrease the number of iterations between tuning phases "
+    //           "or gather more evidence (currently: {}).",
+    //           iterationSinceLastEvidence, suggestedMaxDistance / _iterationScale, _maxEvidence);
   }
 
   _currentIteration = iteration;

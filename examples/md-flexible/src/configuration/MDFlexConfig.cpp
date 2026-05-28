@@ -168,9 +168,27 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
   for (auto i = 0ul; i < numParticles; ++i) {
     ParticleType particle;
 
-    particle.setR(positions[i]);
-    particle.setV(velocities[i]);
-    particle.setF(forces[i]);
+    std::array particlePos {
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(positions[i].at(0)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(positions[i].at(1)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(positions[i].at(2))
+    };
+
+    std::array particleVel {
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(velocities[i].at(0)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(velocities[i].at(1)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(velocities[i].at(2))
+    };
+
+    std::array particleF {
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(forces[i].at(0)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(forces[i].at(1)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(forces[i].at(2))
+    };
+
+    particle.setR(particlePos);
+    particle.setV(particleVel);
+    particle.setF(particleF);
     particle.setID(ids[i]);
     particle.setTypeId(typeIds[i]);
 
@@ -317,6 +335,10 @@ std::string MDFlexConfig::to_string() const {
         os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
         break;
       }
+      case FunctorOption::lj12_6_KOKKOS: {
+        os << "Lennard-Jones (12-6) Kokkos" << endl;
+        break;
+      }
     }
     os << indent;
     printOption(traversalOptions, -indentWidth);
@@ -452,6 +474,8 @@ std::string MDFlexConfig::to_string() const {
   printOption(loadBalancingInterval);
   printOption(subdivideDimension);
   printOption(energySensorOption);
+  printOption(kokkosTeamSize);
+  printOption(kokkosChunkSize);
   return os.str();
 }
 

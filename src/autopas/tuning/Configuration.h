@@ -32,19 +32,24 @@ class Configuration {
    * @param _newton3
    * @param _cellSizeFactor
    * @param _interactionType
+   * @param chunkSize
+   * @param teamSize
    *
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
-                          InteractionTypeOption _interactionType)
+                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, DataLayoutOption _containerLayout, Newton3Option _newton3,
+                          InteractionTypeOption _interactionType, size_t chunkSize, size_t teamSize)
       : container(_container),
         traversal(_traversal),
         loadEstimator(_loadEstimator),
         dataLayout(_dataLayout),
+        containerDataLayout(_containerLayout),
         newton3(_newton3),
         cellSizeFactor(_cellSizeFactor),
-        interactionType(_interactionType) {}
+        interactionType(_interactionType),
+        kokkosChunkSize(chunkSize),
+        kokkosTeamSize(teamSize) {}
 
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
@@ -128,6 +133,9 @@ class Configuration {
    * Data Layout option.
    */
   DataLayoutOption dataLayout;
+
+  DataLayoutOption containerDataLayout;
+
   /**
    * Newton 3 option.
    */
@@ -140,6 +148,10 @@ class Configuration {
    * Interaction type of the configuration.
    */
   InteractionTypeOption interactionType;
+
+  size_t kokkosChunkSize;
+
+  size_t kokkosTeamSize;
 
  private:
   /**
@@ -210,7 +222,9 @@ struct ConfigHash {
                            static_cast<std::size_t>(configuration.dataLayout) * 100 +
                            static_cast<std::size_t>(configuration.loadEstimator) * 1000 +
                            static_cast<std::size_t>(configuration.traversal) * 10000 +
-                           static_cast<std::size_t>(configuration.container) * 100000;
+                           static_cast<std::size_t>(configuration.container) * 100000 +
+                           configuration.kokkosChunkSize * 1000000 +
+                           configuration.kokkosTeamSize * 10000000;
     std::size_t doubleHash = std::hash<double>{}(configuration.cellSizeFactor);
 
     return enumHash ^ doubleHash;

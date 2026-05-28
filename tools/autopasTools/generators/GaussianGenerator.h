@@ -66,7 +66,12 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
       position = {distributions[0](generator), distributions[1](generator), distributions[2](generator)};
     };
     auto p = defaultParticle;
-    p.setR(position);
+    std::array particlePos {
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(position.at(0)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(position.at(1)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(position.at(2)),
+    };
+    p.setR(particlePos);
     p.setID(i);
     container.addParticle(p);
   }

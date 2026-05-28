@@ -140,7 +140,7 @@ class OctreeNodeInterface {
    * @param point The node to test
    * @return true if the point is inside the node's bounding box and false otherwise
    */
-  bool isInside(const std::array<double, 3> &point) {
+  bool isInside(const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &point) {
     using namespace autopas::utils;
     return inBox(point, _boxMin, _boxMax);
   }

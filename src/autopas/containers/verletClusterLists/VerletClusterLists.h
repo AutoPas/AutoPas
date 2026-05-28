@@ -96,7 +96,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    */
   VerletClusterLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
                      double skin, size_t clusterSize, LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
-      : ParticleContainerInterface<Particle_T>(skin),
+      : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin),
         _towerBlock{boxMin, boxMax, cutoff + skin},
         _clusterSize{clusterSize},
         _particlesToAdd(autopas_get_max_threads()),
@@ -107,6 +107,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   }
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
+
+  bool allowsKokkos() const override { return false; }
 
   /**
    * Generates the load estimation function depending on _loadEstimator.
@@ -195,8 +197,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto &haloPos = haloParticle.getR();
+    const std::array haloP {
+      static_cast<double>(haloPos.at(0)),
+      static_cast<double>(haloPos.at(1)),
+      static_cast<double>(haloPos.at(2)),
+    };
     // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it = getRegionIterator(haloPos - (this->getVerletSkin() / 2.), haloPos + (this->getVerletSkin() / 2.),
+    for (auto it = getRegionIterator(haloP - (this->getVerletSkin() / 2.), haloP + (this->getVerletSkin() / 2.),
                                      IteratorBehavior::halo | IteratorBehavior::forceSequential, std::nullopt);
          it.isValid(); ++it) {
       if (haloParticle.getID() == it->getID()) {
@@ -463,6 +470,22 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
       appendBuffersHelper(additionalVectors, additionalVectorsToPass);
       return ContainerIterator<Particle_T, false, false>(*this, behavior, std::ref(additionalVectorsToPass));
     }
+  }
+
+  template <class, typename Lambda>
+  void forEachKokkos(Lambda, IteratorBehavior) {
+    // No Op
+  }
+
+
+  template <class, bool, typename Lambda>
+  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3>&, const std::array<double, 3>&) {
+    // No Op
+  }
+
+  template<class, typename Result, typename, typename Lambda>
+  void reduceKokkos(Lambda, Result&, IteratorBehavior) {
+    // No Op
   }
 
   /**

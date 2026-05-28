@@ -12,6 +12,7 @@
 #include "Functor.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
+#include "autopas/utils/KokkosStorage.h"
 #include "autopas/utils/SoAView.h"
 
 namespace autopas {
@@ -35,6 +36,8 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    */
   using SoAArraysType = typename Particle_T::SoAArraysType;
 
+  using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
+
   /**
    * Constructor
    * @param cutoff
@@ -57,6 +60,10 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
     utils::ExceptionHandler::exception("{}::AoSFunctor: not implemented", this->getName());
   }
 
+  virtual void AoSFunctorKokkos(Particle_T &i, Particle_T &j, bool newton3) {
+    utils::ExceptionHandler::exception("{}::AoSFunctorKokkos: not implemented", this->getName());
+  }
+
   /**
    * PairwiseFunctor for structure of arrays (SoA)
    *
@@ -69,6 +76,12 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    */
   virtual void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorSingle: not implemented", this->getName());
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  virtual void SoAKernelKokkos(const FloatPrecision& xPos1, const FloatPrecision& yPos1, const FloatPrecision& zPos1, const Particle_T::KokkosSoAArraysType& soa2,
+    FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j) {
+    utils::ExceptionHandler::exception("{}::SoAKernelKokkos: not implemented", this->getName());
   }
 
   /**

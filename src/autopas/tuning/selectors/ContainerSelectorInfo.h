@@ -27,7 +27,8 @@ class ContainerSelectorInfo {
         verletSkin(0.),
         verletClusterSize(64),
         sortingThreshold(0),
-        loadEstimator(LoadEstimatorOption::none) {}
+        loadEstimator(LoadEstimatorOption::none),
+        dataLayout(DataLayoutOption::aos){}
 
   /**
    * Constructor.
@@ -41,11 +42,12 @@ class ContainerSelectorInfo {
    * @param verletClusterSize Size of verlet Clusters
    * @param sortingThreshold Number of particles in two cells from which sorting should be performed
    * @param loadEstimator load estimation algorithm for balanced traversals.
+   * @param layout data layout option
    */
   explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                  double cutoff, double cellSizeFactor, double verletSkin,
                                  unsigned int verletClusterSize, size_t sortingThreshold,
-                                 LoadEstimatorOption loadEstimator)
+                                 LoadEstimatorOption loadEstimator, DataLayoutOption layout)
       : boxMin(boxMin),
         boxMax(boxMax),
         cutoff(cutoff),
@@ -53,7 +55,8 @@ class ContainerSelectorInfo {
         verletSkin(verletSkin),
         verletClusterSize(verletClusterSize),
         sortingThreshold(sortingThreshold),
-        loadEstimator(loadEstimator) {}
+        loadEstimator(loadEstimator),
+        dataLayout(layout){}
 
   /**
    * Equality between ContainerSelectorInfo
@@ -63,7 +66,7 @@ class ContainerSelectorInfo {
   bool operator==(const ContainerSelectorInfo &other) const {
     return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin and
            verletClusterSize == other.verletClusterSize and sortingThreshold == other.sortingThreshold and
-           loadEstimator == other.loadEstimator;
+           loadEstimator == other.loadEstimator and dataLayout == other.dataLayout;
   }
 
   /**
@@ -82,9 +85,9 @@ class ContainerSelectorInfo {
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkin, verletClusterSize, sortingThreshold, loadEstimator) <
+    return std::tie(cellSizeFactor, verletSkin, verletClusterSize, sortingThreshold, loadEstimator, dataLayout) <
            std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize, other.sortingThreshold,
-                    other.loadEstimator);
+                    other.loadEstimator, other.dataLayout);
   }
 
   /**
@@ -122,6 +125,8 @@ class ContainerSelectorInfo {
    * Load estimator for balanced sliced traversals.
    */
   LoadEstimatorOption loadEstimator;
+
+  DataLayoutOption dataLayout;
 };
 
 }  // namespace autopas
