@@ -64,8 +64,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    * @param sortingThreshold
    */
   DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double skin,
-            const size_t sortingThreshold)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold),
+            const size_t sortingThreshold, const size_t soaSortingThreshold = 8)
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold, soaSortingThreshold),
         _cellBorderFlagManager() {
     using namespace autopas::utils::ArrayMath::literals;
     // 1 owned and 6 halo cells
@@ -503,6 +503,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCellType> *>(traversal);
     if (dsTraversal && cellTraversal) {
       cellTraversal->setSortingThreshold(this->_sortingThreshold);
+      cellTraversal->setSoASortingThreshold(this->_soaSortingThreshold);
       cellTraversal->setCellsToTraverse(this->_cells);
     } else {
       utils::ExceptionHandler::exception(

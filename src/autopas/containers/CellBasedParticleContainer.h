@@ -34,16 +34,19 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @param cutoff
    * @param skin
    * @param sortingThreshold
+   * @param soaSortingThreshold
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                             const double cutoff, const double skin, const size_t sortingThreshold)
+                             const double cutoff, const double skin, const size_t sortingThreshold,
+                             const size_t soaSortingThreshold = 8)
       : ParticleContainerInterface<ParticleType>(skin),
         _cells(),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
         _skin(skin),
-        _sortingThreshold(sortingThreshold) {}
+        _sortingThreshold(sortingThreshold),
+        _soaSortingThreshold(soaSortingThreshold) {}
 
   /**
    * Destructor of CellBasedParticleContainer.
@@ -162,6 +165,8 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * To be forwarded to cell traversals.
    */
   size_t _sortingThreshold;
+
+  size_t _soaSortingThreshold;
 
  private:
   std::array<double, 3> _boxMin;

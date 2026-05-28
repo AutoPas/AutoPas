@@ -82,6 +82,7 @@ void AutoPas<Particle_T>::init() {
   }
 
   _logicHandlerInfo.sortingThreshold = _sortingThreshold;
+  _logicHandlerInfo.soaSortingThreshold = _soaSortingThreshold;
 
   // If an interval was given for the cell size factor, change it to the relevant values.
   // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.

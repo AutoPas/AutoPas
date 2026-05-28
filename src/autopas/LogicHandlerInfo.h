@@ -40,6 +40,10 @@ class LogicHandlerInfo {
    */
   size_t sortingThreshold{8};
   /**
+   * Number of particles in two SoA buffers from which SoA sorting should be performed.
+   */
+  size_t soaSortingThreshold{8};
+  /**
    * Time step used in the simulation.
    * This is currently used in rebuild frequency estimation for dynamic containers.
    */
