@@ -40,7 +40,7 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
    * @param spaciallyForward Whether the base step only covers neighboring cells that are spacially forward (for example
    * c08).
    */
-  explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
+  explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor,
                                 const double interactionLength, const std::array<double, 3> &cellLength,
                                 DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
       : CellTraversal<ParticleCell>(dims),

@@ -33,7 +33,7 @@ class CellFunctor {
    * @param dataLayout The data layout to be used.
    * @param useNewton3 Parameter to specify whether newton3 is used or not.
    */
-  explicit CellFunctor(ParticleFunctor_T *f, const double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
+  explicit CellFunctor(ParticleFunctor_T &f, const double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
       : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**
@@ -119,7 +119,7 @@ class CellFunctor {
 
   void processCellSoANoN3(ParticleCell_T &cell);
 
-  ParticleFunctor_T *_functor;
+  ParticleFunctor_T &_functor;
 
   const double _sortingCutoff;
 
@@ -210,13 +210,13 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
   // helper function
   const auto interactParticles = [&](auto &p1, auto &p2) {
     if (_useNewton3) {
-      _functor->AoSFunctor(p1, p2, true);
+      _functor.AoSFunctor(p1, p2, true);
     } else {
       if (not p1.isHalo()) {
-        _functor->AoSFunctor(p1, p2, false);
+        _functor.AoSFunctor(p1, p2, false);
       }
       if (not p2.isHalo()) {
-        _functor->AoSFunctor(p2, p1, false);
+        _functor.AoSFunctor(p2, p1, false);
       }
     }
   };
@@ -258,13 +258,13 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
         if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
           break;
         }
-        _functor->AoSFunctor(*p1Ptr, *p2Ptr, true);
+        _functor.AoSFunctor(*p1Ptr, *p2Ptr, true);
       }
     }
   } else {
     for (auto &p1 : cell1) {
       for (auto &p2 : cell2) {
-        _functor->AoSFunctor(p1, p2, true);
+        _functor.AoSFunctor(p1, p2, true);
       }
     }
   }
@@ -275,9 +275,9 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
   // helper function
   const auto interactParticlesNoN3 = [&](auto &p1, auto &p2) {
-    _functor->AoSFunctor(p1, p2, false);
+    _functor.AoSFunctor(p1, p2, false);
     if constexpr (bidirectional) {
-      _functor->AoSFunctor(p2, p1, false);
+      _functor.AoSFunctor(p2, p1, false);
     }
   };
 
@@ -305,25 +305,25 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoAN3(ParticleCell_T &cell1,
                                                                                          ParticleCell_T &cell2) {
-  _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
+  _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoANoN3(ParticleCell_T &cell1,
                                                                                            ParticleCell_T &cell2) {
-  _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
+  _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
   if constexpr (bidirectional) {
-    _functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
+    _functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
   }
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellSoAN3(ParticleCell_T &cell) {
-  _functor->SoAFunctorSingle(cell._particleSoABuffer, true);
+  _functor.SoAFunctorSingle(cell._particleSoABuffer, true);
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellSoANoN3(ParticleCell_T &cell) {
-  _functor->SoAFunctorSingle(cell._particleSoABuffer, false);  // the functor has to enable this...
+  _functor.SoAFunctorSingle(cell._particleSoABuffer, false);  // the functor has to enable this...
 }
 }  // namespace autopas::internal
