@@ -9,21 +9,24 @@
 #include <gtest/gtest.h>
 
 #include "ATMFunctorTest.h"
-#include "AutoPasTestBase.h"
-#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
-#include "testingHelpers/ATMPotential.h"
 #include "testingHelpers/commonTypedefs.h"
 
 template <class FuncType>
 class ATMFunctorTestGlobals : public ATMFunctorTest {
  public:
+  struct OwnershipConfig {
+    double factor{};
+    std::string where_str;
+    bool owned1{}, owned2{}, owned3{};
+  };
+
   ATMFunctorTestGlobals() : ATMFunctorTest() {}
 
-  static void ATMFunctorTestGlobalsNoMixing(where_type where, bool newton3);
-  static void testSoAGlobalsATM(where_type where, bool newton3, InteractionType interactionType,
-                                size_t additionalParticlesToVerletNumber, uint64_t numParticleReplicas,
-                                bool mixedNewton3FunctorCalls);
+  static void ATMFunctorTestGlobalsNoMixingAoS(where_type where, bool newton3);
 
+  void ATMFunctorTestSoAGlobals(where_type where, SoAFunctorType soaFunctorType, bool newton3);
+
+  void ATMFunctorTestGlobalsPeriodicBCs(const std::string &functorToTest, bool newton3);
   constexpr static double cutoff{5.};
   constexpr static double nu{0.7};
 
