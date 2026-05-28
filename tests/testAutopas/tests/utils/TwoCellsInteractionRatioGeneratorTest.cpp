@@ -12,7 +12,7 @@
 
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopasTools/PseudoContainer.h"
-#include "autopasTools/generators/TwoCellsInteractionRatioGenerator.h"
+#include "autopasTools/generators/TwoCellsInteractionHitrateGenerator.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
 using Molecule = mdLib::MoleculeLJ;
@@ -40,7 +40,7 @@ double dist3D(const Molecule &a, const Molecule &b) {
 
 void fill(Cell &v1, Cell &v2, std::size_t n, double ratio, unsigned int seed = 42) {
   autopasTools::PseudoContainer c1(v1), c2(v2);
-  autopasTools::generators::TwoCellsInteractionRatioGenerator::fillWithParticles(
+  autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
       c1, c2, kBoxMin1, kBoxMax1, kBoxMin2, kBoxMax2, n, ratio, kCutoff, Molecule{}, seed);
 }
 
@@ -155,7 +155,7 @@ TEST(TwoCellsInteractionRatioGeneratorTest, PreconditionNonAdjacentCells) {
   autopasTools::PseudoContainer c1(v1), c2(v2);
   const std::array<double, 3> gappedMin2 = {kBoundary + 1.0, 0., 0.};
   auto call = [&]() {
-    autopasTools::generators::TwoCellsInteractionRatioGenerator::fillWithParticles(
+    autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
         c1, c2, kBoxMin1, kBoxMax1, gappedMin2, kBoxMax2, 10ul, 0.5, kCutoff, Molecule{});
   };
   EXPECT_THROW(call(), autopas::utils::ExceptionHandler::AutoPasException);
@@ -166,7 +166,7 @@ TEST(TwoCellsInteractionRatioGeneratorTest, PreconditionRatioOutOfRange) {
   Cell v1, v2;
   autopasTools::PseudoContainer c1(v1), c2(v2);
   auto call = [&](double ratio) {
-    autopasTools::generators::TwoCellsInteractionRatioGenerator::fillWithParticles(
+    autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
         c1, c2, kBoxMin1, kBoxMax1, kBoxMin2, kBoxMax2, 10ul, ratio, kCutoff, Molecule{});
   };
   EXPECT_THROW(call(1.5), autopas::utils::ExceptionHandler::AutoPasException);
@@ -180,7 +180,7 @@ TEST(TwoCellsInteractionRatioGeneratorTest, PreconditionCellTooNarrow) {
   // x-extent = kCutoff exactly, which is <= 1.5 * kCutoff
   const std::array<double, 3> tooNarrowMin1 = {kBoundary - kCutoff, 0., 0.};
   auto call = [&]() {
-    autopasTools::generators::TwoCellsInteractionRatioGenerator::fillWithParticles(
+    autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
         c1, c2, tooNarrowMin1, kBoxMax1, kBoxMin2, kBoxMax2, 10ul, 0.5, kCutoff, Molecule{});
   };
   EXPECT_THROW(call(), autopas::utils::ExceptionHandler::AutoPasException);
