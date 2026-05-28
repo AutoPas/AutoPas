@@ -25,13 +25,13 @@ namespace autopas {
  * on the boundary wall to the previous slice with one lock. This lock is lifted
  * as soon the boundary wall is fully processed.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam NeighborList type of the neighbor list
  */
-template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>,
-                                   public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+template <class ParticleCell_T, class PairwiseFunctor, class NeighborList>
+class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell_T, PairwiseFunctor>,
+                                   public VLCTraversalInterface<typename ParticleCell_T::ParticleType, NeighborList> {
  public:
   /**
    * Constructor of the balanced sliced traversal.
@@ -47,9 +47,9 @@ class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
   explicit VLCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                                       double interactionLength, const std::array<double, 3> &cellLength,
                                       DataLayoutOption dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
-      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
-                                                                    cellLength, dataLayout, useNewton3, false),
-        VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(typeOfList),
+      : SlicedBalancedBasedTraversal<ParticleCell_T, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
+                                                                      cellLength, dataLayout, useNewton3, false),
+        VLCTraversalInterface<typename ParticleCell_T::ParticleType, NeighborList>(typeOfList),
         _functor(pairwiseFunctor) {}
 
   void traverseParticles() override;
@@ -82,8 +82,8 @@ class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
   PairwiseFunctor &_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-inline void VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticles() {
+template <class ParticleCell_T, class PairwiseFunctor, class NeighborList>
+inline void VLCSlicedBalancedTraversal<ParticleCell_T, PairwiseFunctor, NeighborList>::traverseParticles() {
   if (this->_dataLayout == DataLayoutOption::soa) {
     this->loadSoA(_functor, *(this->_verletList));
   }

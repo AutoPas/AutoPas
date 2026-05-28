@@ -26,11 +26,11 @@ namespace autopas {
  * is however not derived from ColorBasedTraversal, as that would not allow varying slice thicknesses,
  * and would prevent us from selecting the dimension in which we cut the slices.
  *
- * @tparam ParticleCell The type of cells.
+ * @tparam ParticleCell_T The type of cells.
  * @tparam Functor The functor that defines the interaction between particles.
  */
-template <class ParticleCell, class Functor>
-class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Functor> {
+template <class ParticleCell_T, class Functor>
+class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell_T, Functor> {
  public:
   /**
    * Constructor of the colored sliced traversal.
@@ -39,8 +39,8 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Functo
   explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor,
                                    const double interactionLength, const std::array<double, 3> &cellLength,
                                    DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
-      : SlicedBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
-                                                    useNewton3, spaciallyForward) {}
+      : SlicedBasedTraversal<ParticleCell_T, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                      useNewton3, spaciallyForward) {}
 
   /**
    * The main traversal of the colored sliced traversal.
@@ -71,9 +71,9 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Functo
   }
 };
 
-template <class ParticleCell, class Functor>
+template <class ParticleCell_T, class Functor>
 template <typename LoopBody>
-void SlicedC02BasedTraversal<ParticleCell, Functor>::cSlicedTraversal(LoopBody &&loopBody) {
+void SlicedC02BasedTraversal<ParticleCell_T, Functor>::cSlicedTraversal(LoopBody &&loopBody) {
   using std::array;
 
   auto numSlices = this->_sliceThickness.size();

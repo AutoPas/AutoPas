@@ -73,12 +73,12 @@ the initialized buffer must show the same behavior as a buffer which was updated
  * \image html C01_combined_cache.png "Figure 2: Evolution of the circular buffer."
  * \image html C01_combined_legend.png
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam Functor The functor that defines the interaction of two particles.
  * @tparam combineSoA
  */
-template <class ParticleCell, class Functor, bool combineSoA = false>
-class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineSoA ? 2 : 3)>,
+template <class ParticleCell_T, class Functor, bool combineSoA = false>
+class LCC01Traversal : public C01BasedTraversal<ParticleCell_T, Functor, (combineSoA ? 2 : 3)>,
                        public LCTraversalInterface {
  public:
   /**
@@ -95,8 +95,8 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
    */
   explicit LCC01Traversal(const std::array<unsigned long, 3> &dims, Functor &functor, const double interactionLength,
                           const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : C01BasedTraversal<ParticleCell, Functor, (combineSoA ? 2 : 3)>(dims, functor, interactionLength, cellLength,
-                                                                       dataLayout, useNewton3),
+      : C01BasedTraversal<ParticleCell_T, Functor, (combineSoA ? 2 : 3)>(dims, functor, interactionLength, cellLength,
+                                                                         dataLayout, useNewton3),
         _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3),
         _functor(functor),
@@ -144,8 +144,8 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
 
   // CellFunctor type for either Pairwise or Triwise Functors.
   using CellFunctorType = std::conditional_t<decltype(utils::isPairwiseFunctor<Functor>())::value,
-                                             internal::CellFunctor<ParticleCell, Functor, /*bidirectional*/ false>,
-                                             internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ false>>;
+                                             internal::CellFunctor<ParticleCell_T, Functor, /*bidirectional*/ false>,
+                                             internal::CellFunctor3B<ParticleCell_T, Functor, /*bidirectional*/ false>>;
 
   /**
    * Computes all interactions between the base
@@ -155,20 +155,20 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
    * @param y Y-index of base cell.
    * @param z Z-index of base cell.
    */
-  inline void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+  inline void processBaseCell(std::vector<ParticleCell_T> &cells, unsigned long x, unsigned long y, unsigned long z);
 
   /**
    * Pairwise implementation of processBaseCell().
    * @copydoc processBaseCell()
    */
-  inline void processBaseCellPairwise(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y,
+  inline void processBaseCellPairwise(std::vector<ParticleCell_T> &cells, unsigned long x, unsigned long y,
                                       unsigned long z);
 
   /**
    * Triwise implementation of processBaseCell().
    * @copydoc processBaseCell()
    */
-  inline void processBaseCellTriwise(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y,
+  inline void processBaseCellTriwise(std::vector<ParticleCell_T> &cells, unsigned long x, unsigned long y,
                                      unsigned long z);
 
   /**
@@ -190,7 +190,7 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
    * @param appendCell
    */
   template <std::size_t... I>
-  constexpr void appendNeeded(ParticleCell &cell, ParticleCell &appendCell, std::index_sequence<I...>) {
+  constexpr void appendNeeded(ParticleCell_T &cell, ParticleCell_T &appendCell, std::index_sequence<I...>) {
     cell._particleSoABuffer.template append<std::get<I>(Functor::getNeededAttr(std::false_type()))...>(
         appendCell._particleSoABuffer);
   }
@@ -220,7 +220,7 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
   /**
    * Cells containing combined SoA buffers.
    */
-  std::vector<std::vector<ParticleCell>> _combinationSlices;
+  std::vector<std::vector<ParticleCell_T>> _combinationSlices;
 
   /**
    * Current index in _combinationSlices.
@@ -233,8 +233,8 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
   const unsigned int _cacheOffset;
 };
 
-template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computeOffsets() {
+template <class ParticleCell_T, class Functor, bool combineSoA>
+inline void LCC01Traversal<ParticleCell_T, Functor, combineSoA>::computeOffsets() {
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
     computePairwiseOffsets();
   } else if (utils::isTriwiseFunctor<Functor>()) {
@@ -244,8 +244,8 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computeOffsets() 
   }
 }
 
-template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computePairwiseOffsets() {
+template <class ParticleCell_T, class Functor, bool combineSoA>
+inline void LCC01Traversal<ParticleCell_T, Functor, combineSoA>::computePairwiseOffsets() {
   _cellOffsets.resize(2 * this->_overlap[0] + 1);
 
   const auto interactionLengthSquare{this->_interactionLength * this->_interactionLength};
@@ -298,8 +298,8 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computePairwiseOf
   }
 }
 
-template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computeTriwiseOffsets() {
+template <class ParticleCell_T, class Functor, bool combineSoA>
+inline void LCC01Traversal<ParticleCell_T, Functor, combineSoA>::computeTriwiseOffsets() {
   using namespace utils::ArrayMath::literals;
   // Reserve approximately. Overestimates more for larger overlap.
   const int cubeSize = this->_overlap[0] * this->_overlap[1] * this->_overlap[2];
@@ -366,10 +366,10 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computeTriwiseOff
   }
 }
 
-template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCell(std::vector<ParticleCell> &cells,
-                                                                               unsigned long x, unsigned long y,
-                                                                               unsigned long z) {
+template <class ParticleCell_T, class Functor, bool combineSoA>
+inline void LCC01Traversal<ParticleCell_T, Functor, combineSoA>::processBaseCell(std::vector<ParticleCell_T> &cells,
+                                                                                 unsigned long x, unsigned long y,
+                                                                                 unsigned long z) {
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
     processBaseCellPairwise(cells, x, y, z);
   } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
@@ -381,12 +381,11 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCell(s
   }
 }
 
-template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPairwise(std::vector<ParticleCell> &cells,
-                                                                                       unsigned long x, unsigned long y,
-                                                                                       unsigned long z) {
+template <class ParticleCell_T, class Functor, bool combineSoA>
+inline void LCC01Traversal<ParticleCell_T, Functor, combineSoA>::processBaseCellPairwise(
+    std::vector<ParticleCell_T> &cells, unsigned long x, unsigned long y, unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-  ParticleCell &baseCell = cells[baseIndex];
+  ParticleCell_T &baseCell = cells[baseIndex];
   const size_t cOffSize = _cellOffsets.size();
 
   if constexpr (combineSoA) {
@@ -403,7 +402,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
         combinationSlice[offsetSlice]._particleSoABuffer.clear();
         for (const auto &offset : _cellOffsets[offsetSlice]) {
           const unsigned long otherIndex = baseIndex + offset.first;
-          ParticleCell &otherCell = cells[otherIndex];
+          ParticleCell_T &otherCell = cells[otherIndex];
           appendNeeded(combinationSlice[offsetSlice], otherCell,
                        std::make_index_sequence<Functor::getNeededAttr(std::false_type()).size()>{});
         }
@@ -416,7 +415,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
         size_t newSize = 0;
         for (const auto &offset : _cellOffsets[i]) {
           const unsigned long otherIndex = baseIndex + offset.first;
-          ParticleCell &otherCell = cells[otherIndex];
+          ParticleCell_T &otherCell = cells[otherIndex];
           newSize += otherCell.size();
         }
         combinationSlice[slice]._particleSoABuffer.resizeArrays(newSize);
@@ -426,7 +425,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
         for (auto offsetIndex = _cellOffsets[(i + 1) % cOffSize].size(); offsetIndex < _cellOffsets[i].size();
              ++offsetIndex) {
           const unsigned long otherIndex = baseIndex + _cellOffsets[i][offsetIndex].first;
-          ParticleCell &otherCell = cells[otherIndex];
+          ParticleCell_T &otherCell = cells[otherIndex];
           appendNeeded(combinationSlice[slice], otherCell,
                        std::make_index_sequence<Functor::getNeededAttr(std::false_type()).size()>{});
         }
@@ -436,7 +435,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
 
       for (const auto &offset : _cellOffsets.back()) {
         const unsigned long otherIndex = baseIndex + offset.first;
-        ParticleCell &otherCell = cells[otherIndex];
+        ParticleCell_T &otherCell = cells[otherIndex];
         appendNeeded(combinationSlice[currentSlice], otherCell,
                      std::make_index_sequence<Functor::getNeededAttr(std::false_type()).size()>{});
       }
@@ -463,7 +462,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
     for (const auto &slice : _cellOffsets) {
       for (auto const &[offset, r] : slice) {
         const unsigned long otherIndex = baseIndex + offset;
-        ParticleCell &otherCell = cells[otherIndex];
+        ParticleCell_T &otherCell = cells[otherIndex];
 
         if (baseIndex == otherIndex) {
           this->_cellFunctor.processCell(baseCell);
@@ -475,18 +474,17 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
   }
 }
 
-template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellTriwise(std::vector<ParticleCell> &cells,
-                                                                                      unsigned long x, unsigned long y,
-                                                                                      unsigned long z) {
+template <class ParticleCell_T, class Functor, bool combineSoA>
+inline void LCC01Traversal<ParticleCell_T, Functor, combineSoA>::processBaseCellTriwise(
+    std::vector<ParticleCell_T> &cells, unsigned long x, unsigned long y, unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-  ParticleCell &baseCell = cells[baseIndex];
+  ParticleCell_T &baseCell = cells[baseIndex];
 
   for (auto const &[offset1, offset2, r] : _cellOffsets) {
     const unsigned long otherIndex1 = baseIndex + offset1;
     const unsigned long otherIndex2 = baseIndex + offset2;
-    ParticleCell &otherCell1 = cells[otherIndex1];
-    ParticleCell &otherCell2 = cells[otherIndex2];
+    ParticleCell_T &otherCell1 = cells[otherIndex1];
+    ParticleCell_T &otherCell2 = cells[otherIndex2];
 
     if (baseIndex == otherIndex1 and baseIndex == otherIndex2) {
       this->_cellFunctor.processCell(baseCell);
@@ -502,8 +500,8 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellTr
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, PairwiseFunctor, combineSoA>::resizeBuffers() {
+template <class ParticleCell_T, class PairwiseFunctor, bool combineSoA>
+inline void LCC01Traversal<ParticleCell_T, PairwiseFunctor, combineSoA>::resizeBuffers() {
   const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
   if (_combinationSlices.size() != numThreads) {
     _combinationSlices.resize(numThreads);
@@ -514,8 +512,8 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, combineSoA>::resizeBuf
   }
 }
 
-template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::traverseParticles() {
+template <class ParticleCell_T, class Functor, bool combineSoA>
+inline void LCC01Traversal<ParticleCell_T, Functor, combineSoA>::traverseParticles() {
   auto &cells = *(this->_cells);
   if (not this->isApplicable()) {
     if constexpr (combineSoA) {

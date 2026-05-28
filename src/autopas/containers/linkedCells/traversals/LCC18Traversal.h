@@ -24,11 +24,11 @@ namespace autopas {
  * Since these steps overlap a domain coloring with eighteen colors is applied.
  * \image html C18_domain.png "C18 domain coloring in 2D. 6 colors are required."
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
-class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
+template <class ParticleCell_T, class PairwiseFunctor>
+class LCC18Traversal : public C18BasedTraversal<ParticleCell_T, PairwiseFunctor>, public LCTraversalInterface {
  public:
   /**
    * Constructor of the lc_c18 traversal.
@@ -45,8 +45,8 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, 
   explicit LCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                           const double interactionLength, const std::array<double, 3> &cellLength,
                           DataLayoutOption dataLayout, bool useNewton3)
-      : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                         dataLayout, useNewton3),
+      : C18BasedTraversal<ParticleCell_T, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                           dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3) {
     computeOffsets();
@@ -62,7 +62,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, 
    * @param y Y-index of base cell.
    * @param z Z-index of base cell.
    */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+  void processBaseCell(std::vector<ParticleCell_T> &cells, unsigned long x, unsigned long y, unsigned long z);
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c18; }
 
@@ -86,7 +86,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<ParticleCell, PairwiseFunctor,
+  internal::CellFunctor<ParticleCell_T, PairwiseFunctor,
                         /*bidirectional*/ true>
       _cellFunctor;
 
@@ -111,8 +111,8 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, 
   unsigned long getIndex(const unsigned long pos, const unsigned int dim) const;
 };
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void LCC18Traversal<ParticleCell, PairwiseFunctor>::computeOffsets() {
+template <class ParticleCell_T, class PairwiseFunctor>
+inline void LCC18Traversal<ParticleCell_T, PairwiseFunctor>::computeOffsets() {
   _cellOffsets.resize(2 * this->_overlap[1] + 1, std::vector<offsetArray_t>(2 * this->_overlap[0] + 1));
   const std::array<long, 3> _overlap_s = utils::ArrayUtils::static_cast_copy_array<long>(this->_overlap);
 
@@ -165,9 +165,9 @@ inline void LCC18Traversal<ParticleCell, PairwiseFunctor>::computeOffsets() {
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor>
-unsigned long LCC18Traversal<ParticleCell, PairwiseFunctor>::getIndex(const unsigned long pos,
-                                                                      const unsigned int dim) const {
+template <class ParticleCell_T, class PairwiseFunctor>
+unsigned long LCC18Traversal<ParticleCell_T, PairwiseFunctor>::getIndex(const unsigned long pos,
+                                                                        const unsigned int dim) const {
   unsigned long index;
   if (pos < this->_overlap[dim]) {
     index = pos;
@@ -179,19 +179,20 @@ unsigned long LCC18Traversal<ParticleCell, PairwiseFunctor>::getIndex(const unsi
   return index;
 }
 
-template <class ParticleCell, class PairwiseFunctor>
-void LCC18Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells, unsigned long x,
-                                                                    unsigned long y, unsigned long z) {
+template <class ParticleCell_T, class PairwiseFunctor>
+void LCC18Traversal<ParticleCell_T, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell_T> &cells,
+                                                                      unsigned long x, unsigned long y,
+                                                                      unsigned long z) {
   const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
 
   const unsigned long xArray = getIndex(x, 0);
   const unsigned long yArray = getIndex(y, 1);
 
-  ParticleCell &baseCell = cells[baseIndex];
+  ParticleCell_T &baseCell = cells[baseIndex];
   offsetArray_t &offsets = this->_cellOffsets[yArray][xArray];
   for (auto const &[offset, r] : offsets) {
     unsigned long otherIndex = baseIndex + offset;
-    ParticleCell &otherCell = cells[otherIndex];
+    ParticleCell_T &otherCell = cells[otherIndex];
 
     if (baseIndex == otherIndex) {
       this->_cellFunctor.processCell(baseCell);
@@ -201,8 +202,8 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void LCC18Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
+template <class ParticleCell_T, class PairwiseFunctor>
+inline void LCC18Traversal<ParticleCell_T, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   this->template c18Traversal</*allCells*/ false>(
       [&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });

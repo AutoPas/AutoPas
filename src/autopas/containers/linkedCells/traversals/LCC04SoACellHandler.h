@@ -24,10 +24,10 @@ namespace autopas {
  * After executing the base step on all cells all pairwise interactions for
  * all cells are done.
  *
- * @tparam ParticleCell the type of cells.
+ * @tparam ParticleCell_T the type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
+template <class ParticleCell_T, class PairwiseFunctor>
 class LCC04SoACellHandler {
  public:
   /**
@@ -63,7 +63,7 @@ class LCC04SoACellHandler {
    * @param y cell index y-axis
    * @param z cell index z-axis
    */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+  void processBaseCell(std::vector<ParticleCell_T> &cells, unsigned long x, unsigned long y, unsigned long z);
 
   /**
    * Resize all buffers to match the current number of threads.
@@ -91,7 +91,7 @@ class LCC04SoACellHandler {
   /**
    * Cells containing combined SoA buffers.
    */
-  std::vector<std::vector<ParticleCell>> _combinationSlices;
+  std::vector<std::vector<ParticleCell_T>> _combinationSlices;
 
   /**
    * Current position in circular buffer for each thread.
@@ -147,8 +147,8 @@ class LCC04SoACellHandler {
    * @param bufferSlice Index of slice in combinationSlice (source)
    * @param cellSlice Index of slice in _baseOffsets (destination)
    */
-  void writeBufferIntoCell(std::vector<ParticleCell> &cells, unsigned long baseIndex,
-                           std::vector<ParticleCell> &combinationSlice,
+  void writeBufferIntoCell(std::vector<ParticleCell_T> &cells, unsigned long baseIndex,
+                           std::vector<ParticleCell_T> &combinationSlice,
                            std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, unsigned long bufferSlice,
                            unsigned long cellSlice);
 
@@ -161,8 +161,8 @@ class LCC04SoACellHandler {
    * @param bufferSlice Index of slice in combinationSlice (destination)
    * @param cellSlice Index of slice in _baseOffsets (source)
    */
-  void writeCellIntoBuffer(const std::vector<ParticleCell> &cells, unsigned long baseIndex,
-                           std::vector<ParticleCell> &combinationSlice,
+  void writeCellIntoBuffer(const std::vector<ParticleCell_T> &cells, unsigned long baseIndex,
+                           std::vector<ParticleCell_T> &combinationSlice,
                            std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, unsigned int bufferSlice,
                            unsigned int cellSlice);
 
@@ -173,10 +173,10 @@ class LCC04SoACellHandler {
   void setupIntervals(const std::array<unsigned long, 3> &cellsPerDimension);
 };
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
-                                                                                unsigned long x, unsigned long y,
-                                                                                unsigned long z) {
+template <class ParticleCell_T, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell_T, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell_T> &cells,
+                                                                                  unsigned long x, unsigned long y,
+                                                                                  unsigned long z) {
   const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, _cellsPerDimension);
 
   // get all information for current thread
@@ -202,7 +202,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(
   // compute interactions
   for (unsigned long slice = 0; slice < numSlices; slice++) {
     for (auto const &[offset1, interval] : _offsets[(slice + currentSlice) % numSlices]) {
-      ParticleCell *cell1 = nullptr;
+      ParticleCell_T *cell1 = nullptr;
       size_t cell1ViewStart = 0;
       size_t cell1ViewEnd;
 
@@ -275,11 +275,11 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::writeCellIntoBuffer(
-    const std::vector<ParticleCell> &cells, const unsigned long baseIndex, std::vector<ParticleCell> &combinationSlice,
-    std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, const unsigned int bufferSlice,
-    const unsigned int cellSlice) {
+template <class ParticleCell_T, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell_T, PairwiseFunctor>::writeCellIntoBuffer(
+    const std::vector<ParticleCell_T> &cells, const unsigned long baseIndex,
+    std::vector<ParticleCell_T> &combinationSlice, std::vector<std::vector<unsigned long>> &combinationSlicesOffsets,
+    const unsigned int bufferSlice, const unsigned int cellSlice) {
   // delete old data
   combinationSlice[bufferSlice]._particleSoABuffer.clear();
   combinationSlicesOffsets[bufferSlice].clear();
@@ -288,16 +288,16 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::writeCellIntoBuf
   combinationSlicesOffsets[bufferSlice].push_back(sum);
   for (const auto offset : _baseOffsets[cellSlice]) {
     const unsigned long otherIndex = baseIndex + offset;
-    const ParticleCell &otherCell = cells[otherIndex];
+    const ParticleCell_T &otherCell = cells[otherIndex];
     combinationSlice[bufferSlice]._particleSoABuffer.append(otherCell._particleSoABuffer);
     sum += otherCell.size();
     combinationSlicesOffsets[bufferSlice].push_back(sum);
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::writeBufferIntoCell(
-    std::vector<ParticleCell> &cells, const unsigned long baseIndex, std::vector<ParticleCell> &combinationSlice,
+template <class ParticleCell_T, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell_T, PairwiseFunctor>::writeBufferIntoCell(
+    std::vector<ParticleCell_T> &cells, const unsigned long baseIndex, std::vector<ParticleCell_T> &combinationSlice,
     std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, const unsigned long bufferSlice,
     const unsigned long cellSlice) {
   auto &buffer = combinationSlice[bufferSlice]._particleSoABuffer;
@@ -326,8 +326,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::writeBufferIntoC
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::setupIntervals(
+template <class ParticleCell_T, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell_T, PairwiseFunctor>::setupIntervals(
     const std::array<unsigned long, 3> &cellsPerDimension) {
   _baseOffsets.resize(_overlap[0] + 1);
   for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
@@ -374,8 +374,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::setupIntervals(
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor>
-void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::resizeBuffers() {
+template <class ParticleCell_T, class PairwiseFunctor>
+void LCC04SoACellHandler<ParticleCell_T, PairwiseFunctor>::resizeBuffers() {
   const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
   if (_combinationSlices.size() != numThreads) {
     _combinationSlices.resize(numThreads);

@@ -12,10 +12,10 @@
 namespace autopas {
 /**
  * This class provides the base logic for the c08 traversal for VLCCellPairNeighborList.
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
+template <class ParticleCell_T, class PairwiseFunctor>
 class VLCCellPairC08CellHandler {
  public:
   /**
@@ -41,9 +41,9 @@ class VLCCellPairC08CellHandler {
    * @param soa Structure of Arrays where the particles are loaded if the SoA data layout is used
    * @param useNewton3
    */
-  void processCellListsC08(VLCCellPairNeighborList<typename ParticleCell::ParticleType> &neighborList,
+  void processCellListsC08(VLCCellPairNeighborList<typename ParticleCell_T::ParticleType> &neighborList,
                            unsigned long cellIndex, PairwiseFunctor &pairwiseFunctor, DataLayoutOption layout,
-                           SoA<typename ParticleCell::ParticleType::SoAArraysType> *soa, bool useNewton3) {
+                           SoA<typename ParticleCell_T::ParticleType::SoAArraysType> *soa, bool useNewton3) {
     using namespace utils::ArrayMath::literals;
     const auto &aosNeighborList = neighborList.getAoSNeighborList();
     const auto &soaNeighborList = neighborList.getSoANeighborList();

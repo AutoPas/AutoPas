@@ -22,11 +22,11 @@ namespace autopas {
 /**
  * This sum defines the traversal typically used by the DirectSum container.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam Functor The functor that defines the interaction of particles.
  */
-template <class ParticleCell, class Functor>
-class DSSequentialTraversal : public CellTraversal<ParticleCell>,
+template <class ParticleCell_T, class Functor>
+class DSSequentialTraversal : public CellTraversal<ParticleCell_T>,
                               public TraversalInterface,
                               public DSTraversalInterface {
  public:
@@ -38,7 +38,7 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit DSSequentialTraversal(Functor &functor, double cutoff, DataLayoutOption dataLayout, bool useNewton3)
-      : CellTraversal<ParticleCell>({2, 1, 1}),
+      : CellTraversal<ParticleCell_T>({2, 1, 1}),
         TraversalInterface(dataLayout, useNewton3),
         _cellFunctor(functor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
@@ -76,8 +76,8 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
  private:
   // CellFunctor type for either Pairwise or Triwise Functors.
   using CellFunctorType = std::conditional_t<decltype(utils::isPairwiseFunctor<Functor>())::value,
-                                             internal::CellFunctor<ParticleCell, Functor, /*bidirectional*/ false>,
-                                             internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ false>>;
+                                             internal::CellFunctor<ParticleCell_T, Functor, /*bidirectional*/ false>,
+                                             internal::CellFunctor3B<ParticleCell_T, Functor, /*bidirectional*/ false>>;
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two or more cells.
@@ -90,8 +90,8 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
   utils::DataLayoutConverter<Functor> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class Functor>
-void DSSequentialTraversal<ParticleCell, Functor>::traverseParticles() {
+template <class ParticleCell_T, class Functor>
+void DSSequentialTraversal<ParticleCell_T, Functor>::traverseParticles() {
   using namespace autopas::utils::ArrayMath::literals;
 
   // cells[0] is the owned domain and cells[1-6] are the halo cells.

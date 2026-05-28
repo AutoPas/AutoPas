@@ -20,13 +20,13 @@ namespace autopas {
  * For each cell all neighbor lists are processed, so depending on whether lists
  * were built with newton3 the base step is c01 or c18
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam NeighborList type of the neighbor list
  */
-template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
-                        public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+template <class ParticleCell_T, class PairwiseFunctor, class NeighborList>
+class VLCC18Traversal : public C18BasedTraversal<ParticleCell_T, PairwiseFunctor>,
+                        public VLCTraversalInterface<typename ParticleCell_T::ParticleType, NeighborList> {
  public:
   /**
    * Constructor of the lc_c18 traversal.
@@ -42,9 +42,9 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
   explicit VLCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                            const double interactionLength, const std::array<double, 3> &cellLength,
                            DataLayoutOption dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
-      : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                         dataLayout, useNewton3),
-        VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(typeOfList),
+      : C18BasedTraversal<ParticleCell_T, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                           dataLayout, useNewton3),
+        VLCTraversalInterface<typename ParticleCell_T::ParticleType, NeighborList>(typeOfList),
         _functor(pairwiseFunctor) {}
 
   void traverseParticles() override;
@@ -77,8 +77,8 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
   PairwiseFunctor &_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-void VLCC18Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticles() {
+template <class ParticleCell_T, class PairwiseFunctor, class NeighborList>
+void VLCC18Traversal<ParticleCell_T, PairwiseFunctor, NeighborList>::traverseParticles() {
   if (this->_dataLayout == DataLayoutOption::soa) {
     this->loadSoA(_functor, *(this->_verletList));
   }

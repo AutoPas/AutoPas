@@ -20,14 +20,14 @@ namespace autopas {
  *
  * When disabling newton 3, interactions inside a cluster are still calculated using newton 3.
  *
- * @tparam ParticleCell
+ * @tparam ParticleCell_T
  * @tparam PairwiseFunctor
  */
-template <class ParticleCell, class PairwiseFunctor>
-class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor>,
-                        public VCLTraversalInterface<typename ParticleCell::ParticleType> {
+template <class ParticleCell_T, class PairwiseFunctor>
+class VCLC06Traversal : public ColorBasedTraversal<ParticleCell_T, PairwiseFunctor>,
+                        public VCLTraversalInterface<typename ParticleCell_T::ParticleType> {
  private:
-  using ParticleType = typename ParticleCell::ParticleType;
+  using ParticleType = typename ParticleCell_T::ParticleType;
 
   /**
    * Each base step looks like this:
@@ -59,7 +59,7 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
    */
   explicit VCLC06Traversal(PairwiseFunctor &pairwiseFunctor, size_t clusterSize, DataLayoutOption dataLayout,
                            bool useNewton3)
-      : ColorBasedTraversal<ParticleCell, PairwiseFunctor>({0, 0, 0}, pairwiseFunctor, 0, {}, dataLayout, useNewton3),
+      : ColorBasedTraversal<ParticleCell_T, PairwiseFunctor>({0, 0, 0}, pairwiseFunctor, 0, {}, dataLayout, useNewton3),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
@@ -112,11 +112,11 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
   internal::VCLClusterFunctor<ParticleType, PairwiseFunctor> _clusterFunctor;
 };
 
-template <class ParticleCell, class PairwiseFunctor>
-void VCLC06Traversal<ParticleCell, PairwiseFunctor>::processColorCell(unsigned long xColorCell,
-                                                                      unsigned long yColorCell,
-                                                                      unsigned long zColorCell,
-                                                                      int towersPerColoringCell) {
+template <class ParticleCell_T, class PairwiseFunctor>
+void VCLC06Traversal<ParticleCell_T, PairwiseFunctor>::processColorCell(unsigned long xColorCell,
+                                                                        unsigned long yColorCell,
+                                                                        unsigned long zColorCell,
+                                                                        int towersPerColoringCell) {
   // We are only doing a 2D coloring.
   if (zColorCell != 0) {
     autopas::utils::ExceptionHandler::exception("Coloring should only be 2D, not in z-direction!");

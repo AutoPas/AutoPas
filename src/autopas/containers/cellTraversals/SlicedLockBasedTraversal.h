@@ -25,11 +25,11 @@ namespace autopas {
  * on the boundary wall to the previous slice with one lock. This lock is lifted
  * as soon the boundary wall is fully processed.
  *
- * @tparam ParticleCell The type of cells.
+ * @tparam ParticleCell_T The type of cells.
  * @tparam Functor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class Functor>
-class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Functor> {
+template <class ParticleCell_T, class Functor>
+class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell_T, Functor> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -38,8 +38,8 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Funct
   explicit SlicedLockBasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor,
                                     const double interactionLength, const std::array<double, 3> &cellLength,
                                     DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
-      : SlicedBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
-                                                    useNewton3, spaciallyForward) {}
+      : SlicedBasedTraversal<ParticleCell_T, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                      useNewton3, spaciallyForward) {}
 
  protected:
   /**
@@ -57,9 +57,9 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Funct
   inline void slicedTraversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor>
+template <class ParticleCell_T, class Functor>
 template <typename LoopBody>
-void SlicedLockBasedTraversal<ParticleCell, Functor>::slicedTraversal(LoopBody &&loopBody) {
+void SlicedLockBasedTraversal<ParticleCell_T, Functor>::slicedTraversal(LoopBody &&loopBody) {
   using std::array;
 
   auto numSlices = this->_sliceThickness.size();

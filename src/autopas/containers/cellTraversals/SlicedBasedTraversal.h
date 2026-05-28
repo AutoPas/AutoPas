@@ -22,11 +22,11 @@ namespace autopas {
  * the domain into multiple slices along this dimension. Slices are
  * assigned to the threads in a round robin fashion.
  *
- * @tparam ParticleCell The type of cells.
+ * @tparam ParticleCell_T The type of cells.
  * @tparam Functor The functor that defines the interaction between particles.
  */
-template <class ParticleCell, class Functor>
-class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface {
+template <class ParticleCell_T, class Functor>
+class SlicedBasedTraversal : public CellTraversal<ParticleCell_T>, public TraversalInterface {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -43,7 +43,7 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor,
                                 const double interactionLength, const std::array<double, 3> &cellLength,
                                 DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
-      : CellTraversal<ParticleCell>(dims),
+      : CellTraversal<ParticleCell_T>(dims),
         TraversalInterface(dataLayout, useNewton3),
         _overlap{},
         _dimsSortedByLength{},
@@ -139,7 +139,7 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
    * Update cell information based on VerletClusterLists
    * @param vcl Pointer to the VerletClusterLists object from which cell information is extracted.
    */
-  void reinitForVCL(const VerletClusterLists<typename ParticleCell::ParticleType> *vcl) {
+  void reinitForVCL(const VerletClusterLists<typename ParticleCell_T::ParticleType> *vcl) {
     // Reinitialize the sliced traversal with up to date tower information
     const auto towerSideLength = vcl->getTowerSideLength();
     this->_cellLength = {towerSideLength[0], towerSideLength[1], vcl->getBoxMax()[2] - vcl->getBoxMin()[2]};
@@ -192,8 +192,8 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
   utils::DataLayoutConverter<Functor> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class Functor>
-void SlicedBasedTraversal<ParticleCell, Functor>::init() {
+template <class ParticleCell_T, class Functor>
+void SlicedBasedTraversal<ParticleCell_T, Functor>::init() {
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
     if (not _spaciallyForward) {

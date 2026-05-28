@@ -19,12 +19,12 @@ namespace autopas {
 /**
  * This class provides the base for traversals using base steps based on cell coloring.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam Functor The functor that defines the interaction between particles.
  * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
-template <class ParticleCell, class Functor, int collapseDepth = 3>
-class ColorBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface {
+template <class ParticleCell_T, class Functor, int collapseDepth = 3>
+class ColorBasedTraversal : public CellTraversal<ParticleCell_T>, public TraversalInterface {
  protected:
   /**
    * Constructor of the ColorBasedTraversal.
@@ -39,7 +39,7 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
   explicit ColorBasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor,
                                const double interactionLength, const std::array<double, 3> &cellLength,
                                DataLayoutOption dataLayout, bool useNewton3)
-      : CellTraversal<ParticleCell>(dims),
+      : CellTraversal<ParticleCell_T>(dims),
         TraversalInterface(dataLayout, useNewton3),
         _interactionLength(interactionLength),
         _cellLength(cellLength),
@@ -127,9 +127,9 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
   utils::DataLayoutConverter<Functor> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class Functor, int collapseDepth>
+template <class ParticleCell_T, class Functor, int collapseDepth>
 template <typename LoopBody>
-inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTraversal(
+inline void ColorBasedTraversal<ParticleCell_T, Functor, collapseDepth>::colorTraversal(
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
     const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;

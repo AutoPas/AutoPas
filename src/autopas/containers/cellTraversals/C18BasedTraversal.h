@@ -16,11 +16,11 @@ namespace autopas {
  * The traversal is defined in the function c18Traversal and uses 18 colors, such that interactions between the base
  * cell and all adjacent cells with greater ID are safe, even when using newton3 optimizations.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam Functor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class Functor>
-class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
+template <class ParticleCell_T, class Functor>
+class C18BasedTraversal : public ColorBasedTraversal<ParticleCell_T, Functor> {
  public:
   /**
    * Constructor of the lc_c18 traversal.
@@ -34,8 +34,8 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
    */
   explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor, const double interactionLength,
                              const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : ColorBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
-                                                   useNewton3) {}
+      : ColorBasedTraversal<ParticleCell_T, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                     useNewton3) {}
 
  protected:
   /**
@@ -54,9 +54,9 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
   inline void c18Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor>
+template <class ParticleCell_T, class Functor>
 template <bool allCells, typename LoopBody>
-inline void C18BasedTraversal<ParticleCell, Functor>::c18Traversal(LoopBody &&loopBody) {
+inline void C18BasedTraversal<ParticleCell_T, Functor>::c18Traversal(LoopBody &&loopBody) {
   const std::array<unsigned long, 3> stride = {
       2ul * this->_overlap[0] + 1ul,
       2ul * this->_overlap[1] + 1ul,

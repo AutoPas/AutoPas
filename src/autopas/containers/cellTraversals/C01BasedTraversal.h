@@ -17,12 +17,12 @@ namespace autopas {
  * The traversal is defined in the function c01Traversal and uses 1 color. Interactions between cells are allowed
  * only if particles of only one cell are modified. This means that newton3 optimizations are NOT allowed.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam Functor The functor that defines the interaction of particles.
  * @tparam dataLayout indicates usage of SoA
  */
-template <class ParticleCell, class Functor, int collapseDepth = 3>
-class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, collapseDepth> {
+template <class ParticleCell_T, class Functor, int collapseDepth = 3>
+class C01BasedTraversal : public ColorBasedTraversal<ParticleCell_T, Functor, collapseDepth> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -36,8 +36,8 @@ class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, coll
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor, double interactionLength,
                              const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : ColorBasedTraversal<ParticleCell, Functor, collapseDepth>(dims, functor, interactionLength, cellLength,
-                                                                  dataLayout, useNewton3) {}
+      : ColorBasedTraversal<ParticleCell_T, Functor, collapseDepth>(dims, functor, interactionLength, cellLength,
+                                                                    dataLayout, useNewton3) {}
 
  protected:
   /**
@@ -51,9 +51,9 @@ class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, coll
   inline void c01Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, int collapseDepth>
+template <class ParticleCell_T, class Functor, int collapseDepth>
 template <typename LoopBody>
-inline void C01BasedTraversal<ParticleCell, Functor, collapseDepth>::c01Traversal(LoopBody &&loopBody) {
+inline void C01BasedTraversal<ParticleCell_T, Functor, collapseDepth>::c01Traversal(LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto offset = this->_overlap;

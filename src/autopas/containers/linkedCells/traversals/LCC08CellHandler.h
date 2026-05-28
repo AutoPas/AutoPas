@@ -21,10 +21,10 @@ namespace autopas {
  * After executing the base step on all cells all pairwise interactions for
  * all cells are done.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
+template <class ParticleCell_T, class PairwiseFunctor>
 class LCC08CellHandler {
  public:
   /**
@@ -59,7 +59,7 @@ class LCC08CellHandler {
    * @param cells vector of all cells.
    * @param baseIndex Index respective to which box is constructed.
    */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
+  void processBaseCell(std::vector<ParticleCell_T> &cells, unsigned long baseIndex);
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()
@@ -92,7 +92,7 @@ class LCC08CellHandler {
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<ParticleCell, PairwiseFunctor,
+  internal::CellFunctor<ParticleCell_T, PairwiseFunctor,
                         /*bidirectional*/ true>
       _cellFunctor;
 
@@ -107,15 +107,15 @@ class LCC08CellHandler {
   const std::array<double, 3> _cellLength;
 };
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
-                                                                             unsigned long baseIndex) {
+template <class ParticleCell_T, class PairwiseFunctor>
+inline void LCC08CellHandler<ParticleCell_T, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell_T> &cells,
+                                                                               unsigned long baseIndex) {
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
     const unsigned long cellIndex2 = baseIndex + offset2;
 
-    ParticleCell &cell1 = cells[cellIndex1];
-    ParticleCell &cell2 = cells[cellIndex2];
+    ParticleCell_T &cell1 = cells[cellIndex1];
+    ParticleCell_T &cell2 = cells[cellIndex2];
 
     if (cellIndex1 == cellIndex2) {
       this->_cellFunctor.processCell(cell1);

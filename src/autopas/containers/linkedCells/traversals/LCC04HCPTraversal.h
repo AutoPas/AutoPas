@@ -23,11 +23,11 @@ namespace autopas {
  * these steps overlap a domain coloring with four colors is applied. It differs from c04 in the shape of the colored
  * blocks. The chosen block-shape for the c08-base-steps in the lc_c04_HCP traversal is a 2x1x3-shape cuboid.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
-class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
+template <class ParticleCell_T, class PairwiseFunctor>
+class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell_T, PairwiseFunctor>, public LCTraversalInterface {
  public:
   /**
    * Constructor of c04hcp
@@ -42,8 +42,8 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
   LCC04HCPTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                     const double interactionLength, const std::array<double, 3> &cellLength,
                     DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                         dataLayout, useNewton3),
+      : C08BasedTraversal<ParticleCell_T, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                           dataLayout, useNewton3),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3),
         _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension),
@@ -67,18 +67,18 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  void traverseSingleColor(std::vector<ParticleCell> &cells, int color);
+  void traverseSingleColor(std::vector<ParticleCell_T> &cells, int color);
 
-  void processBasePack6(std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex);
+  void processBasePack6(std::vector<ParticleCell_T> &cells, const std::array<long, 3> &base3DIndex);
 
-  LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
+  LCC08CellHandler<ParticleCell_T, PairwiseFunctor> _cellHandler;
 
   const std::array<long, 3> _end;
 };
 
-template <class ParticleCell, class PairwiseFunctor>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::processBasePack6(std::vector<ParticleCell> &cells,
-                                                                        const std::array<long, 3> &base3DIndex) {
+template <class ParticleCell_T, class PairwiseFunctor>
+void LCC04HCPTraversal<ParticleCell_T, PairwiseFunctor>::processBasePack6(std::vector<ParticleCell_T> &cells,
+                                                                          const std::array<long, 3> &base3DIndex) {
   using utils::ThreeDimensionalMapping::threeToOneD;
   std::array<long, 3> index{};
   const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension);
@@ -105,8 +105,8 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::processBasePack6(std::vec
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
+template <class ParticleCell_T, class PairwiseFunctor>
+void LCC04HCPTraversal<ParticleCell_T, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   AUTOPAS_OPENMP(parallel) {
     for (int color = 0; color < 4; ++color) {
@@ -123,14 +123,14 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
  * Go through one color and search for cuboids belonging to the specified color.
  * Uses shifts to go through the different dimensions and prevent overlapping of the cuboids.
  *
- * @tparam ParticleCell
+ * @tparam ParticleCell_T
  * @tparam PairwiseFunctor
  * @param cells
  * @param color
  */
-template <class ParticleCell, class PairwiseFunctor>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::traverseSingleColor(std::vector<ParticleCell> &cells,
-                                                                           int color) {
+template <class ParticleCell_T, class PairwiseFunctor>
+void LCC04HCPTraversal<ParticleCell_T, PairwiseFunctor>::traverseSingleColor(std::vector<ParticleCell_T> &cells,
+                                                                             int color) {
   // determine a starting point of one of the grids
   std::array<long, 3> startOfThisColor{};  // coordinates: {x,y,z}
 

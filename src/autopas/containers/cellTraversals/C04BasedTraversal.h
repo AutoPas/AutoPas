@@ -18,12 +18,12 @@ namespace autopas {
  * The traversal is defined in the function c04Traversal and uses 4 colors, such that interactions between the base
  * cell and all adjacent cells with greater ID in each direction are safe, even when using newton3 optimizations.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam Functor The functor that defines the interaction between particles.
  * @tparam collapseDepth
  */
-template <class ParticleCell, class Functor, int collapseDepth = 3>
-class C04BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, collapseDepth> {
+template <class ParticleCell_T, class Functor, int collapseDepth = 3>
+class C04BasedTraversal : public ColorBasedTraversal<ParticleCell_T, Functor, collapseDepth> {
  public:
   /**
    * Constructor of the c04 traversal.
@@ -37,8 +37,8 @@ class C04BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, coll
    */
   explicit C04BasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor, const double interactionLength,
                              const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : ColorBasedTraversal<ParticleCell, Functor, collapseDepth>(dims, functor, interactionLength, cellLength,
-                                                                  dataLayout, useNewton3) {}
+      : ColorBasedTraversal<ParticleCell_T, Functor, collapseDepth>(dims, functor, interactionLength, cellLength,
+                                                                    dataLayout, useNewton3) {}
 
  protected:
   /**
@@ -49,9 +49,9 @@ class C04BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, coll
   inline void c04Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, int collapseDepth>
+template <class ParticleCell_T, class Functor, int collapseDepth>
 template <typename LoopBody>
-inline void C04BasedTraversal<ParticleCell, Functor, collapseDepth>::c04Traversal(LoopBody &&loopBody) {
+inline void C04BasedTraversal<ParticleCell_T, Functor, collapseDepth>::c04Traversal(LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto end = this->_cellsPerDimension - this->_overlap;

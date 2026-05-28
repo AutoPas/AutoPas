@@ -25,11 +25,12 @@ namespace autopas {
  * on the boundary wall to the previous slice with one lock. This lock is lifted
  * as soon the boundary wall is fully processed.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
-class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
+template <class ParticleCell_T, class PairwiseFunctor>
+class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell_T, PairwiseFunctor>,
+                          public LCTraversalInterface {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -44,8 +45,8 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwise
   explicit LCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                              double interactionLength, const std::array<double, 3> &cellLength,
                              DataLayoutOption dataLayout, bool useNewton3)
-      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                                dataLayout, useNewton3, true),
+      : SlicedLockBasedTraversal<ParticleCell_T, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                                  dataLayout, useNewton3, true),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}
 
@@ -59,11 +60,11 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwise
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
+  LCC08CellHandler<ParticleCell_T, PairwiseFunctor> _cellHandler;
 };
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void LCSlicedTraversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
+template <class ParticleCell_T, class PairwiseFunctor>
+inline void LCSlicedTraversal<ParticleCell_T, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

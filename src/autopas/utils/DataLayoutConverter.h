@@ -29,11 +29,11 @@ class DataLayoutConverter {
 
   /**
    * loads the target dataLayout in a cell
-   * @tparam ParticleCell Cell type
+   * @tparam ParticleCell_T Cell type
    * @param cell to load the data in
    */
-  template <class ParticleCell>
-  void loadDataLayout(ParticleCell &cell) {
+  template <class ParticleCell_T>
+  void loadDataLayout(ParticleCell_T &cell) {
     // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
     switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
       case DataLayoutOption::aos: {
@@ -48,11 +48,11 @@ class DataLayoutConverter {
 
   /**
    * converts the dataLayout to aos
-   * @tparam ParticleCell Cell type
+   * @tparam ParticleCell_T Cell type
    * @param cell to load the data in
    */
-  template <class ParticleCell>
-  void storeDataLayout(ParticleCell &cell) {
+  template <class ParticleCell_T>
+  void storeDataLayout(ParticleCell_T &cell) {
     // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
     switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
       case DataLayoutOption::aos: {

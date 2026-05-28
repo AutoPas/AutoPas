@@ -14,14 +14,14 @@ namespace autopas {
 
 /**
  * Traversal for VerletClusterLists. Does not support newton 3.
- * @tparam ParticleCell
+ * @tparam ParticleCell_T
  * @tparam PairwiseFunctor The type of the functor.
 
  */
-template <class ParticleCell, class PairwiseFunctor>
+template <class ParticleCell_T, class PairwiseFunctor>
 class VCLClusterIterationTraversal : public TraversalInterface,
-                                     public VCLTraversalInterface<typename ParticleCell::ParticleType> {
-  using ParticleType = typename ParticleCell::ParticleType;
+                                     public VCLTraversalInterface<typename ParticleCell_T::ParticleType> {
+  using ParticleType = typename ParticleCell_T::ParticleType;
 
  public:
   /**

@@ -17,11 +17,11 @@ namespace autopas {
  * The traversal is defined in the function c08Traversal and uses 8 colors, such that interactions between the base
  * cell and all adjacent cells with greater ID in each direction are safe, even when using newton3 optimizations.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam Functor The functor that defines the interaction between particles.
  */
-template <class ParticleCell, class Functor>
-class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
+template <class ParticleCell_T, class Functor>
+class C08BasedTraversal : public ColorBasedTraversal<ParticleCell_T, Functor> {
  public:
   /**
    * Constructor of the c08 traversal.
@@ -35,8 +35,8 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
    */
   explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor, const double interactionLength,
                              const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : ColorBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
-                                                   useNewton3) {}
+      : ColorBasedTraversal<ParticleCell_T, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                     useNewton3) {}
 
  protected:
   /**
@@ -47,9 +47,9 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
   inline void c08Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor>
+template <class ParticleCell_T, class Functor>
 template <typename LoopBody>
-inline void C08BasedTraversal<ParticleCell, Functor>::c08Traversal(LoopBody &&loopBody) {
+inline void C08BasedTraversal<ParticleCell_T, Functor>::c08Traversal(LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto end = this->_cellsPerDimension - this->_overlap;

@@ -17,9 +17,9 @@ namespace autopas {
  * This class handles traversals through the cell structures.
  * Derived classes handle the order through which the cells are traversed and should additional inherit from
  * TraversalInterface
- * @tparam ParticleCell type of cells.
+ * @tparam ParticleCell_T type of cells.
  */
-template <class ParticleCell>
+template <class ParticleCell_T>
 class CellTraversal {
  public:
   /**
@@ -37,7 +37,7 @@ class CellTraversal {
    * Sets the cells to iterate over. Should always be called before initTraversal().
    * @param cells The cells to iterate over.
    */
-  virtual void setCellsToTraverse(std::vector<ParticleCell> &cells) { _cells = &cells; }
+  virtual void setCellsToTraverse(std::vector<ParticleCell_T> &cells) { _cells = &cells; }
 
   /**
    * Set the sorting-threshold for traversals that use the CellFunctor
@@ -57,7 +57,7 @@ class CellTraversal {
   /**
    * The cells to traverse.
    */
-  std::vector<ParticleCell> *_cells;
+  std::vector<ParticleCell_T> *_cells;
 };
 
 }  // namespace autopas

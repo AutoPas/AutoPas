@@ -18,14 +18,14 @@ namespace autopas {
  * The slices are processed in parallel by multiple threads. Race conditions are prevented,
  * by placing locks on the starting layers of each slice.
  *
- * @tparam ParticleCell
+ * @tparam ParticleCell_T
  * @tparam PairwiseFunctor
  */
-template <class ParticleCell, class PairwiseFunctor>
-class VCLSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>,
-                                   public VCLTraversalInterface<typename ParticleCell::ParticleType> {
+template <class ParticleCell_T, class PairwiseFunctor>
+class VCLSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell_T, PairwiseFunctor>,
+                                   public VCLTraversalInterface<typename ParticleCell_T::ParticleType> {
  private:
-  using ParticleType = typename ParticleCell::ParticleType;
+  using ParticleType = typename ParticleCell_T::ParticleType;
 
   PairwiseFunctor &_functor;
   internal::VCLClusterFunctor<ParticleType, PairwiseFunctor> _clusterFunctor;
@@ -59,8 +59,8 @@ class VCLSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
   explicit VCLSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                                       double interactionLength, const std::array<double, 3> &cellLength,
                                       size_t clusterSize, DataLayoutOption dataLayout, bool useNewton3)
-      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
-                                                                    cellLength, dataLayout, useNewton3, false),
+      : SlicedBalancedBasedTraversal<ParticleCell_T, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
+                                                                      cellLength, dataLayout, useNewton3, false),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
@@ -73,8 +73,8 @@ class VCLSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
   }
 
   void initTraversal() override {
-    SlicedBasedTraversal<ParticleCell, PairwiseFunctor>::reinitForVCL(this->_verletClusterLists);
-    SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>::initTraversal();
+    SlicedBasedTraversal<ParticleCell_T, PairwiseFunctor>::reinitForVCL(this->_verletClusterLists);
+    SlicedBalancedBasedTraversal<ParticleCell_T, PairwiseFunctor>::initTraversal();
   }
 
   void endTraversal() override {

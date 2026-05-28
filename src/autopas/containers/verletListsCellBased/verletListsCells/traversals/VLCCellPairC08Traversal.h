@@ -16,12 +16,12 @@ namespace autopas {
  * C08 traversal for VLCCellPairNeighborList.
  * The pairwise neighbor list allows access to the relevant pairs of interacting particles for each pair of cells,
  * including the diagonal non-base pair of cells in the standard c08 step.
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
-class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
-                                public VLCCellPairTraversalInterface<typename ParticleCell::ParticleType> {
+template <class ParticleCell_T, class PairwiseFunctor>
+class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell_T, PairwiseFunctor>,
+                                public VLCCellPairTraversalInterface<typename ParticleCell_T::ParticleType> {
  public:
   /**
    * Constructor of the c08 traversal for VLCCellPairNeighborList.
@@ -36,8 +36,8 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
   explicit VLCCellPairC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                                    double interactionLength, const std::array<double, 3> &cellLength,
                                    DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                         dataLayout, useNewton3),
+      : C08BasedTraversal<ParticleCell_T, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                           dataLayout, useNewton3),
         _functor(pairwiseFunctor),
         _cellHandler(dims, interactionLength, cellLength) {}
 
@@ -57,15 +57,15 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
 
  private:
   PairwiseFunctor &_functor;
-  VLCCellPairC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
+  VLCCellPairC08CellHandler<ParticleCell_T, PairwiseFunctor> _cellHandler;
   /**
    * Structure of arrays to be used if the data layout is SoA.
    */
-  SoA<typename ParticleCell::ParticleType::SoAArraysType> *_soa;
+  SoA<typename ParticleCell_T::ParticleType::SoAArraysType> *_soa;
 };
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void VLCCellPairC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
+template <class ParticleCell_T, class PairwiseFunctor>
+inline void VLCCellPairC08Traversal<ParticleCell_T, PairwiseFunctor>::traverseParticles() {
   if (this->_dataLayout == DataLayoutOption::soa) {
     _soa = this->_cellPairVerletList->loadSoA(_functor);
   }

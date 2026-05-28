@@ -17,13 +17,13 @@ namespace autopas {
  * The traversal uses the c01 base step performed on every single cell.
  * newton3 cannot be applied!
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam NeighborList type of the neighbor list
  */
-template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>,
-                        public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+template <class ParticleCell_T, class PairwiseFunctor, class NeighborList>
+class VLCC01Traversal : public C01BasedTraversal<ParticleCell_T, PairwiseFunctor, InteractionTypeOption::pairwise>,
+                        public VLCTraversalInterface<typename ParticleCell_T::ParticleType, NeighborList> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -39,9 +39,9 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
   explicit VLCC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                            double interactionLength, const std::array<double, 3> &cellLength,
                            DataLayoutOption dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
+      : C01BasedTraversal<ParticleCell_T, PairwiseFunctor, InteractionTypeOption::pairwise>(
             dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
-        VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(typeOfList),
+        VLCTraversalInterface<typename ParticleCell_T::ParticleType, NeighborList>(typeOfList),
         _functor(pairwiseFunctor) {}
 
   void traverseParticles() override;
@@ -75,8 +75,8 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
   PairwiseFunctor &_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-inline void VLCC01Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticles() {
+template <class ParticleCell_T, class PairwiseFunctor, class NeighborList>
+inline void VLCC01Traversal<ParticleCell_T, PairwiseFunctor, NeighborList>::traverseParticles() {
   if (this->_dataLayout == DataLayoutOption::soa) {
     this->loadSoA(_functor, *(this->_verletList));
   }

@@ -28,14 +28,14 @@ namespace autopas {
  * For each cell all neighbor lists are processed, so depending on whether lists
  * were built with newton3 the base step is c01 or c18
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam NeighborList type of the neighbor list
  */
 
-template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>,
-                           public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+template <class ParticleCell_T, class PairwiseFunctor, class NeighborList>
+class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell_T, PairwiseFunctor>,
+                           public VLCTraversalInterface<typename ParticleCell_T::ParticleType, NeighborList> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -51,9 +51,9 @@ class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
   explicit VLCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                               double interactionLength, const std::array<double, 3> &cellLength,
                               DataLayoutOption dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
-      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                                dataLayout, useNewton3, false),
-        VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(typeOfList),
+      : SlicedLockBasedTraversal<ParticleCell_T, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                                  dataLayout, useNewton3, false),
+        VLCTraversalInterface<typename ParticleCell_T::ParticleType, NeighborList>(typeOfList),
         _functor(pairwiseFunctor) {}
 
   void traverseParticles() override;
@@ -86,8 +86,8 @@ class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
   PairwiseFunctor &_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-inline void VLCSlicedTraversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticles() {
+template <class ParticleCell_T, class PairwiseFunctor, class NeighborList>
+inline void VLCSlicedTraversal<ParticleCell_T, PairwiseFunctor, NeighborList>::traverseParticles() {
   if (this->_dataLayout == DataLayoutOption::soa) {
     this->loadSoA(_functor, *(this->_verletList));
   }

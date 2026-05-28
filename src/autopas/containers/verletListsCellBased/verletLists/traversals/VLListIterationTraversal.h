@@ -17,12 +17,12 @@ namespace autopas {
 /**
  * This class provides a Traversal for the verlet lists container.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
-class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
-  using ParticleType = typename ParticleCell::ParticleType;
+template <class ParticleCell_T, class PairwiseFunctor>
+class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell_T> {
+  using ParticleType = typename ParticleCell_T::ParticleType;
 
  public:
   /**

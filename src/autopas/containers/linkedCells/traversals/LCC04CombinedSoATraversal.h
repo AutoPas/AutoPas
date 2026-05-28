@@ -19,11 +19,11 @@ namespace autopas {
  * The traversal uses the c04 base step performed on every single cell. Since
  * these steps overlap a domain coloring with eight colors is applied.
  *
- * @tparam ParticleCell the type of cells
+ * @tparam ParticleCell_T the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
-class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 2>,
+template <class ParticleCell_T, class PairwiseFunctor>
+class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell_T, PairwiseFunctor, 2>,
                                   public LCTraversalInterface {
  public:
   /**
@@ -39,8 +39,8 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
   explicit LCC04CombinedSoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                                      const double interactionLength, const std::array<double, 3> &cellLength,
                                      DataLayoutOption dataLayout, bool useNewton3)
-      : C04BasedTraversal<ParticleCell, PairwiseFunctor, 2>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                            dataLayout, useNewton3),
+      : C04BasedTraversal<ParticleCell_T, PairwiseFunctor, 2>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                              dataLayout, useNewton3),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, dataLayout, useNewton3,
                      this->_overlap) {}
 
@@ -67,11 +67,11 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
   void setSortingThreshold(size_t sortingThreshold) override {}
 
  private:
-  LCC04SoACellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
+  LCC04SoACellHandler<ParticleCell_T, PairwiseFunctor> _cellHandler;
 };
 
-template <class ParticleCell, class PairwiseFunctor>
-inline void LCC04CombinedSoATraversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
+template <class ParticleCell_T, class PairwiseFunctor>
+inline void LCC04CombinedSoATraversal<ParticleCell_T, PairwiseFunctor>::traverseParticles() {
   _cellHandler.resizeBuffers();
   auto &cells = *(this->_cells);
   this->c04Traversal(
