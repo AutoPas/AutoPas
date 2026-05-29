@@ -6,8 +6,8 @@ traversal                            :  [ds_sequential, lc_sliced, lc_sliced_bal
 newton3                              :  [disabled, enabled]
 data-layout                          :  [AoS, SoA]
 # Configuration options for triwise interactions
-functor-3b                           :  axilrod-teller
-traversal-3b                         :  [ds_sequential, lc_c01]
+functor-3b                           :  axilrod-teller-muto
+traversal-3b                         :  [ds_sequential, vl_list_iteration, vl_pair_list_iteration, vl_list_intersection]
 newton3-3b                           :  [enabled, disabled]
 data-layout-3b                       :  [AoS, SoA]
 
