@@ -11,6 +11,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "autopas/utils/StringUtils.h"
@@ -19,9 +20,9 @@ namespace autopas {
 inline namespace options {
 /**
  * Base class for autopas options.
- * @tparam actualOption Curiously recurring template pattern.
+ * @tparam actualOption_T Curiously recurring template pattern.
  */
-template <typename actualOption>
+template <typename actualOption_T>
 class Option {
  public:
   /**
@@ -34,9 +35,9 @@ class Option {
    * Provides a way to iterate over the possible options.
    * @return Set of all possible values of this option type.
    */
-  static std::set<actualOption> getAllOptions() {
-    const auto mapOptionNames = actualOption::getOptionNames();
-    std::set<actualOption> retSet;
+  static std::set<actualOption_T> getAllOptions() {
+    const auto mapOptionNames = actualOption_T::getOptionNames();
+    std::set<actualOption_T> retSet;
     std::for_each(mapOptionNames.begin(), mapOptionNames.end(),
                   [&](auto pairOpStr) { retSet.insert(pairOpStr.first); });
     return retSet;
@@ -47,10 +48,10 @@ class Option {
    * @note This function is meant to provide sane defaults.
    * @return
    */
-  static std::set<actualOption> getMostOptions() {
+  static std::set<actualOption_T> getMostOptions() {
     const auto allOptions = getAllOptions();
-    const auto discouragedOptions = actualOption::getDiscouragedOptions();
-    std::set<actualOption> retSet;
+    const auto discouragedOptions = actualOption_T::getDiscouragedOptions();
+    std::set<actualOption_T> retSet;
     std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
                         std::inserter(retSet, retSet.begin()));
     return retSet;
@@ -62,8 +63,8 @@ class Option {
    * @return The string representation or "Unknown Option (<IntValue>)".
    */
   [[nodiscard]] std::string to_string(bool fixedLength = false) const {
-    const auto &actualThis = *static_cast<const actualOption *>(this);
-    const auto mapOptNames = actualOption::getOptionNames();  // <- not copying the map destroys the strings
+    const auto &actualThis = *static_cast<const actualOption_T *>(this);
+    const auto mapOptNames = actualOption_T::getOptionNames();  // <- not copying the map destroys the strings
     const auto match = mapOptNames.find(actualThis);
     if (match == mapOptNames.end()) {
       return "Unknown Option (" + std::to_string(actualThis) + ")";
@@ -83,7 +84,7 @@ class Option {
   [[nodiscard]] static size_t maxStringLength() {
     static size_t maxLength = 0;
     if (maxLength == 0) {
-      for (const auto &[_, name] : actualOption::getOptionNames()) {
+      for (const auto &[_, name] : actualOption_T::getOptionNames()) {
         maxLength = std::max(maxLength, name.size());
       }
     }
@@ -106,16 +107,16 @@ class Option {
    * @param optionsString String containing traversal options.
    * @return Container of option enums. If no valid option was found the empty set is returned.
    */
-  template <class OutputContainer = std::set<actualOption>>
+  template <class OutputContainer = std::set<actualOption_T>>
   static OutputContainer parseOptions(const std::string &optionsString) {
     const auto needles = autopas::utils::StringUtils::tokenize(optionsString, autopas::utils::StringUtils::delimiters);
 
     // Shorthand to get everything
     if (needles.size() == 1 and needles.front() == "all") {
-      if constexpr (std::is_same_v<OutputContainer, std::set<actualOption>>) {
-        return actualOption::getAllOptions();
+      if constexpr (std::is_same_v<OutputContainer, std::set<actualOption_T>>) {
+        return actualOption_T::getAllOptions();
       } else {
-        const auto allOptionsSet = actualOption::getAllOptions();
+        const auto allOptionsSet = actualOption_T::getAllOptions();
         OutputContainer allOptionsOut;
         std::copy(allOptionsSet.begin(), allOptionsSet.end(),
                   std::insert_iterator(allOptionsOut, allOptionsOut.begin()));
@@ -124,9 +125,9 @@ class Option {
     }
 
     // create a map of enum -> string with lowercase enums as a lookup and fill strings in the haystack
-    std::map<std::string, actualOption> allOptionNamesLower;
+    std::map<std::string, actualOption_T> allOptionNamesLower;
     std::vector<std::string> haystack;
-    for (auto &[optionEnum, optionString] : actualOption::getOptionNames()) {
+    for (auto &[optionEnum, optionString] : actualOption_T::getOptionNames()) {
       std::transform(optionString.begin(), optionString.end(), optionString.begin(), ::tolower);
       allOptionNamesLower.emplace(optionString, optionEnum);
       haystack.push_back(optionString);
@@ -155,8 +156,8 @@ class Option {
    * @return Option enum.
    */
   template <bool lowercase = false>
-  static actualOption parseOptionExact(const std::string &optionString) {
-    for (auto [optionEnum, optionName] : actualOption::getOptionNames()) {
+  static actualOption_T parseOptionExact(const std::string &optionString) {
+    for (auto [optionEnum, optionName] : actualOption_T::getOptionNames()) {
       if constexpr (lowercase) {
         std::transform(std::begin(optionName), std::end(optionName), std::begin(optionName), ::tolower);
       }
@@ -167,7 +168,7 @@ class Option {
 
     // the end of the function should not be reached
     utils::ExceptionHandler::exception("Option::parseOptionExact() no match found for: {}", optionString);
-    return actualOption();
+    return actualOption_T();
   }
 
   /**
@@ -187,7 +188,7 @@ class Option {
    * @param option out-parameter that will be filled with the parsed option.
    * @return Processed stream.
    */
-  friend std::istream &operator>>(std::istream &in, actualOption &option) {
+  friend std::istream &operator>>(std::istream &in, actualOption_T &option) {
     // Buffer for the current char.
     char c = ' ';
     // Skip any leading whitespace
@@ -212,11 +213,12 @@ class Option {
 
 /**
  * Function required for modern fmt/spdlog integration (fmt v9+).
+ * @tparam actualOption_T The Option type (Curiously recurring template pattern.)
  * @param opt
  * @return string representation
  */
-template <typename actualOption>
-inline std::string format_as(const Option<actualOption> &opt) {
+template <typename actualOption_T>
+inline std::string format_as(const Option<actualOption_T> &opt) {
   return opt.to_string();
 }
 
