@@ -70,9 +70,17 @@ public:
     }
   }
 
+  void setNeighborList(Kokkos::View<size_t*> offsets, Kokkos::View<size_t*> entries) {
+    _neighborListOffsets = offsets;
+    _neighborListEntries = entries;
+  }
+
 protected:
 
   utils::KokkosStorage<Particle_T> _ownedParticles;
   utils::KokkosStorage<Particle_T> _haloParticles;
+
+  Kokkos::View<size_t*> _neighborListOffsets;
+  Kokkos::View<size_t*> _neighborListEntries;
 };
 }

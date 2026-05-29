@@ -6,6 +6,7 @@
 #pragma once
 
 #include <Kokkos_Core.hpp>
+#include <Kokkos_DualView.hpp>
 
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/utils/KokkosAoS.h"
@@ -23,8 +24,8 @@ namespace autopas {
 template <class Particle_T>
 class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
     public:
-    VerletListsKokkos(DataLayoutOption dataLayout, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double skin)
-        : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin), _dataLayout(dataLayout) {
+    VerletListsKokkos(DataLayoutOption dataLayout, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double skin, const double cutoff)
+        : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin), _dataLayout(dataLayout), _cutoff(cutoff) {
             if (dataLayout == DataLayoutOption::aos) {
                 _aosUpToDate = true;
             }
@@ -64,6 +65,7 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
             _ownedParticles.resize(capacityOwned);
         }
         _ownedParticles.addParticle(numberOfOwned++, p);
+        _neighborListValid = false;
     }
 
     void addHaloParticleImpl(const Particle_T &haloP) override {
@@ -75,6 +77,7 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
             _haloParticles.resize(capacityHalo);
         }
         _haloParticles.addParticle(numberOfHalo++, haloP);
+        _neighborListValid = false;
     }
 
     bool updateHaloParticle(const Particle_T &haloParticle) override {
@@ -108,11 +111,13 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
 
     void deleteHaloParticles() override {
         numberOfHalo = 0;
+        _neighborListValid = false;
     }
 
     void deleteAllParticles() override {
         numberOfHalo = 0;
         numberOfOwned = 0;
+        _neighborListValid = false;
     }
 
     size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const override {
@@ -132,9 +137,62 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
         return numberOfHalo + numberOfOwned;
     }
 
-    // TO DO: verlet list rebuilding here or in a higher level of the hierarchy? (probably here, since this is the only container that needs it, but maybe also consider a more general approach for containers that need to do some work after particle updates and before traversals)
-    void rebuildNeighborLists(TraversalInterface *traversal) override {
-        // No-Op
+    // TODO: include halo neighbors. TODO: move to a faster (cell-binned) algorithm.
+    void rebuildNeighborLists([[maybe_unused]]TraversalInterface *traversal) override {
+        if (_neighborListValid) {
+            return;
+        }
+        convertToAoS();
+
+        const double interactionLength = _cutoff + this->getVerletSkin();
+        const double interactionLengthSqr = interactionLength * interactionLength;
+
+        Kokkos::resize(_neighborListOffsets, numberOfOwned + 1);
+        _neighborListOffsets.modify_host();
+        auto h_offsets = _neighborListOffsets.h_view;
+
+        h_offsets(0) = 0;
+        for (size_t i = 0; i < numberOfOwned; ++i) {
+            const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
+            size_t count = 0;
+            for (size_t j = i + 1; j < numberOfOwned; ++j) {
+                const auto &rj = _ownedParticles.getAoS().getParticle(j).getR();
+                const double dx = ri[0] - rj[0];
+                const double dy = ri[1] - rj[1];
+                const double dz = ri[2] - rj[2];
+                if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
+                    ++count;
+                }
+            }
+            h_offsets(i + 1) = count;
+        }
+        for (size_t i = 0; i < numberOfOwned; ++i) {
+            h_offsets(i + 1) += h_offsets(i);
+        }
+
+        const size_t totalNeighbors = numberOfOwned == 0 ? 0 : h_offsets(numberOfOwned);
+        Kokkos::resize(_neighborListEntries, totalNeighbors);
+        _neighborListEntries.modify_host();
+        auto h_entries = _neighborListEntries.h_view;
+
+        for (size_t i = 0; i < numberOfOwned; ++i) {
+            const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
+            size_t slot = h_offsets(i);
+            for (size_t j = i + 1; j < numberOfOwned; ++j) {
+                const auto &rj = _ownedParticles.getAoS().getParticle(j).getR();
+                const double dx = ri[0] - rj[0];
+                const double dy = ri[1] - rj[1];
+                const double dz = ri[2] - rj[2];
+                if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
+                    h_entries(slot++) = j;
+                }
+            }
+        }
+
+        _neighborListOffsets.template sync<typename DeviceSpace::execution_space>();
+        _neighborListEntries.template sync<typename DeviceSpace::execution_space>();
+
+        _neighborListValid = true;
     }
 
     void computeInteractions(TraversalInterface *traversal) override {
@@ -150,11 +208,13 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
 
     [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
         if (keepNeighborListsValid) {
+            // Caller asserts positions haven't moved enough to invalidate the list.
             // TODO: collect particles and mark non owned as dummy
             // i.e.: those particles which are outside of the box shall be returned, halo particles should be marked as dummies
             return {};
         }
         deleteHaloParticles();
+        _neighborListValid = false;
         // TODO: delete dummy particles
         // TODO: determine those particles which are not inside of the box and return them
 
@@ -162,8 +222,10 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
     }
 
     [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
-        // TODO
-        return TraversalSelectorInfo{};
+        using namespace autopas::utils::ArrayMath::literals;
+        // No spatial decomposition (yet) - treat the whole box as a single cell, like DirectSum.
+        return TraversalSelectorInfo({1, 1, 1}, getInteractionLength(),
+                                     this->getBoxMax() - this->getBoxMin(), 0);
     }
 
     /* TODO: Begin of Code Crime (investigate generalizations of this -> every container does EXACTLY the same) */
@@ -293,11 +355,11 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
         // TODO: consider other behavior such as dummies, container only, ...
     }
 
-    [[nodiscard]] double getCutoff() const final { return 0; }
+    [[nodiscard]] double getCutoff() const final { return _cutoff; }
 
-    void setCutoff(double) final {};
+    void setCutoff(double cutoff) final { _cutoff = cutoff; }
 
-    [[nodiscard]] double getInteractionLength() const final { return 0; }
+    [[nodiscard]] double getInteractionLength() const final { return _cutoff + this->getVerletSkin(); }
 
     std::tuple<const Particle_T*, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                             IteratorBehavior iteratorBehavior) const final {
@@ -322,10 +384,10 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
     }
 
     bool deleteParticle(size_t cellIndex, size_t particleIndex) final {
-        if (cellIndex == 0 && particleIndex > numberOfOwned) {
+        if (cellIndex == 0 && particleIndex >= numberOfOwned) {
             // Particle does not exist in owned list
             return false;
-        } else if (cellIndex == 1 && particleIndex > numberOfHalo) {
+        } else if (cellIndex == 1 && particleIndex >= numberOfHalo) {
             // Particle does not exist in halo list
             return false;
         }
@@ -350,6 +412,7 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
 
               kokkosVLTraversal->setOwnedToTraverse(_ownedParticles);
               kokkosVLTraversal->setHaloToTraverse(_haloParticles);
+              kokkosVLTraversal->setNeighborList(_neighborListOffsets.d_view, _neighborListEntries.d_view);
             }
             else {
                 utils::ExceptionHandler::exception("The selected traversal is not compatible with the VerletListsKokkos container.");
@@ -534,7 +597,13 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
 
     size_t capacityHalo {0};
 
-    
+    double _cutoff {0.0};
+
+    // h_view is written by rebuildNeighborLists; d_view is read by the traversal.
+    Kokkos::DualView<size_t*> _neighborListOffsets {};
+    Kokkos::DualView<size_t*> _neighborListEntries {};
+    bool _neighborListValid {false};
+
 };
 
 } 

@@ -83,7 +83,7 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
       break;
     }
       case ContainerOption::verletListsKokkos: {
-        container = std::make_unique<VerletListsKokkos<Particle_T>>(dataLayout, boxMin, boxMax, verletSkin);
+        container = std::make_unique<VerletListsKokkos<Particle_T>>(dataLayout, boxMin, boxMax, verletSkin, cutoff);
         break;
       }
     case ContainerOption::verletListsCells: {
