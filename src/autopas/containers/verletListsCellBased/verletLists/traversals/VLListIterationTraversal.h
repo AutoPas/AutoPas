@@ -2,13 +2,12 @@
  * @file VLListIterationTraversal.h
  *
  * @date 7.4.2019
- * @author jspahl
+ * @authors jspahl, Alexander-Haberl-TUM
  */
+
 #pragma once
 
 #include "VLTraversalInterface.h"
-#include "autopas/containers/cellTraversals/CellTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -17,22 +16,22 @@ namespace autopas {
 /**
  * This class provides a Traversal for the verlet lists container.
  *
- * @tparam ParticleCell the type of cells
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam ParticleCell_T the type of cells
+ * @tparam Functor_T The functor that defines the interaction of two or three particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
-class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
-  using ParticleType = typename ParticleCell::ParticleType;
+template <class ParticleCell_T, class Functor_T>
+class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell_T> {
+  using ParticleType = typename ParticleCell_T::ParticleType;
 
  public:
   /**
    * Constructor for Verlet Traversal
-   * @param pairwiseFunctor Functor to be used with this Traversal
+   * @param functor Functor to be used with this Traversal
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLListIterationTraversal(PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor) {}
+  explicit VLListIterationTraversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3)
+      : TraversalInterface(dataLayout, useNewton3), _functor(functor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }
 
@@ -72,13 +71,25 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   }
 
   void traverseParticles() override {
+    if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
+      traverseParticlePairs();
+    } else if constexpr (utils::isTriwiseFunctor<Functor_T>()) {
+      traverseParticleTriplets();
+    } else {
+      utils::ExceptionHandler::exception(
+          "VLListIterationTraversal::traverseParticles(): Functor {} is not of type PairwiseFunctor or TriwiseFunctor.",
+          _functor->getName());
+    }
+  }
+
+  void traverseParticlePairs() {
     auto &aosNeighborLists = *(this->_aosNeighborLists);
     auto &soaNeighborLists = *(this->_soaNeighborLists);
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
         // If we use parallelization,
         if (not _useNewton3) {
-          size_t buckets = aosNeighborLists.bucket_count();
+          const size_t buckets = aosNeighborLists.bucket_count();
           /// @todo find a sensible chunk size
           AUTOPAS_OPENMP(parallel for schedule(dynamic))
           for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
@@ -119,7 +130,77 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         return;
       }
       default: {
-        utils::ExceptionHandler::exception("VerletList dataLayout {} not available", _dataLayout);
+        utils::ExceptionHandler::exception(
+            "VLListIterationTraversal::traverseParticlePairs(): VerletList dataLayout {} not available", _dataLayout);
+      }
+    }
+  }
+
+  void traverseParticleTriplets() {
+    auto &aosNeighborLists = *(this->_aosNeighborLists);
+    auto &soaNeighborLists = *(this->_soaNeighborLists);
+    switch (this->_dataLayout) {
+      case DataLayoutOption::aos: {
+        if (not _useNewton3) {
+          const size_t buckets = aosNeighborLists.bucket_count();
+          /// @todo find a sensible chunk size
+          AUTOPAS_OPENMP(parallel for schedule(dynamic))
+          for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
+            auto endIter = aosNeighborLists.end(bucketId);
+            for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
+              ParticleType &particle = *(bucketIter->first);
+              if (not particle.isOwned()) {
+                // skip Halo particles, as N3 is disabled
+                continue;
+              }
+              auto neighborPtrIter1 = bucketIter->second.begin();
+              for (; neighborPtrIter1 != bucketIter->second.end(); ++neighborPtrIter1) {
+                auto neighborPtrIter2 = neighborPtrIter1;
+                for (++neighborPtrIter2; neighborPtrIter2 != bucketIter->second.end(); ++neighborPtrIter2) {
+                  ParticleType &neighbor1 = *(*neighborPtrIter1);
+                  ParticleType &neighbor2 = *(*neighborPtrIter2);
+                  _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
+                }
+              }
+            }
+          }
+        } else {
+          for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
+            ParticleType &particle = *particlePtr;
+
+            auto neighborPtrIter1 = neighborPtrList.begin();
+            for (; neighborPtrIter1 != neighborPtrList.end(); ++neighborPtrIter1) {
+              auto neighborPtrIter2 = neighborPtrIter1;
+              for (++neighborPtrIter2; neighborPtrIter2 != neighborPtrList.end(); ++neighborPtrIter2) {
+                ParticleType &neighbor1 = *(*neighborPtrIter1);
+                ParticleType &neighbor2 = *(*neighborPtrIter2);
+                _functor->AoSFunctor(particle, neighbor1, neighbor2, _useNewton3);
+              }
+            }
+          }
+        }
+        return;
+      }
+
+      case DataLayoutOption::soa: {
+        if (not _useNewton3) {
+          /// @todo find a sensible chunk size
+          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
+          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+            _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+          }
+        } else {
+          // iterate over SoA
+          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
+            _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+          }
+        }
+        return;
+      }
+      default: {
+        utils::ExceptionHandler::exception(
+            "VLListIterationTraversal::traverseParticleTriplets(): VerletList dataLayout {} not available",
+            _dataLayout);
       }
     }
   }
@@ -128,7 +209,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   /**
    * Functor for Traversal
    */
-  PairwiseFunctor *_functor;
+  Functor_T *_functor;
 
   /**
    * SoA buffer of verlet lists.

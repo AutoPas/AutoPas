@@ -21,10 +21,10 @@ namespace autopas {
  * After executing the base step on all cells all pairwise interactions for
  * all cells are done.
  *
- * @tparam ParticleCell the type of cells
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam ParticleCell_T the type of cells
+ * @tparam PairwiseFunctor_T The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
+template <class ParticleCell_T, class PairwiseFunctor_T, class FunctorPolicy_T, bool checkBounds = false>
 class LCC08CellHandler {
  public:
   /**
@@ -39,7 +39,7 @@ class LCC08CellHandler {
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
-  explicit LCC08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
+  explicit LCC08CellHandler(PairwiseFunctor_T *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                             double interactionLength, const std::array<double, 3> &cellLength,
                             const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
       : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
@@ -59,7 +59,27 @@ class LCC08CellHandler {
    * @param cells vector of all cells.
    * @param baseIndex Index respective to which box is constructed.
    */
-  void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
+  void processBaseCell(std::vector<ParticleCell_T> &cells, unsigned long baseIndex) {
+    for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
+      const unsigned long cellIndex1 = baseIndex + offset1;
+      const unsigned long cellIndex2 = baseIndex + offset2;
+
+      if constexpr (checkBounds) {
+        if (cellIndex1 >= cells.size() or cellIndex2 >= cells.size()) {
+          // check that index is not outOfBounds because we call processBaseCell on outer-most Halo-Cells as well
+          continue;
+        }
+      }
+      ParticleCell_T &cell1 = cells[cellIndex1];
+      ParticleCell_T &cell2 = cells[cellIndex2];
+
+      if (cellIndex1 == cellIndex2) {
+        this->_cellFunctor.processCell(cell1);
+      } else {
+        this->_cellFunctor.processCellPair(cell1, cell2, r);
+      }
+    }
+  }
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()
@@ -92,9 +112,9 @@ class LCC08CellHandler {
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<ParticleCell, PairwiseFunctor,
-                        /*bidirectional*/ true>
-      _cellFunctor;
+  // internal::CellFunctor<ParticleCell_T, PairwiseFunctor_T,
+  //                       /*bidirectional*/ true>
+  FunctorPolicy_T _cellFunctor;
 
   /**
    * Interaction length (cutoff + skin).
@@ -106,23 +126,4 @@ class LCC08CellHandler {
    */
   const std::array<double, 3> _cellLength;
 };
-
-template <class ParticleCell, class PairwiseFunctor>
-inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
-                                                                             unsigned long baseIndex) {
-  for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
-    const unsigned long cellIndex1 = baseIndex + offset1;
-    const unsigned long cellIndex2 = baseIndex + offset2;
-
-    ParticleCell &cell1 = cells[cellIndex1];
-    ParticleCell &cell2 = cells[cellIndex2];
-
-    if (cellIndex1 == cellIndex2) {
-      this->_cellFunctor.processCell(cell1);
-    } else {
-      this->_cellFunctor.processCellPair(cell1, cell2, r);
-    }
-  }
-}
-
 }  // namespace autopas

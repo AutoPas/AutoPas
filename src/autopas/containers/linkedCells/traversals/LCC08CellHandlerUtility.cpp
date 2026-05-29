@@ -45,7 +45,7 @@ std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offse
   using namespace autopas::utils::ArrayMath::literals;
   // In case the sorting direction is 0, 0, 0 ==> fix to 1, 1, 1
   std::array<double, 3> sortDir = offset1Vector - offset2Vector;
-  if (std::all_of(sortDir.begin(), sortDir.end(), [](const auto &val) { return val == 0; })) {
+  if (std::ranges::all_of(sortDir, [](const auto &val) { return val == 0; })) {
     sortDir = {1., 1., 1.};
   }
 
@@ -72,7 +72,7 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
   const std::array<int, 3> &cellsPerDimIntegral = static_cast_copy_array<int>(cellsPerDimension);
 
   // Small constants used multiple times in the code below
-  // Note, Legacy: With ov1 --> No support for assymetric overlaps!
+  // Note, Legacy: With ov1 --> No support for asymmetric overlaps!
   const int ov1 = overlap[0] + 1;
   const double interactionLengthSquare{interactionLength * interactionLength};
 
@@ -81,11 +81,11 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
     resultOffsetsC08.resize(ov1);
   }
 
-  // Iteration to build the cell pairs required for the C08 base step, x, y, z reprent the spatial dimension
+  // Iteration to build the cell pairs required for the C08 base step, x, y, z represent the spatial dimension
   for (int x = 0; x <= overlap[0]; ++x) {
     for (int y = 0; y <= overlap[1]; ++y) {
       // Calculate the first partaking cell's offset relative to base cell. The first offset never has a z component
-      // These vertical interactions (along the z-axis) are all incoperated by the second cell's index
+      // These vertical interactions (along the z-axis) are all incorporated by the second cell's index
       const int offset1 = threeToOneD(x, y, 0, cellsPerDimIntegral);
       for (int z = 0; z <= overlap[2]; ++z) {
         // The z component is always calculated in the same way and does not depend on the direction
@@ -115,8 +115,8 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
             if (utils::ArrayMath::dot(distVec, distVec) <= interactionLengthSquare) {
               // Calculate the sorting direction if sorting is enabled
               if constexpr (Mode == C08OffsetMode::c08CellPairsSorting) {
-                // These are respectivley the 3D coordinates of the offsets of cell1 and cell2, as double elements
-                // The cellLength is utuilized to modfiy the direction of the sortingVector in case the cells
+                // These are respectively the 3D coordinates of the offsets of cell1 and cell2, as double elements
+                // The cellLength is utilized to modify the direction of the sortingVector in case the cells
                 // are less squarish, but more lengthy
                 const auto sortDir = computeSortingDirection(
                     {
@@ -149,7 +149,7 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
 }
 
 /*
- * Explicit Template Instantation - Required since the definition of computePairwiseCellOffsetsC08(..)
+ * Explicit Template Instantiation - Required since the definition of computePairwiseCellOffsetsC08(..)
  * is not in header file. However, the Mode variable is finite, and all instances can be created before
  * being used by explicit template instantiation
  */
@@ -159,12 +159,12 @@ template std::vector<OffsetPairSorting> computePairwiseCellOffsetsC08<C08OffsetM
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
 
-/** Template Sepcialization to return C08 cell paris without sorting */
+/** Template Specialization to return C08 cell paris without sorting */
 template std::vector<OffsetPair> computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairs>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
 
-/** Template Sepcialization to return C04 cell paris, i.e. C08 resolved on x axis */
+/** Template Specialization to return C04 cell paris, i.e. C08 resolved on x-axis */
 template std::vector<OffsetPairVector> computePairwiseCellOffsetsC08<C08OffsetMode::c04CellPairs>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
