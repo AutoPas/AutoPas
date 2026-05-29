@@ -217,7 +217,7 @@ class LJFunctorHWY
       handleILoopBody<true, true, false, VectorizationPattern::p1xVec>(
           i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr,
           typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, i);
-         }
+    }
 
     if constexpr (calculateGlobals) {
       computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
