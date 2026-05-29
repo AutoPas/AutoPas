@@ -1,7 +1,7 @@
 # This yaml file creates a simple simulation box to be run with 3-body functors.
 container                            :  [LinkedCells, VerletLists] # DirectSum
 functor-3b                           :  axilrod-teller-muto
-traversal-3b                         :  [lc_c01, vl_list_iteration, vl_pair_list_iteration, vl_list_intersection_sorted] # ds_sequential
+traversal-3b                         :  [lc_c01, vl_list_iteration, vl_pair_list_iteration, vl_list_intersection] # ds_sequential
 newton3-3b                           :  [enabled, disabled]
 data-layout-3b                       :  [AoS]
 

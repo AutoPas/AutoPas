@@ -128,12 +128,12 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vl_list_iteration,
     /**
-     * VLListIntersectionTraversalSorted :  Distribute processing of neighbor lists dynamically to threads.
+     * VLListIntersectionTraversal :  Distribute processing of neighbor lists dynamically to threads.
      * Calls Functor for the Intersection of two neighbor lists. Finds intersection by sorting neighbor lists.
      * Only viable for triwise interactions.
      * Does not support Newton3.
      */
-    vl_list_intersection_sorted,
+    vl_list_intersection,
     /**
      * VLPairListIterationTraversal :  Distribute processing of neighbor lists dynamically to threads.
      * Iterates over neighbor lists that store all possible neighbor pairs.
@@ -255,7 +255,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getAllTriwiseOptions() {
-    return {Value::ds_sequential, Value::lc_c01, Value::vl_list_iteration, Value::vl_list_intersection_sorted,
+    return {Value::ds_sequential, Value::lc_c01, Value::vl_list_iteration, Value::vl_list_intersection,
             Value::vl_pair_list_iteration};
   }
 
@@ -264,7 +264,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getAllTriwiseOnlyOptions() {
-    return {Value::vl_list_intersection_sorted, Value::vl_pair_list_iteration};
+    return {Value::vl_list_intersection, Value::vl_pair_list_iteration};
   }
 
   /**
@@ -340,7 +340,7 @@ class TraversalOption : public Option<TraversalOption> {
 
         // VerletList Traversals:
         {TraversalOption::vl_list_iteration, "vl_list_iteration"},
-        {TraversalOption::vl_list_intersection_sorted, "vl_list_intersection_sorted"},
+        {TraversalOption::vl_list_intersection, "vl_list_intersection"},
         {TraversalOption::vl_pair_list_iteration, "vl_pair_list_iteration"},
 
         // VerletListCells Traversals:

@@ -120,7 +120,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
         this->updateVerletListsAoS<InteractionTypeOption::pairwise>(buildWithN3);
         break;
       }
-      case TraversalOption::vl_list_intersection_sorted: {
+      case TraversalOption::vl_list_intersection: {
         this->updateVerletListsAoS<InteractionTypeOption::triwise>(buildWithN3);
 
         // sort neighbor lists for efficient intersecting
