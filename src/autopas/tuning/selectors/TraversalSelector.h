@@ -30,7 +30,6 @@
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedC02Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedTraversal.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/traversals/VVLAsBuildTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIntersectionTraversalHashing.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIntersectionTraversalSorted.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLPairListIterationTraversal.h"
@@ -392,11 +391,6 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
     }
     case TraversalOption::vl_list_intersection_sorted: {
       traversal = std::make_unique<VLListIntersectionTraversalSorted<ParticleCell_T, TriwiseFunctor_T>>(
-          &triwiseFunctor, dataLayout, useNewton3);
-      break;
-    }
-    case TraversalOption::vl_list_intersection_hashing: {
-      traversal = std::make_unique<VLListIntersectionTraversalHashing<ParticleCell_T, TriwiseFunctor_T>>(
           &triwiseFunctor, dataLayout, useNewton3);
       break;
     }
