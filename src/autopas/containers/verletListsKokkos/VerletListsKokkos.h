@@ -139,15 +139,18 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
 
     // TODO: include halo neighbors. TODO: move to a faster (cell-binned) algorithm.
     void rebuildNeighborLists([[maybe_unused]]TraversalInterface *traversal) override {
+        spdlog::debug("Rebuilding Verlet Lists. Number of owned particles: {}, number of halo particles: {}", numberOfOwned, numberOfHalo);
         if (_neighborListValid) {
             return;
         }
+        spdlog::info("Rebuilding Verlet Lists with cutoff {} and skin {}", _cutoff, this->getVerletSkin());
         convertToAoS();
 
         const double interactionLength = _cutoff + this->getVerletSkin();
         const double interactionLengthSqr = interactionLength * interactionLength;
 
         Kokkos::resize(_neighborListOffsets, numberOfOwned + 1);
+        _neighborListOffsets.clear_sync_state();
         _neighborListOffsets.modify_host();
         auto h_offsets = _neighborListOffsets.h_view;
 
@@ -172,6 +175,7 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
 
         const size_t totalNeighbors = numberOfOwned == 0 ? 0 : h_offsets(numberOfOwned);
         Kokkos::resize(_neighborListEntries, totalNeighbors);
+        _neighborListEntries.clear_sync_state();
         _neighborListEntries.modify_host();
         auto h_entries = _neighborListEntries.h_view;
 
@@ -600,8 +604,8 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
     double _cutoff {0.0};
 
     // h_view is written by rebuildNeighborLists; d_view is read by the traversal.
-    Kokkos::DualView<size_t*> _neighborListOffsets {};
-    Kokkos::DualView<size_t*> _neighborListEntries {};
+    Kokkos::DualView<size_t*> _neighborListOffsets {"vl_neighborListOffsets", 0};
+    Kokkos::DualView<size_t*> _neighborListEntries {"vl_neighborListEntries", 0};
     bool _neighborListValid {false};
 
 };
