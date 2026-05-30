@@ -335,7 +335,7 @@ class TraversalOption : public Option<TraversalOption> {
 
         // VerletList Traversals:
         {TraversalOption::vl_list_iteration, "vl_list_iteration"},
-        {TraversalOption::vl_list_kokkos_traversal_flat, "vl_kokkos_traversal_flat"},
+        {TraversalOption::vl_kokkos_traversal_flat, "vl_kokkos_traversal_flat"},
 
         // VerletListCells Traversals:
         {TraversalOption::vlc_sliced, "vlc_sliced"},
