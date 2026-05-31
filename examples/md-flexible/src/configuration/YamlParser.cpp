@@ -325,6 +325,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.sortingThreshold.description;
 
         config.sortingThreshold.value = node[key].as<size_t>();
+      } else if (key == config.soaSortingThreshold.name) {
+        expected = "Unsigned Integer >= 0.";
+        description = config.soaSortingThreshold.description;
+
+        config.soaSortingThreshold.value = node[key].as<size_t>();
       } else if (key == config.traversalOptions.name) {
         expected = "YAML-sequence of possible values.";
         description = config.traversalOptions.description;
