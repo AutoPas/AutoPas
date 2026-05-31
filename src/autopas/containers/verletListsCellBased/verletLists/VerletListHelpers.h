@@ -31,6 +31,47 @@ class VerletListHelpers {
    */
   using NeighborPairsListAoSType = std::unordered_map<Particle_T *, std::vector<std::pair<Particle_T *, Particle_T *>>>;
 
+  class CRSNeighborList {
+    public:
+      void clear() {
+        _offsets.clear();
+        _neighbors.clear();
+      }
+
+      void resizeParticles(size_t numParticles) {
+        _offsets.assign(numParticles + 1, 0);
+        _neighbors.clear();
+      }
+
+      [[nodiscard]] size_t size() const noexcept {
+        return _offsets.empty() ? 0 : _offsets.size() - 1;
+      }
+
+      [[nodiscard]] std::span<const size_t> neighborsOf(size_t particleIndex) const noexcept {
+        return {
+          _neighbors.data() + _offsets[particleIndex],
+          _offsets[particleIndex + 1] - _offsets[particleIndex]
+      };
+      }
+
+      [[nodiscard]] std::span<size_t> neighborsOf(size_t particleIndex) noexcept {
+        return {
+          _neighbors.data() + _offsets[particleIndex],
+          _offsets[particleIndex + 1] - _offsets[particleIndex]
+      };
+      }
+
+      std::vector<size_t> &offsets() noexcept { return _offsets; }
+      std::vector<size_t> &neighbors() noexcept { return _neighbors; }
+
+      [[nodiscard]] const std::vector<size_t> &offsets() const noexcept { return _offsets; }
+      [[nodiscard]] const std::vector<size_t> &neighbors() const noexcept { return _neighbors; }
+
+    private:
+      std::vector<size_t> _offsets;
+      std::vector<size_t> _neighbors;
+    };
+
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
    */

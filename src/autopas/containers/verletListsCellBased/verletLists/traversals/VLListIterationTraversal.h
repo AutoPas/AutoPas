@@ -72,7 +72,11 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 
   void traverseParticles() override {
     if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
-      traverseParticlePairs();
+      if (this->_dataLayout == DataLayoutOption::aos) {
+        traverseParticlePairsCRS();
+      } else {
+        traverseParticlePairs();
+      }
     } else if constexpr (utils::isTriwiseFunctor<Functor_T>()) {
       traverseParticleTriplets();
     } else {
@@ -132,6 +136,28 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       default: {
         utils::ExceptionHandler::exception(
             "VLListIterationTraversal::traverseParticlePairs(): VerletList dataLayout {} not available", _dataLayout);
+      }
+    }
+  }
+
+  void traverseParticlePairsCRS() {
+    auto &list = *(this->_crsNeighborList);
+    auto &particles = *(this->_indexToParticle);
+
+    const auto numParticles = list.size();
+    const auto &offsets = list.offsets();
+    const auto &neighbors = list.neighbors();
+
+    AUTOPAS_OPENMP(parallel for schedule(static))
+    for (size_t i = 0; i < numParticles; ++i) {
+      ParticleType &particle = *particles[i];
+
+      // Optional: skip dummies/deleted particles if necessary.
+      // if (particle.isDummy()) continue;
+
+      for (size_t p = offsets[i]; p < offsets[i + 1]; ++p) {
+        ParticleType &neighbor = *particles[neighbors[p]];
+        _functor->AoSFunctor(particle, neighbor, false);
       }
     }
   }

@@ -74,7 +74,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<ParticleCellType> *>(traversal);
     if (verletTraversalInterface) {
-      verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
+      verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _crsNeighborList, _indexToParticle, _aosNeighborLists,
                                                          _soaNeighborLists, _aosNeighborPairsLists);
     } else {
       utils::ExceptionHandler::exception(
@@ -188,6 +188,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
                                           dataLayout, useNewton3);
     this->_linkedCells.computeInteractions(&traversal);
 
+    generateCRSFromAoSNeighborLists();
     _pairListIsValid = false;
     _soaListIsValid = false;
   }
@@ -289,6 +290,69 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     _soaListIsValid = true;
   }
 
+  size_t generateParticleIndexMap() {
+    _particlePtr2indexMap.clear();
+    _indexToParticle.clear();
+
+    // Optional: reserve if you can get an estimate cheaply.
+    const auto estimatedParticles =
+        this->getNumberOfParticles(IteratorBehavior::ownedOrHaloOrDummy);
+
+    _particlePtr2indexMap.reserve(estimatedParticles);
+    _indexToParticle.reserve(estimatedParticles);
+
+    size_t index = 0;
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy);
+         iter.isValid(); ++iter, ++index) {
+      auto *particlePtr = &(*iter);
+      _particlePtr2indexMap.emplace(particlePtr, index);
+      _indexToParticle.emplace_back(particlePtr);
+         }
+
+    return _indexToParticle.size();
+  }
+
+  void generateCRSFromAoSNeighborLists() {
+    const auto numParticles = generateParticleIndexMap();
+
+    _crsNeighborList.resizeParticles(numParticles);
+    auto &offsets = _crsNeighborList.offsets();
+
+    // Count neighbors.
+    for (const auto &[particlePtr, neighborPtrs] : _aosNeighborLists) {
+      const auto particleIndex = _particlePtr2indexMap.at(particlePtr);
+      offsets[particleIndex + 1] = neighborPtrs.size();
+    }
+
+    // Prefix sum: offsets[i] now marks the beginning of particle i's neighbor range.
+    std::inclusive_scan(offsets.begin(), offsets.end(), offsets.begin());
+    auto &neighbors = _crsNeighborList.neighbors();
+    neighbors.resize(offsets.back());
+
+    auto writeOffsets = offsets;
+
+    // Fill neighbors.
+    for (const auto &[particlePtr, neighborPtrs] : _aosNeighborLists) {
+      const auto particleIndex = _particlePtr2indexMap.at(particlePtr);
+
+      for (const auto *neighborPtr : neighborPtrs) {
+        const auto neighborIndex = _particlePtr2indexMap.at(neighborPtr);
+        neighbors[writeOffsets[particleIndex]++] = neighborIndex;
+      }
+    }
+
+#ifndef NDEBUG
+    for (size_t i = 0; i < numParticles; ++i) {
+      if (writeOffsets[i] != offsets[i + 1]) {
+        utils::ExceptionHandler::exception(
+            "generateCRSFromAoSNeighborLists(): Fill mismatch for particle {}. "
+            "Wrote until {}, expected {}.",
+            i, writeOffsets[i], offsets[i + 1]);
+      }
+    }
+#endif
+  }
+
  private:
   /**
    * Neighbor Lists: Map of particle pointers to vector of particle pointers.
@@ -305,6 +369,9 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * The index indexes all particles in the container.
    */
   std::unordered_map<const Particle_T *, size_t> _particlePtr2indexMap;
+
+  std::vector<Particle_T *> _indexToParticle;
+  VerletListHelpers<Particle_T>::CRSNeighborList _crsNeighborList;
 
   /**
    * verlet list for SoA:
