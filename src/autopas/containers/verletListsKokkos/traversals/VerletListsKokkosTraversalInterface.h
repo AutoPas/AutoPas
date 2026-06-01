@@ -75,12 +75,22 @@ public:
     _neighborListEntries = entries;
   }
 
+  void setHaloNeighborList(Kokkos::View<size_t*> offsets, Kokkos::View<size_t*> entries) {
+    _haloNeighborListOffsets = offsets;
+    _haloNeighborListEntries = entries;
+  }
+
 protected:
 
   utils::KokkosStorage<Particle_T> _ownedParticles;
   utils::KokkosStorage<Particle_T> _haloParticles;
 
+  // owned-owned neighbor list (entries index into the owned SoA/AoS)
   Kokkos::View<size_t*> _neighborListOffsets;
   Kokkos::View<size_t*> _neighborListEntries;
+
+  // owned-halo neighbor list 
+  Kokkos::View<size_t*> _haloNeighborListOffsets;
+  Kokkos::View<size_t*> _haloNeighborListEntries;
 };
 }

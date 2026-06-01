@@ -44,7 +44,7 @@ explicit VerletListsKokkosTraversalFlat(Functor *functor, DataLayoutOption dataL
     }
 
     void traverseParticles() final {
-      const bool newton3 = _useNewton3;
+      [[maybe_unused]] const bool newton3 = _useNewton3;  // kept for a future newton3 implementation
       const auto func = _functor;
 
       size_t N = VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.size();
@@ -58,21 +58,28 @@ explicit VerletListsKokkosTraversalFlat(Functor *functor, DataLayoutOption dataL
 #else
         const auto offsets = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListOffsets;
         const auto entries = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListEntries;
+        const auto haloOffsets = VerletListsKokkosTraversalInterface<Particle_T>::_haloNeighborListOffsets;
+        const auto haloEntries = VerletListsKokkosTraversalInterface<Particle_T>::_haloNeighborListEntries;
 
         // Full neighbor list: each pair appears under both partners, so the gather-only
-        // update of particle i is correct without newton3. Force newton3 off here.
+        // update of particle i is correct without newton3
         Kokkos::parallel_for("traverseParticlesAoS", Kokkos::RangePolicy<Kokkos::HostSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
+          auto& ownedI = VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(i);
           for (size_t k = offsets(i); k < offsets(i + 1); ++k) {
             const size_t j = entries(k);
             func->AoSFunctorKokkos(
-              VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(i),
+              ownedI,
               VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(j),
               false);
           }
+          for (size_t k = haloOffsets(i); k < haloOffsets(i + 1); ++k) {
+            const size_t j = haloEntries(k);
+            func->AoSFunctorKokkos(
+              ownedI,
+              VerletListsKokkosTraversalInterface<Particle_T>::_haloParticles.getAoS().getParticle(j),
+              false);
+          }
         });
-
-        // TODO: consider halo particles
-        // Maybe even execute halo traversal simultaneously on the host with some sort of result merge mechanism in the end
 #endif
       }
       else if (_dataLayout == DataLayoutOption::soa) {
@@ -84,9 +91,12 @@ explicit VerletListsKokkosTraversalFlat(Functor *functor, DataLayoutOption dataL
         syncNeeded<DeviceSpace::execution_space>(ownedSoA, I);
         syncNeeded<DeviceSpace::execution_space>(haloSoA, I);
 
-        performSoATraversal(ownedSoA);
-        // TODO: owned-halo interactions need their own (owned-halo) neighbor list before they
-        // can be traversed here.
+        performSoATraversal(ownedSoA, ownedSoA,
+                            VerletListsKokkosTraversalInterface<Particle_T>::_neighborListOffsets,
+                            VerletListsKokkosTraversalInterface<Particle_T>::_neighborListEntries);
+        performSoATraversal(ownedSoA, haloSoA,
+                            VerletListsKokkosTraversalInterface<Particle_T>::_haloNeighborListOffsets,
+                            VerletListsKokkosTraversalInterface<Particle_T>::_haloNeighborListEntries);
 
         constexpr auto J = std::make_index_sequence<Functor::getComputedAttr().size()>{};
         modifyComputed<DeviceSpace::execution_space>(ownedSoA, J);
@@ -108,19 +118,19 @@ private:
     (particles.template markModified<ExecSpace, Functor::getComputedAttr()[I]-1>(), ...);
   }
 
-  // Owned-owned traversal over the (full) neighbor list: particle i only interacts with the
-  // entries stored for it, which is the whole point of the Verlet list traversal.
-  void performSoATraversal(const Particle_T::KokkosSoAArraysType& soa) {
-    const size_t N = soa.size();
+  // Traverse a neighbor list: each owned particle i (in soa1) gathers force from the partner
+  // particles (in soa2) stored for it in the list.
+  void performSoATraversal(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2,
+                           const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries) {
+    const size_t N = soa1.size();
 
-    if (N == 0) {
+    if (N == 0 || soa2.size() == 0) {
       return;
     }
 
     FloatPrecision cutoffSquared = _functor->getCutoff() * _functor->getCutoff();
-    const auto soaDevice = soa.deviceView();
-    const auto offsets = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListOffsets;
-    const auto entries = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListEntries;
+    const auto soa1Device = soa1.deviceView();
+    const auto soa2Device = soa2.deviceView();
 
     auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
     Kokkos::parallel_for("vl_kokkos_flat", rangePolicy, KOKKOS_LAMBDA(const int i) {
@@ -128,18 +138,18 @@ private:
       FloatPrecision fyAcc = 0.;
       FloatPrecision fzAcc = 0.;
 
-      const auto x1 = soaDevice.template operator()<Particle_T::AttributeNames::posX, true>(i);
-      const auto y1 = soaDevice.template operator()<Particle_T::AttributeNames::posY, true>(i);
-      const auto z1 = soaDevice.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+      const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+      const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+      const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
 
       for (size_t k = offsets(i); k < offsets(i + 1); ++k) {
         const size_t j = entries(k);
-        Functor::SoAKernelKokkosStatic(x1, y1, z1, soaDevice, fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
+        Functor::SoAKernelKokkosStatic(x1, y1, z1, soa2Device, fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
       }
 
-      soaDevice.template operator()<Particle_T::AttributeNames::forceX, true>(i) += fxAcc;
-      soaDevice.template operator()<Particle_T::AttributeNames::forceY, true>(i) += fyAcc;
-      soaDevice.template operator()<Particle_T::AttributeNames::forceZ, true>(i) += fzAcc;
+      soa1Device.template operator()<Particle_T::AttributeNames::forceX, true>(i) += fxAcc;
+      soa1Device.template operator()<Particle_T::AttributeNames::forceY, true>(i) += fyAcc;
+      soa1Device.template operator()<Particle_T::AttributeNames::forceZ, true>(i) += fzAcc;
     });
   }
 

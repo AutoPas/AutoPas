@@ -137,7 +137,7 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
         return numberOfHalo + numberOfOwned;
     }
 
-    // TODO: include halo neighbors. TODO: move to a faster (cell-binned) algorithm.
+    // TODO: move to a faster (cell-binned) algorithm.
     void rebuildNeighborLists([[maybe_unused]]TraversalInterface *traversal) override {
         spdlog::debug("Rebuilding Verlet Lists. Number of owned particles: {}, number of halo particles: {}", numberOfOwned, numberOfHalo);
         if (_neighborListValid) {
@@ -202,6 +202,56 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
 
         _neighborListOffsets.template sync<typename DeviceSpace::execution_space>();
         _neighborListEntries.template sync<typename DeviceSpace::execution_space>();
+
+        // owned-halo neighbor list: for each owned particle, the halo particles within range.
+        // Halo particles are ghosts and never receive force, so this list is one-directional
+        // (each owned i gathers from its halo neighbors) and needs no newton3.
+        Kokkos::resize(_haloNeighborListOffsets, numberOfOwned + 1);
+        _haloNeighborListOffsets.clear_sync_state();
+        _haloNeighborListOffsets.modify_host();
+        auto h_haloOffsets = _haloNeighborListOffsets.h_view;
+
+        h_haloOffsets(0) = 0;
+        for (size_t i = 0; i < numberOfOwned; ++i) {
+            const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
+            size_t count = 0;
+            for (size_t j = 0; j < numberOfHalo; ++j) {
+                const auto &rj = _haloParticles.getAoS().getParticle(j).getR();
+                const double dx = ri[0] - rj[0];
+                const double dy = ri[1] - rj[1];
+                const double dz = ri[2] - rj[2];
+                if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
+                    ++count;
+                }
+            }
+            h_haloOffsets(i + 1) = count;
+        }
+        for (size_t i = 0; i < numberOfOwned; ++i) {
+            h_haloOffsets(i + 1) += h_haloOffsets(i);
+        }
+
+        const size_t totalHaloNeighbors = numberOfOwned == 0 ? 0 : h_haloOffsets(numberOfOwned);
+        Kokkos::resize(_haloNeighborListEntries, totalHaloNeighbors);
+        _haloNeighborListEntries.clear_sync_state();
+        _haloNeighborListEntries.modify_host();
+        auto h_haloEntries = _haloNeighborListEntries.h_view;
+
+        for (size_t i = 0; i < numberOfOwned; ++i) {
+            const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
+            size_t slot = h_haloOffsets(i);
+            for (size_t j = 0; j < numberOfHalo; ++j) {
+                const auto &rj = _haloParticles.getAoS().getParticle(j).getR();
+                const double dx = ri[0] - rj[0];
+                const double dy = ri[1] - rj[1];
+                const double dz = ri[2] - rj[2];
+                if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
+                    h_haloEntries(slot++) = j;
+                }
+            }
+        }
+
+        _haloNeighborListOffsets.template sync<typename DeviceSpace::execution_space>();
+        _haloNeighborListEntries.template sync<typename DeviceSpace::execution_space>();
 
         _neighborListValid = true;
     }
@@ -424,6 +474,7 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
               kokkosVLTraversal->setOwnedToTraverse(_ownedParticles);
               kokkosVLTraversal->setHaloToTraverse(_haloParticles);
               kokkosVLTraversal->setNeighborList(_neighborListOffsets.d_view, _neighborListEntries.d_view);
+              kokkosVLTraversal->setHaloNeighborList(_haloNeighborListOffsets.d_view, _haloNeighborListEntries.d_view);
             }
             else {
                 utils::ExceptionHandler::exception("The selected traversal is not compatible with the VerletListsKokkos container.");
@@ -611,8 +662,12 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
     double _cutoff {0.0};
 
     // h_view is written by rebuildNeighborLists; d_view is read by the traversal.
+    // owned-owned neighbor list (entries index into the owned particles)
     Kokkos::DualView<size_t*> _neighborListOffsets {"vl_neighborListOffsets", 0};
     Kokkos::DualView<size_t*> _neighborListEntries {"vl_neighborListEntries", 0};
+    // owned-halo neighbor list (offsets per owned particle, entries index into the halo particles)
+    Kokkos::DualView<size_t*> _haloNeighborListOffsets {"vl_haloNeighborListOffsets", 0};
+    Kokkos::DualView<size_t*> _haloNeighborListEntries {"vl_haloNeighborListEntries", 0};
     bool _neighborListValid {false};
 
 };
