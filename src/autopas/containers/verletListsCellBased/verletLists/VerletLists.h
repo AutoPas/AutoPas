@@ -75,8 +75,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<ParticleCellType> *>(traversal);
     if (verletTraversalInterface) {
       verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _crsNeighborList,
-                                                         _indexToParticle, _aosNeighborLists, _soaNeighborLists,
-                                                         _aosNeighborPairsLists);
+                                                         _indexToParticle, _soaNeighborLists, _aosNeighborPairsLists);
     } else {
       utils::ExceptionHandler::exception(
           "VerletLists::computeInteractions(): Trying to use a traversal of wrong type.");
@@ -91,7 +90,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * get the actual neighbor list
    * @return the neighbor list
    */
-  typename VerletListHelpers<Particle_T>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
+  typename VerletListHelpers<Particle_T>::CRSNeighborList &getVerletListsAoS() { return _crsNeighborList; }
 
   /**
    * Build the pair neighbor list if necessary without fully rebuilding the other neighbor lists.
@@ -118,7 +117,6 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     switch (traversal->getTraversalType()) {
       // Standard pairwise traversal
       case TraversalOption::vl_list_iteration: {
-        // this->updateVerletListsAoS<InteractionTypeOption::pairwise>(buildWithN3);
         this->updateVerletListsCRS<InteractionTypeOption::pairwise>(buildWithN3);
         break;
       }
@@ -137,7 +135,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       }
       // Default builds normal neighbor lists including halo particles.
       default: {
-        this->updateVerletListsAoS<InteractionTypeOption::triwise>(buildWithN3);
+        this->updateVerletListsCRS<InteractionTypeOption::triwise>(buildWithN3);
       }
     }
 
@@ -164,41 +162,6 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       std::sort(neighbors.begin() + offsets[particleIndex], neighbors.begin() + offsets[particleIndex + 1],
                 indexLessByParticlePtr);
     }
-  }
-
-  /**
-   * Update the verlet lists for AoS usage
-   * @param useNewton3
-   */
-  template <InteractionTypeOption::Value interactionType>
-  void updateVerletListsAoS(bool useNewton3) {
-    generateAoSNeighborLists();
-    const double interactionLength = this->getInteractionLength();
-    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(_aosNeighborLists, interactionLength);
-
-    DataLayoutOption dataLayout;
-    switch (_buildVerletListType) {
-      case BuildVerletListType::VerletAoS:
-        dataLayout = DataLayoutOption::aos;
-        break;
-      case BuildVerletListType::VerletSoA:
-        dataLayout = DataLayoutOption::soa;
-        break;
-      default:
-        utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
-                                           static_cast<int>(_buildVerletListType));
-    }
-
-    constexpr bool traverseHaloCells = (interactionType == InteractionTypeOption::triwise);
-    auto traversal =
-        LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor,
-                       traverseHaloCells>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f,
-                                          interactionLength, this->_linkedCells.getCellBlock().getCellLength(),
-                                          dataLayout, useNewton3);
-    this->_linkedCells.computeInteractions(&traversal);
-
-    _pairListIsValid = false;
-    _soaListIsValid = false;
   }
 
   template <InteractionTypeOption::Value interactionType>
@@ -281,24 +244,6 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
   /**
-   * Clears and then generates the AoS neighbor lists.
-   * The Id Map is used to map the id of a particle to the actual particle.
-   * @return Number of particles in the container
-   */
-  size_t generateAoSNeighborLists() {
-    size_t numParticles = 0;
-    _aosNeighborLists.clear();
-    // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
-    // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
-    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles) {
-      // create the verlet list entries for all particles
-      _aosNeighborLists[&(*iter)];
-    }
-
-    return numParticles;
-  }
-
-  /**
    * Clears and then generates the AoS neighbor pairs lists.
    */
   void generateAoSNeighborPairsLists() {
@@ -336,44 +281,6 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     _soaListIsValid = true;
   }
 
-  /**
-   * Fills SoA neighbor list with particle indices.
-   */
-  void generateSoAListFromAoSVerletLists() {
-    // resize the list to the size of the aos neighbor list
-    _soaNeighborLists.resize(_aosNeighborLists.size());
-    // clear the aos 2 soa map
-    _particlePtr2indexMap.clear();
-
-    _particlePtr2indexMap.reserve(_aosNeighborLists.size());
-    size_t index = 0;
-
-    // Here we have to iterate over all particles, as particles might be later on marked for deletion, and we cannot
-    // differentiate them from particles already marked for deletion.
-    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
-      // set the map
-      _particlePtr2indexMap[&(*iter)] = index;
-    }
-    size_t accumulatedListSize = 0;
-    for (const auto &[particlePtr, neighborPtrVector] : _aosNeighborLists) {
-      accumulatedListSize += neighborPtrVector.size();
-      const size_t i_id = _particlePtr2indexMap[particlePtr];
-      // each soa neighbor list should be of the same size as for aos
-      _soaNeighborLists[i_id].resize(neighborPtrVector.size());
-      size_t j = 0;
-      for (auto &neighborPtr : neighborPtrVector) {
-        _soaNeighborLists[i_id][j] = _particlePtr2indexMap[neighborPtr];
-        j++;
-      }
-    }
-
-    AutoPasLog(DEBUG,
-               "VerletLists::generateSoAListFromAoSVerletLists: average verlet list "
-               "size is {}",
-               static_cast<double>(accumulatedListSize) / _aosNeighborLists.size());
-    _soaListIsValid = true;
-  }
-
   size_t generateParticleIndexMap() {
     _particlePtr2indexMap.clear();
     _indexToParticle.clear();
@@ -395,11 +302,6 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
  private:
-  /**
-   * Neighbor Lists: Map of particle pointers to vector of particle pointers.
-   */
-  typename VerletListHelpers<Particle_T>::NeighborListAoSType _aosNeighborLists;
-
   /**
    * Neighbor Pairs Lists: Map of particle pointers to vector of pairs of particle pointers. (To find triplets.)
    */

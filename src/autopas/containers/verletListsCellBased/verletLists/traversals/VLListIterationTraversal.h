@@ -72,14 +72,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 
   void traverseParticles() override {
     if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
-      if (this->_dataLayout == DataLayoutOption::aos) {
-        traverseParticlePairsCRS();
-      } else {
-        traverseParticlePairs();
-      }
+      traverseParticlePairsCRS();
     } else if constexpr (utils::isTriwiseFunctor<Functor_T>()) {
       traverseParticleTripletsCRS();
-      // traverseParticleTriplets();
     } else {
       utils::ExceptionHandler::exception(
           "VLListIterationTraversal::traverseParticles(): Functor {} is not of type PairwiseFunctor or TriwiseFunctor.",
@@ -87,38 +82,30 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     }
   }
 
-  void traverseParticlePairs() {
-    auto &aosNeighborLists = *(this->_aosNeighborLists);
+  void traverseParticlePairsCRS() {
+    auto &list = *(this->_crsNeighborList);
+    auto &particles = *(this->_indexToParticle);
     auto &soaNeighborLists = *(this->_soaNeighborLists);
+
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
-        // If we use parallelization,
-        if (not _useNewton3) {
-          const size_t buckets = aosNeighborLists.bucket_count();
-          /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic))
-          for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
-            auto endIter = aosNeighborLists.end(bucketId);
-            for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
-              ParticleType &particle = *(bucketIter->first);
-              for (auto neighborPtr : bucketIter->second) {
-                ParticleType &neighbor = *neighborPtr;
-                _functor->AoSFunctor(particle, neighbor, false);
-              }
-            }
-          }
-        } else {
-          for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
-            ParticleType &particle = *particlePtr;
-            for (auto neighborPtr : neighborPtrList) {
-              ParticleType &neighbor = *neighborPtr;
-              _functor->AoSFunctor(particle, neighbor, _useNewton3);
-            }
+        const auto numParticles = list.size();
+        const auto &offsets = list.offsets();
+        const auto &neighbors = list.neighbors();
+
+        AUTOPAS_OPENMP(parallel for schedule(static))
+        for (size_t i = 0; i < numParticles; ++i) {
+          ParticleType &particle = *particles[i];
+
+          // Optional: skip dummies/deleted particles if necessary.
+          // if (particle.isDummy()) continue;
+
+          for (size_t p = offsets[i]; p < offsets[i + 1]; ++p) {
+            ParticleType &neighbor = *particles[neighbors[p]];
+            _functor->AoSFunctor(particle, neighbor, false);
           }
         }
-        return;
       }
-
       case DataLayoutOption::soa: {
         if (not _useNewton3) {
           /// @todo find a sensible chunk size
@@ -137,28 +124,6 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       default: {
         utils::ExceptionHandler::exception(
             "VLListIterationTraversal::traverseParticlePairs(): VerletList dataLayout {} not available", _dataLayout);
-      }
-    }
-  }
-
-  void traverseParticlePairsCRS() {
-    auto &list = *(this->_crsNeighborList);
-    auto &particles = *(this->_indexToParticle);
-
-    const auto numParticles = list.size();
-    const auto &offsets = list.offsets();
-    const auto &neighbors = list.neighbors();
-
-    AUTOPAS_OPENMP(parallel for schedule(static))
-    for (size_t i = 0; i < numParticles; ++i) {
-      ParticleType &particle = *particles[i];
-
-      // Optional: skip dummies/deleted particles if necessary.
-      // if (particle.isDummy()) continue;
-
-      for (size_t p = offsets[i]; p < offsets[i + 1]; ++p) {
-        ParticleType &neighbor = *particles[neighbors[p]];
-        _functor->AoSFunctor(particle, neighbor, false);
       }
     }
   }

@@ -36,14 +36,12 @@ class VLTraversalInterface {
       std::vector<LinkedParticleCell> &cells,
       VerletListHelpers<typename LinkedParticleCell::ParticleType>::CRSNeighborList &crsNeighborList,
       std::vector<typename LinkedParticleCell::ParticleType *> &indexToParticle,
-      typename VerletListHelpers<typename LinkedParticleCell::ParticleType>::NeighborListAoSType &aosNeighborLists,
       std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &soaNeighborLists,
       typename VerletListHelpers<typename LinkedParticleCell::ParticleType>::NeighborPairsListAoSType
           &aosNeighborPairsLists) {
     _cells = &cells;
     _crsNeighborList = &crsNeighborList;
     _indexToParticle = &indexToParticle;
-    _aosNeighborLists = &aosNeighborLists;
     _soaNeighborLists = &soaNeighborLists;
     _aosNeighborPairsLists = &aosNeighborPairsLists;
   }
@@ -57,11 +55,6 @@ class VLTraversalInterface {
   VerletListHelpers<typename LinkedParticleCell::ParticleType>::CRSNeighborList *_crsNeighborList = nullptr;
   std::vector<typename LinkedParticleCell::ParticleType *> *_indexToParticle = nullptr;
 
-  /**
-   * The AoS neighbor list of the verlet lists container.
-   */
-  typename VerletListHelpers<typename LinkedParticleCell::ParticleType>::NeighborListAoSType *_aosNeighborLists =
-      nullptr;
   /**
    * The SoA neighbor list of the verlet lists container.
    */
