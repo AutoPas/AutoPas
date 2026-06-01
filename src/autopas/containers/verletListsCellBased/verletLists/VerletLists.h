@@ -123,17 +123,9 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
         break;
       }
       case TraversalOption::vl_list_intersection: {
-        this->updateVerletListsAoS<InteractionTypeOption::triwise>(buildWithN3);
+        this->updateVerletListsCRS<InteractionTypeOption::triwise>(buildWithN3);
+        sortCRSNeighborListsByParticlePtr();
 
-        // sort neighbor lists for efficient intersecting
-        const size_t buckets = _aosNeighborLists.bucket_count();
-        AUTOPAS_OPENMP(parallel for schedule(dynamic))
-        for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
-          for (auto bucketIter = _aosNeighborLists.begin(bucketId); bucketIter != _aosNeighborLists.end(bucketId);
-               ++bucketIter) {
-            std::ranges::sort(bucketIter->second);
-          }
-        }
         break;
       }
       case TraversalOption::vl_pair_list_iteration: {
@@ -159,6 +151,21 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
  protected:
+  void sortCRSNeighborListsByParticlePtr() {
+    auto &offsets = _crsNeighborList.offsets();
+    auto &neighbors = _crsNeighborList.neighbors();
+
+    const auto indexLessByParticlePtr = [this](size_t lhs, size_t rhs) {
+      return _indexToParticle[lhs] < _indexToParticle[rhs];
+    };
+
+    AUTOPAS_OPENMP(parallel for schedule(dynamic))
+    for (size_t particleIndex = 0; particleIndex < _crsNeighborList.size(); ++particleIndex) {
+      std::sort(neighbors.begin() + offsets[particleIndex], neighbors.begin() + offsets[particleIndex + 1],
+                indexLessByParticlePtr);
+    }
+  }
+
   /**
    * Update the verlet lists for AoS usage
    * @param useNewton3

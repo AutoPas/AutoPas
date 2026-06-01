@@ -62,72 +62,89 @@ class VLListIntersectionTraversal : public TraversalInterface, public VLTraversa
   }
 
   void traverseParticles() override {
-    auto &aosNeighborLists = *(this->_aosNeighborLists);
-    auto &soaNeighborLists = *(this->_soaNeighborLists);
+    auto &crsNeighborList = *(this->_crsNeighborList);
+    auto &particles = *(this->_indexToParticle);
+
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
-        /// @todo add parelelization
-        if (not _useNewton3) {
-          const size_t buckets = aosNeighborLists.bucket_count();
+        if (this->_useNewton3) {
+          // Same limitation as the old implementation.
+          utils::ExceptionHandler::exception(
+              "VLListIntersectionTraversal::traverseParticles(): "
+              "VLListIntersectionTraversal does not support Newton3.");
+        }
 
-          AUTOPAS_OPENMP(parallel) {
-            // create a buffer per Thread for all intersections
-            auto intersectingNeighbors = std::vector<ParticleType *>();
+        const auto &offsets = crsNeighborList.offsets();
+        const auto &neighbors = crsNeighborList.neighbors();
+        const size_t numParticles = crsNeighborList.size();
 
-            AUTOPAS_OPENMP(for schedule(dynamic))
-            for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
-              auto endIter = aosNeighborLists.end(bucketId);
-              for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
-                ParticleType &particle = *(bucketIter->first);
-                if (not particle.isOwned()) {
-                  // skip Halo particles as N3 is disabled
-                  continue;
-                }
-                auto &neighborList = bucketIter->second;
-                auto neighborPtrIter1 = neighborList.begin();
-                for (; neighborPtrIter1 != neighborList.end(); ++neighborPtrIter1) {
-                  ParticleType &neighbor1 = *(*neighborPtrIter1);
-                  auto &neighborList1 = (aosNeighborLists.find(&neighbor1))->second;
+        /*
+         * IMPORTANT:
+         * This comparator matches the old AoS behavior if your AoS lists were sorted
+         * as ParticleType* lists. If you instead sort CRS rows numerically by index,
+         * remove this comparator and use the default std::set_intersection ordering.
+         */
+        const auto indexLessByParticlePtr = [&particles](size_t lhs, size_t rhs) {
+          return particles[lhs] < particles[rhs];
+        };
 
-                  size_t maxIntersectionSize = std::min(neighborList1.size(), neighborList.size());
-                  //  make sure the buffer has enough space
-                  intersectingNeighbors.reserve(maxIntersectionSize);
+        AUTOPAS_OPENMP(parallel) {
+          // Thread-local buffer for intersection results.
+          std::vector<size_t> intersectingNeighbors;
 
-                  auto intersectionIter = neighborPtrIter1;
-                  auto intersectionEndIter =
-                      std::set_intersection(++intersectionIter, neighborList.end(), neighborList1.begin(),
-                                            neighborList1.end(), std::back_inserter(intersectingNeighbors));
+        AUTOPAS_OPENMP(for schedule(dynamic))
+        for (size_t particleIndex = 0; particleIndex < numParticles; ++particleIndex) {
+          ParticleType &particle = *particles[particleIndex];
 
-                  for (auto neighborPtrIter2 = intersectingNeighbors.begin();
-                       neighborPtrIter2 != intersectingNeighbors.end(); ++neighborPtrIter2) {
-                    ParticleType &neighbor2 = *(*neighborPtrIter2);
-                    _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
-                  }
+          if (not particle.isOwned()) {
+            continue;
+          }
 
-                  // clear buffer for next loop-iteration
-                  intersectingNeighbors.clear();
-                }
-              }
+          const size_t particleNeighborBegin = offsets[particleIndex];
+          const size_t particleNeighborEnd = offsets[particleIndex + 1];
+
+          for (size_t p1 = particleNeighborBegin; p1 < particleNeighborEnd; ++p1) {
+            const size_t neighbor1Index = neighbors[p1];
+            ParticleType &neighbor1 = *particles[neighbor1Index];
+
+            const size_t neighbor1Begin = offsets[neighbor1Index];
+            const size_t neighbor1End = offsets[neighbor1Index + 1];
+
+            const size_t suffixBegin = p1 + 1;
+            const size_t suffixEnd = particleNeighborEnd;
+
+            const size_t maxIntersectionSize = std::min(suffixEnd - suffixBegin, neighbor1End - neighbor1Begin);
+
+            intersectingNeighbors.clear();
+            intersectingNeighbors.reserve(maxIntersectionSize);
+
+            std::set_intersection(neighbors.begin() + suffixBegin, neighbors.begin() + suffixEnd,
+                                  neighbors.begin() + neighbor1Begin, neighbors.begin() + neighbor1End,
+                                  std::back_inserter(intersectingNeighbors), indexLessByParticlePtr);
+
+            for (const size_t neighbor2Index : intersectingNeighbors) {
+              ParticleType &neighbor2 = *particles[neighbor2Index];
+              _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
             }
           }
-        } else {
-          // list intersection does not work with the current way neighborlists are built for N3 case
-          utils::ExceptionHandler::exception(
-              "VLListIntersectionTraversal::traverseParticles(): VLListIntersectionTraversal does not "
-              "support Newton3.");
         }
+        }
+
         return;
       }
 
       case DataLayoutOption::soa: {
         utils::ExceptionHandler::exception(
-            "VLListIntersectionTraversal::traverseParticles(): SoA dataLayout not implemented yet for "
-            "VLListIntersectionTraversal.");
+            "VLListIntersectionTraversal::traverseParticles(): "
+            "SoA dataLayout not implemented yet for VLListIntersectionTraversal.");
         return;
       }
+
       default: {
         utils::ExceptionHandler::exception(
-            "VLListIntersectionTraversal::traverseParticles(): VerletList dataLayout {} not available", _dataLayout);
+            "VLListIntersectionTraversal::traverseParticles(): "
+            "VerletList dataLayout {} not available",
+            this->_dataLayout);
       }
     }
   }
