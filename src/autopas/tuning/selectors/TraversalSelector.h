@@ -27,6 +27,7 @@
 #include "autopas/containers/octree/traversals/OTC01Traversal.h"
 #include "autopas/containers/octree/traversals/OTC18Traversal.h"
 #include "autopas/containers/verletListsKokkos/traversals/VerletListsKokkosTraversalFlat.h"
+#include "autopas/containers/verletListsKokkos/traversals/VerletListsKokkosTraversalTeams.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
@@ -224,6 +225,11 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
     case TraversalOption::vl_kokkos_traversal_flat: {
       traversal = std::make_unique<VerletListsKokkosTraversalFlat<PairwiseFunctor_T, typename ParticleCell_T::ParticleType>>(
         &pairwiseFunctor, dataLayout, useNewton3);
+      break;
+    }
+    case TraversalOption::vl_kokkos_traversal_teams: {
+      traversal = std::make_unique<VerletListsKokkosTraversalTeams<PairwiseFunctor_T, typename ParticleCell_T::ParticleType>>(
+        &pairwiseFunctor, dataLayout, useNewton3, kokkosTeamSize);
       break;
     }
     // Var Verlet Lists

@@ -150,6 +150,11 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vl_kokkos_traversal_flat,
 
+    /**
+     * VerletList Kokkos team traversal : uses Kokkos::TeamPolicy for intra-particle parallelism
+     */
+    vl_kokkos_traversal_teams,
+
     // VerletListCells Traversals:
     /**
      * VLCC01Traversal : Equivalent to LCC01Traversal. Schedules all neighbor lists of one cell at once.
@@ -336,6 +341,7 @@ class TraversalOption : public Option<TraversalOption> {
         // VerletList Traversals:
         {TraversalOption::vl_list_iteration, "vl_list_iteration"},
         {TraversalOption::vl_kokkos_traversal_flat, "vl_kokkos_traversal_flat"},
+        {TraversalOption::vl_kokkos_traversal_teams, "vl_kokkos_traversal_teams"},
 
         // VerletListCells Traversals:
         {TraversalOption::vlc_sliced, "vlc_sliced"},
