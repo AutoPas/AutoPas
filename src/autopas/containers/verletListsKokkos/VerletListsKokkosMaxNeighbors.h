@@ -154,107 +154,64 @@ class VerletListsKokkosMaxNeighbors : public ParticleContainerInterface<Particle
         const double interactionLength = _cutoff + this->getVerletSkin();
         const double interactionLengthSqr = interactionLength * interactionLength;
 
-        Kokkos::resize(_neighborListOffsets, numberOfOwned + 1);
-        _neighborListOffsets.clear_sync_state();
-        _neighborListOffsets.modify_host();
-        auto h_offsets = _neighborListOffsets.h_view;
 
-        // Full neighbor list: every pair {i,j} is stored under both i and j (j != i).
-        h_offsets(0) = 0;
-        for (size_t i = 0; i < numberOfOwned; ++i) {
-            const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
-            size_t count = 0;
-            for (size_t j = 0; j < numberOfOwned; ++j) {
-                if (j == i) {
-                    continue;
+        auto buildList = [&](utils::KokkosStorage<Particle_T> &srcJ, size_t numJ,
+                             Kokkos::DualView<size_t *> &offsetsDV, Kokkos::DualView<size_t *> &entriesDV,
+                             bool skipSelf) -> bool {
+            Kokkos::resize(offsetsDV, numberOfOwned + 1);
+            offsetsDV.clear_sync_state();
+            offsetsDV.modify_host();
+            auto h_offsets = offsetsDV.h_view;
+
+            Kokkos::resize(entriesDV, numberOfOwned * _maxNeighbors);
+            entriesDV.clear_sync_state();
+            entriesDV.modify_host();
+            auto h_entries = entriesDV.h_view;
+
+            h_offsets(0) = 0;
+            for (size_t i = 0; i < numberOfOwned; ++i) {
+                const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
+                const size_t base = h_offsets(i);
+                size_t count = 0;
+                for (size_t j = 0; j < numJ; ++j) {
+                    if (skipSelf && j == i) {
+                        continue;
+                    }
+                    const auto &rj = srcJ.getAoS().getParticle(j).getR();
+                    const double dx = ri[0] - rj[0];
+                    const double dy = ri[1] - rj[1];
+                    const double dz = ri[2] - rj[2];
+                    if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
+                        if (count >= _maxNeighbors) {
+                            return true;  // overflow: this particle needs more than _maxNeighbors slots
+                        }
+                        h_entries(base + count) = j;
+                        ++count;
+                    }
                 }
-                const auto &rj = _ownedParticles.getAoS().getParticle(j).getR();
-                const double dx = ri[0] - rj[0];
-                const double dy = ri[1] - rj[1];
-                const double dz = ri[2] - rj[2];
-                if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
-                    ++count;
-                }
+                h_offsets(i + 1) = base + count;
             }
-            h_offsets(i + 1) = count;
-        }
-        for (size_t i = 0; i < numberOfOwned; ++i) {
-            h_offsets(i + 1) += h_offsets(i);
-        }
+            return false;
+        };
 
-        const size_t totalNeighbors = numberOfOwned == 0 ? 0 : h_offsets(numberOfOwned);
-        Kokkos::resize(_neighborListEntries, totalNeighbors);
-        _neighborListEntries.clear_sync_state();
-        _neighborListEntries.modify_host();
-        auto h_entries = _neighborListEntries.h_view;
-
-        for (size_t i = 0; i < numberOfOwned; ++i) {
-            const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
-            size_t slot = h_offsets(i);
-            for (size_t j = 0; j < numberOfOwned; ++j) {
-                if (j == i) {
-                    continue;
-                }
-                const auto &rj = _ownedParticles.getAoS().getParticle(j).getR();
-                const double dx = ri[0] - rj[0];
-                const double dy = ri[1] - rj[1];
-                const double dz = ri[2] - rj[2];
-                if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
-                    h_entries(slot++) = j;
-                }
+        while (true) {
+            const bool ownedOverflow =
+                buildList(_ownedParticles, numberOfOwned, _neighborListOffsets, _neighborListEntries, true);
+            const bool haloOverflow =
+                ownedOverflow ? false
+                              : buildList(_haloParticles, numberOfHalo, _haloNeighborListOffsets,
+                                          _haloNeighborListEntries, false);
+            if (not ownedOverflow and not haloOverflow) {
+                break;
             }
+            const size_t grown = _maxNeighbors * 2;
+            spdlog::info("VerletListsKokkosMaxNeighbors: neighbor overflow, growing maxNeighbors {} -> {}",
+                         _maxNeighbors, grown);
+            _maxNeighbors = grown;
         }
 
         _neighborListOffsets.template sync<typename DeviceSpace::execution_space>();
         _neighborListEntries.template sync<typename DeviceSpace::execution_space>();
-
-        // owned-halo neighbor list: for each owned particle, the halo particles within range.
-        // Halo particles are ghosts and never receive force, so this list is one-directional
-        // (each owned i gathers from its halo neighbors) and needs no newton3.
-        Kokkos::resize(_haloNeighborListOffsets, numberOfOwned + 1);
-        _haloNeighborListOffsets.clear_sync_state();
-        _haloNeighborListOffsets.modify_host();
-        auto h_haloOffsets = _haloNeighborListOffsets.h_view;
-
-        h_haloOffsets(0) = 0;
-        for (size_t i = 0; i < numberOfOwned; ++i) {
-            const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
-            size_t count = 0;
-            for (size_t j = 0; j < numberOfHalo; ++j) {
-                const auto &rj = _haloParticles.getAoS().getParticle(j).getR();
-                const double dx = ri[0] - rj[0];
-                const double dy = ri[1] - rj[1];
-                const double dz = ri[2] - rj[2];
-                if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
-                    ++count;
-                }
-            }
-            h_haloOffsets(i + 1) = count;
-        }
-        for (size_t i = 0; i < numberOfOwned; ++i) {
-            h_haloOffsets(i + 1) += h_haloOffsets(i);
-        }
-
-        const size_t totalHaloNeighbors = numberOfOwned == 0 ? 0 : h_haloOffsets(numberOfOwned);
-        Kokkos::resize(_haloNeighborListEntries, totalHaloNeighbors);
-        _haloNeighborListEntries.clear_sync_state();
-        _haloNeighborListEntries.modify_host();
-        auto h_haloEntries = _haloNeighborListEntries.h_view;
-
-        for (size_t i = 0; i < numberOfOwned; ++i) {
-            const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
-            size_t slot = h_haloOffsets(i);
-            for (size_t j = 0; j < numberOfHalo; ++j) {
-                const auto &rj = _haloParticles.getAoS().getParticle(j).getR();
-                const double dx = ri[0] - rj[0];
-                const double dy = ri[1] - rj[1];
-                const double dz = ri[2] - rj[2];
-                if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
-                    h_haloEntries(slot++) = j;
-                }
-            }
-        }
-
         _haloNeighborListOffsets.template sync<typename DeviceSpace::execution_space>();
         _haloNeighborListEntries.template sync<typename DeviceSpace::execution_space>();
 
@@ -674,6 +631,12 @@ class VerletListsKokkosMaxNeighbors : public ParticleContainerInterface<Particle
     Kokkos::DualView<size_t*> _haloNeighborListOffsets {"vl_haloNeighborListOffsets", 0};
     Kokkos::DualView<size_t*> _haloNeighborListEntries {"vl_haloNeighborListEntries", 0};
     bool _neighborListValid {false};
+
+    // Per-owned-particle neighbor slot capacity used to size the (still packed) CSR entry buffers
+    // without a separate counting pass. If any particle exceeds this during a rebuild, it is grown
+    // and the lists are rebuilt (detect + grow & retry). Persists across rebuilds so the cost is
+    // amortized once the value has settled.
+    size_t _maxNeighbors {64};
 
 };
 
