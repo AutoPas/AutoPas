@@ -32,45 +32,162 @@ class VerletListHelpers {
   using NeighborPairsListAoSType = std::unordered_map<Particle_T *, std::vector<std::pair<Particle_T *, Particle_T *>>>;
 
   class CRSNeighborList {
-    public:
-      void clear() {
-        _offsets.clear();
-        _neighbors.clear();
+   public:
+    void clear() {
+      _offsets.clear();
+      _neighbors.clear();
+    }
+
+    void resizeParticles(size_t numParticles) {
+      _offsets.assign(numParticles + 1, 0);
+      _neighbors.clear();
+    }
+
+    [[nodiscard]] size_t size() const noexcept { return _offsets.empty() ? 0 : _offsets.size() - 1; }
+
+    [[nodiscard]] std::span<const size_t> neighborsOf(size_t particleIndex) const noexcept {
+      return {_neighbors.data() + _offsets[particleIndex], _offsets[particleIndex + 1] - _offsets[particleIndex]};
+    }
+
+    [[nodiscard]] std::span<size_t> neighborsOf(size_t particleIndex) noexcept {
+      return {_neighbors.data() + _offsets[particleIndex], _offsets[particleIndex + 1] - _offsets[particleIndex]};
+    }
+
+    std::vector<size_t> &offsets() noexcept { return _offsets; }
+    std::vector<size_t> &neighbors() noexcept { return _neighbors; }
+
+    [[nodiscard]] const std::vector<size_t> &offsets() const noexcept { return _offsets; }
+    [[nodiscard]] const std::vector<size_t> &neighbors() const noexcept { return _neighbors; }
+
+   private:
+    std::vector<size_t> _offsets;
+    std::vector<size_t> _neighbors;
+  };
+
+  class CRSNeighborCounterFunctor : public PairwiseFunctor<Particle_T, CRSNeighborCounterFunctor> {
+   public:
+    using SoAArraysType = typename Particle_T::SoAArraysType;
+
+    CRSNeighborCounterFunctor(const std::unordered_map<const Particle_T *, std::size_t> &particleToIndex,
+                              std::vector<std::size_t> &counts, double interactionLength)
+        : PairwiseFunctor<Particle_T, CRSNeighborCounterFunctor>(interactionLength),
+          _particleToIndex(particleToIndex),
+          _counts(counts),
+          _interactionLengthSquared(interactionLength * interactionLength) {}
+
+    std::string getName() override { return "CRSNeighborCounterFunctor"; }
+
+    bool isRelevantForTuning() override { return false; }
+
+    bool allowsNewton3() override {
+      utils::ExceptionHandler::exception(
+          "CRSNeighborCounterFunctor::allowsNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
+
+    bool allowsNonNewton3() override {
+      utils::ExceptionHandler::exception(
+          "CRSNeighborCounterFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
+
+    void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
+      const auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+      const auto dist2 = utils::ArrayMath::dot(dr, dr);
+
+      if (dist2 <= _interactionLengthSquared) {
+        const auto indexI = _particleToIndex.at(&i);
+        const auto indexJ = _particleToIndex.at(&j);
+
+        ++_counts[indexI + 1];
       }
+    }
 
-      void resizeParticles(size_t numParticles) {
-        _offsets.assign(numParticles + 1, 0);
-        _neighbors.clear();
+    /**
+     * @copydoc autopas::Functor::getNeededAttr()
+     */
+    constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
+      return std::array<typename Particle_T::AttributeNames, 4>{
+          Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+          Particle_T::AttributeNames::posZ};
+    }
+
+    /**
+     * @copydoc autopas::Functor::getComputedAttr()
+     */
+    constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() {
+      return std::array<typename Particle_T::AttributeNames, 0>{/*Nothing*/};
+    }
+
+   private:
+    const std::unordered_map<const Particle_T *, std::size_t> &_particleToIndex;
+    std::vector<std::size_t> &_counts;
+    double _interactionLengthSquared;
+  };
+
+  class CRSNeighborFillFunctor : public PairwiseFunctor<Particle_T, CRSNeighborFillFunctor> {
+   public:
+    using SoAArraysType = typename Particle_T::SoAArraysType;
+
+    CRSNeighborFillFunctor(const std::unordered_map<const Particle_T *, std::size_t> &particleToIndex,
+                           std::vector<std::size_t> &writeOffsets, std::vector<std::size_t> &neighbors,
+                           double interactionLength)
+        : PairwiseFunctor<Particle_T, CRSNeighborFillFunctor>(interactionLength),
+          _particleToIndex(particleToIndex),
+          _writeOffsets(writeOffsets),
+          _neighbors(neighbors),
+          _interactionLengthSquared(interactionLength * interactionLength) {}
+
+    std::string getName() override { return "CRSNeighborFillFunctor"; }
+
+    bool isRelevantForTuning() override { return false; }
+
+    bool allowsNewton3() override {
+      utils::ExceptionHandler::exception(
+          "CRSNeighborFillFunctor::allowsNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
+
+    bool allowsNonNewton3() override {
+      utils::ExceptionHandler::exception(
+          "CRSNeighborFillFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
+
+    void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
+      const auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+      const auto dist2 = utils::ArrayMath::dot(dr, dr);
+
+      if (dist2 <= _interactionLengthSquared) {
+        const auto indexI = _particleToIndex.at(&i);
+        const auto indexJ = _particleToIndex.at(&j);
+
+        _neighbors[_writeOffsets[indexI]++] = indexJ;
       }
+    }
 
-      [[nodiscard]] size_t size() const noexcept {
-        return _offsets.empty() ? 0 : _offsets.size() - 1;
-      }
+    /**
+     * @copydoc autopas::Functor::getNeededAttr()
+     */
+    constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
+      return std::array<typename Particle_T::AttributeNames, 4>{
+          Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+          Particle_T::AttributeNames::posZ};
+    }
 
-      [[nodiscard]] std::span<const size_t> neighborsOf(size_t particleIndex) const noexcept {
-        return {
-          _neighbors.data() + _offsets[particleIndex],
-          _offsets[particleIndex + 1] - _offsets[particleIndex]
-      };
-      }
+    /**
+     * @copydoc autopas::Functor::getComputedAttr()
+     */
+    constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() {
+      return std::array<typename Particle_T::AttributeNames, 0>{/*Nothing*/};
+    }
 
-      [[nodiscard]] std::span<size_t> neighborsOf(size_t particleIndex) noexcept {
-        return {
-          _neighbors.data() + _offsets[particleIndex],
-          _offsets[particleIndex + 1] - _offsets[particleIndex]
-      };
-      }
-
-      std::vector<size_t> &offsets() noexcept { return _offsets; }
-      std::vector<size_t> &neighbors() noexcept { return _neighbors; }
-
-      [[nodiscard]] const std::vector<size_t> &offsets() const noexcept { return _offsets; }
-      [[nodiscard]] const std::vector<size_t> &neighbors() const noexcept { return _neighbors; }
-
-    private:
-      std::vector<size_t> _offsets;
-      std::vector<size_t> _neighbors;
-    };
+   private:
+    const std::unordered_map<const Particle_T *, std::size_t> &_particleToIndex;
+    std::vector<std::size_t> &_writeOffsets;
+    std::vector<std::size_t> &_neighbors;
+    double _interactionLengthSquared;
+  };
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.

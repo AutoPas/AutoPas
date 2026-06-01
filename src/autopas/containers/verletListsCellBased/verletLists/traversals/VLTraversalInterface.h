@@ -53,7 +53,7 @@ class VLTraversalInterface {
    * The cells of the underlying linked cells container of the verlet lists container.
    */
   std::vector<LinkedParticleCell> *_cells = nullptr;
-  
+
   VerletListHelpers<typename LinkedParticleCell::ParticleType>::CRSNeighborList *_crsNeighborList = nullptr;
   std::vector<typename LinkedParticleCell::ParticleType *> *_indexToParticle = nullptr;
 

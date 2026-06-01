@@ -78,7 +78,8 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         traverseParticlePairs();
       }
     } else if constexpr (utils::isTriwiseFunctor<Functor_T>()) {
-      traverseParticleTriplets();
+      traverseParticleTripletsCRS();
+      // traverseParticleTriplets();
     } else {
       utils::ExceptionHandler::exception(
           "VLListIterationTraversal::traverseParticles(): Functor {} is not of type PairwiseFunctor or TriwiseFunctor.",
@@ -158,6 +159,35 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       for (size_t p = offsets[i]; p < offsets[i + 1]; ++p) {
         ParticleType &neighbor = *particles[neighbors[p]];
         _functor->AoSFunctor(particle, neighbor, false);
+      }
+    }
+  }
+
+  void traverseParticleTripletsCRS() {
+    auto &list = *(this->_crsNeighborList);
+    auto &particles = *(this->_indexToParticle);
+
+    const auto numParticles = list.size();
+    const auto &offsets = list.offsets();
+    const auto &neighbors = list.neighbors();
+
+    AUTOPAS_OPENMP(parallel for schedule(static))
+    for (size_t i = 0; i < numParticles; ++i) {
+      ParticleType &particle = *particles[i];
+      if (not particle.isOwned()) {
+        // skip Halo particles, as N3 is disabled
+        continue;
+      }
+      // Optional: skip dummies/deleted particles if necessary.
+      // if (particle.isDummy()) continue;
+
+      for (size_t p1 = offsets[i]; p1 < offsets[i + 1]; ++p1) {
+        ParticleType &neighbor1 = *particles[neighbors[p1]];
+        size_t p2 = p1;
+        for (++p2; p2 < offsets[i + 1]; ++p2) {
+          ParticleType &neighbor2 = *particles[neighbors[p2]];
+          _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
+        }
       }
     }
   }
