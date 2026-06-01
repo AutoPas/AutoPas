@@ -18,6 +18,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsKokkos/VerletListsKokkos.h"
+#include "autopas/containers/verletListsKokkos/VerletListsKokkosMaxNeighbors.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
@@ -84,6 +85,11 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
     }
       case ContainerOption::verletListsKokkos: {
         container = std::make_unique<VerletListsKokkos<Particle_T>>(dataLayout, boxMin, boxMax, verletSkin, cutoff);
+        break;
+      }
+      case ContainerOption::verletListsKokkosMaxNeighbors: {
+        container =
+            std::make_unique<VerletListsKokkosMaxNeighbors<Particle_T>>(dataLayout, boxMin, boxMax, verletSkin, cutoff);
         break;
       }
     case ContainerOption::verletListsCells: {
