@@ -154,11 +154,15 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
         _neighborListOffsets.modify_host();
         auto h_offsets = _neighborListOffsets.h_view;
 
+        // Full neighbor list: every pair {i,j} is stored under both i and j (j != i).
         h_offsets(0) = 0;
         for (size_t i = 0; i < numberOfOwned; ++i) {
             const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
             size_t count = 0;
-            for (size_t j = i + 1; j < numberOfOwned; ++j) {
+            for (size_t j = 0; j < numberOfOwned; ++j) {
+                if (j == i) {
+                    continue;
+                }
                 const auto &rj = _ownedParticles.getAoS().getParticle(j).getR();
                 const double dx = ri[0] - rj[0];
                 const double dy = ri[1] - rj[1];
@@ -182,7 +186,10 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
         for (size_t i = 0; i < numberOfOwned; ++i) {
             const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
             size_t slot = h_offsets(i);
-            for (size_t j = i + 1; j < numberOfOwned; ++j) {
+            for (size_t j = 0; j < numberOfOwned; ++j) {
+                if (j == i) {
+                    continue;
+                }
                 const auto &rj = _ownedParticles.getAoS().getParticle(j).getR();
                 const double dx = ri[0] - rj[0];
                 const double dy = ri[1] - rj[1];

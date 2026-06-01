@@ -56,14 +56,18 @@ explicit VerletListsKokkosTraversalFlat(Functor *functor, DataLayoutOption dataL
 #elif defined(KOKKOS_ENABLE_HIP)
         return; // TODO: log error / exception
 #else
+        const auto offsets = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListOffsets;
+        const auto entries = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListEntries;
+
+        // Full neighbor list: each pair appears under both partners, so the gather-only
+        // update of particle i is correct without newton3. Force newton3 off here.
         Kokkos::parallel_for("traverseParticlesAoS", Kokkos::RangePolicy<Kokkos::HostSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
-          for (int j = (newton3 ? i+1 : 0); j < N; ++j) {
-            if (newton3 or i != j) {
-              func->AoSFunctorKokkos(
-                VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(i),
-                VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(j),
-                newton3);
-            }
+          for (size_t k = offsets(i); k < offsets(i + 1); ++k) {
+            const size_t j = entries(k);
+            func->AoSFunctorKokkos(
+              VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(i),
+              VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(j),
+              false);
           }
         });
 
@@ -80,8 +84,9 @@ explicit VerletListsKokkosTraversalFlat(Functor *functor, DataLayoutOption dataL
         syncNeeded<DeviceSpace::execution_space>(ownedSoA, I);
         syncNeeded<DeviceSpace::execution_space>(haloSoA, I);
 
-        performSoATraversal(ownedSoA, ownedSoA);
-        performSoATraversal(ownedSoA, haloSoA);
+        performSoATraversal(ownedSoA);
+        // TODO: owned-halo interactions need their own (owned-halo) neighbor list before they
+        // can be traversed here.
 
         constexpr auto J = std::make_index_sequence<Functor::getComputedAttr().size()>{};
         modifyComputed<DeviceSpace::execution_space>(ownedSoA, J);
@@ -103,17 +108,19 @@ private:
     (particles.template markModified<ExecSpace, Functor::getComputedAttr()[I]-1>(), ...);
   }
 
-  void performSoATraversal(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2) {
-    const size_t N = soa1.size();
-    const size_t M = soa2.size();
+  // Owned-owned traversal over the (full) neighbor list: particle i only interacts with the
+  // entries stored for it, which is the whole point of the Verlet list traversal.
+  void performSoATraversal(const Particle_T::KokkosSoAArraysType& soa) {
+    const size_t N = soa.size();
 
-    if (N == 0 || M == 0) {
+    if (N == 0) {
       return;
     }
 
     FloatPrecision cutoffSquared = _functor->getCutoff() * _functor->getCutoff();
-    const auto soa1Device = soa1.deviceView();
-    const auto soa2Device = soa2.deviceView();
+    const auto soaDevice = soa.deviceView();
+    const auto offsets = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListOffsets;
+    const auto entries = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListEntries;
 
     auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
     Kokkos::parallel_for("vl_kokkos_flat", rangePolicy, KOKKOS_LAMBDA(const int i) {
@@ -121,17 +128,18 @@ private:
       FloatPrecision fyAcc = 0.;
       FloatPrecision fzAcc = 0.;
 
-      const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
-      const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
-      const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+      const auto x1 = soaDevice.template operator()<Particle_T::AttributeNames::posX, true>(i);
+      const auto y1 = soaDevice.template operator()<Particle_T::AttributeNames::posY, true>(i);
+      const auto z1 = soaDevice.template operator()<Particle_T::AttributeNames::posZ, true>(i);
 
-      for (int j = 0; j < M; ++j) {
-        Functor::SoAKernelKokkosStatic(x1, y1, z1, soa2Device, fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
+      for (size_t k = offsets(i); k < offsets(i + 1); ++k) {
+        const size_t j = entries(k);
+        Functor::SoAKernelKokkosStatic(x1, y1, z1, soaDevice, fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
       }
 
-      soa1Device.template operator()<Particle_T::AttributeNames::forceX, true>(i) += fxAcc;
-      soa1Device.template operator()<Particle_T::AttributeNames::forceY, true>(i) += fyAcc;
-      soa1Device.template operator()<Particle_T::AttributeNames::forceZ, true>(i) += fzAcc;
+      soaDevice.template operator()<Particle_T::AttributeNames::forceX, true>(i) += fxAcc;
+      soaDevice.template operator()<Particle_T::AttributeNames::forceY, true>(i) += fyAcc;
+      soaDevice.template operator()<Particle_T::AttributeNames::forceZ, true>(i) += fzAcc;
     });
   }
 
