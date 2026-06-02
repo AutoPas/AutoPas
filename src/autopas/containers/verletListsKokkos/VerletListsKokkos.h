@@ -427,6 +427,10 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
                 convertTo(targetLayout);
               }
 
+              // convertTo() moves the data into the target layout's buffer, but does not update the storage's internal layout state, so we need to set it here to make sure the correct views are returned.
+              _ownedParticles.setLayout(targetLayout);
+              _haloParticles.setLayout(targetLayout);
+
               kokkosVLTraversal->setOwnedToTraverse(_ownedParticles);
               kokkosVLTraversal->setHaloToTraverse(_haloParticles);
               kokkosVLTraversal->setNeighborList(_neighborListOffsets.d_view, _neighborListEntries.d_view);

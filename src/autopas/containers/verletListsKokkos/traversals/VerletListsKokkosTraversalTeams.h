@@ -9,6 +9,7 @@
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/verletListsKokkos/traversals/VerletListsKokkosTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/logging/Logger.h"
 
 #include <Kokkos_Core.hpp>
 
@@ -50,12 +51,21 @@ explicit VerletListsKokkosTraversalTeams(Functor *functor, DataLayoutOption data
 
       size_t N = VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.size();
 
+      spdlog::debug("VerletListsKokkosTraversalTeams::traverseParticles: dataLayout={}, ownedParticles={}",
+                    _dataLayout.to_string(), N);
+
       // TODO: this should only be executed on the CPU
       if (_dataLayout == DataLayoutOption::aos) {
     #ifdef KOKKOS_ENABLE_CUDA
-        return; // TODO: log error / exception
+        spdlog::warn(
+            "VerletListsKokkosTraversalTeams: AoS data layout is not supported on the CUDA backend - no forces "
+            "were computed. Use SoA.");
+        return;
     #elif defined(KOKKOS_ENABLE_HIP)
-        return; // TODO: log error / exception
+        spdlog::warn(
+            "VerletListsKokkosTraversalTeams: AoS data layout is not supported on the HIP backend - no forces "
+            "were computed. Use SoA.");
+        return;
     #else
         const auto offsets = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListOffsets;
         const auto entries = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListEntries;
@@ -126,7 +136,14 @@ private:
                            const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries) {
     const size_t N = soa1.size();
 
+    spdlog::debug("VerletListsKokkosTraversalTeams::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
+                  soa2.size());
+
     if (N == 0 || soa2.size() == 0) {
+      spdlog::debug(
+          "VerletListsKokkosTraversalTeams::performSoATraversal: skipping kernel launch (soa1.size()={}, "
+          "soa2.size()={})",
+          N, soa2.size());
       return;
     }
 
