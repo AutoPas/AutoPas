@@ -137,7 +137,6 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
         return numberOfHalo + numberOfOwned;
     }
 
-    // TODO: move to a faster (cell-binned) algorithm.
     void rebuildNeighborLists([[maybe_unused]]TraversalInterface *traversal) override {
         spdlog::debug("Rebuilding Verlet Lists. Number of owned particles: {}, number of halo particles: {}", numberOfOwned, numberOfHalo);
         if (_neighborListValid) {
@@ -149,109 +148,66 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
         const double interactionLength = _cutoff + this->getVerletSkin();
         const double interactionLengthSqr = interactionLength * interactionLength;
 
-        Kokkos::resize(_neighborListOffsets, numberOfOwned + 1);
-        _neighborListOffsets.clear_sync_state();
-        _neighborListOffsets.modify_host();
-        auto h_offsets = _neighborListOffsets.h_view;
-
-        // Full neighbor list: every pair {i,j} is stored under both i and j (j != i).
-        h_offsets(0) = 0;
-        for (size_t i = 0; i < numberOfOwned; ++i) {
-            const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
-            size_t count = 0;
-            for (size_t j = 0; j < numberOfOwned; ++j) {
-                if (j == i) {
-                    continue;
-                }
-                const auto &rj = _ownedParticles.getAoS().getParticle(j).getR();
+        auto buildList = [&](utils::KokkosStorage<Particle_T> &srcJ, size_t numJ,
+                             Kokkos::DualView<size_t *> &offsetsDV, Kokkos::DualView<size_t *> &entriesDV,
+                             bool skipSelf) {
+            auto inRange = [&](size_t i, size_t j) {
+                const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
+                const auto &rj = srcJ.getAoS().getParticle(j).getR();
                 const double dx = ri[0] - rj[0];
                 const double dy = ri[1] - rj[1];
                 const double dz = ri[2] - rj[2];
-                if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
-                    ++count;
+                return dx * dx + dy * dy + dz * dz < interactionLengthSqr;
+            };
+
+            Kokkos::resize(offsetsDV, numberOfOwned + 1);
+            offsetsDV.clear_sync_state();
+            offsetsDV.modify_host();
+            auto h_offsets = offsetsDV.h_view;
+
+            // count neighbors per owned particle
+            h_offsets(0) = 0;
+            for (size_t i = 0; i < numberOfOwned; ++i) {
+                size_t count = 0;
+                for (size_t j = 0; j < numJ; ++j) {
+                    if (skipSelf && j == i) {
+                        continue;
+                    }
+                    if (inRange(i, j)) {
+                        ++count;
+                    }
+                }
+                h_offsets(i + 1) = h_offsets(i) + count;
+            }
+
+            const size_t totalNeighbors = numberOfOwned == 0 ? 0 : h_offsets(numberOfOwned);
+            Kokkos::resize(entriesDV, totalNeighbors);
+            entriesDV.clear_sync_state();
+            entriesDV.modify_host();
+            auto h_entries = entriesDV.h_view;
+
+            // fill 
+            for (size_t i = 0; i < numberOfOwned; ++i) {
+                size_t slot = h_offsets(i);
+                for (size_t j = 0; j < numJ; ++j) {
+                    if (skipSelf && j == i) {
+                        continue;
+                    }
+                    if (inRange(i, j)) {
+                        h_entries(slot++) = j;
+                    }
                 }
             }
-            h_offsets(i + 1) = count;
-        }
-        for (size_t i = 0; i < numberOfOwned; ++i) {
-            h_offsets(i + 1) += h_offsets(i);
-        }
 
-        const size_t totalNeighbors = numberOfOwned == 0 ? 0 : h_offsets(numberOfOwned);
-        Kokkos::resize(_neighborListEntries, totalNeighbors);
-        _neighborListEntries.clear_sync_state();
-        _neighborListEntries.modify_host();
-        auto h_entries = _neighborListEntries.h_view;
+            offsetsDV.template sync<typename DeviceSpace::execution_space>();
+            entriesDV.template sync<typename DeviceSpace::execution_space>();
+        };
 
-        for (size_t i = 0; i < numberOfOwned; ++i) {
-            const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
-            size_t slot = h_offsets(i);
-            for (size_t j = 0; j < numberOfOwned; ++j) {
-                if (j == i) {
-                    continue;
-                }
-                const auto &rj = _ownedParticles.getAoS().getParticle(j).getR();
-                const double dx = ri[0] - rj[0];
-                const double dy = ri[1] - rj[1];
-                const double dz = ri[2] - rj[2];
-                if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
-                    h_entries(slot++) = j;
-                }
-            }
-        }
-
-        _neighborListOffsets.template sync<typename DeviceSpace::execution_space>();
-        _neighborListEntries.template sync<typename DeviceSpace::execution_space>();
-
-        // owned-halo neighbor list: for each owned particle, the halo particles within range.
-        // Halo particles are ghosts and never receive force, so this list is one-directional
-        // (each owned i gathers from its halo neighbors) and needs no newton3.
-        Kokkos::resize(_haloNeighborListOffsets, numberOfOwned + 1);
-        _haloNeighborListOffsets.clear_sync_state();
-        _haloNeighborListOffsets.modify_host();
-        auto h_haloOffsets = _haloNeighborListOffsets.h_view;
-
-        h_haloOffsets(0) = 0;
-        for (size_t i = 0; i < numberOfOwned; ++i) {
-            const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
-            size_t count = 0;
-            for (size_t j = 0; j < numberOfHalo; ++j) {
-                const auto &rj = _haloParticles.getAoS().getParticle(j).getR();
-                const double dx = ri[0] - rj[0];
-                const double dy = ri[1] - rj[1];
-                const double dz = ri[2] - rj[2];
-                if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
-                    ++count;
-                }
-            }
-            h_haloOffsets(i + 1) = count;
-        }
-        for (size_t i = 0; i < numberOfOwned; ++i) {
-            h_haloOffsets(i + 1) += h_haloOffsets(i);
-        }
-
-        const size_t totalHaloNeighbors = numberOfOwned == 0 ? 0 : h_haloOffsets(numberOfOwned);
-        Kokkos::resize(_haloNeighborListEntries, totalHaloNeighbors);
-        _haloNeighborListEntries.clear_sync_state();
-        _haloNeighborListEntries.modify_host();
-        auto h_haloEntries = _haloNeighborListEntries.h_view;
-
-        for (size_t i = 0; i < numberOfOwned; ++i) {
-            const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
-            size_t slot = h_haloOffsets(i);
-            for (size_t j = 0; j < numberOfHalo; ++j) {
-                const auto &rj = _haloParticles.getAoS().getParticle(j).getR();
-                const double dx = ri[0] - rj[0];
-                const double dy = ri[1] - rj[1];
-                const double dz = ri[2] - rj[2];
-                if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
-                    h_haloEntries(slot++) = j;
-                }
-            }
-        }
-
-        _haloNeighborListOffsets.template sync<typename DeviceSpace::execution_space>();
-        _haloNeighborListEntries.template sync<typename DeviceSpace::execution_space>();
+        // Full neighbor list: every owned pair {i,j} is stored under both i and j (j != i).
+        buildList(_ownedParticles, numberOfOwned, _neighborListOffsets, _neighborListEntries, true);
+        // owned-halo neighbor list: halo particles are ghosts and never receive force, so this list
+        // is one-directional (each owned i gathers from its halo neighbors) and needs no newton3.
+        buildList(_haloParticles, numberOfHalo, _haloNeighborListOffsets, _haloNeighborListEntries, false);
 
         _neighborListValid = true;
     }
