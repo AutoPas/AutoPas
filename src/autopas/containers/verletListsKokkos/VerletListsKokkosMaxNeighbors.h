@@ -94,8 +94,8 @@ class VerletListsKokkosMaxNeighbors : public ParticleContainerInterface<Particle
         const auto id = _haloParticles.template operator()<Particle_T::AttributeNames::id, true, true>(i);
         if (id == haloParticle.getID()) {
             const typename Particle_T::ParticleSoAFloatPrecision x1 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, true, true>(i);
-            const typename Particle_T::ParticleSoAFloatPrecision x2 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, true, true>(i);
-            const typename Particle_T::ParticleSoAFloatPrecision x3 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, true, true>(i);
+            const typename Particle_T::ParticleSoAFloatPrecision x2 = _haloParticles.template operator()<Particle_T::AttributeNames::posY, true, true>(i);
+            const typename Particle_T::ParticleSoAFloatPrecision x3 = _haloParticles.template operator()<Particle_T::AttributeNames::posZ, true, true>(i);
 
             const typename Particle_T::ParticleSoAFloatPrecision dX = x1 - haloParticle.getR().at(0);
             const typename Particle_T::ParticleSoAFloatPrecision dY = x2 - haloParticle.getR().at(1);
@@ -632,7 +632,7 @@ class VerletListsKokkosMaxNeighbors : public ParticleContainerInterface<Particle
     Kokkos::DualView<size_t*> _haloNeighborListEntries {"vl_haloNeighborListEntries", 0};
     bool _neighborListValid {false};
 
-    // Per-owned-particle neighbor slot capacity used to size the (still packed) CSR entry buffers
+    // Per-owned-particle neighbor slot capacity used to size the entry buffers
     // without a separate counting pass. If any particle exceeds this during a rebuild, it is grown
     // and the lists are rebuilt (detect + grow & retry). Persists across rebuilds so the cost is
     // amortized once the value has settled.

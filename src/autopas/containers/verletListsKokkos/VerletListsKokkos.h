@@ -89,8 +89,8 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
         const auto id = _haloParticles.template operator()<Particle_T::AttributeNames::id, true, true>(i);
         if (id == haloParticle.getID()) {
             const typename Particle_T::ParticleSoAFloatPrecision x1 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, true, true>(i);
-            const typename Particle_T::ParticleSoAFloatPrecision x2 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, true, true>(i);
-            const typename Particle_T::ParticleSoAFloatPrecision x3 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, true, true>(i);
+            const typename Particle_T::ParticleSoAFloatPrecision x2 = _haloParticles.template operator()<Particle_T::AttributeNames::posY, true, true>(i);
+            const typename Particle_T::ParticleSoAFloatPrecision x3 = _haloParticles.template operator()<Particle_T::AttributeNames::posZ, true, true>(i);
 
             const typename Particle_T::ParticleSoAFloatPrecision dX = x1 - haloParticle.getR().at(0);
             const typename Particle_T::ParticleSoAFloatPrecision dY = x2 - haloParticle.getR().at(1);
