@@ -93,6 +93,21 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   }
   timestepFile << "        </DataArray>\n";
 
+  timestepFile
+      << "        <DataArray Name=\"slowforces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto f = particle->getSlowF();
+    timestepFile << "        " << f[0] << " " << f[1] << " " << f[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+  timestepFile
+      << "        <DataArray Name=\"totalforces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    const auto f = particle->getTotalF();
+    timestepFile << "        " << f[0] << " " << f[1] << " " << f[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
 #if MD_FLEXIBLE_MODE == MULTISITE
   // print quaternions
   timestepFile
@@ -325,6 +340,10 @@ void ParallelVtkWriter::createParticlesPvtuFile(size_t currentIteration) const {
   timestepFile
       << "      <PDataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
   timestepFile << "      <PDataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile
+      << "      <PDataArray Name=\"slowforces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile
+      << "      <PDataArray Name=\"totalforces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
 #if MD_FLEXIBLE_MODE == MULTISITE
   timestepFile
       << "      <PDataArray Name=\"quaternions\" NumberOfComponents=\"4\" format=\"ascii\" type=\"Float32\"/>\n";
