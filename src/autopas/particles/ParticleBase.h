@@ -57,8 +57,6 @@ class ParticleBase {
       : _r(r),
         _v(v),
         _f({0.0, 0.0, 0.0}),
-        _f_fast({0.0, 0.0, 0.0}),
-        _f_slow({0.0, 0.0, 0.0}),
         _id(id),
         _ownershipState(ownershipState)
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
@@ -97,12 +95,6 @@ class ParticleBase {
   std::array<floatType, 3> _f;
 
   /**
-   * Slow and fast forces on the particle
-   */
-  std::array<floatType, 3> _f_fast;
-  std::array<floatType, 3> _f_slow;
-
-  /**
    * Particle id.
    */
   idType _id;
@@ -131,22 +123,7 @@ class ParticleBase {
    * @TODO how to split
    * @param f force
    */
-  void setF(const std::array<double, 3> &f) {
-    using namespace autopas::utils::ArrayMath::literals;
-    _f_fast = f;
-    _f = _f_fast + _f_slow;
-  }
-
-  void setF_fast(const std::array<double, 3> &f) {
-    using namespace autopas::utils::ArrayMath::literals;
-    _f_fast = f;
-    _f = _f_fast + _f_slow;
-  }
-  void setF_slow(const std::array<double, 3> &f) {
-    using namespace autopas::utils::ArrayMath::literals;
-    _f_slow = f;
-    _f = _f_fast + _f_slow;
-  }
+  void setF(const std::array<double, 3> &f) { _f = f; }
 
   /**
    * Add a partial force to the force acting on the particle
@@ -155,19 +132,7 @@ class ParticleBase {
    */
   void addF(const std::array<double, 3> &f) {
     using namespace autopas::utils::ArrayMath::literals;
-    _f_fast += f;
-    _f = _f_fast + _f_slow;
-  }
-
-  void addF_fast(const std::array<double, 3> &f) {
-    using namespace autopas::utils::ArrayMath::literals;
-    _f_fast += f;
-    _f = _f_fast + _f_slow;
-  }
-  void addF_slow(const std::array<double, 3> &f) {
-    using namespace autopas::utils::ArrayMath::literals;
-    _f_slow += f;
-    _f = _f_fast + _f_slow;
+    _f += f;
   }
 
   /**
@@ -177,23 +142,7 @@ class ParticleBase {
    */
   void subF(const std::array<double, 3> &f) {
     using namespace autopas::utils::ArrayMath::literals;
-    _f_fast -= f;
-    _f = _f_fast + _f_slow;
-  }
-
-  /**
-   * Substract a partial force from the force acting on the particle
-   * @param f partial force to be substracted
-   */
-  void subF_fast(const std::array<double, 3> &f) {
-    using namespace autopas::utils::ArrayMath::literals;
-    _f_fast -= f;
-    _f = _f_fast + _f_slow;
-  }
-  void subF_slow(const std::array<double, 3> &f) {
-    using namespace autopas::utils::ArrayMath::literals;
-    _f_slow -= f;
-    _f = _f_fast + _f_slow;
+    _f -= f;
   }
 
   /**

@@ -14,6 +14,21 @@ MoleculeLJ::MoleculeLJ(const std::array<double, 3> &pos, const std::array<double
 const std::array<double, 3> &MoleculeLJ::getOldF() const { return _oldF; }
 void MoleculeLJ::setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; }
 
+const std::array<double, 3> &MoleculeLJ::getSlowF() const { return _slowF; }
+void MoleculeLJ::setSlowF(const std::array<double, 3> &slowForce) { _slowF = slowForce; }
+void MoleculeLJ::addSlowF(const std::array<double, 3> &f) {
+  using namespace autopas::utils::ArrayMath::literals;
+  _slowF += f;
+}
+void MoleculeLJ::subSlowF(const std::array<double, 3> &f) {
+  using namespace autopas::utils::ArrayMath::literals;
+  _slowF -= f;
+}
+const std::array<double, 3> MoleculeLJ::getTotalF() const {
+  using namespace autopas::utils::ArrayMath::literals;
+  return _f + _slowF;
+}
+
 size_t MoleculeLJ::getTypeId() const { return _typeId; }
 void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }
 

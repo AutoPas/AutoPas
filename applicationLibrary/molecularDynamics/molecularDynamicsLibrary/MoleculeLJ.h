@@ -178,6 +178,16 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
   void setOldF(const std::array<double, 3> &oldForce);
 
   /**
+   * Slow force
+   */
+  [[nodiscard]] const std::array<double, 3> &getSlowF() const;
+  void setSlowF(const std::array<double, 3> &slowF);
+  void addSlowF(const std::array<double, 3> &f);
+  void subSlowF(const std::array<double, 3> &f);
+
+  [[nodiscard]] const std::array<double, 3> getTotalF() const;
+
+  /**
    * Get TypeId.
    * @return
    */
@@ -209,6 +219,11 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * Old Force of the particle experiences as 3D vector.
    */
   std::array<double, 3> _oldF = {0., 0., 0.};
+
+  /**
+   * The force for slow particles. _f is the fast force
+   */
+  std::array<double, 3> _slowF = {0., 0., 0.};
 };
 
 }  // namespace mdLib
