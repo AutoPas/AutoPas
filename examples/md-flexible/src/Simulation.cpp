@@ -225,7 +225,7 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    _is_respa_iteration = _iteration % _configuration.slow_frequency.value;
+    _is_respa_iteration = _iteration % _configuration.slow_frequency.value == 0;
 
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
@@ -552,6 +552,7 @@ bool Simulation::calculatePairwiseForces() {
 #endif
     return isTuningIteration;
   });
+
   return wasTuningIteration;
 }
 
@@ -833,14 +834,20 @@ void Simulation::loadParticles() {
 template <class ReturnType, class FunctionType>
 ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   const double cutoff = _configuration.cutoff.value;
-  const double fast_cutoff = _configuration.fast_cutoff.value;  // @TODO split this into configuration
+
+  // On normal interation, dr2 is [0, fast_cutoff]. On respa, it is [0, fast_cutoff] and (fast_cutoff, slow_cutoff]
+  const double fast_cutoff = _configuration.fast_cutoff.value;
   const double slow_cutoff = _configuration.slow_cutoff.value;
 
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-      return f(LJFunctorTypeAutovec{fast_cutoff, slow_cutoff, _is_respa_iteration, particlePropertiesLibrary});
+      if (_is_respa_iteration) {
+        return f(LJFunctorTypeAutovecRespa{fast_cutoff, slow_cutoff, particlePropertiesLibrary});
+      } else {
+        return f(LJFunctorTypeAutovec{fast_cutoff, slow_cutoff, particlePropertiesLibrary});
+      }
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "

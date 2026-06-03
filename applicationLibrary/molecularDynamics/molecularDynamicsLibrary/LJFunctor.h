@@ -34,8 +34,8 @@ namespace mdLib {
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
-          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool countFLOPs = false, bool relevantForTuning = true>
+          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool updateSlowForces = false,
+          bool calculateGlobals = false, bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctor
     : public autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3,
                                                             calculateGlobals, countFLOPs, relevantForTuning>> {
@@ -61,12 +61,11 @@ class LJFunctor
    * @param cutoff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctor(double cutoff, double slow_cutoff, bool is_respa_iteration, void * /*dummy*/)
+  explicit LJFunctor(double cutoff, double slow_cutoff, void * /*dummy*/)
       : autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
                                                        countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _slow_cutoffSquared{slow_cutoff * slow_cutoff},
-        _is_respa_iteration{is_respa_iteration},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _postProcessed{false} {
@@ -87,8 +86,7 @@ class LJFunctor
    *
    * @param cutoff
    */
-  explicit LJFunctor(double cutoff, double slow_cutoff, bool is_respa_iteration)
-      : LJFunctor(cutoff, slow_cutoff, is_respa_iteration, nullptr) {
+  explicit LJFunctor(double cutoff, double slow_cutoff) : LJFunctor(cutoff, slow_cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -100,9 +98,9 @@ class LJFunctor
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctor(double cutoff, double slow_cutoff, bool is_respa_iteration,
+  explicit LJFunctor(double cutoff, double slow_cutoff,
                      ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJFunctor(cutoff, slow_cutoff, is_respa_iteration, nullptr) {
+      : LJFunctor(cutoff, slow_cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -147,12 +145,15 @@ class LJFunctor
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
-    if (dr2 > _slow_cutoffSquared) {
-      return;
-    }
-
-    if (!_is_respa_iteration && dr2 > _cutoffSquared) {
-      return;
+    // Particle distance not in calculation range
+    if constexpr (updateSlowForces) {
+      if (dr2 > _slow_cutoffSquared) {
+        return;
+      }
+    } else {
+      if (dr2 > _cutoffSquared) {
+        return;
+      }
     }
 
     double invdr2 = 1. / dr2;
@@ -163,16 +164,25 @@ class LJFunctor
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     auto f = dr * fac;
 
-    if (_is_respa_iteration && dr2 >= _cutoffSquared) {
-      i.addF_slow(f);
-      if (newton3) {
-        j.subF_slow(f);
+    if constexpr (updateSlowForces) {
+      if (dr2 >= _cutoffSquared) {
+        i.addSlowF(f);
+        // only if we use newton 3 here, we want to
+        if (newton3) {
+          j.subSlowF(f);
+        }
+      } else {
+        i.addF(f);
+        if (newton3) {
+          // only if we use newton 3 here, we want to
+          j.subF(f);
+        }
       }
     } else {
-      i.addF_fast(f);
+      i.addF(f);
       if (newton3) {
         // only if we use newton 3 here, we want to
-        j.subF_fast(f);
+        j.subF(f);
       }
     }
 
@@ -1219,7 +1229,6 @@ class LJFunctor
 
   const double _cutoffSquared;
   const double _slow_cutoffSquared;
-  const bool _is_respa_iteration;
 
   // not const because they might be reset through PPL
   double _epsilon24, _sigmaSquared, _shift6 = 0;
