@@ -10,7 +10,7 @@ constexpr unsigned long WALL_PIT = 3;
 constexpr unsigned long WALL_GRID = 4;
 constexpr unsigned long WALL_DUAL_BOSS = 5;
 
-constexpr double FLUID_WALL_EPSILON_SCALE = 0.3;
+constexpr double FLUID_WALL_EPSILON_SCALE = 0.6;
 
 template <class TypeId>
 constexpr bool isWall(TypeId typeId) {

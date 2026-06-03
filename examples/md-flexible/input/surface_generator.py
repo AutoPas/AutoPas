@@ -10,6 +10,22 @@ WALL_Y0 = (BOX_SIZE_Y - WALL_SIZE) // 2
 WALL_CENTER_X = WALL_X0 + WALL_SIZE // 2
 WALL_CENTER_Y = WALL_Y0 + WALL_SIZE // 2
 
+ITERATIONS = 300000
+DELTA_T = 0.0005
+GRAVITY_Z = -0.0001
+TEMPERATURE = 0.3
+VTK_WRITE_FREQUENCY = 1000
+EPSILON_FW = 0.03
+RADIUS = 17
+
+DROPLET_CENTER_Z = {
+    "smooth": 24,
+    "boss": 36,
+    "grid": 36,
+    "pit": 30,
+    "dual_boss": 38,
+}
+
 if len(sys.argv) != 2:
     print("Usage:")
     print("  python3 surface_generator.py smooth")
@@ -20,6 +36,13 @@ if len(sys.argv) != 2:
     sys.exit(1)
 
 surface = sys.argv[1]
+RUN_NAME = (
+    f"{surface}"
+    f"_r{RADIUS}"
+    f"_eps{int(EPSILON_FW*1000):03d}"
+    f"_temp{int(TEMPERATURE*10):02d}"
+    f"_g1e4"
+)
 
 if surface not in VALID_SURFACES:
     print(f"Unknown surface type: {surface}")
@@ -51,7 +74,7 @@ def generate_surface_blocks(surface_type):
 
     period = 10
     feature_size = 4
-    feature_height = 6
+    feature_height = 10
 
     base_z = 1
     base_height = 4
@@ -155,12 +178,12 @@ box-min                          :  [0, 0, 0]
 box-max                          :  [{BOX_SIZE_X}, {BOX_SIZE_Y}, 70]
 cell-size                        :  [1]
 
-deltaT                           :  0.0005
-iterations                       :  50
+deltaT                           :  {DELTA_T}
+iterations                       :  {ITERATIONS}
 
 energy-sensor                    :  rapl
 boundary-type                    :  [reflective, reflective, reflective]
-globalForce                      :  [0, 0, -0.001]
+globalForce                      :  [0, 0, {GRAVITY_Z}]
 
 Sites:
   0:
@@ -169,27 +192,27 @@ Sites:
     mass                         :  1.
 
   1:
-    epsilon                      :  1.
+    epsilon                      :  {EPSILON_FW}
     sigma                        :  1.
     mass                         :  1.
 
   2:
-    epsilon                      :  1.
+    epsilon                      :  {EPSILON_FW}
     sigma                        :  1.
     mass                         :  1.
 
   3:
-    epsilon                      :  1.
+    epsilon                      :  {EPSILON_FW}
     sigma                        :  1.
     mass                         :  1.
 
   4:
-    epsilon                      :  1.
+    epsilon                      :  {EPSILON_FW}
     sigma                        :  1.
     mass                         :  1.
 
   5:
-    epsilon                      :  1.
+    epsilon                      : {EPSILON_FW}
     sigma                        :  1.
     mass                         :  1.
 
@@ -199,22 +222,22 @@ Objects:
 
   Sphere:
     0:
-      center                     :  [{WALL_CENTER_X}, {WALL_CENTER_Y}, 30]
-      radius                     :  15
+      center                     :  [{WALL_CENTER_X}, {WALL_CENTER_Y}, {DROPLET_CENTER_Z[surface]}]
+      radius                     :  {RADIUS}
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
 
 thermostat:
-   initialTemperature            :  0.6
-   targetTemperature             :  0.6
+   initialTemperature            :  {TEMPERATURE}
+   targetTemperature             :  {TEMPERATURE}
    deltaTemperature              :  0.1
    thermostatInterval            :  10
    addBrownianMotion             :  false
 
-vtk-filename                     :  sessileDrop_{surface}
-vtk-write-frequency              :  1
-vtk-output-folder                :  vtkOutputFolder_{surface}
+vtk-filename                     :  {RUN_NAME}
+vtk-write-frequency              :  {VTK_WRITE_FREQUENCY}
+vtk-output-folder                :  {RUN_NAME}
 no-end-config                    :  true
 log-level                        :  info
 """

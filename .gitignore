@@ -46,3 +46,6 @@ codex_autopas_smoke_output/
 vtkOutputFolder_*/
 .claude/
 .claude-code/
+
+CMakeCache.txt
+CMakeFiles/
