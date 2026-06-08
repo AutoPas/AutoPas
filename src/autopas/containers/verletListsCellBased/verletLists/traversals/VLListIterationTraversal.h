@@ -79,6 +79,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         // If we use parallelization,
         if (not _useNewton3) {
           size_t buckets = aosNeighborLists.bucket_count();
+          autopas_set_loop_tag(openmp_helpers::openmpLoopName);
           AUTOPAS_OPENMP(parallel for schedule(runtime))
           for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
             auto endIter = aosNeighborLists.end(bucketId);
@@ -104,8 +105,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 
       case DataLayoutOption::soa: {
         if (not _useNewton3) {
-          /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
+          AUTOPAS_OPENMP(parallel for schedule(runtime))
           for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
             _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
           }

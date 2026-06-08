@@ -894,9 +894,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   void loadParticlesIntoSoAs(Functor *functor) {
     const auto numTowers = _towerBlock.size();
 
-
-    /// @todo: find sensible chunksize
-    AUTOPAS_OPENMP(parallel for schedule(runtime))
+    // ToDo -> How much impact does this loop make?
+    AUTOPAS_OPENMP(parallel for schedule(dynamic))
     for (size_t index = 0; index < numTowers; index++) {
       _towerBlock[index].loadSoA(functor);
     }
@@ -911,7 +910,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   void extractParticlesFromSoAs(Functor *functor) {
     const auto numTowers = _towerBlock.size();
 
-    AUTOPAS_OPENMP(parallel for schedule(runtime))
+    // ToDo -> How much impact does this loop make?
+    AUTOPAS_OPENMP(parallel for schedule(dynamic))
     for (size_t index = 0; index < numTowers; index++) {
       _towerBlock[index].extractSoA(functor);
     }
