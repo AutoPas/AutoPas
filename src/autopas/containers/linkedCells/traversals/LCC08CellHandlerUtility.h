@@ -188,6 +188,7 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
 
 /**
  * Computes the cell triplet offsets for the C08 base step.
+ * The offsets include unique triplets {a, b, c}, pairs as {a, b, b} (not {a, a, b}) and the base cell only {0, 0, 0}.
  * If the Mode is `sorting`, a normalized vector connecting the base cell and the second cell is additionally returned.
  * @tparam Mode Determines the concrete return type (see @ref C08OffsetMode)
  * @param cellsPerDimension the number of cells per dimension

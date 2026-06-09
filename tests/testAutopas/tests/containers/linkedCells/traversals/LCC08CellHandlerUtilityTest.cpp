@@ -239,10 +239,10 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputeTriwiseCellOffsetsC08Test_1x1x1) {
       // 1 single cell triplet
       std::make_tuple(0, 0, 0),
       // 13 pair cell triplets
-      std::make_tuple(0, 0, 1), std::make_tuple(0, 0, 12), std::make_tuple(0, 0, 13), std::make_tuple(0, 0, 144),
-      std::make_tuple(0, 0, 145), std::make_tuple(0, 0, 156), std::make_tuple(0, 0, 157), std::make_tuple(1, 1, 12),
-      std::make_tuple(1, 1, 144), std::make_tuple(1, 1, 156), std::make_tuple(12, 12, 144),
-      std::make_tuple(12, 12, 145), std::make_tuple(13, 13, 144),
+      std::make_tuple(0, 1, 1), std::make_tuple(0, 12, 12), std::make_tuple(0, 13, 13), std::make_tuple(0, 144, 144),
+      std::make_tuple(0, 145, 145), std::make_tuple(0, 156, 156), std::make_tuple(0, 157, 157),
+      std::make_tuple(1, 12, 12), std::make_tuple(1, 144, 144), std::make_tuple(1, 156, 156),
+      std::make_tuple(12, 144, 144), std::make_tuple(12, 145, 145), std::make_tuple(13, 144, 144),
       // 21 cell triplets incl. base cell
       std::make_tuple(0, 1, 12), std::make_tuple(0, 1, 13), std::make_tuple(0, 1, 144), std::make_tuple(0, 1, 145),
       std::make_tuple(0, 1, 156), std::make_tuple(0, 1, 157), std::make_tuple(0, 12, 13), std::make_tuple(0, 12, 144),
@@ -300,7 +300,7 @@ std::vector<std::tuple<long, long, long>> LCC08CellHandlerUtilityTest::generateC
       for (long k1 = -overlap; k1 <= overlap; ++k1) {
         auto cell1Index = autopas::utils::ThreeDimensionalMapping::threeToOneD(
             i1, j1, k1, autopas::utils::ArrayUtils::static_cast_copy_array<long>(CELLS_PER_DIMENSION));
-        if (cell1Index < 0) continue;
+        if (cell1Index <= 0) continue;
         if (cellDistIsGreaterThanCutoff(0, 0, 0, i1, j1, k1)) continue;
 
         for (long i2 = -overlap; i2 <= overlap; ++i2) {
@@ -308,8 +308,8 @@ std::vector<std::tuple<long, long, long>> LCC08CellHandlerUtilityTest::generateC
             for (long k2 = -overlap; k2 <= overlap; ++k2) {
               auto cell2Index = autopas::utils::ThreeDimensionalMapping::threeToOneD(
                   i2, j2, k2, autopas::utils::ArrayUtils::static_cast_copy_array<long>(CELLS_PER_DIMENSION));
-              // ">=" because only base and cell1 should be the same, a.k.a. (0, 0, 1) but not (0, 1, 1)
-              if (cell2Index <= cell1Index) continue;
+              // "<" because cell1 and cell2 can be the same to account for pairs, e.g. (0, 1, 1) but not (0, 0, 1)
+              if (cell2Index < cell1Index) continue;
               if (cellDistIsGreaterThanCutoff(0, 0, 0, i2, j2, k2)) continue;
               if (cellDistIsGreaterThanCutoff(i1, j1, k1, i2, j2, k2)) continue;
 

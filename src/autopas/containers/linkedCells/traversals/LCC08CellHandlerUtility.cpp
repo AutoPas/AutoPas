@@ -216,11 +216,11 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
   // offsets for the first cell
   const size_t numCells = cells.size();
   for (size_t i = 0; i < numCells; ++i) {
-    for (size_t j = i; j < numCells; ++j) {
+    // j starts at i + 1 because offset1 < offset2 (strict inequality)
+    for (size_t j = i + 1; j < numCells; ++j) {
       if (cellDistIsGreaterThanCutoff(cells[i], cells[j])) continue;
-      // k starts at j + 1 because offset2 < offset3 (strict inequality)
-      for (size_t k = j + 1; k < numCells; ++k) {
-        // check distance between cell 1 and cell 2
+      for (size_t k = j; k < numCells; ++k) {
+        // check distance to cell 1 and cell 2
         if (cellDistIsGreaterThanCutoff(cells[i], cells[k])) continue;
         if (cellDistIsGreaterThanCutoff(cells[j], cells[k])) continue;
 
@@ -232,9 +232,8 @@ OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned l
         if ((c1.x == 0 or c2.x == 0 or c3.x == 0) and (c1.y == 0 or c2.y == 0 or c3.y == 0) and
             (c1.z == 0 or c2.z == 0 or c3.z == 0)) {
           if constexpr (Mode == C08OffsetMode::sorting) {
-            const auto &sortCell = c1 == c2 ? c3 : c2;
             const auto sortDirection = computeSortingDirection(
-                {static_cast<double>(sortCell.x), static_cast<double>(sortCell.y), static_cast<double>(sortCell.z)},
+                {static_cast<double>(c2.x), static_cast<double>(c2.y), static_cast<double>(c2.z)},
                 {static_cast<double>(c1.x), static_cast<double>(c1.y), static_cast<double>(c1.z)}, cellLength);
             resultOffsetsC08.emplace_back(c1.offset, c2.offset, c3.offset, sortDirection);
           } else if constexpr (Mode == C08OffsetMode::c04NoSorting) {
