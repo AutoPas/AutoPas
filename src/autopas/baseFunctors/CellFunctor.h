@@ -79,19 +79,32 @@ class CellFunctor {
   void setSortingThreshold(size_t sortingThreshold);
 
  private:
+  static constexpr std::array<double, 3> zeroDirection{0., 0., 0.};
+
   /**
-   * Returns true if the given cell is empty for the current _dataLayout. False by default in the case of other data
-   * layouts than aos or soa.
+   * Returns true if the given cell is empty for the current _dataLayout.
    * @param cell
    * @return whether the given cell is empty.
    */
   [[nodiscard]] bool cellIsEmptyForCurrentLayout(const ParticleCell_T &cell) const {
-    if (_dataLayout == DataLayoutOption::aos) {
-      return cell.isEmpty();
-    } else if (_dataLayout == DataLayoutOption::soa) {
-      return cell._particleSoABuffer.size() == 0;
+    switch (_dataLayout) {
+      case DataLayoutOption::aos:
+        return cell.isEmpty();
+      case DataLayoutOption::soa:
+        return cell._particleSoABuffer.size() == 0;
     }
+    utils::ExceptionHandler::exception("CellFunctor::cellIsEmptyForCurrentLayout(): Unsupported data layout.");
     return false;
+  }
+
+  /**
+   *
+   * @param particleCount
+   * @param sortingDirection
+   * @return
+   */
+  [[nodiscard]] bool shouldUseSorting(std::size_t particleCount, const std::array<double, 3> &sortingDirection) const {
+    return particleCount >= _sortingThreshold and sortingDirection != zeroDirection;
   }
 
   /**
@@ -217,7 +230,7 @@ template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 template <bool newton3>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellAoSImpl(ParticleCell_T &cell) {
   // helper function
-  const auto interactParticles = [&](auto &p1, auto &p2) {
+  const auto interactParticles = [this](auto &p1, auto &p2) {
     if constexpr (newton3) {
       _functor.AoSFunctor(p1, p2, true);
     } else {
@@ -271,7 +284,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
     }
   };
 
-  if ((cell1.size() + cell2.size() >= _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
+  if (shouldUseSorting(cell1.size() + cell2.size(), sortingDirection)) {
     // Use sorted cell views
     SortedCellView<ParticleCell_T> cell1Sorted(cell1, sortingDirection);
     SortedCellView<ParticleCell_T> cell2Sorted(cell2, sortingDirection);
