@@ -95,15 +95,15 @@ class CellFunctor {
   }
 
   /**
-   * Applies the functor to all particle pairs exploiting newtons third law of motion.
-   * There is only one version of this function as newton3 is always allowed to be applied inside of a cell.
-   * The value of _useNewton3 defines whether or whether not to apply the aos version functor in a newton3 fashion or
-   * not:
-   * - if _useNewton3 is true: the aos functor will be applied once for each pair (only i,j), passing newton3=true.
-   * - if _useNewton3 is false: the aos functor will be applied twice for each pair (i,j and j,i), passing
-   * newton3=false.
+   * Applies the functor to all particle pairs exploiting Newton's third law of motion.
+   * There is only one version of this function as newton3 is always allowed to be applied inside a cell.
+   * The value of newton3 defines how to apply the aos functor:
+   * - If newton3 is true: The aos functor will be applied once for each pair (only i,j), passing newton3=true.
+   * - If newton3 is false: The aos functor will be applied twice for each pair (i,j and j,i), passing newton3=false.
+   * @tparam newton3
    * @param cell
    */
+  template <bool newton3>
   void processCellAoSImpl(ParticleCell_T &cell);
 
   /**
@@ -160,7 +160,11 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(
 
   switch (_dataLayout) {
     case DataLayoutOption::aos:
-      processCellAoSImpl(cell);
+      if (_useNewton3) {
+        processCellAoSImpl<true>(cell);
+      } else {
+        processCellAoSImpl<false>(cell);
+      }
       break;
     case DataLayoutOption::soa:
       _functor.SoAFunctorSingle(cell._particleSoABuffer, _useNewton3);
@@ -210,10 +214,11 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+template <bool newton3>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellAoSImpl(ParticleCell_T &cell) {
   // helper function
   const auto interactParticles = [&](auto &p1, auto &p2) {
-    if (_useNewton3) {
+    if constexpr (newton3) {
       _functor.AoSFunctor(p1, p2, true);
     } else {
       if (not p1.isHalo()) {
