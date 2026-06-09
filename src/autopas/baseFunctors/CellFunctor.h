@@ -225,7 +225,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
     }
   };
 
-  if (cell.size() > _sortingThreshold) {
+  if (cell.size() >= _sortingThreshold) {
     SortedCellView<ParticleCell_T> cellSorted(cell, utils::ArrayMath::normalize(cell.getCellLength()));
 
     for (auto cellIter1 = cellSorted._particles.begin(); cellIter1 != cellSorted._particles.end(); ++cellIter1) {
@@ -266,7 +266,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
     }
   };
 
-  if ((cell1.size() + cell2.size() > _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
+  if ((cell1.size() + cell2.size() >= _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
     // Use sorted cell views
     SortedCellView<ParticleCell_T> cell1Sorted(cell1, sortingDirection);
     SortedCellView<ParticleCell_T> cell2Sorted(cell2, sortingDirection);
