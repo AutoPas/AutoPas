@@ -70,7 +70,12 @@ python train.py --results-dir=/path/to/results/
 
 Set the decision-tree-tuning strategy. This is not designed to be used with any other tuning strategies.
 
-If using a HPC system, remember to, in the jobscript file, load the up-to-date version of python and activate the virtual enviroment.
+If using a HPC system, remember to, in the jobscript file, load the up-to-date version of python and activate the virtual environment.
+
+It is also possible to set a confidence threshold, such for that predictions in which the model's confidence is below this, the configuration queue is left untouched (e.g. typically a full search will occur, if no other tuning strategies are specified).
+This feature is largely untested, and potentially not even of value with the random forest model.
+It is left included because it may be valuable with alternative models.
+We recommend therefore using the default threshold (0.0).
 
 
 

@@ -361,7 +361,7 @@ class MDFlexConfig {
    */
   MDFlexOption<std::string, __LINE__> modelFilename{"", "model-filename", true,
                                                     "Path to a .pkl file containing the model for the decision-tree "
-                                                    "tuning method. The path is relative to AUTOPAS_SOURCE_DIR"};
+                                                    "tuning method."};
 
   /**
    * confidenceThreshold
