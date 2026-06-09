@@ -80,6 +80,21 @@ class CellFunctor {
 
  private:
   /**
+   * Returns true if the given cell is empty for the current _dataLayout. False by default in the case of other data
+   * layouts than aos or soa.
+   * @param cell
+   * @return whether the given cell is empty.
+   */
+  [[nodiscard]] bool cellIsEmptyForCurrentLayout(const ParticleCell_T &cell) const {
+    if (_dataLayout == DataLayoutOption::aos) {
+      return cell.isEmpty();
+    } else if (_dataLayout == DataLayoutOption::soa) {
+      return cell._particleSoABuffer.size() == 0;
+    }
+    return false;
+  }
+
+  /**
    * Applies the functor to all particle pairs exploiting newtons third law of motion.
    * There is only one version of this function as newton3 is always allowed to be applied inside of a cell.
    * The value of _useNewton3 defines whether or whether not to apply the aos version functor in a newton3 fashion or
@@ -141,8 +156,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSortingTh
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(ParticleCell_T &cell) {
-  if ((_dataLayout == DataLayoutOption::soa and cell._particleSoABuffer.size() == 0) or
-      (_dataLayout == DataLayoutOption::aos and cell.isEmpty())) {
+  if (cellIsEmptyForCurrentLayout(cell)) {
     return;
   }
 
@@ -169,9 +183,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPair(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
-  if ((_dataLayout == DataLayoutOption::soa and
-       (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0)) or
-      (_dataLayout == DataLayoutOption::aos and (cell1.isEmpty() or cell2.isEmpty()))) {
+  if (cellIsEmptyForCurrentLayout(cell1) or cellIsEmptyForCurrentLayout(cell2)) {
     return;
   }
 
