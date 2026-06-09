@@ -56,7 +56,7 @@ class CellFunctor {
    * Getter
    * @return
    */
-  [[nodiscard]] DataLayoutOption getDataLayout() const { return _dataLayout; }
+  [[nodiscard]] DataLayoutOption::Value getDataLayout() const { return _dataLayout; }
 
   /**
    * Getter
@@ -129,9 +129,9 @@ class CellFunctor {
    */
   size_t _sortingThreshold{8};
 
-  DataLayoutOption _dataLayout;
+  const DataLayoutOption::Value _dataLayout;
 
-  bool _useNewton3;
+  const bool _useNewton3;
 };
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
@@ -152,8 +152,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(
     return;
   }
 
-  // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
-  switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
+  switch (_dataLayout) {
     case DataLayoutOption::aos:
       processCellAoS(cell);
       break;
