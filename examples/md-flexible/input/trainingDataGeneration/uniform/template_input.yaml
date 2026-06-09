@@ -3,7 +3,7 @@ cutoff                           :  3
 verlet-skin-radius               :  $skin
 verlet-rebuild-frequency         :  10
 deltaT                           :  0
-iterations                       :  8750 # ToDo: check this is suitable
+iterations                       :  5200
 boundary-type                    : [none, none, none]
 globalForce                      :  [0, 0, 0]
 data-layout                          :  [AoS, SoA]
