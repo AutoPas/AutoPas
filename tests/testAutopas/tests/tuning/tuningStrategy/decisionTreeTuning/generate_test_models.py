@@ -11,7 +11,7 @@ Outputs
 -------
 test_model.pkl
     Valid model.  predict() returns the configuration the C++ tests assert:
-    LinkedCells / lc_c08 / none / SoA / enabled / 1.0, with confidence 1.0.
+    LinkedCells / lc_c08 / none / SoA / enabled / 1.0 / 1xVec, with confidence 1.0.
 
 test_model_invalid.pkl
     Structurally valid model (passes predict.py __init__) but whose label
@@ -49,6 +49,7 @@ _VALID_LABEL_COMPONENTS = [
     ("Data Layout",    "SoA"),
     ("Newton 3",       "enabled"),
     ("CellSizeFactor", "1.0"),
+    ("VectorizationPattern", "1xVectorLength")
 ]
 VALID_LABEL = ";".join(v for _, v in _VALID_LABEL_COMPONENTS)
 

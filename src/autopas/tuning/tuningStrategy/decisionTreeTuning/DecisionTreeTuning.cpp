@@ -129,6 +129,7 @@ void DecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQue
                  predictionJson["CellSizeFactor"].type_name());
     }
     config.loadEstimator = LoadEstimatorOption::parseOptionExact(predictionJson["Load Estimator"]);
+    config.vecPattern = VectorizationPatternOption::parseOptionExact(predictionJson["VectorizationPattern"]);
 
     config.interactionType = _interactionType;
 
