@@ -27,7 +27,7 @@ class VCLClusterFunctor {
    * @param dataLayout The data layout to be used.
    * @param useNewton3 Parameter to specify whether newton3 is used or not.
    */
-  explicit VCLClusterFunctor(PairwiseFunctor *functor, size_t clusterSize, DataLayoutOption dataLayout, bool useNewton3)
+  explicit VCLClusterFunctor(PairwiseFunctor &functor, size_t clusterSize, DataLayoutOption dataLayout, bool useNewton3)
       : _functor(functor), _clusterSize(clusterSize), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**
@@ -59,15 +59,15 @@ class VCLClusterFunctor {
         for (size_t j = i + 1; j < _clusterSize; j++) {
           // this if else branch is needed because of https://github.com/AutoPas/AutoPas/issues/426
           if (_useNewton3) {
-            _functor->AoSFunctor(cluster[i], cluster[j], true);
+            _functor.AoSFunctor(cluster[i], cluster[j], true);
           } else {
-            _functor->AoSFunctor(cluster[i], cluster[j], false);
-            _functor->AoSFunctor(cluster[j], cluster[i], false);
+            _functor.AoSFunctor(cluster[i], cluster[j], false);
+            _functor.AoSFunctor(cluster[j], cluster[i], false);
           }
         }
       }
     } else {
-      _functor->SoAFunctorSingle(cluster.getSoAView(), _useNewton3);
+      _functor.SoAFunctorSingle(cluster.getSoAView(), _useNewton3);
     }
   }
 
@@ -80,16 +80,16 @@ class VCLClusterFunctor {
     if (_dataLayout == DataLayoutOption::aos) {
       for (size_t i = 0; i < _clusterSize; i++) {
         for (size_t j = 0; j < _clusterSize; j++) {
-          _functor->AoSFunctor(cluster[i], neighborCluster[j], _useNewton3);
+          _functor.AoSFunctor(cluster[i], neighborCluster[j], _useNewton3);
         }
       }
     } else {
-      _functor->SoAFunctorPair(cluster.getSoAView(), neighborCluster.getSoAView(), _useNewton3);
+      _functor.SoAFunctorPair(cluster.getSoAView(), neighborCluster.getSoAView(), _useNewton3);
     }
   }
 
  private:
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
   size_t _clusterSize;
   DataLayoutOption _dataLayout;
   bool _useNewton3;

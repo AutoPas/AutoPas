@@ -40,7 +40,7 @@ class LCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell_T, Func
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit LCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, Functor_T *functor, double interactionLength,
+  explicit LCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, Functor_T &functor, double interactionLength,
                                 const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
       : SlicedC02BasedTraversal<ParticleCell_T, Functor_T>(dims, functor, interactionLength, cellLength, dataLayout,
                                                            useNewton3, true),

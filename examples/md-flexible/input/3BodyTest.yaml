@@ -6,7 +6,7 @@ newton3-3b                           :  [disabled]
 data-layout-3b                       :  [AoS]
 
 # Comment out to isolate 3-body interactions, but this makes simulation unphysical
-functor                              :  lj-avx
+functor                              :  lj-hwy
 traversal                            :  [lc_c01, lc_c08, lc_c04, lc_sliced, lc_sliced_c02]
 newton3                              :  [enabled, disabled]
 data-layout                          :  [AoS, SoA]
