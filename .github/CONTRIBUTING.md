@@ -14,6 +14,10 @@ Please keep in mind the following notes while working.
 * `constexpr` instead of `#define`. Use it wherever possible.
 * `const` wherever possible. 
 * `nullptr` instead of `NULL`.
+* Use `utils::optRef` for non-owned optional references, wherever possible.
+  * This indicates better that the variable is not owned by that scope or object, and that the variable's lifetime should exceed the reference's.
+  * `utils::optRef` is a short-hand alias for `std::optional<std::reference_wrapper<T>>`.
+  * This may fail with Apple Clang for types `T` incomplete at the point of instantiation. In these cases simply, use a raw or shared pointer but indicate the intention in the documentation.
 * `using` instead of `typedef`.
 * Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Meaningful error message")` instead.
 
@@ -127,6 +131,10 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Create a new set of compatible traversals in [`CompatibleTraversals`](/src/autopas/containers/CompatibleTraversals.h).
 * Create a new `case` statement in [`StaticContainerSelector`](/src/autopas/utils/StaticContainerSelector.h).
 * Add a case for the new container in [`ContainerSelector::generateContainer()`](/src/autopas/tuning/selectors/ContainerSelector.h).
+* Check [`CompatibleVectorizationPattern::allCompatibleVectorizationPattern()`](/src/autopas/containers/CompatibleVectorizationPattern.h) is correct.
+  * Containers which use SoAFunctorVerlet, or otherwise only support the traditional 1xVecLength vectorization pattern, should specify this.
+  * Otherwise, by default, all vectorization patterns are compatible with the container. 
+  * This should function correctly for containers which use SoAFunctor Single and Pair.
 * Check that the new option is working in the md-flexible example.
 * Adapt unit tests (e.g. expected number of iterations in [`AutoTunerTest::testAllConfigurations()`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp) and [`StringUtilsTest::parseContainerOptionsTest`](/tests/testAutopas/tests/utils/StringUtilsTest.cpp)).
 * Add new unit tests for your container.

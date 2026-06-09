@@ -3,8 +3,9 @@
  * @author seckler
  * @date 13.05.19
  */
-
 #include "AutoPasInterfaceTest.h"
+
+#include <ranges>
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/tuning/Configuration.h"
@@ -15,6 +16,7 @@
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
+#include "testingHelpers/ParticleMatcher.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
@@ -37,6 +39,9 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setNumSamples(3);
 
+  autoPas.setAllowedVecPatterns({autopas::options::VectorizationPatternOption::p1xVec},
+                                autopas::InteractionTypeOption::pairwise);
+
   // init autopas
   autoPas.init();
 }
@@ -57,6 +62,8 @@ void defaultInit(AutoPasT &autoPas1, AutoPasT &autoPas2, size_t direction) {
     aP->setVerletSkin(skin);
     aP->setVerletRebuildFrequency(2);
     aP->setNumSamples(2);
+    aP->setAllowedVecPatterns({autopas::options::VectorizationPatternOption::p1xVec},
+                              autopas::InteractionTypeOption::pairwise);
     // init autopas
     aP->init();
   }
@@ -502,6 +509,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
                              autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
                              autopas::Newton3Option::getAllOptions(),
                              std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get(),
+                             autopas::VectorizationPatternOption::getAllOptions(),
                              autopas::InteractionTypeOption::pairwise)),
                          AutoPasInterfaceTest::PrintToStringParamName());
 
@@ -535,13 +543,18 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
 
   auto particlesOutside = autoPas.resizeBox(boxMinNew, boxMaxNew);
 
+  // Predicate to compare molecules with each other
+  const auto pred = [&](const auto &lhs, const auto &rhs) { return almostEqualParticles(lhs, rhs); };
+
   // remove particles that are now outside from the expectation
   for (auto &p : particlesOutside) {
-    auto pInExpected = std::find(expectedParticles.begin(), expectedParticles.end(), p);
-    EXPECT_NE(pInExpected, expectedParticles.end())
+    auto match = std::ranges::search(expectedParticles, std::views::single(p), pred);
+    auto ptr = match.begin();
+    EXPECT_NE(ptr, expectedParticles.end())
         << "Particle that was returned as \"outside\" is not one of the initially expected particles!";
-    if (pInExpected != expectedParticles.end()) {
-      expectedParticles.erase(pInExpected);
+
+    if (ptr != expectedParticles.end()) {
+      expectedParticles.erase(ptr);
     }
   }
 
@@ -554,7 +567,7 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
     particlesInsideAfterResize.push_back(p);
   }
 
-  EXPECT_THAT(particlesInsideAfterResize, ::testing::UnorderedElementsAreArray(expectedParticles));
+  EXPECT_THAT(particlesInsideAfterResize, ::testing::UnorderedPointwise(ParticleEq(), expectedParticles));
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface1ContainersTest, ValuesIn(getTestableContainerOptions()),

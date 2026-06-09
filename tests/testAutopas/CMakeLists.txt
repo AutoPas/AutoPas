@@ -49,9 +49,7 @@ include(GoogleTest)
 # cross compiling, make sure to properly set CMAKE_CROSSCOMPILING_EMULATOR.
 gtest_discover_tests(
         runTests TEST_PREFIX "testAutopas/"
-        # Defer --gtest_list_tests to CTest time (not CMake POST_BUILD) to avoid
-        # Python interpreter initialisation hanging in the CMake build environment
-        # when pybind11::embed is linked.
+        # Use PRE_TEST discovery mode to avoid test discovery hanging
         DISCOVERY_MODE PRE_TEST
         # increase the discovery timeout for `runTests --gtest_list_tests`
         DISCOVERY_TIMEOUT 60

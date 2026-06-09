@@ -28,6 +28,9 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeHWY *);
+#endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -37,6 +40,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 
 #include "ParticleCommunicator.h"
 #include "Thermostat.h"
+#include "TimeDiscretization.h"
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
@@ -83,18 +87,15 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                        std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
-      _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr),
       _totalEnergySensor(configuration.energySensorOption.value) {
   _timers.total.start();
   _timers.initialization.start();
   _totalEnergySensor.startMeasurement();
 
   // only create the writer if necessary since this also creates the output dir
-  if (_createVtkFiles) {
-    _vtkWriter =
-        std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
-                                            std::to_string(_configuration.iterations.value).size());
+  if (not configuration.vtkFileName.value.empty()) {
+    _vtkWriter.emplace(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
+                       std::to_string(_configuration.iterations.value).size());
   }
 
   const auto rank = _domainDecomposition->getDomainIndex();
@@ -124,12 +125,17 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   if (_configuration.getInteractionTypes().empty()) {
     std::string functorName{};
     std::tie(_configuration.functorOption.value, functorName) =
-#if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+        std::make_pair(MDFlexConfig::FunctorOption::lj12_6_HWY, "Lennard-Jones HWY Functor.");
+#elif defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6_AVX, "Lennard-Jones AVX Functor.");
 #elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6_SVE, "Lennard-Jones SVE Functor.");
-#else
+#elif defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6, "Lennard-Jones AutoVec Functor.");
+#else
+        std::make_pair(MDFlexConfig::FunctorOption::none, "");
+    std::cerr << "No functor specified and no valid fall-back LJ functor available!" << std::endl;
 #endif
     _configuration.addInteractionType(autopas::InteractionTypeOption::pairwise);
     std::cout << "WARNING: No functor was specified. Defaulting to " << functorName << std::endl;
@@ -144,6 +150,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                                               autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
                                           autopas::InteractionTypeOption::pairwise);
+  _autoPasContainer->setAllowedVecPatterns(_configuration.vecPatternOptions.value,
+                                           autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
   // Triwise specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
@@ -224,7 +232,7 @@ void Simulation::finalize() {
 void Simulation::run() {
   _timers.simulate.start();
   while (needsMoreIterations()) {
-    if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
+    if (_vtkWriter.has_value() and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
       _timers.vtk.stop();
@@ -339,7 +347,7 @@ void Simulation::run() {
   _timers.simulate.stop();
 
   // Record last state of simulation.
-  if (_createVtkFiles) {
+  if (_vtkWriter.has_value()) {
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
   }
 }
@@ -367,7 +375,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
                       _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
-                      autopas::InteractionTypeOption::pairwise)
+                      _configuration.vecPatternOptions.value, autopas::InteractionTypeOption::pairwise)
                       .size();
 
         const size_t searchSpaceSizeTriwise =
@@ -377,7 +385,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                      autopas::InteractionTypeOption::triwise)
+                      _configuration.vecPatternOptions.value, autopas::InteractionTypeOption::triwise)
                       .size();
 
         return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
@@ -863,6 +871,15 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_HWY: {
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+      return f(LJFunctorTypeHWY{cutoff, std::ref(particlePropertiesLibrary)});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor HWY. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_HWY=ON`.");
 #endif
     }
     default: {

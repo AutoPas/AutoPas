@@ -22,8 +22,10 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
@@ -40,7 +42,6 @@ class LogicHandler;
  * The AutoPas class is intended to be the main point of Interaction for the user.
  * It acts as an interface from where all features of the library can be triggered and configured.
  * @tparam Particle_T Class for particles
- * @tparam ParticleCell Class for the particle cells
  */
 template <class Particle_T>
 class AutoPas {
@@ -75,10 +76,17 @@ class AutoPas {
   using RegionConstIteratorT = autopas::ContainerIterator<Particle_T, false, true>;
 
   /**
-   * Constructor for the autopas class.
-   * @param logOutputStream Stream where log output should go to. Default is std::out.
+   * Constructor for the AutoPas class.
+   * @param logOutputStream Stream where log output should go to. Default is std::cout.
    */
   explicit AutoPas(std::ostream &logOutputStream = std::cout);
+
+  /**
+   * Constructor for the AutoPas class.
+   * This constructor can be used when the logging should be directed to a file.
+   * @param logFileName Name of the log file.
+   */
+  explicit AutoPas(const std::string &logFileName);
 
   ~AutoPas();
 
@@ -572,7 +580,7 @@ class AutoPas {
    * get the bool value indicating if the search space is trivial (not more than one configuration to test).
    * @return bool indicating if search space is trivial.
    */
-  [[nodiscard]] bool searchSpaceIsTrivial();
+  [[nodiscard]] bool searchSpaceIsTrivial() const;
 
   /**
    * Set coordinates of the lower corner of the domain.
@@ -955,6 +963,35 @@ class AutoPas {
   }
 
   /**
+   * Get the list of allowed vectorization pattern options.
+   * @param interactionType Get allowed vectorization pattern options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
+   * @return
+   */
+  [[nodiscard]] const std::set<VectorizationPatternOption> &getAllowedVecPatternOptions(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedVecPatternsOptions.at(interactionType);
+  }
+
+  /**
+   * Set the list of allowed vectorization pattern options
+   * For possible options, see options::VectorizationOption::Value
+   * @param allowedVecPatterns
+   * @param interactionType Set allowed vectorization pattern options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise
+   */
+  void setAllowedVecPatterns(const std::set<VectorizationPatternOption> &allowedVecPatterns,
+                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedVecPatternsOptions[iType] = allowedVecPatterns;
+      }
+    } else {
+      _allowedVecPatternsOptions[interactionType] = allowedVecPatterns;
+    }
+  }
+
+  /**
    * Set the list of allowed interaction types.
    * AutoPas will initialize AutoTuners for the allowed interaction types.
    * For possible newton 3 choices see options::interactionTypeOption::Value.
@@ -971,9 +1008,9 @@ class AutoPas {
   [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>>
   getCurrentConfigs() const {
     std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>> currentConfigs;
-    currentConfigs.reserve(_autoTuners.size());
+    currentConfigs.reserve(_tuningManager->getAutoTuners().size());
 
-    for (const auto &[type, tuner] : _autoTuners) {
+    for (const auto &[type, tuner] : _tuningManager->getAutoTuners()) {
       currentConfigs.emplace(type, std::cref(tuner->getCurrentConfig()));
     }
     return currentConfigs;
@@ -1192,6 +1229,14 @@ class AutoPas {
       {InteractionTypeOption::pairwise, Newton3Option::getMostOptions()},
       {InteractionTypeOption::triwise, Newton3Option::getMostOptions()}};
   /**
+   * Vector Interaction Patterns
+   */
+  std::unordered_map<InteractionTypeOption::Value, std::set<VectorizationPatternOption>> _allowedVecPatternsOptions{
+      {InteractionTypeOption::pairwise, VectorizationPatternOption::getMostOptions()},
+      // Note: Currently Vectorization Patterns are not implemented for threebody interactions. p1xVec is used as
+      // default.
+      {InteractionTypeOption::triwise, std::set<VectorizationPatternOption>{VectorizationPatternOption::p1xVec}}};
+  /**
    * What kind of interactions AutoPas should expect.
    * By default AutoPas is configured to only use pairwise interactions.
    */
@@ -1209,14 +1254,12 @@ class AutoPas {
   /**
    * LogicHandler of autopas.
    */
-  std::unique_ptr<autopas::LogicHandler<Particle_T>> _logicHandler;
+  std::unique_ptr<LogicHandler<Particle_T>> _logicHandler;
 
   /**
-   * All AutoTuners used in this instance of AutoPas.
-   * There can be up to one per interaction type.
+   * TuningManager which contains all the AutoTuner objects and coordinates them.
    */
-  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> _autoTuners;
-
+  std::shared_ptr<TuningManager> _tuningManager;
   /**
    * Stores whether the mpi communicator was provided externally or not
    */

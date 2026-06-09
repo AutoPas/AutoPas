@@ -41,7 +41,7 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwise
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit LCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit LCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                              double interactionLength, const std::array<double, 3> &cellLength,
                              DataLayoutOption dataLayout, bool useNewton3)
       : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
