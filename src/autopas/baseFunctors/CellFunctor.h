@@ -228,7 +228,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
       // start inner loop ahead of the outer loop
       for (auto cellIter2 = std::next(cellIter1); cellIter2 != cellSorted._particles.end(); ++cellIter2) {
         auto &[p2Projection, p2Ptr] = *cellIter2;
-        if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
+        if (p2Projection - p1Projection > _sortingCutoff) {
           break;
         }
         interactParticles(*p1Ptr, *p2Ptr);
@@ -254,7 +254,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 
     for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
       for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
-        if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
+        // p2Projection > p1Projection guaranteed by sorting direction
+        if (p2Projection - p1Projection > _sortingCutoff) {
           break;
         }
         _functor.AoSFunctor(*p1Ptr, *p2Ptr, true);
@@ -286,7 +287,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 
     for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
       for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
-        if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
+        // p2Projection > p1Projection guaranteed by sorting direction
+        if (p2Projection - p1Projection > _sortingCutoff) {
           break;
         }
         interactParticlesNoN3(*p1Ptr, *p2Ptr);
