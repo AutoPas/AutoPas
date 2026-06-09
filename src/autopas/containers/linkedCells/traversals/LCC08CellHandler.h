@@ -16,11 +16,9 @@ namespace autopas {
 /**
  * This class provides the base for traversals using the c08 base step.
  *
- * The base step processBaseCell() computes one set of pairwise interactions
- * between two cells for each spatial direction based on the baseIndex.
- * After executing the base step on all cells all pairwise interactions for
- * all cells are done.
- * Similarly, this can be done for triwise interactions.
+ * The base step processBaseCell() computes the full set of pairwise (or triwise) interactions between two (or three)
+ * cells for each spatial direction based on the baseIndex.
+ * After executing the base step on all cells, all pairwise (or triwise) interactions for all cells are done.
  *
  * @tparam ParticleCell_T the type of cells
  * @tparam Functor_T The functor that defines the interaction of two or three particles.
