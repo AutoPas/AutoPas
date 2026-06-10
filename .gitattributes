@@ -1,0 +1,18 @@
+# Vendored third-party dependencies under libs/.
+# These are git subtrees of upstream projects. Marking them as
+# linguist-vendored tells GitHub:
+#   1. exclude them from the repo's language statistics
+#   2. collapse their files by default in PR diff views (reviewers
+#      can click "Load diff" to expand).
+# First-party files under libs/ (fake-dlclose, patches, CMakeLists.txt)
+# are deliberately not marked so they remain reviewable.
+
+libs/spdlog/**     linguist-vendored
+libs/eigen/**      linguist-vendored
+libs/pmt/**        linguist-vendored
+libs/highway/**    linguist-vendored
+libs/googletest/** linguist-vendored
+libs/yaml-cpp/**   linguist-vendored
+libs/antlr4/**     linguist-vendored
+libs/ALL/**        linguist-vendored
+libs/harmony/**    linguist-vendored
