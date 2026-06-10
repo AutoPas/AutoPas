@@ -5,6 +5,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include <array>
 
 #include "Rapl.h"
 #include "common/PMT.h"

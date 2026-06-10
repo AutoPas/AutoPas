@@ -82,7 +82,7 @@ inline size_t pread(int fd, const std::span<std::byte>& byte,
                 static_cast<::off_t>(offset));
     if (data_read < 0) {
       const int errcode = take_and_reset_errno();
-      if (errno == EINTR) {
+      if (errcode == EINTR) {
         // interrupted system call
         continue;
       }
