@@ -1,0 +1,144 @@
+/** @page app_example_synth Synth: A Synthetic Function Test Application
+
+Introduction
+============
+
+This example application is designed to test and compare search
+strategies.  It uses purely mathematical multi-variate continuous
+functions to simulate empirical test results.  It requires two
+parameters: the name of a test function, and the number of tuning
+variables to use as input for the test function.
+
+The underlying function can be modified several ways.
+
+- **Input Accuracy**
+  This truncates the input values for the underlying function after
+  a certain number of decimal digits.  In effect, it alters the
+  resolution of the search strategy by changing the number of valid
+  testing points within the search space.  A higher accuracy term
+  results in a more refined mesh.  This can be used to test a search
+  strategy's sensitivity to mesh resolution.
+
+- **Output Quantization**
+  This truncates the output of the underlying function after a certain
+  number of decimal digits.  In effect, it reduces the continuous
+  nature of the underlying function, where lower quantization values
+  result in a more discrete function.  This can be used to test a
+  search strategy's sensitivity to non-continuous functions.
+
+- **Output Perturbation**
+  This adds a random non-negative value to the output of the
+  underlying function.  The perturbation occurs after quantization, if
+  both are requested.  This can be used to test a search strategy's
+  sensitivity to non-deterministic empirical tests.
+
+
+Building
+========
+
+This example application only relies on a C compiler.  It can be built
+with the following command:
+
+    $ make all
+
+
+Usage
+=====
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  synth [OPTIONS] <fname> <N> [x1..xN] [KEY=VAL ..]
+
+  OPTION SUMMARY
+  -a, --accuracy=(inf|INT) Allow INT decimal digits of accuracy to the
+                            right of the decimal point for function input
+                            variables.  If 'inf' is provided instead of an
+                            integer, the full accuracy of an IEEE double
+                            will be used. [Default: %d]
+  -l, --list               List available test functions.  Full
+                            descriptions will be printed when used with -v.
+  -h, --help               Display this help message.
+  -i, --iterations=INT     Perform at most INT search loop iterations.
+  -o, --options=LIST       Pass a comma (,) separated list of real numbers
+                            to the test function as optional parameters.
+  -p, --perturb=REAL       Perturb the test function's output by a
+                            uniformly random value in the range [0, REAL].
+  -q, --quantize=INT       Quantize the underlying function by rounding
+                            output values after INT decimal digits to the
+                            right of the decimal point.
+  -s, --seed=(time|INT)    Seed the random value generator with the
+                            provided INT before perturbing output values.
+                            If 'time' is provided instead of an integer,
+                            the value will be taken from time(NULL).
+                            [Default: time]
+  -t, --tuna=TYPE          Run as a child of Tuna, where only a single
+                            point is tested and the output is used to
+                            consume a proportional amount of resources as
+                            determined by TYPE:
+                              w = Wall time.
+                              u = User CPU time.
+                              s = System CPU time.
+                              o = Print value to stdout. (default)
+  -v, --verbose            Verbose output.
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Running Mode
+============
+
+There are two ways to use this application, tuning session mode and
+single evaluation mode.
+
+Tuning Session Mode
+-------------------
+By default, this application will launch its own auto-tuning session
+for the selected underlying function.  After a session has been
+established and joined, it will search the underlying function for
+optimal points until either the search converges, or the maximum
+number of iterations has been performed.
+
+Harmony configuration directives can be used to control various
+aspects of the tuning session, such as search strategy and included
+processing layers.
+
+Upon completion, the application displays the best point and
+associated performance value discovered by the search, along with the
+global optimal performance value, if known.
+
+Single Evaluation Mode
+----------------------
+If N real values follow, they are considered to be a single point in
+the search space to test.  The function is evaluated once, and the
+program exits.  This mode is designed pair with Tuna.  To further pair
+with Tuna's functionality, this application can be instructed to
+consume amount of a system resource that Tuna measuring proportional
+to the underlying function's output..
+
+
+Example Invocations
+===================
+
+The following invocation displays a list of supported underlying functions verbosely:
+
+    $ ./synth -l -v
+
+To test DeJong's first function in two dimensions:
+
+    $ ./synth dejong 2
+
+To test DeJong's first function in six dimensions:
+
+    $ ./synth dejong 6
+
+To test 1000 iterations of the Random search strategy:
+
+    $ ./synth -i1000 dejong 6 STRATEGY=random.so
+
+To perturb the function by at most 8, and compensate by using the minimum of 5 tests per point:
+
+    $ ./synth -p8.0 dejong 6 LAYERS=agg.so \
+              AGG_FUNC=min AGG_TIMES=5
+
+To run as a client of tuna:
+
+    $ tuna -r=x1,-64,64,1e-6 -r=x2,-64,64,1e-6 -r=x3,-64,64,1e-6 \
+           -r=x4,-64,64,1e-6 -r=x5,-64,64,1e-6 -r=x6,-64,64,1e-6 \
+           ./synth -v --tuna=w -- dejong 6
+*/

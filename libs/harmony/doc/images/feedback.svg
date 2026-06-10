@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="300"
+   height="150"
+   id="svg3336"
+   version="1.1"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="feedback.svg">
+  <defs
+     id="defs3338">
+    <marker
+       inkscape:stockid="TriangleOutS"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="TriangleOutS"
+       style="overflow:visible">
+      <path
+         id="path5048"
+         d="M 5.77,0.0 L -2.88,5.0 L -2.88,-5.0 L 5.77,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt"
+         transform="scale(0.2)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#ffffff"
+     borderopacity="0.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="0"
+     inkscape:zoom="5.112"
+     inkscape:cx="141.7"
+     inkscape:cy="55.45"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1389"
+     inkscape:window-height="793"
+     inkscape:window-x="92"
+     inkscape:window-y="56"
+     inkscape:window-maximized="0"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <metadata
+     id="metadata3341">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-275.9007,-300.54547)">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:6;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#TriangleOutS)"
+       d="m 240,55 0,-42.5 -180,0 0,34.5"
+       id="path4894"
+       inkscape:connector-curvature="0"
+       transform="translate(275.9007,300.54547)"
+       sodipodi:nodetypes="cccc" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1;stroke-dasharray:none"
+       id="rect3112-7"
+       width="137"
+       height="22"
+       x="357.48657"
+       y="302.04547" />
+    <text
+       style="font-size:7px;fill:#000000;fill-opacity:1"
+       id="text25312"
+       x="365.68481"
+       y="316.35602">
+      <tspan
+         style="font-size:12px;font-variant:normal;font-weight:normal;writing-mode:lr-tb;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         id="tspan25314"
+         x="365.68481"
+         y="316.35602">Performance Report</tspan>
+    </text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:6;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#TriangleOutS)"
+       d="M 60,95 60,137.5 l 180,0 0,-34.5"
+       id="path4892"
+       inkscape:connector-curvature="0"
+       transform="translate(275.9007,300.54547)"
+       sodipodi:nodetypes="cccc" />
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1;stroke-dasharray:none"
+       id="rect3112"
+       width="137"
+       height="22"
+       x="357.31491"
+       y="427.04547" />
+    <text
+       style="font-size:7px;fill:#000000;fill-opacity:1"
+       id="text25292"
+       x="374.24948"
+       y="442.5191">
+      <tspan
+         style="font-size:12px;font-variant:normal;font-weight:normal;writing-mode:lr-tb;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         id="tspan25294"
+         x="374.24948"
+         y="442.5191">Point Value Fetch</tspan>
+    </text>
+    <path
+       d="m 456.40073,395.0445 119,0 0,-39 -119,0 0,39 z"
+       style="fill:#cc66ff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1;stroke-dasharray:none"
+       id="path25242"
+       inkscape:connector-curvature="0" />
+    <text
+       xml:space="preserve"
+       style="font-size:18.66675949px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="516.36951"
+       y="371.35504"
+       id="text25570"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan25572"
+         x="516.36951"
+         y="371.35504"
+         style="font-size:12px">Client</tspan><tspan
+         sodipodi:role="line"
+         x="516.36951"
+         y="386.35504"
+         id="tspan25574"
+         style="font-size:12px">Application</tspan></text>
+    <path
+       d="m 276.40073,395.04646 119,0 0,-39 -119,0 0,39 z"
+       style="fill:#00ff00;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:1;stroke-dasharray:none"
+       id="path25102"
+       inkscape:connector-curvature="0" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3908"
+       y="372.52008"
+       x="336.02084"
+       style="font-size:18.66675949px;font-style:normal;font-weight:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-size:12px"
+         id="tspan3912"
+         y="372.52008"
+         x="336.02084"
+         sodipodi:role="line">Tuning</tspan><tspan
+         style="font-size:12px"
+         y="387.52008"
+         x="336.02084"
+         sodipodi:role="line"
+         id="tspan3916">Session</tspan></text>
+  </g>
+</svg>
