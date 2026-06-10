@@ -23,8 +23,10 @@ namespace py = pybind11;
 
 DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
                                        double confidenceThreshold, InteractionTypeOption interactionType)
-    : _configurations(searchSpace), _modelFileName(modelFileName), _confidenceThreshold(confidenceThreshold),
-  _interactionType(interactionType) {
+    : _configurations(searchSpace),
+      _modelFileName(modelFileName),
+      _confidenceThreshold(confidenceThreshold),
+      _interactionType(interactionType) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   try {
     // Initialize the Python interpreter using scoped_interpreter
@@ -44,8 +46,9 @@ DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpac
     utils::ExceptionHandler::exception("Failed to initialize Python environment: {}", e.what());
   }
 #else
-  utils::ExceptionHandler::exception("DecisionTreeTuning constructed but AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF! "
-"Set this CMake variable to ON to use this tuning strategy.");
+  utils::ExceptionHandler::exception(
+      "DecisionTreeTuning constructed but AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF! "
+      "Set this CMake variable to ON to use this tuning strategy.");
 #endif
 }
 
@@ -90,7 +93,7 @@ std::string DecisionTreeTuning::getPredictionFromPython() {
     pythonPredictionTimer.start();
 #endif
     // Convert live info to JSON string
-    const nlohmann::json liveInfoJson = _currentLiveInfo; // todo make this a reference
+    const nlohmann::json liveInfoJson = _currentLiveInfo;  // todo make this a reference
     // Call the Python function and get the result
     const py::object result = _decisionTreeTuningPyObj.attr("predict")(liveInfoJson.dump());
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE

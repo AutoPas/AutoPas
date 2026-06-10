@@ -15,9 +15,9 @@
 
 #include <filesystem>  // For checking the existence of test files
 
+#include "autopas/options/InteractionTypeOption.h"
 #include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/options/InteractionTypeOption.h"
 
 namespace autopas {
 
@@ -46,7 +46,8 @@ TEST(DecisionTreeTuningTest, TestNonExistantModelLoading) {
 
   EXPECT_THROW(
       {
-        autopas::DecisionTreeTuning tuningStrategy(searchSpace, "/nonexistant_model.pkl", 0.8, InteractionTypeOption::pairwise);
+        autopas::DecisionTreeTuning tuningStrategy(searchSpace, "/nonexistant_model.pkl", 0.8,
+                                                   InteractionTypeOption::pairwise);
         std::vector<autopas::Configuration> configQueue;
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
