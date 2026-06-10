@@ -2,112 +2,48 @@ set(AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
         # Default is OFF just for faster default compilation time.
         OFF
         CACHE
-        BOOL "Enables rules-based tuning and fuzzy tuning, which, if using the bundled version, will compile ANTLR and, if it is not installed uuid."
+        BOOL "Enables rules-based tuning and fuzzy tuning, which compiles the bundled ANTLR cpp runtime."
         )
 
 if (AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
     message(STATUS "Rules-Based Tuning Enabled")
-    message(STATUS "antlr4cpp - using bundled version")
+    message(STATUS "antlr4cpp - using bundled subtree (libs/antlr4 at tag 4.13.2, Cpp runtime only)")
 
-    include(ExternalProject)
+    include(FetchContent)
 
-    # check if uuid-dev is installed on the system, since this is a dependency of antlr4cpp
-    find_package(PkgConfig)
-    pkg_check_modules(UUID QUIET uuid)
+    # Suppress antlr4cpp's tests, shared lib, and demo before pulling in its CMakeLists.
+    set(ANTLR_BUILD_CPP_TESTS OFF CACHE BOOL "" FORCE)
+    set(ANTLR_BUILD_SHARED    OFF CACHE BOOL "" FORCE)
+    set(WITH_DEMO             OFF CACHE BOOL "" FORCE)
+    set(DISABLE_WARNINGS      ON  CACHE BOOL "" FORCE)
 
-    # if uuid-dev was not found on system we install it locally
-    if (NOT UUID_FOUND)
-        message(STATUS "UUID not found - using bundled version")
+    FetchContent_Declare(
+            autopas_antlr4cpp
+            SOURCE_DIR ${PROJECT_SOURCE_DIR}/libs/antlr4/runtime/Cpp
+    )
+    FetchContent_MakeAvailable(autopas_antlr4cpp)
 
-        set(LIBUUID_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/uuid/install")
-        set(LIBUUID_PKGCONFIG_DIR ${LIBUUID_INSTALL_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
-        set(LIBUUID_LIBRARY_DIR ${LIBUUID_INSTALL_DIR}/lib:$ENV{LIBRARY_PATH})
-        set(UUID_CONFIG_PARAMS "--prefix=${LIBUUID_INSTALL_DIR}")
-        ExternalProject_Add(
-            uuid_bundled
-            PREFIX ${CMAKE_CURRENT_BINARY_DIR}/uuid
-            SOURCE_DIR ${PROJECT_SOURCE_DIR}/libs/libuuid
-            DOWNLOAD_COMMAND ""
-            BUILD_IN_SOURCE TRUE
-            INSTALL_DIR "install"
-            CONFIGURE_COMMAND "./configure" ${UUID_CONFIG_PARAMS}
-            BUILD_COMMAND ${MAKE_EXE}
-        )
+    # antlr4cpp's CMakeLists produces a static library target named `antlr4_static`.
+    # Alias it to `antlr4cpp` to preserve the link name used in src/autopas/CMakeLists.txt.
+    add_library(antlr4cpp ALIAS antlr4_static)
 
-    else()
-        message(STATUS "UUID found - using system version")
-        # add a dummy target so the dependency in antlr4cpp_bundled is fulfilled if uuid-dev was found on the system
-        add_custom_target(uuid_bundled)
+    # Hide antlr4cpp's cache options from ccmake/cmake-gui.
+    mark_as_advanced(
+            ANTLR_BUILD_CPP_TESTS
+            ANTLR_BUILD_SHARED
+            ANTLR_BUILD_STATIC
+            DISABLE_WARNINGS
+            WITH_DEMO
+            WITH_LIBCXX
+            WITH_STATIC_CRT
+            TRACE_ATN
+    )
+
+    # Keep antlr4cpp targets out of the default "all" build/install step.
+    if (IS_DIRECTORY "${autopas_antlr4cpp_SOURCE_DIR}")
+        set_property(DIRECTORY ${autopas_antlr4cpp_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
     endif ()
 
-    find_package(utf8cpp QUIET)
-
-    # if utf8cpp was not found on system we install it locally
-    if (NOT utf8cpp_FOUND)
-        message(STATUS "utf8cpp not found - using bundled version")
-
-        set(UTFCPP_DIR "${CMAKE_CURRENT_BINARY_DIR}/utf8cpp")
-        ExternalProject_Add(
-            utf8cpp_bundled
-            PREFIX           ${CMAKE_CURRENT_BINARY_DIR}/utf8cpp
-            SOURCE_DIR       ${PROJECT_SOURCE_DIR}/libs/utfcpp
-            DOWNLOAD_COMMAND ""
-            BUILD_IN_SOURCE  TRUE
-            INSTALL_DIR      "install"
-            CMAKE_ARGS       -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${UTFCPP_DIR}/install -DUTF8_TESTS=off -DUTF8_SAMPLES=off
-        )
-    else()
-        message(STATUS "utf8cpp found - using system version")
-        # add a dummy target so the dependency in antlr4cpp_bundled is fulfilled if utf8cpp was found on the system
-        add_custom_target(utf8cpp_bundled)
-    endif ()
-
-    # install prefix for antlr
-    set(antlr4cpp_prefix ${CMAKE_CURRENT_BINARY_DIR}/_deps/antlr4cppPrefix)
-    # location where antlr will install its static library
-    set(staticLibInstallLocation ${antlr4cpp_prefix}/install/lib/libantlr4-runtime.a)
-
-    # The latest ANTLR runtimes can be found at https://www.antlr.org/download.html.
-    # libs/antlr4 is a git subtree at upstream tag 4.13.2 with all non-Cpp runtimes pruned;
-    # the cpp runtime source lives at libs/antlr4/runtime/Cpp.
-    ExternalProject_ADD(
-            antlr4cpp_bundled
-            PREFIX           ${antlr4cpp_prefix}
-            SOURCE_DIR       ${PROJECT_SOURCE_DIR}/libs/antlr4/runtime/Cpp
-            DOWNLOAD_COMMAND ""
-            BUILD_BYPRODUCTS ${staticLibInstallLocation}
-            # pass PKG_CONFIG_PATH as a environment variable to cmake so find_package() in antlr4cpp's CMakeLists.txt can find uuid-dev if using the bundled version
-            CMAKE_COMMAND    ${CMAKE_COMMAND} -E env PKG_CONFIG_PATH=${LIBUUID_PKGCONFIG_DIR} ${CMAKE_COMMAND}
-            BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp/install/lib/libantlr4-runtime.a
-            # point antlr4cpp to utf8cpp install dir
-            CMAKE_ARGS       -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${antlr4cpp_prefix}/install -DCMAKE_CXX_FLAGS=-w -DCMAKE_PREFIX_PATH=${UTFCPP_DIR}/install -DANTLR_BUILD_CPP_TESTS=OFF -DANTLR_BUILD_SHARED=OFF
-            # make sure UUID and UTF8CPP are installed before antlr is installed
-            DEPENDS          uuid_bundled utf8cpp_bundled
-    )
-
-    # create dummy target that contains all information to easily link against
-    add_library(antlr4cpp
-            STATIC
-            IMPORTED
-            GLOBAL
-            )
-
-    add_dependencies(antlr4cpp antlr4cpp_bundled)
-
-    ExternalProject_Get_Property(antlr4cpp_bundled install_dir)
-    set_target_properties(
-            antlr4cpp
-            PROPERTIES "IMPORTED_LOCATION" "${staticLibInstallLocation}"
-    )
-
-    # create directory otherwise cmake will complain during generate step since this is only generated during make
-    file(MAKE_DIRECTORY "${install_dir}/install/include/antlr4-runtime")
-
-    target_include_directories(
-            antlr4cpp SYSTEM
-            INTERFACE "${install_dir}/install/include/antlr4-runtime"
-    )
-
-else()
-    message(STATUS "Rules-Based Tuning Disabled. Bundled versions of ANTLR and uuid will not be compiled.")
-endif()
+else ()
+    message(STATUS "Rules-Based Tuning Disabled. Bundled ANTLR will not be compiled.")
+endif ()
