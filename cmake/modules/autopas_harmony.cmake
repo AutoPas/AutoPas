@@ -20,13 +20,12 @@ find_program(MAKE_EXE NAMES gmake nmake make)
 # Extract and build harmony
 ExternalProject_Add(
     harmony_bundled
-    URL ${AUTOPAS_SOURCE_DIR}/libs/harmony.zip
-    # Hash is with deleted `example/` folder and removed `example` target from the local Makefile
-    URL_HASH MD5=6249e1899005238c608cd8a0c443fbba 
-    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/harmony/include/lib/libharmony.a
+    # libs/harmony is a git subtree at upstream branch hotfix-v4.6.0 (github.com/ActiveHarmony/harmony)
+    # with example/ pruned as a follow-up commit.
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/harmony
-    # since we only unpack a header lib src == include
-    SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/harmony/include
+    SOURCE_DIR ${AUTOPAS_SOURCE_DIR}/libs/harmony
+    DOWNLOAD_COMMAND ""
+    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/harmony/include/lib/libharmony.a
     # tell cmake to run make inside the source folder and suppress all warnings
     BUILD_IN_SOURCE TRUE
     CONFIGURE_COMMAND ""

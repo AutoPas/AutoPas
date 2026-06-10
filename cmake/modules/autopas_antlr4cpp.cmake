@@ -26,8 +26,8 @@ if (AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
         ExternalProject_Add(
             uuid_bundled
             PREFIX ${CMAKE_CURRENT_BINARY_DIR}/uuid
-            URL ${PROJECT_SOURCE_DIR}/libs/libuuid-1.0.3.zip
-            URL_HASH MD5=9fd1e87682d24d6ca22941e0af339c8a
+            SOURCE_DIR ${PROJECT_SOURCE_DIR}/libs/libuuid
+            DOWNLOAD_COMMAND ""
             BUILD_IN_SOURCE TRUE
             INSTALL_DIR "install"
             CONFIGURE_COMMAND "./configure" ${UUID_CONFIG_PARAMS}
@@ -49,12 +49,12 @@ if (AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
         set(UTFCPP_DIR "${CMAKE_CURRENT_BINARY_DIR}/utf8cpp")
         ExternalProject_Add(
             utf8cpp_bundled
-            PREFIX          ${CMAKE_CURRENT_BINARY_DIR}/utf8cpp
-            URL             ${PROJECT_SOURCE_DIR}/libs/utfcpp-4.0.6.zip
-            URL_HASH        MD5=352a44ae1d2c655872774369b4b649bb
-            BUILD_IN_SOURCE TRUE
-            INSTALL_DIR     "install"
-            CMAKE_ARGS      -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${UTFCPP_DIR}/install -DUTF8_TESTS=off -DUTF8_SAMPLES=off
+            PREFIX           ${CMAKE_CURRENT_BINARY_DIR}/utf8cpp
+            SOURCE_DIR       ${PROJECT_SOURCE_DIR}/libs/utfcpp
+            DOWNLOAD_COMMAND ""
+            BUILD_IN_SOURCE  TRUE
+            INSTALL_DIR      "install"
+            CMAKE_ARGS       -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${UTFCPP_DIR}/install -DUTF8_TESTS=off -DUTF8_SAMPLES=off
         )
     else()
         message(STATUS "utf8cpp found - using system version")
@@ -67,12 +67,14 @@ if (AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
     # location where antlr will install its static library
     set(staticLibInstallLocation ${antlr4cpp_prefix}/install/lib/libantlr4-runtime.a)
 
-    # The latest ANTLR runtimes can be found at https://www.antlr.org/download.html
+    # The latest ANTLR runtimes can be found at https://www.antlr.org/download.html.
+    # libs/antlr4 is a git subtree at upstream tag 4.13.2 with all non-Cpp runtimes pruned;
+    # the cpp runtime source lives at libs/antlr4/runtime/Cpp.
     ExternalProject_ADD(
             antlr4cpp_bundled
             PREFIX           ${antlr4cpp_prefix}
-            URL              ${PROJECT_SOURCE_DIR}/libs/antlr4-cpp-runtime-4.13.2-source.zip
-            URL_HASH         MD5=bac8aef215ffd7b23a1dde2fcfe3c842
+            SOURCE_DIR       ${PROJECT_SOURCE_DIR}/libs/antlr4/runtime/Cpp
+            DOWNLOAD_COMMAND ""
             BUILD_BYPRODUCTS ${staticLibInstallLocation}
             # pass PKG_CONFIG_PATH as a environment variable to cmake so find_package() in antlr4cpp's CMakeLists.txt can find uuid-dev if using the bundled version
             CMAKE_COMMAND    ${CMAKE_COMMAND} -E env PKG_CONFIG_PATH=${LIBUUID_PKGCONFIG_DIR} ${CMAKE_COMMAND}
