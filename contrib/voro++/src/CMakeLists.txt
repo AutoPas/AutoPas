@@ -1,0 +1,18 @@
+set (MODULE_NAME voro)
+
+# Get all compilation units.
+#file (GLOB ${MODULE_NAME}_SRCS *.cc)
+file (GLOB ${MODULE_NAME}_SRCS voro++.cc)
+
+# Create the library.
+add_library (${MODULE_NAME} ${${MODULE_NAME}_SRCS})
+
+target_include_directories(${MODULE_NAME}
+	INTERFACE
+	"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>"
+	"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+
+install (TARGETS ${MODULE_NAME}
+	EXPORT ALLTargets
+		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

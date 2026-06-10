@@ -1,0 +1,11 @@
+#!/bin/bash -x
+#SBATCH --account=#account#
+#SBATCH --ntasks-per-node=#tpn#
+#SBATCH --ntasks=#tasks#
+#SBATCH --output=#outfile#
+#SBATCH --error=#errfile#
+#SBATCH --time=#time#
+#SBATCH --partition=batch
+
+#exec#
+touch #done#
