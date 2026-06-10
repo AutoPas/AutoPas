@@ -24,8 +24,6 @@ bool isNumber(const std::string &s) {
 namespace pmt {
 
 PMT::~PMT() {
-  StopDump();
-  StopThread();
 };
 
 double PMT::seconds(const Timestamp &timestamp) {
@@ -77,39 +75,6 @@ float State::joules(int i) {
 float State::watts(int i) {
   assert(i < nr_measurements_);
   return watt_[i];
-}
-
-void PMT::StartThread() {
-  SetMeasurementInterval();
-
-  thread_ = std::thread([&] {
-    State state_previous = GetState();
-    assert(state_previous.nr_measurements_ > 0);
-    state_latest_ = state_previous;
-
-    if (dump_file_) {
-      DumpHeader(state_previous);
-    }
-
-    while (!thread_stop_) {
-      std::this_thread::sleep_for(
-          std::chrono::milliseconds(GetMeasurementInterval()));
-      state_latest_ = GetState();
-
-      if (dump_file_ &&
-          (1e3 * seconds(state_previous, state_latest_)) > GetDumpInterval()) {
-        Dump(state_latest_);
-        state_previous = state_latest_;
-      }
-    }
-  });
-}
-
-void PMT::StopThread() {
-  thread_stop_ = true;
-  if (thread_.joinable()) {
-    thread_.join();
-  }
 }
 
 void PMT::StartDump(const char *filename) {
@@ -187,13 +152,8 @@ void PMT::SetMeasurementInterval(unsigned int milliseconds) {
 Timestamp PMT::GetTime() { return std::chrono::system_clock::now(); }
 
 State PMT::Read() {
-  const int measurement_interval = GetMeasurementInterval();
-  if (!thread_started_) {
-    StartThread();
-    thread_started_ = true;
-    std::this_thread::sleep_for(
-        std::chrono::milliseconds(measurement_interval));
-  }
+  // Get the latest measurement
+  state_latest_ = GetState();
   return state_latest_;
 }
 

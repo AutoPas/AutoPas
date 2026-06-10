@@ -115,6 +115,7 @@ void RaplImpl::Init() {
         if (e.code().value() == EACCES) {
           std::cerr << "Please check the permission or try to run as 'root'"
                     << std::endl;
+          std::abort();
         }
       }
     }
@@ -131,10 +132,11 @@ void RaplImpl::Init() {
       uj_offset_[i] = 0;
     }
 
-  } catch (std::exception& e) {
+  } catch (const std::runtime_error& e) {
     std::stringstream message;
     message << "Unable to init rapl plugin: " << e.what();
     std::cerr << message.str() << std::endl;
+    std::abort();
   }
 }
 

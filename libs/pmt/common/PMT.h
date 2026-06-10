@@ -85,19 +85,10 @@ class PMT {
   Timestamp GetTime();
 
  private:
-  unsigned int measurement_interval_ = 100;  // milliseconds
+  unsigned int measurement_interval_ = 1;  // milliseconds
 
   // The last state set by the thread
   State state_latest_;
-
-  // This thread continuously call GetState to update state_latest_. It is
-  // started automatically upon the first Read() call.
-  std::thread thread_;
-  volatile bool thread_started_ = false;
-  volatile bool thread_stop_ = false;
-
-  void StartThread();
-  void StopThread();
 
   void DumpHeader(const State &state);
 
