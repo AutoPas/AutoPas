@@ -1,0 +1,10 @@
+A quick overview of the examples in this directory:
+
+client_api      - Harmony Client API samples in multiple languages.
+constraint      - Constraint processing layer usage sample.
+synth           - Stand-alone performance client to be used with Tuna.
+code_generation - Harmony/CHiLL integration sample to be used with PRO.
+taudb           - tauDB processing layer usage sample.
+xml             - XML output processing layer usage sample.
+
+Each directory includes a README which provides further details.
