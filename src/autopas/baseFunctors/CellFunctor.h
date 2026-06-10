@@ -310,10 +310,10 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-template <bool useNewton3>
+template <bool newton3>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoAImpl(ParticleCell_T &cell1,
                                                                                            ParticleCell_T &cell2) {
-  if constexpr (useNewton3) {
+  if constexpr (newton3) {
     _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
   } else {
     _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
