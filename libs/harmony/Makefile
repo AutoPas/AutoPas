@@ -1,14 +1,11 @@
 TO_BASE=.
 
 SUBDIRS=src \
-	code-server \
-	example
+	code-server
 
 .PHONY: doc
 
 code-server: src
-
-example: src
 
 doc:
 	$(MAKE) -C doc
