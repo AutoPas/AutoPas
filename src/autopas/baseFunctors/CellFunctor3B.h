@@ -105,7 +105,7 @@ class CellFunctor3B {
       case DataLayoutOption::soa:
         return cell._particleSoABuffer.size() == 0;
     }
-    utils::ExceptionHandler::exception("CellFunctor::cellIsEmptyForCurrentLayout(): Unsupported data layout.");
+    utils::ExceptionHandler::exception("CellFunctor3B::cellIsEmptyForCurrentLayout(): Unsupported data layout.");
     return false;
   }
 
@@ -349,7 +349,7 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
 
         for (auto cellIter3 = std::next(cellIter2); cellIter3 != cellSorted._particles.end(); ++cellIter3) {
           auto &[p3Projection, p3Ptr] = *cellIter3;
-          if (p3Projection - p3Projection > _sortingCutoff or p3Projection - p2Projection > _sortingCutoff) {
+          if (p3Projection - p1Projection > _sortingCutoff or p3Projection - p2Projection > _sortingCutoff) {
             break;
           }
           interactParticles(*p1Ptr, *p2Ptr, *p3Ptr);
@@ -507,7 +507,7 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
   } else {
     _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
     if constexpr (bidirectional) {
-      if (bidirectional) _functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
+      _functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
     }
   }
 }
