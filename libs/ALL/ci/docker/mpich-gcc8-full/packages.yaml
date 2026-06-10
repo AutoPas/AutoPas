@@ -1,0 +1,7 @@
+packages:
+  vtk:
+    variants: +mpi
+    version: [8.2]
+  all:
+    target: ["x86_64"]
+    compiler: [gcc@8]
