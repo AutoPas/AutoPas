@@ -41,7 +41,7 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c01_combined_SoA,
     /**
-     * LCC04Traversal : Four-way domain coloring using plus-shaped clusters of cells that are processed with the c08
+     * + LCC04Traversal : Four-way domain coloring using plus-shaped clusters of cells that are processed with the c08
      * base-step. Less scheduling overhead than LCC08Traversal because of fewer barriers but more coarse-grained.
      */
     lc_c04,
@@ -55,7 +55,7 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c04_combined_SoA,
     /**
-     * LCC08Traversal : More compact form of LCC18Traversal. Eight-way domain coloring in minimally small interaction
+     * + LCC08Traversal : More compact form of LCC18Traversal. Eight-way domain coloring in minimally small interaction
      * blocks. High degree of parallelism and good load balancing due to fine granularity.
      */
     lc_c08,
@@ -64,8 +64,8 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c18,
     /**
-     * LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice interface.
-     * Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
+     * + LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice
+     * interface. Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
      */
     lc_sliced,
     /**
@@ -74,7 +74,7 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_sliced_balanced,
     /**
-     * LCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
+     * + LCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
      * coloring of slices.
      */
     lc_sliced_c02,
@@ -255,7 +255,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getAllTriwiseOptions() {
-    return {Value::ds_sequential, Value::lc_c01, Value::vl_list_iteration, Value::vl_list_intersection,
+    return {Value::ds_sequential, Value::lc_c01, Value::lc_c08, Value::lc_sliced, Value::lc_sliced_c02, Value::lc_c04, Value::vl_list_iteration, Value::vl_list_intersection,
             Value::vl_pair_list_iteration};
   }
 

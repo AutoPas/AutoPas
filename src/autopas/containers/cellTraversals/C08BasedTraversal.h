@@ -34,7 +34,7 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell_T, Functor_T> 
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, Functor_T *functor,
+  explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, Functor_T &functor,
                              const double interactionLength, const std::array<double, 3> &cellLength,
                              DataLayoutOption dataLayout, bool useNewton3)
       : ColorBasedTraversal<ParticleCell_T, Functor_T>(dims, functor, interactionLength, cellLength, dataLayout,

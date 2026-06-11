@@ -103,6 +103,9 @@ if (AUTOPAS_BUILD_TESTS)
     gtest_discover_tests(
             ${TEST_EXE_NAME}
             TEST_PREFIX "${TEST_EXE_NAME}/"
+            # Use PRE_TEST discovery mode to avoid running MPI executable during build
+            # This prevents SIGPIPE errors in CI when MPI and sanitizers are enabled
+            DISCOVERY_MODE PRE_TEST
             PROPERTIES
             ENVIRONMENT "${LSAN_OPTIONS_STR}"
     )
@@ -132,6 +135,9 @@ if (AUTOPAS_BUILD_TESTS)
     # more robust, queries the compiled executable
     gtest_discover_tests(
             sphLibTests TEST_PREFIX "sphLibTests/"
+            # Use PRE_TEST discovery mode to avoid running MPI executable during build
+            # This prevents SIGPIPE errors in CI when MPI and sanitizers are enabled
+            DISCOVERY_MODE PRE_TEST
             PROPERTIES
             ENVIRONMENT "${LSAN_OPTIONS_STR}"
     )

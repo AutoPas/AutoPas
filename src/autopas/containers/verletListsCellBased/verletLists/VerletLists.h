@@ -238,7 +238,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
 
     auto traversal = VLListIterationTraversal<ParticleCellType,
                                               typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor>(
-        &f, dataLayout, useNewton3);
+        f, dataLayout, useNewton3);
     this->computeInteractions(&traversal);
     _pairListIsValid = true;
   }
