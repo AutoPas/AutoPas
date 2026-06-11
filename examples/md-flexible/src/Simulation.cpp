@@ -6,6 +6,7 @@
 #include "Simulation.h"
 
 #include <algorithm>
+#include <set>
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
@@ -292,6 +293,17 @@ void Simulation::run() {
     }
 
     updateInteractionForces();
+
+    {
+      const std::set<size_t> trackedIDs{0, 1, 2, 3, 4};
+      for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+        if (trackedIDs.count(particle->getID()) == 0) {
+          continue;
+        }
+        const auto &f = particle->getF();
+        std::cout << "Particle " << particle->getID() << " force: [" << f[0] << ", " << f[1] << ", " << f[2] << "]\n";
+      }
+    }
 
     if (_configuration.pauseSimulationDuringTuning.value) {
       // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
