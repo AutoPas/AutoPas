@@ -32,8 +32,10 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
     FetchContent_Declare(
             pmt
             # libs/pmt is a git subtree at upstream commit 7a56fa3a (Dec 19, 2024)
-            # with the AutoPas-specific changes applied as the follow-up commit.
-            # See libs/patches/patch-file-pmt-for-autopas.patch for the historical patch.
+            # with the AutoPas-specific changes applied as the follow-up commit, including:
+            # - removal of 100 ms minimum time interval for energy samples
+            # - removing asynchronous energy measurement
+            # - better error handling
             SOURCE_DIR ${AUTOPAS_SOURCE_DIR}/libs/pmt
     )
 
