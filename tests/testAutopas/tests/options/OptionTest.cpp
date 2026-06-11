@@ -89,6 +89,8 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
       {autopas::TuningStrategyOption::activeHarmony, "harmony"},
       {autopas::TuningStrategyOption::bayesianSearch, "bayesian"},
       {autopas::TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster"},
+      {autopas::TuningStrategyOption::reinforcementLearning, "reinforcement-learning"},
+      {autopas::TuningStrategyOption::deepReinforcementLearning, "deep-reinforcement-learning"},
       {autopas::TuningStrategyOption::fullSearch, "full"},
       {autopas::TuningStrategyOption::mpiDivideAndConquer, "divide&conquer"},
       {autopas::TuningStrategyOption::predictiveTuning, "predictive"},
