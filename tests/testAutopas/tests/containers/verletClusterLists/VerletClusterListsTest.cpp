@@ -21,7 +21,7 @@ TEST_F(VerletClusterListsTest, VerletListConstructor) {
   const double cutoff = 1.;
   const double skin = 0.2;
   const size_t clusterSize = 4;
-  const autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, clusterSize);
+  const autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, 1, clusterSize);
 }
 
 TEST_F(VerletClusterListsTest, testVerletListBuild) {
@@ -30,7 +30,7 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
   const double cutoff = 1.;
   const double skin = 0.2;
   const size_t clusterSize = 4;
-  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, clusterSize);
+  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, 1, clusterSize);
 
   const std::array<double, 3> r = {2, 2, 2};
   const ParticleFP64 p(r, {0., 0., 0.}, 0);
@@ -54,7 +54,7 @@ TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
   const double skin = 0.2;
   const unsigned long numParticles = 271;
   const size_t clusterSize = 4;
-  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, clusterSize);
+  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, 1, clusterSize);
 
   autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, verletLists.getBoxMin(),
                                                                 verletLists.getBoxMax(), numParticles);
@@ -75,7 +75,7 @@ TEST_F(VerletClusterListsTest, testIterator) {
   const double skin = 0.2;
   const unsigned long numParticles = 271;
   const size_t clusterSize = 4;
-  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, clusterSize);
+  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, 1, clusterSize);
 
   autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, verletLists.getBoxMin(),
                                                                 verletLists.getBoxMax(), numParticles);
@@ -135,7 +135,7 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
   const double skin = 0.2;
   const unsigned long numParticles = 30;
   const size_t clusterSize = 4;
-  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, clusterSize);
+  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, 1, clusterSize);
 
   // Fill the container with random particles and build neighbor lists
   autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, verletLists.getBoxMin(),
@@ -223,7 +223,7 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
   std::unordered_map<size_t, std::vector<size_t>> neighborsNoN3{}, neighborsN3{};
 
   for (bool newton3 : {true, false}) {
-    autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, clusterSize);
+    autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, 1, clusterSize);
 
     autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, verletLists.getBoxMin(),
                                                                   verletLists.getBoxMax(), numParticles);
@@ -264,7 +264,7 @@ TEST_F(VerletClusterListsTest, testGridAlignment) {
   const double cutoff{2.};
   const double skin{0.05};
   const size_t clusterSize{4};
-  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, clusterSize);
+  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, 1, clusterSize);
   size_t numParticles{0};
   // lower corner of the inner box, thus in the first inner tower
   const ParticleFP64 p0{boxMin, {0., 0., 0.}, numParticles++};
@@ -315,7 +315,7 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
   const double skin = 0.1;
   const int numParticles = 5000;
   const size_t clusterSize = 4;
-  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, clusterSize);
+  autopas::VerletClusterLists<ParticleFP64> verletLists(boxMin, boxMax, cutoff, skin, 1, clusterSize);
 
   autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, ParticleFP64{}, boxMin, boxMax,
                                                                 numParticles);
