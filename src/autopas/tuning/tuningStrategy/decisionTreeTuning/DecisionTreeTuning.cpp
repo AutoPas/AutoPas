@@ -106,6 +106,8 @@ std::string DecisionTreeTuning::getPredictionFromPython() {
     utils::ExceptionHandler::exception("Error during Python function call: {}", e.what());
     return {};
   }
+#else
+  return {};
 #endif
 }
 

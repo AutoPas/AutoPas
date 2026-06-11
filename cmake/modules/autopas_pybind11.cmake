@@ -14,7 +14,7 @@ if (AUTOPAS_ENABLE_PYTHON_BASED_TUNING)
 
     option(pybind11_ForceBundled "Forcibly use the bundled version of pybind11 (v${expectedVersion})" ON)
 
-    if (NOT ${pybind11_ForceBundled})
+    if (NOT pybind11_ForceBundled)
         find_package(pybind11 ${expectedVersion} QUIET)
         if (pybind11_FOUND)
             message(STATUS "pybind11 - using installed system version ${pybind11_VERSION}")

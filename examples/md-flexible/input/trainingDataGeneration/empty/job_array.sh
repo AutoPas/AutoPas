@@ -30,7 +30,6 @@ module load intel-oneapi-mpi
 
 # Generate arrays of parameters indexed by job ID
 declare -a thread_count
-declare -a rebuild_frequency
 declare -a verlet_skin
 index=0
 
@@ -38,10 +37,9 @@ for thread_count_iter in 06 12 18 24 30 36
 do
     for verlet_skin_iter in 0.1 0.2 0.3 0.4 0.5
     do
-	thread_count[$index]="$thread_count_iter"
-	rebuild_frequency[$index]="$rebuild_frequency_iter"
-	verlet_skin[$index]="$verlet_skin_iter"
-	index=$((index + 1))
+        thread_count[$index]="$thread_count_iter"
+        verlet_skin[$index]="$verlet_skin_iter"
+        index=$((index + 1))
     done
 done
     

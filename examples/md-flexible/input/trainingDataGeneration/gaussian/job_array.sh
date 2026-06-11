@@ -37,13 +37,13 @@ for noClustersIter in 010 020 040 080 160
 do
     for thread_count_iter in 06 12 18 24 30 36
     do
-	for verlet_skin_iter in 0.1 0.2 0.3 0.4 0.5
-	do	
-	    noClusters[$index]="$noClustersIter"
-	    thread_count[$index]="$thread_count_iter"
-	    verlet_skin[$index]="$verlet_skin_iter"
-	    index=$((index + 1))
-	done
+        for verlet_skin_iter in 0.1 0.2 0.3 0.4 0.5
+        do
+            noClusters[$index]="$noClustersIter"
+            thread_count[$index]="$thread_count_iter"
+            verlet_skin[$index]="$verlet_skin_iter"
+            index=$((index + 1))
+        done
     done
 done
     

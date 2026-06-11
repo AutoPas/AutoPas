@@ -545,7 +545,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.modelFilename.description;
         config.modelFilename.value = node[key].as<std::string>();
         if (config.modelFilename.value.empty()) {
-          throw std::runtime_error("Parsed rule filename is empty!");
+          throw std::runtime_error("Parsed model filename is empty!");
         }
       } else if (key == config.confidenceThreshold.name) {
         expected = "Floating-point Value between 0 and 1";

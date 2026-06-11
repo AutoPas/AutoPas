@@ -39,22 +39,21 @@ for radius_iter in 05 10 15 20
 do
     for spacing_iter in 0.5 1.0 1.5 2.0
     do
-	
-	for thread_count_iter in 06 12 18 24 30 36
-	do
-	    for rebuild_frequency_iter in 10
-	    do
-		for verlet_skin_iter in 0.1 0.2 0.3 0.4 0.5
-		do
-		    radius[$index]="$radius_iter"
-		    spacing[$index]="$spacing_iter"
-		    thread_count[$index]="$thread_count_iter"
-		    rebuild_frequency[$index]="$rebuild_frequency_iter"
-		    verlet_skin[$index]="$verlet_skin_iter"
-		    index=$((index + 1))
-		done
-	    done
-	done
+        for thread_count_iter in 06 12 18 24 30 36
+        do
+            for rebuild_frequency_iter in 10
+            do
+                for verlet_skin_iter in 0.1 0.2 0.3 0.4 0.5
+                do
+                    radius[$index]="$radius_iter"
+                    spacing[$index]="$spacing_iter"
+                    thread_count[$index]="$thread_count_iter"
+                    rebuild_frequency[$index]="$rebuild_frequency_iter"
+                    verlet_skin[$index]="$verlet_skin_iter"
+                    index=$((index + 1))
+                done
+            done
+        done
     done
 done
     

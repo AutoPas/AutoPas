@@ -6,40 +6,34 @@ import os
 # simulation domain with different thread counts and skin sizes. For each scenario,
 # 5 repeat runs are made.
 
-inputTemplateFile = open("template_input.yaml", "r")
+with open("template_input.yaml", "r") as inputTemplateFile:
+    inputTemplate = Template(inputTemplateFile.read())
 
-inputTemplate = Template(inputTemplateFile.read())
+    verlet_skins = np.array([0.1, 0.2, 0.3, 0.4, 0.5])
+    thread_counts = np.array([6, 12, 18, 24, 30, 36])
 
-verlet_skins = np.array([0.1, 0.2, 0.3, 0.4, 0.5])
-thread_counts = np.array([6, 12, 18, 24, 30, 36])
+    # Create directory structure:
+    # <thread_count>/<verlet_skin>/<run>
+    for thread_count in thread_counts:
+        os.mkdir(f"./{thread_count:0>2}_threads")
+        os.chdir(f'./{thread_count:0>2}_threads')
+        for verlet_skin in verlet_skins:
+            os.mkdir(f"./skin_{verlet_skin}")
+            os.chdir(f'./skin_{verlet_skin}')
 
-# Create directory structure:
-# <thread_count>/<verlet_skin>/<run>
-for thread_count in thread_counts:
-    os.mkdir(f"./{thread_count:0>2}_threads")
-    os.chdir(f'./{thread_count:0>2}_threads')
-    for verlet_skin in verlet_skins:
-        os.mkdir(f"./skin_{verlet_skin}")
-        os.chdir(f'./skin_{verlet_skin}')
-        
-        for run in range(5):
-            os.mkdir(f"./run_{run:0>1}")
-            os.chdir(f"./run_{run:0>1}")
-                
-            dictionary = {
-                'skin' : verlet_skin,
-            }
+            for run in range(5):
+                os.mkdir(f"./run_{run:0>1}")
+                os.chdir(f"./run_{run:0>1}")
 
-                
-                        
-            f = open("./input.yaml", "w")
-                    
-            f.write(inputTemplate.substitute(dictionary))
-                    
-            f.close()
-                           
-            os.chdir('..')
+                dictionary = {
+                    'skin' : verlet_skin,
+                }
+
+                with open("./input.yaml", "w") as f:
+                    f.write(inputTemplate.substitute(dictionary))
+
+                os.chdir('..')
+            os.chdir("..")
         os.chdir("..")
-    os.chdir("..")
     
     

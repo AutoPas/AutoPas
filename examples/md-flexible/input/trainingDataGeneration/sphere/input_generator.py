@@ -6,9 +6,8 @@ import os
 # simulation domain empty except for a sphere of particles, with different
 # thread counts and skin sizes. For each scenario, 5 repeat runs are made.
 
-inputTemplateFile = open("template_input.yaml", "r")
-
-inputTemplate = Template(inputTemplateFile.read())
+with open("template_input.yaml", "r") as inputTemplateFile:
+    inputTemplate = Template(inputTemplateFile.read())
 
 verlet_skins = np.array([0.1, 0.2, 0.3, 0.4, 0.5])
 thread_counts = np.array([6, 12, 18, 24, 30, 36])
@@ -42,13 +41,8 @@ for radius in radii:
                         'spacing'         : spacing
                     }
 
-                
-                        
-                    f = open("./input.yaml", "w")
-                    
-                    f.write(inputTemplate.substitute(dictionary))
-                    
-                    f.close()
+                    with open("./input.yaml", "w") as f:
+                        f.write(inputTemplate.substitute(dictionary))
 
                     os.chdir('..')
              

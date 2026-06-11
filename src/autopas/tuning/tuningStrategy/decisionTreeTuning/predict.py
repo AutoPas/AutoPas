@@ -39,7 +39,7 @@ class DecisionTreeTuning:
             try:
                 self.model = combined_data['pairwise_model']
                 self.label_encoder = combined_data['pairwise_label_encoder']
-            except:
+            except KeyError:
                 raise Exception("The Pairwise Model or Label Encoder was not found.")
 
 
@@ -47,7 +47,7 @@ class DecisionTreeTuning:
             try:
                 self.model = combined_data['triwise_model']
                 self.label_encoder = combined_data['triwise_label_encoder']
-            except:
+            except KeyError:
                 raise Exception("The Triwise Model or Label Encoder was not found.")
 
         else:
@@ -55,7 +55,7 @@ class DecisionTreeTuning:
 
         try:
             self.features = combined_data['features']
-        except:
+        except KeyError:
             raise Exception("The Features were not found.")
 
         # Check that the model exists (e.g. that a triwise model was actually trained)

@@ -38,22 +38,21 @@ for noParticlesIter in 012800 025600 051200 102400 204800
 do
     for thread_count_iter in 06 12 18 24 30 36
     do
-	for rebuild_frequency_iter in 10
-	do
-	    for verlet_skin_iter in 0.1 0.2 0.3 0.4 0.5
-	    do
-		for run_iter in `seq 0 4`
-		do
-		    
-		    noParticles[$index]="$noParticlesIter"
-		    thread_count[$index]="$thread_count_iter"
-		    rebuild_frequency[$index]="$rebuild_frequency_iter"
-		    verlet_skin[$index]="$verlet_skin_iter"
-		    run[$index]="$run_iter"
-		    index=$((index + 1))
-		done
-	    done
-	done
+        for rebuild_frequency_iter in 10
+        do
+            for verlet_skin_iter in 0.1 0.2 0.3 0.4 0.5
+            do
+                for run_iter in `seq 0 4`
+                do
+                    noParticles[$index]="$noParticlesIter"
+                    thread_count[$index]="$thread_count_iter"
+                    rebuild_frequency[$index]="$rebuild_frequency_iter"
+                    verlet_skin[$index]="$verlet_skin_iter"
+                    run[$index]="$run_iter"
+                    index=$((index + 1))
+                done
+            done
+        done
     done
 done
     
