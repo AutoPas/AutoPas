@@ -56,7 +56,7 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell_T, Functo
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  LCC08CellHandler<ParticleCell_T, Functor_T, internal::CellFunctor<ParticleCell_T, Functor_T>> _cellHandler;
+  LCC08CellHandler<ParticleCell_T, Functor_T> _cellHandler;
 };
 
 template <class ParticleCell_T, class Functor_T>

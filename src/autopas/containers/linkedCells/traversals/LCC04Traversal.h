@@ -81,7 +81,7 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, publ
 
   std::array<std::array<long, 3>, 32> _cellOffsets32Pack;
 
-  LCC08CellHandler<ParticleCell_T, Functor_T, internal::CellFunctor<ParticleCell_T, Functor_T>> _cellHandler;
+  LCC08CellHandler<ParticleCell_T, Functor_T> _cellHandler;
 
   std::array<long, 3> _end;
 };

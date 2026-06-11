@@ -409,18 +409,18 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
     }
     // VerletLists
     case TraversalOption::vl_list_iteration: {
-      traversal = std::make_unique<VLListIterationTraversal<ParticleCell_T, TriwiseFunctor_T>>(&triwiseFunctor,
+      traversal = std::make_unique<VLListIterationTraversal<ParticleCell_T, TriwiseFunctor_T>>(triwiseFunctor,
                                                                                                dataLayout, useNewton3);
       break;
     }
     case TraversalOption::vl_list_intersection: {
       traversal = std::make_unique<VLListIntersectionTraversal<ParticleCell_T, TriwiseFunctor_T>>(
-          &triwiseFunctor, dataLayout, useNewton3);
+          triwiseFunctor, dataLayout, useNewton3);
       break;
     }
     case TraversalOption::vl_pair_list_iteration: {
       traversal = std::make_unique<VLPairListIterationTraversal<ParticleCell_T, TriwiseFunctor_T>>(
-          &triwiseFunctor, dataLayout, useNewton3);
+          triwiseFunctor, dataLayout, useNewton3);
       break;
     }
     default: {

@@ -34,7 +34,7 @@ class VLListIntersectionTraversal : public TraversalInterface, public VLTraversa
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLListIntersectionTraversal(TriwiseFunctor_T *triwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit VLListIntersectionTraversal(TriwiseFunctor_T &triwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _functor(triwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_intersection; }
@@ -124,7 +124,7 @@ class VLListIntersectionTraversal : public TraversalInterface, public VLTraversa
 
             for (const size_t neighbor2Index : intersectingNeighbors) {
               ParticleType &neighbor2 = *particles[neighbor2Index];
-              _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
+              _functor.AoSFunctor(particle, neighbor1, neighbor2, false);
             }
           }
         }
@@ -153,7 +153,7 @@ class VLListIntersectionTraversal : public TraversalInterface, public VLTraversa
   /**
    * Functor for Traversal
    */
-  TriwiseFunctor_T *_functor;
+  TriwiseFunctor_T &_functor;
 
   /**
    * SoA buffer of verlet lists.

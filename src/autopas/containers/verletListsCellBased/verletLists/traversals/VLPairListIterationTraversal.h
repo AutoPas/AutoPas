@@ -30,7 +30,7 @@ class VLPairListIterationTraversal : public TraversalInterface, public VLTravers
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLPairListIterationTraversal(TriwiseFunctor_T *triwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit VLPairListIterationTraversal(TriwiseFunctor_T &triwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _functor(triwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_pair_list_iteration; }
@@ -64,7 +64,7 @@ class VLPairListIterationTraversal : public TraversalInterface, public VLTravers
       utils::ExceptionHandler::exception(
           "VLPairListIterationTraversal::traverseParticles(): Functor {} is not of type TriwiseFunctor. The "
           "VLPairListIterationTraversal is implemented only for triwise interactions.",
-          _functor->getName());
+          _functor.getName());
     }
   }
 
@@ -87,7 +87,7 @@ class VLPairListIterationTraversal : public TraversalInterface, public VLTravers
 
               for (auto &neighborPairPtr : bucketIter->second) {
                 auto &[neighborPtr1, neighborPtr2] = neighborPairPtr;
-                _functor->AoSFunctor(particle, *neighborPtr1, *neighborPtr2, false);
+                _functor.AoSFunctor(particle, *neighborPtr1, *neighborPtr2, false);
               }
             }
           }
@@ -116,7 +116,7 @@ class VLPairListIterationTraversal : public TraversalInterface, public VLTravers
   /**
    * Functor for Traversal
    */
-  TriwiseFunctor_T *_functor;
+  TriwiseFunctor_T &_functor;
 };
 
 }  // namespace autopas

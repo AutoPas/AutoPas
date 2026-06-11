@@ -196,6 +196,8 @@ TEST_F(TuningManagerTest, testMultipleTunersSameContainersRebuildLogic) {
     EXPECT_CALL(triwiseFunctor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
     EXPECT_CALL(pairwiseFunctor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
     EXPECT_CALL(triwiseFunctor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+    EXPECT_CALL(pairwiseFunctor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+    EXPECT_CALL(triwiseFunctor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
   };
   setupFunctorMocks();
 
@@ -280,6 +282,8 @@ TEST_F(TuningManagerTest, testMultipleTunersDifferentContainersRebuildLogic) {
     EXPECT_CALL(triwiseFunctor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
     EXPECT_CALL(pairwiseFunctor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
     EXPECT_CALL(triwiseFunctor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+    EXPECT_CALL(pairwiseFunctor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+    EXPECT_CALL(triwiseFunctor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
   };
   setupFunctorMocks();
 

@@ -180,7 +180,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
 
       auto traversal =
           LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::CRSNeighborCounterFunctor,
-                         traverseHaloCells>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &counter,
+                         traverseHaloCells>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), counter,
                                             interactionLength, this->_linkedCells.getCellBlock().getCellLength(),
                                             dataLayout, useNewton3);
       this->_linkedCells.computeInteractions(&traversal);
@@ -199,7 +199,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
 
       auto traversal = LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::CRSNeighborFillFunctor,
                                       traverseHaloCells>(
-          this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &filler, interactionLength,
+          this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), filler, interactionLength,
           this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
       this->_linkedCells.computeInteractions(&traversal);
     }
