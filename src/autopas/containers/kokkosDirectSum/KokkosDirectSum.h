@@ -358,6 +358,10 @@ template <class Particle_T>
                 convertTo(targetLayout);
               }
 
+              // convertTo() moves the data into the target layout's buffer, but does not update the storage's internal layout state, so we need to set it here to make sure the correct views are returned.
+              _ownedParticles.setLayout(targetLayout);
+              _haloParticles.setLayout(targetLayout);
+
               kokkosDsTraversal->setOwnedToTraverse(_ownedParticles);
               kokkosDsTraversal->setHaloToTraverse(_haloParticles);
             }
