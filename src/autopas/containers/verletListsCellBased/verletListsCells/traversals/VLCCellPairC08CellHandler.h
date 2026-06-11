@@ -28,7 +28,7 @@ class VLCCellPairC08CellHandler {
   VLCCellPairC08CellHandler(const std::array<unsigned long, 3> &dims, double interactionLength,
                             const std::array<double, 3> &cellLength)
       : _cellPairOffsets{LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<
-            LCC08CellHandlerUtility::C08OffsetMode::c08CellPairs>(dims, cellLength, interactionLength)},
+            LCC08CellHandlerUtility::C08OffsetMode::noSorting>(dims, cellLength, interactionLength)},
         _dims{dims} {}
 
   /**
