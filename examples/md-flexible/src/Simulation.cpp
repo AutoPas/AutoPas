@@ -302,8 +302,10 @@ void Simulation::run() {
         if (trackedIDs.count(particle->getID()) == 0) {
           continue;
         }
+        const auto &r = particle->getR();
         const auto &f = particle->getF();
-        std::cout << "Particle " << particle->getID() << " force: [" << f[0] << ", " << f[1] << ", " << f[2] << "]\n";
+        std::cout << "Particle " << particle->getID() << " pos: [" << r[0] << ", " << r[1] << ", " << r[2] << "]"
+                  << " force: [" << f[0] << ", " << f[1] << ", " << f[2] << "]\n";
       }
     }
 
