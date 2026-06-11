@@ -79,32 +79,15 @@ class CellFunctor {
   void setSortingThreshold(size_t sortingThreshold);
 
  private:
-  static constexpr std::array<double, 3> zeroDirection{0., 0., 0.};
-
-  /**
-   * Returns true if the given cell is empty for the current _dataLayout.
-   * @param cell
-   * @return whether the given cell is empty.
-   */
-  [[nodiscard]] bool cellIsEmptyForCurrentLayout(const ParticleCell_T &cell) const {
-    switch (_dataLayout) {
-      case DataLayoutOption::aos:
-        return cell.isEmpty();
-      case DataLayoutOption::soa:
-        return cell._particleSoABuffer.size() == 0;
-    }
-    utils::ExceptionHandler::exception("CellFunctor::cellIsEmptyForCurrentLayout(): Unsupported data layout.");
-    return false;
-  }
-
   /**
    *
    * @param particleCount
    * @param sortingDirection
    * @return
    */
-  [[nodiscard]] bool shouldUseSorting(std::size_t particleCount, const std::array<double, 3> &sortingDirection) const {
-    return particleCount >= _sortingThreshold and sortingDirection != zeroDirection;
+  [[nodiscard]] bool shouldUseSorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
+    return particleCount >= _sortingThreshold and
+           (sortingDirection[0] != 0.0 and sortingDirection[1] != 0.0 and sortingDirection[2] != 0.0);
   }
 
   /**
@@ -161,10 +144,6 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSortingTh
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(ParticleCell_T &cell) {
-  if (cellIsEmptyForCurrentLayout(cell)) {
-    return;
-  }
-
   // avoid force calculations if the cell contains only halo particles or if the cell is empty (=dummy)
   const bool cellHasOwnedParticles = toInt64(cell.getPossibleParticleOwnerships() & OwnershipState::owned);
   if (not cellHasOwnedParticles) {
@@ -173,6 +152,9 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(
 
   switch (_dataLayout) {
     case DataLayoutOption::aos:
+      if (cell.isEmpty()) {
+        return;
+      }
       if (_useNewton3) {
         processCellAoSImpl<true>(cell);
       } else {
@@ -180,6 +162,9 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(
       }
       break;
     case DataLayoutOption::soa:
+      if (cell._particleSoABuffer.size() == 0) {
+        return;
+      }
       _functor.SoAFunctorSingle(cell._particleSoABuffer, _useNewton3);
       break;
   }
@@ -188,10 +173,6 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPair(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
-  if (cellIsEmptyForCurrentLayout(cell1) or cellIsEmptyForCurrentLayout(cell2)) {
-    return;
-  }
-
   const bool cell1HasOwnedParticles = toInt64(cell1.getPossibleParticleOwnerships() & OwnershipState::owned);
   const bool cell2HasOwnedParticles = toInt64(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
 
@@ -210,6 +191,9 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 
   switch (_dataLayout) {
     case DataLayoutOption::aos:
+      if (cell1.isEmpty() or cell2.isEmpty()) {
+        return;
+      }
       if (_useNewton3) {
         processCellPairAoSImpl<true>(cell1, cell2, sortingDirection);
       } else {
@@ -217,6 +201,9 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
       }
       break;
     case DataLayoutOption::soa:
+      if (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0) {
+        return;
+      }
       if (_useNewton3) {
         processCellPairSoAImpl<true>(cell1, cell2);
       } else {
@@ -230,15 +217,15 @@ template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 template <bool newton3>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellAoSImpl(ParticleCell_T &cell) {
   // helper function
-  const auto interactParticles = [this](auto &p1, auto &p2) {
+  const auto interactParticles = [&f = this->_functor](auto &p1, auto &p2) {
     if constexpr (newton3) {
-      _functor.AoSFunctor(p1, p2, true);
+      f.AoSFunctor(p1, p2, true);
     } else {
       if (not p1.isHalo()) {
-        _functor.AoSFunctor(p1, p2, false);
+        f.AoSFunctor(p1, p2, false);
       }
       if (not p2.isHalo()) {
-        _functor.AoSFunctor(p2, p1, false);
+        f.AoSFunctor(p2, p1, false);
       }
     }
   };
@@ -272,14 +259,14 @@ template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 template <bool newton3>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairAoSImpl(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
-  const auto interactParticles = [this](auto &p1, auto &p2) {
+  const auto interactParticles = [&f = this->_functor](auto &p1, auto &p2) {
     if constexpr (newton3) {
-      _functor.AoSFunctor(p1, p2, true);
+      f.AoSFunctor(p1, p2, true);
     } else {
-      _functor.AoSFunctor(p1, p2, false);
+      f.AoSFunctor(p1, p2, false);
 
       if constexpr (bidirectional) {
-        _functor.AoSFunctor(p2, p1, false);
+        f.AoSFunctor(p2, p1, false);
       }
     }
   };
