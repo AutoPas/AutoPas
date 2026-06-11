@@ -194,3 +194,59 @@ To update the grammar, simply run [`generateRuleLanguage.sh`](/src/autopas/tunin
 To update the parser, the easiest way to do this is via the CLion plugin for Antlr4. Just right-click the g4 file -> 'Configure ANTLR' (Output directory, input grammar file, namespace `AutopasGeneratedRuleSyntax`, language) and then right click the g4 again -> 'Generate ANTLR Recognizer'. Don't forget to apply clang-format afterward.
 
 **WARNING** The CLion plugin and Antlr version must match!. For example for Antlr version 4.9.1 the plugin version 1.16 is needed, otherwise incompatible parser code is generated. See [Antlr plugin's GitHub page](https://github.com/antlr/intellij-plugin-v4/releases) for what is compatible and get the plugin's binary from the [jetbrains plugin webpage](https://plugins.jetbrains.com/plugin/7358-antlr-v4/versions).
+
+## Dependencies
+
+* Dependencies are kept in [`libs/`](/libs) as **git subtrees** of their upstream repositories. 
+* Each subtree was added with `--squash`, so only a snapshot of that repository is kept, without a full git history. 
+* CMake modules under [`cmake/modules/`](/cmake/modules) point `FetchContent` / `ExternalProject_Add` at the in-tree path with `SOURCE_DIR`, so no download happens at configure time. This is used primarily to aid with HPC systems that do not allow downloading dependencies at compile-time.
+* Some subtrees carry one or more **follow-up commits** on top of the squashed import. These are normal commits in our history and can re-applied via 3-way merge when the subtree is next pulled.
+* These subtrees are marked `linguist-vendored` in [`.gitattributes`](/.gitattributes) so GitHub excludes them from language statistics and collapses them in PR diff views.
+
+### Overview of dependencies
+
+| Dep | Path | Upstream | Pinned ref | Post-import commits |
+| --- | --- | --- | --- | --- |
+| spdlog | [`libs/spdlog`](/libs/spdlog) | https://github.com/gabime/spdlog | tag `v1.17.0` | — |
+| eigen | [`libs/eigen`](/libs/eigen) | https://gitlab.com/libeigen/eigen | tag `3.4.0` | — |
+| pmt | [`libs/pmt`](/libs/pmt) | https://git.astron.nl/RD/pmt | commit `7a56fa3a` | AutoPas-specific patch |
+| highway | [`libs/highway`](/libs/highway) | https://github.com/google/highway | tag `1.3.0` | — |
+| googletest | [`libs/googletest`](/libs/googletest) | https://github.com/google/googletest | tag `v1.15.2` | — |
+| yaml-cpp | [`libs/yaml-cpp`](/libs/yaml-cpp) | https://github.com/jbeder/yaml-cpp | commit `2f86d137` | — |
+| antlr4 | [`libs/antlr4`](/libs/antlr4) | https://github.com/antlr/antlr4 | tag `4.13.2` | non-Cpp runtimes pruned |
+| ALL | [`libs/ALL`](/libs/ALL) | https://gitlab.jsc.fz-juelich.de/SLMS/loadbalancing | tag `v0.9.3` | — |
+| harmony | [`libs/harmony`](/libs/harmony) | https://github.com/ActiveHarmony/harmony | branch `hotfix-v4.6.0` | `example/` pruned |
+
+### Updating a dependency
+
+Update with
+
+```bash
+git subtree pull --prefix=libs/<name> <upstream-url> <new-ref> --squash
+```
+
+E.g.
+```bash
+git subtree pull --prefix=libs/spdlog https://github.com/gabime/spdlog v1.18.0 --squash
+```
+
+For dependencies with post-import commits, git performs a 3-way merge - resolve like any normal merge. 
+
+Update the above table when you do this.
+
+### Adding a new dependency
+
+* Add the subtree at a pinned reference:
+   ```bash
+   git subtree add --prefix=libs/<name> <upstream-url> <ref> --squash
+   ```
+  
+* (Optional) Prune unused upstream files as a follow-up commit if the upstream ships much more than AutoPas needs. Keep the prune as a single, self-contained commit so future `git subtree pull --squash` can reapply it via 3-way merge.
+* (Optional) Apply any AutoPas-specific patches as a follow-up commit, for the same 3-way-merge reason. Keep the patch minimal to reduce future merge conflicts.
+* If you do either of the above, **point reviewers to these commits in the PR**. Otherwise, reviewers will not see them.
+* Add a CMake module under `cmake/modules/autopas_<name>.cmake`. Prefer the following:
+    * For CMake-based deps, prefer `FetchContent` with `SOURCE_DIR ${AUTOPAS_SOURCE_DIR}/libs/<name>`. See [`cmake/modules/autopas_spdlog.cmake`](/cmake/modules/autopas_spdlog.cmake).
+    * For Makefile-based or otherwise non-CMake deps, use `ExternalProject_Add` with `SOURCE_DIR` + `DOWNLOAD_COMMAND ""`. If the upstream is a `BUILD_IN_SOURCE` Makefile project, copy the source into the build tree first (see [`cmake/modules/autopas_harmony.cmake`](/cmake/modules/autopas_harmony.cmake)) so the in-source build doesn't pollute `libs/<name>/`. 
+* Include the new CMake module** from [`cmake/modules/AutoPasCMakeOptions.cmake`](/cmake/modules/AutoPasCMakeOptions.cmake) (or whichever options module is appropriate).
+* Mark the new path `linguist-vendored` in [`.gitattributes`](/.gitattributes) so it stays out of PR diffs and language stats.
+* Add a row to the dependency table above with the upstream URL, pinned ref, and a note about any post-import commits.

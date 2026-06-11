@@ -17,16 +17,20 @@ find_program(MAKE_EXE NAMES gmake nmake make)
 # other cmake projects as it allows the export of their cmake targets. As harmony is a Makefile
 # project, FetchContent is not useful here.
 
-# Extract and build harmony
+# Copy and build harmony.
+# Harmony has a makefile-based BUILD_IN_SOURCE build that produces bin/, include/, libexec/
+# inside the source directory. To keep libs/harmony (the git subtree) clean, we copy the source
+# into the build tree first and build there.
 ExternalProject_Add(
     harmony_bundled
-    URL ${AUTOPAS_SOURCE_DIR}/libs/harmony.zip
-    # Hash is with deleted `example/` folder and removed `example` target from the local Makefile
-    URL_HASH MD5=6249e1899005238c608cd8a0c443fbba 
-    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/harmony/include/lib/libharmony.a
+    # libs/harmony is a git subtree at upstream branch hotfix-v4.6.0 (github.com/ActiveHarmony/harmony)
+    # with example/ pruned as a follow-up commit.
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/harmony
-    # since we only unpack a header lib src == include
     SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/harmony/include
+    DOWNLOAD_COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${AUTOPAS_SOURCE_DIR}/libs/harmony
+        ${CMAKE_CURRENT_BINARY_DIR}/harmony/include
+    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/harmony/include/lib/libharmony.a
     # tell cmake to run make inside the source folder and suppress all warnings
     BUILD_IN_SOURCE TRUE
     CONFIGURE_COMMAND ""

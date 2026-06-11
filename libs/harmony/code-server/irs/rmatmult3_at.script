@@ -1,0 +1,30 @@
+
+    source: rmatmult3_at.spd
+    procedure: 0
+    loop: 0
+
+    TI=71
+    TJ=15
+    TK=54
+    UI=11
+    UJ=3
+
+
+    permute([1,2,3])
+    #print
+    known(kmax>=3)
+    known(imax>=3)
+    known(jmax>=3)
+    distribute([0,1],1)
+    #tile(0,2,TJ)
+    #tile(0,2,TI)
+    #tile(0,5,TK)
+    print
+    #datacopy(0,3,a,false,1)
+    #datacopy(0,4,b)
+    #unroll(0,4,4) 
+    #unroll(0,5,1)
+    #unroll(0,6,4)
+   
+    print
+    

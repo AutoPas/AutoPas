@@ -1,0 +1,4 @@
+packages:
+  all:
+    target: ["x86_64"]
+    compiler: [gcc@8]
