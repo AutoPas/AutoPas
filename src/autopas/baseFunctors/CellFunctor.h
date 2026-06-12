@@ -87,7 +87,7 @@ class CellFunctor {
    */
   [[nodiscard]] bool shouldUseSorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
     return particleCount >= _sortingThreshold and
-           (sortingDirection[0] != 0.0 and sortingDirection[1] != 0.0 and sortingDirection[2] != 0.0);
+           (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
   }
 
   /**
