@@ -286,13 +286,14 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
 
       for (auto cellIter2 = std::next(cellIter1); cellIter2 != cellSorted._particles.end(); ++cellIter2) {
         auto &[p2Projection, p2Ptr] = *cellIter2;
-        if (p2Projection - p1Projection > _sortingCutoff) {
+        if (std::abs(p2Projection - p1Projection) > _sortingCutoff) {
           break;
         }
 
         for (auto cellIter3 = std::next(cellIter2); cellIter3 != cellSorted._particles.end(); ++cellIter3) {
           auto &[p3Projection, p3Ptr] = *cellIter3;
-          if (p3Projection - p1Projection > _sortingCutoff or p3Projection - p2Projection > _sortingCutoff) {
+          if (std::abs(p3Projection - p1Projection) > _sortingCutoff or
+              std::abs(p3Projection - p2Projection) > _sortingCutoff) {
             break;
           }
           interactParticles(*p1Ptr, *p2Ptr, *p3Ptr);
@@ -344,11 +345,12 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
       // Particle 2 in cell1, particle 3 in cell2
       for (auto cellIter2 = std::next(cellIter1); cellIter2 != cell1Sorted._particles.end(); ++cellIter2) {
         auto &[p2Projection, p2Ptr] = *cellIter2;
-        if (p2Projection - p1Projection > _sortingCutoff) {
+        if (std::abs(p2Projection - p1Projection) > _sortingCutoff) {
           break;
         }
         for (auto &[p3Projection, p3Ptr] : cell2Sorted._particles) {
-          if (p3Projection - p2Projection > _sortingCutoff or p3Projection - p1Projection > _sortingCutoff) {
+          if (std::abs(p3Projection - p2Projection) > _sortingCutoff or
+              std::abs(p3Projection - p1Projection) > _sortingCutoff) {
             break;
           }
           interactParticles(*p1Ptr, *p2Ptr, *p3Ptr, true);
@@ -358,12 +360,13 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
       // Particle 2 and 3 in cell 2
       for (auto cellIter2 = cell2Sorted._particles.begin(); cellIter2 != cell2Sorted._particles.end(); ++cellIter2) {
         auto &[p2Projection, p2Ptr] = *cellIter2;
-        if (p2Projection - p1Projection > _sortingCutoff) {
+        if (std::abs(p2Projection - p1Projection) > _sortingCutoff) {
           break;
         }
         for (auto cellIter3 = std::next(cellIter2); cellIter3 != cell2Sorted._particles.end(); ++cellIter3) {
           auto &[p3Projection, p3Ptr] = *cellIter3;
-          if (p3Projection - p2Projection > _sortingCutoff or p3Projection - p1Projection > _sortingCutoff) {
+          if (std::abs(p3Projection - p2Projection) > _sortingCutoff or
+              std::abs(p3Projection - p1Projection) > _sortingCutoff) {
             break;
           }
           interactParticles(*p1Ptr, *p2Ptr, *p3Ptr, false);
@@ -415,8 +418,7 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
 
     for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
       for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
-        // p2Projection > p1Projection guaranteed by sorting direction
-        if (p2Projection - p1Projection > _sortingCutoff) {
+        if (std::abs(p2Projection - p1Projection) > _sortingCutoff) {
           break;
         }
         for (auto &p3 : cell3) {
