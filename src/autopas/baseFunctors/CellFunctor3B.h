@@ -109,27 +109,22 @@ class CellFunctor3B {
    * - If _useNewton3 is true: The aos functor will be applied once for each triplet (only i,j,k), passing newton3=true.
    * - If _useNewton3 is false: The aos functor will be applied three times for each triplet (i,j,k and j,i,k and
    * k,i,j), passing newton3=false.
-   * @tparam newton3
    * @param cell
    */
-  template <bool newton3>
   void processCellAoSImpl(ParticleCell_T &cell);
 
   /**
    * Applies the functor to all particle triplets between cell1 and cell2
    * exploiting newtons third law of motion.
-   * @tparam newton3
    * @param cell1
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
-  template <bool newton3>
   void processCellPairAoSImpl(ParticleCell_T &cell1, ParticleCell_T &cell2,
                               const std::array<double, 3> &sortingDirection);
 
   /**
    * Applies the functor to all particle triples between cell1, cell2 and cell3.
-   * @tparam newton3 Whether to use Newton's third law of motion.
    * @param cell1
    * @param cell2
    * @param cell3
@@ -138,27 +133,22 @@ class CellFunctor3B {
    * @warning If sorting is used, sortingDirection should correspond to the pairwise sorting direction between cell1 and
    * cell2.
    */
-  template <bool newton3>
   void processCellTripleAoSImpl(ParticleCell_T &cell1, ParticleCell_T &cell2, ParticleCell_T &cell3,
                                 const std::array<double, 3> &sortingDirection);
 
   /**
    * Applies the SoA functor to all particle triplets between cell1 and cell2.
-   * @tparam newton3 Whether to use Newton's third law of motion.
    * @param cell1
    * @param cell2
    */
-  template <bool newton3>
   void processCellPairSoAImpl(ParticleCell_T &cell1, ParticleCell_T &cell2);
 
   /**
    * Applies the SoA functor to all particle triplets between cell1, cell2 and cell3.
-   * @tparam newton3 Whether to use Newton's third law of motion.
    * @param cell1
    * @param cell2
    * @param cell3
    */
-  template <bool newton3>
   void processCellTripleSoAImpl(ParticleCell_T &cell1, ParticleCell_T &cell2, ParticleCell_T &cell3);
 
   ParticleFunctor_T &_functor;
@@ -195,11 +185,7 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
       if (cell.isEmpty()) {
         return;
       }
-      if (_useNewton3) {
-        processCellAoSImpl<true>(cell);
-      } else {
-        processCellAoSImpl<false>(cell);
-      }
+      processCellAoSImpl(cell);
       break;
     case DataLayoutOption::soa:
       if (cell._particleSoABuffer.size() == 0) {
@@ -239,21 +225,13 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
       if (cell1.isEmpty() or cell2.isEmpty()) {
         return;
       }
-      if (_useNewton3) {
-        processCellPairAoSImpl<true>(cell1, cell2, sortingDirection);
-      } else {
-        processCellPairAoSImpl<false>(cell1, cell2, sortingDirection);
-      }
+      processCellPairAoSImpl(cell1, cell2, sortingDirection);
       break;
     case DataLayoutOption::soa:
       if (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0) {
         return;
       }
-      if (_useNewton3) {
-        processCellPairSoAImpl<true>(cell1, cell2);
-      } else {
-        processCellPairSoAImpl<false>(cell1, cell2);
-      }
+      processCellPairSoAImpl(cell1, cell2);
       break;
   }
 }
@@ -285,32 +263,23 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
       if (cell1.isEmpty() or cell2.isEmpty() or cell3.isEmpty()) {
         return;
       }
-      if (_useNewton3) {
-        processCellTripleAoSImpl<true>(cell1, cell2, cell3, sortingDirection);
-      } else {
-        processCellTripleAoSImpl<false>(cell1, cell2, cell3, sortingDirection);
-      }
+      processCellTripleAoSImpl(cell1, cell2, cell3, sortingDirection);
       break;
     case DataLayoutOption::soa:
       if (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0 or
           cell3._particleSoABuffer.size() == 0) {
         return;
       }
-      if (_useNewton3) {
-        processCellTripleSoAImpl<true>(cell1, cell2, cell3);
-      } else {
-        processCellTripleSoAImpl<false>(cell1, cell2, cell3);
-      }
+      processCellTripleSoAImpl(cell1, cell2, cell3);
       break;
   }
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-template <bool newton3>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellAoSImpl(ParticleCell_T &cell) {
   // helper function
-  const auto interactParticles = [&f = this->_functor](auto &p1, auto &p2, auto &p3) {
-    if constexpr (newton3) {
+  const auto interactParticles = [&f = this->_functor, n3 = this->_useNewton3](auto &p1, auto &p2, auto &p3) {
+    if (n3) {
       f.AoSFunctor(p1, p2, p3, true);
     } else {
       if (not p1.isHalo()) {
@@ -362,11 +331,11 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-template <bool newton3>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairAoSImpl(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
-  const auto interactParticles = [&f = this->_functor](auto &p1, auto &p2, auto &p3, const bool p2FromCell1) {
-    if constexpr (newton3) {
+  const auto interactParticles = [&f = this->_functor, n3 = this->_useNewton3](auto &p1, auto &p2, auto &p3,
+                                                                               const bool p2FromCell1) {
+    if (n3) {
       f.AoSFunctor(p1, p2, p3, true);
     } else {
       f.AoSFunctor(p1, p2, p3, false);
@@ -445,12 +414,11 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-template <bool newton3>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellTripleAoSImpl(
     ParticleCell_T &cell1, ParticleCell_T &cell2, ParticleCell_T &cell3,
     const std::array<double, 3> &sortingDirection) {
-  const auto interactParticles = [&f = this->_functor](auto &p1, auto &p2, auto &p3) {
-    if constexpr (newton3) {
+  const auto interactParticles = [&f = this->_functor, n3 = this->_useNewton3](auto &p1, auto &p2, auto &p3) {
+    if (n3) {
       f.AoSFunctor(p1, p2, p3, true);
     } else {
       f.AoSFunctor(p1, p2, p3, false);
@@ -489,10 +457,9 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-template <bool newton3>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoAImpl(ParticleCell_T &cell1,
                                                                                              ParticleCell_T &cell2) {
-  if constexpr (newton3) {
+  if (_useNewton3) {
     _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
   } else {
     _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
@@ -503,11 +470,10 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-template <bool newton3>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellTripleSoAImpl(ParticleCell_T &cell1,
                                                                                                ParticleCell_T &cell2,
                                                                                                ParticleCell_T &cell3) {
-  if constexpr (newton3) {
+  if (_useNewton3) {
     _functor.SoAFunctorTriple(cell1._particleSoABuffer, cell2._particleSoABuffer, cell3._particleSoABuffer, true);
   } else {
     _functor.SoAFunctorTriple(cell1._particleSoABuffer, cell2._particleSoABuffer, cell3._particleSoABuffer, false);
