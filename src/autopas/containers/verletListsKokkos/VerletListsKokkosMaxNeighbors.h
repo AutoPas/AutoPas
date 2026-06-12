@@ -18,6 +18,7 @@
 #include "autopas/utils/KokkosSoA.h"
 #include "autopas/utils/KokkosStorage.h"
 #include "traversals/VerletListsKokkosTraversalInterface.h"
+#include "autopas/utils/TimingStats.h"
 
 namespace autopas {
 
@@ -149,6 +150,8 @@ class VerletListsKokkosMaxNeighbors : public ParticleContainerInterface<Particle
             return;
         }
         spdlog::info("Rebuilding Verlet Lists with cutoff {} and skin {}", _cutoff, this->getVerletSkin());
+        Kokkos::Timer rebuildTimer;
+        const double startRebuild = rebuildTimer.seconds();
         convertToAoS();
 
         const double interactionLength = _cutoff + this->getVerletSkin();
@@ -209,6 +212,9 @@ class VerletListsKokkosMaxNeighbors : public ParticleContainerInterface<Particle
                          _maxNeighbors, grown);
             _maxNeighbors = grown;
         }
+        const double rebuildTime = rebuildTimer.seconds() - startRebuild;
+        spdlog::info("Rebuilding Verlet Lists took {} s", rebuildTime);
+        _rebuildTimingStats.addTiming(rebuildTime);
 
         _neighborListOffsets.template sync<typename DeviceSpace::execution_space>();
         _neighborListEntries.template sync<typename DeviceSpace::execution_space>();
@@ -223,7 +229,13 @@ class VerletListsKokkosMaxNeighbors : public ParticleContainerInterface<Particle
 
         // TODO: if this is the common structure, why isn't this generalized and called in a higher level of the hierarchy?
         traversal->initTraversal();
+        Kokkos::Timer traversalTimer;
+        const double startTraversal = traversalTimer.seconds();
         traversal->traverseParticles();
+        Kokkos::fence();
+        const double traversalTime = traversalTimer.seconds() - startTraversal;
+        _traversalTimingStats.addTiming(traversalTime);
+        spdlog::info("Traversal took {} s", traversalTime);
         traversal->endTraversal();
 
         finishTraversal(traversal);
@@ -641,6 +653,8 @@ class VerletListsKokkosMaxNeighbors : public ParticleContainerInterface<Particle
     // and the lists are rebuilt (detect + grow & retry). Persists across rebuilds so the cost is
     // amortized once the value has settled.
     size_t _maxNeighbors {64};
+    TimingStats _traversalTimingStats {"VerletListsKokkosMaxNeighbors::computeInteractions"};
+    TimingStats _rebuildTimingStats {"VerletListsKokkosMaxNeighbors::rebuildNeighborLists"};
 
 };
 

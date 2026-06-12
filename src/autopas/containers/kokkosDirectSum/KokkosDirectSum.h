@@ -15,6 +15,7 @@
 #include "autopas/utils/KokkosSoA.h"
 #include "autopas/utils/KokkosStorage.h"
 #include "traversals/KokkosDsFlatTraversal.h"
+#include "autopas/utils/TimingStats.h"
 
 namespace autopas {
 
@@ -159,7 +160,9 @@ template <class Particle_T>
                 // The Kokkos kernels are launched asynchronously, so fence before stopping the timer to capture the actual compute time.
                 Kokkos::fence();
                 const double traversalTime = traversalTimer.seconds() - startTraversal;
+                _traversalTimingStats.addTiming(traversalTime);
                 spdlog::info("Traversal took {} s", traversalTime);
+
                 traversal->endTraversal();
 
                 finishTraversal(traversal);
@@ -554,5 +557,6 @@ template <class Particle_T>
 
         size_t capacityHalo {0};
 
+        TimingStats _traversalTimingStats {"KokkosDirectSum::computeInteractions"};
         };
 }

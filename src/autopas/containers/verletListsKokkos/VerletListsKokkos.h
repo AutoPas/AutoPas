@@ -16,6 +16,7 @@
 #include "autopas/utils/KokkosStorage.h"
 #include "autopas/utils/logging/Logger.h"
 #include "traversals/VerletListsKokkosTraversalInterface.h"
+#include "autopas/utils/TimingStats.h"
 
 namespace autopas {
 
@@ -214,8 +215,9 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
         // is one-directional (each owned i gathers from its halo neighbors) and needs no newton3.
         buildList(_haloParticles, numberOfHalo, _haloNeighborListOffsets, _haloNeighborListEntries, false);
 
-        const double endTimeRebuild = rebuildTimer.seconds();
-        spdlog::info("Neighbor list rebuild took {} s", endTimeRebuild - startTimeRebuild);
+        const double rebuildTime = rebuildTimer.seconds()-startTimeRebuild;
+        _rebuildTimingStats.addTiming(rebuildTime);
+        spdlog::info("Rebuilding Verlet Lists took {} s", rebuildTime);
 
         _neighborListValid = true;
     }
@@ -232,6 +234,7 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
         Kokkos::fence();
         const double traversalTime = traversalTimer.seconds() - traversalStart;
         spdlog::info("Traversal took {} s", traversalTime);
+        _traversalTimingStats.addTiming(traversalTime);
         traversal->endTraversal();
 
         finishTraversal(traversal);
@@ -643,6 +646,10 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
     Kokkos::DualView<size_t*> _haloNeighborListOffsets {"vl_haloNeighborListOffsets", 0};
     Kokkos::DualView<size_t*> _haloNeighborListEntries {"vl_haloNeighborListEntries", 0};
     bool _neighborListValid {false};
+    TimingStats _rebuildTimingStats {"VerletListsKokkos::rebuildNeighborLists"};
+    TimingStats _traversalTimingStats {"VerletListsKokkos::computeInteractions"};
+
+
 
 };
 
