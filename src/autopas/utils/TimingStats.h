@@ -3,6 +3,7 @@
 
 #include <limits>
 #include <spdlog/spdlog.h>
+#include <vector>
 class TimingStats{
     public:
         TimingStats(const std::string& name) : operationName(name), sumTimings(0), minimumTiming(std::numeric_limits<double>::max()), maximumTiming(0), count(0) {}
@@ -22,13 +23,19 @@ class TimingStats{
             if (timing > maximumTiming) {
                 maximumTiming = timing;
             }
+            times.push_back(timing);
             ++count;
         }
         
         void printStats(const std::string& operationName) const {
             if (count > 0) {
                 double averageTiming = sumTimings / count;
-                spdlog::info("{} - Average: {} s, Min: {} s, Max: {} s over {} instances", operationName, averageTiming, minimumTiming, maximumTiming, count);
+                double stdev = 0;
+                for (const auto& time : times) {
+                    stdev += (time - averageTiming) * (time - averageTiming);
+                }
+                stdev = std::sqrt(stdev / count);
+                spdlog::info("{} - Average: {} s, Min: {} s, Max: {} s, StdDev: {} s over {} instances", operationName, averageTiming, minimumTiming, maximumTiming, stdev, count);
             } else {
                 spdlog::info("{} - No timings recorded.", operationName);
             }
@@ -36,6 +43,7 @@ class TimingStats{
 
     private:
         std::string operationName;
+        std::vector<double> times;
         double sumTimings;
         double minimumTiming;
         double maximumTiming;
