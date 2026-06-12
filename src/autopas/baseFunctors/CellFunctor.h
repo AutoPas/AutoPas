@@ -195,16 +195,11 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellAoSImpl(ParticleCell_T &cell) {
   // helper function
-  const auto interactParticles = [&f = this->_functor, n3 = this->_useNewton3](auto &p1, auto &p2) {
-    if (n3) {
-      f.AoSFunctor(p1, p2, true);
-    } else {
-      if (not p1.isHalo()) {
-        f.AoSFunctor(p1, p2, false);
-      }
-      if (not p2.isHalo()) {
-        f.AoSFunctor(p2, p1, false);
-      }
+  const auto interactParticles = [this](auto &p1, auto &p2) {
+    this->_functor.AoSFunctor(p1, p2, this->_useNewton3);
+
+    if (not this->_useNewton3) {
+      this->_functor.AoSFunctor(p2, p1, false);
     }
   };
 
@@ -236,14 +231,11 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairAoSImpl(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
-  const auto interactParticles = [&f = this->_functor, n3 = this->_useNewton3](auto &p1, auto &p2) {
-    if (n3) {
-      f.AoSFunctor(p1, p2, true);
-    } else {
-      f.AoSFunctor(p1, p2, false);
-
-      if constexpr (bidirectional) {
-        f.AoSFunctor(p2, p1, false);
+  const auto interactParticles = [this](auto &p1, auto &p2) {
+    this->_functor.AoSFunctor(p1, p2, this->_useNewton3);
+    if constexpr (bidirectional) {
+      if (not this->_useNewton3) {
+        this->_functor.AoSFunctor(p2, p1, false);
       }
     }
   };
@@ -276,12 +268,9 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoAImpl(ParticleCell_T &cell1,
                                                                                            ParticleCell_T &cell2) {
-  if (_useNewton3) {
-    _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
-  } else {
-    _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
-
-    if constexpr (bidirectional) {
+  _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, _useNewton3);
+  if constexpr (bidirectional) {
+    if (not _useNewton3) {
       _functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
     }
   }
