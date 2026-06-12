@@ -138,60 +138,57 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSortingTh
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(ParticleCell_T &cell) {
-  // avoid force calculations if the cell contains only halo particles or if the cell is empty (=dummy)
+  const bool isAoS = _dataLayout == DataLayoutOption::aos ? true : false;
+  const bool isSoA = _dataLayout == DataLayoutOption::soa ? true : false;
+
+  // Return early if the cell is empty.
+  if ((isSoA and cell._particleSoABuffer.size() == 0) or (isAoS and cell.isEmpty())) {
+    return;
+  }
+  // Avoid force calculations if the cell contains only halo particles or if the cell is empty (=dummy)
   const bool cellHasOwnedParticles = toInt64(cell.getPossibleParticleOwnerships() & OwnershipState::owned);
   if (not cellHasOwnedParticles) {
     return;
   }
 
-  switch (_dataLayout) {
-    case DataLayoutOption::aos:
-      if (cell.isEmpty()) {
-        return;
-      }
-      processCellAoSImpl(cell);
-      break;
-    case DataLayoutOption::soa:
-      if (cell._particleSoABuffer.size() == 0) {
-        return;
-      }
-      _functor.SoAFunctorSingle(cell._particleSoABuffer, _useNewton3);
-      break;
+  if (isAoS) {
+    processCellAoSImpl(cell);
+  } else if (isSoA) {
+    _functor.SoAFunctorSingle(cell._particleSoABuffer, _useNewton3);
   }
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPair(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
-  const bool cell1HasOwnedParticles = toInt64(cell1.getPossibleParticleOwnerships() & OwnershipState::owned);
-  const bool cell2HasOwnedParticles = toInt64(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
+  const bool isAoS = _dataLayout == DataLayoutOption::aos ? true : false;
+  const bool isSoA = _dataLayout == DataLayoutOption::soa ? true : false;
 
-  // Avoid force calculations if both cells cannot contain owned particles.
-  if (not cell1HasOwnedParticles and not cell2HasOwnedParticles) {
+  // Return early if a cell is empty.
+  if ((isSoA and (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0)) or
+      (isAoS and (cell1.isEmpty() or cell2.isEmpty()))) {
     return;
   }
 
-  // In Newton3==false and functor is not bidirectional, only interactions from cell1 to cell2 are computed. Therefore,
-  // if cell1 cannot contain owned particles, there is nothing useful to do.
-  if constexpr (not bidirectional) {
-    if (not _useNewton3 and not cell1HasOwnedParticles) {
+  const bool cell1HasOwnedParticles = toInt64(cell1.getPossibleParticleOwnerships() & OwnershipState::owned);
+  if (not cell1HasOwnedParticles) {
+    // Nothing to do if cell1 has no owned particles and we don't write to cell2 particles.
+    if constexpr (not bidirectional) {
+      if (not _useNewton3) {
+        return;
+      }
+    }
+    // Nothing to do if both cells cannot have owned particles.
+    const bool cell2HasOwnedParticles = toInt64(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
+    if (not cell2HasOwnedParticles) {
       return;
     }
   }
 
-  switch (_dataLayout) {
-    case DataLayoutOption::aos:
-      if (cell1.isEmpty() or cell2.isEmpty()) {
-        return;
-      }
-      processCellPairAoSImpl(cell1, cell2, sortingDirection);
-      break;
-    case DataLayoutOption::soa:
-      if (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0) {
-        return;
-      }
-      processCellPairSoAImpl(cell1, cell2);
-      break;
+  if (isAoS) {
+    processCellPairAoSImpl(cell1, cell2, sortingDirection);
+  } else if (isSoA) {
+    processCellPairSoAImpl(cell1, cell2);
   }
 }
 
