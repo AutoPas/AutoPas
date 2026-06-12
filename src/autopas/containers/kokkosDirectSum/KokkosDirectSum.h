@@ -153,13 +153,13 @@ template <class Particle_T>
 
                 // TODO: if this is the common structure, why isn't this generalized and called in a higher level of the hierarchy?
                 traversal->initTraversal();
-                const auto traversalStart = std::chrono::steady_clock::now();
+                Kokkos::Timer traversalTimer;
+                const double startTraversal=traversalTimer.seconds();
                 traversal->traverseParticles();
                 // The Kokkos kernels are launched asynchronously, so fence before stopping the timer to capture the actual compute time.
                 Kokkos::fence();
-                const auto traversalMicros =
-                    std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - traversalStart).count();
-                spdlog::info("Traversal took {} us", traversalMicros);
+                const double traversalTime = traversalTimer.seconds() - startTraversal;
+                spdlog::info("Traversal took {} s", traversalTime);
                 traversal->endTraversal();
 
                 finishTraversal(traversal);
