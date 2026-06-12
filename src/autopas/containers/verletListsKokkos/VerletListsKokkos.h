@@ -8,10 +8,13 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
 
+#include <chrono>
+
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/utils/KokkosAoS.h"
 #include "autopas/utils/KokkosSoA.h"
 #include "autopas/utils/KokkosStorage.h"
+#include "autopas/utils/logging/Logger.h"
 #include "traversals/VerletListsKokkosTraversalInterface.h"
 
 namespace autopas {
@@ -143,6 +146,7 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
             return;
         }
         spdlog::info("Rebuilding Verlet Lists with cutoff {} and skin {}", _cutoff, this->getVerletSkin());
+        const auto rebuildStart = std::chrono::steady_clock::now();
         convertToAoS();
 
         const double interactionLength = _cutoff + this->getVerletSkin();
@@ -209,6 +213,10 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
         // is one-directional (each owned i gathers from its halo neighbors) and needs no newton3.
         buildList(_haloParticles, numberOfHalo, _haloNeighborListOffsets, _haloNeighborListEntries, false);
 
+        const auto rebuildMicros =
+            std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - rebuildStart).count();
+        spdlog::info("Neighbor list rebuild took {} us", rebuildMicros);
+
         _neighborListValid = true;
     }
 
@@ -217,7 +225,13 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
 
         // TODO: if this is the common structure, why isn't this generalized and called in a higher level of the hierarchy?
         traversal->initTraversal();
+        const auto traversalStart = std::chrono::steady_clock::now();
         traversal->traverseParticles();
+        // The Kokkos kernels are launched asynchronously, so fence before stopping the timer to capture the actual compute time.
+        Kokkos::fence();
+        const auto traversalMicros =
+            std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - traversalStart).count();
+        spdlog::info("Traversal took {} us", traversalMicros);
         traversal->endTraversal();
 
         finishTraversal(traversal);
