@@ -92,10 +92,10 @@ class CellFunctor3B {
 
  private:
   /**
-   *
-   * @param particleCount
-   * @param sortingDirection
-   * @return
+   * Evaluate whether the AoSFunctor should use sorting, depending on the set sorting threshold.
+   * @param particleCount Total number of involved particles.
+   * @param sortingDirection No sorting when the sorting direction is {0., 0., 0.}.
+   * @return whether the AoSFunctor should use the SortedCellView.
    */
   [[nodiscard]] bool shouldUseSorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
     return particleCount >= _sortingThreshold and
@@ -103,9 +103,9 @@ class CellFunctor3B {
   }
 
   /**
-   * Applies the functor to all particle triplets exploiting newtons third law of motion.
+   * Applies the functor to all particle triplets exploiting Newton's third law of motion.
    * There is only one version of this function as newton3 is always allowed to be applied inside a cell.
-   * The value of newton3 defines how to apply the aos functor:
+   * The value of _useNewton3 defines how to apply the aos functor:
    * - If _useNewton3 is true: The aos functor will be applied once for each triplet (only i,j,k), passing newton3=true.
    * - If _useNewton3 is false: The aos functor will be applied three times for each triplet (i,j,k and j,i,k and
    * k,i,j), passing newton3=false.
