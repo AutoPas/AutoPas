@@ -30,7 +30,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLListIterationTraversal(Functor_T *functor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit VLListIterationTraversal(Functor_T &functor, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _functor(functor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }
@@ -54,7 +54,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 
       AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
-        _functor->SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
+        _functor.SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
       }
     }
   }
@@ -64,7 +64,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     if (_dataLayout == DataLayoutOption::soa) {
       size_t offset = 0;
       for (auto &cell : cells) {
-        _functor->SoAExtractor(cell, _soa, offset);
+        _functor.SoAExtractor(cell, _soa, offset);
         offset += cell.size();
       }
     }
@@ -98,7 +98,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
               ParticleType &particle = *(bucketIter->first);
               for (auto neighborPtr : bucketIter->second) {
                 ParticleType &neighbor = *neighborPtr;
-                _functor->AoSFunctor(particle, neighbor, false);
+                _functor.AoSFunctor(particle, neighbor, false);
               }
             }
           }
@@ -107,7 +107,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
             ParticleType &particle = *particlePtr;
             for (auto neighborPtr : neighborPtrList) {
               ParticleType &neighbor = *neighborPtr;
-              _functor->AoSFunctor(particle, neighbor, _useNewton3);
+              _functor.AoSFunctor(particle, neighbor, _useNewton3);
             }
           }
         }
@@ -119,12 +119,12 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
           /// @todo find a sensible chunk size
           AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
           for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-            _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+            _functor.SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
           }
         } else {
           // iterate over SoA
           for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-            _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+            _functor.SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
           }
         }
         return;
@@ -209,7 +209,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   /**
    * Functor for Traversal
    */
-  Functor_T *_functor;
+  Functor_T &_functor;
 
   /**
    * SoA buffer of verlet lists.

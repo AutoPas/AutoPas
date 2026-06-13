@@ -183,7 +183,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     constexpr bool traverseHaloCells = (interactionType == InteractionTypeOption::triwise);
     auto traversal =
         LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor,
-                       traverseHaloCells>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f,
+                       traverseHaloCells>(this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f,
                                           interactionLength, this->_linkedCells.getCellBlock().getCellLength(),
                                           dataLayout, useNewton3);
     this->_linkedCells.computeInteractions(&traversal);

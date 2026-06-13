@@ -7,29 +7,28 @@
 #pragma once
 
 #include "autopas/baseFunctors/CellFunctor.h"
-#include "autopas/containers/cellTraversals/CellTraversal.h"
+#include "autopas/baseFunctors/CellFunctor3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
-#include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/utils/checkFunctorType.h"
 
 namespace autopas {
 
 /**
  * This class provides the base for traversals using the c08 base step.
  *
- * The base step processBaseCell() computes one set of pairwise interactions
- * between two cells for each spatial direction based on the baseIndex.
- * After executing the base step on all cells all pairwise interactions for
- * all cells are done.
+ * The base step processBaseCell() computes the full set of pairwise (or triwise) interactions between two (or three)
+ * cells for each spatial direction based on the baseIndex.
+ * After executing the base step on all cells, all pairwise (or triwise) interactions for all cells are done.
  *
  * @tparam ParticleCell_T the type of cells
- * @tparam PairwiseFunctor_T The functor that defines the interaction of two particles.
+ * @tparam Functor_T The functor that defines the interaction of two or three particles.
  */
-template <class ParticleCell_T, class PairwiseFunctor_T, class FunctorPolicy_T, bool checkBounds = false>
+template <class ParticleCell_T, class Functor_T, class FunctorPolicy_T, bool checkBounds = false>
 class LCC08CellHandler {
  public:
   /**
    * Constructor of the LCC08CellHandler.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param functor The functor that defines the interaction of two particles.
    * @param cellsPerDimension The number of cells per dimension.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
@@ -39,19 +38,28 @@ class LCC08CellHandler {
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
-  explicit LCC08CellHandler(PairwiseFunctor_T *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
+  explicit LCC08CellHandler(PairwiseFunctor_T &pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                             double interactionLength, const std::array<double, 3> &cellLength,
                             const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
-      : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
-                     dataLayout, useNewton3),
-        _interactionLength(interactionLength),
-        _cellLength(cellLength),
-        _overlap(overlap),
+      : _overlap(overlap),
         _dataLayout(dataLayout),
         _useNewton3(useNewton3),
-        _cellPairOffsets{LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<
-            LCC08CellHandlerUtility::C08OffsetMode::c08CellPairsSorting>(cellsPerDimension, cellLength,
-                                                                         interactionLength)} {}
+        _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
+                     dataLayout, useNewton3),
+        _interactionLength(interactionLength),
+        _cellLength(cellLength) {
+    if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
+      _cellOffsets =
+          LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<LCC08CellHandlerUtility::C08OffsetMode::sorting>(
+              cellsPerDimension, cellLength, interactionLength);
+    } else if constexpr (utils::isTriwiseFunctor<Functor_T>()) {
+      _cellOffsets =
+          LCC08CellHandlerUtility::computeTriwiseCellOffsetsC08<LCC08CellHandlerUtility::C08OffsetMode::sorting>(
+              cellsPerDimension, cellLength, interactionLength);
+    } else {
+      utils::ExceptionHandler::exception("LCC08CellHandler::LCC08CellHandler(): Functor is not valid.");
+    }
+  }
 
   /**
    * Computes one interaction for each spacial direction based on the lower left
@@ -59,27 +67,19 @@ class LCC08CellHandler {
    * @param cells vector of all cells.
    * @param baseIndex Index respective to which box is constructed.
    */
-  void processBaseCell(std::vector<ParticleCell_T> &cells, unsigned long baseIndex) {
-    for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
-      const unsigned long cellIndex1 = baseIndex + offset1;
-      const unsigned long cellIndex2 = baseIndex + offset2;
+  void processBaseCell(std::vector<ParticleCell_T> &cells, unsigned long baseIndex);
 
-      if constexpr (checkBounds) {
-        if (cellIndex1 >= cells.size() or cellIndex2 >= cells.size()) {
-          // check that index is not outOfBounds because we call processBaseCell on outer-most Halo-Cells as well
-          continue;
-        }
-      }
-      ParticleCell_T &cell1 = cells[cellIndex1];
-      ParticleCell_T &cell2 = cells[cellIndex2];
+  /**
+   * Pairwise implementation of processBaseCell().
+   * @copydoc processBaseCell()
+   */
+  inline void processBaseCellPairwise(std::vector<ParticleCell_T> &cells, unsigned long baseIndex);
 
-      if (cellIndex1 == cellIndex2) {
-        this->_cellFunctor.processCell(cell1);
-      } else {
-        this->_cellFunctor.processCellPair(cell1, cell2, r);
-      }
-    }
-  }
+  /**
+   * Triwise implementation of processBaseCell().
+   * @copydoc processBaseCell()
+   */
+  inline void processBaseCellTriwise(std::vector<ParticleCell_T> &cells, unsigned long baseIndex);
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()
@@ -88,10 +88,17 @@ class LCC08CellHandler {
 
  protected:
   /**
+   * CellOffset needs to store interaction pairs or triplets depending on the Functor type.
+   */
+  using CellOffsetType =
+      std::conditional_t<decltype(utils::isPairwiseFunctor<Functor_T>())::value,
+                         LCC08CellHandlerUtility::OffsetPairSorting, LCC08CellHandlerUtility::OffsetTripletSorting>;
+
+  /**
    * Pair sets for processBaseCell().
    * Values are: offset of first cell, offset of second cell, sorting direction.
    */
-  std::vector<LCC08CellHandlerUtility::OffsetPairSorting> _cellPairOffsets;
+  std::vector<CellOffsetType> _cellOffsets;
 
   /**
    * Overlap of interacting cells. Array allows asymmetric cell sizes.
@@ -109,6 +116,12 @@ class LCC08CellHandler {
   bool _useNewton3;
 
  private:
+  // CellFunctor type for either Pairwise or Triwise Functors.
+  using CellFunctorType =
+      std::conditional_t<decltype(utils::isPairwiseFunctor<Functor_T>())::value,
+                         internal::CellFunctor<ParticleCell_T, Functor_T, /*bidirectional*/ true>,
+                         internal::CellFunctor3B<ParticleCell_T, Functor_T, /*bidirectional*/ true>>;
+
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
@@ -126,4 +139,66 @@ class LCC08CellHandler {
    */
   const std::array<double, 3> _cellLength;
 };
+
+template <class ParticleCell_T, class Functor_T>
+inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCell(std::vector<ParticleCell_T> &cells,
+                                                                         unsigned long baseIndex) {
+  if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
+    processBaseCellPairwise(cells, baseIndex);
+  } else if constexpr (utils::isTriwiseFunctor<Functor_T>()) {
+    processBaseCellTriwise(cells, baseIndex);
+  } else {
+    utils::ExceptionHandler::exception(
+        "LCC08CellHandler::processBaseCell(): Given Functor type is not of type PairwiseFunctor or TriwiseFunctor.");
+  }
+}
+
+template <class ParticleCell_T, class Functor_T>
+inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCellPairwise(std::vector<ParticleCell_T> &cells,
+                                                                                 unsigned long baseIndex) {
+  for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
+    const unsigned long cellIndex1 = baseIndex + offset1;
+    const unsigned long cellIndex2 = baseIndex + offset2;
+
+    if constexpr (checkBounds) {
+      if (cellIndex1 >= cells.size() or cellIndex2 >= cells.size()) {
+        // check that index is not outOfBounds because we call processBaseCell on outer-most Halo-Cells as well
+        continue;
+      }
+    }
+    ParticleCell_T &cell1 = cells[cellIndex1];
+    ParticleCell_T &cell2 = cells[cellIndex2];
+
+    if (cellIndex1 == cellIndex2) {
+      this->_cellFunctor.processCell(cell1);
+    } else {
+      this->_cellFunctor.processCellPair(cell1, cell2, r);
+    }
+  }
+}
+
+template <class ParticleCell_T, class Functor_T>
+inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCellTriwise(std::vector<ParticleCell_T> &cells,
+                                                                                unsigned long baseIndex) {
+  for (auto const &[offset1, offset2, offset3, r] : _cellOffsets) {
+    const unsigned long index1 = baseIndex + offset1;
+    const unsigned long index2 = baseIndex + offset2;
+    const unsigned long index3 = baseIndex + offset3;
+
+    ParticleCell_T &cell1 = cells[index1];
+    ParticleCell_T &cell2 = cells[index2];
+    ParticleCell_T &cell3 = cells[index3];
+
+    if (index1 == index2 and index1 == index3) {
+      this->_cellFunctor.processCell(cell1);
+    } else if (index1 == index2 and index1 != index3) {
+      this->_cellFunctor.processCellPair(cell1, cell3, r);
+    } else if (index1 != index2 and (index1 == index3 or index2 == index3)) {
+      this->_cellFunctor.processCellPair(cell1, cell2, r);
+    } else {
+      this->_cellFunctor.processCellTriple(cell1, cell2, cell3, r);
+    }
+  }
+}
+
 }  // namespace autopas

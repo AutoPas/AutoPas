@@ -12,6 +12,7 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 
 namespace autopas::utils {
 /**
@@ -32,6 +33,7 @@ class ConfigurationAndRankIteratorHandler {
    * @param dataLayoutOptions
    * @param newton3Options
    * @param interactionType
+   * @param vecPatternOptions
    * @param numConfigs
    * @param commSize
    */
@@ -39,14 +41,16 @@ class ConfigurationAndRankIteratorHandler {
       const std::set<ContainerOption> &containerOptions, const std::set<double> &cellSizeFactors,
       const std::set<TraversalOption> &traversalOptions, const std::set<LoadEstimatorOption> &loadEstimatorOptions,
       const std::set<DataLayoutOption> &dataLayoutOptions, const std::set<Newton3Option> &newton3Options,
-      const InteractionTypeOption &interactionType, const int numConfigs, const int commSize)
+      const InteractionTypeOption &interactionType, std::set<VectorizationPatternOption> &vecPatternOptions,
+      const int numConfigs, const int commSize)
       : _containers(containerOptions),
         _cellSizeFactors(cellSizeFactors),
         _allowedTraversalOptions(traversalOptions),
         _allowedLoadEstimatorOptions(loadEstimatorOptions),
         _dataLayoutOptions(dataLayoutOptions),
         _newton3Options(newton3Options),
-        _interactionType(interactionType) {
+        _interactionType(interactionType),
+        _vecPatternOptions(vecPatternOptions) {
     reset(numConfigs, commSize);
   }
 
@@ -73,19 +77,22 @@ class ConfigurationAndRankIteratorHandler {
    * @param traversalIt out
    * @param dataLayoutIt out
    * @param newton3It out
+   * @param vecPatternIt out
    */
   inline void getConfigIterators(std::set<ContainerOption>::iterator &containerIt,
                                  std::set<double>::iterator &cellSizeFactorIt,
                                  std::set<TraversalOption>::iterator &traversalIt,
                                  std::set<LoadEstimatorOption>::iterator &loadEstimatorIt,
                                  std::set<DataLayoutOption>::iterator &dataLayoutIt,
-                                 std::set<Newton3Option>::iterator &newton3It) {
+                                 std::set<Newton3Option>::iterator &newton3It,
+                                 std::set<VectorizationPatternOption>::iterator &vecPatternIt) {
     containerIt = _containerIt;
     cellSizeFactorIt = _cellSizeFactorIt;
     traversalIt = _traversalIt;
     loadEstimatorIt = _loadEstimatorIt;
     dataLayoutIt = _dataLayoutIt;
     newton3It = _newton3It;
+    vecPatternIt = _vecPatternIt;
   }
 
   /**
@@ -148,6 +155,14 @@ class ConfigurationAndRankIteratorHandler {
    */
   [[nodiscard]] inline std::set<Newton3Option>::iterator getNewton3Iterator() const { return _newton3It; }
 
+  /**
+   * Getter for the VectorizationPatternIterator
+   * @return
+   */
+  [[nodiscard]] inline std::set<VectorizationPatternOption>::iterator getVecPatternIterator() const {
+    return _vecPatternIt;
+  }
+
  private:
   /**
    * Resets _allowedAndApplicableTraversalOptions to fit with whatever _containerOptions is pointing to.
@@ -172,6 +187,7 @@ class ConfigurationAndRankIteratorHandler {
   const std::set<DataLayoutOption> &_dataLayoutOptions;
   const std::set<Newton3Option> &_newton3Options;
   const InteractionTypeOption &_interactionType;
+  const std::set<VectorizationPatternOption> &_vecPatternOptions;
   std::set<TraversalOption> _allowedAndApplicableTraversalOptions;
   std::set<LoadEstimatorOption> _allowedAndApplicableLoadEstimatorOptions;
   std::set<ContainerOption>::iterator _containerIt;
@@ -180,6 +196,7 @@ class ConfigurationAndRankIteratorHandler {
   std::set<LoadEstimatorOption>::iterator _loadEstimatorIt;
   std::set<DataLayoutOption>::iterator _dataLayoutIt;
   std::set<Newton3Option>::iterator _newton3It;
+  std::set<VectorizationPatternOption>::iterator _vecPatternIt;
   int _rankIterator;
   int _remainingBlockSize;
   int _remainder;

@@ -51,6 +51,7 @@ TEST_F(TuningManagerTest, testTuningIntervalIsFixed) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   constexpr size_t numIterations = 5 * tuningInterval;
   bool lastWasTuningInteration = false;
@@ -109,6 +110,8 @@ TEST_F(TuningManagerTest, testMultipleTuners) {
   EXPECT_CALL(triFunctor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(pairFunctor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(triFunctor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(pairFunctor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(triFunctor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   // Add three particles into one (linked cells) cell
   logicHandler.getContainer().addParticle((Molecule{{0.1, 0.1, 0.1}, {0., 0., 0.}, 0, 0}));
@@ -348,6 +351,7 @@ TEST_F(TuningManagerTest, testTuningPhaseLongerThanTuningInterval) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   constexpr size_t iterationsToDo = 35;
   size_t iterationsDone = 0;
@@ -404,6 +408,7 @@ TEST_F(TuningManagerTest, testForceRetuneBetweenPhases) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   size_t iteration = 0;
   // 1. Expect a full tuning phase
@@ -476,6 +481,7 @@ TEST_F(TuningManagerTest, testForceRetuneInPhase) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   // Do part of the tuning phase. After the loop we should be in the middle of sampling the second configuration.
   ASSERT_GT(autoTunerInfo.maxSamples, 1);
@@ -528,6 +534,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
   // Need to resize cells during loading, otherwise we get exceptions in SoAFunctors
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Molecule> &>(_), _, _, _))
       .Times(testing::AtLeast(1))
@@ -540,7 +547,8 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::InteractionTypeOption::pairwise);
+      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::VectorizationPatternOption::getAllOptions(),
+      autopas::InteractionTypeOption::pairwise);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
@@ -553,52 +561,55 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
 
   // number of configs manually counted:
   //
-  // Direct Sum:            ds_sequential               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  configsPerContainer[autopas::ContainerOption::directSum] = 4;
-  // LinkedCells:           lc_c08                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_sliced                   (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_sliced_balanced          (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
-  //                        lc_sliced_c02               (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_c18                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_c01                      (AoS <=> SoA, noNewton3)                             = 2
-  //                        lc_c01_combined_SoA         (SoA, noNewton3)                                     = 1
-  //                        lc_c04                      (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        lc_c04_combined_SoA         (SoA, newton3 <=> noNewton3)                         = 2
-  //                        lc_c04_HCP                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  configsPerContainer[autopas::ContainerOption::linkedCells] = 37;
+  // Direct Sum:            ds_sequential               (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
+  configsPerContainer[autopas::ContainerOption::directSum] = 16;
+  // LinkedCells:           lc_c08                      (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
+  //                        lc_sliced                   (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
+  //                        lc_sliced_balanced          (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics, 4 vecPattern)
+  //                                                    = 32
+  //                        lc_sliced_c02               (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
+  //                        lc_c18                      (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
+  //                        lc_c01                      (AoS <=> SoA, noNewton3, 4 vecPattern)             = 8
+  //                        lc_c01_combined_SoA         (SoA, noNewton3, 4 vecPattern)                     = 4
+  //                        lc_c04 (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)                      = 16
+  //                        lc_c04_combined_SoA         (SoA,newton3 <=> noNewton3, 4 vecPattern)          = 8
+  //                        lc_c04_HCP (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)                  = 16
+  configsPerContainer[autopas::ContainerOption::linkedCells] = 148;
   // same as linked Cells but load estimator stuff is currently missing
   configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
-      configsPerContainer[autopas::ContainerOption::linkedCells] - 4;
-  // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                             = 2
+      configsPerContainer[autopas::ContainerOption::linkedCells] - 16;
+  // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3, 1 vecPattern) = 2
   configsPerContainer[autopas::ContainerOption::verletLists] = 2;
-  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics)   = 12
-  //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlc_c01                     (AoS <=> SoA, noNewton3)                             = 2
-  //                        vlc_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics, 1 vecPattern)
+  //                                                    = 12
+  //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlc_c01                     (AoS <=> SoA, noNewton3, 1 vecPattern)             = 2
+  //                        vlc_c08 (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern)                     = 4
   configsPerContainer[autopas::ContainerOption::verletListsCells] = 30;
-  // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                             = 2
-  //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3)                             = 2
-  //                        vcl_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vcl_sliced_c02              (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vcl_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)   = 8
-  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 24;
-  // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3, 4 vecPattern)             = 8
+  //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
+  //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3, 4 vecPattern)             = 8
+  //                        vcl_sliced (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)                  = 16
+  //                        vcl_sliced_c02 (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)              = 16
+  //                        vcl_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics, 4 vecPattern)
+  //                                                    = 32
+  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 96;
+  // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
   configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
 
-  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
-  //                        vlp_c01                     (AoS <=> SoA, noNewton3)                             = 2
-  //                        vlp_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
+  //                        vlp_c01                     (AoS <=> SoA, noNewton3, 1 vecPattern)             = 2
+  //                        vlp_c08 (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern)                     = 4
   configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 22;
 
-  // Octree:                ot_c01                      (AoS <=> SoA, noNewton3)                             = 2
-  //                        ot_c18                      (AoS <=> SoA, newton3)                               = 2
-  configsPerContainer[autopas::ContainerOption::octree] = 4;
+  // Octree:                ot_c01                      (AoS <=> SoA, noNewton3, 4 vecPattern)             = 8
+  //                        ot_c18                      (AoS <=> SoA, newton3, 4 vecPattern)               = 8
+  configsPerContainer[autopas::ContainerOption::octree] = 16;
 
   // check that there is an entry for every container.
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size());
@@ -674,6 +685,7 @@ TEST_F(TuningManagerTest, testWillRebuildDL) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   size_t iteration = 0;
   // Intended false positive
@@ -744,6 +756,7 @@ TEST_F(TuningManagerTest, testWillRebuildDDL) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   // updateContainer increments the logic handler's iteration counters for this time step and checks the rebuild
   // conditions afterwards.
@@ -829,6 +842,7 @@ TEST_F(TuningManagerTest, testWillRebuildDDLOneConfigKicked) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
+  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   size_t iteration = 0;
   logicHandler.updateContainer();
@@ -893,6 +907,7 @@ TEST_F(TuningManagerTest, testOneConfig) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   size_t numSamples = 0;
   for (int i = 0; i < 5; ++i) {
@@ -932,6 +947,7 @@ TEST_F(TuningManagerTest, testConfigSecondInvalid) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
+  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   logicHandler.updateContainer();
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
