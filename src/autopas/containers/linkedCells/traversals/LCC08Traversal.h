@@ -9,7 +9,6 @@
 #include "LCC08CellHandler.h"
 #include "LCTraversalInterface.h"
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
-#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -22,10 +21,12 @@ namespace autopas {
  * \image html C08_domain.png "C08 domain coloring in 2D. 4 colors are required."
  *
  * @tparam ParticleCell_T the type of cells
- * @tparam Functor_T The functor that defines the interaction of two particles.
+ * @tparam Functor_T The functor that defines the interaction of two or three particles.
+ * @tparam traverseHaloCells boolean whether to traverse the halo cells (e.g. for triwise neighbor list generation)
  */
-template <class ParticleCell_T, class Functor_T>
-class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, public LCTraversalInterface {
+template <class ParticleCell_T, class Functor_T, bool traverseHaloCells = false>
+class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T, traverseHaloCells>,
+                       public LCTraversalInterface {
  public:
   /**
    * Constructor of the lc_c08 traversal.
@@ -39,18 +40,19 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, publ
    */
   explicit LCC08Traversal(const std::array<unsigned long, 3> &dims, Functor_T &functor, double interactionLength,
                           const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedTraversal<ParticleCell_T, Functor_T>(dims, functor, interactionLength, cellLength, dataLayout,
-                                                     useNewton3),
+      : C08BasedTraversal<ParticleCell_T, Functor_T, traverseHaloCells>(dims, functor, interactionLength, cellLength,
+                                                                        dataLayout, useNewton3),
+
         _cellHandler(functor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap, dataLayout,
                      useNewton3) {}
 
   /**
-   * @copydoc autopas::TraversalInterface::traverseParticles()
+   * @copydoc autopas::TraversalInterface::traverseParticles
    */
   void traverseParticles() override;
 
   /**
-   * @copydoc autopas::TraversalInterface::getTraversalType()
+   * @copydoc autopas::TraversalInterface::getTraversalType
    */
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08; }
 
@@ -66,11 +68,11 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, publ
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  LCC08CellHandler<ParticleCell_T, Functor_T> _cellHandler;
+  LCC08CellHandler<ParticleCell_T, Functor_T, traverseHaloCells> _cellHandler;
 };
 
-template <class ParticleCell_T, class Functor_T>
-inline void LCC08Traversal<ParticleCell_T, Functor_T>::traverseParticles() {
+template <class ParticleCell_T, class Functor_T, bool traverseHaloCells>
+inline void LCC08Traversal<ParticleCell_T, Functor_T, traverseHaloCells>::traverseParticles() {
   auto &cells = *(this->_cells);
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
