@@ -145,66 +145,21 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
 
     // TODO: move to a faster (cell-binned) algorithm.
     void rebuildNeighborLists([[maybe_unused]]TraversalInterface *traversal) override {
-        spdlog::debug("Rebuilding Verlet Lists. Number of owned particles: {}, number of halo particles: {}", numberOfOwned, numberOfHalo);
         if (_neighborListValid) {
             return;
         }
         spdlog::info("Rebuilding Verlet Lists with cutoff {} and skin {}", _cutoff, this->getVerletSkin());
         Kokkos::Timer rebuildTimer;
         const double startRebuild = rebuildTimer.seconds();
-        convertToAoS();
-
-        const double interactionLength = _cutoff + this->getVerletSkin();
-        const double interactionLengthSqr = interactionLength * interactionLength;
-
-
-        auto buildList = [&](utils::KokkosStorage<Particle_T> &srcJ, size_t numJ,
-                             Kokkos::DualView<size_t *> &offsetsDV, Kokkos::DualView<size_t *> &entriesDV,
-                             bool skipSelf) -> bool {
-            Kokkos::resize(offsetsDV, numberOfOwned + 1);
-            offsetsDV.clear_sync_state();
-            offsetsDV.modify_host();
-            auto h_offsets = offsetsDV.h_view;
-
-            Kokkos::resize(entriesDV, numberOfOwned * _maxNeighbors);
-            entriesDV.clear_sync_state();
-            entriesDV.modify_host();
-            auto h_entries = entriesDV.h_view;
-
-            h_offsets(0) = 0;
-            for (size_t i = 0; i < numberOfOwned; ++i) {
-                const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
-                const size_t base = h_offsets(i);
-                size_t count = 0;
-                for (size_t j = 0; j < numJ; ++j) {
-                    if (skipSelf && j == i) {
-                        continue;
-                    }
-                    const auto &rj = srcJ.getAoS().getParticle(j).getR();
-                    const double dx = ri[0] - rj[0];
-                    const double dy = ri[1] - rj[1];
-                    const double dz = ri[2] - rj[2];
-                    if (dx * dx + dy * dy + dz * dz < interactionLengthSqr) {
-                        if (count >= _maxNeighbors) {
-                            return true;  // overflow: this particle needs more than _maxNeighbors slots
-                        }
-                        h_entries(base + count) = j;
-                        ++count;
-                    }
-                }
-                h_offsets(i + 1) = base + count;
-            }
-            return false;
-        };
+        
+        auto& ownedSoA = _ownedParticles.getSoA();
+        auto& haloSoA = _haloParticles.getSoA();
 
         while (true) {
-            const bool ownedOverflow =
-                buildList(_ownedParticles, numberOfOwned, _neighborListOffsets, _neighborListEntries, true);
-            const bool haloOverflow =
-                ownedOverflow ? false
-                              : buildList(_haloParticles, numberOfHalo, _haloNeighborListOffsets,
-                                          _haloNeighborListEntries, false);
-            if (not ownedOverflow and not haloOverflow) {
+            const bool ownedOverflow = buildNeighborListsFlat(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view);
+            
+            const bool haloOverflow = buildNeighborListsFlat(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view);
+            if (!ownedOverflow && !haloOverflow) {
                 break;
             }
             const size_t grown = _maxNeighbors * 2;
@@ -212,14 +167,10 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                          _maxNeighbors, grown);
             _maxNeighbors = grown;
         }
+        
         const double rebuildTime = rebuildTimer.seconds() - startRebuild;
         spdlog::info("Rebuilding Verlet Lists took {} s", rebuildTime);
         _rebuildTimingStats.addTiming(rebuildTime);
-
-        _neighborListOffsets.template sync<typename DeviceSpace::execution_space>();
-        _neighborListEntries.template sync<typename DeviceSpace::execution_space>();
-        _haloNeighborListOffsets.template sync<typename DeviceSpace::execution_space>();
-        _haloNeighborListEntries.template sync<typename DeviceSpace::execution_space>();
 
         _neighborListValid = true;
     }
@@ -433,6 +384,55 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
 
 
     private:
+
+        bool buildNeighborListsFlat(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
+
+            const size_t N = soa1.size();
+            const size_t M = soa2.size();
+            spdlog::debug("VerletListsKokkosTraversalFlat::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
+                        soa2.size());
+
+            if (N == 0 || soa2.size() == 0) {
+                spdlog::debug(
+                    "VerletListsKokkosTraversalFlat::performSoATraversal: skipping kernel launch (soa1.size()={}, "
+                    "soa2.size()={})",
+                    N, soa2.size());
+                return false;
+            }
+            const size_t maxNeighbors = _maxNeighbors;
+            const float interactionLength = _cutoff + this->getVerletSkin();
+            const float interactionLengthSqr = interactionLength * interactionLength;
+            const auto soa1Device = soa1.deviceView();
+            const auto soa2Device = soa2.deviceView();
+
+            auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+            Kokkos::parallel_for("vl_kokkos_rebuild_flat", rangePolicy, KOKKOS_LAMBDA(const int i) {
+
+                const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+                const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+                const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+
+                const size_t count = 0;
+                for (size_t k = 0; k < M; ++k) {
+                    const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
+                    const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
+                    const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
+                    const auto dx = x1 - x2;
+                    const auto dy = y1 - y2;
+                    const auto dz = z1 - z2;
+                    const auto distSquared = dx * dx + dy * dy + dz * dz;
+                    if (distSquared < interactionLengthSqr) {
+                        if(count > maxNeighbors) {
+                            // TO DO: handle overflow (e.g., by setting a flag or using atomic operations to grow the neighbor list and retrying)
+                        }
+                        size_t index= i*maxNeighbors + count;
+                        entries(index) = k;
+                    }
+                }
+                offsets(i)= i*maxNeighbors + count;
+            });
+            return false; // TODO: return true if overflow occurred (count > maxNeighbors)
+        }
         
         template <typename Traversal>
         void prepareTraversal(Traversal &traversal) {
