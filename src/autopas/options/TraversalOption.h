@@ -255,7 +255,14 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getAllTriwiseOptions() {
-    return {Value::ds_sequential, Value::lc_c01, Value::lc_c08, Value::lc_sliced, Value::lc_sliced_c02, Value::lc_c04, Value::vl_list_iteration, Value::vl_list_intersection,
+    return {Value::ds_sequential,
+            Value::lc_c01,
+            Value::lc_c08,
+            Value::lc_sliced,
+            Value::lc_sliced_c02,
+            Value::lc_c04,
+            Value::vl_list_iteration,
+            Value::vl_list_intersection,
             Value::vl_pair_list_iteration};
   }
 

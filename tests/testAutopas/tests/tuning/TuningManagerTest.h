@@ -58,7 +58,8 @@ class TuningManagerTest : public AutoPasTestBase {
                                                       autopas::LoadEstimatorOption::none,
                                                       autopas::DataLayoutOption::aos,
                                                       autopas::Newton3Option::disabled,
-                                                      autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::p1xVec};
+                                                      autopas::InteractionTypeOption::pairwise,
+                                                      autopas::VectorizationPatternOption::p1xVec};
 
   // Triwise configs:
   const autopas::Configuration _confLc_c01_3b_noN3{
@@ -77,12 +78,14 @@ class TuningManagerTest : public AutoPasTestBase {
                                                          autopas::LoadEstimatorOption::none,
                                                          autopas::DataLayoutOption::aos,
                                                          autopas::Newton3Option::disabled,
-                                                         autopas::InteractionTypeOption::triwise, autopas::VectorizationPatternOption::p1xVec};
+                                                         autopas::InteractionTypeOption::triwise,
+                                                         autopas::VectorizationPatternOption::p1xVec};
   const autopas::Configuration _confVl_pair_list_iteration_3b{autopas::ContainerOption::verletLists,
                                                               _cellSizeFactor,
                                                               autopas::TraversalOption::vl_pair_list_iteration,
                                                               autopas::LoadEstimatorOption::none,
                                                               autopas::DataLayoutOption::aos,
                                                               autopas::Newton3Option::disabled,
-                                                              autopas::InteractionTypeOption::triwise, autopas::VectorizationPatternOption::p1xVec};
+                                                              autopas::InteractionTypeOption::triwise,
+                                                              autopas::VectorizationPatternOption::p1xVec};
 };

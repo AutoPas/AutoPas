@@ -57,7 +57,7 @@ class LCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell_T, Func
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  LCC08CellHandler<ParticleCell_T, Functor_T, internal::CellFunctor<ParticleCell_T, Functor_T>> _cellHandler;
+  LCC08CellHandler<ParticleCell_T, Functor_T> _cellHandler;
 };
 
 template <class ParticleCell_T, class Functor_T>

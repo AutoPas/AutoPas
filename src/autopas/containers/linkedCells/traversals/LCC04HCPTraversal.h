@@ -71,7 +71,7 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
 
   void processBasePack6(std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex);
 
-  LCC08CellHandler<ParticleCell, PairwiseFunctor, internal::CellFunctor<ParticleCell, PairwiseFunctor>> _cellHandler;
+  LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
 
   const std::array<long, 3> _end;
 };

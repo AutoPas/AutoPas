@@ -38,14 +38,13 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T, trave
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit LCC08Traversal(const std::array<unsigned long, 3> &dims, Functor_T &functor,
-                          double interactionLength, const std::array<double, 3> &cellLength,
-                          DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedTraversal<ParticleCell_T, Functor_T, traverseHaloCells>(
-            dims, functor, interactionLength, cellLength, dataLayout, useNewton3),
+  explicit LCC08Traversal(const std::array<unsigned long, 3> &dims, Functor_T &functor, double interactionLength,
+                          const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
+      : C08BasedTraversal<ParticleCell_T, Functor_T, traverseHaloCells>(dims, functor, interactionLength, cellLength,
+                                                                        dataLayout, useNewton3),
 
-        _cellHandler(functor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
-                     dataLayout, useNewton3) {}
+        _cellHandler(functor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap, dataLayout,
+                     useNewton3) {}
 
   /**
    * @copydoc autopas::TraversalInterface::traverseParticles
@@ -69,12 +68,7 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T, trave
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  using CellHandlerType = std::conditional_t<
-      traverseHaloCells,
-      LCC08CellHandler<ParticleCell_T, Functor_T,
-                       internal::CellFunctor<ParticleCell_T, Functor_T, true, true>, true>,
-      LCC08CellHandler<ParticleCell_T, Functor_T, internal::CellFunctor<ParticleCell_T, Functor_T>>>;
-  CellHandlerType _cellHandler;
+  LCC08CellHandler<ParticleCell_T, Functor_T, traverseHaloCells> _cellHandler;
 };
 
 template <class ParticleCell_T, class Functor_T, bool traverseHaloCells>
