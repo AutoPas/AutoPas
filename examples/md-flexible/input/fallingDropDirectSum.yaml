@@ -4,7 +4,7 @@ verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [SoA]
-traversal                        :  [ds_kokkos_flat]
+traversal                        :  [ds_kokkos_teams]
 tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3

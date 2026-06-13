@@ -1,4 +1,4 @@
-container                        :  [VerletListsKokkos]
+container                        :  [VerletListsKokkosMaxNeighborsGPURebuilding]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4

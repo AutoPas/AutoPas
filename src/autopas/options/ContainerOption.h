@@ -60,6 +60,10 @@ class ContainerOption : public Option<ContainerOption> {
     verletListsKokkos,
 
     verletListsKokkosMaxNeighbors,
+
+    verletListsKokkosGPURebuilding,
+
+    verletListsKokkosMaxNeighborsGPURebuilding,
     /**
      * VerletListsCells : Similar to VerletLists but Lists are associated with the underlying cells to achieve location
      * information. Parallelization options similar to LinkedCells.
@@ -115,6 +119,8 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::verletLists, "VerletLists"},
         {ContainerOption::verletListsKokkos, "VerletListsKokkos"},
         {ContainerOption::verletListsKokkosMaxNeighbors, "VerletListsKokkosMaxNeighbors"},
+        {ContainerOption::verletListsKokkosGPURebuilding, "VerletListsKokkosGPURebuilding"},
+        {ContainerOption::verletListsKokkosMaxNeighborsGPURebuilding, "VerletListsKokkosMaxNeighborsGPURebuilding"},
         {ContainerOption::verletListsCells, "VerletListsCells"},
         {ContainerOption::verletClusterLists, "VerletClusterLists"},
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},

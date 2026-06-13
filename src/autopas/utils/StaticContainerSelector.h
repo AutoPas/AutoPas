@@ -19,6 +19,8 @@
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsKokkos/VerletListsKokkos.h"
 #include "autopas/containers/verletListsKokkos/VerletListsKokkosMaxNeighbors.h"
+#include "autopas/containers/verletListsKokkos/VerletListsKokkosMaxNeighborsGPURebuilding.h"
+#include "autopas/containers/verletListsKokkos/VerletListsKokkosGPURebuilding.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
@@ -61,6 +63,10 @@ decltype(auto) withStaticContainerType(ParticleContainerInterface<Particle_T> &c
       return function(dynamic_cast<VerletListsKokkos<Particle_T> &>(container));
     case ContainerOption::verletListsKokkosMaxNeighbors:
       return function(dynamic_cast<VerletListsKokkosMaxNeighbors<Particle_T> &>(container));
+    case ContainerOption::verletListsKokkosGPURebuilding:
+      return function(dynamic_cast<VerletListsKokkosGPURebuilding<Particle_T> &>(container));
+    case ContainerOption::verletListsKokkosMaxNeighborsGPURebuilding:
+      return function(dynamic_cast<VerletListsKokkosMaxNeighborsGPURebuilding<Particle_T> &>(container));
   }
   utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                      container.getContainerType());
