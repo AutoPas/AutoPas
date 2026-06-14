@@ -110,6 +110,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * @param traversal
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
+    _soaListIsValid = false;
+    _pairListIsValid = false;
     const bool buildWithN3 = traversal->getUseNewton3();
     this->_verletBuiltNewton3 = buildWithN3;
 
@@ -127,10 +129,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
         break;
       }
       case TraversalOption::vl_pair_list_iteration: {
-        if (not _pairListIsValid) {
-          // build 3Body Verlet lists through VLIteration traversal
-          this->updatePairVerletListsAoS3B(buildWithN3);
-        }
+        // build 3Body Verlet lists through VLIteration traversal
+        this->updatePairVerletListsAoS3B(buildWithN3);
         break;
       }
       // Default builds normal neighbor lists including halo particles.
@@ -142,7 +142,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     // the neighbor list is now valid
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
 
-    if (not _soaListIsValid and traversal->getDataLayout() == DataLayoutOption::soa) {
+    if (traversal->getDataLayout() == DataLayoutOption::soa) {
       // only do this if we need it, i.e., if we are using soa!
       generateSoAListFromCRSNeighborLists();
     }
