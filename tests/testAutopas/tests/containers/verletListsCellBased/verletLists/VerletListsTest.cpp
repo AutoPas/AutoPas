@@ -333,4 +333,61 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
   EXPECT_FALSE(iter2.isValid());
 }
 
+/*
+ * Test that SoA neighbor lists are properly marked invalid and reset at a rebuild step.
+*/
+TEST_P(VerletListsTest, SoARebuild) {
+  constexpr double cutoff = 2.0;
+  const double cellSizeFactor = GetParam();
+  autopas::VerletLists<Molecule> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3 /*skin*/,
+                                             autopas::VerletLists<Molecule>::BuildVerletListType::VerletSoA,
+                                             cellSizeFactor);
+
+  // 1. Add two particles within cutoff range.
+  Molecule p1({1., 1., 1.}, {0., 0., 0.}, 1, 0);
+  Molecule p2({1.5, 1.1, 1.}, {0., 0., 0.}, 2, 0);
+  verletLists.addParticle(p1);
+  verletLists.addParticle(p2);
+
+  LJFunctorType<> ljFunctor(cutoff);
+  ljFunctor.setParticleProperties(1., 1.);
+  autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> soaTraversal(ljFunctor, autopas::DataLayoutOption::soa,
+                                                                          false);
+
+  // First interaction (builds neighbor list and SoA list)
+  verletLists.rebuildNeighborLists(&soaTraversal);
+  verletLists.computeInteractions(&soaTraversal);
+
+  // Verify they interacted. Keep track of force.
+  auto forceBefore = verletLists.begin()->getF();
+  EXPECT_GT(std::abs(forceBefore[0]), 0.0);
+
+  // 2. Move particles and alter the particle counts to change the index map size/contents.
+  verletLists.deleteAllParticles();
+
+  Molecule p3({1., 1., 1.}, {0., 0., 0.}, 3, 0);
+  Molecule p4({8., 8., 8.}, {0., 0., 0.}, 4, 0);   // far away
+  Molecule p5({1.2, 1., 1.}, {0., 0., 0.}, 5, 0);  // close to p3
+  verletLists.addParticle(p3);
+  verletLists.addParticle(p4);
+  verletLists.addParticle(p5);
+
+  // Second interaction (forces rebuild and should invalidate & rebuild the SoA list)
+  verletLists.rebuildNeighborLists(&soaTraversal);
+
+  // Updated neighbor lists should not cause issues.
+  ASSERT_NO_THROW(verletLists.computeInteractions(&soaTraversal));
+
+  // Verify forces are correct for the new particle coordinates
+  for (auto iter = verletLists.begin(); iter.isValid(); ++iter) {
+    if (iter->getID() == 4) {
+      // p4 is far away from all other particles, so force should be zero
+      EXPECT_DOUBLE_EQ(iter->getF()[0], 0.0);
+    } else if (iter->getID() == 3 || iter->getID() == 5) {
+      // p3 and p5 are within cutoff, so force must be non-zero
+      EXPECT_GT(std::abs(iter->getF()[0]), 0.0);
+    }
+  }
+}
+
 INSTANTIATE_TEST_SUITE_P(Generated, VerletListsTest, Values(1.0, 2.0), VerletListsTest::PrintToStringParamName());
