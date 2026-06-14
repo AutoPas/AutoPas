@@ -64,6 +64,42 @@ class VerletListHelpers {
     std::vector<size_t> _neighbors;
   };
 
+  class CRSPairNeighborList {
+   public:
+    void clear() {
+      _offsets.clear();
+      _neighborPairs.clear();
+    }
+
+    void resizeParticles(size_t numParticles) {
+      _offsets.assign(numParticles + 1, 0);
+      _neighborPairs.clear();
+    }
+
+    [[nodiscard]] size_t size() const noexcept { return _offsets.empty() ? 0 : _offsets.size() - 1; }
+
+    [[nodiscard]] std::span<const std::pair<Particle_T *, Particle_T *>> neighborPairsOf(
+        size_t particleIndex) const noexcept {
+      return {_neighborPairs.data() + _offsets[particleIndex], _offsets[particleIndex + 1] - _offsets[particleIndex]};
+    }
+
+    [[nodiscard]] std::span<std::pair<Particle_T *, Particle_T *>> neighborPairsOf(size_t particleIndex) noexcept {
+      return {_neighborPairs.data() + _offsets[particleIndex], _offsets[particleIndex + 1] - _offsets[particleIndex]};
+    }
+
+    std::vector<size_t> &offsets() noexcept { return _offsets; }
+    std::vector<std::pair<Particle_T *, Particle_T *>> &neighborPairs() noexcept { return _neighborPairs; }
+
+    [[nodiscard]] const std::vector<size_t> &offsets() const noexcept { return _offsets; }
+    [[nodiscard]] const std::vector<std::pair<Particle_T *, Particle_T *>> &neighborPairs() const noexcept {
+      return _neighborPairs;
+    }
+
+   private:
+    std::vector<size_t> _offsets;
+    std::vector<std::pair<Particle_T *, Particle_T *>> _neighborPairs;
+  };
+
   class CRSNeighborCounterFunctor : public PairwiseFunctor<Particle_T, CRSNeighborCounterFunctor> {
    public:
     using SoAArraysType = typename Particle_T::SoAArraysType;
@@ -364,9 +400,12 @@ class VerletListHelpers {
      * @param pairVerletListsAoS
      * @param interactionLength
      */
-    PairVerletListGeneratorFunctor(NeighborPairsListAoSType &pairVerletListsAoS, double interactionLength)
+    PairVerletListGeneratorFunctor(std::vector<std::vector<std::pair<Particle_T *, Particle_T *>>> &pairVerletListsAoS,
+                                   const std::unordered_map<const Particle_T *, size_t> &particlePtr2indexMap,
+                                   double interactionLength)
         : TriwiseFunctor<Particle_T, PairVerletListGeneratorFunctor>(interactionLength),
           _pairVerletListsAoS(pairVerletListsAoS),
+          _particlePtr2indexMap(particlePtr2indexMap),
           _interactionLengthSquared(interactionLength * interactionLength) {}
 
     std::string getName() override { return "PairVerletListGeneratorFunctor"; }
@@ -387,27 +426,17 @@ class VerletListHelpers {
 
     void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool /*newton3*/) override {
       using namespace autopas::utils::ArrayMath::literals;
+      if (i.isDummy() or j.isDummy() or k.isDummy()) return;
 
-      if (i.isDummy() or j.isDummy() or k.isDummy()) {
-        return;
-      }
       const auto distIJ = j.getR() - i.getR();
       const auto distIK = k.getR() - i.getR();
       const auto distJK = k.getR() - j.getR();
 
-      const double distSquareIJ = utils::ArrayMath::dot(distIJ, distIJ);
-      const double distSquareIK = utils::ArrayMath::dot(distIK, distIK);
-      const double distSquareJK = utils::ArrayMath::dot(distJK, distJK);
-      if (distSquareIJ < _interactionLengthSquared and distSquareIK < _interactionLengthSquared and
-          distSquareJK < _interactionLengthSquared) {
-        // this is thread safe, only if particle i is accessed by only one
-        // thread at a time. which is ensured, as particle i resides in a
-        // specific cell and each cell is only accessed by one thread at a time
-        // (ensured by traversals)
-        // also the list is not allowed to be resized!
-
-        _pairVerletListsAoS.at(&i).push_back(std::make_pair(&j, &k));
-        // no newton3 here, as AoSFunctor(j,i,k) and AoSFunctor (k,i,j) will also be called if newton3 is disabled.
+      if (utils::ArrayMath::dot(distIJ, distIJ) < _interactionLengthSquared and
+          utils::ArrayMath::dot(distIK, distIK) < _interactionLengthSquared and
+          utils::ArrayMath::dot(distJK, distJK) < _interactionLengthSquared) {
+        const auto indexI = _particlePtr2indexMap.at(&i);
+        _pairVerletListsAoS[indexI].push_back(std::make_pair(&j, &k));
       }
     }
 
@@ -428,7 +457,8 @@ class VerletListHelpers {
     }
 
    private:
-    NeighborPairsListAoSType &_pairVerletListsAoS;
+    std::vector<std::vector<std::pair<Particle_T *, Particle_T *>>> &_pairVerletListsAoS;
+    const std::unordered_map<const Particle_T *, size_t> &_particlePtr2indexMap;
     double _interactionLengthSquared;
   };
 

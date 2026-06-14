@@ -335,7 +335,7 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
 
 /*
  * Test that SoA neighbor lists are properly marked invalid and reset at a rebuild step.
-*/
+ */
 TEST_P(VerletListsTest, SoARebuild) {
   constexpr double cutoff = 2.0;
   const double cellSizeFactor = GetParam();

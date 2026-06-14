@@ -219,28 +219,37 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    */
   void updatePairVerletListsAoS3B(bool useNewton3) {
     updateVerletListsCRS<InteractionTypeOption::triwise>(false);
-    generateAoSNeighborPairsLists();
+
+    const size_t numParticles = _indexToParticle.size();
+    std::vector<std::vector<std::pair<Particle_T *, Particle_T *>>> tempPairLists(numParticles);
+
     const double interactionLength = this->getInteractionLength();
-    typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor f(_aosNeighborPairsLists, interactionLength);
+    typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor f(tempPairLists, _particlePtr2indexMap,
+                                                                             interactionLength);
 
-    DataLayoutOption dataLayout;
-    if (_buildVerletListType == BuildVerletListType::VerletAoS) {
-      dataLayout = DataLayoutOption::aos;
-    } else if (_buildVerletListType == BuildVerletListType::VerletSoA) {
-      // there are no SoA 3-body traversals, so we print out a warning and use AoS Layout instead
-      AutoPasLog(WARN, "Pair Verlet Lists can currently only be built with AoS DataLayout, using that instead!");
-      _buildVerletListType = BuildVerletListType::VerletAoS;
-      dataLayout = DataLayoutOption::aos;
-    } else {
-      utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS3B(): unsupported BuildVerletListType: {}",
-                                         static_cast<int>(_buildVerletListType));
-    }
-
+    DataLayoutOption dataLayout = DataLayoutOption::aos;
     auto traversal = VLListIterationTraversal<ParticleCellType,
                                               typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor>(
         f, dataLayout, useNewton3);
     this->computeInteractions(&traversal);
-    _pairListIsValid = true;
+
+    // Flatten tempPairLists into _aosNeighborPairsLists
+    _aosNeighborPairsLists.resizeParticles(numParticles);
+    auto &offsets = _aosNeighborPairsLists.offsets();
+    for (size_t i = 0; i < numParticles; ++i) {
+      offsets[i + 1] = tempPairLists[i].size();
+    }
+    std::inclusive_scan(offsets.begin(), offsets.end(), offsets.begin());
+
+    auto &neighborPairs = _aosNeighborPairsLists.neighborPairs();
+    neighborPairs.resize(offsets.back());
+
+        AUTOPAS_OPENMP(parallel for schedule(static))
+        for (size_t i = 0; i < numParticles; ++i) {
+          std::copy(tempPairLists[i].begin(), tempPairLists[i].end(), neighborPairs.begin() + offsets[i]);
+        }
+
+        _pairListIsValid = true;
   }
 
   /**
@@ -305,7 +314,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Neighbor Pairs Lists: Map of particle pointers to vector of pairs of particle pointers. (To find triplets.)
    */
-  typename VerletListHelpers<Particle_T>::NeighborPairsListAoSType _aosNeighborPairsLists;
+  VerletListHelpers<Particle_T>::CRSPairNeighborList _aosNeighborPairsLists;
 
   /**
    * Mapping of every particle, represented by its pointer, to an index.
