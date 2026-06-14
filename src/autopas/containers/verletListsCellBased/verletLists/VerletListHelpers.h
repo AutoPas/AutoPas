@@ -13,7 +13,42 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
 namespace autopas {
+class PointerToIndexMap {
+ public:
+  template <typename PointerType>
+  void build(const std::vector<PointerType> &keys) {
+    size_t size = keys.size();
+    size_t tableSize = 1;
+    while (tableSize < size * 2) tableSize *= 2;
+    _table.assign(tableSize, Entry{nullptr, 0});
+    _mask = tableSize - 1;
 
+    for (size_t val = 0; val < size; ++val) {
+      const void *key = static_cast<const void *>(keys[val]);
+      size_t h = (reinterpret_cast<size_t>(key) >> 3) & _mask;
+      while (_table[h].key != nullptr) {
+        h = (h + 1) & _mask;
+      }
+      _table[h] = {key, val};
+    }
+  }
+
+  [[nodiscard]] inline size_t at(const void *key) const noexcept {
+    size_t h = (reinterpret_cast<size_t>(key) >> 3) & _mask;
+    while (_table[h].key != key) {
+      h = (h + 1) & _mask;
+    }
+    return _table[h].val;
+  }
+
+ private:
+  struct Entry {
+    const void *key;
+    size_t val;
+  };
+  std::vector<Entry> _table;
+  size_t _mask = 0;
+};
 /**
  * Class of helpers for the VerletLists class.
  * @tparam Particle_T
@@ -104,8 +139,8 @@ class VerletListHelpers {
    public:
     using SoAArraysType = typename Particle_T::SoAArraysType;
 
-    CRSNeighborCounterFunctor(const std::unordered_map<const Particle_T *, std::size_t> &particleToIndex,
-                              std::vector<std::size_t> &counts, double interactionLength)
+    CRSNeighborCounterFunctor(const PointerToIndexMap &particleToIndex, std::vector<std::size_t> &counts,
+                              double interactionLength)
         : PairwiseFunctor<Particle_T, CRSNeighborCounterFunctor>(interactionLength),
           _particleToIndex(particleToIndex),
           _counts(counts),
@@ -133,8 +168,6 @@ class VerletListHelpers {
 
       if (dist2 <= _interactionLengthSquared) {
         const auto indexI = _particleToIndex.at(&i);
-        const auto indexJ = _particleToIndex.at(&j);
-
         ++_counts[indexI + 1];
       }
     }
@@ -156,7 +189,7 @@ class VerletListHelpers {
     }
 
    private:
-    const std::unordered_map<const Particle_T *, std::size_t> &_particleToIndex;
+    const PointerToIndexMap &_particleToIndex;
     std::vector<std::size_t> &_counts;
     double _interactionLengthSquared;
   };
@@ -165,9 +198,8 @@ class VerletListHelpers {
    public:
     using SoAArraysType = typename Particle_T::SoAArraysType;
 
-    CRSNeighborFillFunctor(const std::unordered_map<const Particle_T *, std::size_t> &particleToIndex,
-                           std::vector<std::size_t> &writeOffsets, std::vector<std::size_t> &neighbors,
-                           double interactionLength)
+    CRSNeighborFillFunctor(const PointerToIndexMap &particleToIndex, std::vector<std::size_t> &writeOffsets,
+                           std::vector<std::size_t> &neighbors, double interactionLength)
         : PairwiseFunctor<Particle_T, CRSNeighborFillFunctor>(interactionLength),
           _particleToIndex(particleToIndex),
           _writeOffsets(writeOffsets),
@@ -219,7 +251,7 @@ class VerletListHelpers {
     }
 
    private:
-    const std::unordered_map<const Particle_T *, std::size_t> &_particleToIndex;
+    const PointerToIndexMap &_particleToIndex;
     std::vector<std::size_t> &_writeOffsets;
     std::vector<std::size_t> &_neighbors;
     double _interactionLengthSquared;
@@ -401,8 +433,7 @@ class VerletListHelpers {
      * @param interactionLength
      */
     PairVerletListGeneratorFunctor(std::vector<std::vector<std::pair<Particle_T *, Particle_T *>>> &pairVerletListsAoS,
-                                   const std::unordered_map<const Particle_T *, size_t> &particlePtr2indexMap,
-                                   double interactionLength)
+                                   const PointerToIndexMap &particlePtr2indexMap, double interactionLength)
         : TriwiseFunctor<Particle_T, PairVerletListGeneratorFunctor>(interactionLength),
           _pairVerletListsAoS(pairVerletListsAoS),
           _particlePtr2indexMap(particlePtr2indexMap),
@@ -458,7 +489,7 @@ class VerletListHelpers {
 
    private:
     std::vector<std::vector<std::pair<Particle_T *, Particle_T *>>> &_pairVerletListsAoS;
-    const std::unordered_map<const Particle_T *, size_t> &_particlePtr2indexMap;
+    const PointerToIndexMap &_particlePtr2indexMap;
     double _interactionLengthSquared;
   };
 

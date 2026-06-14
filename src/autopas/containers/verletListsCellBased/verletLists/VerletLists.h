@@ -291,21 +291,17 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
   size_t generateParticleIndexMap() {
-    _particlePtr2indexMap.clear();
     _indexToParticle.clear();
 
-    // Optional: reserve if you can get an estimate cheaply.
     const auto estimatedParticles = this->getNumberOfParticles(IteratorBehavior::ownedOrHaloOrDummy);
-
-    _particlePtr2indexMap.reserve(estimatedParticles);
     _indexToParticle.reserve(estimatedParticles);
 
-    size_t index = 0;
-    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++index) {
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
       auto *particlePtr = &(*iter);
-      _particlePtr2indexMap.emplace(particlePtr, index);
       _indexToParticle.emplace_back(particlePtr);
     }
+
+    _particlePtr2indexMap.build(_indexToParticle);
 
     return _indexToParticle.size();
   }
@@ -320,7 +316,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * Mapping of every particle, represented by its pointer, to an index.
    * The index indexes all particles in the container.
    */
-  std::unordered_map<const Particle_T *, size_t> _particlePtr2indexMap;
+  PointerToIndexMap _particlePtr2indexMap;
 
   std::vector<Particle_T *> _indexToParticle;
   VerletListHelpers<Particle_T>::CRSNeighborList _crsNeighborList;
@@ -330,6 +326,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * For every Particle, identified via the _particlePtr2indexMap, a vector of its neighbor indices is stored.
    */
   std::vector<std::vector<size_t, AlignedAllocator<size_t>>> _soaNeighborLists;
+
+  std::vector<std::vector<size_t>> _tempNeighbors;
 
   /**
    * Shows if the SoA neighbor list is currently valid.
