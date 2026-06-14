@@ -93,16 +93,26 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         const auto &offsets = list.offsets();
         const auto &neighbors = list.neighbors();
 
-        AUTOPAS_OPENMP(parallel for schedule(static))
-        for (size_t i = 0; i < numParticles; ++i) {
-          ParticleType &particle = *particles[i];
+        if (not _useNewton3) {
+          AUTOPAS_OPENMP(parallel for schedule(static))
+          for (size_t i = 0; i < numParticles; ++i) {
+            ParticleType &particle = *particles[i];
 
-          // Optional: skip dummies/deleted particles if necessary.
-          // if (particle.isDummy()) continue;
+            // Optional: skip dummies/deleted particles if necessary.
+            // if (particle.isDummy()) continue;
 
-          for (size_t p = offsets[i]; p < offsets[i + 1]; ++p) {
-            ParticleType &neighbor = *particles[neighbors[p]];
-            _functor.AoSFunctor(particle, neighbor, false);
+            for (size_t p = offsets[i]; p < offsets[i + 1]; ++p) {
+              ParticleType &neighbor = *particles[neighbors[p]];
+              _functor.AoSFunctor(particle, neighbor, false);
+            }
+          }
+        } else {
+          for (size_t i = 0; i < numParticles; ++i) {
+            ParticleType &particle = *particles[i];
+            for (size_t p = offsets[i]; p < offsets[i + 1]; ++p) {
+              ParticleType &neighbor = *particles[neighbors[p]];
+              _functor.AoSFunctor(particle, neighbor, _useNewton3);
+            }
           }
         }
       }
