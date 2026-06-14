@@ -29,7 +29,9 @@ bool TuningManager::tune(const size_t currentIteration, const LiveInfo &info) {
       _forceRetunePending = false;
     }
 
+    const bool allTrivial = allSearchSpacesAreTrivial();
     for (const auto &tuner : _autoTuners | std::ranges::views::values) {
+      tuner->setSampleEvenIfTrivial(not allTrivial);
       if (tuner->needsLiveInfo() and (isStart or aboutToBegin)) {
         tuner->receiveLiveInfo(info, isStart);
       }
@@ -41,9 +43,9 @@ bool TuningManager::tune(const size_t currentIteration, const LiveInfo &info) {
 
 void TuningManager::addMeasurement(long sampleRebuild, long sampleTraverseParticles, bool neighborListRebuilt,
                                    size_t iteration, InteractionTypeOption::Value interactionType) const {
-  if (_autoTuners.at(interactionType)->inTuningPhase()) {
-    _autoTuners.at(interactionType)
-        ->addMeasurement(sampleRebuild, sampleTraverseParticles, neighborListRebuilt, iteration, _tuningPhase);
+  auto &tuner = _autoTuners.at(interactionType);
+  if (tuner->inTuningPhase()) {
+    tuner->addMeasurement(sampleRebuild, sampleTraverseParticles, neighborListRebuilt, iteration, _tuningPhase);
   }
 }
 

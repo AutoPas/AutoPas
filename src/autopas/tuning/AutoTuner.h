@@ -240,6 +240,15 @@ class AutoTuner {
   void setRebuildFrequency(double rebuildFrequency);
 
   /**
+   * Sets whether a trivial tuner should still be sampled (collect evidence)
+during tuning.
+   * This is used by the TuningManager in multi-tuner scenarios to ensure all
+tuners have evidence.
+   * @param sampleEvenIfTrivial
+   */
+  void setSampleEvenIfTrivial(bool sampleEvenIfTrivial);
+
+  /**
    * Checks whether the current configuration performs so poorly that it shouldn't be resampled further within this
    * tuning phase. If the currently sampled configuration is worse than the current best configuration by more than the
    * earlyStoppingFactor factor, it will not be sampled again this tuning phase. Uses the _estimateRuntimeFromSamples()
@@ -440,5 +449,10 @@ class AutoTuner {
    * significantly slower than the fastest configuration by more than _earlyStoppingFactor.
    */
   bool _earlyStoppingOfResampling{false};
+
+  /**
+   *Flag to force the tuner to collect samples even if the search space is trivial.
+   */
+  bool _sampleEvenIfTrivial{false};
 };
 }  // namespace autopas

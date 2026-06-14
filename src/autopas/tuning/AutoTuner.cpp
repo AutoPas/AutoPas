@@ -413,9 +413,7 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo, const bool isStartOfTu
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 
 bool AutoTuner::inTuningPhase() const {
-  // If _iteration % _tuningInterval == 0 we are in the first tuning iteration but tuneConfiguration has not
-  // been called yet.
-  return (_isTuning or _forceRetune) and not searchSpaceIsTrivial();
+  return (_isTuning or _forceRetune) and (not searchSpaceIsTrivial() or _sampleEvenIfTrivial);
 }
 
 bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
@@ -425,6 +423,8 @@ const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evi
 bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
 
 void AutoTuner::setRebuildFrequency(double rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
+
+void AutoTuner::setSampleEvenIfTrivial(bool sampleEvenIfTrivial) { _sampleEvenIfTrivial = sampleEvenIfTrivial; }
 
 void AutoTuner::checkEarlyStoppingCondition(const size_t tuningPhase) {
   if (_evidenceCollection.empty(tuningPhase)) {
