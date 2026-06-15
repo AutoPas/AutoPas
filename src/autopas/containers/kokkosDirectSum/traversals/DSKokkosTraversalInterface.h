@@ -23,7 +23,10 @@ public:
 
   void setOwnedToTraverse(utils::KokkosStorage<Particle_T>& input, DataLayoutOption targetLayout) {
 
+    // No actual copy must be done as we do not want the content to be copied
     _ownedParticles.setLayout(targetLayout);
+    _ownedParticles.overrideSize(input.size());
+    _ownedParticles.overrideCapacity(input.getCapacity());
 
     if (targetLayout == DataLayoutOption::aos) {
       _ownedParticles.getAoS() = input.getAoS();

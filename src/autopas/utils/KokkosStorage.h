@@ -29,6 +29,8 @@ namespace autopas::utils {
 
     KokkosStorage(const KokkosStorage& other) {
       _layout = other.getLayout();
+      _currentSize = other.size();
+      _capacity = other.getCapacity();
 
       switch (_layout) {
         case DataLayoutOption::aos: {
@@ -53,9 +55,14 @@ namespace autopas::utils {
           break;
         }
       }
+
+      _capacity = numParticles;
+      _currentSize = 0; // because realloc deletes all content
     }
 
     void resize(size_t numParticles) {
+      // TODO: check if numParticles < currentSize and decide how to handle that
+
       switch (_layout) {
         case DataLayoutOption::aos: {
           storageAoS.resize(numParticles);
@@ -68,9 +75,31 @@ namespace autopas::utils {
           break;
         }
       }
+
+      _currentSize = std::min(_currentSize, numParticles);
+      _capacity = numParticles;
     }
 
-    void addParticle(size_t index, const Particle_T &p) {
+    void clear () {
+      storageAoS.realloc(0);
+      storageSoA.realloc(0);
+
+      _capacity = 0;
+      _currentSize = 0;
+
+      _soaDirty = false;
+      _aosDirty = false;
+    }
+
+    // TODO: mark somewhere that this is not thread safe (!)
+    void addParticle(const Particle_T &p) {
+
+      if (_currentSize == _capacity) {
+        resize(_capacity+10);
+      }
+
+      size_t index = _currentSize++;
+
       switch (_layout) {
         case DataLayoutOption::aos: {
           syncSoAToAoS();
@@ -178,6 +207,7 @@ namespace autopas::utils {
 
     template <typename Target>
     void markModified() {
+      // TODO: when AoS is also allowed on the GPU, we need a switch here too
       constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
 
@@ -221,18 +251,21 @@ namespace autopas::utils {
       return Particle_T::KokkosSoAArraysType::tupleSize();
     }
 
+    // TODO: make it very (!) clear that this function is only to be used in exceptional cases
+    void overrideSize(size_t newSize) {
+      _currentSize = newSize;
+    }
+
+    void overrideCapacity(size_t newCapacity) {
+      _capacity = newCapacity;
+    }
+
     size_t size() const {
-      switch (_layout) {
-        case DataLayoutOption::aos: {
-          return storageAoS.size();
-        }
-        case DataLayoutOption::soa: {
-          return storageSoA.size();
-        }
-        default: {
-          return 0;
-        }
-      }
+      return _currentSize;
+    }
+
+    size_t getCapacity() const {
+      return _capacity;
     }
 
   private:
@@ -262,6 +295,9 @@ namespace autopas::utils {
     // TODO: maybe think of a better concept for this in the future
     bool _soaDirty {false};
     bool _aosDirty {false};
+
+    size_t _capacity {0};
+    size_t _currentSize {0};
   };
 
 }

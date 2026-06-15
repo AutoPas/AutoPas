@@ -305,6 +305,7 @@ class AutoPas {
   template <class ExecSpace, typename Lambda>
   void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto &container) { container.template forEachKokkos<ExecSpace>(forEachLambda, behavior); });
+    // TODO: also consider buffer particles -> begin() does
   }
 
   bool containerAllowsKokkos() const { return getContainer().allowsKokkos(); }
@@ -318,34 +319,10 @@ class AutoPas {
     withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
   }
 
-  /**
-   * Reduce properties of particles in parallel as defined by a lambda function.
-   * @tparam Lambda (Particle_T p, A &initialValue) -> void
-   * @tparam reference to result of type A
-   * @param reduceLambda code to reduce properties of particles
-   * @param result reference to result of type A
-   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
-   * @note not actually parallel until kokkos integration
-   */
-  template <typename Lambda, typename A>
-  void reduceParallel(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
-  }
-
-  /**
-   * @copydoc reduce()
-   * @note const version
-   */
-  template <typename Lambda, typename A>
-  void reduceParallel(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
-  }
-
   template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
   void reduceKokkos(Lambda forEachLambda, Result& result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto &container) { container.template reduceKokkos<ExecSpace, Result, Reduction>(forEachLambda, result, behavior); });
+    // TODO: also consider buffer particles -> begin() does
   }
 
   /**
@@ -436,6 +413,7 @@ class AutoPas {
   template <class ExecSpace, typename Lambda>
   void forEachInRegionKokkos(Lambda forEachLambda, const std::array<double, 3>& lowerCorner, const std::array<double, 3>& higherCorner, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     withStaticContainerType(getContainer(), [&](auto &container) { container.template forEachInRegionKokkos<ExecSpace, true>(forEachLambda, behavior, lowerCorner, higherCorner); });
+    // TODO: also consider buffer particles -> begin() does
   }
 
   /**

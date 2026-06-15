@@ -27,7 +27,7 @@ namespace autopas {
  *
  * @tparam Particle_T
  */
-template <typename Particle_T>
+template <typename Particle_T, typename ExecSpace>
 class RemainderPairwiseInteractionHandler {
  public:
   /**
@@ -156,35 +156,140 @@ class RemainderPairwiseInteractionHandler {
     using utils::ArrayUtils::static_cast_copy_array;
     using namespace autopas::utils::ArrayMath::literals;
 
-    // Bunch of shorthands
-    const auto cutoff = container.getCutoff();
-    const auto interactionLength = container.getInteractionLength();
-    const auto haloBoxMin = container.getBoxMin() - interactionLength;
-    const auto totalBoxLengthInv = 1. / (container.getBoxMax() + interactionLength - haloBoxMin);
-    const std::array<size_t, 3> spacialLocksPerDim{_spatialLocks.size(), _spatialLocks[0].size(),
-                                                   _spatialLocks[0][0].size()};
+    bool requiresKokkos = container.allowsKokkos();
 
-    // Helper function to obtain the lock responsible for a given position.
-    // Implemented as lambda because it can reuse a lot of information that is known in this context.
-    const auto getSpacialLock = [&](const std::array<double, 3> &pos) -> std::mutex & {
-      const auto posDistFromLowerCorner = pos - haloBoxMin;
-      const auto relativePos = posDistFromLowerCorner * totalBoxLengthInv;
-      // Lock coordinates are the position scaled by the number of locks
-      const auto lockCoords =
-          static_cast_copy_array<size_t>(static_cast_copy_array<double>(spacialLocksPerDim) * relativePos);
-      return *_spatialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]];
-    };
+    if (requiresKokkos) {
+      // 1. Loop over all buffers and determine the size of the KokkosStorage objects
+      size_t haloSize = 0;
+      size_t ownedSize = 0;
 
-    // one halo and particle buffer pair per thread
-    AUTOPAS_OPENMP(parallel for schedule(static, 1) default(shared))
-    for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
-      auto &particleBuffer = particleBuffers[bufferId];
-      auto &haloParticleBuffer = haloParticleBuffers[bufferId];
+      for (int i = 0; i < particleBuffers.size(); ++i) {
+        haloSize += haloParticleBuffers.at(i).size();
+        ownedSize += particleBuffers.at(i).size();
+      }
 
-      // 1. particleBuffer with all close particles in container
-      for (auto &&p1 : particleBuffer) {
-        const auto min = p1.getR() - cutoff;
-        const auto max = p1.getR() + cutoff;
+      // 2. Fill particles in KokkosStorage buffers
+      utils::KokkosStorage<Particle_T> ownedBuffer {DataLayoutOption::soa, ownedSize};
+      utils::KokkosStorage<Particle_T> haloBuffer {DataLayoutOption::soa, haloSize};
+
+      // This guarantees the order [bufferA, bufferB, bufferC, ...] which will be important later on
+      for (int i = 0; i < particleBuffers.size(); ++i) {
+        auto &particleBuffer = particleBuffers.at(i);
+        auto &haloParticleBuffer = haloParticleBuffers.at(i);
+
+        for (auto &p : particleBuffer) {
+          ownedBuffer.addParticle(p);
+        }
+        for (auto &p : haloParticleBuffer) {
+          haloBuffer.addParticle(p);
+        }
+      }
+
+      ownedBuffer.template markModified<Kokkos::HostSpace>();
+      haloBuffer.template markModified<Kokkos::HostSpace>();
+
+      // 3. perform actual remainder computations
+      ownedBuffer.template sync<ExecSpace>();
+      haloBuffer.template sync<ExecSpace>();
+
+      constexpr bool host = false;
+
+      typename Particle_T::ParticleSoAFloatPrecision cutoffSquared = f->getCutoff() * f->getCutoff();
+
+      Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fx2 {};
+      Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fy2 {};
+      Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fz2 {};
+
+      fx2.realloc(ownedSize);
+      fy2.realloc(ownedSize);
+      fz2.realloc(ownedSize);
+
+      // TODO: figure out how to extract that in a clever way (below, it is done on a per particle basis)
+      auto min = container.getBoxMin();
+      auto max = container.getBoxMax();
+
+      container.template forEachInRegionKokkos<ExecSpace, true>(KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage) {
+        const auto x1 = storage.template operator()<Particle_T::AttributeNames::posX, true, host>(i);
+        const auto y1 = storage.template operator()<Particle_T::AttributeNames::posY, true, host>(i);
+        const auto z1 = storage.template operator()<Particle_T::AttributeNames::posZ, true, host>(i);
+
+        typename Particle_T::ParticleSoAFloatPrecision fxAcc = 0.;
+        typename Particle_T::ParticleSoAFloatPrecision fyAcc = 0.;
+        typename Particle_T::ParticleSoAFloatPrecision fzAcc = 0.;
+
+        for (int j = 0; j < ownedSize; ++j) {
+          typename Particle_T::ParticleSoAFloatPrecision fx = -fxAcc;
+          typename Particle_T::ParticleSoAFloatPrecision fy = -fyAcc;
+          typename Particle_T::ParticleSoAFloatPrecision fz = -fzAcc;
+
+          f->SoAKernelKokkos(x1, y1, z1, ownedBuffer.getSoA(), fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
+
+          fx += fxAcc;
+          fy += fyAcc;
+          fz += fzAcc;
+
+          /* This enforces the use of n3 (not easy to handle non-n3)*/
+          Kokkos::atomic_add(&fx2.view_device()(j), fx);
+          Kokkos::atomic_add(&fy2.view_device()(j), fy);
+          Kokkos::atomic_add(&fz2.view_device()(j), fz);
+        }
+
+        for (int j = 0; j < haloSize; ++j) {
+          f->SoAKernelKokkos(x1, y1, z1, haloBuffer.getSoA(), fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
+        }
+
+        storage.template operator()<Particle_T::AttributeNames::forceX, true, false>(i) += fxAcc;
+        storage.template operator()<Particle_T::AttributeNames::forceY, true, false>(i) += fyAcc;
+        storage.template operator()<Particle_T::AttributeNames::forceZ, true, false>(i) += fzAcc;
+      }, IteratorBehavior::ownedOrHalo, min, max);
+
+      // 4. extract the content of the force views to the buffers
+      fx2.modify_device();
+      fy2.modify_device();
+      fx2.modify_device();
+
+      fx2.sync_host();
+      fy2.sync_host();
+      fz2.sync_host();
+
+      int offset = 0;
+      for (int i = 0; i < particleBuffers.size(); ++i) {
+        auto &particleBuffer = particleBuffers.at(i);
+
+        for (auto& p : particleBuffer) {
+          p.addF({fx2.view_host()(offset), fy2.view_host()(offset), fz2.view_host()(offset++)});
+        }
+      }
+    } else {
+      // Bunch of shorthands
+      const auto cutoff = container.getCutoff();
+      const auto interactionLength = container.getInteractionLength();
+      const auto haloBoxMin = container.getBoxMin() - interactionLength;
+      const auto totalBoxLengthInv = 1. / (container.getBoxMax() + interactionLength - haloBoxMin);
+      const std::array<size_t, 3> spacialLocksPerDim{_spatialLocks.size(), _spatialLocks[0].size(),
+                                                     _spatialLocks[0][0].size()};
+
+      // Helper function to obtain the lock responsible for a given position.
+      // Implemented as lambda because it can reuse a lot of information that is known in this context.
+      const auto getSpacialLock = [&](const std::array<double, 3> &pos) -> std::mutex & {
+        const auto posDistFromLowerCorner = pos - haloBoxMin;
+        const auto relativePos = posDistFromLowerCorner * totalBoxLengthInv;
+        // Lock coordinates are the position scaled by the number of locks
+        const auto lockCoords =
+            static_cast_copy_array<size_t>(static_cast_copy_array<double>(spacialLocksPerDim) * relativePos);
+        return *_spatialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]];
+      };
+
+      // one halo and particle buffer pair per thread
+      AUTOPAS_OPENMP(parallel for schedule(static, 1) default(shared))
+      for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
+        auto &particleBuffer = particleBuffers[bufferId];
+        auto &haloParticleBuffer = haloParticleBuffers[bufferId];
+
+        // 1. particleBuffer with all close particles in container
+        for (auto &&p1 : particleBuffer) {
+          const auto min = p1.getR() - cutoff;
+          const auto max = p1.getR() + cutoff;
 
         // TODO: forEachInRegionKokkos
 
@@ -205,19 +310,20 @@ class RemainderPairwiseInteractionHandler {
             min, max, IteratorBehavior::ownedOrHalo);
       }
 
-      // 2. haloParticleBuffer with owned, close particles in container
-      for (auto &&p1halo : haloParticleBuffer) {
-        const auto min = p1halo.getR() - cutoff;
-        const auto max = p1halo.getR() + cutoff;
-        container.forEachInRegion(
-            [&](auto &p2) {
-              // No need to apply anything to p1halo
-              //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
-              //   -> newton3 argument needed for correct globals
-              const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
-              f->AoSFunctor(p2, p1halo, newton3);
-            },
-            min, max, IteratorBehavior::owned);
+        // 2. haloParticleBuffer with owned, close particles in container
+        for (auto &&p1halo : haloParticleBuffer) {
+          const auto min = p1halo.getR() - cutoff;
+          const auto max = p1halo.getR() + cutoff;
+          container.forEachInRegion(
+              [&](auto &p2) {
+                // No need to apply anything to p1halo
+                //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
+                //   -> newton3 argument needed for correct globals
+                const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
+                f->AoSFunctor(p2, p1halo, newton3);
+              },
+              min, max, IteratorBehavior::owned);
+        }
       }
     }
   }
