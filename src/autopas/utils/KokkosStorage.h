@@ -140,7 +140,7 @@ namespace autopas::utils {
 
     template <bool regionIter, bool host, typename T>
     KOKKOS_INLINE_FUNCTION
-    bool fulfillsIteratorRequirements(int index, autopas::options::IteratorBehavior behavior, const std::array<T, 3>& lowerCorner, const std::array<T, 3>& upperCorner) const {
+    bool fulfillsIteratorRequirements(int index, autopas::options::IteratorBehavior behavior, const Kokkos::Array<T, 3>& lowerCorner, const Kokkos::Array<T, 3>& upperCorner) const {
 
       if constexpr (regionIter) {
         std::array<T, 3> positions {
@@ -149,9 +149,13 @@ namespace autopas::utils {
           operator()<Particle_T::AttributeNames::posZ, true, host>(index),
         };
 
+        // TODO: write own version of inBox maybe in autopas::kokkosUtils namespace
+
+        /*
         if (not autopas::utils::inBox(positions, lowerCorner, upperCorner)) {
           return false;
         }
+        */
       }
 
       auto ownershipState = operator()<Particle_T::AttributeNames::ownershipState, true, host>(index);

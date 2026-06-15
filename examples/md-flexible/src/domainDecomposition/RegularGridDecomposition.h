@@ -20,7 +20,7 @@ namespace {
 /**
  * Sixth Root of Two precomputed here, as it is used a lot in reflecting boundaries.
  */
-const double sixthRootOfTwo = std::pow(2., 1. / 6.);
+const double _sixthRootOfTwo = std::pow(2., 1. / 6.);
 }  // namespace
 
 /**

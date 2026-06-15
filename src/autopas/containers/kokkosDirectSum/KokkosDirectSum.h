@@ -143,6 +143,9 @@ template <class Particle_T>
               auto& boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
               auto& boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
 
+              const auto& boxMinKokkos = Kokkos::Array<double, 3> {boxMin.at(0), boxMin.at(1), boxMin.at(2)};
+              const auto& boxMaxKokkos = Kokkos::Array<double, 3> {boxMax.at(0), boxMax.at(1), boxMax.at(2)};
+
               auto& owned = _ownedParticles;
 
               // TODO: change HostSpace to whatever other space
@@ -162,8 +165,8 @@ template <class Particle_T>
                 Kokkos::parallel_for("collectMigrants", Kokkos::RangePolicy<HostSpace::execution_space>(0, numberOfOwned), KOKKOS_LAMBDA(int i) {
 
                   // TODO: make sure this logic is working, i.e. the correct particles are found, i.e. the owned particles outside of the box
-                  if ((not owned.template fulfillsIteratorRequirements<true, host>(i, IteratorBehavior::ownedOrHaloOrDummy, boxMin, boxMax))
-                     and owned.template fulfillsIteratorRequirements<false, host>(i, IteratorBehavior::owned, boxMin, boxMax)) {
+                  if ((not owned.template fulfillsIteratorRequirements<true, host>(i, IteratorBehavior::ownedOrHaloOrDummy, boxMinKokkos, boxMaxKokkos))
+                     and owned.template fulfillsIteratorRequirements<false, host>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
 
                     int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
                     auto id = owned.template operator()<Particle_T::AttributeNames::id, true, host>(i);
@@ -184,10 +187,10 @@ template <class Particle_T>
 
                 Kokkos::parallel_for("collectMigrantsAndReinsertOwned", Kokkos::RangePolicy<HostSpace::execution_space>(0, numberOfOwned), KOKKOS_LAMBDA(int i) {
 
-                  if (owned.template fulfillsIteratorRequirements<false, host>(i, IteratorBehavior::owned, boxMin, boxMax)) {
+                  if (owned.template fulfillsIteratorRequirements<false, host>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
                     /* Particle is owned */
 
-                    if (owned.template fulfillsIteratorRequirements<true, host>(i, IteratorBehavior::owned, boxMin, boxMax)) {
+                    if (owned.template fulfillsIteratorRequirements<true, host>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
                       /* Particle is within the container */
 
                       // TODO: this can lead to heavy contention on the locks... -> maybe think of a better approach
@@ -298,7 +301,9 @@ template <class Particle_T>
 
               template <class ExecSpace, bool regionIter, typename Lambda>
             void forEachInRegionKokkos(Lambda forEachLambda, IteratorBehavior behavior, const std::array<double, 3> &lowerCorner, const std::array<double, 3>& higherCorner) {
-              // TODO: this will still require to pass the all particle's indices to the lambda clause with a preceeding check if the current particle is within the requested region in addition to the test for the ownershipstate
+
+              const auto& lowerCornerKokkos = Kokkos::Array{lowerCorner.at(0), lowerCorner.at(1), lowerCorner.at(2)};
+              const auto& higherCornerKokkos = Kokkos::Array{higherCorner.at(0), higherCorner.at(1), higherCorner.at(2)};
 
               if (_dataLayout == DataLayoutOption::aos) {
                 convertToAoS(); /* this guarantees syncing to the Host (AoS must not run on CUDA - so far) */
@@ -319,7 +324,7 @@ template <class Particle_T>
                 auto& owned = _ownedParticles;
                 Kokkos::parallel_for("forEachKokkosOwned", Kokkos::RangePolicy<ExecSpace>(0, numberOfOwned), KOKKOS_LAMBDA(int i)  {
 
-                  if (owned.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCorner, higherCorner)) {
+                  if (owned.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
                     forEachLambda(i, owned);
                   }
                 });
@@ -328,7 +333,7 @@ template <class Particle_T>
               if (behavior & 0b110)  {
                 auto& halo = _haloParticles;
                 Kokkos::parallel_for("forEachKokkosHalo", Kokkos::RangePolicy<ExecSpace>(0, numberOfHalo), KOKKOS_LAMBDA(int i)  {
-                  if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCorner, higherCorner)) {
+                  if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
                     forEachLambda(i, halo);
                   }
                 });
@@ -373,11 +378,14 @@ template <class Particle_T>
               // TODO: decide on how to deduce this template parameters based on the ExecSpace
               constexpr bool host = false;
 
+              const auto& lowerCornerKokkos = Kokkos::Array{lowerCorner.at(0), lowerCorner.at(1), lowerCorner.at(2)};
+              const auto& higherCornerKokkos = Kokkos::Array{higherCorner.at(0), higherCorner.at(1), higherCorner.at(2)};
+
               /* owned or dummies; this basically filters out only halo, sequential, container only */
               if (behavior & 0b101) {
                 auto& owned = _ownedParticles;
                 Kokkos::parallel_reduce("reduceKokkosOwned", Kokkos::RangePolicy<ExecSpace>(0, numberOfOwned), KOKKOS_LAMBDA(int i, Result& localResult)  {
-                  if (owned.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCorner, higherCorner)) {
+                  if (owned.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
                     reduceLambda(i, owned, localResult);
                   }
                 }, Reduction(result));
@@ -386,7 +394,7 @@ template <class Particle_T>
               if (behavior & 0b110) {
                 auto& halo = _haloParticles;
                 Kokkos::parallel_reduce("reduceKokkosHalo", Kokkos::RangePolicy<ExecSpace>(0, numberOfHalo), KOKKOS_LAMBDA(int i, Result& localResult)  {
-                  if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCorner, higherCorner)) {
+                  if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
                     reduceLambda(i, halo, localResult);
                   }
                 }, Reduction(result));

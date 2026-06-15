@@ -61,7 +61,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   for (const auto &[_, sigma] : configuration.sigmaMap.value) {
     maxSigma = std::max(maxSigma, sigma);
   }
-  _maxReflectiveSkin = sixthRootOfTwo * maxSigma / 2.;
+  _maxReflectiveSkin = _sixthRootOfTwo * maxSigma / 2.;
 
   // initialize _communicator and _domainIndex
   initializeMPICommunicator();
@@ -372,7 +372,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         };
 
         const bool reflectMoleculeFlag =
-            distanceToBoundary < sixthRootOfTwo * 0.5 *
+            distanceToBoundary < _sixthRootOfTwo * 0.5 *
 #if MD_FLEXIBLE_MODE == MULTISITE
                                      particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId());
 #else
@@ -455,6 +455,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
       }
       } else {
 
+        const auto sixthRootOfTwo = _sixthRootOfTwo;
         autoPasContainer.forEachInRegionKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
 
           ParticleType::ParticleSoAFloatPrecision position = 42.;
