@@ -473,8 +473,9 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
 
               kokkosVLTraversal->setOwnedToTraverse(_ownedParticles);
               kokkosVLTraversal->setHaloToTraverse(_haloParticles);
-              kokkosVLTraversal->setNeighborList(_neighborListOffsets.d_view, _neighborListEntries.d_view);
-              kokkosVLTraversal->setHaloNeighborList(_haloNeighborListOffsets.d_view, _haloNeighborListEntries.d_view);
+              kokkosVLTraversal->setNeighborList(_neighborListOffsets.d_view, _neighborListEntries.d_view, _maxNeighbors);
+              kokkosVLTraversal->setHaloNeighborList(_haloNeighborListOffsets.d_view, _haloNeighborListEntries.d_view,
+                                                     _maxNeighbors);
             }
             else {
                 utils::ExceptionHandler::exception("The selected traversal is not compatible with the VerletListsKokkos container.");

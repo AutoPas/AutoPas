@@ -70,14 +70,19 @@ public:
     }
   }
 
-  void setNeighborList(Kokkos::View<size_t*> offsets, Kokkos::View<size_t*> entries) {
+  // stride == 0: packed CSR, begin(i) = offsets(i), end(i) = offsets(i+1) (offsets has N+1 entries).
+  // stride  > 0: fixed-stride (stride slots per particle, with gaps), begin(i) = i * stride,
+  //              end(i) = offsets(i) (offsets has N entries and stores each particle's end).
+  void setNeighborList(Kokkos::View<size_t*> offsets, Kokkos::View<size_t*> entries, size_t stride = 0) {
     _neighborListOffsets = offsets;
     _neighborListEntries = entries;
+    _neighborListStride = stride;
   }
 
-  void setHaloNeighborList(Kokkos::View<size_t*> offsets, Kokkos::View<size_t*> entries) {
+  void setHaloNeighborList(Kokkos::View<size_t*> offsets, Kokkos::View<size_t*> entries, size_t stride = 0) {
     _haloNeighborListOffsets = offsets;
     _haloNeighborListEntries = entries;
+    _haloNeighborListStride = stride;
   }
 
 protected:
@@ -88,9 +93,11 @@ protected:
   // owned-owned neighbor list (entries index into the owned SoA/AoS)
   Kokkos::View<size_t*> _neighborListOffsets;
   Kokkos::View<size_t*> _neighborListEntries;
+  size_t _neighborListStride {0};
 
-  // owned-halo neighbor list 
+  // owned-halo neighbor list
   Kokkos::View<size_t*> _haloNeighborListOffsets;
   Kokkos::View<size_t*> _haloNeighborListEntries;
+  size_t _haloNeighborListStride {0};
 };
 }
