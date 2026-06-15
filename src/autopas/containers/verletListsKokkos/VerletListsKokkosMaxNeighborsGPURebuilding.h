@@ -434,7 +434,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                     const auto distSquared = dx * dx + dy * dy + dz * dz;
                     
                     if (distSquared < interactionLengthSqr) {
-                        if (count > maxNeighbors) {
+                        if (count >= maxNeighbors) {
                             // No room left for this neighbor: record the overflow and stop writing, atomic since shared between threads
                             Kokkos::atomic_store(&overflowFlag(), 1);
                             break;
