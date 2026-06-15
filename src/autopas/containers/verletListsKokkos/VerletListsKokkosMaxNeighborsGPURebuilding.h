@@ -156,8 +156,14 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
         auto& haloSoA = _haloParticles.getSoA();
 
         while (true) {
+            // Offsets are per owned particle; entries hold maxNeighbors slots per owned particle
+            Kokkos::realloc(_neighborListOffsets, numberOfOwned);
+            Kokkos::realloc(_neighborListEntries, numberOfOwned * _maxNeighbors);
+            Kokkos::realloc(_haloNeighborListOffsets, numberOfOwned);
+            Kokkos::realloc(_haloNeighborListEntries, numberOfOwned * _maxNeighbors);
+
             const bool ownedOverflow = buildNeighborListsFlat(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view);
-            
+
             const bool haloOverflow = buildNeighborListsFlat(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view);
             if (!ownedOverflow && !haloOverflow) {
                 break;
@@ -386,7 +392,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
     private:
 
         bool buildNeighborListsFlat(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
-
+            spdlog::info("buildNeighborlistflat()");
             const size_t N = soa1.size();
             const size_t M = soa2.size();
             spdlog::debug("VerletListsKokkosTraversalFlat::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
@@ -405,6 +411,11 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
             const auto soa1Device = soa1.deviceView();
             const auto soa2Device = soa2.deviceView();
 
+            // Device-side overflow flag
+            Kokkos::View<int, DeviceSpace> overflowFlag("overflowFlag");
+            Kokkos::deep_copy(overflowFlag, 0);
+
+            spdlog::info("Launching kernel with N={} and M={}", N, M);
             auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
             Kokkos::parallel_for("vl_kokkos_rebuild_flat", rangePolicy, KOKKOS_LAMBDA(const int i) {
 
@@ -412,7 +423,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                 const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
                 const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
 
-                const size_t count = 0;
+                size_t count = 0;
                 for (size_t k = 0; k < M; ++k) {
                     const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
                     const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
@@ -421,17 +432,28 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                     const auto dy = y1 - y2;
                     const auto dz = z1 - z2;
                     const auto distSquared = dx * dx + dy * dy + dz * dz;
+                    
                     if (distSquared < interactionLengthSqr) {
-                        if(count > maxNeighbors) {
-                            // TO DO: handle overflow (e.g., by setting a flag or using atomic operations to grow the neighbor list and retrying)
+                        if (count > maxNeighbors) {
+                            // No room left for this neighbor: record the overflow and stop writing, atomic since shared between threads
+                            Kokkos::atomic_store(&overflowFlag(), 1);
+                            break;
                         }
-                        size_t index= i*maxNeighbors + count;
+                        const size_t index = i * maxNeighbors + count;
                         entries(index) = k;
+                        ++count;
                     }
+                    
                 }
-                offsets(i)= i*maxNeighbors + count;
+                offsets(i) = i * maxNeighbors + count;
             });
-            return false; // TODO: return true if overflow occurred (count > maxNeighbors)
+            spdlog::info("Kernel launch complete, checking for overflow...");
+
+            // Read the flag back on the host. deep_copy is blocking, so the kernel is finished here
+            int overflow = 0;
+            Kokkos::deep_copy(overflow, overflowFlag);
+            return overflow != 0;
+            spdlog::info("buildNeighborlistflat() complete, overflow flag is currently not checked (TODO)");
         }
         
         template <typename Traversal>
