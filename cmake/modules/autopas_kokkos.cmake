@@ -36,7 +36,7 @@ else ()
 endif ()
 
 message(STATUS "Setting up Kokkos")
-set(Kokkos_VERSION 4.7.01)
+set(Kokkos_VERSION 5.1.1)
 
 #find_package(Kokkos ${Kokkos_VERSION} CONFIG QUIET)
 
