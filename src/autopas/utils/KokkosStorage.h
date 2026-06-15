@@ -231,18 +231,22 @@ namespace autopas::utils {
       return _layout;
     }
 
+    KOKKOS_INLINE_FUNCTION
     KokkosAoS<Particle_T>& getAoS() {
       return storageAoS;
     }
 
+    KOKKOS_INLINE_FUNCTION
     const KokkosAoS<Particle_T>& getAoS() const {
       return storageAoS;
     }
 
+    KOKKOS_INLINE_FUNCTION
     Particle_T::KokkosSoAArraysType& getSoA() {
       return storageSoA;
     }
 
+    KOKKOS_INLINE_FUNCTION
     const Particle_T::KokkosSoAArraysType& getSoA() const {
       return storageSoA;
     }
