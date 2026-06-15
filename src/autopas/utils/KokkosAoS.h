@@ -33,8 +33,11 @@ namespace autopas::utils {
     void resize(size_t numParticles) {
       if (numParticles == 0) {
         return;
+      } else if (view.extent(0) == 0) {
+        realloc(numParticles);
+      } else {
+        Kokkos::resize(view, numParticles);
       }
-      Kokkos::resize(view, numParticles);
     }
 
     void addParticle(size_t index, const Particle_T& p) {

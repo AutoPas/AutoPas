@@ -883,7 +883,7 @@ class LogicHandler {
   /**
    * Handles pairwise interactions of buffer particles (the remainder).
    */
-  RemainderPairwiseInteractionHandler<Particle_T> _remainderPairwiseInteractionHandler;
+  RemainderPairwiseInteractionHandler<Particle_T, DeviceSpace::execution_space> _remainderPairwiseInteractionHandler;
 
   /**
    * Handles triwise interactions of buffer particles (the remainder).
