@@ -147,8 +147,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(
     return;
   }
   // Avoid force calculations if the cell contains only halo particles or if the cell is empty (=dummy)
-  const bool cellHasOwnedParticles = toInt64(cell.getPossibleParticleOwnerships() & OwnershipState::owned);
-  if (not cellHasOwnedParticles) {
+  if (not cell.canHaveOwnedParticles()) {
     return;
   }
 
@@ -171,8 +170,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
     return;
   }
 
-  const bool cell1HasOwnedParticles = toInt64(cell1.getPossibleParticleOwnerships() & OwnershipState::owned);
-  if (not cell1HasOwnedParticles) {
+  if (not cell1.canHaveOwnedParticles()) {
     // Nothing to do if cell1 has no owned particles and we don't write to cell2 particles.
     if constexpr (not bidirectional) {
       if (not _useNewton3) {
@@ -180,8 +178,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
       }
     }
     // Nothing to do if both cells cannot have owned particles.
-    const bool cell2HasOwnedParticles = toInt64(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
-    if (not cell2HasOwnedParticles) {
+    if (not cell2.canHaveOwnedParticles()) {
       return;
     }
   }
