@@ -142,83 +142,23 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
     }
 
     void rebuildNeighborLists([[maybe_unused]]TraversalInterface *traversal) override {
-        spdlog::debug("Rebuilding Verlet Lists. Number of owned particles: {}, number of halo particles: {}", numberOfOwned, numberOfHalo);
         if (_neighborListValid) {
             return;
         }
         spdlog::info("Rebuilding Verlet Lists with cutoff {} and skin {}", _cutoff, this->getVerletSkin());
         Kokkos::Timer rebuildTimer;
-        const double startTimeRebuild = rebuildTimer.seconds();
-        convertToAoS();
-
-        const double interactionLength = _cutoff + this->getVerletSkin();
-        const double interactionLengthSqr = interactionLength * interactionLength;
-
-        auto buildList = [&](utils::KokkosStorage<Particle_T> &srcJ, size_t numJ,
-                             Kokkos::DualView<size_t *> &offsetsDV, Kokkos::DualView<size_t *> &entriesDV,
-                             bool skipSelf) {
-            auto inRange = [&](size_t i, size_t j) {
-                const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
-                const auto &rj = srcJ.getAoS().getParticle(j).getR();
-                const double dx = ri[0] - rj[0];
-                const double dy = ri[1] - rj[1];
-                const double dz = ri[2] - rj[2];
-                return dx * dx + dy * dy + dz * dz < interactionLengthSqr;
-            };
-
-            Kokkos::resize(offsetsDV, numberOfOwned + 1);
-            offsetsDV.clear_sync_state();
-            offsetsDV.modify_host();
-            auto h_offsets = offsetsDV.h_view;
-
-            // count neighbors per owned particle
-            h_offsets(0) = 0;
-            for (size_t i = 0; i < numberOfOwned; ++i) {
-                size_t count = 0;
-                for (size_t j = 0; j < numJ; ++j) {
-                    if (skipSelf && j == i) {
-                        continue;
-                    }
-                    if (inRange(i, j)) {
-                        ++count;
-                    }
-                }
-                h_offsets(i + 1) = h_offsets(i) + count;
-            }
-
-            const size_t totalNeighbors = numberOfOwned == 0 ? 0 : h_offsets(numberOfOwned);
-            Kokkos::resize(entriesDV, totalNeighbors);
-            entriesDV.clear_sync_state();
-            entriesDV.modify_host();
-            auto h_entries = entriesDV.h_view;
-
-            // fill 
-            for (size_t i = 0; i < numberOfOwned; ++i) {
-                size_t slot = h_offsets(i);
-                for (size_t j = 0; j < numJ; ++j) {
-                    if (skipSelf && j == i) {
-                        continue;
-                    }
-                    if (inRange(i, j)) {
-                        h_entries(slot++) = j;
-                    }
-                }
-            }
-
-            offsetsDV.template sync<typename DeviceSpace::execution_space>();
-            entriesDV.template sync<typename DeviceSpace::execution_space>();
-        };
-
-        // Full neighbor list: every owned pair {i,j} is stored under both i and j (j != i).
-        buildList(_ownedParticles, numberOfOwned, _neighborListOffsets, _neighborListEntries, true);
-        // owned-halo neighbor list: halo particles are ghosts and never receive force, so this list
-        // is one-directional (each owned i gathers from its halo neighbors) and needs no newton3.
-        buildList(_haloParticles, numberOfHalo, _haloNeighborListOffsets, _haloNeighborListEntries, false);
-
-        const double rebuildTime = rebuildTimer.seconds()-startTimeRebuild;
-        _rebuildTimingStats.addTiming(rebuildTime);
+        const double startRebuild = rebuildTimer.seconds();
+        
+        auto& ownedSoA = _ownedParticles.getSoA();
+        auto& haloSoA = _haloParticles.getSoA();
+        // owned-owned: skip self (a particle is not its own neighbor)
+        buildNeighborListsFlat(ownedSoA,ownedSoA,_neighborListOffsets,_neighborListEntries, true);
+        // owned-halo: different arrays, no self-collision possible
+        buildNeighborListsFlat(ownedSoA,haloSoA,_haloNeighborListOffsets,_haloNeighborListEntries, false);
+            
+        const double rebuildTime = rebuildTimer.seconds() - startRebuild;
         spdlog::info("Rebuilding Verlet Lists took {} s", rebuildTime);
-
+        _rebuildTimingStats.addTiming(rebuildTime);
         _neighborListValid = true;
     }
 
@@ -432,6 +372,111 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
 
 
     private:
+
+        bool buildNeighborListsFlat(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, Kokkos::DualView<size_t*>& offsetsDual, Kokkos::DualView<size_t*>& entriesDual, bool skipSelf){
+            spdlog::info("buildNeighborlistflat()");
+
+
+            const size_t N = soa1.size();
+            const size_t M = soa2.size();
+            spdlog::debug("VerletListsKokkosTraversalFlat::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
+                        soa2.size());
+
+            if (N == 0 || soa2.size() == 0) {
+                spdlog::debug(
+                    "VerletListsKokkosTraversalFlat::performSoATraversal: skipping kernel launch (soa1.size()={}, "
+                    "soa2.size()={})",
+                    N, soa2.size());
+                return false;
+            }
+            const float interactionLength = _cutoff + this->getVerletSkin();
+            const float interactionLengthSqr = interactionLength * interactionLength;
+            const auto soa1Device = soa1.deviceView();
+            const auto soa2Device = soa2.deviceView();
+
+
+            spdlog::info("Launching kernel with N={} and M={}", N, M);
+
+            // offsets has N+1 entries. offsets(i)..offsets(i+1) delimits particle i neighbor list
+            Kokkos::realloc(offsetsDual, N + 1);
+            auto offsets = offsetsDual.d_view;
+
+            auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+            Kokkos::parallel_for ("vl_gpu_rebuilding_countingNeighbors", rangePolicy, KOKKOS_LAMBDA (const int i) {
+
+                const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+                const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+                const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+                size_t neighborCount = 0;
+                for (size_t k = 0; k < M; ++k) {
+                    if (skipSelf && k == static_cast<size_t>(i)) {
+                        continue;
+                    }
+                    const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
+                    const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
+                    const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
+                    const auto dx = x1 - x2;
+                    const auto dy = y1 - y2;
+                    const auto dz = z1 - z2;
+                    const auto distSquared = dx * dx + dy * dy + dz * dz;
+
+                    if (distSquared < interactionLengthSqr) {
+                        ++neighborCount;
+                    }
+                }
+                offsets(i) = neighborCount;
+            });
+            // Exclusive prefix sum to convert neighbor counts to the offsets where each neighbor list starts, 4-argument parallel_scan chosen for final reduction value needed to allocate entries
+            size_t totalNeighbors = 0;
+            Kokkos::parallel_scan("vl_gpu_rebuilding_exclusivePrefixSum", rangePolicy, KOKKOS_LAMBDA (const int i, size_t& update, const bool final) {
+                const size_t neighborCount = offsets(i);
+                if (final) {
+                    offsets(i) = update;
+                }
+                update += neighborCount;
+            }, totalNeighbors);
+
+            // store total nieghbors in last index, needed for traversal to function correctly
+            Kokkos::deep_copy(Kokkos::subview(offsets, N), totalNeighbors);
+
+            Kokkos::realloc(entriesDual, totalNeighbors);
+            auto entries = entriesDual.d_view;
+
+            spdlog::info("Number of neighbors found: {}", totalNeighbors);
+
+            Kokkos::parallel_for ("vl_gpu_rebuilding_fillNeighbors", rangePolicy, KOKKOS_LAMBDA (const int i) {
+
+                const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+                const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+                const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+                size_t cursor = offsets(i);
+                for (size_t k = 0; k < M; ++k) {
+                    if (skipSelf && k == static_cast<size_t>(i)) {
+                        continue;
+                    }
+                    const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
+                    const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
+                    const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
+                    const auto dx = x1 - x2;
+                    const auto dy = y1 - y2;
+                    const auto dz = z1 - z2;
+                    const auto distSquared = dx * dx + dy * dy + dz * dz;
+
+                    if (distSquared < interactionLengthSqr) {
+                        entries(cursor) = k;
+                        ++cursor;
+                    }
+                }
+            });
+            // Fence so the fill kernel runtime is attributed to the rebuild timer
+            Kokkos::fence();
+
+            // lists produced entirely on device, mark the device copy as priority, later host reads trigger needed syncs
+            offsetsDual.modify_device();
+            entriesDual.modify_device();
+
+            return true;
+        }
         
         template <typename Traversal>
         void prepareTraversal(Traversal &traversal) {
@@ -638,7 +683,7 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
 
     double _cutoff {0.0};
 
-    // h_view is written by rebuildNeighborLists; d_view is read by the traversal.
+    // d_view is built on the device by rebuildNeighborLists (count/scan/fill) and read by the traversal.
     // owned-owned neighbor list (entries index into the owned particles)
     Kokkos::DualView<size_t*> _neighborListOffsets {"vl_neighborListOffsets", 0};
     Kokkos::DualView<size_t*> _neighborListEntries {"vl_neighborListEntries", 0};
