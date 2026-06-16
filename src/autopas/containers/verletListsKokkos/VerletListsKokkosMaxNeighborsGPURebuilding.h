@@ -173,7 +173,12 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                          _maxNeighbors, grown);
             _maxNeighbors = grown;
         }
-        
+
+        _neighborListOffsets.modify_device();
+        _neighborListEntries.modify_device();
+        _haloNeighborListOffsets.modify_device();
+        _haloNeighborListEntries.modify_device();
+
         const double rebuildTime = rebuildTimer.seconds() - startRebuild;
         spdlog::info("Rebuilding Verlet Lists took {} s", rebuildTime);
         _rebuildTimingStats.addTiming(rebuildTime);
@@ -662,7 +667,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
 
     double _cutoff {0.0};
 
-    // h_view is written by rebuildNeighborLists; d_view is read by the traversal.
+    // d_view is built on the device by rebuildNeighborLists and read by the traversal.
     // owned-owned neighbor list (entries index into the owned particles)
     Kokkos::DualView<size_t*> _neighborListOffsets {"vl_neighborListOffsets", 0};
     Kokkos::DualView<size_t*> _neighborListEntries {"vl_neighborListEntries", 0};
