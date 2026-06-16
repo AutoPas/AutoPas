@@ -48,6 +48,9 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
     forceX,
     forceY,
     forceZ,
+    slowForceX,
+    slowForceY,
+    slowForceZ,
     oldForceX,
     oldForceY,
     oldForceZ,
@@ -65,8 +68,9 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
   using SoAArraysType =
       typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
-                                       double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+                                       double /*fz*/, double /* slow fx*/, double /* slow fy*/, double /* slow fz*/,
+                                       double /*oldFx*/, double /*oldFy*/, double /*oldFz*/, size_t /*typeid*/,
+                                       autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -106,6 +110,12 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       return getF()[1];
     } else if constexpr (attribute == AttributeNames::forceZ) {
       return getF()[2];
+    } else if constexpr (attribute == AttributeNames::slowForceX) {
+      return getSlowF()[0];
+    } else if constexpr (attribute == AttributeNames::slowForceY) {
+      return getSlowF()[1];
+    } else if constexpr (attribute == AttributeNames::slowForceZ) {
+      return getSlowF()[2];
     } else if constexpr (attribute == AttributeNames::oldForceX) {
       return getOldF()[0];
     } else if constexpr (attribute == AttributeNames::oldForceY) {
@@ -150,6 +160,12 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       _f[1] = value;
     } else if constexpr (attribute == AttributeNames::forceZ) {
       _f[2] = value;
+    } else if constexpr (attribute == AttributeNames::slowForceX) {
+      _slowF[0] = value;
+    } else if constexpr (attribute == AttributeNames::slowForceY) {
+      _slowF[1] = value;
+    } else if constexpr (attribute == AttributeNames::slowForceZ) {
+      _slowF[2] = value;
     } else if constexpr (attribute == AttributeNames::oldForceX) {
       _oldF[0] = value;
     } else if constexpr (attribute == AttributeNames::oldForceY) {
