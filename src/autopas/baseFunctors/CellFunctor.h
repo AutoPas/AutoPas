@@ -174,7 +174,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloIn
   if ((isSoA and (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0)) or
       (isAoS and (cell1.isEmpty() or cell2.isEmpty()))) {
     return;
-      }
+  }
 
   if constexpr (not processHaloInteractions) {
     if (not cell1.canHaveOwnedParticles()) {
@@ -199,7 +199,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloIn
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional, bool processHaloInteractions>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloInteractions>::processCellAoSImpl(ParticleCell_T &cell) {
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloInteractions>::processCellAoSImpl(
+    ParticleCell_T &cell) {
   // helper function
   const auto interactParticles = [this](auto &p1, auto &p2) {
     this->_functor.AoSFunctor(p1, p2, this->_useNewton3);
@@ -271,7 +272,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloIn
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional, bool processHaloInteractions>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloInteractions>::processCellPairSoAImpl(ParticleCell_T &cell1, ParticleCell_T &cell2) {
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloInteractions>::processCellPairSoAImpl(
+    ParticleCell_T &cell1, ParticleCell_T &cell2) {
   _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, _useNewton3);
   if constexpr (bidirectional) {
     if (not _useNewton3) {
