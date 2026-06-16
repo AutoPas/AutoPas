@@ -157,13 +157,10 @@ private:
     const auto soa1Device = soa1.deviceView();
     const auto soa2Device = soa2.deviceView();
 
-    auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, _teamSize, Kokkos::AUTO)
-                          .set_scratch_size(0, Kokkos::PerTeam(3 * _teamSize * sizeof(FloatPrecision)));
+    auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, _teamSize, Kokkos::AUTO);
     using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
     Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
       const int i = teamHandle.league_rank();
-      const int teamRank = teamHandle.team_rank();
-      const int teamSize = teamHandle.team_size();
 
       const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
       const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
@@ -173,48 +170,22 @@ private:
       const size_t listEnd = (stride ? offsets(i) : offsets(i + 1));
       const size_t numNeighbors = listEnd - listBegin;
 
-      using ScratchView = Kokkos::View<FloatPrecision*, typename MemberType::scratch_memory_space,
-                                       Kokkos::MemoryUnmanaged>;
-      ScratchView forceScratch(teamHandle.team_scratch(0), 3 * teamSize);
-      auto fxScratch = Kokkos::subview(forceScratch, Kokkos::make_pair(0, teamSize));
-      auto fyScratch = Kokkos::subview(forceScratch, Kokkos::make_pair(teamSize, 2 * teamSize));
-      auto fzScratch = Kokkos::subview(forceScratch, Kokkos::make_pair(2 * teamSize, 3 * teamSize));
-
+      // The team cooperatively reduces particle i's neighbor list into a single force contribution.
       FloatPrecision fxAcc = 0.;
       FloatPrecision fyAcc = 0.;
       FloatPrecision fzAcc = 0.;
-      for (size_t k = teamRank; k < numNeighbors; k += teamSize) {
-        const size_t j = entries(listBegin + k);
-        Functor::SoAKernelKokkosStatic(x1, y1, z1, soa2Device, fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
-      }
-
-      fxScratch(teamRank) = fxAcc;
-      fyScratch(teamRank) = fyAcc;
-      fzScratch(teamRank) = fzAcc;
-      teamHandle.team_barrier();
+      Kokkos::parallel_reduce(
+          Kokkos::TeamThreadRange(teamHandle, numNeighbors),
+          [&](const size_t k, FloatPrecision& fx, FloatPrecision& fy, FloatPrecision& fz) {
+            const size_t j = entries(listBegin + k);
+            Functor::SoAKernelKokkosStatic(x1, y1, z1, soa2Device, fx, fy, fz, cutoffSquared, i, j);
+          },
+          fxAcc, fyAcc, fzAcc);
 
       Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
-          FloatPrecision fxTeamAcc = 0.;
-          FloatPrecision fyTeamAcc = 0.;
-          FloatPrecision fzTeamAcc = 0.;
-          for (int rank = 0; rank < teamSize; ++rank) {
-            fxTeamAcc += fxScratch(rank);
-            fyTeamAcc += fyScratch(rank);
-            fzTeamAcc += fzScratch(rank);
-          }
-
-          int index = teamHandle.league_rank();
-          const FloatPrecision oldFx = soa1Device.template operator()<Particle_T::AttributeNames::forceX, true>(index);
-          const FloatPrecision oldFy = soa1Device.template operator()<Particle_T::AttributeNames::forceY, true>(index);
-          const FloatPrecision oldFz = soa1Device.template operator()<Particle_T::AttributeNames::forceZ, true>(index);
-
-          const FloatPrecision newFx = oldFx + fxTeamAcc;
-          const FloatPrecision newFy = oldFy + fyTeamAcc;
-          const FloatPrecision newFz = oldFz + fzTeamAcc;
-
-          soa1Device.template operator()<Particle_T::AttributeNames::forceX, true>(index) = newFx;
-          soa1Device.template operator()<Particle_T::AttributeNames::forceY, true>(index) = newFy;
-          soa1Device.template operator()<Particle_T::AttributeNames::forceZ, true>(index) = newFz;
+        soa1Device.template operator()<Particle_T::AttributeNames::forceX, true>(i) += fxAcc;
+        soa1Device.template operator()<Particle_T::AttributeNames::forceY, true>(i) += fyAcc;
+        soa1Device.template operator()<Particle_T::AttributeNames::forceZ, true>(i) += fzAcc;
       });
     });
   }
