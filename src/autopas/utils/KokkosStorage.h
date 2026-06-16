@@ -160,6 +160,7 @@ namespace autopas::utils {
     }
 
     template <bool host>
+    KOKKOS_INLINE_FUNCTION
     void copyParticle(int targetIndex, const KokkosStorage<Particle_T>& otherStorage, int sourceIndex) const {
       constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
@@ -171,8 +172,9 @@ namespace autopas::utils {
     KOKKOS_INLINE_FUNCTION
     bool fulfillsIteratorRequirements(int index, autopas::options::IteratorBehavior behavior, const Kokkos::Array<T, 3>& lowerCorner, const Kokkos::Array<T, 3>& upperCorner) const {
 
+      /*
       if constexpr (regionIter) {
-        std::array<T, 3> positions {
+        Kokkos::Array<T, 3> positions {
           operator()<Particle_T::AttributeNames::posX, true, host>(index),
           operator()<Particle_T::AttributeNames::posY, true, host>(index),
           operator()<Particle_T::AttributeNames::posZ, true, host>(index),
@@ -180,12 +182,13 @@ namespace autopas::utils {
 
         // TODO: write own version of inBox maybe in autopas::kokkosUtils namespace
 
-        /*
+
         if (not autopas::utils::inBox(positions, lowerCorner, upperCorner)) {
           return false;
         }
-        */
+
       }
+      */
 
       auto ownershipState = operator()<Particle_T::AttributeNames::ownershipState, true, host>(index);
 
@@ -275,6 +278,7 @@ namespace autopas::utils {
   private:
 
     template <bool host, std::size_t... I>
+    KOKKOS_INLINE_FUNCTION
     void copyParticleImpl (int targetIndex, const KokkosStorage<Particle_T>& otherStorage, int sourceIndex, std::index_sequence<I...>) const {
 
       switch (_layout) {

@@ -50,6 +50,21 @@ namespace autopas {
   constexpr bool ForEachHostFlag = true;
 #endif
 
+template <typename Particle_T>
+struct UpdateRebuildPositionsFunctor {
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(int i, const utils::KokkosStorage<Particle_T>& storage) const {
+    const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, true, ForEachHostFlag>(i);
+    const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, true, ForEachHostFlag>(i);
+    const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, true, ForEachHostFlag>(i);
+
+    storage.template operator()<Particle_T::AttributeNames::rebuildX, true, ForEachHostFlag>(i) = pX;
+    storage.template operator()<Particle_T::AttributeNames::rebuildY, true, ForEachHostFlag>(i) = pY;
+    storage.template operator()<Particle_T::AttributeNames::rebuildZ, true, ForEachHostFlag>(i) = pZ;
+  }
+};
+
 /**
  * The LogicHandler takes care of the containers s.t. they are all in the same valid state.
  * This is mainly done by incorporating a global container rebuild frequency, which defines when containers and their
@@ -988,18 +1003,10 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
   }
   else {
 
-    auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage) {
-      const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, true, ForEachHostFlag>(i);
-      const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, true, ForEachHostFlag>(i);
-      const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, true, ForEachHostFlag>(i);
+    UpdateRebuildPositionsFunctor<Particle_T> functor{};
 
-      storage.template operator()<Particle_T::AttributeNames::rebuildX, true, ForEachHostFlag>(i) = pX;
-      storage.template operator()<Particle_T::AttributeNames::rebuildY, true, ForEachHostFlag>(i) = pY;
-      storage.template operator()<Particle_T::AttributeNames::rebuildZ, true, ForEachHostFlag>(i) = pZ;
-    };
-
-    withStaticContainerType(getContainer(), [&lambda] (auto& actualContainer) {
-      actualContainer.template forEachKokkos<DeviceSpace::execution_space>(lambda, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+    withStaticContainerType(getContainer(), [&functor] (auto& actualContainer) {
+      actualContainer.template forEachKokkos<DeviceSpace::execution_space>(functor, IteratorBehavior::owned | IteratorBehavior::containerOnly);
     });
   }
 #endif

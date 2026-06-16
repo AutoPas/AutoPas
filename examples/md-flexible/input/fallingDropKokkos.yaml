@@ -63,5 +63,5 @@ vtk-write-frequency              :  200
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  info
-kokkos-chunk-size                :  [8]
-kokkos-team-size                 :  [1]
+kokkos-chunk-size                :  [128]
+kokkos-team-size                 :  [128]

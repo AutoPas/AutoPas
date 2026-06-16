@@ -30,6 +30,84 @@ using DeviceSpace = Kokkos::HostSpace;
 constexpr bool ForEachHostFlag = true;
 #endif
 
+template <class ParticleType>
+struct CalcTemperatureFunctor {
+  KOKKOS_INLINE_FUNCTION
+  void operator()(int i, const autopas::utils::KokkosStorage<ParticleType>& storage, double& localKinetic) const {
+    const auto velX = storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i);
+    const auto velY = storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i);
+    const auto velZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i);
+
+    const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, true, ForEachHostFlag>(i);
+
+    localKinetic += mass * (velX * velX + velY * velY + velZ * velZ);
+  }
+};
+
+template <class ParticleType>
+struct CalcTemperatureComponentFunctor {
+  using KineticEnergyDualViewType = Kokkos::DualView<double*, typename DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>>;
+  using NumParticleDualViewType = Kokkos::DualView<size_t*, typename DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>>;
+
+  KineticEnergyDualViewType _kineticEnergyMul2Map;
+  NumParticleDualViewType _numParticleMap;
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) const {
+    const auto velX = storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i);
+    const auto velY = storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i);
+    const auto velZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i);
+
+    const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, true, ForEachHostFlag>(i);
+    const auto typeId = storage.template operator()<ParticleType::AttributeNames::typeId, true, ForEachHostFlag>(i);
+
+    _kineticEnergyMul2Map.view_device()(typeId) += mass * (velX * velX + velY * velY + velZ * velZ);
+    _numParticleMap.view_device()(typeId) += 1;
+  }
+};
+
+template <class ParticleType>
+struct BrownianMotionFunctor {
+  using FloatPrecision = typename ParticleType::ParticleSoAFloatPrecision;
+  using RandomPool = Kokkos::Random_XorShift64_Pool<>;
+
+  RandomPool _randomEngine;
+  double _targetTemperature;
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) const {
+    auto generator = _randomEngine.get_state();
+
+    const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, true, ForEachHostFlag>(i);
+    double velScale = Kokkos::sqrt(_targetTemperature / mass);
+
+    const FloatPrecision velIncrementX = generator.normal(0, 1) * velScale;
+    const FloatPrecision velIncrementY = generator.normal(0, 1) * velScale;
+    const FloatPrecision velIncrementZ = generator.normal(0, 1) * velScale;
+
+    storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i) += velIncrementX;
+    storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i) += velIncrementY;
+    storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i) += velIncrementZ;
+
+    _randomEngine.free_state(generator);
+  }
+};
+
+template <class ParticleType>
+struct ApplyFunctor {
+  Kokkos::DualView<double*, DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>> _scalingMap;
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) const {
+    const auto typeId = storage.template operator()<ParticleType::AttributeNames::typeId, true, ForEachHostFlag>(i);
+    const auto scaling = _scalingMap.view_device()(typeId);
+
+    storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i) *= scaling;
+    storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i) *= scaling;
+    storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i) *= scaling;
+  }
+};
+
 /**
  * Calculates temperature of system.
  * Assuming dimension-less units and Boltzmann constant = 1.
@@ -59,21 +137,9 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
     #endif
     }
   } else {
-    auto lambda = KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage, double localKinetic) {
-      const auto velX = storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i);
-      const auto velY = storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i);
-      const auto velZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i);
 
-      // TODO: multi-site
-
-      const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, true, ForEachHostFlag>(i);
-
-      localKinetic += mass * (velX*velX + velY*velY + velZ*velZ);
-
-      // TODO: multi-site
-    };
-
-    autopas.template reduceKokkos<DeviceSpace::execution_space, double, Kokkos::Sum<double>>(lambda, kineticEnergyMul2, autopas::IteratorBehavior::ownedOrHalo); // TODO: check iterator behavior
+    CalcTemperatureFunctor<ParticleType> functor {};
+    autopas.template reduceKokkos<DeviceSpace::execution_space, double, Kokkos::Sum<double>>(functor, kineticEnergyMul2, autopas::IteratorBehavior::ownedOrHalo); // TODO: check iterator behavior
   }
   // md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
   constexpr unsigned int degreesOfFreedom {
@@ -154,21 +220,8 @@ auto calcTemperatureComponent(AutoPasTemplate &autopas,
       }
     }
   } else {
-
-    auto lambda = KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
-      const auto velX = storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i);
-      const auto velY = storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i);
-      const auto velZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i);
-
-      const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, true, ForEachHostFlag>(i);
-      const auto typeId = storage.template operator()<ParticleType::AttributeNames::typeId, true, ForEachHostFlag>(i);
-
-      kineticEnergyMul2Map.view_device()(typeId) += mass * (velX*velX + velY*velY + velZ*velZ);
-      // TODO: multi-site
-      numParticleMap.view_device()(typeId) += 1;
-    };
-
-    autopas.template forEachKokkos<DeviceSpace::execution_space>(lambda, autopas::IteratorBehavior::owned); // TODO: check which iterator behavior to use
+    CalcTemperatureComponentFunctor<ParticleType> functor {kineticEnergyMul2Map, numParticleMap};
+    autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::owned); // TODO: check which iterator behavior to use
     kineticEnergyMul2Map.modify<DeviceSpace::execution_space>();
     numParticleMap.modify<DeviceSpace::execution_space>();
   }
@@ -273,25 +326,8 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
   } else {
 
     Kokkos::Random_XorShift64_Pool<> random_engine (42);
-    auto lambda = KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
-
-      auto generator = random_engine.get_state();
-
-      const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, true, ForEachHostFlag>(i);
-      double velScale = Kokkos::sqrt(targetTemperature / mass);
-
-      const ParticleType::ParticleSoAFloatPrecision velIncrementX = generator.normal(0,1) * velScale;
-      const ParticleType::ParticleSoAFloatPrecision velIncrementY = generator.normal(0,1) * velScale;
-      const ParticleType::ParticleSoAFloatPrecision velIncrementZ = generator.normal(0,1) * velScale;
-
-      storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i) += velIncrementX;
-      storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i) += velIncrementY;
-      storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i) += velIncrementZ;
-
-      // TODO: multi-site
-    };
-
-    autopas.template forEachKokkos<DeviceSpace::execution_space>(lambda, autopas::IteratorBehavior::ownedOrHalo); // TODO: check iterator behavior
+    BrownianMotionFunctor<ParticleType> functor(random_engine, targetTemperature);
+    autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::ownedOrHalo); // TODO: check iterator behavior
   }
 }
 
@@ -353,15 +389,8 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     }
   } else {
     scalingMap.template sync<DeviceSpace::execution_space>();
-    autopas.template forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
-
-      const auto typeId = storage.template operator()<ParticleType::AttributeNames::typeId, true, ForEachHostFlag>(i);
-      const auto scaling = scalingMap.view_device()(typeId);
-
-      storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i) *= scaling;
-      storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i) *= scaling;
-      storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i) *= scaling;
-    }, autopas::IteratorBehavior::owned); // TODO: decide iterator behavior, figure out how to handle scalingMap
+    ApplyFunctor<ParticleType> functor {scalingMap};
+    autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::owned); // TODO: decide iterator behavior, figure out how to handle scalingMap
   }
 }
 }  // namespace Thermostat

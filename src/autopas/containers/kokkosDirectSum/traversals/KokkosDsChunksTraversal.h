@@ -14,6 +14,51 @@
 
 namespace autopas {
 
+template <class Functor, class Particle_T, class DeviceSpace>
+struct SoAChunksTraversalFunctor {
+  using KokkosSoAArraysType = typename Particle_T::KokkosSoAArraysType;
+  using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
+  using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
+
+  KokkosSoAArraysType _soa1;
+  KokkosSoAArraysType _soa2;
+  Functor* _func;
+  FloatPrecision _cutoffSquared;
+  size_t _M;
+  size_t _N;
+  size_t _chunkSize;
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const MemberType& teamHandle) const {
+    const int k = teamHandle.league_rank();
+
+    size_t offset = k * _chunkSize;
+    size_t rest = _N - offset;
+    size_t upper = rest < _chunkSize ? rest : _chunkSize;
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, upper), [&](int i) {
+        FloatPrecision fxAcc = 0.;
+        FloatPrecision fyAcc = 0.;
+        FloatPrecision fzAcc = 0.;
+
+        const auto x1 = _soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i + offset);
+        const auto y1 = _soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i + offset);
+        const auto z1 = _soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i + offset);
+
+        Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(teamHandle, _M), [&](int j,
+            FloatPrecision& localFxAcc,
+            FloatPrecision& localFyAcc,
+            FloatPrecision& localFzAcc) {
+                _func->SoAKernelKokkos(x1, y1, z1, _soa2, localFxAcc, localFyAcc, localFzAcc, _cutoffSquared, i, j);
+            }, fxAcc, fyAcc, fzAcc);
+
+        _soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(i + offset) += fxAcc;
+        _soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(i + offset) += fyAcc;
+        _soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(i + offset) += fzAcc;
+    });
+  }
+};
+
 /**
  * This class defines the traversal typically used by the KokkosDirectSumContainer
  *
@@ -117,35 +162,11 @@ private:
     const size_t chunkSize = _chunkSize;
     const size_t numChunks = N / chunkSize;
 
+    SoAChunksTraversalFunctor<Functor, Particle_T, DeviceSpace> functor {soa1, soa2, func, cutoffSquared, M, N, chunkSize};
+
     auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(numChunks+1, _teamSize, Kokkos::AUTO);
-
     using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
-    Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
-      const int k = teamHandle.league_rank();
-
-      size_t offset = k* chunkSize;
-      size_t rest = N - offset;
-      size_t upper = std::min(rest, chunkSize);
-
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, upper), [&](int i) {
-
-        FloatPrecision fxAcc = 0.;
-        FloatPrecision fyAcc = 0.;
-        FloatPrecision fzAcc = 0.;
-
-        const auto x1 = soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i+offset);
-        const auto y1 = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i+offset);
-        const auto z1 = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i+offset);
-
-        Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(teamHandle, M), [&](int j, FloatPrecision& localFxAcc, FloatPrecision& localFyAcc, FloatPrecision& localFzAcc) {
-          func->SoAKernelKokkos(x1, y1, z1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
-        }, fxAcc, fyAcc, fzAcc);
-
-        soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(i+offset) += fxAcc;
-        soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(i+offset) += fyAcc;
-        soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(i+offset) += fzAcc;
-      });
-    });
+    Kokkos::parallel_for("traversal", teamPolicy, functor);
   }
 
 

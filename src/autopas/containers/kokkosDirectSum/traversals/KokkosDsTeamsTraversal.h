@@ -14,6 +14,50 @@
 
 namespace autopas {
 
+template <class Functor, class Particle_T, class DeviceSpace>
+struct SoATeamTraversalFunctor {
+    using KokkosSoAArraysType = typename Particle_T::KokkosSoAArraysType;
+    using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
+    using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
+
+    KokkosSoAArraysType _soa1;
+    KokkosSoAArraysType _soa2;
+    Functor* _func;
+    FloatPrecision _cutoffSquared;
+    size_t _M;
+
+    KOKKOS_INLINE_FUNCTION
+    void operator()(const MemberType& teamHandle) const {
+        const int i = teamHandle.league_rank();
+
+        FloatPrecision fxAcc = 0.;
+        FloatPrecision fyAcc = 0.;
+        FloatPrecision fzAcc = 0.;
+
+        const auto x1 = _soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
+        const auto y1 = _soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
+        const auto z1 = _soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
+
+        Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamHandle, _M), [&](int j,
+            FloatPrecision& localFxAcc,
+            FloatPrecision& localFyAcc,
+            FloatPrecision& localFzAcc) {
+                _func->SoAKernelKokkos(x1, y1, z1, _soa2, localFxAcc, localFyAcc, localFzAcc, _cutoffSquared, i, j);
+            }, fxAcc, fyAcc, fzAcc);
+
+        Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
+            const int index = teamHandle.league_rank();
+            const FloatPrecision oldFx = _soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index);
+            const FloatPrecision oldFy = _soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index);
+            const FloatPrecision oldFz = _soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index);
+
+            _soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index) = oldFx + fxAcc;
+            _soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) = oldFy + fyAcc;
+            _soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) = oldFz + fzAcc;
+        });
+    }
+};
+
 /**
  * This class defines the traversal typically used by the KokkosDirectSumContainer
  *
@@ -113,41 +157,11 @@ private:
     auto func = _functor;
     FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
 
+    SoATeamTraversalFunctor<Functor, Particle_T, DeviceSpace> functor {soa1, soa2, func, cutoffSquared, M};
+
     auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, _teamSize, Kokkos::AUTO);
     using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
-    Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
-      const int i = teamHandle.league_rank();
-
-      FloatPrecision fxAcc = 0.;
-      FloatPrecision fyAcc = 0.;
-      FloatPrecision fzAcc = 0.;
-
-      const auto x1 = soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
-      const auto y1 = soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
-      const auto z1 = soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
-
-      Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamHandle, M), [&](int j,
-          FloatPrecision& localFxAcc,
-          FloatPrecision& localFyAcc,
-          FloatPrecision& localFzAcc) {
-            func->SoAKernelKokkos(x1, y1, z1, soa2, localFxAcc, localFyAcc, localFzAcc, cutoffSquared, i, j);
-        }, fxAcc, fyAcc, fzAcc);
-
-        Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
-          int index = teamHandle.league_rank();
-          const FloatPrecision oldFx = soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index);
-          const FloatPrecision oldFy = soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index);
-          const FloatPrecision oldFz = soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index);
-
-          const FloatPrecision newFx = oldFx + fxAcc;
-          const FloatPrecision newFy = oldFy + fyAcc;
-          const FloatPrecision newFz = oldFz + fzAcc;
-
-          soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index) = newFx;
-          soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) = newFy;
-          soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) = newFz;
-        });
-    });
+    Kokkos::parallel_for("traversal", teamPolicy, functor);
   }
 
 

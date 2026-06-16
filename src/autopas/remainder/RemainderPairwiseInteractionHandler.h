@@ -12,6 +12,7 @@
 #include <mutex>
 #include <vector>
 
+#include "autopas/LogicHandler.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
@@ -20,6 +21,57 @@
 #include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
+
+template <class Functor, class Particle_T, class ExecSpace>
+struct SoABufferTraversalFunctor {
+    using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
+    using DualViewType = Kokkos::DualView<FloatPrecision*, typename ExecSpace::device_type>;
+
+    utils::KokkosStorage<Particle_T> _ownedBuffer;
+    utils::KokkosStorage<Particle_T> _haloBuffer;
+    Functor* _f;
+    FloatPrecision _cutoffSquared;
+    size_t _ownedSize;
+    size_t _haloSize;
+    DualViewType _fx2;
+    DualViewType _fy2;
+    DualViewType _fz2;
+
+    KOKKOS_INLINE_FUNCTION
+    void operator()(int i, const utils::KokkosStorage<Particle_T>& storage) const {
+        const auto x1 = storage.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
+        const auto y1 = storage.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
+        const auto z1 = storage.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
+
+        FloatPrecision fxAcc = 0.;
+        FloatPrecision fyAcc = 0.;
+        FloatPrecision fzAcc = 0.;
+
+        for (int j = 0; j < _ownedSize; ++j) {
+            FloatPrecision fx = -fxAcc;
+            FloatPrecision fy = -fyAcc;
+            FloatPrecision fz = -fzAcc;
+
+            _f->SoAKernelKokkos(x1, y1, z1, _ownedBuffer.getSoA(), fxAcc, fyAcc, fzAcc, _cutoffSquared, i, j);
+
+            fx += fxAcc;
+            fy += fyAcc;
+            fz += fzAcc;
+
+            Kokkos::atomic_add(&_fx2.view_device()(j), fx);
+            Kokkos::atomic_add(&_fy2.view_device()(j), fy);
+            Kokkos::atomic_add(&_fz2.view_device()(j), fz);
+        }
+
+        for (int j = 0; j < _haloSize; ++j) {
+            _f->SoAKernelKokkos(x1, y1, z1, _haloBuffer.getSoA(), fxAcc, fyAcc, fzAcc, _cutoffSquared, i, j);
+        }
+
+        storage.template operator()<Particle_T::AttributeNames::forceX, true, false>(i) += fxAcc;
+        storage.template operator()<Particle_T::AttributeNames::forceY, true, false>(i) += fyAcc;
+        storage.template operator()<Particle_T::AttributeNames::forceZ, true, false>(i) += fzAcc;
+    }
+};
 
 /**
  * Handles pairwise interactions involving particle buffers (particles not yet inserted into the main container).
@@ -204,44 +256,11 @@ class RemainderPairwiseInteractionHandler {
       fy2.realloc(ownedSize);
       fz2.realloc(ownedSize);
 
-      // TODO: figure out how to extract that in a clever way (below, it is done on a per particle basis)
       auto min = container.getBoxMin();
       auto max = container.getBoxMax();
 
-      container.template forEachInRegionKokkos<ExecSpace, true>(KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage) {
-        const auto x1 = storage.template operator()<Particle_T::AttributeNames::posX, true, host>(i);
-        const auto y1 = storage.template operator()<Particle_T::AttributeNames::posY, true, host>(i);
-        const auto z1 = storage.template operator()<Particle_T::AttributeNames::posZ, true, host>(i);
-
-        typename Particle_T::ParticleSoAFloatPrecision fxAcc = 0.;
-        typename Particle_T::ParticleSoAFloatPrecision fyAcc = 0.;
-        typename Particle_T::ParticleSoAFloatPrecision fzAcc = 0.;
-
-        for (int j = 0; j < ownedSize; ++j) {
-          typename Particle_T::ParticleSoAFloatPrecision fx = -fxAcc;
-          typename Particle_T::ParticleSoAFloatPrecision fy = -fyAcc;
-          typename Particle_T::ParticleSoAFloatPrecision fz = -fzAcc;
-
-          f->SoAKernelKokkos(x1, y1, z1, ownedBuffer.getSoA(), fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
-
-          fx += fxAcc;
-          fy += fyAcc;
-          fz += fzAcc;
-
-          /* This enforces the use of n3 (not easy to handle non-n3)*/
-          Kokkos::atomic_add(&fx2.view_device()(j), fx);
-          Kokkos::atomic_add(&fy2.view_device()(j), fy);
-          Kokkos::atomic_add(&fz2.view_device()(j), fz);
-        }
-
-        for (int j = 0; j < haloSize; ++j) {
-          f->SoAKernelKokkos(x1, y1, z1, haloBuffer.getSoA(), fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
-        }
-
-        storage.template operator()<Particle_T::AttributeNames::forceX, true, false>(i) += fxAcc;
-        storage.template operator()<Particle_T::AttributeNames::forceY, true, false>(i) += fyAcc;
-        storage.template operator()<Particle_T::AttributeNames::forceZ, true, false>(i) += fzAcc;
-      }, IteratorBehavior::ownedOrHalo, min, max);
+      SoABufferTraversalFunctor<PairwiseFunctor, Particle_T, ExecSpace> functor {ownedBuffer, haloBuffer, f, cutoffSquared, ownedSize, haloSize, fx2, fy2, fz2};
+      container.template forEachInRegionKokkos<ExecSpace, true>(functor, IteratorBehavior::ownedOrHalo, min, max);
 
       // 4. extract the content of the force views to the buffers
       fx2.modify_device();

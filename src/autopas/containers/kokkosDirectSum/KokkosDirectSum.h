@@ -133,84 +133,80 @@ template <class Particle_T>
 
               auto& owned = _ownedParticles;
 
-              // TODO: change HostSpace to whatever other space
-              Kokkos::View<int*, HostSpace> migrantCounter {};
-              Kokkos::resize(migrantCounter, 1);
-
-              // TODO: infer this from some other location/property
-              constexpr bool host = true;
+              Kokkos::View<int*, DeviceSpace> migrantCounter {"migrantCounter", 1};
 
               if (keepNeighborListsValid) {
                 // i.e.: those particles which are outside of the box shall be returned, halo particles should be marked as dummies
                 // TODO: think about the validity of this approach because in theory, the particles should still exist for neighbor lists being valid (but this is not the case for DirectSum as there are no neighbor lists)
                 _haloParticles.clear();
 
-                // TODO: change HostSpace to whatever other space
                 // TODO: make sure that owned is synced to the right memory space
-                Kokkos::parallel_for("collectMigrants", Kokkos::RangePolicy<HostSpace::execution_space>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
+                Kokkos::parallel_for("collectMigrants", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
 
                   // TODO: make sure this logic is working, i.e. the correct particles are found, i.e. the owned particles outside of the box
-                  if ((not owned.template fulfillsIteratorRequirements<true, host>(i, IteratorBehavior::ownedOrHaloOrDummy, boxMinKokkos, boxMaxKokkos))
-                     and owned.template fulfillsIteratorRequirements<false, host>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
+                  if ((not owned.template fulfillsIteratorRequirements<true, useHostView>(i, IteratorBehavior::ownedOrHaloOrDummy, boxMinKokkos, boxMaxKokkos))
+                     and owned.template fulfillsIteratorRequirements<false, useHostView>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
 
                     int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
-                    auto id = owned.template operator()<Particle_T::AttributeNames::id, true, host>(i);
-                    migrants.template copyParticle<host>(migrantIndex, owned, i);
+                    auto id = owned.template operator()<Particle_T::AttributeNames::id, true, useHostView>(i);
+                    migrants.template copyParticle<useHostView>(migrantIndex, owned, i);
 
-                    owned.template operator()<Particle_T::AttributeNames::ownershipState, true, host>(i) = OwnershipState::dummy;
+                    owned.template operator()<Particle_T::AttributeNames::ownershipState, true, useHostView>(i) = OwnershipState::dummy;
                   }
-
                 });
               } else {
                 deleteHaloParticles();
 
                 utils::KokkosStorage<Particle_T> survivors {_ownedParticles.getLayout(), _ownedParticles.size()};
 
-                // TODO: change HostSpace to whatever other space
-                Kokkos::View<int*, HostSpace> survivorCounter {};
-                Kokkos::resize(survivorCounter, 1);
+                Kokkos::View<int*, DeviceSpace> survivorCounter {"survivorCounter", 1};
 
-                Kokkos::parallel_for("collectMigrantsAndReinsertOwned", Kokkos::RangePolicy<HostSpace::execution_space>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
+                Kokkos::parallel_for("collectMigrantsAndReinsertOwned", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
 
-                  if (owned.template fulfillsIteratorRequirements<false, host>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
+                  if (owned.template fulfillsIteratorRequirements<false, useHostView>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
                     /* Particle is owned */
 
-                    if (owned.template fulfillsIteratorRequirements<true, host>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
+                    if (owned.template fulfillsIteratorRequirements<true, useHostView>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
                       /* Particle is within the container */
 
                       // TODO: this can lead to heavy contention on the locks... -> maybe think of a better approach
                       int survivorIndex = Kokkos::atomic_fetch_inc(&survivorCounter(0));
-                      survivors.template copyParticle<host>(survivorIndex, owned, i);
+                      survivors.template copyParticle<useHostView>(survivorIndex, owned, i);
                     } else {
                       /* Particle is outside the container boundary */
 
                       int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
-                      migrants.template copyParticle<host>(migrantIndex, owned, i);
+                      migrants.template copyParticle<useHostView>(migrantIndex, owned, i);
                     }
                   }
                 });
+                migrants.template markModified<DeviceSpace::execution_space>();
+                survivors.template markModified<DeviceSpace::execution_space>();
 
-                // TODO: make sure that survivorCounter is in accessible memory space
-                int numSurvivors = survivorCounter(0);
+                auto surviorCounterMirror = Kokkos::create_mirror_view(survivorCounter);
+                Kokkos::deep_copy(surviorCounterMirror, survivorCounter);
+
+                int numSurvivors = surviorCounterMirror(0);
                 survivors.resize(numSurvivors);
                 survivors.overrideSize(numSurvivors);
 
                 _ownedParticles = survivors;
               }
 
-              // TODO: make sure that migrantCounter is in accessible memory space
-              int numMigrants = migrantCounter(0);
+              auto migrantCounterMirror = Kokkos::create_mirror_view(migrantCounter);
+              Kokkos::deep_copy(migrantCounterMirror, migrantCounter);
+
+              int numMigrants = migrantCounterMirror(0);
               migrants.resize(numMigrants);
 
-              // TODO: sth else than host space
-              _ownedParticles.template markModified<HostSpace::execution_space>();
+              _ownedParticles.template markModified<DeviceSpace::execution_space>();
               _ownedParticles.markLayoutModified(owned.getLayout());
 
+              migrants.template sync<HostSpace::execution_space>();
               migrants.syncSoAToAoS();
               std::vector<Particle_T> migrantVector {};
               migrantVector.reserve(numMigrants);
 
-              // TODO: make sure that we can access the migrant AoS from the CPU
               for (int i = 0; i < numMigrants; ++i) {
                 Particle_T migrant = migrants.getAoS().getParticle(i);
                 migrantVector.push_back(migrant);
@@ -607,8 +603,10 @@ protected:
 
 #ifdef KOKKOS_ENABLE_CUDA
   using DeviceSpace = Kokkos::CudaSpace;
+  constexpr static bool useHostView = false;
 #else
   using DeviceSpace = Kokkos::HostSpace;
+  constexpr static bool useHostView = true;
 #endif
 
   using HostSpace = Kokkos::HostSpace;
