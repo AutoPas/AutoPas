@@ -189,12 +189,11 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloIn
         return;
       }
     }
-
-    if (isAoS) {
-      processCellPairAoSImpl(cell1, cell2, sortingDirection);
-    } else if (isSoA) {
-      processCellPairSoAImpl(cell1, cell2);
-    }
+  }
+  if (isAoS) {
+    processCellPairAoSImpl(cell1, cell2, sortingDirection);
+  } else if (isSoA) {
+    processCellPairSoAImpl(cell1, cell2);
   }
 }
 
