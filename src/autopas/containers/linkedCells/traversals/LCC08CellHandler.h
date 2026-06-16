@@ -23,7 +23,7 @@ namespace autopas {
  * @tparam ParticleCell_T the type of cells
  * @tparam Functor_T The functor that defines the interaction of two or three particles.
  */
-template <class ParticleCell_T, class Functor_T, bool checkBounds = false>
+template <class ParticleCell_T, class Functor_T>
 class LCC08CellHandler {
  public:
   /**
@@ -35,19 +35,22 @@ class LCC08CellHandler {
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
+   * @param checkBounds
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
   explicit LCC08CellHandler(Functor_T &functor, const std::array<unsigned long, 3> &cellsPerDimension,
                             double interactionLength, const std::array<double, 3> &cellLength,
-                            const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
+                            const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3,
+                            bool checkBounds = false)
       : _overlap(overlap),
         _dataLayout(dataLayout),
         _useNewton3(useNewton3),
         _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
-                     dataLayout, useNewton3),
+                     dataLayout, useNewton3, checkBounds),
         _interactionLength(interactionLength),
-        _cellLength(cellLength) {
+        _cellLength(cellLength),
+        _checkBounds(checkBounds) {
     if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
       _cellOffsets =
           LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<LCC08CellHandlerUtility::C08OffsetMode::sorting>(
@@ -119,7 +122,7 @@ class LCC08CellHandler {
   // CellFunctor type for either Pairwise or Triwise Functors.
   using CellFunctorType =
       std::conditional_t<decltype(utils::isPairwiseFunctor<Functor_T>())::value,
-                         internal::CellFunctor<ParticleCell_T, Functor_T, /*bidirectional*/ true, checkBounds>,
+                         internal::CellFunctor<ParticleCell_T, Functor_T, /*bidirectional*/ true>,
                          internal::CellFunctor3B<ParticleCell_T, Functor_T, /*bidirectional*/ true>>;
 
   /**
@@ -136,11 +139,13 @@ class LCC08CellHandler {
    * Cell length in CellBlock3D.
    */
   const std::array<double, 3> _cellLength;
+
+  const bool _checkBounds;
 };
 
-template <class ParticleCell_T, class Functor_T, bool checkBounds>
-inline void LCC08CellHandler<ParticleCell_T, Functor_T, checkBounds>::processBaseCell(
-    std::vector<ParticleCell_T> &cells, unsigned long baseIndex) {
+template <class ParticleCell_T, class Functor_T>
+inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCell(std::vector<ParticleCell_T> &cells,
+                                                                         unsigned long baseIndex) {
   if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
     processBaseCellPairwise(cells, baseIndex);
   } else if constexpr (utils::isTriwiseFunctor<Functor_T>()) {
@@ -151,33 +156,33 @@ inline void LCC08CellHandler<ParticleCell_T, Functor_T, checkBounds>::processBas
   }
 }
 
-template <class ParticleCell_T, class Functor_T, bool checkBounds>
-inline void LCC08CellHandler<ParticleCell_T, Functor_T, checkBounds>::processBaseCellPairwise(
-    std::vector<ParticleCell_T> &cells, unsigned long baseIndex) {
+template <class ParticleCell_T, class Functor_T>
+inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCellPairwise(std::vector<ParticleCell_T> &cells,
+                                                                                 unsigned long baseIndex) {
   for (auto const &[offset1, offset2, r] : _cellOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
     const unsigned long cellIndex2 = baseIndex + offset2;
 
-    if constexpr (checkBounds) {
+    ParticleCell_T &cell1 = cells[cellIndex1];
+    ParticleCell_T &cell2 = cells[cellIndex2];
+
+    if (_checkBounds) {
       if (cellIndex1 >= cells.size() or cellIndex2 >= cells.size()) {
         // check that index is not outOfBounds because we call processBaseCell on outer-most Halo-Cells as well
         continue;
       }
     }
-    ParticleCell_T &cell1 = cells[cellIndex1];
-    ParticleCell_T &cell2 = cells[cellIndex2];
-
     if (cellIndex1 == cellIndex2) {
-      this->_cellFunctor.processCell(cell1);
+      _cellFunctor.processCell(cell1);
     } else {
-      this->_cellFunctor.processCellPair(cell1, cell2, r);
+      _cellFunctor.processCellPair(cell1, cell2, r);
     }
   }
 }
 
-template <class ParticleCell_T, class Functor_T, bool checkBounds>
-inline void LCC08CellHandler<ParticleCell_T, Functor_T, checkBounds>::processBaseCellTriwise(
-    std::vector<ParticleCell_T> &cells, unsigned long baseIndex) {
+template <class ParticleCell_T, class Functor_T>
+inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCellTriwise(std::vector<ParticleCell_T> &cells,
+                                                                                unsigned long baseIndex) {
   for (auto const &[offset1, offset2, offset3, r] : _cellOffsets) {
     const unsigned long index1 = baseIndex + offset1;
     const unsigned long index2 = baseIndex + offset2;

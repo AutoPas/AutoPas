@@ -22,11 +22,9 @@ namespace autopas {
  *
  * @tparam ParticleCell_T the type of cells
  * @tparam Functor_T The functor that defines the interaction of two or three particles.
- * @tparam traverseHaloCells boolean whether to traverse the halo cells (e.g. for triwise neighbor list generation)
  */
-template <class ParticleCell_T, class Functor_T, bool traverseHaloCells = false>
-class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T, traverseHaloCells>,
-                       public LCTraversalInterface {
+template <class ParticleCell_T, class Functor_T>
+class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, public LCTraversalInterface {
  public:
   /**
    * Constructor of the lc_c08 traversal.
@@ -37,14 +35,16 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T, trave
    * @param cellLength cell length.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
+   * @param traverseHaloCells boolean whether to traverse the halo cells (e.g. for triwise neighbor list generation)
    */
   explicit LCC08Traversal(const std::array<unsigned long, 3> &dims, Functor_T &functor, double interactionLength,
-                          const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedTraversal<ParticleCell_T, Functor_T, traverseHaloCells>(dims, functor, interactionLength, cellLength,
-                                                                        dataLayout, useNewton3),
+                          const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3,
+                          bool traverseHaloCells = false)
+      : C08BasedTraversal<ParticleCell_T, Functor_T>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                     useNewton3, traverseHaloCells),
 
         _cellHandler(functor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap, dataLayout,
-                     useNewton3) {}
+                     useNewton3, traverseHaloCells) {}
 
   /**
    * @copydoc autopas::TraversalInterface::traverseParticles
@@ -68,11 +68,11 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T, trave
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  LCC08CellHandler<ParticleCell_T, Functor_T, traverseHaloCells> _cellHandler;
+  LCC08CellHandler<ParticleCell_T, Functor_T> _cellHandler;
 };
 
-template <class ParticleCell_T, class Functor_T, bool traverseHaloCells>
-inline void LCC08Traversal<ParticleCell_T, Functor_T, traverseHaloCells>::traverseParticles() {
+template <class ParticleCell_T, class Functor_T>
+inline void LCC08Traversal<ParticleCell_T, Functor_T>::traverseParticles() {
   auto &cells = *(this->_cells);
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

@@ -19,9 +19,8 @@ namespace autopas {
  *
  * @tparam ParticleCell_T the type of cells
  * @tparam Functor_T The functor that defines the interaction between particles.
- * @tparam traverseHaloCells boolean whether to traverse the halo cells (e.g. for triwise neighbor list generation)
  */
-template <class ParticleCell_T, class Functor_T, bool traverseHaloCells = false>
+template <class ParticleCell_T, class Functor_T>
 class C08BasedTraversal : public ColorBasedTraversal<ParticleCell_T, Functor_T> {
  public:
   /**
@@ -33,12 +32,14 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell_T, Functor_T> 
    * @param cellLength cell length.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
+   * @param traverseHaloCells boolean whether to traverse the halo cells (e.g. for triwise neighbor list generation)
    */
   explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, Functor_T &functor,
                              const double interactionLength, const std::array<double, 3> &cellLength,
-                             DataLayoutOption dataLayout, bool useNewton3)
+                             DataLayoutOption dataLayout, bool useNewton3, bool traverseHaloCells = false)
       : ColorBasedTraversal<ParticleCell_T, Functor_T>(dims, functor, interactionLength, cellLength, dataLayout,
-                                                       useNewton3) {}
+                                                       useNewton3),
+        _traverseHaloCells(traverseHaloCells) {}
 
  protected:
   /**
@@ -50,9 +51,12 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell_T, Functor_T> 
     using namespace autopas::utils::ArrayMath::literals;
 
     // Compile-time branching for zero runtime overhead
-    const auto end = traverseHaloCells ? this->_cellsPerDimension : (this->_cellsPerDimension - this->_overlap);
+    const auto end = _traverseHaloCells ? this->_cellsPerDimension : (this->_cellsPerDimension - this->_overlap);
     const auto stride = this->_overlap + 1ul;
     this->colorTraversal(std::forward<LoopBody>(loopBody), end, stride);
   }
+
+ private:
+  const bool _traverseHaloCells;
 };
 }  // namespace autopas

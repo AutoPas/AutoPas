@@ -20,10 +20,8 @@ namespace autopas::internal {
  * @tparam ParticleFunctor_T the functor which
  * @tparam bidirectional if no newton3 is used processCellPair(cell1, cell2) should also handle processCellPair(cell2,
  * cell1)
- * @tparam processHaloInteractions includes halo interactions if set to true
  */
-template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional = true,
-          bool processHaloInteractions = false>
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional = true>
 class CellFunctor {
  public:
   /**
@@ -34,9 +32,15 @@ class CellFunctor {
    * verlet lists, this should be cutoff+skin.
    * @param dataLayout The data layout to be used.
    * @param useNewton3 Parameter to specify whether newton3 is used or not.
+   * @param processHaloInteractions includes halo interactions if set to true
    */
-  explicit CellFunctor(ParticleFunctor_T &f, const double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
-      : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
+  explicit CellFunctor(ParticleFunctor_T &f, const double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3,
+                       bool processHaloInteractions = false)
+      : _functor(f),
+        _sortingCutoff(sortingCutoff),
+        _dataLayout(dataLayout),
+        _useNewton3(useNewton3),
+        _processHaloInteractions(processHaloInteractions) {}
 
   /**
    * Process the interactions inside one cell.
@@ -132,17 +136,17 @@ class CellFunctor {
   const DataLayoutOption::Value _dataLayout;
 
   const bool _useNewton3;
+
+  const bool _processHaloInteractions;
 };
 
-template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional, bool processHaloInteractions>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloInteractions>::setSortingThreshold(
-    size_t sortingThreshold) {
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSortingThreshold(size_t sortingThreshold) {
   _sortingThreshold = sortingThreshold;
 }
 
-template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional, bool processHaloInteractions>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloInteractions>::processCell(
-    ParticleCell_T &cell) {
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(ParticleCell_T &cell) {
   const bool isAoS = _dataLayout == DataLayoutOption::aos ? true : false;
   const bool isSoA = _dataLayout == DataLayoutOption::soa ? true : false;
 
@@ -151,7 +155,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloIn
     return;
   }
   // Avoid force calculations if the cell contains only halo particles or if the cell is empty (=dummy)
-  if constexpr (not processHaloInteractions) {
+  if (not _processHaloInteractions) {
     if (not cell.canHaveOwnedParticles()) {
       return;
     }
@@ -164,8 +168,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloIn
   }
 }
 
-template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional, bool processHaloInteractions>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloInteractions>::processCellPair(
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPair(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
   const bool isAoS = _dataLayout == DataLayoutOption::aos ? true : false;
   const bool isSoA = _dataLayout == DataLayoutOption::soa ? true : false;
@@ -176,7 +180,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloIn
     return;
   }
 
-  if constexpr (not processHaloInteractions) {
+  if (not _processHaloInteractions) {
     if (not cell1.canHaveOwnedParticles()) {
       // Nothing to do if cell1 has no owned particles and we don't write to cell2 particles.
       if constexpr (not bidirectional) {
@@ -197,9 +201,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloIn
   }
 }
 
-template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional, bool processHaloInteractions>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloInteractions>::processCellAoSImpl(
-    ParticleCell_T &cell) {
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellAoSImpl(ParticleCell_T &cell) {
   // helper function
   const auto interactParticles = [this](auto &p1, auto &p2) {
     this->_functor.AoSFunctor(p1, p2, this->_useNewton3);
@@ -234,8 +237,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloIn
   }
 }
 
-template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional, bool processHaloInteractions>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloInteractions>::processCellPairAoSImpl(
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairAoSImpl(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
   const auto interactParticles = [this](auto &p1, auto &p2) {
     this->_functor.AoSFunctor(p1, p2, this->_useNewton3);
@@ -270,9 +273,9 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloIn
   }
 }
 
-template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional, bool processHaloInteractions>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional, processHaloInteractions>::processCellPairSoAImpl(
-    ParticleCell_T &cell1, ParticleCell_T &cell2) {
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoAImpl(ParticleCell_T &cell1,
+                                                                                           ParticleCell_T &cell2) {
   _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, _useNewton3);
   if constexpr (bidirectional) {
     if (not _useNewton3) {
