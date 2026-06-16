@@ -238,9 +238,14 @@ class LJFunctor
     SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
+    SoAFloatPrecision *const __restrict slow_fxptr = soa.template begin<Particle_T::AttributeNames::slowForceX>();
+    SoAFloatPrecision *const __restrict slow_fyptr = soa.template begin<Particle_T::AttributeNames::slowForceY>();
+    SoAFloatPrecision *const __restrict slow_fzptr = soa.template begin<Particle_T::AttributeNames::slowForceZ>();
+
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle_T::AttributeNames::typeId>();
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+    const SoAFloatPrecision slow_cutoffSquared = _slow_cutoffSquared;
 
     SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
     SoAFloatPrecision virialSumX = 0.;
@@ -280,6 +285,10 @@ class LJFunctor
       SoAFloatPrecision fyacc = 0.;
       SoAFloatPrecision fzacc = 0.;
 
+      SoAFloatPrecision slow_fxacc = 0.;
+      SoAFloatPrecision slow_fyacc = 0.;
+      SoAFloatPrecision slow_fzacc = 0.;
+
       if constexpr (useMixing) {
         for (unsigned int j = 0; j < soa.size(); ++j) {
           auto mixingData = _PPLibrary->getLJMixingData(typeptr[i], typeptr[j]);
@@ -293,9 +302,9 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
-                               numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
-                               numGlobalCalcsSum)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, slow_fxacc, slow_fyacc, slow_fzacc, potentialEnergySum,        \
+                               virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, \
+                               numKernelCallsNoN3Sum, numGlobalCalcsSum)
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
         SoAFloatPrecision shift6 = const_shift6;
         SoAFloatPrecision sigmaSquared = const_sigmaSquared;
@@ -322,7 +331,12 @@ class LJFunctor
 
         // Mask away if distance is too large or any particle is a dummy.
         // Particle ownedStateI was already checked previously.
-        const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+        bool mask;
+        if constexpr (updateSlowForces) {
+          mask = dr2 <= slow_cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+        } else {
+          mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+        }
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
@@ -335,14 +349,36 @@ class LJFunctor
         const SoAFloatPrecision fy = dry * fac;
         const SoAFloatPrecision fz = drz * fac;
 
-        fxacc += fx;
-        fyacc += fy;
-        fzacc += fz;
+        if constexpr (updateSlowForces) {
+          if (dr2 >= cutoffSquared) {
+            slow_fxacc += fx;
+            slow_fyacc += fy;
+            slow_fzacc += fz;
 
-        // newton 3
-        fxptr[j] -= fx;
-        fyptr[j] -= fy;
-        fzptr[j] -= fz;
+            // newton3
+            slow_fxptr[j] -= fx;
+            slow_fyptr[j] -= fy;
+            slow_fzptr[j] -= fz;
+          } else {
+            fxacc += fx;
+            fyacc += fy;
+            fzacc += fz;
+
+            // newton 3
+            fxptr[j] -= fx;
+            fyptr[j] -= fy;
+            fzptr[j] -= fz;
+          }
+        } else {
+          fxacc += fx;
+          fyacc += fy;
+          fzacc += fz;
+
+          // newton 3
+          fxptr[j] -= fx;
+          fyptr[j] -= fy;
+          fzptr[j] -= fz;
+        }
 
         if constexpr (countFLOPs) {
           numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
@@ -373,7 +409,14 @@ class LJFunctor
       fxptr[i] += fxacc;
       fyptr[i] += fyacc;
       fzptr[i] += fzacc;
+
+      if constexpr (updateSlowForces) {
+        slow_fxptr[i] += slow_fxacc;
+        slow_fyptr[i] += slow_fyacc;
+        slow_fzptr[i] += slow_fzacc;
+      }
     }
+
     if constexpr (countFLOPs) {
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
@@ -429,6 +472,14 @@ class LJFunctor
     auto *const __restrict fx2ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
     auto *const __restrict fy2ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fz2ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+
+    auto *const __restrict slow_fx1ptr = soa1.template begin<Particle_T::AttributeNames::slowForceX>();
+    auto *const __restrict slow_fy1ptr = soa1.template begin<Particle_T::AttributeNames::slowForceY>();
+    auto *const __restrict slow_fz1ptr = soa1.template begin<Particle_T::AttributeNames::slowForceZ>();
+    auto *const __restrict slow_fx2ptr = soa2.template begin<Particle_T::AttributeNames::slowForceX>();
+    auto *const __restrict slow_fy2ptr = soa2.template begin<Particle_T::AttributeNames::slowForceY>();
+    auto *const __restrict slow_fz2ptr = soa2.template begin<Particle_T::AttributeNames::slowForceZ>();
+
     [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<Particle_T::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
@@ -445,6 +496,7 @@ class LJFunctor
     size_t numGlobalCalcsNoN3Sum = 0;
 
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+    const SoAFloatPrecision slow_cutoffSquared = _slow_cutoffSquared;
     SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmaSquared = _sigmaSquared;
     SoAFloatPrecision epsilon24 = _epsilon24;
@@ -467,6 +519,10 @@ class LJFunctor
       SoAFloatPrecision fyacc = 0;
       SoAFloatPrecision fzacc = 0;
 
+      SoAFloatPrecision slow_fxacc = 0;
+      SoAFloatPrecision slow_fyacc = 0;
+      SoAFloatPrecision slow_fzacc = 0;
+
       const auto ownedStateI = ownedStatePtr1[i];
       if (ownedStateI == autopas::OwnershipState::dummy) {
         continue;
@@ -485,9 +541,9 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
-                               numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
-                               numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, slow_fxacc, slow_fyacc, slow_fzacc, potentialEnergySum,        \
+                               virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, \
+                               numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
@@ -511,7 +567,13 @@ class LJFunctor
 
         // Mask away if distance is too large or any particle is a dummy.
         // Particle ownedStateI was already checked previously.
-        const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+        bool mask;
+        if constexpr (updateSlowForces) {
+          mask = dr2 <= slow_cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+
+        } else {
+          mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+        }
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
@@ -524,13 +586,35 @@ class LJFunctor
         const SoAFloatPrecision fy = dry * fac;
         const SoAFloatPrecision fz = drz * fac;
 
-        fxacc += fx;
-        fyacc += fy;
-        fzacc += fz;
-        if (newton3) {
-          fx2ptr[j] -= fx;
-          fy2ptr[j] -= fy;
-          fz2ptr[j] -= fz;
+        if constexpr (updateSlowForces) {
+          if (dr2 >= slow_cutoffSquared) {
+            slow_fxacc += fx;
+            slow_fyacc += fy;
+            slow_fzacc += fz;
+            if (newton3) {
+              slow_fx2ptr[j] -= fx;
+              slow_fy2ptr[j] -= fy;
+              slow_fz2ptr[j] -= fz;
+            }
+          } else {
+            fxacc += fx;
+            fyacc += fy;
+            fzacc += fz;
+            if (newton3) {
+              fx2ptr[j] -= fx;
+              fy2ptr[j] -= fy;
+              fz2ptr[j] -= fz;
+            }
+          }
+        } else {
+          fxacc += fx;
+          fyacc += fy;
+          fzacc += fz;
+          if (newton3) {
+            fx2ptr[j] -= fx;
+            fy2ptr[j] -= fy;
+            fz2ptr[j] -= fz;
+          }
         }
 
         if constexpr (countFLOPs) {
@@ -566,10 +650,18 @@ class LJFunctor
           }
         }
       }
+
       fx1ptr[i] += fxacc;
       fy1ptr[i] += fyacc;
       fz1ptr[i] += fzacc;
+
+      if constexpr (updateSlowForces) {
+        slow_fx1ptr[i] += slow_fxacc;
+        slow_fy1ptr[i] += slow_fyacc;
+        slow_fz1ptr[i] += slow_fzacc;
+      }
     }
+
     if constexpr (countFLOPs) {
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
@@ -718,7 +810,8 @@ class LJFunctor
   double getPotentialEnergy() {
     if (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate "
+          "Trying to get potential energy even though calculateGlobals is false. If you want this functor to "
+          "calculate "
           "global "
           "values, please specify calculateGlobals to be true.");
     }
@@ -776,9 +869,9 @@ class LJFunctor
    * Caveats:
    *
    * This function is supposed to return useful FLOPs, e.g. without counting masked vector instructions.
-   * You could also argue that, strictly speaking, we redundantly calculate forces and globals twice in the newton3 case
-   * on a owned/halo boundary. This function does not treat such "redundant" calculations as useless. Similarly, this
-   * function does not treat halo-halo interactions as redundant useless calculations.
+   * You could also argue that, strictly speaking, we redundantly calculate forces and globals twice in the newton3
+   * case on a owned/halo boundary. This function does not treat such "redundant" calculations as useless. Similarly,
+   * this function does not treat halo-halo interactions as redundant useless calculations.
    *
    * @return number of FLOPs since initTraversal() is called.
    */
@@ -810,7 +903,8 @@ class LJFunctor
              numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsN3Acc * numFLOPsPerN3GlobalCalc +
              numGlobalCalcsNoN3Acc * numFLOPsPerNoN3GlobalCalc;
     } else {
-      // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
+      // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with
+      // it
       return std::numeric_limits<size_t>::max();
     }
   }
@@ -830,7 +924,8 @@ class LJFunctor
       return (static_cast<double>(numKernelCallsNoN3Acc) + static_cast<double>(numKernelCallsN3Acc)) /
              (static_cast<double>(numDistCallsAcc));
     } else {
-      // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
+      // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with
+      // it
       return std::numeric_limits<double>::quiet_NaN();
     }
   }
@@ -1144,8 +1239,8 @@ class LJFunctor
   }
 
   /**
-   * This class stores internal data for global calculations for each thread. Make sure that this data has proper size,
-   * i.e. k*64 Bytes!
+   * This class stores internal data for global calculations for each thread. Make sure that this data has proper
+   * size, i.e. k*64 Bytes!
    */
   class AoSThreadDataGlobals {
    public:
