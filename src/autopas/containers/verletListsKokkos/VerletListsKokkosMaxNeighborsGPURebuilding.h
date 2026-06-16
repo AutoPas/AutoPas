@@ -44,6 +44,11 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
     
     [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsKokkosMaxNeighborsGPURebuilding; }
 
+    /**
+     * whether to use flat or teams rebuild kernel
+     */
+    void setUseTeamsRebuild(bool useTeams) { _useTeamsRebuild = useTeams; }
+
     bool allowsKokkos() const override { return true; }
 
     void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
@@ -162,9 +167,13 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
             Kokkos::realloc(_haloNeighborListOffsets, numberOfOwned);
             Kokkos::realloc(_haloNeighborListEntries, numberOfOwned * _maxNeighbors);
 
-            const bool ownedOverflow = buildNeighborListsFlat(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view);
+            const bool ownedOverflow = _useTeamsRebuild
+                ? buildNeighborListsTeams(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view)
+                : buildNeighborListsFlat(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view);
 
-            const bool haloOverflow = buildNeighborListsFlat(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view);
+            const bool haloOverflow = _useTeamsRebuild
+                ? buildNeighborListsTeams(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view)
+                : buildNeighborListsFlat(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view);
             if (!ownedOverflow && !haloOverflow) {
                 break;
             }
@@ -460,6 +469,83 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
             return overflow != 0;
             spdlog::info("buildNeighborlistflat() complete, overflow flag is currently not checked (TODO)");
         }
+
+        
+        bool buildNeighborListsTeams(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
+            spdlog::info("buildNeighborListsTeams()");
+            const size_t N = soa1.size();
+            const size_t M = soa2.size();
+            spdlog::debug("VerletListsKokkosTraversalTeams::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
+                        soa2.size());
+
+            if (N == 0 || M == 0) {
+                spdlog::debug(
+                    "VerletListsKokkosTraversalTeams::performSoATraversal: skipping kernel launch (soa1.size()={}, "
+                    "soa2.size()={})",
+                    N, M);
+                return false;
+            }
+            const size_t maxNeighbors = _maxNeighbors;
+            const float interactionLength = _cutoff + this->getVerletSkin();
+            const float interactionLengthSqr = interactionLength * interactionLength;
+            const auto soa1Device = soa1.deviceView();
+            const auto soa2Device = soa2.deviceView();
+
+            // Device-side overflow flag
+            Kokkos::View<int, DeviceSpace> overflowFlag("overflowFlag");
+            Kokkos::deep_copy(overflowFlag, 0);
+
+            using ExecSpace = typename DeviceSpace::execution_space;
+            using MemberType = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
+            using CounterView = Kokkos::View<size_t*, typename ExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
+            const size_t scratchBytes = CounterView::shmem_size(1);
+
+            spdlog::info("Launching team kernel with N={} and M={}", N, M);
+            auto teamPolicy = Kokkos::TeamPolicy<ExecSpace>(N, Kokkos::AUTO)
+                                  .set_scratch_size(0, Kokkos::PerTeam(scratchBytes));
+            Kokkos::parallel_for("vl_kokkos_rebuild_teams", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
+                const int i = teamHandle.league_rank();
+
+                const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+                const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+                const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+
+                // running neighbor count for this team, stored in shared memory
+                CounterView count(teamHandle.team_scratch(0), 1);
+                Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() { count(0) = 0; });
+                teamHandle.team_barrier();
+
+                Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, M), [&](const size_t k) {
+                    const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
+                    const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
+                    const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
+                    const auto dx = x1 - x2;
+                    const auto dy = y1 - y2;
+                    const auto dz = z1 - z2;
+                    const auto distSquared = dx * dx + dy * dy + dz * dz;
+
+                    if (distSquared < interactionLengthSqr) {
+                        const size_t slot = Kokkos::atomic_fetch_add(&count(0), size_t(1));
+                        if (slot >= maxNeighbors) {
+                            Kokkos::atomic_store(&overflowFlag(), 1);
+                        } else {
+                            entries(i * maxNeighbors + slot) = k;
+                        }
+                    }
+                });
+                teamHandle.team_barrier();
+
+                Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
+                    const size_t finalCount = count(0) < maxNeighbors ? count(0) : maxNeighbors;
+                    offsets(i) = i * maxNeighbors + finalCount;
+                });
+            });
+            spdlog::info("Team kernel launch complete, checking for overflow...");
+
+            int overflow = 0;
+            Kokkos::deep_copy(overflow, overflowFlag);
+            return overflow != 0;
+        }
         
         template <typename Traversal>
         void prepareTraversal(Traversal &traversal) {
@@ -681,6 +767,9 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
     // and the lists are rebuilt (detect + grow & retry). Persists across rebuilds so the cost is
     // amortized once the value has settled.
     size_t _maxNeighbors {64};
+
+    
+    bool _useTeamsRebuild {true};
     TimingStats _traversalTimingStats {"VerletListsKokkosMaxNeighbors::computeInteractions"};
     TimingStats _rebuildTimingStats {"VerletListsKokkosMaxNeighbors::rebuildNeighborLists"};
 
