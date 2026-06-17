@@ -35,7 +35,7 @@ class LCC08CellHandler {
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
-   * @param checkBounds
+   * @param checkBounds Boolean parameter whether to check cell indices and call the cell functor with halo cells
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
@@ -140,6 +140,9 @@ class LCC08CellHandler {
    */
   const std::array<double, 3> _cellLength;
 
+  /*
+   * Set to true if an extra safety check is required that cell offset indices are in range.
+   */
   const bool _checkBounds;
 };
 

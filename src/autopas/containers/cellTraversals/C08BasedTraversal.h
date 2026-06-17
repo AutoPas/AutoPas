@@ -50,7 +50,6 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell_T, Functor_T> 
   inline void c08Traversal(LoopBody &&loopBody) {
     using namespace autopas::utils::ArrayMath::literals;
 
-    // Compile-time branching for zero runtime overhead
     const auto end = _traverseHaloCells ? this->_cellsPerDimension : (this->_cellsPerDimension - this->_overlap);
     const auto stride = this->_overlap + 1ul;
     this->colorTraversal(std::forward<LoopBody>(loopBody), end, stride);

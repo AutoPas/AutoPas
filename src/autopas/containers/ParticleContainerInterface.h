@@ -316,7 +316,7 @@ class ParticleContainerInterface {
 
   /**
    * Prepare the container for a specific traversal.
-   * Useful for lazily building auxiliary structures (like pair lists) outside the main force computation timing.
+   * Useful for adding additional work (like pair lists) outside the main force computation timing.
    * @param traversal The traversal that will be used for computeInteractions.
    */
   virtual void prepareForTraversal(TraversalInterface *traversal) {}
