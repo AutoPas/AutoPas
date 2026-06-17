@@ -16,6 +16,10 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
 target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_link_libraries(md-flexible PRIVATE stdc++ m)
+endif()
+
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." ON)
