@@ -306,6 +306,8 @@ template <class Particle_T>
                     forEachLambda(i, owned);
                   }
                 });
+                _ownedParticles.template markModified<ExecSpace>();
+                owned.markLayoutModified(owned.getLayout());
               }
               /* halo or dummies; this basically filters out only owned, sequential, container only */
               if (behavior & 0b110)  {
@@ -315,6 +317,8 @@ template <class Particle_T>
                     forEachLambda(i, halo);
                   }
                 });
+                _haloParticles.template markModified<ExecSpace>();
+                halo.markLayoutModified(halo.getLayout());
               }
               /* force sequential (sequential yes, but which particles? all? only owned? */
               if (behavior & 0b1000) {
@@ -325,12 +329,6 @@ template <class Particle_T>
                 // TODO: implement
               }
               // TODO: also consider particles in the additionalStorage (they come from the LogicHandler's additional buffer)
-
-              if (_dataLayout == DataLayoutOption::soa) {
-                _ownedParticles.template markModified<ExecSpace>();
-                _haloParticles.template markModified<ExecSpace>();
-                _ownedParticles.markLayoutModified(DataLayoutOption::soa);
-              }
             }
 
             template<class ExecSpace, typename Result, typename Reduction, typename Lambda>

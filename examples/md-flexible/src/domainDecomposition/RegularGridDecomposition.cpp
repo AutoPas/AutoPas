@@ -362,7 +362,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 
             const auto sigmaSquared = sigma * sigma;
             const auto epsilon24 = 24.; // TODO: extract from particle
-            const auto mirrorPosition = pos[dim] + isUpper? 2* distanceToBoundary : -2*distanceToBoundary;
+            const auto mirrorPosition = pos[dim] + (isUpper? 2* distanceToBoundary : -2*distanceToBoundary);
             const auto f = LJKernel(pos[dim], mirrorPosition, sigmaSquared, epsilon24);
 
             force[dim] += f;
@@ -370,12 +370,12 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         };
 
         if (autopas::utils::Math::isNearRelKokkos(localBoxMin[dim], globalBoxMin[dim])) {
-          const auto boundaryPosition = globalBoxMin[dim] + maxReflSkin;
+          const auto boundaryPosition = globalBoxMin[dim];
           const auto distanceToBoundary = Kokkos::abs(pos[dim] - boundaryPosition);
           reflectKokkos(false, distanceToBoundary);
         }
         if (autopas::utils::Math::isNearRelKokkos(localBoxMax[dim], globalBoxMax[dim])) {
-          const auto boundaryPosition = globalBoxMax[dim] - maxReflSkin;
+          const auto boundaryPosition = globalBoxMax[dim];
           const auto distanceToBoundary = Kokkos::abs(pos[dim] - boundaryPosition);
           reflectKokkos(true, distanceToBoundary);
         }

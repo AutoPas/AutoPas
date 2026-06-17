@@ -202,19 +202,23 @@ namespace autopas::utils {
 
     template <typename Target>
     void sync() {
-      constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
-      constexpr auto I = std::make_index_sequence<tupleSize>();
+      if (_layout == DataLayoutOption::soa) {
+        constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
+        constexpr auto I = std::make_index_sequence<tupleSize>();
 
-      storageSoA.template syncAll<Target>(I);
+        storageSoA.template syncAll<Target>(I);
+      }
     }
 
     template <typename Target>
     void markModified() {
       // TODO: when AoS is also allowed on the GPU, we need a switch here too
-      constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
-      constexpr auto I = std::make_index_sequence<tupleSize>();
+      if (_layout == DataLayoutOption::soa) {
+        constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
+        constexpr auto I = std::make_index_sequence<tupleSize>();
 
-      storageSoA.template markAllModified<Target>(I);
+        storageSoA.template markAllModified<Target>(I);
+      }
     }
 
     // TODO: rethink this interface and when this should be used
