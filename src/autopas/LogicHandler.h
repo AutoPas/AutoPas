@@ -37,7 +37,7 @@
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
-#include "autopas/utils/KokkosStorage.h"
+#include "autopas/utilsKokkos/KokkosStorage.h"
 
 namespace autopas {
 

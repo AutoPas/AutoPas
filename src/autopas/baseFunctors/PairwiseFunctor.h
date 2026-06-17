@@ -12,7 +12,7 @@
 #include "Functor.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
-#include "autopas/utils/KokkosStorage.h"
+#include "autopas/utilsKokkos/KokkosStorage.h"
 #include "autopas/utils/SoAView.h"
 
 namespace autopas {

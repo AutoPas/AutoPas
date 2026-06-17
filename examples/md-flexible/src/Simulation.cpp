@@ -84,8 +84,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _totalEnergySensor(configuration.energySensorOption.value) {
-  _timers.total.start();
-  _timers.initialization.start();
+  _kokkosTimers.total.start();
+  _kokkosTimers.initialization.start();
   _totalEnergySensor.startMeasurement();
 
   // only create the writer if necessary since this also creates the output dir
@@ -208,11 +208,11 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                       _configuration.initTemperature.value, std::numeric_limits<double>::max());
   }
 
-  _timers.initialization.stop();
+  _kokkosTimers.initialization.stop();
 }
 
 void Simulation::finalize() {
-  _timers.total.stop();
+  _kokkosTimers.total.stop();
   _totalEnergySensor.endMeasurement();
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
@@ -221,15 +221,15 @@ void Simulation::finalize() {
 }
 
 void Simulation::run() {
-  _timers.simulate.start();
+  _kokkosTimers.simulate.start();
   while (needsMoreIterations()) {
     if (_vtkWriter.has_value() and _iteration % _configuration.vtkWriteFrequency.value == 0) {
-      _timers.vtk.start();
+      _kokkosTimers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
-      _timers.vtk.stop();
+      _kokkosTimers.vtk.stop();
     }
 
-    _timers.computationalLoad.start();
+    _kokkosTimers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -240,16 +240,16 @@ void Simulation::run() {
     // We update the container, even if dt=0, to bump the iteration counter, which is needed to ensure containers can
     // still be rebuilt in frozen scenarios e.g. for algorithm performance data gathering purposes. Also, it bumps the
     // iteration counter which can be used to uniquely identify functor calls.
-    _timers.updateContainer.start();
+    _kokkosTimers.updateContainer.start();
     auto emigrants = _autoPasContainer->updateContainer();
-    _timers.updateContainer.stop();
+    _kokkosTimers.updateContainer.stop();
 
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
+      const auto computationalLoad = static_cast<double>(_kokkosTimers.computationalLoad.stop());
 
       // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
-        _timers.loadBalancing.start();
+        _kokkosTimers.loadBalancing.start();
         _domainDecomposition->update(computationalLoad);
         auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
                                                                 _domainDecomposition->getLocalBoxMax());
@@ -272,23 +272,23 @@ void Simulation::run() {
                         emigrants.end());
 
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-        _timers.loadBalancing.stop();
+        _kokkosTimers.loadBalancing.stop();
       }
 
-      _timers.migratingParticleExchange.start();
+      _kokkosTimers.migratingParticleExchange.start();
       _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
-      _timers.migratingParticleExchange.stop();
+      _kokkosTimers.migratingParticleExchange.stop();
 
-      _timers.reflectParticlesAtBoundaries.start();
+      _kokkosTimers.reflectParticlesAtBoundaries.start();
       _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer,
                                                          *_configuration.getParticlePropertiesLibrary());
-      _timers.reflectParticlesAtBoundaries.stop();
+      _kokkosTimers.reflectParticlesAtBoundaries.stop();
 
-      _timers.haloParticleExchange.start();
+      _kokkosTimers.haloParticleExchange.start();
       _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
-      _timers.haloParticleExchange.stop();
+      _kokkosTimers.haloParticleExchange.stop();
 
-      _timers.computationalLoad.start();
+      _kokkosTimers.computationalLoad.start();
     }
 
     updateInteractionForces();
@@ -305,7 +305,7 @@ void Simulation::run() {
 #endif
       updateThermostat();
     }
-    _timers.computationalLoad.stop();
+    _kokkosTimers.computationalLoad.stop();
 #ifdef MD_FLEXIBLE_CALC_GLOBALS
     // Summing the potential energy over all MPI ranks
     double potentialEnergyOverMPIRanks{}, virialSumOverMPIRanks{};
@@ -335,7 +335,7 @@ void Simulation::run() {
       }
     }
   }
-  _timers.simulate.stop();
+  _kokkosTimers.simulate.stop();
 
   // Record last state of simulation.
   if (_vtkWriter.has_value()) {
@@ -462,7 +462,7 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 }
 
 void Simulation::updatePositionsAndResetForces() {
-  _timers.positionUpdate.start();
+  _kokkosTimers.positionUpdate.start();
   const std::array globalForce {
     static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(0)),
     static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(1)),
@@ -472,19 +472,19 @@ void Simulation::updatePositionsAndResetForces() {
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
       static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.deltaT.value),
       globalForce, _configuration.fastParticlesThrow.value);
-  _timers.positionUpdate.stop();
+  _kokkosTimers.positionUpdate.stop();
 }
 
 void Simulation::updateQuaternions() {
-  _timers.quaternionUpdate.start();
+  _kokkosTimers.quaternionUpdate.start();
   TimeDiscretization::calculateQuaternionsAndResetTorques(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
       _configuration.globalForce.value);
-  _timers.quaternionUpdate.stop();
+  _kokkosTimers.quaternionUpdate.stop();
 }
 
 void Simulation::updateInteractionForces() {
-  _timers.forceUpdateTotal.start();
+  _kokkosTimers.forceUpdateTotal.start();
 
   _previousIterationWasTuningIteration = _currentIterationIsTuningIteration;
   _currentIterationIsTuningIteration = false;
@@ -492,23 +492,23 @@ void Simulation::updateInteractionForces() {
 
   // Calculate pairwise forces
   if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
-    _timers.forceUpdatePairwise.start();
+    _kokkosTimers.forceUpdatePairwise.start();
     _currentIterationIsTuningIteration |= calculatePairwiseForces();
-    timeIteration += _timers.forceUpdatePairwise.stop();
+    timeIteration += _kokkosTimers.forceUpdatePairwise.stop();
   }
   // Calculate triwise forces
   if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
-    _timers.forceUpdateTriwise.start();
+    _kokkosTimers.forceUpdateTriwise.start();
     _currentIterationIsTuningIteration |= calculateTriwiseForces();
-    timeIteration += _timers.forceUpdateTriwise.stop();
+    timeIteration += _kokkosTimers.forceUpdateTriwise.stop();
   }
 
   // count time spent for tuning
   if (_currentIterationIsTuningIteration) {
-    _timers.forceUpdateTuning.addTime(timeIteration);
+    _kokkosTimers.forceUpdateTuning.addTime(timeIteration);
     ++_numTuningIterations;
   } else {
-    _timers.forceUpdateNonTuning.addTime(timeIteration);
+    _kokkosTimers.forceUpdateNonTuning.addTime(timeIteration);
     // if the previous iteration was a tuning iteration and the current one is not
     // we have reached the end of a tuning phase
     if (_previousIterationWasTuningIteration) {
@@ -516,35 +516,35 @@ void Simulation::updateInteractionForces() {
     }
   }
 
-  _timers.forceUpdateTotal.stop();
+  _kokkosTimers.forceUpdateTotal.stop();
 }
 
 void Simulation::updateVelocities() {
   const double deltaT = _configuration.deltaT.value;
 
   if (deltaT != 0) {
-    _timers.velocityUpdate.start();
+    _kokkosTimers.velocityUpdate.start();
     TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                             static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.deltaT.value));
-    _timers.velocityUpdate.stop();
+    _kokkosTimers.velocityUpdate.stop();
   }
 }
 
 void Simulation::updateAngularVelocities() {
   const double deltaT = _configuration.deltaT.value;
 
-  _timers.angularVelocityUpdate.start();
+  _kokkosTimers.angularVelocityUpdate.start();
   TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                                  deltaT);
-  _timers.angularVelocityUpdate.stop();
+  _kokkosTimers.angularVelocityUpdate.stop();
 }
 
 void Simulation::updateThermostat() {
   if (_configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0) {
-    _timers.thermostat.start();
+    _kokkosTimers.thermostat.start();
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                       _configuration.targetTemperature.value, _configuration.deltaTemp.value);
-    _timers.thermostat.stop();
+    _kokkosTimers.thermostat.stop();
   }
 }
 
@@ -637,25 +637,25 @@ void Simulation::updateSimulationPauseState() {
 }
 
 void Simulation::logMeasurements() {
-  const long positionUpdate = accumulateTime(_timers.positionUpdate.getTotalTime());
-  const long quaternionUpdate = accumulateTime(_timers.quaternionUpdate.getTotalTime());
-  const long updateContainer = accumulateTime(_timers.updateContainer.getTotalTime());
-  const long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
-  const long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
-  const long forceUpdateTriwise = accumulateTime(_timers.forceUpdateTriwise.getTotalTime());
-  const long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
-  const long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
-  const long velocityUpdate = accumulateTime(_timers.velocityUpdate.getTotalTime());
-  const long angularVelocityUpdate = accumulateTime(_timers.angularVelocityUpdate.getTotalTime());
-  const long simulate = accumulateTime(_timers.simulate.getTotalTime());
-  const long vtk = accumulateTime(_timers.vtk.getTotalTime());
-  const long initialization = accumulateTime(_timers.initialization.getTotalTime());
-  const long total = accumulateTime(_timers.total.getTotalTime());
-  const long thermostat = accumulateTime(_timers.thermostat.getTotalTime());
-  const long haloParticleExchange = accumulateTime(_timers.haloParticleExchange.getTotalTime());
-  const long reflectParticlesAtBoundaries = accumulateTime(_timers.reflectParticlesAtBoundaries.getTotalTime());
-  const long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
-  const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
+  const long positionUpdate = accumulateTime(_kokkosTimers.positionUpdate.getTotalTime());
+  const long quaternionUpdate = accumulateTime(_kokkosTimers.quaternionUpdate.getTotalTime());
+  const long updateContainer = accumulateTime(_kokkosTimers.updateContainer.getTotalTime());
+  const long forceUpdateTotal = accumulateTime(_kokkosTimers.forceUpdateTotal.getTotalTime());
+  const long forceUpdatePairwise = accumulateTime(_kokkosTimers.forceUpdatePairwise.getTotalTime());
+  const long forceUpdateTriwise = accumulateTime(_kokkosTimers.forceUpdateTriwise.getTotalTime());
+  const long forceUpdateTuning = accumulateTime(_kokkosTimers.forceUpdateTuning.getTotalTime());
+  const long forceUpdateNonTuning = accumulateTime(_kokkosTimers.forceUpdateNonTuning.getTotalTime());
+  const long velocityUpdate = accumulateTime(_kokkosTimers.velocityUpdate.getTotalTime());
+  const long angularVelocityUpdate = accumulateTime(_kokkosTimers.angularVelocityUpdate.getTotalTime());
+  const long simulate = accumulateTime(_kokkosTimers.simulate.getTotalTime());
+  const long vtk = accumulateTime(_kokkosTimers.vtk.getTotalTime());
+  const long initialization = accumulateTime(_kokkosTimers.initialization.getTotalTime());
+  const long total = accumulateTime(_kokkosTimers.total.getTotalTime());
+  const long thermostat = accumulateTime(_kokkosTimers.thermostat.getTotalTime());
+  const long haloParticleExchange = accumulateTime(_kokkosTimers.haloParticleExchange.getTotalTime());
+  const long reflectParticlesAtBoundaries = accumulateTime(_kokkosTimers.reflectParticlesAtBoundaries.getTotalTime());
+  const long migratingParticleExchange = accumulateTime(_kokkosTimers.migratingParticleExchange.getTotalTime());
+  const long loadBalancing = accumulateTime(_kokkosTimers.loadBalancing.getTotalTime());
 #ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
   double totalEnergy = _totalEnergySensor.getJoules();
   autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &totalEnergy, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
@@ -663,7 +663,7 @@ void Simulation::logMeasurements() {
 #endif
 
   if (_domainDecomposition->getDomainIndex() == 0) {
-    const long wallClockTime = _timers.total.getTotalTime();
+    const long wallClockTime = _kokkosTimers.total.getTotalTime();
     // use the two potentially largest timers to determine the number of chars needed
     const auto maximumNumberOfDigits =
         static_cast<int>(std::max(std::to_string(total).length(), std::to_string(wallClockTime).length()));

@@ -10,7 +10,7 @@
 
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/KokkosSoA.h"
+#include "autopas/utilsKokkos/KokkosSoA.h"
 
 namespace mdLib {
 

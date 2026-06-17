@@ -13,7 +13,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/WrapKokkos.h"
 
-#include "autopas/utils/KokkosStorage.h"
+#include "autopas/utilsKokkos/KokkosStorage.h"
 
 namespace TimeDiscretization {
 

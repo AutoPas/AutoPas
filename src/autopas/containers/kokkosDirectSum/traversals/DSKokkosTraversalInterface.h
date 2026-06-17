@@ -7,8 +7,8 @@
 #pragma once
 
 #include <Kokkos_Core.hpp>
-#include "autopas/utils/KokkosAoS.h"
-#include "autopas/utils/KokkosDataLayoutConverter.h"
+#include "autopas/utilsKokkos/KokkosAoS.h"
+#include "autopas/utilsKokkos/KokkosDataLayoutConverter.h"
 #include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {

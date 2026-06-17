@@ -11,9 +11,7 @@
 #include <Kokkos_Core.hpp>
 
 #include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/utils/KokkosAoS.h"
-#include "autopas/utils/KokkosSoA.h"
-#include "autopas/utils/KokkosStorage.h"
+#include "autopas/utilsKokkos/KokkosStorage.h"
 #include "autopas/containers/kokkosDirectSum/traversals/DSKokkosTraversalInterface.h"
 
 namespace autopas {
