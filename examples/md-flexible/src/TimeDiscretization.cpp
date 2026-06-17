@@ -118,7 +118,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     storage.template operator()<ParticleType::AttributeNames::posY, true, ForEachHostFlag>(i) = pY + displacementY;
     storage.template operator()<ParticleType::AttributeNames::posZ, true, ForEachHostFlag>(i) = pZ + displacementZ;
 
-  }, autopas::IteratorBehavior::owned);
+  }, autopas::IteratorBehavior::owned, "mdFlexible::TimeDiscretization::calculatePositionsAndResetForces");
   }
 #ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   /*
@@ -252,7 +252,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
       storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i) = vX + vUpdateX;
       storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i) = vY + vUpdateY;
       storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i) = vZ + vUpdateZ;
-    }, autopas::IteratorBehavior::owned);
+    }, autopas::IteratorBehavior::owned, "mdFlexible::TimeDiscretization::calculateVelocities");
 
   }
 }

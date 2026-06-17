@@ -454,7 +454,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         }
       }
       } else {
-
+        // TODO: refactor whole process as invoking a Kokkos kernel for 6 times introduces massive overhead (!)
         const auto sixthRootOfTwo = _sixthRootOfTwo;
         autoPasContainer.forEachInRegionKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
 
@@ -515,7 +515,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
             }
           }
 
-        }, reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
+        }, reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned, "mdFlexible::RegularGridDecomposition::refectParticlesAtBoundaries");
 
       }
     };

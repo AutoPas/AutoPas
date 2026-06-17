@@ -161,7 +161,7 @@ private:
 
     auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, _teamSize, Kokkos::AUTO);
     using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
-    Kokkos::parallel_for("traversal", teamPolicy, functor);
+    Kokkos::parallel_for("autopas::TeamsTraversalSoA", teamPolicy, functor);
   }
 
 

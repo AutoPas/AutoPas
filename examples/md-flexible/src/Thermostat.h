@@ -139,7 +139,7 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
   } else {
 
     CalcTemperatureFunctor<ParticleType> functor {};
-    autopas.template reduceKokkos<DeviceSpace::execution_space, double, Kokkos::Sum<double>>(functor, kineticEnergyMul2, autopas::IteratorBehavior::ownedOrHalo); // TODO: check iterator behavior
+    autopas.template reduceKokkos<DeviceSpace::execution_space, double, Kokkos::Sum<double>>(functor, kineticEnergyMul2, autopas::IteratorBehavior::ownedOrHalo,  "mdFlexible::Thermostat::calcTemperature"); // TODO: check iterator behavior
   }
   // md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
   constexpr unsigned int degreesOfFreedom {
@@ -221,7 +221,7 @@ auto calcTemperatureComponent(AutoPasTemplate &autopas,
     }
   } else {
     CalcTemperatureComponentFunctor<ParticleType> functor {kineticEnergyMul2Map, numParticleMap};
-    autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::owned); // TODO: check which iterator behavior to use
+    autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::owned, "mdFlexible::Thermostat::calcTemperatureComponent"); // TODO: check which iterator behavior to use
     kineticEnergyMul2Map.modify<DeviceSpace::execution_space>();
     numParticleMap.modify<DeviceSpace::execution_space>();
   }
@@ -327,7 +327,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 
     Kokkos::Random_XorShift64_Pool<> random_engine (42);
     BrownianMotionFunctor<ParticleType> functor(random_engine, targetTemperature);
-    autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::ownedOrHalo); // TODO: check iterator behavior
+    autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::ownedOrHalo, "mdFlexible::Thermostat::addBrownianMotion"); // TODO: check iterator behavior
   }
 }
 
@@ -390,7 +390,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
   } else {
     scalingMap.template sync<DeviceSpace::execution_space>();
     ApplyFunctor<ParticleType> functor {scalingMap};
-    autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::owned); // TODO: decide iterator behavior, figure out how to handle scalingMap
+    autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::owned, "mdFlexible::Thermostat::apply"); // TODO: decide iterator behavior, figure out how to handle scalingMap
   }
 }
 }  // namespace Thermostat

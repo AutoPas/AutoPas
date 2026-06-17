@@ -351,20 +351,19 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
     return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
   }
 
-  template <class, typename Lambda>
-  void forEachKokkos(Lambda, IteratorBehavior) {
-    // No Op
+  template <class ExecSpace, typename Lambda>
+  void forEachKokkos(Lambda, IteratorBehavior, const std::string& = "") {
+    // TODO: throw not implemented exception
   }
-
 
   template <class, bool, typename Lambda>
-  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3>&, const std::array<double, 3>&) {
-    // No Op
+  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3>&, const std::array<double, 3>&, const std::string& = "") {
+    // TODO: throw not implemented exception
   }
 
-  template<class, typename Result, typename, typename Lambda>
-  void reduceKokkos(Lambda, Result&, IteratorBehavior) {
-    // No Op
+  template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda, Result&, IteratorBehavior, const std::string& = "") {
+    // TODO: throw not implemented exception
   }
 
   /**

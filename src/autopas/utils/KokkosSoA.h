@@ -17,18 +17,19 @@ namespace autopas::utils {
   public:
 
     explicit KokkosSoA()
-      : KokkosSoA(0) {}
-
-    explicit KokkosSoA(size_t N) {
-      resize(N);
-    }
+      : KokkosSoA(0, "Default") {}
 
     KokkosSoA(const KokkosSoA<Types...>& other) {
       views = other.views;
     }
 
     KOKKOS_FUNCTION
-    KokkosSoA(size_t N, const std::string& label) : views{Kokkos::DualView<Types>(label, N)...} {}
+    KokkosSoA(size_t N, const std::string& label) {
+      constexpr auto tupleSize = std::tuple_size<decltype(views)>::value;
+      constexpr auto I = std::make_index_sequence<tupleSize>{};
+
+      createViewsImpl(N, label, I);
+    }
 
     /* Get/Set/Allocation */
 
@@ -126,6 +127,14 @@ namespace autopas::utils {
     }
 
   private:
+
+    template <std::size_t... I>
+    void createViewsImpl(size_t numParticles, const std::string& label, std::index_sequence<I...>) {
+      views = std::make_tuple(
+        Kokkos::DualView<Types, Kokkos::CudaSpace::device_type>(Kokkos::ViewAllocateWithoutInitializing(label + std::to_string(I)), numParticles)...
+      );
+    }
+
     template <std::size_t... I>
     void resizeImpl(size_t numParticles, std::index_sequence<I...>) {
       (std::get<I>(views).resize(numParticles), ...);
@@ -142,10 +151,12 @@ namespace autopas::utils {
     }
 
 #ifdef KOKKOS_ENABLE_CUDA
-    std::tuple<Kokkos::DualView<Types, Kokkos::CudaSpace::device_type>...> views {};
+    using DeviceSpace = Kokkos::CudaSpace;
 #else
-    std::tuple<Kokkos::DualView<Types, Kokkos::HostSpace::device_type>...> views {};
+    using DeviceSpace = Kokkos::HostSpace;
 #endif
+
+    std::tuple<Kokkos::DualView<Types, DeviceSpace::device_type>...> views {};
   };
 
 }

@@ -260,7 +260,7 @@ class RemainderPairwiseInteractionHandler {
       auto max = container.getBoxMax();
 
       SoABufferTraversalFunctor<PairwiseFunctor, Particle_T, ExecSpace> functor {ownedBuffer, haloBuffer, f, cutoffSquared, ownedSize, haloSize, fx2, fy2, fz2};
-      container.template forEachInRegionKokkos<ExecSpace, true>(functor, IteratorBehavior::ownedOrHalo, min, max);
+      container.template forEachInRegionKokkos<ExecSpace, true>(functor, IteratorBehavior::ownedOrHalo, min, max, "autopas::bufferTraversalSoA");
 
       // 4. extract the content of the force views to the buffers
       fx2.modify_device();

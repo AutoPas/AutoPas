@@ -147,7 +147,7 @@ private:
     SoAFlatTraversalFunctor<Functor, Particle_T> functor {soa1, soa2, func, cutoffSquared, M};
 
     auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
-    Kokkos::parallel_for("traversal", rangePolicy, functor);
+    Kokkos::parallel_for("autopas::FlatTraversalSoA", rangePolicy, functor);
   }
 
 

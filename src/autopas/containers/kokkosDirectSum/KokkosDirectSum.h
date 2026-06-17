@@ -271,16 +271,16 @@ template <class Particle_T>
             }
 
             template <class ExecSpace, typename Lambda>
-            void forEachKokkos(Lambda& forEachLambda, IteratorBehavior behavior) {
+            void forEachKokkos(Lambda& forEachLambda, IteratorBehavior behavior, const std::string& label = "forEachKokkos") {
 
               auto& boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
               auto& boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
 
-              forEachInRegionKokkos<ExecSpace, false>(forEachLambda, behavior, boxMin, boxMax);
+              forEachInRegionKokkos<ExecSpace, false>(forEachLambda, behavior, boxMin, boxMax, label);
             }
 
               template <class ExecSpace, bool regionIter, typename Lambda>
-            void forEachInRegionKokkos(Lambda forEachLambda, IteratorBehavior behavior, const std::array<double, 3> &lowerCorner, const std::array<double, 3>& higherCorner) {
+            void forEachInRegionKokkos(Lambda forEachLambda, IteratorBehavior behavior, const std::array<double, 3> &lowerCorner, const std::array<double, 3>& higherCorner, const std::string& label = "forEachInRegionKokkos") {
 
               const auto& lowerCornerKokkos = Kokkos::Array{lowerCorner.at(0), lowerCorner.at(1), lowerCorner.at(2)};
               const auto& higherCornerKokkos = Kokkos::Array{higherCorner.at(0), higherCorner.at(1), higherCorner.at(2)};
@@ -302,7 +302,7 @@ template <class Particle_T>
               /* owned or dummies; this basically filters out only halo, sequential, container only */
               if (behavior & 0b101) {
                 auto& owned = _ownedParticles;
-                Kokkos::parallel_for("forEachKokkosOwned", Kokkos::RangePolicy<ExecSpace>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i)  {
+                Kokkos::parallel_for(label + "_owned", Kokkos::RangePolicy<ExecSpace>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i)  {
 
                   if (owned.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
                     forEachLambda(i, owned);
@@ -312,7 +312,7 @@ template <class Particle_T>
               /* halo or dummies; this basically filters out only owned, sequential, container only */
               if (behavior & 0b110)  {
                 auto& halo = _haloParticles;
-                Kokkos::parallel_for("forEachKokkosHalo", Kokkos::RangePolicy<ExecSpace>(0, _haloParticles.size()), KOKKOS_LAMBDA(int i)  {
+                Kokkos::parallel_for(label + "_halo", Kokkos::RangePolicy<ExecSpace>(0, _haloParticles.size()), KOKKOS_LAMBDA(int i)  {
                   if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
                     forEachLambda(i, halo);
                   }
@@ -336,17 +336,17 @@ template <class Particle_T>
             }
 
             template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
-            void reduceKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior) {
+            void reduceKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior, const std::string& label = "reduceKokkos") {
 
               auto& boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
               auto& boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
 
-              reduceInRegionKokkos<ExecSpace, false, Result, Reduction>(reduceLambda, result, behavior, boxMin, boxMax);
+              reduceInRegionKokkos<ExecSpace, false, Result, Reduction>(reduceLambda, result, behavior, boxMin, boxMax, label);
             }
 
             // TODO: declare that changes to particles is actually undefined behavior (as no memory syncs and data conversions are issued)
             template<class ExecSpace, bool regionIter, typename Result, typename Reduction, typename Lambda>
-            void reduceInRegionKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior, const std::array<double, 3>& lowerCorner, const std::array<double, 3>& higherCorner) {
+            void reduceInRegionKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior, const std::array<double, 3>& lowerCorner, const std::array<double, 3>& higherCorner, const std::string& label = "reduceInRegionKokkos") {
               if (_dataLayout == DataLayoutOption::aos) {
                 convertToAoS();
               }
@@ -365,7 +365,7 @@ template <class Particle_T>
               /* owned or dummies; this basically filters out only halo, sequential, container only */
               if (behavior & 0b101) {
                 auto& owned = _ownedParticles;
-                Kokkos::parallel_reduce("reduceKokkosOwned", Kokkos::RangePolicy<ExecSpace>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i, Result& localResult)  {
+                Kokkos::parallel_reduce(label + "_owned", Kokkos::RangePolicy<ExecSpace>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i, Result& localResult)  {
                   if (owned.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
                     reduceLambda(i, owned, localResult);
                   }
@@ -374,7 +374,7 @@ template <class Particle_T>
               /* halo or dummies; this basically filters out only owned, sequential, container only */
               if (behavior & 0b110) {
                 auto& halo = _haloParticles;
-                Kokkos::parallel_reduce("reduceKokkosHalo", Kokkos::RangePolicy<ExecSpace>(0, _haloParticles.size()), KOKKOS_LAMBDA(int i, Result& localResult)  {
+                Kokkos::parallel_reduce(label + "_halo", Kokkos::RangePolicy<ExecSpace>(0, _haloParticles.size()), KOKKOS_LAMBDA(int i, Result& localResult)  {
                   if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
                     reduceLambda(i, halo, localResult);
                   }

@@ -691,7 +691,7 @@ class LogicHandler {
       };
 
       withStaticContainerType(getContainer(), [&lambda, &maxVelocity](auto& actualContainer) {
-        actualContainer.template reduceKokkos<DeviceSpace::execution_space, double, Kokkos::Max<double>>(lambda, maxVelocity, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+        actualContainer.template reduceKokkos<DeviceSpace::execution_space, double, Kokkos::Max<double>>(lambda, maxVelocity, IteratorBehavior::owned | IteratorBehavior::containerOnly, "autopas::LogicHandler::getVelocityRFEstimate");
       });
     }
 
@@ -1006,7 +1006,7 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
     UpdateRebuildPositionsFunctor<Particle_T> functor{};
 
     withStaticContainerType(getContainer(), [&functor] (auto& actualContainer) {
-      actualContainer.template forEachKokkos<DeviceSpace::execution_space>(functor, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+      actualContainer.template forEachKokkos<DeviceSpace::execution_space>(functor, IteratorBehavior::owned | IteratorBehavior::containerOnly, "autopas::LogicHandler::updateRebuildPositions");
     });
   }
 #endif
@@ -1095,7 +1095,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
       };
 
     withStaticContainerType(getContainer(), [&lambda, &test](auto& actualContainer) {
-      actualContainer.template reduceKokkos<DeviceSpace::execution_space, bool, Kokkos::LOr<bool>>(lambda, test, IteratorBehavior::owned | IteratorBehavior::containerOnly);
+      actualContainer.template reduceKokkos<DeviceSpace::execution_space, bool, Kokkos::LOr<bool>>(lambda, test, IteratorBehavior::owned | IteratorBehavior::containerOnly, "autopas::LogicHandler::checkNeighborListsInvalid");
     });
     _neighborListInvalidDoDynamicRebuild = test;
 
