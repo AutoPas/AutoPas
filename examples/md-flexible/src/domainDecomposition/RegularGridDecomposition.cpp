@@ -38,6 +38,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
       _globalBoxMin(configuration.boxMin.value),
       _globalBoxMax(configuration.boxMax.value),
       _boundaryType(configuration.boundaryOption.value),
+      _boundaryTypeKokkos({configuration.boundaryOption.value.at(0), configuration.boundaryOption.value.at(1), configuration.boundaryOption.value.at(2)}),
       _mpiCommunicationNeeded(
 #if defined(AUTOPAS_INCLUDE_MPI)
           true
@@ -182,7 +183,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
       static_cast<size_t>(autoPasContainer.getNumberOfParticles() * (haloActualVolume / localBoxVolume) * 1.1));
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
-    const auto periodicBCs = _boundaryType[dimensionIndex] == options::BoundaryTypeOption::periodic;
+    const auto periodicBCs = _boundaryTypeKokkos[dimensionIndex] == options::BoundaryTypeOption::periodic;
     const auto atGlobalMinBoundary = isNearRel(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex]);
     const auto atGlobalMaxBoundary = isNearRel(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex]);
 
@@ -251,7 +252,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
   std::vector<ParticleType> remainingEmigrants;
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // if this rank spans the whole dimension but is not periodic -> skip.
-    if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and
+    if (_boundaryTypeKokkos[dimensionIndex] != options::BoundaryTypeOption::periodic and
         isNearRel(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex]) and
         isNearRel(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex]))
       continue;
@@ -292,7 +293,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
     }
   }
   // sanity check: if the simulation is a closed system there should be no emigrants left at this point.
-  if (std::all_of(_boundaryType.begin(), _boundaryType.end(),
+  if (std::all_of(_boundaryTypeKokkos.begin(), _boundaryTypeKokkos.end(),
                   [](const auto &boundary) {
                     return boundary == options::BoundaryTypeOption::periodic or
                            boundary == options::BoundaryTypeOption::reflective;
@@ -311,230 +312,239 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
                                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
-  using autopas::utils::Math::isNearRel;
-  std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
 
-  for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
-    // skip if boundary is not reflective
-    if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::reflective) continue;
+  const bool containerAllowsKokkos = autoPasContainer.containerAllowsKokkos();
 
-    auto reflect = [&](bool isUpper) {
-      const auto boundaryPosition = isUpper ? reflSkinMax[dimensionIndex] : reflSkinMin[dimensionIndex];
+  if (containerAllowsKokkos) {
 
-      if (!autoPasContainer.containerAllowsKokkos()) {
-              for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
-           p.isValid(); ++p) {
-        // Check that particle is within 6th root of 2 * sigma
-        const auto pos = p->getR();
-        const std::array position {
-          static_cast<double>(pos.at(0)),
-          static_cast<double>(pos.at(1)),
-          static_cast<double>(pos.at(2)),
-        };
-        const auto distanceToBoundary = std::abs(position[dimensionIndex] - boundaryPosition);
+    constexpr auto dimCount = _dimensionCount;
+    const auto sixthRootOfTwo = _sixthRootOfTwo;
+    const auto maxReflSkin = _maxReflectiveSkin;
+    const auto boundaries = _boundaryTypeKokkos;
+    Kokkos::Array<double, 3> localBoxMin = {_localBoxMin.at(0), _localBoxMin.at(1), _localBoxMin.at(2)};
+    Kokkos::Array<double, 3> localBoxMax = {_localBoxMax.at(0), _localBoxMax.at(1), _localBoxMax.at(2)};
+    Kokkos::Array<double, 3> globalBoxMin = {_globalBoxMin.at(0), _globalBoxMin.at(1), _globalBoxMin.at(2)};
+    Kokkos::Array<double, 3> globalBoxMax = {_globalBoxMax.at(0), _globalBoxMax.at(1), _globalBoxMax.at(2)};
 
-        // For single-site molecules, we discard molecules further than sixthRootOfTwo * sigma, and are left only with
-        // molecules who will experience repulsion from the boundary.
+    autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
 
-        // For multi-site molecules, we discard molecules with center-of-mass further than sixthRootOfTwo * the largest
-        // sigma of any site of that molecule. Some molecules may still experience attraction in which case their force
-        // is reset to before the force interaction.
-        //
-        // Note, there is a scenario where a molecule has center-of-mass further than sixthRootOfTwo * sigma, but has a
-        // site closer than this distance, with a large enough epsilon, that repulsion would occur. For computational
-        // cost reasons, this scenario is neglected - no repulsion occurs. This *should*, in theory, with an appropriate
-        // step-size and molecular model, not cause any problems.
+      const auto posX = storage.template operator()<ParticleType::AttributeNames::posX, true, ForEachHostFlag>(i);
+      const auto posY = storage.template operator()<ParticleType::AttributeNames::posY, true, ForEachHostFlag>(i);
+      const auto posZ = storage.template operator()<ParticleType::AttributeNames::posZ, true, ForEachHostFlag>(i);
 
-        // To produce a "mirrored" multi-site molecule that could be used with the multi-site molecule functor requires
-        // adding 3 additional molecule types for every molecule type, as we would require relative site positions
-        // mirrored in all 3-dimensions. Then the reflected relative site positions can be rotated using the mirrored
-        // quaternion produced by quaternion::qMirror.
-        //
-        // As this is nasty, we reimplement the kernel of the lennard-jones force here. We also use this for
-        // single-site molecules, primarily for consistency but it is also suspected to be cheaper than creating a
-        // mirror particle for use with the actual functor.
+      Kokkos::Array pos {posX, posY, posZ};
+      Kokkos::Array<FloatPrecision, 3> force {0, 0, 0};
 
-        // Calculates force acting on site from another site
-        const auto LJKernel = [](const std::array<double, 3>& sitePosition,
-                                 const std::array<double, 3>& mirrorSitePosition, const double sigmaSquared,
-                                 const double epsilon24) {
-          const auto displacement = autopas::utils::ArrayMath::sub(sitePosition, mirrorSitePosition);
-          const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
+      for (int dim = 0; dim < dimCount; ++dim) {
+        if (boundaries[dim] != options::BoundaryTypeOption::reflective) continue;
 
-          const auto inverseDistanceSquared = 1. / distanceSquared;
-          const auto lj2 = sigmaSquared * inverseDistanceSquared;
-          const auto lj6 = lj2 * lj2 * lj2;
-          const auto lj12 = lj6 * lj6;
-          const auto lj12m6 = lj12 - lj6;
-          const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * inverseDistanceSquared;
+        auto reflectKokkos = [&](bool isUpper, FloatPrecision distanceToBoundary) {
 
-          return autopas::utils::ArrayMath::mulScalar(displacement, scalarMultiple);
+          constexpr auto sigma = 1.; // TODO: extract from particle
+
+          if (distanceToBoundary < sixthRootOfTwo * 0.5 * sigma) {
+
+            const auto LJKernel = [](const FloatPrecision particlePos, const FloatPrecision mirrorPos, const FloatPrecision sigmaSquared, const FloatPrecision epsilon24) {
+              const auto displacement = particlePos - mirrorPos;
+              const auto distanceSquared = displacement * displacement;
+
+              const auto inverseDistanceSquared = 1./distanceSquared;
+
+              const auto lj2 = sigmaSquared * inverseDistanceSquared;
+              const auto lj6 = lj2 * lj2 * lj2;
+              const auto lj12 = lj6 * lj6;
+              const auto lj12m6 = lj12 - lj6;
+
+              const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * inverseDistanceSquared;
+
+              return displacement * scalarMultiple;
+            };
+
+            const auto sigmaSquared = sigma * sigma;
+            const auto epsilon24 = 24.; // TODO: extract from particle
+            const auto mirrorPosition = pos[dim] + isUpper? 2* distanceToBoundary : -2*distanceToBoundary;
+            const auto f = LJKernel(pos[dim], mirrorPosition, sigmaSquared, epsilon24);
+
+            force[dim] += f;
+          }
         };
 
-        const bool reflectMoleculeFlag =
-            distanceToBoundary < _sixthRootOfTwo * 0.5 *
-#if MD_FLEXIBLE_MODE == MULTISITE
-                                     particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId());
-#else
-                                     particlePropertiesLib.getSigma(p->getTypeId());
-#endif
-
-        if (reflectMoleculeFlag) {
-#if MD_FLEXIBLE_MODE == MULTISITE
-          // Keep track of current force and torque to see if molecule is repulsed, and, if not, reset the force.
-          const auto currentForce = p->getF();
-          const auto currentTorque = p->getTorque();
-
-          // load site positions and types
-          const auto unrotatedSitePositions = particlePropertiesLib.getSitePositions(p->getTypeId());
-          const auto rotatedSitePositions =
-              autopas::utils::quaternion::rotateVectorOfPositions(p->getQuaternion(), unrotatedSitePositions);
-          const auto exactSitePositions = [rotatedSitePositions, position]() {
-            std::vector<std::array<double, 3>> returnedPositions{};
-            returnedPositions.reserve(rotatedSitePositions.size());
-            for (const auto &rotatedSitePosition : rotatedSitePositions) {
-              returnedPositions.push_back(autopas::utils::ArrayMath::add(rotatedSitePosition, position));
-            }
-            return returnedPositions;
-          }();
-          const auto siteTypes = particlePropertiesLib.getSiteTypes(p->getTypeId());
-
-          // get positions of opposing mirror sites
-          const auto exactMirrorSitePositions = [exactSitePositions, boundaryPosition, dimensionIndex]() {
-            std::vector<std::array<double, 3>> returnedPositions{};
-            returnedPositions.reserve(exactSitePositions.size());
-            for (const auto &exactSitePosition : exactSitePositions) {
-              auto mirrorPosition = exactSitePosition;
-              const auto displacementToBoundary = boundaryPosition - exactSitePosition[dimensionIndex];
-              mirrorPosition[dimensionIndex] += 2 * displacementToBoundary;
-              returnedPositions.push_back(mirrorPosition);
-            }
-            return returnedPositions;
-          }();
-
-          // Add forces + torques for molecule-to-molecule interaction
-          for (int site = 0; site < particlePropertiesLib.getNumSites(p->getTypeId()); site++) {
-            for (int mirrorSite = 0; mirrorSite < particlePropertiesLib.getNumSites(p->getTypeId()); mirrorSite++) {
-              const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteTypes[site], siteTypes[site]);
-              const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteTypes[site], siteTypes[site]);
-              const auto force =
-                  LJKernel(exactSitePositions[site], exactMirrorSitePositions[mirrorSite], sigmaSquared, epsilon24);
-              p->addF(force);
-              p->addTorque((autopas::utils::ArrayMath::cross(rotatedSitePositions[site], force)));
-            }
-          }
-#else
-          const auto siteType = p->getTypeId();
-          const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
-            const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
-            auto returnedPosition = position;
-            returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
-            return returnedPosition;
-          }();
-          const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
-          const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
-          const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
-          p->addF({
-            static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(0)),
-            static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(1)),
-            static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(2)),
-          });
-#endif
-
-#if MD_FLEXIBLE_MODE == MULTISITE
-          // test if attraction has occurred
-          const bool reflectionIsAttractive = isUpper ? p->getF()[dimensionIndex] - currentForce[dimensionIndex] > 0
-                                                      : p->getF()[dimensionIndex] - currentForce[dimensionIndex] < 0;
-          // reset force if no attraction has occurred
-          if (reflectionIsAttractive) {
-            p->setF(currentForce);
-            p->setTorque(currentTorque);
-          }
-#endif
+        if (autopas::utils::Math::isNearRelKokkos(localBoxMin[dim], globalBoxMin[dim])) {
+          const auto boundaryPosition = globalBoxMin[dim] + maxReflSkin;
+          const auto distanceToBoundary = Kokkos::abs(pos[dim] - boundaryPosition);
+          reflectKokkos(false, distanceToBoundary);
+        }
+        if (autopas::utils::Math::isNearRelKokkos(localBoxMax[dim], globalBoxMax[dim])) {
+          const auto boundaryPosition = globalBoxMax[dim] - maxReflSkin;
+          const auto distanceToBoundary = Kokkos::abs(pos[dim] - boundaryPosition);
+          reflectKokkos(true, distanceToBoundary);
         }
       }
-      } else {
-        // TODO: refactor whole process as invoking a Kokkos kernel for 6 times introduces massive overhead (!)
-        const auto sixthRootOfTwo = _sixthRootOfTwo;
-        autoPasContainer.forEachInRegionKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
 
-          ParticleType::ParticleSoAFloatPrecision position = 42.;
+      storage.template operator()<ParticleType::AttributeNames::forceX, true, ForEachHostFlag>(i) += force[0];
+      storage.template operator()<ParticleType::AttributeNames::forceY, true, ForEachHostFlag>(i) += force[1];
+      storage.template operator()<ParticleType::AttributeNames::forceZ, true, ForEachHostFlag>(i) += force[2];
 
-          if (dimensionIndex == 0) {
-            position = storage.template operator()<ParticleType::AttributeNames::posX, true, ForEachHostFlag>(i);
-          } else if (dimensionIndex == 1) {
-            position = storage.template operator()<ParticleType::AttributeNames::posY, true, ForEachHostFlag>(i);
-          } else if (dimensionIndex == 2) {
-            position = storage.template operator()<ParticleType::AttributeNames::posZ, true, ForEachHostFlag>(i);
-          } else {
-            position = 42.; // TODO; throw exception in this case as this should never happen
-          }
+    }, autopas::IteratorBehavior::owned, "mdFlexible::RegularGridDecomposition::refectParticlesAtBoundaries");
+  } else {
+    using autopas::utils::Math::isNearRel;
+    std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
 
-          const auto distanceToBoundary = position - boundaryPosition;
+    for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
+    // skip if boundary is not reflective
+      if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::reflective) continue;
 
-          const auto LJKernel = [] (ParticleType::ParticleSoAFloatPrecision sitePosition, ParticleType::ParticleSoAFloatPrecision mirrorPosition,
-            ParticleType::ParticleSoAFloatPrecision sigmaSquared, ParticleType::ParticleSoAFloatPrecision epsilon24) {
+      auto reflect = [&](bool isUpper) {
+        const auto boundaryPosition = isUpper ? reflSkinMax[dimensionIndex] : reflSkinMin[dimensionIndex];
+        for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
+             p.isValid(); ++p) {
+          // Check that particle is within 6th root of 2 * sigma
+          const auto pos = p->getR();
+          const std::array position {
+            static_cast<double>(pos.at(0)),
+            static_cast<double>(pos.at(1)),
+            static_cast<double>(pos.at(2)),
+          };
+          const auto distanceToBoundary = std::abs(position[dimensionIndex] - boundaryPosition);
 
-            const auto displacement = sitePosition - mirrorPosition;
-            const auto distanceSquared = displacement * displacement;
+          // For single-site molecules, we discard molecules further than sixthRootOfTwo * sigma, and are left only with
+          // molecules who will experience repulsion from the boundary.
 
-            const auto inverseDistanceSquared = 1./distanceSquared;
+          // For multi-site molecules, we discard molecules with center-of-mass further than sixthRootOfTwo * the largest
+          // sigma of any site of that molecule. Some molecules may still experience attraction in which case their force
+          // is reset to before the force interaction.
+          //
+          // Note, there is a scenario where a molecule has center-of-mass further than sixthRootOfTwo * sigma, but has a
+          // site closer than this distance, with a large enough epsilon, that repulsion would occur. For computational
+          // cost reasons, this scenario is neglected - no repulsion occurs. This *should*, in theory, with an appropriate
+          // step-size and molecular model, not cause any problems.
 
+          // To produce a "mirrored" multi-site molecule that could be used with the multi-site molecule functor requires
+          // adding 3 additional molecule types for every molecule type, as we would require relative site positions
+          // mirrored in all 3-dimensions. Then the reflected relative site positions can be rotated using the mirrored
+          // quaternion produced by quaternion::qMirror.
+          //
+          // As this is nasty, we reimplement the kernel of the lennard-jones force here. We also use this for
+          // single-site molecules, primarily for consistency but it is also suspected to be cheaper than creating a
+          // mirror particle for use with the actual functor.
+
+          // Calculates force acting on site from another site
+          const auto LJKernel = [](const std::array<double, 3>& sitePosition,
+                                   const std::array<double, 3>& mirrorSitePosition, const double sigmaSquared,
+                                   const double epsilon24) {
+            const auto displacement = autopas::utils::ArrayMath::sub(sitePosition, mirrorSitePosition);
+            const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
+
+            const auto inverseDistanceSquared = 1. / distanceSquared;
             const auto lj2 = sigmaSquared * inverseDistanceSquared;
             const auto lj6 = lj2 * lj2 * lj2;
             const auto lj12 = lj6 * lj6;
             const auto lj12m6 = lj12 - lj6;
-
             const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * inverseDistanceSquared;
 
-            return displacement * scalarMultiple;
+            return autopas::utils::ArrayMath::mulScalar(displacement, scalarMultiple);
           };
 
-          // TODO: extract sigma somehow from somewhere
-          const ParticleType::ParticleSoAFloatPrecision sigma = 1.;
-
-          const bool reflectMoleculeFlag = distanceToBoundary < sixthRootOfTwo * 0.5 * sigma;
+          const bool reflectMoleculeFlag =
+              distanceToBoundary < _sixthRootOfTwo * 0.5 *
+#if MD_FLEXIBLE_MODE == MULTISITE
+                                       particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId());
+#else
+                                       particlePropertiesLib.getSigma(p->getTypeId());
+#endif
 
           if (reflectMoleculeFlag) {
-            const auto displacementToBoundary = boundaryPosition - position;
-            const auto mirrorPosition = position + 2 * displacementToBoundary;
+#if MD_FLEXIBLE_MODE == MULTISITE
+            // Keep track of current force and torque to see if molecule is repulsed, and, if not, reset the force.
+            const auto currentForce = p->getF();
+            const auto currentTorque = p->getTorque();
 
-            const auto sigmaSquared = 1.; // TODO: obtain somehow from somewhere
-            const auto epsilon24 = 24.; // TODO: obtain somehow from somewhere
+            // load site positions and types
+            const auto unrotatedSitePositions = particlePropertiesLib.getSitePositions(p->getTypeId());
+            const auto rotatedSitePositions =
+                autopas::utils::quaternion::rotateVectorOfPositions(p->getQuaternion(), unrotatedSitePositions);
+            const auto exactSitePositions = [rotatedSitePositions, position]() {
+              std::vector<std::array<double, 3>> returnedPositions{};
+              returnedPositions.reserve(rotatedSitePositions.size());
+              for (const auto &rotatedSitePosition : rotatedSitePositions) {
+                returnedPositions.push_back(autopas::utils::ArrayMath::add(rotatedSitePosition, position));
+              }
+              return returnedPositions;
+            }();
+            const auto siteTypes = particlePropertiesLib.getSiteTypes(p->getTypeId());
 
-            const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
+            // get positions of opposing mirror sites
+            const auto exactMirrorSitePositions = [exactSitePositions, boundaryPosition, dimensionIndex]() {
+              std::vector<std::array<double, 3>> returnedPositions{};
+              returnedPositions.reserve(exactSitePositions.size());
+              for (const auto &exactSitePosition : exactSitePositions) {
+                auto mirrorPosition = exactSitePosition;
+                const auto displacementToBoundary = boundaryPosition - exactSitePosition[dimensionIndex];
+                mirrorPosition[dimensionIndex] += 2 * displacementToBoundary;
+                returnedPositions.push_back(mirrorPosition);
+              }
+              return returnedPositions;
+            }();
 
-            if (dimensionIndex == 0) {
-              storage.template operator()<ParticleType::AttributeNames::forceX, true, ForEachHostFlag>(i) += force;
-            } else if (dimensionIndex == 1) {
-              storage.template operator()<ParticleType::AttributeNames::forceY, true, ForEachHostFlag>(i) += force;
-            } else if (dimensionIndex == 2) {
-              storage.template operator()<ParticleType::AttributeNames::forceZ, true, ForEachHostFlag>(i) += force;
-            } else {
-              // TODO: throw exception in this case as this should never happen
+            // Add forces + torques for molecule-to-molecule interaction
+            for (int site = 0; site < particlePropertiesLib.getNumSites(p->getTypeId()); site++) {
+              for (int mirrorSite = 0; mirrorSite < particlePropertiesLib.getNumSites(p->getTypeId()); mirrorSite++) {
+                const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteTypes[site], siteTypes[site]);
+                const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteTypes[site], siteTypes[site]);
+                const auto force =
+                    LJKernel(exactSitePositions[site], exactMirrorSitePositions[mirrorSite], sigmaSquared, epsilon24);
+                p->addF(force);
+                p->addTorque((autopas::utils::ArrayMath::cross(rotatedSitePositions[site], force)));
+              }
             }
+#else
+            const auto siteType = p->getTypeId();
+            const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
+              const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
+              auto returnedPosition = position;
+              returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
+              return returnedPosition;
+            }();
+            const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
+            const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
+            const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
+            p->addF({
+              static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(0)),
+              static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(1)),
+              static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(2)),
+            });
+#endif
+
+#if MD_FLEXIBLE_MODE == MULTISITE
+            // test if attraction has occurred
+            const bool reflectionIsAttractive = isUpper ? p->getF()[dimensionIndex] - currentForce[dimensionIndex] > 0
+                                                        : p->getF()[dimensionIndex] - currentForce[dimensionIndex] < 0;
+            // reset force if no attraction has occurred
+            if (reflectionIsAttractive) {
+              p->setF(currentForce);
+              p->setTorque(currentTorque);
+            }
+#endif
           }
+        }
+      };
 
-        }, reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned, "mdFlexible::RegularGridDecomposition::refectParticlesAtBoundaries");
+      // apply if we are at a global boundary on lower end of the dimension
+      if (isNearRel(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex])) {
+        reflSkinMin = _globalBoxMin;
+        reflSkinMax = _globalBoxMax;
+        reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + _maxReflectiveSkin;
 
+        reflect(false);
       }
-    };
+      // apply if we are at a global boundary on upper end of the dimension
+      if (isNearRel(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex])) {
+        reflSkinMin = _globalBoxMin;
+        reflSkinMax = _globalBoxMax;
+        reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - _maxReflectiveSkin;
 
-    // apply if we are at a global boundary on lower end of the dimension
-    if (isNearRel(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex])) {
-      reflSkinMin = _globalBoxMin;
-      reflSkinMax = _globalBoxMax;
-      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + _maxReflectiveSkin;
-
-      reflect(false);
-    }
-    // apply if we are at a global boundary on upper end of the dimension
-    if (isNearRel(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex])) {
-      reflSkinMin = _globalBoxMin;
-      reflSkinMax = _globalBoxMax;
-      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - _maxReflectiveSkin;
-
-      reflect(true);
+        reflect(true);
+      }
     }
   }
 }

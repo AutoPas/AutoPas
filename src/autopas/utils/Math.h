@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 #include <cmath>
 #include <vector>
+#include "Kokkos_Core.hpp"
 
 namespace autopas::utils::Math {
 /**
@@ -305,6 +306,15 @@ bool isNearRel(FloatType a, FloatType b, double maxRelativeDifference = EPSILON_
   const auto greaterNumber = std::max(std::abs(a), std::abs(b));
   const auto absoluteDifference = maxRelativeDifference * greaterNumber;
   const auto diff = std::abs(a - b);
+  return diff <= absoluteDifference;
+}
+
+template <std::floating_point FloatType>
+KOKKOS_INLINE_FUNCTION
+bool isNearRelKokkos(FloatType a, FloatType b, double maxRelativeDifference = EPSILON_RELATIVE_EQUALITY) {
+  const auto greaterNumber = Kokkos::max(Kokkos::abs(a), Kokkos::abs(b));
+  const auto absoluteDifference = maxRelativeDifference * greaterNumber;
+  const auto diff = Kokkos::abs(a - b);
   return diff <= absoluteDifference;
 }
 
