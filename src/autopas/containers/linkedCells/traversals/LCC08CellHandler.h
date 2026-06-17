@@ -47,7 +47,7 @@ class LCC08CellHandler {
         _dataLayout(dataLayout),
         _useNewton3(useNewton3),
         _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
-                     dataLayout, useNewton3, checkBounds),
+                     dataLayout, useNewton3),
         _interactionLength(interactionLength),
         _cellLength(cellLength),
         _checkBounds(checkBounds) {
@@ -171,11 +171,17 @@ inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCellPairwise
         // check that index is not outOfBounds because we call processBaseCell on outer-most Halo-Cells as well
         continue;
       }
-    }
-    if (cellIndex1 == cellIndex2) {
-      _cellFunctor.processCell(cell1);
+      if (cellIndex1 == cellIndex2) {
+        _cellFunctor.template processCell<true>(cell1);
+      } else {
+        _cellFunctor.template processCellPair<true>(cell1, cell2, r);
+      }
     } else {
-      _cellFunctor.processCellPair(cell1, cell2, r);
+      if (cellIndex1 == cellIndex2) {
+        _cellFunctor.template processCell<false>(cell1);
+      } else {
+        _cellFunctor.template processCellPair<false>(cell1, cell2, r);
+      }
     }
   }
 }
