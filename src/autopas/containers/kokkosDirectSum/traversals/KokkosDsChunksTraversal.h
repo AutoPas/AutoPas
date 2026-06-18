@@ -41,9 +41,9 @@ struct SoAChunksTraversalFunctor {
         FloatPrecision fyAcc = 0.;
         FloatPrecision fzAcc = 0.;
 
-        const auto x1 = _soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i + offset);
-        const auto y1 = _soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i + offset);
-        const auto z1 = _soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i + offset);
+        const auto x1 = _soa1.template operator()<Particle_T::AttributeNames::posX, false>(i + offset);
+        const auto y1 = _soa1.template operator()<Particle_T::AttributeNames::posY, false>(i + offset);
+        const auto z1 = _soa1.template operator()<Particle_T::AttributeNames::posZ, false>(i + offset);
 
         Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(teamHandle, _M), [&](int j,
             FloatPrecision& localFxAcc,
@@ -52,9 +52,9 @@ struct SoAChunksTraversalFunctor {
                 _func->SoAKernelKokkos(x1, y1, z1, _soa2, localFxAcc, localFyAcc, localFzAcc, _cutoffSquared, i, j);
             }, fxAcc, fyAcc, fzAcc);
 
-        _soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(i + offset) += fxAcc;
-        _soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(i + offset) += fyAcc;
-        _soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(i + offset) += fzAcc;
+        _soa1.template operator()<Particle_T::AttributeNames::forceX, false>(i + offset) += fxAcc;
+        _soa1.template operator()<Particle_T::AttributeNames::forceY, false>(i + offset) += fyAcc;
+        _soa1.template operator()<Particle_T::AttributeNames::forceZ, false>(i + offset) += fzAcc;
     });
   }
 };

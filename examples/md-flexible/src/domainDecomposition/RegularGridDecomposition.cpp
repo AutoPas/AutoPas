@@ -328,9 +328,9 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 
     autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
 
-      const auto posX = storage.template operator()<ParticleType::AttributeNames::posX, true, ForEachHostFlag>(i);
-      const auto posY = storage.template operator()<ParticleType::AttributeNames::posY, true, ForEachHostFlag>(i);
-      const auto posZ = storage.template operator()<ParticleType::AttributeNames::posZ, true, ForEachHostFlag>(i);
+      const auto posX = storage.template operator()<ParticleType::AttributeNames::posX, ForEachHostFlag>(i);
+      const auto posY = storage.template operator()<ParticleType::AttributeNames::posY, ForEachHostFlag>(i);
+      const auto posZ = storage.template operator()<ParticleType::AttributeNames::posZ, ForEachHostFlag>(i);
 
       Kokkos::Array pos {posX, posY, posZ};
       Kokkos::Array<FloatPrecision, 3> force {0, 0, 0};
@@ -381,9 +381,9 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         }
       }
 
-      storage.template operator()<ParticleType::AttributeNames::forceX, true, ForEachHostFlag>(i) += force[0];
-      storage.template operator()<ParticleType::AttributeNames::forceY, true, ForEachHostFlag>(i) += force[1];
-      storage.template operator()<ParticleType::AttributeNames::forceZ, true, ForEachHostFlag>(i) += force[2];
+      storage.template operator()<ParticleType::AttributeNames::forceX, ForEachHostFlag>(i) += force[0];
+      storage.template operator()<ParticleType::AttributeNames::forceY, ForEachHostFlag>(i) += force[1];
+      storage.template operator()<ParticleType::AttributeNames::forceZ, ForEachHostFlag>(i) += force[2];
 
     }, autopas::IteratorBehavior::owned, "mdFlexible::RegularGridDecomposition::refectParticlesAtBoundaries");
   } else {

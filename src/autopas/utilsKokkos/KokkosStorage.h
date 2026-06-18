@@ -94,6 +94,9 @@ namespace autopas::utils {
     // TODO: mark somewhere that this is not thread safe (!)
     void addParticle(const Particle_T &p) {
 
+      // TODO: figure out how to deduce that...
+      constexpr bool useHostView = false;
+
       if (_currentSize == _capacity) {
         resize(_capacity+10);
       }
@@ -103,15 +106,13 @@ namespace autopas::utils {
       switch (_layout) {
         case DataLayoutOption::aos: {
           syncSoAToAoS();
-          storageAoS.addParticle(index, p);
+          storageAoS.template addParticle<useHostView>(index, p);
           _aosDirty = true;
           break;
         }
         case DataLayoutOption::soa: {
           syncAoSToSoA();
-          sync<Kokkos::HostSpace::execution_space>();
-          storageSoA.addParticle(index, p);
-          markModified<Kokkos::HostSpace::execution_space>();
+          storageSoA.template addParticle<Particle_T, useHostView>(index, p);
           _soaDirty = true;
           break;
         }
@@ -142,19 +143,19 @@ namespace autopas::utils {
       }
     }
 
-    template <size_t attribute, bool offset, bool host = false>
+    template <size_t attribute, bool useHostView = false>
     KOKKOS_INLINE_FUNCTION
     constexpr auto& operator() (int i) const {
       switch (_layout) {
         case DataLayoutOption::aos: {
-          return storageAoS.template operator()<attribute>(i);
+          return storageAoS.template operator()<attribute, useHostView>(i);
         }
         case DataLayoutOption::soa: {
-          return storageSoA.template operator()<attribute, offset, host>(i);
+          return storageSoA.template operator()<attribute-1, useHostView>(i);
         }
         default: {
           // THIS SHOULD NEVER HAPPEN, TODO: log an error
-          return storageAoS.template operator()<attribute>(i);
+          return storageAoS.template operator()<attribute, useHostView>(i);
         }
       }
     }
@@ -190,7 +191,7 @@ namespace autopas::utils {
       }
       */
 
-      auto ownershipState = operator()<Particle_T::AttributeNames::ownershipState, true, host>(index);
+      auto ownershipState = operator()<Particle_T::AttributeNames::ownershipState, host>(index);
 
       // TODO: this will require checks for edge cases and sync with the changes for dummy particles
       return static_cast<unsigned int>(ownershipState) & static_cast<unsigned int>(behavior);
@@ -281,17 +282,17 @@ namespace autopas::utils {
 
   private:
 
-    template <bool host, std::size_t... I>
+    template <bool useHostView, std::size_t... I>
     KOKKOS_INLINE_FUNCTION
     void copyParticleImpl (int targetIndex, const KokkosStorage<Particle_T>& otherStorage, int sourceIndex, std::index_sequence<I...>) const {
 
       switch (_layout) {
         case DataLayoutOption::aos: {
-          ((this->storageAoS.template operator()<I+1>(targetIndex) = otherStorage.getAoS().template operator()<I+1>(sourceIndex)), ...);
+          ((this->storageAoS.template operator()<I+1, useHostView>(targetIndex) = otherStorage.getAoS().template operator()<I+1, useHostView>(sourceIndex)), ...);
           break;
         }
         case DataLayoutOption::soa: {
-          ((this->storageSoA.template operator()<I, false, host>(targetIndex) = otherStorage.getSoA().template operator()<I, false, host>(sourceIndex)), ...);
+          ((this->storageSoA.template operator()<I, useHostView>(targetIndex) = otherStorage.getSoA().template operator()<I, useHostView>(sourceIndex)), ...);
           break;
         }
       }

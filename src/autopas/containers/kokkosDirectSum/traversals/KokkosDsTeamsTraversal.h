@@ -34,9 +34,9 @@ struct SoATeamTraversalFunctor {
         FloatPrecision fyAcc = 0.;
         FloatPrecision fzAcc = 0.;
 
-        const auto x1 = _soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
-        const auto y1 = _soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
-        const auto z1 = _soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
+        const auto x1 = _soa1.template operator()<Particle_T::AttributeNames::posX, false>(i);
+        const auto y1 = _soa1.template operator()<Particle_T::AttributeNames::posY, false>(i);
+        const auto z1 = _soa1.template operator()<Particle_T::AttributeNames::posZ, false>(i);
 
         Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamHandle, _M), [&](int j,
             FloatPrecision& localFxAcc,
@@ -47,13 +47,13 @@ struct SoATeamTraversalFunctor {
 
         Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
             const int index = teamHandle.league_rank();
-            const FloatPrecision oldFx = _soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index);
-            const FloatPrecision oldFy = _soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index);
-            const FloatPrecision oldFz = _soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index);
+            const FloatPrecision oldFx = _soa1.template operator()<Particle_T::AttributeNames::forceX, false>(index);
+            const FloatPrecision oldFy = _soa1.template operator()<Particle_T::AttributeNames::forceY, false>(index);
+            const FloatPrecision oldFz = _soa1.template operator()<Particle_T::AttributeNames::forceZ, false>(index);
 
-            _soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(index) = oldFx + fxAcc;
-            _soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(index) = oldFy + fyAcc;
-            _soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(index) = oldFz + fzAcc;
+            _soa1.template operator()<Particle_T::AttributeNames::forceX, false>(index) = oldFx + fxAcc;
+            _soa1.template operator()<Particle_T::AttributeNames::forceY, false>(index) = oldFy + fyAcc;
+            _soa1.template operator()<Particle_T::AttributeNames::forceZ, false>(index) = oldFz + fzAcc;
         });
     }
 };

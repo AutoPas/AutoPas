@@ -19,7 +19,7 @@ namespace mdLib {
  */
 class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
  public:
-  KokkosMoleculeLJ() = default;
+  KOKKOS_INLINE_FUNCTION KokkosMoleculeLJ() {}
 
   /**
    * Constructor of lennard jones molecule with initialization of typeID.

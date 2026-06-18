@@ -32,7 +32,8 @@ namespace autopas {
 template <typename floatType, typename idType>
 class ParticleBase {
  public:
-  ParticleBase()
+
+  KOKKOS_INLINE_FUNCTION ParticleBase()
       : _r({0.0, 0.0, 0.0}),
         _v({0., 0., 0.}),
         _f({0.0, 0.0, 0.0}),

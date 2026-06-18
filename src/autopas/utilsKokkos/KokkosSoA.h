@@ -50,33 +50,33 @@ namespace autopas::utils {
       resizeImpl(numParticles, I);
     }
 
-    template <size_t attribute, bool offset, bool host = false>
+    template <size_t attribute, bool useHostView = false>
     KOKKOS_INLINE_FUNCTION
     constexpr auto& operator() (int i) const {
-      if constexpr (host) {
-        return std::get<attribute - (offset ? 1 : 0)>(views).view_host()(i);
+      if constexpr (useHostView) {
+        return std::get<attribute>(views).view_host()(i);
       }
       else {
-        return std::get<attribute - (offset ? 1 : 0)>(views).view_device()(i);
+        return std::get<attribute>(views).view_device()(i);
       }
     }
 
-    template <class Particle_T>
+    template <class Particle_T, bool useHostView>
     void addParticle(size_t position, const Particle_T& p) {
       constexpr auto tupleSize = std::tuple_size<decltype(views)>::value;
       constexpr auto I = std::make_index_sequence<tupleSize>{};
 
-      addParticleImpl(position, p, I);
+      addParticleImpl<Particle_T, useHostView>(position, p, I);
     }
 
-    template <size_t attribute, bool offset, bool host = false>
+    template <size_t attribute, bool useHostView = false>
     KOKKOS_INLINE_FUNCTION
     constexpr auto& getView() const {
-      if constexpr (host) {
-        return std::get<attribute - (offset ? 1 : 0)>(views).view_host();
+      if constexpr (useHostView) {
+        return std::get<attribute>(views).view_host();
       }
       else {
-        return std::get<attribute - (offset ? 1 : 0)>(views).view_device();
+        return std::get<attribute>(views).view_device();
       }
     }
 
@@ -89,14 +89,6 @@ namespace autopas::utils {
     constexpr static size_t tupleSize() {
       return std::tuple_size<decltype(views)>::value;
     }
-
-    /* Data copies */
-    /*
-    template <class SrcSoA, std::size_t ... I>
-    void copyFrom(SrcSoA src, std::index_sequence<I...>) {
-      (Kokkos::deep_copy(std::get<I>(views), src.template getView<I>()), ...);
-    }
-    */
 
     template <typename Target, std::size_t... I>
     void markAllModified(std::index_sequence<I...>) {
@@ -145,9 +137,9 @@ namespace autopas::utils {
       (std::get<I>(views).realloc(numParticles), ...);
     }
 
-    template <class Particle_T, std::size_t... I>
+    template <class Particle_T, bool useHostView, std::size_t... I>
     void addParticleImpl(size_t position, const Particle_T& p, std::index_sequence<I...>) {
-      ((operator()<I, false, true>(position) = p.template get<static_cast<Particle_T::AttributeNames>(I+1)>()), ...);
+      ((operator()<I, useHostView>(position) = p.template get<static_cast<Particle_T::AttributeNames>(I+1)>()), ...);
     }
 
 #ifdef KOKKOS_ENABLE_CUDA

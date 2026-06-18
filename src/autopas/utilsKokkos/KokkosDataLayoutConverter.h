@@ -6,37 +6,40 @@
 
 #pragma once
 
-#include "autopas/options/DataLayoutOption.h"
-
 namespace autopas::utils {
 
 template <class Particle_T>
 class KokkosDataLayoutConverter {
  public:
 
-  explicit KokkosDataLayoutConverter() {}
+  constexpr static bool useHostView = true;
 
-  // TODO: this will have to run in parallel using Kokkos::parallel_for
   template <class Input, class Output, std::size_t... I>
-  void convertToSoA(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...> seq) {
+  static void convertToSoA(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...> seq) {
 
+    // TODO: sync src
     // AoS to SoA
-    for (size_t i = 0; i < numParticles; ++i) {
-      ((dstParticles. template operator()<I, false, true>(i) = srcParticles.getParticle(i).template get<static_cast<Particle_T::AttributeNames>(I+1)>()), ...); // I+1 as KokkosSoA does not contain ptr
-    }
+    // TODO: something else than HostSpace -> input template parameter
+    Kokkos::parallel_for("autopas::KokkosDataLayoutConverter::convertToSoA", Kokkos::RangePolicy<Kokkos::HostSpace::execution_space>(0, numParticles), KOKKOS_LAMBDA (size_t i) {
+      ((dstParticles. template operator()<I, useHostView>(i) = srcParticles.template operator()<I+1, useHostView>(i)), ...); // I+1 as KokkosSoA does not contain ptr
+    });
 
-    dstParticles.template markAllModified<Kokkos::HostSpace::execution_space>(seq);
+    (dstParticles.template markModified<Kokkos::HostSpace::execution_space, I>(), ...);
   }
 
-  // TODO: this will have to run in parallel using Kokkos::parallel_for
   template <class Input, class Output, std::size_t... I>
-  void convertToAoS(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...> seq) {
+  static void convertToAoS(Input &srcParticles, Output &dstParticles, size_t numParticles, std::index_sequence<I...> seq) {
 
-    srcParticles.template syncAll<Kokkos::HostSpace::execution_space>(seq);
+    (srcParticles.template sync<Kokkos::HostSpace::execution_space, I>(), ...);
     // SoA to AoS
-    for (size_t i = 0; i < numParticles; ++i) {
-      (dstParticles.getParticle(i). template set<static_cast<Particle_T::AttributeNames>(I+1)>(srcParticles. template operator()<I, false, true>(i)), ...); // I+1 as KokkosSoA does not contain ptr
-    }
+    // TODO: something else than HostSpace -> input template parameter
+    Kokkos::parallel_for("autopas::KokkosDataLayoutConverter::convertToAoS", Kokkos::RangePolicy<Kokkos::HostSpace::execution_space>(0,numParticles), KOKKOS_LAMBDA (size_t i) {
+
+      ((dstParticles.template operator()<I+1, useHostView>(i) = srcParticles.template operator()<I, useHostView>(i)), ...); // I+1 as KokkosSoA does not contain ptr
+
+    });
+
+    // TODO: modify dest
   }
 };
 

@@ -58,11 +58,12 @@ template <class Particle_T>
               const auto skinHalf = this->getVerletSkin() * 0.5;
 
               for (int i = 0; i < _haloParticles.size(); ++i) {
-                const auto id = _haloParticles.template operator()<Particle_T::AttributeNames::id, true, true>(i);
+                constexpr bool useHostView = true;
+                const auto id = _haloParticles.template operator()<Particle_T::AttributeNames::id, useHostView>(i);
                 if (id == haloParticle.getID()) {
-                  const typename Particle_T::ParticleSoAFloatPrecision x1 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, true, true>(i);
-                  const typename Particle_T::ParticleSoAFloatPrecision x2 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, true, true>(i);
-                  const typename Particle_T::ParticleSoAFloatPrecision x3 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, true, true>(i);
+                  const typename Particle_T::ParticleSoAFloatPrecision x1 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, useHostView>(i);
+                  const typename Particle_T::ParticleSoAFloatPrecision x2 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, useHostView>(i);
+                  const typename Particle_T::ParticleSoAFloatPrecision x3 = _haloParticles.template operator()<Particle_T::AttributeNames::posX, useHostView>(i);
 
                   const typename Particle_T::ParticleSoAFloatPrecision dX = x1 - haloParticle.getR().at(0);
                   const typename Particle_T::ParticleSoAFloatPrecision dY = x2 - haloParticle.getR().at(1);
@@ -146,10 +147,10 @@ template <class Particle_T>
                      and owned.template fulfillsIteratorRequirements<false, useHostView>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
 
                     int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
-                    auto id = owned.template operator()<Particle_T::AttributeNames::id, true, useHostView>(i);
+                    auto id = owned.template operator()<Particle_T::AttributeNames::id, useHostView>(i);
                     migrants.template copyParticle<useHostView>(migrantIndex, owned, i);
 
-                    owned.template operator()<Particle_T::AttributeNames::ownershipState, true, useHostView>(i) = OwnershipState::dummy;
+                    owned.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i) = OwnershipState::dummy;
                   }
                 });
               } else {
@@ -206,7 +207,7 @@ template <class Particle_T>
               migrantVector.reserve(numMigrants);
 
               for (int i = 0; i < numMigrants; ++i) {
-                Particle_T migrant = migrants.getAoS().getParticle(i);
+                Particle_T migrant = migrants.getAoS().template getParticle<true>(i); // TODO: make sure that host view is accessible
                 migrantVector.push_back(migrant);
               }
 
@@ -426,7 +427,8 @@ template <class Particle_T>
                 return false;
               }
               auto& storage = (cellIndex == 0) ? _ownedParticles : _haloParticles;
-              storage.template operator()<Particle_T::AttributeNames::ownershipState, true, true>(particleIndex) = OwnershipState::dummy;
+              // TODO: make sure that storage is synced to HostSpace
+              storage.template operator()<Particle_T::AttributeNames::ownershipState, true>(particleIndex) = OwnershipState::dummy;
               return true;
             }
 
@@ -553,7 +555,8 @@ protected:
 
           if (particleIndex >= sizeToCheck or
               not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-            viewToCheck.getParticle(particleIndex), iteratorBehavior, boxMin, boxMax)) {
+                // TODO: make sure that viewToCheck is uptodate in HostSpace
+            viewToCheck.template getParticle<true>(particleIndex), iteratorBehavior, boxMin, boxMax)) {
 
             std::tie(cellIndex, particleIndex) =
             advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
@@ -564,7 +567,7 @@ protected:
           }
 
           const auto& viewToExtract = (cellIndex == 0) ? _ownedParticles.getAoS() : _haloParticles.getAoS();
-          const Particle_T * result = &viewToExtract.getParticle(particleIndex);
+          const Particle_T * result = &viewToExtract.template getParticle<true>(particleIndex); // TODO: make sure that view is accessible from host space
 
           return {result, cellIndex, particleIndex};
         }
@@ -591,7 +594,8 @@ protected:
               }
             }
           } while (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-              ((cellIndex == 0) ? _ownedParticles.getAoS().getParticle(particleIndex) : _haloParticles.getAoS().getParticle(particleIndex)), iteratorBehavior, boxMin, boxMax));
+            // TODO: make sure that particle views are up to date in HostSpace
+              ((cellIndex == 0) ? _ownedParticles.getAoS().template getParticle<true>(particleIndex) : _haloParticles.getAoS().template getParticle<true>(particleIndex)), iteratorBehavior, boxMin, boxMax));
 
           // the indices returned at this point should always be valid
           return {cellIndex, particleIndex};

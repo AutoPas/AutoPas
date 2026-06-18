@@ -39,9 +39,9 @@ struct SoABufferTraversalFunctor {
 
     KOKKOS_INLINE_FUNCTION
     void operator()(int i, const utils::KokkosStorage<Particle_T>& storage) const {
-        const auto x1 = storage.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
-        const auto y1 = storage.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
-        const auto z1 = storage.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
+        const auto x1 = storage.template operator()<Particle_T::AttributeNames::posX, false>(i);
+        const auto y1 = storage.template operator()<Particle_T::AttributeNames::posY, false>(i);
+        const auto z1 = storage.template operator()<Particle_T::AttributeNames::posZ, false>(i);
 
         FloatPrecision fxAcc = 0.;
         FloatPrecision fyAcc = 0.;
@@ -67,9 +67,9 @@ struct SoABufferTraversalFunctor {
             _f->SoAKernelKokkos(x1, y1, z1, _haloBuffer.getSoA(), fxAcc, fyAcc, fzAcc, _cutoffSquared, i, j);
         }
 
-        storage.template operator()<Particle_T::AttributeNames::forceX, true, false>(i) += fxAcc;
-        storage.template operator()<Particle_T::AttributeNames::forceY, true, false>(i) += fyAcc;
-        storage.template operator()<Particle_T::AttributeNames::forceZ, true, false>(i) += fzAcc;
+        storage.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
+        storage.template operator()<Particle_T::AttributeNames::forceY, false>(i) += fyAcc;
+        storage.template operator()<Particle_T::AttributeNames::forceZ, false>(i) += fzAcc;
     }
 };
 

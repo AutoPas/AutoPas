@@ -31,17 +31,17 @@ struct SoAFlatTraversalFunctor {
     FloatPrecision fyAcc = 0.;
     FloatPrecision fzAcc = 0.;
 
-    const auto x1 = _soa1.template operator()<Particle_T::AttributeNames::posX, true, false>(i);
-    const auto y1 = _soa1.template operator()<Particle_T::AttributeNames::posY, true, false>(i);
-    const auto z1 = _soa1.template operator()<Particle_T::AttributeNames::posZ, true, false>(i);
+    const auto x1 = _soa1.template operator()<Particle_T::AttributeNames::posX, false>(i);
+    const auto y1 = _soa1.template operator()<Particle_T::AttributeNames::posY, false>(i);
+    const auto z1 = _soa1.template operator()<Particle_T::AttributeNames::posZ, false>(i);
 
     for (int j = 0; j < M; ++j) {
       _func->SoAKernelKokkos(x1, y1, z1, _soa2, fxAcc, fyAcc, fzAcc, _cutoffSquared, i, j);
     }
 
-    _soa1.template operator()<Particle_T::AttributeNames::forceX, true, false>(i) += fxAcc;
-    _soa1.template operator()<Particle_T::AttributeNames::forceY, true, false>(i) += fyAcc;
-    _soa1.template operator()<Particle_T::AttributeNames::forceZ, true, false>(i) += fzAcc;
+    _soa1.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
+    _soa1.template operator()<Particle_T::AttributeNames::forceY, false>(i) += fyAcc;
+    _soa1.template operator()<Particle_T::AttributeNames::forceZ, false>(i) += fzAcc;
   }
 };
 
@@ -147,7 +147,9 @@ private:
     SoAFlatTraversalFunctor<Functor, Particle_T> functor {soa1, soa2, func, cutoffSquared, M};
 
     auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+    Kokkos::Timer timer {};
     Kokkos::parallel_for("autopas::FlatTraversalSoA", rangePolicy, functor);
+    std::cout << timer.seconds() << std::endl;
   }
 
 

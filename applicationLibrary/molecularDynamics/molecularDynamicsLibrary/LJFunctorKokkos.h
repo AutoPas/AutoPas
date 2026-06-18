@@ -103,11 +103,11 @@ class LJFunctorKokkos
 
     // if (owned2 != autopas::OwnershipState::dummy) {
 
-    const auto x2 = soa2.template operator()<Particle_T::AttributeNames::posX, true, false>(j);
+    const auto x2 = soa2.template operator()<Particle_T::AttributeNames::posX, false>(j);
 
-    const auto y2 = soa2.template operator()<Particle_T::AttributeNames::posY, true, false>(j);
+    const auto y2 = soa2.template operator()<Particle_T::AttributeNames::posY, false>(j);
 
-    const auto z2 = soa2.template operator()<Particle_T::AttributeNames::posZ, true, false>(j);
+    const auto z2 = soa2.template operator()<Particle_T::AttributeNames::posZ, false>(j);
 
     ljPair(x1, y1, z1, x2, y2, z2, cutoffSquared, fxAcc, fyAcc, fzAcc);
 

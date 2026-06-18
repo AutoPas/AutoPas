@@ -55,13 +55,13 @@ struct UpdateRebuildPositionsFunctor {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(int i, const utils::KokkosStorage<Particle_T>& storage) const {
-    const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, true, ForEachHostFlag>(i);
-    const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, true, ForEachHostFlag>(i);
-    const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, true, ForEachHostFlag>(i);
+    const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, ForEachHostFlag>(i);
+    const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, ForEachHostFlag>(i);
+    const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, ForEachHostFlag>(i);
 
-    storage.template operator()<Particle_T::AttributeNames::rebuildX, true, ForEachHostFlag>(i) = pX;
-    storage.template operator()<Particle_T::AttributeNames::rebuildY, true, ForEachHostFlag>(i) = pY;
-    storage.template operator()<Particle_T::AttributeNames::rebuildZ, true, ForEachHostFlag>(i) = pZ;
+    storage.template operator()<Particle_T::AttributeNames::rebuildX, ForEachHostFlag>(i) = pX;
+    storage.template operator()<Particle_T::AttributeNames::rebuildY, ForEachHostFlag>(i) = pY;
+    storage.template operator()<Particle_T::AttributeNames::rebuildZ, ForEachHostFlag>(i) = pZ;
   }
 };
 
@@ -681,9 +681,9 @@ class LogicHandler {
     } else {
 
       auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage, double &localMaxVelocity) {
-        const auto velX = storage.template operator()<Particle_T::AttributeNames::velocityX, true, ForEachHostFlag>(i);
-        const auto velY = storage.template operator()<Particle_T::AttributeNames::velocityY, true, ForEachHostFlag>(i);
-        const auto velZ = storage.template operator()<Particle_T::AttributeNames::velocityZ, true, ForEachHostFlag>(i);
+        const auto velX = storage.template operator()<Particle_T::AttributeNames::velocityX, ForEachHostFlag>(i);
+        const auto velY = storage.template operator()<Particle_T::AttributeNames::velocityY, ForEachHostFlag>(i);
+        const auto velZ = storage.template operator()<Particle_T::AttributeNames::velocityZ, ForEachHostFlag>(i);
 
         const auto tempVelAbs = Kokkos::sqrt(velX*velX + velY*velY + velZ*velZ);
 
@@ -1077,13 +1077,13 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 
     auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage, bool& local) {
 
-        const typename Particle_T::ParticleSoAFloatPrecision pX = storage.template operator()<Particle_T::AttributeNames::posX, true, ForEachHostFlag>(i);
-        const typename Particle_T::ParticleSoAFloatPrecision pY = storage.template operator()<Particle_T::AttributeNames::posY, true, ForEachHostFlag>(i);
-        const typename Particle_T::ParticleSoAFloatPrecision pZ = storage.template operator()<Particle_T::AttributeNames::posZ, true, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision pX = storage.template operator()<Particle_T::AttributeNames::posX, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision pY = storage.template operator()<Particle_T::AttributeNames::posY, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision pZ = storage.template operator()<Particle_T::AttributeNames::posZ, ForEachHostFlag>(i);
 
-        const typename Particle_T::ParticleSoAFloatPrecision rebuildX = storage.template operator()<Particle_T::AttributeNames::rebuildX, true, ForEachHostFlag>(i);
-        const typename Particle_T::ParticleSoAFloatPrecision rebuildY = storage.template operator()<Particle_T::AttributeNames::rebuildY, true, ForEachHostFlag>(i);
-        const typename Particle_T::ParticleSoAFloatPrecision rebuildZ = storage.template operator()<Particle_T::AttributeNames::rebuildZ, true, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision rebuildX = storage.template operator()<Particle_T::AttributeNames::rebuildX, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision rebuildY = storage.template operator()<Particle_T::AttributeNames::rebuildY, ForEachHostFlag>(i);
+        const typename Particle_T::ParticleSoAFloatPrecision rebuildZ = storage.template operator()<Particle_T::AttributeNames::rebuildZ, ForEachHostFlag>(i);
 
         const typename Particle_T::ParticleSoAFloatPrecision dX = rebuildX - pX;
         const typename Particle_T::ParticleSoAFloatPrecision dY = rebuildY - pY;

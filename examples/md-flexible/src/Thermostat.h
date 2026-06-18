@@ -34,11 +34,11 @@ template <class ParticleType>
 struct CalcTemperatureFunctor {
   KOKKOS_INLINE_FUNCTION
   void operator()(int i, const autopas::utils::KokkosStorage<ParticleType>& storage, double& localKinetic) const {
-    const auto velX = storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i);
-    const auto velY = storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i);
-    const auto velZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i);
+    const auto velX = storage.template operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i);
+    const auto velY = storage.template operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i);
+    const auto velZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i);
 
-    const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, true, ForEachHostFlag>(i);
+    const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, ForEachHostFlag>(i);
 
     localKinetic += mass * (velX * velX + velY * velY + velZ * velZ);
   }
@@ -54,12 +54,12 @@ struct CalcTemperatureComponentFunctor {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) const {
-    const auto velX = storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i);
-    const auto velY = storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i);
-    const auto velZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i);
+    const auto velX = storage.template operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i);
+    const auto velY = storage.template operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i);
+    const auto velZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i);
 
-    const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, true, ForEachHostFlag>(i);
-    const auto typeId = storage.template operator()<ParticleType::AttributeNames::typeId, true, ForEachHostFlag>(i);
+    const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, ForEachHostFlag>(i);
+    const auto typeId = storage.template operator()<ParticleType::AttributeNames::typeId, ForEachHostFlag>(i);
 
     _kineticEnergyMul2Map.view_device()(typeId) += mass * (velX * velX + velY * velY + velZ * velZ);
     _numParticleMap.view_device()(typeId) += 1;
@@ -78,16 +78,16 @@ struct BrownianMotionFunctor {
   void operator()(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) const {
     auto generator = _randomEngine.get_state();
 
-    const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, true, ForEachHostFlag>(i);
+    const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, ForEachHostFlag>(i);
     double velScale = Kokkos::sqrt(_targetTemperature / mass);
 
     const FloatPrecision velIncrementX = generator.normal(0, 1) * velScale;
     const FloatPrecision velIncrementY = generator.normal(0, 1) * velScale;
     const FloatPrecision velIncrementZ = generator.normal(0, 1) * velScale;
 
-    storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i) += velIncrementX;
-    storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i) += velIncrementY;
-    storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i) += velIncrementZ;
+    storage.template operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i) += velIncrementX;
+    storage.template operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i) += velIncrementY;
+    storage.template operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i) += velIncrementZ;
 
     _randomEngine.free_state(generator);
   }
@@ -99,12 +99,12 @@ struct ApplyFunctor {
 
   KOKKOS_INLINE_FUNCTION
   void operator()(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) const {
-    const auto typeId = storage.template operator()<ParticleType::AttributeNames::typeId, true, ForEachHostFlag>(i);
+    const auto typeId = storage.template operator()<ParticleType::AttributeNames::typeId, ForEachHostFlag>(i);
     const auto scaling = _scalingMap.view_device()(typeId);
 
-    storage.template operator()<ParticleType::AttributeNames::velocityX, true, ForEachHostFlag>(i) *= scaling;
-    storage.template operator()<ParticleType::AttributeNames::velocityY, true, ForEachHostFlag>(i) *= scaling;
-    storage.template operator()<ParticleType::AttributeNames::velocityZ, true, ForEachHostFlag>(i) *= scaling;
+    storage.template operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i) *= scaling;
+    storage.template operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i) *= scaling;
+    storage.template operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i) *= scaling;
   }
 };
 
