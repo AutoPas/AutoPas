@@ -479,7 +479,6 @@ MPI_Comm getDecomposition(const std::array<double, 3> &globalMin, const std::arr
 
 int main(int argc, char *argv[]) {
   MPI_Init(&argc, &argv);
-  autopas::Logger::create();
 
   std::array<double, 3> globalBoxMin({0., 0., 0.}), globalBoxMax{};
   globalBoxMax[0] = 1.;
@@ -525,6 +524,7 @@ int main(int argc, char *argv[]) {
   Initialize(sphSystem);
 
   // 0.1 ---- GET INITIAL FORCES OF SYSTEM ----
+  sphSystem.updateContainer();
   densityPressureHydroForce(sphSystem, comm, globalBoxMin, globalBoxMax);
 
   std::cout << "\n----------------------------" << std::endl;

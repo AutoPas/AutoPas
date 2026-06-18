@@ -715,21 +715,21 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
 
   if (dataLayoutOption == autopas::DataLayoutOption::aos) {
     autopas::LCC08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJ(
-        linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr, linkedCells.getInteractionLength(),
+        linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), fnctr, linkedCells.getInteractionLength(),
         linkedCells.getCellBlock().getCellLength(), autopas::DataLayoutOption::aos, true);
 
     autopas::VLListIterationTraversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJVerlet(
-        &fnctr, autopas::DataLayoutOption::aos, true);
+        fnctr, autopas::DataLayoutOption::aos, true);
 
     verletLists.rebuildNeighborLists(&traversalLJVerlet);
     verletLists.computeInteractions(&traversalLJVerlet);
     linkedCells.computeInteractions(&traversalLJ);
   } else {
     autopas::LCC08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJ(
-        linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr, linkedCells.getInteractionLength(),
+        linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), fnctr, linkedCells.getInteractionLength(),
         linkedCells.getCellBlock().getCellLength(), autopas::DataLayoutOption::soa, true);
     autopas::VLListIterationTraversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJVerlet(
-        &fnctr, autopas::DataLayoutOption::soa, true);
+        fnctr, autopas::DataLayoutOption::soa, true);
 
     verletLists.rebuildNeighborLists(&traversalLJVerlet);
     verletLists.computeInteractions(&traversalLJVerlet);

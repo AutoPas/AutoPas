@@ -173,7 +173,7 @@ jobs:
             -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config.asan }} \
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config.tsan }} \
             -DAUTOPAS_INTERNODE_TUNING=${UseMPI} \
-            -DAUTOPAS_USE_VECTORIZATION=OFF \
+            -DAUTOPAS_USE_AUTOVEC=OFF \
             -DMD_FLEXIBLE_USE_MPI=${UseMPI} \
             -DMD_FLEXIBLE_MODE=${{ matrix.config.site }} \
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=${{ matrix.config.autovec }} \

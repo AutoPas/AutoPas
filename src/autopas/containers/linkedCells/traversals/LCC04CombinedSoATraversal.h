@@ -36,7 +36,7 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit LCC04CombinedSoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit LCC04CombinedSoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                                      const double interactionLength, const std::array<double, 3> &cellLength,
                                      DataLayoutOption dataLayout, bool useNewton3)
       : C04BasedTraversal<ParticleCell, PairwiseFunctor, 2>(dims, pairwiseFunctor, interactionLength, cellLength,

@@ -42,7 +42,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, 
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
-  explicit LCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit LCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                           const double interactionLength, const std::array<double, 3> &cellLength,
                           DataLayoutOption dataLayout, bool useNewton3)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
