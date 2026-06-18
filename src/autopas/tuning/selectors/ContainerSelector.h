@@ -67,9 +67,8 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
       break;
     }
     case ContainerOption::linkedCellsReferences: {
-      container = std::make_unique<LinkedCellsReferences<Particle_T>>(boxMin, boxMax, cutoff, verletSkin,
-                                                                      cellSizeFactor, sortingThreshold,
-                                                                      soaSortingThreshold);
+      container = std::make_unique<LinkedCellsReferences<Particle_T>>(
+          boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, sortingThreshold, soaSortingThreshold);
       break;
     }
     case ContainerOption::verletLists: {

@@ -259,8 +259,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
  */
 template <bool mixing>
 void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsSorted(bool newton3, bool doDeleteSomeParticles,
-                                                                  VectorizationPattern pattern,
-                                                                  CellGeometry geometry) {
+                                                                 VectorizationPattern pattern, CellGeometry geometry) {
   FMCell cell1HWY;
   FMCell cell2HWY;
 
@@ -336,7 +335,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsSorted(bool newton3, b
   auto ljFunctorHWY = [&]() {
     if constexpr (mixing) {
       return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff,
-                                                                                                 std::ref(_PPL));
+                                                                                                std::ref(_PPL));
     } else {
       return mdLib::LJFunctorHWY<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
     }
@@ -364,8 +363,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsSorted(bool newton3, b
   // Reference: unsorted pair on autovec functor.
   ljFunctor.SoAFunctorPair(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer, newton3);
   // Under test: sorted pair on HWY functor.
-  ljFunctorHWY.SoAFunctorPairSorted(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, sortingDirection,
-                                    _cutoff, newton3);
+  ljFunctorHWY.SoAFunctorPairSorted(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, sortingDirection, _cutoff,
+                                    newton3);
 
   EXPECT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
       << "Cells 1 not equal after applying functor.";

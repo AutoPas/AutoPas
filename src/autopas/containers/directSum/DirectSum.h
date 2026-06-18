@@ -65,7 +65,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    */
   DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double skin,
             const size_t sortingThreshold, const size_t soaSortingThreshold = 8)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold, soaSortingThreshold),
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold,
+                                                     soaSortingThreshold),
         _cellBorderFlagManager() {
     using namespace autopas::utils::ArrayMath::literals;
     // 1 owned and 6 halo cells

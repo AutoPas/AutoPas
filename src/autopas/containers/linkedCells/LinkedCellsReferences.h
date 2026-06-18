@@ -62,7 +62,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                         const double skin, const double cellSizeFactor = 1.0, const size_t sortingThreshold = 8,
                         const size_t soaSortingThreshold = 8,
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold, soaSortingThreshold),
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold,
+                                                     soaSortingThreshold),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 

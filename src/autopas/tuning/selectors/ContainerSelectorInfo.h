@@ -86,9 +86,8 @@ class ContainerSelectorInfo {
    */
   bool operator<(const ContainerSelectorInfo &other) {
     return std::tie(cellSizeFactor, verletSkin, verletClusterSize, sortingThreshold, soaSortingThreshold,
-                    loadEstimator) <
-           std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize, other.sortingThreshold,
-                    other.soaSortingThreshold, other.loadEstimator);
+                    loadEstimator) < std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize,
+                                              other.sortingThreshold, other.soaSortingThreshold, other.loadEstimator);
   }
 
   /**

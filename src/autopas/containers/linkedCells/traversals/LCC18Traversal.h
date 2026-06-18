@@ -76,7 +76,9 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, 
    * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
-  void setSoASortingThreshold(size_t soaSortingThreshold) override { _cellFunctor.setSoASortingThreshold(soaSortingThreshold); }
+  void setSoASortingThreshold(size_t soaSortingThreshold) override {
+    _cellFunctor.setSoASortingThreshold(soaSortingThreshold);
+  }
 
  private:
   /**

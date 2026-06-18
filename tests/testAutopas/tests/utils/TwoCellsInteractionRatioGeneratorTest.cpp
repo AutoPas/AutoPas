@@ -93,8 +93,8 @@ TEST(TwoCellsInteractionRatioGeneratorTest, PairedParticlesInRange) {
       fill(v1, v2, n, ratio);
       const auto k = static_cast<std::size_t>(std::round(static_cast<double>(n) * ratio));
       for (std::size_t i = 0; i < k; ++i) {
-        EXPECT_LT(dist3D(v1[i], v2[i]), kCutoff) << "pair " << i << " out of range (n=" << n << " ratio=" << ratio
-                                                  << ")";
+        EXPECT_LT(dist3D(v1[i], v2[i]), kCutoff)
+            << "pair " << i << " out of range (n=" << n << " ratio=" << ratio << ")";
       }
     }
   }

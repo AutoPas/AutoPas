@@ -62,8 +62,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    */
   LinkedCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
               const double skin, const double cellSizeFactor = 1.0, const size_t sortingThreshold = 8,
-              const size_t soaSortingThreshold = 8, LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold, soaSortingThreshold),
+              const size_t soaSortingThreshold = 8,
+              LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold,
+                                                     soaSortingThreshold),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
