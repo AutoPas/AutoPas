@@ -41,13 +41,14 @@ class ContainerSelectorInfo {
    * rebuilding lists.
    * @param verletClusterSize Size of verlet Clusters
    * @param sortingThreshold Number of particles in two cells from which sorting should be performed
-   * @param soaSortingThreshold Number of particles in two SoA buffers from which SoA sorting should be performed
    * @param loadEstimator load estimation algorithm for balanced traversals.
+   * @param soaSortingThreshold Number of particles in two SoA buffers from which SoA sorting should be performed.
+   * Defaults to 8.
    */
   explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                  double cutoff, double cellSizeFactor, double verletSkin,
-                                 unsigned int verletClusterSize, size_t sortingThreshold, size_t soaSortingThreshold,
-                                 LoadEstimatorOption loadEstimator)
+                                 unsigned int verletClusterSize, size_t sortingThreshold,
+                                 LoadEstimatorOption loadEstimator, size_t soaSortingThreshold = 8)
       : boxMin(boxMin),
         boxMax(boxMax),
         cutoff(cutoff),

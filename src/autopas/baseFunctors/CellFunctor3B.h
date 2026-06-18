@@ -175,18 +175,6 @@ class CellFunctor3B {
    */
   size_t _soaSortingThreshold{8};
 
-  /**
-   * Min. number of particles in two SoA buffers to start SoA-level sorting.
-   * Currently unused by CellFunctor3B (stored for interface consistency with CellFunctor).
-   */
-  size_t _soaSortingThreshold{8};
-
-  /**
-   * Min. number of particles in two SoA buffers to start SoA-level sorting.
-   * Currently unused by CellFunctor3B (stored for interface consistency with CellFunctor).
-   */
-  size_t _soaSortingThreshold{8};
-
   const DataLayoutOption::Value _dataLayout;
 
   const bool _useNewton3;
@@ -195,16 +183,6 @@ class CellFunctor3B {
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSortingThreshold(size_t sortingThreshold) {
   _sortingThreshold = sortingThreshold;
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
-  _soaSortingThreshold = soaSortingThreshold;
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
-  _soaSortingThreshold = soaSortingThreshold;
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>

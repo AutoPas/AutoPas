@@ -86,8 +86,8 @@ class LogicHandler {
                                                             _logicHandlerInfo.verletSkin,
                                                             _verletClusterSize,
                                                             _sortingThreshold,
-                                                            _soaSortingThreshold,
-                                                            configuration.loadEstimator};
+                                                            configuration.loadEstimator,
+                                                            _soaSortingThreshold};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
@@ -845,16 +845,6 @@ class LogicHandler {
    */
   size_t _soaSortingThreshold;
 
-  /**
-   * Number of particles in two SoA buffers from which SoA sorting should be performed.
-   */
-  size_t _soaSortingThreshold;
-
-  /**
-   * Number of particles in two SoA buffers from which SoA sorting should be performed.
-   */
-  size_t _soaSortingThreshold;
-
   std::shared_ptr<TuningManager> _tuningManager;
 
   /**
@@ -1367,7 +1357,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _sortingThreshold, _soaSortingThreshold, config.loadEstimator);
+                            _verletClusterSize, _sortingThreshold, config.loadEstimator, _soaSortingThreshold);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.

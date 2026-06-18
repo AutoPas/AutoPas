@@ -98,6 +98,11 @@ class CellFunctor {
            (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
   }
 
+  [[nodiscard]] bool shouldUseSoASorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
+    return particleCount > _soaSortingThreshold and
+           (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
+  }
+
   /**
    * Applies the functor to all particle pairs exploiting Newton's third law of motion.
    * There is only one version of this function as newton3 is always allowed to be applied inside a cell.
@@ -120,10 +125,13 @@ class CellFunctor {
 
   /**
    * Applies the SoA functor to all particle pairs between cell1 and cell2.
+   * Uses SoAFunctorPairSorted when shouldUseSoASorting() is true; otherwise SoAFunctorPair.
    * @param cell1
    * @param cell2
+   * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
    */
-  void processCellPairSoAImpl(ParticleCell_T &cell1, ParticleCell_T &cell2);
+  void processCellPairSoAImpl(ParticleCell_T &cell1, ParticleCell_T &cell2,
+                              const std::array<double, 3> &sortingDirection);
 
   ParticleFunctor_T &_functor;
 
@@ -140,16 +148,6 @@ class CellFunctor {
    */
   size_t _soaSortingThreshold{8};
 
-  /**
-   * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
-   */
-  size_t _soaSortingThreshold{8};
-
-  /**
-   * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
-   */
-  size_t _soaSortingThreshold{8};
-
   const DataLayoutOption::Value _dataLayout;
 
   const bool _useNewton3;
@@ -160,18 +158,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSortingTh
   _sortingThreshold = sortingThreshold;
 }
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
-  _soaSortingThreshold = soaSortingThreshold;
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
-  _soaSortingThreshold = soaSortingThreshold;
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
   _soaSortingThreshold = soaSortingThreshold;
 }
 
@@ -208,41 +196,23 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
     return;
   }
 
-  // avoid force calculations if both cells can not contain owned particles or if newton3==false and cell1 does not
-  // contain owned particles
-  const bool cell1HasOwnedParticles = toInt64(cell1.getPossibleParticleOwnerships() & OwnershipState::owned);
-  const bool cell2HasOwnedParticles = toInt64(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
-
-  if (((not cell1HasOwnedParticles) and (not _useNewton3) and (not bidirectional)) or
-      ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles))) {
-    return;
+  if (not cell1.canHaveOwnedParticles()) {
+    // Nothing to do if cell1 has no owned particles and we don't write to cell2 particles.
+    if constexpr (not bidirectional) {
+      if (not _useNewton3) {
+        return;
+      }
+    }
+    // Nothing to do if both cells cannot have owned particles.
+    if (not cell2.canHaveOwnedParticles()) {
+      return;
+    }
   }
 
-  // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
-  switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
-    case DataLayoutOption::aos:
-      if (_useNewton3) {
-        processCellPairAoSN3(cell1, cell2, sortingDirection);
-      } else {
-        processCellPairAoSNoN3(cell1, cell2, sortingDirection);
-      }
-      break;
-    case DataLayoutOption::soa:
-      if (sortingDirection != std::array<double, 3>{0., 0., 0.} and
-          cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size() > _soaSortingThreshold) {
-        if (_useNewton3) {
-          processCellPairSoASortedN3(cell1, cell2, sortingDirection);
-        } else {
-          processCellPairSoASortedNoN3(cell1, cell2, sortingDirection);
-        }
-      } else {
-        if (_useNewton3) {
-          processCellPairSoAN3(cell1, cell2);
-        } else {
-          processCellPairSoANoN3(cell1, cell2);
-        }
-      }
-      break;
+  if (isAoS) {
+    processCellPairAoSImpl(cell1, cell2, sortingDirection);
+  } else if (isSoA) {
+    processCellPairSoAImpl(cell1, cell2, sortingDirection);
   }
 }
 
@@ -319,67 +289,24 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoAImpl(ParticleCell_T &cell1,
-                                                                                           ParticleCell_T &cell2) {
-  _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, _useNewton3);
-  if constexpr (bidirectional) {
-    if (not _useNewton3) {
-      _functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoAImpl(
+    ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
+  if (shouldUseSoASorting(cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size(), sortingDirection)) {
+    _functor.SoAFunctorPairSorted(cell1._particleSoABuffer, cell2._particleSoABuffer, sortingDirection, _sortingCutoff,
+                                  _useNewton3);
+    if constexpr (bidirectional) {
+      if (not _useNewton3) {
+        _functor.SoAFunctorPairSorted(cell2._particleSoABuffer, cell1._particleSoABuffer, sortingDirection,
+                                      _sortingCutoff, false);
+      }
     }
-  }
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairSoASortedN3(
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  _functor->SoAFunctorPairSorted(cell1._particleSoABuffer, cell2._particleSoABuffer, sortingDirection, _sortingCutoff,
-                                 true);
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairSoASortedNoN3(
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  _functor->SoAFunctorPairSorted(cell1._particleSoABuffer, cell2._particleSoABuffer, sortingDirection, _sortingCutoff,
-                                 false);
-  if constexpr (bidirectional) {
-    _functor->SoAFunctorPairSorted(cell2._particleSoABuffer, cell1._particleSoABuffer, sortingDirection, _sortingCutoff,
-                                   false);
-  }
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairSoASortedN3(
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  _functor->SoAFunctorPairSorted(cell1._particleSoABuffer, cell2._particleSoABuffer, sortingDirection, _sortingCutoff,
-                                 true);
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairSoASortedNoN3(
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  _functor->SoAFunctorPairSorted(cell1._particleSoABuffer, cell2._particleSoABuffer, sortingDirection, _sortingCutoff,
-                                 false);
-  if constexpr (bidirectional) {
-    _functor->SoAFunctorPairSorted(cell2._particleSoABuffer, cell1._particleSoABuffer, sortingDirection, _sortingCutoff,
-                                   false);
-  }
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairSoASortedN3(
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  _functor->SoAFunctorPairSorted(cell1._particleSoABuffer, cell2._particleSoABuffer, sortingDirection, _sortingCutoff,
-                                 true);
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairSoASortedNoN3(
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  _functor->SoAFunctorPairSorted(cell1._particleSoABuffer, cell2._particleSoABuffer, sortingDirection, _sortingCutoff,
-                                 false);
-  if constexpr (bidirectional) {
-    _functor->SoAFunctorPairSorted(cell2._particleSoABuffer, cell1._particleSoABuffer, sortingDirection, _sortingCutoff,
-                                   false);
+  } else {
+    _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, _useNewton3);
+    if constexpr (bidirectional) {
+      if (not _useNewton3) {
+        _functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
+      }
+    }
   }
 }
 }  // namespace autopas::internal
