@@ -264,7 +264,6 @@ class LJFunctorHWY
    *      monotonically non-decreasing, this is exactly the maximum upper
    *      bound across the block — no per-i max reduction is needed.
    *   5. Scatter accumulated forces back to the original SoA indices.
-   *.
    */
   inline void SoAFunctorPairSorted(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                                    const std::array<double, 3> &sortingDirection, double sortingCutoff,
@@ -801,8 +800,6 @@ class LJFunctorHWY
 
     fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI,
                                                      restI);
-    // Note: for 2x0.5vec pattern might need to switch into 1vec if one of them is finished -> ask if feasible/allowed
-    // Could also just refill with the next Particle
     std::ptrdiff_t j = 0;
     for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j); incrementSecondLoop<vecPattern>(j)) {
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
