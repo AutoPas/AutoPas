@@ -56,7 +56,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    * @param cutoff
    * @param skin
    * @param cellSizeFactor cell size factor relative to cutoff
-   * @param sortingThreshold number of particles in two cells from which sorting should be performed
+   * @param sortingThreshold number of particles in two cells from which AoS sorting should be performed
+   * @param soaSortingThreshold Sum of the SoA buffer sizes of two cells from which SoA sorting should be enabled.
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
