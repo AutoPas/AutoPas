@@ -936,10 +936,10 @@ class LJFunctorHWY
       x2s.resize(n2);
       y2s.resize(n2);
       z2s.resize(n2);
-      ownership1s.assign(n1, autopas::OwnershipState::dummy);
-      ownership2s.assign(n2, autopas::OwnershipState::dummy);
-      typeID1s.assign(n1, 0);
-      typeID2s.assign(n2, 0);
+      ownership1s.resize(n1);
+      ownership2s.resize(n2);
+      typeID1s.resize(n1);
+      typeID2s.resize(n2);
       fx1s.assign(n1, 0.0);
       fy1s.assign(n1, 0.0);
       fz1s.assign(n1, 0.0);

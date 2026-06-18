@@ -99,7 +99,7 @@ class CellFunctor {
   }
 
   [[nodiscard]] bool shouldUseSoASorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
-    return particleCount > _soaSortingThreshold and
+    return particleCount >= _soaSortingThreshold and
            (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
   }
 
