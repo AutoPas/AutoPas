@@ -145,3 +145,6 @@ if (AUTOPAS_BUILD_TESTS)
 else()
     message(STATUS "AUTOPAS_BUILD_TESTS is disabled. Not building Application Libraries tests!")
 endif()
+
+# google benchmark based micro-benchmarks (opt-in)
+add_subdirectory(molecularDynamics/benchmarks)
