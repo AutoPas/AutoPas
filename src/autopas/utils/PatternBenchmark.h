@@ -26,7 +26,6 @@ class PatternBenchmark {
    */
   static constexpr size_t _benchmarkSize = 30;
 
-
   /**
    * Helper method to initialize particle cells used in pattern benchmark by adding particles to each cell to match
    * given numbers of particles and hit rates.
@@ -171,8 +170,10 @@ class PatternBenchmark {
     }
     constexpr size_t numPatterns = 4;
     if (patterns.size() != numPatterns) {
-      utils::ExceptionHandler::exception("PatternBenchmark assumes there are only {} vectorization patterns, but"
-      "there is actually {}!", numPatterns, patterns.size());
+      utils::ExceptionHandler::exception(
+          "PatternBenchmark assumes there are only {} vectorization patterns, but"
+          "there is actually {}!",
+          numPatterns, patterns.size());
     }
     std::array<std::array<unsigned long, 4>, _benchmarkSize * _benchmarkSize> allResults{};
     std::map<std::string, autopas::utils::Timer> timer{
@@ -182,7 +183,6 @@ class PatternBenchmark {
         {"InteractionCounter", autopas::utils::Timer()},
     };
     for (const auto pattern : patterns) {
-
       for (size_t numberParticlesSoA1 = 1; numberParticlesSoA1 <= _benchmarkSize; numberParticlesSoA1++) {
         for (size_t numberParticlesSoA2 = 1; numberParticlesSoA2 <= _benchmarkSize; numberParticlesSoA2++) {
           // we set the hit rate to 16 percent, as this is the average for linked cells

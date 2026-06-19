@@ -91,8 +91,7 @@ class LogicHandler {
       checkMinimalSize();
 
       // give outputSuffix to PatternBenchmark object in AutoTuner
-      auto &autoTuner = *_autoTunerRefs[interactionType];
-      autoTuner.patternBenchmark.outputSuffix = outputSuffix;
+      tuner->patternBenchmark.outputSuffix = outputSuffix;
     }
 
     // initialize locks needed for remainder traversal
@@ -1164,10 +1163,12 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
   // https://github.com/AutoPas/AutoPas/issues/916
   LiveInfo info{};
+  bool infoGathered = false;
 #ifdef AUTOPAS_LOG_LIVEINFO
   auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
   info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
               _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+  infoGathered = true;
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
 
@@ -1188,7 +1189,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
   if (_tuningManager->needsLiveInfo(_iteration)) {
     // If live info has not been gathered yet, gather it now and send it to the tuner.
-    if (info.get().empty()) {
+    if (not infoGathered) {
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
       info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
                   _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
@@ -1219,12 +1220,14 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     configuration = _tuningManager->rejectConfiguration(configuration, rejectIndefinitely, interactionType);
   } while (true);
 
-  // override regular AutoPas algorithm selection/auto-tuning pattern selection with benchmark pattern selection if relevant
+  // override regular AutoPas algorithm selection/auto-tuning pattern selection with benchmark pattern selection if
+  // relevant
   if (_logicHandlerInfo.useBenchmarkPatternSelection) {
     /* An optimal pattern map is calculated once at the start and stored in the Autotuner in a PatternBenchmark object
      * if the functor can use pattern selection.
      */
     if (functor.canUseVectorPatternLookupTable()) {
+      auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
       if (not autoTuner.patternBenchmark._patternsCalculated) {
         autoTuner.patternBenchmark.runBenchmark<Functor, Particle_T>(functor,
                                                                      _logicHandlerInfo.createPatternBenchmarkOutput);

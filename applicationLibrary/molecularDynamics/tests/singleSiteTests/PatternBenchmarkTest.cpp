@@ -1,15 +1,16 @@
 /**
-* @file PatternBenchmarkTest.cpp
+ * @file PatternBenchmarkTest.cpp
  * @author J.Rief
  * @date 04.09.25
  */
 #include <gtest/gtest.h>
+
 #include "autopas/utils/PatternBenchmark.h"
 /**
-   *
-   * Tests, if the Benchmark class can properly select optimal vectorization patterns from its benchmark results.
-   */
-TEST(PatternBenchmarkTest,getBenchmarkResultTest) {
+ *
+ * Tests, if the Benchmark class can properly select optimal vectorization patterns from its benchmark results.
+ */
+TEST(PatternBenchmarkTest, getBenchmarkResultTest) {
   constexpr size_t benchmarkSize = autopas::PatternBenchmark::_benchmarkSize;
   std::array<autopas::VectorizationPatternOption::Value, benchmarkSize * benchmarkSize> benchmarkResults{};
   /* to test the getBenchmarkResult method we fill the patternBenchmark object with artificial optimal patterns
@@ -47,7 +48,6 @@ TEST(PatternBenchmarkTest,getBenchmarkResultTest) {
   EXPECT_EQ(patternBenchmark.getBenchmarkResult(1, 1, true), autopas::VectorizationPatternOption::Value::p1xVec);
   EXPECT_EQ(patternBenchmark.getBenchmarkResult(1, 1, false), autopas::VectorizationPatternOption::Value::p1xVec);
 
-
   //  right edge
 
   EXPECT_EQ(patternBenchmark.getBenchmarkResult(2 * benchmarkSize, 1, true),
@@ -73,12 +73,9 @@ TEST(PatternBenchmarkTest,getBenchmarkResultTest) {
   EXPECT_EQ(patternBenchmark.getBenchmarkResult(0, 1, true), autopas::VectorizationPatternOption::Value::p1xVec);
   EXPECT_EQ(patternBenchmark.getBenchmarkResult(0, 1, false), autopas::VectorizationPatternOption::Value::p1xVec);
 
-
   EXPECT_EQ(patternBenchmark.getBenchmarkResult(1, 0, true), autopas::VectorizationPatternOption::Value::p1xVec);
   EXPECT_EQ(patternBenchmark.getBenchmarkResult(1, 0, false), autopas::VectorizationPatternOption::Value::p1xVec);
 
-
   EXPECT_EQ(patternBenchmark.getBenchmarkResult(0, 0, true), autopas::VectorizationPatternOption::Value::p1xVec);
   EXPECT_EQ(patternBenchmark.getBenchmarkResult(0, 0, false), autopas::VectorizationPatternOption::Value::p1xVec);
-
 }

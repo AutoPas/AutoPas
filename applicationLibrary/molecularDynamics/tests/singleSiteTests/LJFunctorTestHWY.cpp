@@ -458,8 +458,6 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
   EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctor.getVirial(), _maxError) << "global virial";
 }
 
-
-
 /**
  * Checks that the HWY Functor computes forces that match the AutoVec functor in the AoS case.
  */
@@ -535,7 +533,6 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
     testLJFunctorvsLJFunctorHWYTwoCells<false>(newton3, doDeleteSomeParticle, true, vecPattern);
   }
 }
-
 
 std::vector<VectorizationPattern> patterns{VectorizationPattern::p1xVec, VectorizationPattern::p2xVecDiv2,
                                            VectorizationPattern::pVecDiv2x2, VectorizationPattern::pVecx1};
