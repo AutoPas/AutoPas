@@ -46,30 +46,10 @@ class LJFunctorKokkos
       : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos>(cutoff),
         _cutoffSquared{static_cast<FloatPrecision>(cutoff * cutoff)} {}
 
-  void AoSFunctorKokkos(Particle_T &i, Particle_T &j, bool newton3) final {
-    if (i.getOwnershipState() == autopas::OwnershipState::dummy or
-        j.getOwnershipState() == autopas::OwnershipState::dummy) {
-      return;
-        }
-
-    FloatPrecision fx = 0.;
-    FloatPrecision fy = 0.;
-    FloatPrecision fz = 0.;
-
-    const auto &rI = i.getR();
-    const auto &rJ = j.getR();
-
-    ljPair(rI[0], rI[1], rI[2], rJ[0], rJ[1], rJ[2], _cutoffSquared, fx, fy, fz);
-
-    i.addF({fx, fy, fz});
-
-    if (newton3) {
-      j.subF({fx, fy, fz});
-    }
-  }
-
   void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
-    AoSFunctorKokkos(i, j, newton3);
+    // No Op, TODO: make sure this is never uses (never!)
+
+    std::cout << "Trying to call non-existing function" << std::endl;
   }
 
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
@@ -93,8 +73,8 @@ class LJFunctorKokkos
   }
 
   KOKKOS_INLINE_FUNCTION
-  void SoAKernelKokkos(const FloatPrecision &x1, const FloatPrecision &y1, const FloatPrecision &z1,
-                       const Particle_T::KokkosSoAArraysType &soa2, FloatPrecision &fxAcc, FloatPrecision &fyAcc,
+  void ForceKernelKokkos(const FloatPrecision &x1, const FloatPrecision &y1, const FloatPrecision &z1,
+                       const autopas::utilsKokkos::KokkosStorage<Particle_T>& storage2, FloatPrecision &fxAcc, FloatPrecision &fyAcc,
                        FloatPrecision &fzAcc, FloatPrecision cutoffSquared, int i, int j) final {
     // const auto owned2 =
     //     soa2.template operator()<
@@ -103,11 +83,11 @@ class LJFunctorKokkos
 
     // if (owned2 != autopas::OwnershipState::dummy) {
 
-    const auto x2 = soa2.template operator()<Particle_T::AttributeNames::posX, false>(j);
+    const auto x2 = storage2.template operator()<Particle_T::AttributeNames::posX, false>(j);
 
-    const auto y2 = soa2.template operator()<Particle_T::AttributeNames::posY, false>(j);
+    const auto y2 = storage2.template operator()<Particle_T::AttributeNames::posY, false>(j);
 
-    const auto z2 = soa2.template operator()<Particle_T::AttributeNames::posZ, false>(j);
+    const auto z2 = storage2.template operator()<Particle_T::AttributeNames::posZ, false>(j);
 
     ljPair(x1, y1, z1, x2, y2, z2, cutoffSquared, fxAcc, fyAcc, fzAcc);
 

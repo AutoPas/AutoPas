@@ -12,7 +12,6 @@
 #include <mutex>
 #include <vector>
 
-#include "autopas/LogicHandler.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
@@ -24,11 +23,11 @@ namespace autopas {
 
 template <class Functor, class Particle_T, class ExecSpace>
 struct SoABufferTraversalFunctor {
-    using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
+    using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
     using DualViewType = Kokkos::DualView<FloatPrecision*, typename ExecSpace::device_type>;
 
-    utils::KokkosStorage<Particle_T> _ownedBuffer;
-    utils::KokkosStorage<Particle_T> _haloBuffer;
+    utilsKokkos::KokkosStorage<Particle_T> _ownedBuffer;
+    utilsKokkos::KokkosStorage<Particle_T> _haloBuffer;
     Functor* _f;
     FloatPrecision _cutoffSquared;
     size_t _ownedSize;
@@ -38,7 +37,7 @@ struct SoABufferTraversalFunctor {
     DualViewType _fz2;
 
     KOKKOS_INLINE_FUNCTION
-    void operator()(int i, const utils::KokkosStorage<Particle_T>& storage) const {
+    void operator()(int i, const utilsKokkos::KokkosStorage<Particle_T>& storage) const {
         const auto x1 = storage.template operator()<Particle_T::AttributeNames::posX, false>(i);
         const auto y1 = storage.template operator()<Particle_T::AttributeNames::posY, false>(i);
         const auto z1 = storage.template operator()<Particle_T::AttributeNames::posZ, false>(i);
@@ -52,7 +51,7 @@ struct SoABufferTraversalFunctor {
             FloatPrecision fy = -fyAcc;
             FloatPrecision fz = -fzAcc;
 
-            _f->SoAKernelKokkos(x1, y1, z1, _ownedBuffer.getSoA(), fxAcc, fyAcc, fzAcc, _cutoffSquared, i, j);
+            _f->ForceKernelKokkos(x1, y1, z1, _ownedBuffer, fxAcc, fyAcc, fzAcc, _cutoffSquared, i, j);
 
             fx += fxAcc;
             fy += fyAcc;
@@ -64,7 +63,7 @@ struct SoABufferTraversalFunctor {
         }
 
         for (int j = 0; j < _haloSize; ++j) {
-            _f->SoAKernelKokkos(x1, y1, z1, _haloBuffer.getSoA(), fxAcc, fyAcc, fzAcc, _cutoffSquared, i, j);
+            _f->ForceKernelKokkos(x1, y1, z1, _haloBuffer, fxAcc, fyAcc, fzAcc, _cutoffSquared, i, j);
         }
 
         storage.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
@@ -221,8 +220,8 @@ class RemainderPairwiseInteractionHandler {
       }
 
       // 2. Fill particles in KokkosStorage buffers
-      utils::KokkosStorage<Particle_T> ownedBuffer {DataLayoutOption::soa, ownedSize};
-      utils::KokkosStorage<Particle_T> haloBuffer {DataLayoutOption::soa, haloSize};
+      utilsKokkos::KokkosStorage<Particle_T> ownedBuffer {DataLayoutOption::soa, ownedSize};
+      utilsKokkos::KokkosStorage<Particle_T> haloBuffer {DataLayoutOption::soa, haloSize};
 
       // This guarantees the order [bufferA, bufferB, bufferC, ...] which will be important later on
       for (int i = 0; i < particleBuffers.size(); ++i) {
@@ -237,12 +236,12 @@ class RemainderPairwiseInteractionHandler {
         }
       }
 
-      ownedBuffer.template markModified<Kokkos::HostSpace>();
-      haloBuffer.template markModified<Kokkos::HostSpace>();
+      ownedBuffer.template modifyAll<Kokkos::HostSpace>();
+      haloBuffer.template modifyAll<Kokkos::HostSpace>();
 
       // 3. perform actual remainder computations
-      ownedBuffer.template sync<ExecSpace>();
-      haloBuffer.template sync<ExecSpace>();
+      ownedBuffer.template syncAll<ExecSpace>();
+      haloBuffer.template syncAll<ExecSpace>();
 
       constexpr bool host = false;
 

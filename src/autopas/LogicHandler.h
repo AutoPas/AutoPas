@@ -54,7 +54,7 @@ template <typename Particle_T>
 struct UpdateRebuildPositionsFunctor {
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i, const utils::KokkosStorage<Particle_T>& storage) const {
+  void operator()(int i, const utilsKokkos::KokkosStorage<Particle_T>& storage) const {
     const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, ForEachHostFlag>(i);
     const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, ForEachHostFlag>(i);
     const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, ForEachHostFlag>(i);
@@ -680,7 +680,7 @@ class LogicHandler {
       }
     } else {
 
-      auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage, double &localMaxVelocity) {
+      auto lambda = KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T>& storage, double &localMaxVelocity) {
         const auto velX = storage.template operator()<Particle_T::AttributeNames::velocityX, ForEachHostFlag>(i);
         const auto velY = storage.template operator()<Particle_T::AttributeNames::velocityY, ForEachHostFlag>(i);
         const auto velZ = storage.template operator()<Particle_T::AttributeNames::velocityZ, ForEachHostFlag>(i);
@@ -1075,7 +1075,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 
     bool test = _neighborListInvalidDoDynamicRebuild;
 
-    auto lambda = KOKKOS_LAMBDA(int i, const utils::KokkosStorage<Particle_T>& storage, bool& local) {
+    auto lambda = KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T>& storage, bool& local) {
 
         const typename Particle_T::ParticleSoAFloatPrecision pX = storage.template operator()<Particle_T::AttributeNames::posX, ForEachHostFlag>(i);
         const typename Particle_T::ParticleSoAFloatPrecision pY = storage.template operator()<Particle_T::AttributeNames::posY, ForEachHostFlag>(i);

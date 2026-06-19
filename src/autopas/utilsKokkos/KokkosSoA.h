@@ -9,7 +9,7 @@
 #include <Kokkos_DualView.hpp>
 #include <tuple>
 
-namespace autopas::utils {
+namespace autopas::utilsKokkos {
 
   template <typename ... Types>
   class KokkosSoA {
@@ -91,12 +91,12 @@ namespace autopas::utils {
     }
 
     template <typename Target, std::size_t... I>
-    void markAllModified(std::index_sequence<I...>) {
-      (markModified<Target, I>(), ...);
+    void modifyAll(std::index_sequence<I...>) {
+      (modify<Target, I>(), ...);
     }
 
     template <typename Target, std::size_t I>
-    void markModified() {
+    void modify() {
       std::get<I>(views).template modify<Target>();
     }
 

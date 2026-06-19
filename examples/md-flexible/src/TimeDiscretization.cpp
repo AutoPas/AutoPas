@@ -80,24 +80,23 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 #endif
     }
   } else {
-   autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
-    //auto m = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
-    ParticleType::ParticleSoAFloatPrecision m = storage.template operator()<ParticleType::AttributeNames::mass, ForEachHostFlag>(i);
-    ParticleType::ParticleSoAFloatPrecision vX = storage.template operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i);
-    ParticleType::ParticleSoAFloatPrecision vY = storage.template operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i);
-    ParticleType::ParticleSoAFloatPrecision vZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i);
+   autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage) {
+    ParticleType::ParticleSoAFloatPrecision m = storage.operator()<ParticleType::AttributeNames::mass, ForEachHostFlag>(i);
+    ParticleType::ParticleSoAFloatPrecision vX = storage.operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i);
+    ParticleType::ParticleSoAFloatPrecision vY = storage.operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i);
+    ParticleType::ParticleSoAFloatPrecision vZ = storage.operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i);
 
-    ParticleType::ParticleSoAFloatPrecision fX = storage.template operator()<ParticleType::AttributeNames::forceX, ForEachHostFlag>(i);
-    ParticleType::ParticleSoAFloatPrecision fY = storage.template operator()<ParticleType::AttributeNames::forceY, ForEachHostFlag>(i);
-    ParticleType::ParticleSoAFloatPrecision fZ = storage.template operator()<ParticleType::AttributeNames::forceZ, ForEachHostFlag>(i);
+    ParticleType::ParticleSoAFloatPrecision fX = storage.operator()<ParticleType::AttributeNames::forceX, ForEachHostFlag>(i);
+    ParticleType::ParticleSoAFloatPrecision fY = storage.operator()<ParticleType::AttributeNames::forceY, ForEachHostFlag>(i);
+    ParticleType::ParticleSoAFloatPrecision fZ = storage.operator()<ParticleType::AttributeNames::forceZ, ForEachHostFlag>(i);
 
-    storage.template operator()<ParticleType::AttributeNames::oldForceX, ForEachHostFlag>(i) = fX;
-    storage.template operator()<ParticleType::AttributeNames::oldForceY, ForEachHostFlag>(i) = fY;
-    storage.template operator()<ParticleType::AttributeNames::oldForceZ, ForEachHostFlag>(i) = fZ;
+    storage.operator()<ParticleType::AttributeNames::oldForceX, ForEachHostFlag>(i) = fX;
+    storage.operator()<ParticleType::AttributeNames::oldForceY, ForEachHostFlag>(i) = fY;
+    storage.operator()<ParticleType::AttributeNames::oldForceZ, ForEachHostFlag>(i) = fZ;
 
-    storage.template operator()<ParticleType::AttributeNames::forceX, ForEachHostFlag>(i) = globalForce[0];
-    storage.template operator()<ParticleType::AttributeNames::forceY, ForEachHostFlag>(i) = globalForce[1];
-    storage.template operator()<ParticleType::AttributeNames::forceZ, ForEachHostFlag>(i) = globalForce[2];
+    storage.operator()<ParticleType::AttributeNames::forceX, ForEachHostFlag>(i) = globalForce[0];
+    storage.operator()<ParticleType::AttributeNames::forceY, ForEachHostFlag>(i) = globalForce[1];
+    storage.operator()<ParticleType::AttributeNames::forceZ, ForEachHostFlag>(i) = globalForce[2];
 
     vX *= deltaT;
     vY *= deltaT;
@@ -111,12 +110,12 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     const ParticleType::ParticleSoAFloatPrecision displacementY = vY + fY;
     const ParticleType::ParticleSoAFloatPrecision displacementZ = vZ + fZ;
 
-    const ParticleType::ParticleSoAFloatPrecision pX = storage.template operator()<ParticleType::AttributeNames::posX, ForEachHostFlag>(i);
-    const ParticleType::ParticleSoAFloatPrecision pY = storage.template operator()<ParticleType::AttributeNames::posY, ForEachHostFlag>(i);
-    const ParticleType::ParticleSoAFloatPrecision pZ = storage.template operator()<ParticleType::AttributeNames::posZ, ForEachHostFlag>(i);
-    storage.template operator()<ParticleType::AttributeNames::posX, ForEachHostFlag>(i) = pX + displacementX;
-    storage.template operator()<ParticleType::AttributeNames::posY, ForEachHostFlag>(i) = pY + displacementY;
-    storage.template operator()<ParticleType::AttributeNames::posZ, ForEachHostFlag>(i) = pZ + displacementZ;
+    const ParticleType::ParticleSoAFloatPrecision pX = storage.operator()<ParticleType::AttributeNames::posX, ForEachHostFlag>(i);
+    const ParticleType::ParticleSoAFloatPrecision pY = storage.operator()<ParticleType::AttributeNames::posY, ForEachHostFlag>(i);
+    const ParticleType::ParticleSoAFloatPrecision pZ = storage.operator()<ParticleType::AttributeNames::posZ, ForEachHostFlag>(i);
+    storage.operator()<ParticleType::AttributeNames::posX, ForEachHostFlag>(i) = pX + displacementX;
+    storage.operator()<ParticleType::AttributeNames::posY, ForEachHostFlag>(i) = pY + displacementY;
+    storage.operator()<ParticleType::AttributeNames::posZ, ForEachHostFlag>(i) = pZ + displacementZ;
 
   }, autopas::IteratorBehavior::owned, "mdFlexible::TimeDiscretization::calculatePositionsAndResetForces");
   }
@@ -230,28 +229,28 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   }
   else {
 
-    autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
+    autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage) {
       //const auto mass = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
-      const ParticleType::ParticleSoAFloatPrecision mass = storage.template operator()<ParticleType::AttributeNames::mass, ForEachHostFlag>(i);
-      const ParticleType::ParticleSoAFloatPrecision vX = storage.template operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i);
-      const ParticleType::ParticleSoAFloatPrecision vY = storage.template operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i);
-      const ParticleType::ParticleSoAFloatPrecision vZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i);
+      const ParticleType::ParticleSoAFloatPrecision mass = storage.operator()<ParticleType::AttributeNames::mass, ForEachHostFlag>(i);
+      const ParticleType::ParticleSoAFloatPrecision vX = storage.operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i);
+      const ParticleType::ParticleSoAFloatPrecision vY = storage.operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i);
+      const ParticleType::ParticleSoAFloatPrecision vZ = storage.operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i);
 
-      const ParticleType::ParticleSoAFloatPrecision fX = storage.template operator()<ParticleType::AttributeNames::forceX, ForEachHostFlag>(i);
-      const ParticleType::ParticleSoAFloatPrecision fY = storage.template operator()<ParticleType::AttributeNames::forceY, ForEachHostFlag>(i);
-      const ParticleType::ParticleSoAFloatPrecision fZ = storage.template operator()<ParticleType::AttributeNames::forceZ, ForEachHostFlag>(i);
+      const ParticleType::ParticleSoAFloatPrecision fX = storage.operator()<ParticleType::AttributeNames::forceX, ForEachHostFlag>(i);
+      const ParticleType::ParticleSoAFloatPrecision fY = storage.operator()<ParticleType::AttributeNames::forceY, ForEachHostFlag>(i);
+      const ParticleType::ParticleSoAFloatPrecision fZ = storage.operator()<ParticleType::AttributeNames::forceZ, ForEachHostFlag>(i);
 
-      const ParticleType::ParticleSoAFloatPrecision oldFx = storage.template operator()<ParticleType::AttributeNames::oldForceX, ForEachHostFlag>(i);
-      const ParticleType::ParticleSoAFloatPrecision oldFy = storage.template operator()<ParticleType::AttributeNames::oldForceY, ForEachHostFlag>(i);
-      const ParticleType::ParticleSoAFloatPrecision oldFz = storage.template operator()<ParticleType::AttributeNames::oldForceZ, ForEachHostFlag>(i);
+      const ParticleType::ParticleSoAFloatPrecision oldFx = storage.operator()<ParticleType::AttributeNames::oldForceX, ForEachHostFlag>(i);
+      const ParticleType::ParticleSoAFloatPrecision oldFy = storage.operator()<ParticleType::AttributeNames::oldForceY, ForEachHostFlag>(i);
+      const ParticleType::ParticleSoAFloatPrecision oldFz = storage.operator()<ParticleType::AttributeNames::oldForceZ, ForEachHostFlag>(i);
 
       const ParticleType::ParticleSoAFloatPrecision vUpdateX = (fX + oldFx) * (deltaT / (2 * mass));
       const ParticleType::ParticleSoAFloatPrecision vUpdateY = (fY + oldFy) * (deltaT / (2 * mass));
       const ParticleType::ParticleSoAFloatPrecision vUpdateZ = (fZ + oldFz) * (deltaT / (2 * mass));
 
-      storage.template operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i) = vX + vUpdateX;
-      storage.template operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i) = vY + vUpdateY;
-      storage.template operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i) = vZ + vUpdateZ;
+      storage.operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i) = vX + vUpdateX;
+      storage.operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i) = vY + vUpdateY;
+      storage.operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i) = vZ + vUpdateZ;
     }, autopas::IteratorBehavior::owned, "mdFlexible::TimeDiscretization::calculateVelocities");
 
   }

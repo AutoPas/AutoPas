@@ -9,7 +9,7 @@
 #include <Kokkos_Core.hpp>
 #include "Kokkos_DualView.hpp"
 
-namespace autopas::utils {
+namespace autopas::utilsKokkos {
 
   template <class Particle_T>
   class KokkosAoS {

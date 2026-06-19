@@ -6,7 +6,7 @@
 
 #pragma once
 
-namespace autopas::utils {
+namespace autopas::utilsKokkos {
 
 template <class Particle_T>
 class KokkosDataLayoutConverter {
@@ -24,7 +24,7 @@ class KokkosDataLayoutConverter {
       ((dstParticles. template operator()<I, useHostView>(i) = srcParticles.template operator()<I+1, useHostView>(i)), ...); // I+1 as KokkosSoA does not contain ptr
     });
 
-    (dstParticles.template markModified<Kokkos::HostSpace::execution_space, I>(), ...);
+    (dstParticles.template modify<Kokkos::HostSpace::execution_space, I>(), ...);
   }
 
   template <class Input, class Output, std::size_t... I>

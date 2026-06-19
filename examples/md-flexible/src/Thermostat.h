@@ -33,7 +33,7 @@ constexpr bool ForEachHostFlag = true;
 template <class ParticleType>
 struct CalcTemperatureFunctor {
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i, const autopas::utils::KokkosStorage<ParticleType>& storage, double& localKinetic) const {
+  void operator()(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage, double& localKinetic) const {
     const auto velX = storage.template operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i);
     const auto velY = storage.template operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i);
     const auto velZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i);
@@ -46,14 +46,14 @@ struct CalcTemperatureFunctor {
 
 template <class ParticleType>
 struct CalcTemperatureComponentFunctor {
-  using KineticEnergyDualViewType = Kokkos::DualView<double*, typename DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>>;
-  using NumParticleDualViewType = Kokkos::DualView<size_t*, typename DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>>;
+  using KineticEnergyDualViewType = Kokkos::DualView<double*, DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>>;
+  using NumParticleDualViewType = Kokkos::DualView<size_t*, DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>>;
 
   KineticEnergyDualViewType _kineticEnergyMul2Map;
   NumParticleDualViewType _numParticleMap;
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) const {
+  void operator()(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage) const {
     const auto velX = storage.template operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i);
     const auto velY = storage.template operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i);
     const auto velZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i);
@@ -68,14 +68,14 @@ struct CalcTemperatureComponentFunctor {
 
 template <class ParticleType>
 struct BrownianMotionFunctor {
-  using FloatPrecision = typename ParticleType::ParticleSoAFloatPrecision;
+  using FloatPrecision = ParticleType::ParticleSoAFloatPrecision;
   using RandomPool = Kokkos::Random_XorShift64_Pool<>;
 
   RandomPool _randomEngine;
   double _targetTemperature;
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) const {
+  void operator()(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage) const {
     auto generator = _randomEngine.get_state();
 
     const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, ForEachHostFlag>(i);
@@ -98,7 +98,7 @@ struct ApplyFunctor {
   Kokkos::DualView<double*, DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>> _scalingMap;
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) const {
+  void operator()(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage) const {
     const auto typeId = storage.template operator()<ParticleType::AttributeNames::typeId, ForEachHostFlag>(i);
     const auto scaling = _scalingMap.view_device()(typeId);
 

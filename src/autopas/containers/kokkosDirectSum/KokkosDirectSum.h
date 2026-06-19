@@ -53,7 +53,7 @@ template <class Particle_T>
             // TODO: provide an additional function for this
 
             bool updateHaloParticle(const Particle_T &haloParticle) override {
-              _haloParticles.template sync<HostSpace::execution_space>();
+              _haloParticles.template syncAll<HostSpace::execution_space>();
 
               const auto skinHalf = this->getVerletSkin() * 0.5;
 
@@ -73,7 +73,7 @@ template <class Particle_T>
 
                   if (distanceSqr < skinHalf*skinHalf) {
                     this->addHaloParticleImpl(haloParticle);
-                    _haloParticles.template markModified<HostSpace::execution_space>();
+                    _haloParticles.template modifyAll<HostSpace::execution_space>();
                     return true;
                   }
                 }
@@ -122,7 +122,7 @@ template <class Particle_T>
             [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
 
               /* Prepare data structures */
-              utils::KokkosStorage<Particle_T> migrants {_ownedParticles.getLayout(), _ownedParticles.size()};
+              utilsKokkos::KokkosStorage<Particle_T> migrants {_ownedParticles.getLayout(), _ownedParticles.size()};
 
               auto& boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
               auto& boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
@@ -156,7 +156,7 @@ template <class Particle_T>
               } else {
                 deleteHaloParticles();
 
-                utils::KokkosStorage<Particle_T> survivors {_ownedParticles.getLayout(), _ownedParticles.size()};
+                utilsKokkos::KokkosStorage<Particle_T> survivors {_ownedParticles.getLayout(), _ownedParticles.size()};
 
                 Kokkos::View<int*, DeviceSpace> survivorCounter {"survivorCounter", 1};
 
@@ -179,8 +179,8 @@ template <class Particle_T>
                     }
                   }
                 });
-                migrants.template markModified<DeviceSpace::execution_space>();
-                survivors.template markModified<DeviceSpace::execution_space>();
+                migrants.template modifyAll<DeviceSpace::execution_space>();
+                survivors.template modifyAll<DeviceSpace::execution_space>();
 
                 auto surviorCounterMirror = Kokkos::create_mirror_view(survivorCounter);
                 Kokkos::deep_copy(surviorCounterMirror, survivorCounter);
@@ -198,10 +198,10 @@ template <class Particle_T>
               int numMigrants = migrantCounterMirror(0);
               migrants.resize(numMigrants);
 
-              _ownedParticles.template markModified<DeviceSpace::execution_space>();
+              _ownedParticles.template modifyAll<DeviceSpace::execution_space>();
               _ownedParticles.markLayoutModified(owned.getLayout());
 
-              migrants.template sync<HostSpace::execution_space>();
+              migrants.template syncAll<HostSpace::execution_space>();
               migrants.syncSoAToAoS();
               std::vector<Particle_T> migrantVector {};
               migrantVector.reserve(numMigrants);
@@ -290,8 +290,8 @@ template <class Particle_T>
               }
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
-                _ownedParticles.template sync<ExecSpace>();
-                _haloParticles.template sync<ExecSpace>();
+                _ownedParticles.template syncAll<ExecSpace>();
+                _haloParticles.template syncAll<ExecSpace>();
               }
 
               // TODO: make sure that no AoS runs on Cuda
@@ -307,7 +307,7 @@ template <class Particle_T>
                     forEachLambda(i, owned);
                   }
                 });
-                _ownedParticles.template markModified<ExecSpace>();
+                _ownedParticles.template modifyAll<ExecSpace>();
                 owned.markLayoutModified(owned.getLayout());
               }
               /* halo or dummies; this basically filters out only owned, sequential, container only */
@@ -318,7 +318,7 @@ template <class Particle_T>
                     forEachLambda(i, halo);
                   }
                 });
-                _haloParticles.template markModified<ExecSpace>();
+                _haloParticles.template modifyAll<ExecSpace>();
                 halo.markLayoutModified(halo.getLayout());
               }
               /* force sequential (sequential yes, but which particles? all? only owned? */
@@ -349,8 +349,8 @@ template <class Particle_T>
               }
               else if (_dataLayout == DataLayoutOption::soa) {
                 convertToSoA();
-                _ownedParticles.template sync<ExecSpace>();
-                _haloParticles.template sync<ExecSpace>();
+                _ownedParticles.template syncAll<ExecSpace>();
+                _haloParticles.template syncAll<ExecSpace>();
               }
               // TODO: make sure that no AoS runs on Cuda
               // TODO: decide on how to deduce this template parameters based on the ExecSpace
@@ -622,9 +622,9 @@ protected:
 
         // bool _soaUpToDate = false;
 
-        utils::KokkosStorage<Particle_T> _ownedParticles {};
+        utilsKokkos::KokkosStorage<Particle_T> _ownedParticles {};
 
-        utils::KokkosStorage<Particle_T> _haloParticles {};
+        utilsKokkos::KokkosStorage<Particle_T> _haloParticles {};
 
         };
 }

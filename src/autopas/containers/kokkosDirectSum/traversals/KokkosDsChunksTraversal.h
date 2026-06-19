@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/kokkosDirectSum/traversals/DSKokkosTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 
@@ -15,13 +14,12 @@
 namespace autopas {
 
 template <class Functor, class Particle_T, class DeviceSpace>
-struct SoAChunksTraversalFunctor {
-  using KokkosSoAArraysType = typename Particle_T::KokkosSoAArraysType;
+struct ChunksTraversalFunctor {
   using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
   using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
 
-  KokkosSoAArraysType _soa1;
-  KokkosSoAArraysType _soa2;
+  utilsKokkos::KokkosStorage<Particle_T> _storageA;
+  utilsKokkos::KokkosStorage<Particle_T> _storageB;
   Functor* _func;
   FloatPrecision _cutoffSquared;
   size_t _M;
@@ -41,20 +39,20 @@ struct SoAChunksTraversalFunctor {
         FloatPrecision fyAcc = 0.;
         FloatPrecision fzAcc = 0.;
 
-        const auto x1 = _soa1.template operator()<Particle_T::AttributeNames::posX, false>(i + offset);
-        const auto y1 = _soa1.template operator()<Particle_T::AttributeNames::posY, false>(i + offset);
-        const auto z1 = _soa1.template operator()<Particle_T::AttributeNames::posZ, false>(i + offset);
+        const auto x1 = _storageA.template operator()<Particle_T::AttributeNames::posX, false>(i + offset);
+        const auto y1 = _storageA.template operator()<Particle_T::AttributeNames::posY, false>(i + offset);
+        const auto z1 = _storageA.template operator()<Particle_T::AttributeNames::posZ, false>(i + offset);
 
         Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(teamHandle, _M), [&](int j,
             FloatPrecision& localFxAcc,
             FloatPrecision& localFyAcc,
             FloatPrecision& localFzAcc) {
-                _func->SoAKernelKokkos(x1, y1, z1, _soa2, localFxAcc, localFyAcc, localFzAcc, _cutoffSquared, i, j);
+                _func->ForceKernelKokkos(x1, y1, z1, _storageB, localFxAcc, localFyAcc, localFzAcc, _cutoffSquared, i, j);
             }, fxAcc, fyAcc, fzAcc);
 
-        _soa1.template operator()<Particle_T::AttributeNames::forceX, false>(i + offset) += fxAcc;
-        _soa1.template operator()<Particle_T::AttributeNames::forceY, false>(i + offset) += fyAcc;
-        _soa1.template operator()<Particle_T::AttributeNames::forceZ, false>(i + offset) += fzAcc;
+        _storageA.template operator()<Particle_T::AttributeNames::forceX, false>(i + offset) += fxAcc;
+        _storageA.template operator()<Particle_T::AttributeNames::forceY, false>(i + offset) += fyAcc;
+        _storageA.template operator()<Particle_T::AttributeNames::forceZ, false>(i + offset) += fzAcc;
     });
   }
 };
@@ -66,7 +64,7 @@ struct SoAChunksTraversalFunctor {
  * @tparam Particle_T
  */
 template <class Functor, class Particle_T>
-class KokkosDsChunksTraversal : public TraversalInterface, public DSKokkosTraversalInterface<Particle_T> {
+class KokkosDsChunksTraversal : public DSKokkosTraversalInterface<Particle_T> {
 
 public:
   /**
@@ -78,7 +76,7 @@ public:
    * @param chunkSize Size of the Chunks for the Kokkos Teams, one team works one chunkSize consecutive i-particles
    */
 explicit KokkosDsChunksTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3, size_t teamSize, size_t chunkSize)
-        : TraversalInterface(dataLayout, useNewton3), DSKokkosTraversalInterface<Particle_T>(), _functor{functor}, _teamSize(teamSize), _chunkSize(chunkSize) {}
+        : DSKokkosTraversalInterface<Particle_T>(dataLayout, useNewton3), _functor{functor}, _teamSize(teamSize), _chunkSize(chunkSize) {}
 
     [[nodiscard]] TraversalOption getTraversalType() const final { return TraversalOption::ds_kokkos_chunks; }
 
@@ -87,54 +85,38 @@ explicit KokkosDsChunksTraversal(Functor *functor, DataLayoutOption dataLayout, 
         return true;
     }
 
-    void initTraversal() final {
+  void initTraversal() final {
+    const auto I = std::make_index_sequence<Functor::getNeededAttr().size()>{};
+
+    syncNeeded<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space>(DSKokkosTraversalInterface<Particle_T>::_ownedParticles, I);
+    syncNeeded<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space>(DSKokkosTraversalInterface<Particle_T>::_haloParticles, I);
+  }
+
+  void endTraversal() final {
+    constexpr auto J = std::make_index_sequence<Functor::getComputedAttr().size()>{};
+    modifyComputed<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space>(DSKokkosTraversalInterface<Particle_T>::_ownedParticles, J);
+  }
+
+protected:
+  void performTraversal(const utilsKokkos::KokkosStorage<Particle_T>& storageA, const utilsKokkos::KokkosStorage<Particle_T>& storageB) final {
+    const size_t N = storageA.size();
+    const size_t M = storageB.size();
+
+    if (N == 0 || M == 0) {
+      return;
     }
 
-    void traverseParticles() final {
-      const bool newton3 = _useNewton3;
-      const auto func = _functor;
+    auto func = _functor;
+    typename DSKokkosTraversalInterface<Particle_T>::FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
 
-      size_t N = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.size();
+    const size_t chunkSize = _chunkSize;
+    const size_t numChunks = N / chunkSize;
 
-      // TODO: this should only be executed on the CPU
-      if (_dataLayout == DataLayoutOption::aos) {
-#ifdef KOKKOS_ENABLE_CUDA
-        return; // TODO: log error / exception
-#else
-        Kokkos::parallel_for("traverseParticlesAoS", Kokkos::RangePolicy<Kokkos::HostSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
-          for (int j = (newton3 ? i+1 : 0); j < N; ++j) {
-            if (newton3 or i != j) {
-              func->AoSFunctorKokkos(
-                DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(i),
-                DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(j),
-                newton3);
-            }
-          }
-        });
+    ChunksTraversalFunctor<Functor, Particle_T, typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace> functor {storageA, storageB, func, cutoffSquared, M, N, chunkSize};
 
-        // TODO: consider halo particles
-        // Maybe even execute halo traversal simultaneously on the host with some sort of result merge mechanism in the end
-#endif
-      }
-      else if (_dataLayout == DataLayoutOption::soa) {
-        auto& ownedSoA = DSKokkosTraversalInterface<Particle_T>::_ownedParticles.getSoA();
-        auto& haloSoA = DSKokkosTraversalInterface<Particle_T>::_haloParticles.getSoA();
-
-        const auto I = std::make_index_sequence<Functor::getNeededAttr().size()>{};
-
-        syncNeeded<DeviceSpace::execution_space>(ownedSoA, I);
-        syncNeeded<DeviceSpace::execution_space>(haloSoA, I);
-
-        performSoATraversal(ownedSoA, ownedSoA);
-        performSoATraversal(ownedSoA, haloSoA);
-
-        constexpr auto J = std::make_index_sequence<Functor::getComputedAttr().size()>{};
-        modifyComputed<DeviceSpace::execution_space>(ownedSoA, J);
-      }
-    }
-
-    void endTraversal() final {
-    }
+    auto teamPolicy = Kokkos::TeamPolicy<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space>(numChunks+1, _teamSize, Kokkos::AUTO);
+    Kokkos::parallel_for("autopas::ChunksTraversalSoA", teamPolicy, functor);
+  }
 
 private:
 
@@ -145,42 +127,10 @@ private:
 
   template <typename ExecSpace, std::size_t... I>
   void modifyComputed(auto& particles, std::index_sequence<I...>) {
-    (particles.template markModified<ExecSpace, Functor::getComputedAttr()[I]-1>(), ...);
+    (particles.template modify<ExecSpace, Functor::getComputedAttr()[I]-1>(), ...);
   }
 
-  void performSoATraversal(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2) {
-    const size_t N = soa1.size();
-    const size_t M = soa2.size();
-
-    if (N == 0 || M == 0) {
-      return;
-    }
-
-    auto func = _functor;
-    FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
-
-    const size_t chunkSize = _chunkSize;
-    const size_t numChunks = N / chunkSize;
-
-    SoAChunksTraversalFunctor<Functor, Particle_T, DeviceSpace> functor {soa1, soa2, func, cutoffSquared, M, N, chunkSize};
-
-    auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(numChunks+1, _teamSize, Kokkos::AUTO);
-    using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
-    Kokkos::parallel_for("autopas::ChunksTraversalSoA", teamPolicy, functor);
-  }
-
-
-#ifdef KOKKOS_ENABLE_CUDA
-  using DeviceSpace = Kokkos::CudaSpace;
-#else
-  using DeviceSpace = Kokkos::HostSpace;
-#endif
-
-  using HostSpace = Kokkos::HostSpace;
-
-  using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
-
-  Functor *_functor;
+  Functor* _functor;
 
   const size_t _teamSize {0};
 

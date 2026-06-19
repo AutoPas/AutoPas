@@ -13,15 +13,21 @@
 
 namespace autopas {
 template <class Particle_T>
-class DSKokkosTraversalInterface {
+class DSKokkosTraversalInterface : public TraversalInterface {
 
 public:
 
-  explicit DSKokkosTraversalInterface() {};
+  explicit DSKokkosTraversalInterface(DataLayoutOption dataLayout, bool useNewton3) : TraversalInterface(dataLayout, useNewton3) {};
 
   virtual ~DSKokkosTraversalInterface() = default;
 
-  void setOwnedToTraverse(utils::KokkosStorage<Particle_T>& input, DataLayoutOption targetLayout) {
+  void traverseParticles() final {
+
+    performTraversal(_ownedParticles, _ownedParticles);
+    performTraversal(_ownedParticles, _haloParticles);
+  }
+
+  void setOwnedToTraverse(utilsKokkos::KokkosStorage<Particle_T>& input, DataLayoutOption targetLayout) {
 
     // No actual copy must be done as we do not want the content to be copied
     _ownedParticles.setLayout(targetLayout);
@@ -36,7 +42,7 @@ public:
     }
   }
 
-  void setHaloToTraverse(utils::KokkosStorage<Particle_T>& input, DataLayoutOption targetLayout) {
+  void setHaloToTraverse(utilsKokkos::KokkosStorage<Particle_T>& input, DataLayoutOption targetLayout) {
 
     _haloParticles.setLayout(targetLayout);
 
@@ -48,7 +54,7 @@ public:
     }
   }
 
-  void retrieveOwned(utils::KokkosStorage<Particle_T>& output) {
+  void retrieveOwned(utilsKokkos::KokkosStorage<Particle_T>& output) {
     auto storageLayout = _ownedParticles.getLayout();
 
     if (storageLayout == DataLayoutOption::aos) {
@@ -59,7 +65,7 @@ public:
     }
   }
 
-  void retrieveHalo(utils::KokkosStorage<Particle_T>& output) {
+  void retrieveHalo(utilsKokkos::KokkosStorage<Particle_T>& output) {
     auto storageLayout = _haloParticles.getLayout();
 
     if (storageLayout == DataLayoutOption::aos) {
@@ -72,7 +78,22 @@ public:
 
 protected:
 
-  utils::KokkosStorage<Particle_T> _ownedParticles;
-  utils::KokkosStorage<Particle_T> _haloParticles;
+#ifdef KOKKOS_ENABLE_CUDA
+  using DeviceSpace = Kokkos::CudaSpace;
+  constexpr static bool useHostView = false;
+#else
+  using DeviceSpace = Kokkos::HostSpace;
+  constexpr static bool useHostView = true;
+#endif
+
+  using HostSpace = Kokkos::HostSpace;
+
+  using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
+
+  virtual void performTraversal(const utilsKokkos::KokkosStorage<Particle_T>& storageA, const utilsKokkos::KokkosStorage<Particle_T>& storageB) = 0;
+
+  utilsKokkos::KokkosStorage<Particle_T> _ownedParticles;
+  utilsKokkos::KokkosStorage<Particle_T> _haloParticles;
+
 };
 }

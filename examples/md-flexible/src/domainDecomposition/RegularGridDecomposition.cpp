@@ -326,7 +326,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     Kokkos::Array<double, 3> globalBoxMin = {_globalBoxMin.at(0), _globalBoxMin.at(1), _globalBoxMin.at(2)};
     Kokkos::Array<double, 3> globalBoxMax = {_globalBoxMax.at(0), _globalBoxMax.at(1), _globalBoxMax.at(2)};
 
-    autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
+    autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage) {
 
       const auto posX = storage.template operator()<ParticleType::AttributeNames::posX, ForEachHostFlag>(i);
       const auto posY = storage.template operator()<ParticleType::AttributeNames::posY, ForEachHostFlag>(i);

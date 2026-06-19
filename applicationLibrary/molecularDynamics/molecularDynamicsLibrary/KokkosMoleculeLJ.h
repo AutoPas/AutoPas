@@ -82,7 +82,7 @@ class KokkosMoleculeLJ : public autopas::ParticleBaseFP64 {
       ParticleSoAFloatPrecision /*mass*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
   using KokkosSoAArraysType =
-      autopas::utils::KokkosSoA<size_t * /*id*/, ParticleSoAFloatPrecision * /*x*/, ParticleSoAFloatPrecision * /*y*/,
+      autopas::utilsKokkos::KokkosSoA<size_t * /*id*/, ParticleSoAFloatPrecision * /*x*/, ParticleSoAFloatPrecision * /*y*/,
                                 ParticleSoAFloatPrecision * /*z*/,
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
                                 ParticleSoAFloatPrecision * /*rebuildX*/, ParticleSoAFloatPrecision * /*rebuildY*/,

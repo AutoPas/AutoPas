@@ -14,7 +14,7 @@
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/inBox.h"
 
-namespace autopas::utils {
+namespace autopas::utilsKokkos {
 
   template <class Particle_T>
   class KokkosStorage {
@@ -201,24 +201,47 @@ namespace autopas::utils {
       return storageAoS.getParticle(i);
     }
 
-    template <typename Target>
+    template <typename Target, std::size_t I>
     void sync() {
+      if (_layout == DataLayoutOption::soa) {
+        storageSoA.template sync<Target, I>();
+      } else {
+        /* Partial copy is not supported for AoS */
+        storageAoS.template sync<Target>();
+      }
+    }
+
+    template <typename Target>
+    void syncAll() {
       if (_layout == DataLayoutOption::soa) {
         constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
         constexpr auto I = std::make_index_sequence<tupleSize>();
 
         storageSoA.template syncAll<Target>(I);
+      } else {
+        storageAoS.template sync<Target>();
+      }
+    }
+
+    template <typename Target, std::size_t I>
+    void modify() {
+      if (_layout == DataLayoutOption::soa) {
+        storageSoA.template modify<Target, I>();
+      } else {
+        /* Partial copy is not supported for AoS */
+        storageAoS.template modify<Target>();
       }
     }
 
     template <typename Target>
-    void markModified() {
-      // TODO: when AoS is also allowed on the GPU, we need a switch here too
+    void modifyAll() {
       if (_layout == DataLayoutOption::soa) {
         constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
         constexpr auto I = std::make_index_sequence<tupleSize>();
 
-        storageSoA.template markAllModified<Target>(I);
+        storageSoA.template modifyAll<Target>(I);
+      } else {
+        storageAoS.template modify<Target>();
       }
     }
 
