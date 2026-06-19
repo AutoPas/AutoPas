@@ -65,4 +65,14 @@ class AutoTunerTest : public AutoPasTestBase {
       autopas::TraversalOption::ds_sequential, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
       autopas::InteractionTypeOption::triwise, autopas::VectorizationPatternOption::p1xVec};
+
+  /**
+   * Tests that ending a tuning phase with a reject configuration is handled correctly.
+   *
+   * Mimics an AutoTuner trialling four configurations. The second and the final configurations will be rejected. After
+   * the tuning phase is completed, the test should get the correct configuration upon calling `getNextConfig`
+   *
+   * @param rejectIndefinitely Run the test, parsing this rejectIndefinitely value to rejectConfig
+   */
+  void testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinitely) const;
 };

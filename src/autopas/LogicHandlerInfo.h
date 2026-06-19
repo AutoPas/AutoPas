@@ -40,6 +40,11 @@ class LogicHandlerInfo {
    */
   size_t sortingThreshold{8};
   /**
+   * Time step used in the simulation.
+   * This is currently used in rebuild frequency estimation for dynamic containers.
+   */
+  double deltaT{0};
+  /**
    * Whether to use pattern selection strategy based on benchmark.
    */
   bool useBenchmarkPatternSelection{false};

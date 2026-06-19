@@ -84,10 +84,6 @@ class LJFunctorHWY
                                            particlePropertiesLibrary = std::nullopt)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
         _cutoffSquareAoS{cutoff * cutoff},
-        _potentialEnergySum{0.},
-        _virialSum{0., 0., 0.},
-        _aosThreadData{},
-        _postProcessed{false},
         _PPLibrary{particlePropertiesLibrary} {
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
@@ -127,8 +123,8 @@ class LJFunctorHWY
    * @param vecPattern
    * @return whether the functor is capable of using the specified Vectorization Pattern
    */
-  bool isVecPatternAllowed(const VectorizationPattern vecPattern) override final {
-    return std::find(_vecPatternsAllowed.begin(), _vecPatternsAllowed.end(), vecPattern) != _vecPatternsAllowed.end();
+  bool isVecPatternAllowed(const VectorizationPattern vecPattern) final {
+    return std::ranges::find(_vecPatternsAllowed, vecPattern) != _vecPatternsAllowed.end();
   }
 
   /**
@@ -192,10 +188,40 @@ class LJFunctorHWY
    * This functor will always do a newton3 like traversal of the soa.
    */
   inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, const bool newton3) final {
-    if (newton3) {
-      SoAFunctorSingleImpl<true>(soa);
-    } else {
-      SoAFunctorSingleImpl<false>(soa);
+    if (soa.size() == 0) return;
+
+    // obtain iterators for the various values
+    const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
+
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    auto *const __restrict fxPtr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
+
+    const auto *const __restrict typeIDptr = soa.template begin<Particle_T::AttributeNames::typeId>();
+
+    // initialize and declare vector variables
+    auto virialSumX = highway::Zero(tag_double);
+    auto virialSumY = highway::Zero(tag_double);
+    auto virialSumZ = highway::Zero(tag_double);
+    auto uPotSum = highway::Zero(tag_double);
+
+    for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soa.size()) - 1;
+         checkFirstLoopCondition<true, VectorizationPattern::p1xVec>(i, 0);
+         decrementFirstLoop<VectorizationPattern::p1xVec>(i)) {
+      static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
+                    "OwnershipStates underlying type should be int64_t!");
+
+      handleILoopBody<true, true, false, VectorizationPattern::p1xVec>(
+          i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr,
+          typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, i);
+    }
+
+    if constexpr (calculateGlobals) {
+      computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
     }
   }
 
@@ -300,7 +326,7 @@ class LJFunctorHWY
    * @return true if the loop over i should be continued, else false.
    */
   template <bool reversed, VectorizationPattern vecPattern>
-  constexpr bool checkFirstLoopCondition(const std::ptrdiff_t i, const long vecEnd) {
+  static constexpr bool checkFirstLoopCondition(const std::ptrdiff_t i, const long vecEnd) {
     if constexpr (reversed) {
       if constexpr (vecPattern == VectorizationPattern::p1xVec) {
         return i >= 0;
@@ -344,7 +370,7 @@ class LJFunctorHWY
    * @param i
    */
   template <VectorizationPattern vecPattern>
-  constexpr void decrementFirstLoop(std::ptrdiff_t &i) {
+  static constexpr void decrementFirstLoop(std::ptrdiff_t &i) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       --i;
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -364,7 +390,7 @@ class LJFunctorHWY
    * @param i
    */
   template <VectorizationPattern vecPattern>
-  constexpr void incrementFirstLoop(std::ptrdiff_t &i) {
+  static constexpr void incrementFirstLoop(std::ptrdiff_t &i) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       ++i;
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -386,7 +412,7 @@ class LJFunctorHWY
    * @return the number of lanes filled.
    */
   template <bool reversed>
-  constexpr int obtainILoopRemainderLength(std::ptrdiff_t i, const int vecEnd) {
+  static constexpr int obtainILoopRemainderLength(std::ptrdiff_t i, const int vecEnd) {
     return reversed ? (i < 0 ? 0 : i + 1) : vecEnd - i;
   }
 
@@ -399,7 +425,7 @@ class LJFunctorHWY
    * @return  true if the inner loop over j should be continued, else false.
    */
   template <VectorizationPattern vecPattern>
-  constexpr bool checkSecondLoopCondition(std::ptrdiff_t i, size_t j) {
+  static constexpr bool checkSecondLoopCondition(std::ptrdiff_t i, size_t j) {
     std::ptrdiff_t limit = 0;
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
@@ -431,7 +457,7 @@ class LJFunctorHWY
    * @param j
    */
   template <VectorizationPattern vecPattern>
-  constexpr void incrementSecondLoop(std::ptrdiff_t &j) {
+  static constexpr void incrementSecondLoop(std::ptrdiff_t &j) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       j += _vecLengthDouble;
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -452,7 +478,7 @@ class LJFunctorHWY
    * @return the number of lanes filled.
    */
   template <VectorizationPattern vecPattern>
-  constexpr int obtainJLoopRemainderLength(const std::ptrdiff_t j) {
+  static constexpr int obtainJLoopRemainderLength(const std::ptrdiff_t j) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       return static_cast<int>(j & (_vecLengthDouble - 1));
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -485,7 +511,7 @@ class LJFunctorHWY
    * @param restI The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, bool reversed, VectorizationPattern vecPattern>
-  inline void fillIRegisters(const size_t i, const double *const __restrict xPtr, const double *const __restrict yPtr,
+  static void fillIRegisters(const size_t i, const double *const __restrict xPtr, const double *const __restrict yPtr,
                              const double *const __restrict zPtr,
                              const autopas::OwnershipState *const __restrict ownedStatePtr, VectorDouble &x1,
                              VectorDouble &y1, VectorDouble &z1, MaskDouble &ownedMaskI, const size_t restI) {
@@ -558,15 +584,14 @@ class LJFunctorHWY
 
     MaskLong ownedMaskILong = highway::Ne(ownedStateILong, highway::Zero(tag_long));
 
-    // conert to a double mask since we perform logical operations with other double masks in the kernel.
+    // convert to a double mask since we perform logical operations with other double masks in the kernel.
     ownedMaskI = highway::RebindMask(tag_double, ownedMaskILong);
   }
 
-  template <bool remainder, bool reversed, VectorizationPattern vecPattern>
-  inline void handleNewton3Reduction(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
+  template <bool remainder, VectorizationPattern vecPattern>
+  static void handleNewton3Reduction(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
                                      double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
-                                     double *const __restrict fz2Ptr, const size_t i, const size_t j,
-                                     const size_t rest) {
+                                     double *const __restrict fz2Ptr, const size_t j, const size_t rest) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       const VectorDouble fx2 =
           remainder ? highway::LoadN(tag_double, &fx2Ptr[j], rest) : highway::LoadU(tag_double, &fx2Ptr[j]);
@@ -637,7 +662,7 @@ class LJFunctorHWY
   }
 
   template <bool reversed, bool remainder, VectorizationPattern vecPattern>
-  inline void reduceAccumulatedForce(const size_t i, double *const __restrict fxPtr, double *const __restrict fyPtr,
+  static void reduceAccumulatedForce(const size_t i, double *const __restrict fxPtr, double *const __restrict fyPtr,
                                      double *const __restrict fzPtr, const VectorDouble &fxAcc,
                                      const VectorDouble &fyAcc, const VectorDouble &fzAcc, const int restI) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
@@ -709,21 +734,49 @@ class LJFunctorHWY
     }
   }
 
-  template <bool newton3>
   inline void computeGlobals(const VectorDouble &virialSumX, const VectorDouble &virialSumY,
                              const VectorDouble &virialSumZ, const VectorDouble &uPotSum) {
     const int threadnum = autopas::autopas_get_thread_num();
 
-    const std::array<double, 4> globals{
-        highway::ReduceSum(tag_double, virialSumX), highway::ReduceSum(tag_double, virialSumY),
-        highway::ReduceSum(tag_double, virialSumZ), highway::ReduceSum(tag_double, uPotSum)};
-
-    _aosThreadData[threadnum].virialSum[0] += globals[0];
-    _aosThreadData[threadnum].virialSum[1] += globals[1];
-    _aosThreadData[threadnum].virialSum[2] += globals[2];
-    _aosThreadData[threadnum].potentialEnergySum += globals[3];
+    _aosThreadData[threadnum].virialSum[0] += highway::ReduceSum(tag_double, virialSumX);
+    _aosThreadData[threadnum].virialSum[1] += highway::ReduceSum(tag_double, virialSumY);
+    _aosThreadData[threadnum].virialSum[2] += highway::ReduceSum(tag_double, virialSumZ);
+    _aosThreadData[threadnum].potentialEnergySum += highway::ReduceSum(tag_double, uPotSum);
   }
 
+  /**
+   * Helper function that handles an iteration of the outer-loop (the loop that changes "i").
+   * @tparam reversed Whether iterating backwards over the outer-loop.
+   * @tparam newton3
+   * @tparam remainderI True iff the "i" vector register is not fully filled, i.e. there are less than _vecLength
+   * elements of the SoA to iterate over.
+   * @tparam vecPattern
+   * @param i index of SoA 1 from which the vector register is filled. E.g. with reversed=false, and the VecLength x 1
+   * pattern used, the vector register will be filled with elements i, i+1, i+2, ..., i+_vecLength-1. With
+   * reversed=true, this is instead i-_vecLength+1, i-_vecLength+2, ..., i-1, i.
+   * @param xPtr1
+   * @param yPtr1
+   * @param zPtr1
+   * @param ownedStatePtr1
+   * @param xPtr2
+   * @param yPtr2
+   * @param zPtr2
+   * @param ownedStatePtr2
+   * @param fxPtr1
+   * @param fyPtr1
+   * @param fzPtr1
+   * @param fxPtr2
+   * @param fyPtr2
+   * @param fzPtr2
+   * @param typeIDptr1
+   * @param typeIDptr2
+   * @param virialSumX
+   * @param virialSumY
+   * @param virialSumZ
+   * @param uPotSum
+   * @param restI In the remainder case, this is the number of elements left in the SoA.
+   * @param jVecEnd The end index for the inner "j" loop.
+   */
   template <bool reversed, bool newton3, bool remainderI, VectorizationPattern vecPattern>
   inline void handleILoopBody(
       const size_t i, const double *const __restrict xPtr1, const double *const __restrict yPtr1,
@@ -764,50 +817,6 @@ class LJFunctorHWY
     }
 
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
-  }
-
-  /**
-   * Templatized version of SoAFunctorSingle
-   * @tparam newton3 Whether to use newton3
-   * @param soa
-   */
-  template <bool newton3>
-  inline void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
-    if (soa.size() == 0) return;
-
-    // obtain iterators for the various values
-    const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
-    const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
-    const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
-
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
-
-    auto *const __restrict fxPtr = soa.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
-
-    const auto *const __restrict typeIDptr = soa.template begin<Particle_T::AttributeNames::typeId>();
-
-    // initialize and declare vector variables
-    auto virialSumX = highway::Zero(tag_double);
-    auto virialSumY = highway::Zero(tag_double);
-    auto virialSumZ = highway::Zero(tag_double);
-    auto uPotSum = highway::Zero(tag_double);
-
-    for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soa.size()) - 1;
-         checkFirstLoopCondition<true, VectorizationPattern::p1xVec>(i, 0);
-         decrementFirstLoop<VectorizationPattern::p1xVec>(i)) {
-      static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
-                    "OwnershipStates underlying type should be int64_t!");
-
-      handleILoopBody<true, true, false, VectorizationPattern::p1xVec>(
-          i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr,
-          typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, i);
-    }
-
-    if constexpr (calculateGlobals) {
-      computeGlobals<newton3>(virialSumX, virialSumY, virialSumZ, uPotSum);
-    }
   }
 
   /**
@@ -866,7 +875,7 @@ class LJFunctorHWY
     }
 
     if constexpr (calculateGlobals) {
-      computeGlobals<newton3>(virialSumX, virialSumY, virialSumZ, uPotSum);
+      computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
     }
   }
 
@@ -888,7 +897,7 @@ class LJFunctorHWY
    * @param rest The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, VectorizationPattern vecPattern>
-  inline void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
+  static void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
                              const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
                              VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, MaskDouble &ownedMaskJ,
                              const unsigned int rest) {
@@ -959,7 +968,7 @@ class LJFunctorHWY
   template <bool remainderI, bool remainderJ, bool reversed, VectorizationPattern vecPattern>
   inline void fillPhysicsRegisters(const size_t *const typeID1Ptr, const size_t *const typeID2Ptr,
                                    VectorDouble &epsilon24s, VectorDouble &sigmaSquareds, VectorDouble &shift6s,
-                                   const unsigned int j, const unsigned int restI, const unsigned int restJ) {
+                                   const unsigned int restI, const unsigned int restJ) const {
     // We overestimate the array size. This should be a tight/perfect upper bound on x86, and should never be large
     // enough on e.g. ARM/RISC-V to cause issues.
     HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
@@ -1069,12 +1078,14 @@ class LJFunctorHWY
 
     if constexpr (useMixing) {
       fillPhysicsRegisters<remainderI, remainderJ, reversed, vecPattern>(typeID1Ptr, typeID2Ptr, epsilon24s,
-                                                                         sigmaSquareds, shift6s, j, restI, restJ);
+                                                                         sigmaSquareds, shift6s, restI, restJ);
     } else {
       epsilon24s = highway::Set(tag_double, _epsilon24AoS);
       sigmaSquareds = highway::Set(tag_double, _sigmaSquareAoS);
       if constexpr (applyShift) {
         shift6s = highway::Set(tag_double, _shift6AoS);
+      } else {
+        shift6s = highway::Zero(tag_double);
       }
     }
 
@@ -1127,7 +1138,7 @@ class LJFunctorHWY
     fzAcc = highway::Add(fzAcc, fz);
 
     if constexpr (newton3) {
-      handleNewton3Reduction<remainderJ, reversed, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, i, j, restJ);
+      handleNewton3Reduction<remainderJ, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
     }
 
     if constexpr (calculateGlobals) {
@@ -1213,7 +1224,7 @@ class LJFunctorHWY
     HWY_ALIGN std::array<double, _maxVecLengthDouble> fy2Tmp{};
     HWY_ALIGN std::array<double, _maxVecLengthDouble> fz2Tmp{};
     HWY_ALIGN std::array<size_t, _maxVecLengthDouble> typeID2Tmp{};
-    // ownedStates2Tmp is int64_t because we can directly use static_case on the individual elements below, unlike other
+    // ownedStates2Tmp is int64_t because we can directly use static_cast on the individual elements below, unlike other
     // functors where we have to resort to unsafe reinterpret_cast
     HWY_ALIGN std::array<int64_t, _maxVecLengthDouble> ownedStates2Tmp;
     ownedStates2Tmp.fill(static_cast<int64_t>(autopas::OwnershipState::dummy));
@@ -1239,8 +1250,8 @@ class LJFunctorHWY
 
       SoAKernel<newton3, false, false, false, VectorizationPattern::p1xVec>(
           0, 0, ownedMaskI, ownedStates2Tmp.data(), x1, y1, z1, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(),
-          fy2Tmp.data(), fz2Tmp.data(), &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
-          uPotSum, 0, 0);
+          fy2Tmp.data(), fz2Tmp.data(), &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
+          virialSumY, virialSumZ, uPotSum, 0, 0);
 
       if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
@@ -1270,8 +1281,8 @@ class LJFunctorHWY
 
       SoAKernel<newton3, false, true, false, VectorizationPattern::p1xVec>(
           0, 0, ownedMaskI, ownedStates2Tmp.data(), x1, y1, z1, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(),
-          fy2Tmp.data(), fz2Tmp.data(), &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
-          uPotSum, 0, rest);
+          fy2Tmp.data(), fz2Tmp.data(), &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
+          virialSumY, virialSumZ, uPotSum, 0, rest);
 
       if constexpr (newton3) {
         for (long vecIndex = 0; vecIndex < _vecLengthDouble && vecIndex < rest; ++vecIndex) {
@@ -1287,7 +1298,7 @@ class LJFunctorHWY
     fzPtr[indexFirst] += highway::ReduceSum(tag_double, fzAcc);
 
     if constexpr (calculateGlobals) {
-      computeGlobals<newton3>(virialSumX, virialSumY, virialSumZ, uPotSum);
+      computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
     }
   }
 
@@ -1475,11 +1486,11 @@ class LJFunctorHWY
 
   // accumulators for the globals (potential energy and virial).
   double _potentialEnergySum{0.};
-  std::array<double, 3> _virialSum;
+  std::array<double, 3> _virialSum{0., 0., 0.};
   std::vector<AoSThreadData> _aosThreadData{};
 
-  // flag to indicate wether post processing has been performed.
-  bool _postProcessed;
+  // flag to indicate whether post-processing has been performed.
+  bool _postProcessed{false};
 
   // The Vectorization Pattern currently used in the SoA functor.
   VectorizationPattern _vecPattern{};

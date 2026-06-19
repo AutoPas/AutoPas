@@ -11,9 +11,6 @@
 #include "autopasTools/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 
-/**
- * Is called before each test case
- */
 void LJFunctorTestHWY::SetUp() {
   bool mixing = std::get<0>(GetParam());
   if (mixing) {
@@ -21,9 +18,6 @@ void LJFunctorTestHWY::SetUp() {
   }
 }
 
-/**
- * Called from SetUp to initialize the particle properties library with common values.
- */
 void LJFunctorTestHWY::setupPPL() {
   _PPL.addSiteType(0, 1.0);
   _PPL.addLJParametersToSite(0, 1.0, 1.4);
@@ -38,14 +32,6 @@ void LJFunctorTestHWY::setupPPL() {
   _PPL.calculateMixingCoefficients();
 }
 
-/**
- * Checks that two non empty SoAs' particles are equal
- *
- * @tparam SoAType
- * @param soa1
- * @param soa2
- * @return true if the two SoAs' particles are equal
- */
 template <class SoAType>
 bool LJFunctorTestHWY::checkSoAParticlesAreEqual(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2) {
   EXPECT_GT(soa1.size(), 0);
@@ -82,13 +68,6 @@ bool LJFunctorTestHWY::checkSoAParticlesAreEqual(const autopas::SoA<SoAType> &so
   return not HasFailure();
 }
 
-/**
- * Checks if the two particles p1 and p2 are equal.
- *
- * @param p1 particle 1
- * @param p2 particle 2
- * @return if the two particles p1 and p2 are equal.
- */
 bool LJFunctorTestHWY::checkParticlesAreEqual(const Molecule &p1, const Molecule &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
@@ -102,14 +81,6 @@ bool LJFunctorTestHWY::checkParticlesAreEqual(const Molecule &p1, const Molecule
   return not HasFailure();
 }
 
-/**
- * Checks if the two cells cell 1 and cell 2 are equal. They are equal, if the size is the same and all contained
- * particles are equal.
- *
- * @param cell1
- * @param cell2
- * @return if the two cells cell 1 and cell 2 are equal.
- */
 bool LJFunctorTestHWY::checkAoSParticlesAreEqual(const FMCell &cell1, const FMCell &cell2) {
   EXPECT_GT(cell1.size(), 0);
   EXPECT_EQ(cell1.size(), cell2.size());
@@ -125,19 +96,6 @@ bool LJFunctorTestHWY::checkAoSParticlesAreEqual(const FMCell &cell1, const FMCe
   return allEqual;
 }
 
-/**
- * Checks equality of SoALoader, SoAFunctorPair and SoAExtractor.
- * Expects that particles are loaded and extracted in the same order.
- * In all comparisons first is HWY, second Autovec
- *
- * Checks SoAFunctorPair(soa1, soa2, newton3)
- *
- * @tparam mixing
- * @param newton3
- * @param doDeleteSomeParticles
- * @param useUnalignedViews
- * @param pattern
- */
 template <bool mixing>
 void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles,
                                                            bool useUnalignedViews, VectorizationPattern pattern) {
@@ -250,19 +208,6 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
   EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), _maxError) << "global virial";
 }
 
-/**
- * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
- * Expects that particles are loaded and extracted in the same order.
- * In all comparisons first is HWY, second Autovec
- *
- * Checks SoAFunctorSingle(soa, newton3)
- *
- * @tparam mixing
- * @param newton3
- * @param doDeleteSomeParticles
- * @param useUnalignedViews
- * @param pattern
- */
 template <bool mixing>
 void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles,
                                                           bool useUnalignedViews, VectorizationPattern pattern) {
@@ -346,13 +291,6 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
   EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), _maxError) << "global virial";
 }
 
-/**
- * Creates two cells, generates neighbor lists manually and then compares the SoAFunctorVerlet calls.
- *
- * @tparam mixing
- * @param newton3
- * @param doDeleteSomeParticles
- */
 template <bool mixing>
 void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDeleteSomeParticles) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -448,13 +386,6 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
   EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), _maxError) << "global virial";
 }
 
-/**
- * Create two cells and compare the HWY AoSFunctor to the Autovec functor.
- *
- * @tparam mixing
- * @param newton3
- * @param doDeleteSomeParticles
- */
 template <bool mixing>
 void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles) {
   FMCell cellHWY;
@@ -529,6 +460,9 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
 
 
 
+/**
+ * Checks that the HWY Functor computes forces that match the AutoVec functor in the AoS case.
+ */
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {
   auto [mixing, newton3, doDeleteSomeParticle, _] = GetParam();
   if (mixing) {
@@ -538,6 +472,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {
   }
 }
 
+/**
+ * Checks that the HWY Functor computes forces that match the AutoVec functor in the SoA Verlet case.
+ */
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYVerlet) {
   // different vectorization patterns are currently not supported for Verlet Functor
   auto [mixing, newton3, doDeleteSomeParticle, _] = GetParam();
@@ -548,6 +485,10 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYVerlet) {
   }
 }
 
+/**
+ * Checks that the HWY Functor computes forces that match the AutoVec functor in the SoA Single (with aligned views)
+ * case.
+ */
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellAlignedAccess) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
@@ -557,6 +498,10 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellAlignedAccess) {
   }
 }
 
+/**
+ * Checks that the HWY Functor computes forces that match the AutoVec functor in the SoA Single (with unaligned views)
+ * case.
+ */
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellUseUnalignedViews) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
@@ -566,6 +511,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellUseUnalignedViews) {
   }
 }
 
+/**
+ * Checks that the HWY Functor computes forces that match the AutoVec functor in the SoA Pair (with aligned views) case.
+ */
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsAlignedAccess) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
@@ -575,6 +523,10 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsAlignedAccess) {
   }
 }
 
+/**
+ * Checks that the HWY Functor computes forces that match the AutoVec functor in the SoA Pair (with unaligned views)
+ * case.
+ */
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
