@@ -220,7 +220,7 @@ class LJFunctorHWY
 
       handleILoopBody<true, true, false, VectorizationPattern::p1xVec>(
           i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr,
-          typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, i);
+          typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0, i);
     }
 
     if constexpr (calculateGlobals) {
@@ -812,7 +812,7 @@ class LJFunctorHWY
       double *const __restrict fyPtr1, double *const __restrict fzPtr1, double *const __restrict fxPtr2,
       double *const __restrict fyPtr2, double *const __restrict fzPtr2, const size_t *const __restrict typeIDptr1,
       const size_t *const __restrict typeIDptr2, VectorDouble &virialSumX, VectorDouble &virialSumY,
-      VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t jVecEnd) {
+      VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t jVecStart, const size_t jVecEnd) {
     VectorDouble fxAcc = highway::Zero(tag_double);
     VectorDouble fyAcc = highway::Zero(tag_double);
     VectorDouble fzAcc = highway::Zero(tag_double);
@@ -825,7 +825,7 @@ class LJFunctorHWY
 
     fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI,
                                                      restI);
-    std::ptrdiff_t j = 0;
+    std::ptrdiff_t j = jVecStart;
     for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j); incrementSecondLoop<vecPattern>(j)) {
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
@@ -912,6 +912,7 @@ class LJFunctorHWY
     auto &fy2s = td.fy2s;
     auto &fz2s = td.fz2s;
     auto &maxIndex = td.maxIndex;
+    auto &minIndex = td.minIndex;
     std::ptrdiff_t start_i = 0;
 
     if constexpr (sorted) {
@@ -983,6 +984,16 @@ class LJFunctorHWY
         }
         maxIndex[i] = jUpper;
       }
+
+      minIndex.resize(n1, 0);
+      size_t jLower = 0;
+      for (size_t i = start_i; i < n1; ++i) {
+        const double lowerLimit = projIdx1[i].first - sortingCutoff;
+        while (jLower < n2 and projIdx2[jLower].first < lowerLimit) {
+          ++jLower;
+        }
+        minIndex[i] = jLower;
+      }
     }
 
     // After packing, data pointers alias either sorted caches or original SoA arrays.
@@ -1024,15 +1035,34 @@ class LJFunctorHWY
       return 1;
     }();
 
+    const size_t jStepSize = [&]() -> size_t {
+      if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+        return _vecLengthDouble;
+      } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+        return _vecLengthDouble / 2;
+      } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+        return 2;
+      } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+        return 1;
+      }
+      return 1;
+    }();
+
     // Step 5: vectorized interaction loop.
     std::ptrdiff_t i = start_i;
     for (; checkFirstLoopCondition<false, vecPattern>(i, n1); incrementFirstLoop<vecPattern>(i)) {
       size_t jVecEnd;
+      size_t jVecStart = 0;
       if constexpr (sorted) {
         // maxIndex is monotonically non-decreasing, so the tightest valid bound for the i-block
         // [i, i + iStepSize - 1] is maxIndex of the last particle in the block. For p1xVec
         // (iStepSize=1) this collapses to maxIndex[i].
         jVecEnd = maxIndex[i + iStepSize - 1];
+        jVecStart = minIndex[i];
+        if (jVecStart >= jVecEnd) {
+          continue;
+        }
+        jVecStart = jVecStart - (jVecStart % jStepSize);
         if constexpr (vecPattern == VectorizationPattern::p1xVec) {
           if (owned1Data[i] == autopas::OwnershipState::dummy) continue;
         }
@@ -1041,18 +1071,28 @@ class LJFunctorHWY
       }
       handleILoopBody<false, newton3, false, vecPattern>(
           i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data, owned2Data, fx1Data, fy1Data, fz1Data, fx2Data,
-          fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, 0, jVecEnd);
+          fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, 0, jVecStart, jVecEnd);
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       // Rest I can't occur in 1xVec case
       const int restI = obtainILoopRemainderLength<false>(i, n1);
       if (restI > 0) {
         // Remainder block covers [i, i + restI - 1]. Same monotonicity argument as above.
-        const size_t jVecEnd = sorted ? maxIndex[i + restI - 1] : n2;
-        handleILoopBody<false, newton3, true, vecPattern>(i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data,
-                                                          owned2Data, fx1Data, fy1Data, fz1Data, fx2Data, fy2Data,
-                                                          fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY,
-                                                          virialSumZ, uPotSum, restI, jVecEnd);
+        size_t jVecEnd = n2;
+        size_t jVecStart = 0;
+        if constexpr (sorted) {
+          jVecEnd = maxIndex[i + restI - 1];
+          jVecStart = minIndex[i];
+          if (jVecStart < jVecEnd) {
+            jVecStart = jVecStart - (jVecStart % jStepSize);
+          }
+        }
+        if (jVecStart < jVecEnd) {
+          handleILoopBody<false, newton3, true, vecPattern>(i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data,
+                                                            owned2Data, fx1Data, fy1Data, fz1Data, fx2Data, fy2Data,
+                                                            fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY,
+                                                            virialSumZ, uPotSum, restI, jVecStart, jVecEnd);
+        }
       }
     }
 
@@ -1670,6 +1710,7 @@ class LJFunctorHWY
     std::vector<size_t, autopas::AlignedAllocator<size_t>> typeID1s, typeID2s;
     std::vector<double, autopas::AlignedAllocator<double>> fx1s, fy1s, fz1s, fx2s, fy2s, fz2s;
     std::vector<size_t> maxIndex;
+    std::vector<size_t> minIndex;
   };
 
   // cutoff squared used in the AoS functor.
