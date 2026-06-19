@@ -248,6 +248,30 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsSorted(bool newton3, b
       cell2High = {2 * _highCorner[0], 2 * _highCorner[1], 2 * _highCorner[2]};
       sortingDirection = {1.0 / std::sqrt(3.0), 1.0 / std::sqrt(3.0), 1.0 / std::sqrt(3.0)};
       break;
+    // Reversed variants: cell2 is to the left of cell1 in the projection axis.
+    // This ensures some j particles have projection < proj(i) - cutoff for the higher-projection
+    // i particles, so minIndex[i] > 0 and the left-side j pruning is exercised.
+    case CellGeometry::faceReversed:
+      cell1Low = {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]};
+      cell1High = _highCorner;
+      cell2Low = _lowCorner;
+      cell2High = {_highCorner[0] / 2, _highCorner[1], _highCorner[2]};
+      sortingDirection = {1.0, 0.0, 0.0};
+      break;
+    case CellGeometry::edgeReversed:
+      cell1Low = {_highCorner[0], _highCorner[1], _lowCorner[2]};
+      cell1High = {2 * _highCorner[0], 2 * _highCorner[1], _highCorner[2]};
+      cell2Low = _lowCorner;
+      cell2High = _highCorner;
+      sortingDirection = {1.0 / std::sqrt(2.0), 1.0 / std::sqrt(2.0), 0.0};
+      break;
+    case CellGeometry::cornerReversed:
+      cell1Low = _highCorner;
+      cell1High = {2 * _highCorner[0], 2 * _highCorner[1], 2 * _highCorner[2]};
+      cell2Low = _lowCorner;
+      cell2High = _highCorner;
+      sortingDirection = {1.0 / std::sqrt(3.0), 1.0 / std::sqrt(3.0), 1.0 / std::sqrt(3.0)};
+      break;
   }
 
   autopasTools::generators::UniformGenerator::fillWithParticles(cell1HWY, defaultParticle, cell1Low, cell1High,
@@ -698,6 +722,54 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedCorner) {
     testLJFunctorvsLJFunctorHWYTwoCellsSorted<true>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::corner);
   } else {
     testLJFunctorvsLJFunctorHWYTwoCellsSorted<false>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::corner);
+  }
+}
+
+/**
+ * Checks that SoAFunctorPairSorted matches the autovec SoAFunctorPair when cell2 is to the LEFT of
+ * cell1 in the projection axis (face adjacency). Exercises minIndex > 0 (left-side j pruning).
+ * Cell-pair axis is {1,0,0}.
+ */
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedFaceReversed) {
+  auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
+  if (mixing) {
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<true>(newton3, doDeleteSomeParticle, vecPattern,
+                                                    CellGeometry::faceReversed);
+  } else {
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<false>(newton3, doDeleteSomeParticle, vecPattern,
+                                                     CellGeometry::faceReversed);
+  }
+}
+
+/**
+ * Checks that SoAFunctorPairSorted matches the autovec SoAFunctorPair when cell2 is to the LEFT of
+ * cell1 in the projection axis (edge adjacency). Exercises minIndex > 0 (left-side j pruning).
+ * Cell-pair axis is {1/√2, 1/√2, 0}.
+ */
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedEdgeReversed) {
+  auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
+  if (mixing) {
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<true>(newton3, doDeleteSomeParticle, vecPattern,
+                                                    CellGeometry::edgeReversed);
+  } else {
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<false>(newton3, doDeleteSomeParticle, vecPattern,
+                                                     CellGeometry::edgeReversed);
+  }
+}
+
+/**
+ * Checks that SoAFunctorPairSorted matches the autovec SoAFunctorPair when cell2 is to the LEFT of
+ * cell1 in the projection axis (corner adjacency). Exercises minIndex > 0 (left-side j pruning).
+ * Cell-pair axis is {1/√3, 1/√3, 1/√3}.
+ */
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedCornerReversed) {
+  auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
+  if (mixing) {
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<true>(newton3, doDeleteSomeParticle, vecPattern,
+                                                    CellGeometry::cornerReversed);
+  } else {
+    testLJFunctorvsLJFunctorHWYTwoCellsSorted<false>(newton3, doDeleteSomeParticle, vecPattern,
+                                                     CellGeometry::cornerReversed);
   }
 }
 

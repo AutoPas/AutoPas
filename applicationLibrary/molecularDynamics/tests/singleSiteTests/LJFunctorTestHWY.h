@@ -54,11 +54,17 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
   /**
    * Cell-pair adjacency geometry used by testLJFunctorvsLJFunctorHWYTwoCellsSorted.
    *
-   * face   — cells share a face (sorting axis {1,0,0})
-   * edge   — cells share an edge (sorting axis {1/√2, 1/√2, 0})
-   * corner — cells share a corner (sorting axis {1/√3, 1/√3, 1/√3})
+   * face        — cells share a face, cell2 to the right of cell1 (sorting axis {1,0,0})
+   * edge        — cells share an edge, cell2 to the upper-right of cell1 (sorting axis {1/√2, 1/√2, 0})
+   * corner      — cells share a corner, cell2 diagonally above cell1 (sorting axis {1/√3, 1/√3, 1/√3})
+   *
+   * The *Reversed variants swap cell1 and cell2, placing cell2 to the left/below cell1 in the
+   * projection axis. This exercises minIndex > 0, i.e. left-side j pruning.
+   * faceReversed   — cell2 to the left of cell1 (sorting axis {1,0,0})
+   * edgeReversed   — cell2 to the lower-left of cell1 (sorting axis {1/√2, 1/√2, 0})
+   * cornerReversed — cell2 diagonally below cell1 (sorting axis {1/√3, 1/√3, 1/√3})
    */
-  enum class CellGeometry { face, edge, corner };
+  enum class CellGeometry { face, edge, corner, faceReversed, edgeReversed, cornerReversed };
 
   /**
    * Checks that SoAFunctorPairSorted on HWY matches the (unsorted) SoAFunctorPair on the autovec functor.
