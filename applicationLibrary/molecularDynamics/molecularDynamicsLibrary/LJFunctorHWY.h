@@ -804,15 +804,18 @@ class LJFunctorHWY
    * @param jVecEnd The end index for the inner "j" loop.
    */
   template <bool reversed, bool newton3, bool remainderI, VectorizationPattern vecPattern>
-  inline void handleILoopBody(
-      const size_t i, const double *const __restrict xPtr1, const double *const __restrict yPtr1,
-      const double *const __restrict zPtr1, const autopas::OwnershipState *const __restrict ownedStatePtr1,
-      const double *const __restrict xPtr2, const double *const __restrict yPtr2, const double *const __restrict zPtr2,
-      const autopas::OwnershipState *const __restrict ownedStatePtr2, double *const __restrict fxPtr1,
-      double *const __restrict fyPtr1, double *const __restrict fzPtr1, double *const __restrict fxPtr2,
-      double *const __restrict fyPtr2, double *const __restrict fzPtr2, const size_t *const __restrict typeIDptr1,
-      const size_t *const __restrict typeIDptr2, VectorDouble &virialSumX, VectorDouble &virialSumY,
-      VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t jVecStart, const size_t jVecEnd) {
+  inline void handleILoopBody(const size_t i, const double *const __restrict xPtr1,
+                              const double *const __restrict yPtr1, const double *const __restrict zPtr1,
+                              const autopas::OwnershipState *const __restrict ownedStatePtr1,
+                              const double *const __restrict xPtr2, const double *const __restrict yPtr2,
+                              const double *const __restrict zPtr2,
+                              const autopas::OwnershipState *const __restrict ownedStatePtr2,
+                              double *const __restrict fxPtr1, double *const __restrict fyPtr1,
+                              double *const __restrict fzPtr1, double *const __restrict fxPtr2,
+                              double *const __restrict fyPtr2, double *const __restrict fzPtr2,
+                              const size_t *const __restrict typeIDptr1, const size_t *const __restrict typeIDptr2,
+                              VectorDouble &virialSumX, VectorDouble &virialSumY, VectorDouble &virialSumZ,
+                              VectorDouble &uPotSum, const size_t restI, const size_t jVecStart, const size_t jVecEnd) {
     VectorDouble fxAcc = highway::Zero(tag_double);
     VectorDouble fyAcc = highway::Zero(tag_double);
     VectorDouble fzAcc = highway::Zero(tag_double);
@@ -914,6 +917,7 @@ class LJFunctorHWY
     auto &maxIndex = td.maxIndex;
     auto &minIndex = td.minIndex;
     std::ptrdiff_t start_i = 0;
+    size_t jCacheEnd = n2;
 
     if constexpr (sorted) {
       // Step 1: 1D projection, sort indices ascending.
@@ -930,51 +934,14 @@ class LJFunctorHWY
       std::sort(projIdx1.begin(), projIdx1.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
       std::sort(projIdx2.begin(), projIdx2.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
 
-      // Step 2: pack into contiguous caches in sorted order.
-      x1s.resize(n1);
-      y1s.resize(n1);
-      z1s.resize(n1);
-      x2s.resize(n2);
-      y2s.resize(n2);
-      z2s.resize(n2);
-      ownership1s.resize(n1);
-      ownership2s.resize(n2);
-      typeID1s.resize(n1);
-      typeID2s.resize(n2);
-      fx1s.assign(n1, 0.0);
-      fy1s.assign(n1, 0.0);
-      fz1s.assign(n1, 0.0);
-      if constexpr (newton3) {
-        fx2s.assign(n2, 0.0);
-        fy2s.assign(n2, 0.0);
-        fz2s.assign(n2, 0.0);
-      }
-      for (size_t i = 0; i < n1; ++i) {
-        const size_t idx = projIdx1[i].second;
-        x1s[i] = x1Ptr[idx];
-        y1s[i] = y1Ptr[idx];
-        z1s[i] = z1Ptr[idx];
-        ownership1s[i] = ownedStatePtr1[idx];
-        typeID1s[i] = typeID1Ptr[idx];
-      }
-      for (size_t j = 0; j < n2; ++j) {
-        const size_t idx = projIdx2[j].second;
-        x2s[j] = x2Ptr[idx];
-        y2s[j] = y2Ptr[idx];
-        z2s[j] = z2Ptr[idx];
-        ownership2s[j] = ownedStatePtr2[idx];
-        typeID2s[j] = typeID2Ptr[idx];
-      }
-
-      // Step 3 Compute start_i -> leftmost particle (by sorted projection) that can still interact with at least one
-      // particle in soa2
+      // Step 2: compute start_i and loop bounds before packing so the cache can be trimmed.
       const double threshold = projIdx2[0].first - sortingCutoff;
       auto it = std::upper_bound(projIdx1.begin(), projIdx1.end(), threshold,
                                  [](double val, const auto &elem) { return val < elem.first; });
       start_i = it - projIdx1.begin();
 
-      // Step 4: compute max_index[i] (exclusive upper bound on inner-loop j). Single-pass since
-      // max_index[] is monotonically non-decreasing in i when both arrays are sorted ascending.
+      // Step 3: compute maxIndex[i] (exclusive upper bound on inner-loop j). Single-pass since
+      // maxIndex[] is monotonically non-decreasing in i when both arrays are sorted ascending.
       maxIndex.resize(n1, 0);
       size_t jUpper = 0;
       for (size_t i = start_i; i < n1; ++i) {
@@ -984,6 +951,7 @@ class LJFunctorHWY
         }
         maxIndex[i] = jUpper;
       }
+      jCacheEnd = (n1 > 0) ? maxIndex[n1 - 1] : 0;
 
       minIndex.resize(n1, 0);
       size_t jLower = 0;
@@ -993,6 +961,42 @@ class LJFunctorHWY
           ++jLower;
         }
         minIndex[i] = jLower;
+      }
+
+      // Step 4: pack into contiguous caches in sorted order. j is trimmed to [0, jCacheEnd).
+      x1s.resize(n1);
+      y1s.resize(n1);
+      z1s.resize(n1);
+      x2s.resize(jCacheEnd);
+      y2s.resize(jCacheEnd);
+      z2s.resize(jCacheEnd);
+      ownership1s.resize(n1);
+      ownership2s.resize(jCacheEnd);
+      typeID1s.resize(n1);
+      typeID2s.resize(jCacheEnd);
+      fx1s.assign(n1, 0.0);
+      fy1s.assign(n1, 0.0);
+      fz1s.assign(n1, 0.0);
+      if constexpr (newton3) {
+        fx2s.assign(jCacheEnd, 0.0);
+        fy2s.assign(jCacheEnd, 0.0);
+        fz2s.assign(jCacheEnd, 0.0);
+      }
+      for (size_t i = 0; i < n1; ++i) {
+        const size_t idx = projIdx1[i].second;
+        x1s[i] = x1Ptr[idx];
+        y1s[i] = y1Ptr[idx];
+        z1s[i] = z1Ptr[idx];
+        ownership1s[i] = ownedStatePtr1[idx];
+        typeID1s[i] = typeID1Ptr[idx];
+      }
+      for (size_t j = 0; j < jCacheEnd; ++j) {
+        const size_t idx = projIdx2[j].second;
+        x2s[j] = x2Ptr[idx];
+        y2s[j] = y2Ptr[idx];
+        z2s[j] = z2Ptr[idx];
+        ownership2s[j] = ownedStatePtr2[idx];
+        typeID2s[j] = typeID2Ptr[idx];
       }
     }
 
@@ -1069,9 +1073,10 @@ class LJFunctorHWY
       } else {
         jVecEnd = n2;
       }
-      handleILoopBody<false, newton3, false, vecPattern>(
-          i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data, owned2Data, fx1Data, fy1Data, fz1Data, fx2Data,
-          fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY, virialSumZ, uPotSum, 0, jVecStart, jVecEnd);
+      handleILoopBody<false, newton3, false, vecPattern>(i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data,
+                                                         owned2Data, fx1Data, fy1Data, fz1Data, fx2Data, fy2Data,
+                                                         fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY,
+                                                         virialSumZ, uPotSum, 0, jVecStart, jVecEnd);
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       // Rest I can't occur in 1xVec case
@@ -1088,10 +1093,10 @@ class LJFunctorHWY
           }
         }
         if (jVecStart < jVecEnd) {
-          handleILoopBody<false, newton3, true, vecPattern>(i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data,
-                                                            owned2Data, fx1Data, fy1Data, fz1Data, fx2Data, fy2Data,
-                                                            fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY,
-                                                            virialSumZ, uPotSum, restI, jVecStart, jVecEnd);
+          handleILoopBody<false, newton3, true, vecPattern>(i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data,
+                                                            z2Data, owned2Data, fx1Data, fy1Data, fz1Data, fx2Data,
+                                                            fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX,
+                                                            virialSumY, virialSumZ, uPotSum, restI, jVecStart, jVecEnd);
         }
       }
     }
@@ -1105,7 +1110,7 @@ class LJFunctorHWY
         fz1Ptr[origIdx] += fz1s[k];
       }
       if constexpr (newton3) {
-        for (size_t k = 0; k < n2; ++k) {
+        for (size_t k = 0; k < jCacheEnd; ++k) {
           const size_t origIdx = projIdx2[k].second;
           fx2Ptr[origIdx] += fx2s[k];
           fy2Ptr[origIdx] += fy2s[k];
