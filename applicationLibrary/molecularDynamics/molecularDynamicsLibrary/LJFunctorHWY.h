@@ -872,22 +872,22 @@ class LJFunctorHWY
     const size_t n2 = soa2.size();
 
     // Raw SoA pointers — used directly (unsorted) or as gather source for packing (sorted).
-    const auto *const x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
-    const auto *const y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
-    const auto *const z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
-    const auto *const x2Ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
-    const auto *const y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
-    const auto *const z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
-    const auto *const ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
-    const auto *const ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
-    auto *const fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
-    auto *const fx2Ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
-    const auto *const typeID1Ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
-    const auto *const typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
+    const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict x2Ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
+    auto *const __restrict fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fx2Ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    const auto *const __restrict typeID1Ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
+    const auto *const __restrict typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
     // Sorted-path caches. Member variables reused across calls to avoid reallocation.
     auto &td = _soaThreadData[autopas::autopas_get_thread_num()];
@@ -1058,7 +1058,7 @@ class LJFunctorHWY
 
     // Step 6: scatter accumulated forces back to the original SoA order (sorted only).
     if constexpr (sorted) {
-      for (size_t k = 0; k < n1; ++k) {
+      for (size_t k = static_cast<size_t>(start_i); k < n1; ++k) {
         const size_t origIdx = projIdx1[k].second;
         fx1Ptr[origIdx] += fx1s[k];
         fy1Ptr[origIdx] += fy1s[k];
