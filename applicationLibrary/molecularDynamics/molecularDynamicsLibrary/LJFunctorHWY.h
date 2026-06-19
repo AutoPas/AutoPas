@@ -918,6 +918,20 @@ class LJFunctorHWY
     auto &minIndex = td.minIndex;
     std::ptrdiff_t start_i = 0;
     size_t jCacheEnd = n2;
+    size_t jCacheStart = 0;
+
+    const size_t jStepSize = [&]() -> size_t {
+      if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+        return _vecLengthDouble;
+      } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+        return _vecLengthDouble / 2;
+      } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+        return 2;
+      } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+        return 1;
+      }
+      return 1;
+    }();
 
     if constexpr (sorted) {
       // Step 1: 1D projection, sort indices ascending.
@@ -962,8 +976,10 @@ class LJFunctorHWY
         }
         minIndex[i] = jLower;
       }
+      jCacheStart = (start_i < n1) ? minIndex[start_i] - (minIndex[start_i] % jStepSize) : 0;
 
-      // Step 4: pack into contiguous caches in sorted order. j is trimmed to [0, jCacheEnd).
+      // Step 4: pack into contiguous caches in sorted order.
+      // i is trimmed to [start_i, n1), j to [jCacheStart, jCacheEnd).
       x1s.resize(n1);
       y1s.resize(n1);
       z1s.resize(n1);
@@ -974,15 +990,21 @@ class LJFunctorHWY
       ownership2s.resize(jCacheEnd);
       typeID1s.resize(n1);
       typeID2s.resize(jCacheEnd);
-      fx1s.assign(n1, 0.0);
-      fy1s.assign(n1, 0.0);
-      fz1s.assign(n1, 0.0);
+      fx1s.resize(n1);
+      std::fill(fx1s.begin() + start_i, fx1s.end(), 0.0);
+      fy1s.resize(n1);
+      std::fill(fy1s.begin() + start_i, fy1s.end(), 0.0);
+      fz1s.resize(n1);
+      std::fill(fz1s.begin() + start_i, fz1s.end(), 0.0);
       if constexpr (newton3) {
-        fx2s.assign(jCacheEnd, 0.0);
-        fy2s.assign(jCacheEnd, 0.0);
-        fz2s.assign(jCacheEnd, 0.0);
+        fx2s.resize(jCacheEnd);
+        std::fill(fx2s.begin() + jCacheStart, fx2s.end(), 0.0);
+        fy2s.resize(jCacheEnd);
+        std::fill(fy2s.begin() + jCacheStart, fy2s.end(), 0.0);
+        fz2s.resize(jCacheEnd);
+        std::fill(fz2s.begin() + jCacheStart, fz2s.end(), 0.0);
       }
-      for (size_t i = 0; i < n1; ++i) {
+      for (size_t i = start_i; i < n1; ++i) {
         const size_t idx = projIdx1[i].second;
         x1s[i] = x1Ptr[idx];
         y1s[i] = y1Ptr[idx];
@@ -990,7 +1012,7 @@ class LJFunctorHWY
         ownership1s[i] = ownedStatePtr1[idx];
         typeID1s[i] = typeID1Ptr[idx];
       }
-      for (size_t j = 0; j < jCacheEnd; ++j) {
+      for (size_t j = jCacheStart; j < jCacheEnd; ++j) {
         const size_t idx = projIdx2[j].second;
         x2s[j] = x2Ptr[idx];
         y2s[j] = y2Ptr[idx];
@@ -1035,19 +1057,6 @@ class LJFunctorHWY
         return _vecLengthDouble / 2;
       } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
         return _vecLengthDouble;
-      }
-      return 1;
-    }();
-
-    const size_t jStepSize = [&]() -> size_t {
-      if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-        return _vecLengthDouble;
-      } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-        return _vecLengthDouble / 2;
-      } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-        return 2;
-      } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-        return 1;
       }
       return 1;
     }();
@@ -1110,7 +1119,7 @@ class LJFunctorHWY
         fz1Ptr[origIdx] += fz1s[k];
       }
       if constexpr (newton3) {
-        for (size_t k = 0; k < jCacheEnd; ++k) {
+        for (size_t k = jCacheStart; k < jCacheEnd; ++k) {
           const size_t origIdx = projIdx2[k].second;
           fx2Ptr[origIdx] += fx2s[k];
           fy2Ptr[origIdx] += fy2s[k];
