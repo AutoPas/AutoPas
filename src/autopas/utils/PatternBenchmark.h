@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <filesystem>
 #include <fstream>
 #include <vector>
@@ -15,6 +16,15 @@
 #include "autopas/utils/Timer.h"
 
 namespace autopas {
+
+/**
+ * Concept for particle types that can be used with PatternBenchmark.
+ * Requires construction from (position, velocity, id) — the standard ParticleBase 3-argument form.
+ * @tparam Particle_T
+ */
+template <typename Particle_T>
+concept PatternBenchmarkableParticle =
+    std::constructible_from<Particle_T, std::array<double, 3>, std::array<double, 3>, size_t>;
 
 /* PatternBenchmark class contains all functionalities of the benchmark vectorization pattern selection.
  * It calculates and store the benchmark results
@@ -66,8 +76,7 @@ class PatternBenchmark {
                 0.,
             },
             // every cell gets its own id space
-            particleId + ((std::numeric_limits<size_t>::max() / 2) * cellId),
-            particleId % 5};
+            particleId + ((std::numeric_limits<size_t>::max() / 2) * cellId)};
         (cellId == 0 ? cells.first : cells.second).addParticle(p);
       }
       functor.SoALoader((cellId == 0 ? cells.first : cells.second),
@@ -221,6 +230,10 @@ class PatternBenchmark {
    */
   template <class Functor_T, typename Particle_T>
   void runBenchmark(Functor_T &functor, bool printPatternResults) {
+    static_assert(PatternBenchmarkableParticle<Particle_T>,
+                  "Particle_T must be constructible from (array<double,3>, array<double,3>, size_t). "
+                  "Only set FunctorBenchmarkTraits::supportsPatternBenchmark = true for compatible functor/particle "
+                  "pairs.");
     _optimalPatternsNewton3On = calculateVecPatternMap<Functor_T, Particle_T>(functor, true);
     _optimalPatternsNewton3Off = calculateVecPatternMap<Functor_T, Particle_T>(functor, false);
     _patternsCalculated = true;
