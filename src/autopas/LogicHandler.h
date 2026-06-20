@@ -26,6 +26,7 @@
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/utils/FunctorBenchmarkTraits.h"
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -1220,13 +1221,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     configuration = _tuningManager->rejectConfiguration(configuration, rejectIndefinitely, interactionType);
   } while (true);
 
-  // override regular AutoPas algorithm selection/auto-tuning pattern selection with benchmark pattern selection if
-  // relevant
-  if (_logicHandlerInfo.useBenchmarkPatternSelection) {
-    /* An optimal pattern map is calculated once at the start and stored in the Autotuner in a PatternBenchmark object
-     * if the functor can use pattern selection.
-     */
-    if (functor.canUseVectorPatternLookupTable()) {
+  // Override regular vecPattern auto-tuning with benchmark-based pattern selection if the functor supports it.
+  if constexpr (FunctorBenchmarkTraits<Functor>::supportsPatternBenchmark) {
+    if (_logicHandlerInfo.useBenchmarkPatternSelection and functor.canUseVectorPatternLookupTable()) {
       auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
       if (not autoTuner.patternBenchmark._patternsCalculated) {
         autoTuner.patternBenchmark.runBenchmark<Functor, Particle_T>(functor,

@@ -17,6 +17,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/FunctorBenchmarkTraits.h"
 #include "autopas/utils/PatternBenchmark.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -1503,3 +1504,16 @@ class LJFunctorHWY
   autopas::PatternBenchmark *_patternBenchmark = nullptr;
 };
 }  // namespace mdLib
+
+namespace autopas {
+/**
+ * Opt-in: LJFunctorHWY supports PatternBenchmark because it has a real setVecPattern() implementation and
+ * dispatches SoAFunctorPair to different SIMD kernels depending on the active pattern.
+ */
+template <class Particle_T, bool applyShift, bool useMixing, FunctorN3Modes useNewton3, bool calculateGlobals,
+          bool countFLOPs, bool relevantForTuning>
+struct FunctorBenchmarkTraits<mdLib::LJFunctorHWY<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                  countFLOPs, relevantForTuning>> {
+  static constexpr bool supportsPatternBenchmark = true;
+};
+}  // namespace autopas
