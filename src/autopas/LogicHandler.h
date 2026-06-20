@@ -1205,6 +1205,17 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
   auto configuration = _tuningManager->getCurrentConfig(interactionType);
 
+  // Override regular vecPattern auto-tuning with benchmark-based pattern selection if the functor supports it.
+  if constexpr (FunctorBenchmarkTraits<Functor>::supportsPatternBenchmark) {
+    if (_logicHandlerInfo.useBenchmarkPatternSelection) {
+      auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
+      if (not autoTuner.patternBenchmark._patternsCalculated) {
+        autoTuner.patternBenchmark.runBenchmark<Functor, Particle_T>(functor,
+                                                                     _logicHandlerInfo.createPatternBenchmarkOutput);
+      }
+      functor.setPatternBenchmark(&(autoTuner.patternBenchmark));
+    }
+  }
   // loop as long as we don't get a valid configuration
   do {
     // applicability check also sets the container
@@ -1220,18 +1231,6 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     // if no config is left after rejecting this one, an exception is thrown here.
     configuration = _tuningManager->rejectConfiguration(configuration, rejectIndefinitely, interactionType);
   } while (true);
-
-  // Override regular vecPattern auto-tuning with benchmark-based pattern selection if the functor supports it.
-  if constexpr (FunctorBenchmarkTraits<Functor>::supportsPatternBenchmark) {
-    if (_logicHandlerInfo.useBenchmarkPatternSelection) {
-      auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
-      if (not autoTuner.patternBenchmark._patternsCalculated) {
-        autoTuner.patternBenchmark.runBenchmark<Functor, Particle_T>(functor,
-                                                                     _logicHandlerInfo.createPatternBenchmarkOutput);
-      }
-      functor.setPatternBenchmark(&(autoTuner.patternBenchmark));
-    }
-  }
 }
 
 template <typename Particle_T>
