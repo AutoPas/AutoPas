@@ -191,12 +191,6 @@ class Functor {
   virtual void setPatternBenchmark(PatternBenchmark *patternBenchmark) {}
 
   /**
-   * Returns true if the functor can make use of a vector pattern lookup table.
-   * @return boolean
-   */
-  virtual bool canUseVectorPatternLookupTable() { return false; };
-
-  /**
    * Get the number of FLOPs. Implementation required if FLOPLogger used.
    *
    * If derived class provides no implementation, the FLOPLogger interprets the default numeric_limits<size_t>::max()

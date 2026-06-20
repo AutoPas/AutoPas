@@ -1449,11 +1449,6 @@ class LJFunctorHWY
    * @param patternBenchmark pointer to the pattern benchmark object
    */
   void setPatternBenchmark(autopas::PatternBenchmark *patternBenchmark) final { _patternBenchmark = patternBenchmark; }
-  /**
-   * Returns true if the functor can make use of a vector pattern lookup table.
-   * @return boolean
-   */
-  virtual bool canUseVectorPatternLookupTable() { return true; };
 
  private:
   /**

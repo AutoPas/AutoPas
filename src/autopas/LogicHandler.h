@@ -1223,7 +1223,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
   // Override regular vecPattern auto-tuning with benchmark-based pattern selection if the functor supports it.
   if constexpr (FunctorBenchmarkTraits<Functor>::supportsPatternBenchmark) {
-    if (_logicHandlerInfo.useBenchmarkPatternSelection and functor.canUseVectorPatternLookupTable()) {
+    if (_logicHandlerInfo.useBenchmarkPatternSelection) {
       auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
       if (not autoTuner.patternBenchmark._patternsCalculated) {
         autoTuner.patternBenchmark.runBenchmark<Functor, Particle_T>(functor,
