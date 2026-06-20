@@ -9,6 +9,7 @@
 #include <concepts>
 #include <filesystem>
 #include <fstream>
+#include <random>
 #include <vector>
 
 #include "autopas/cells/FullParticleCell.h"
@@ -62,23 +63,23 @@ class PatternBenchmark {
 
     cells.first.reserve(numParticlesPerCell.first);
     cells.second.reserve(numParticlesPerCell.second);
+    std::uniform_real_distribution<double> dist{0.0, 1.0};
     for (size_t cellId = 0; cellId < 2; ++cellId) {
       for (size_t particleId = 0; particleId < (cellId == 0 ? numParticlesPerCell.first : numParticlesPerCell.second);
            ++particleId) {
-        Particle_T p{
-            {
-                // particles are next to each other in X direction
-                std::rand() / static_cast<double>(RAND_MAX) * cellLength + cellLength * static_cast<double>(cellId),
-                std::rand() / static_cast<double>(RAND_MAX) * cellLength,
-                std::rand() / static_cast<double>(RAND_MAX) * cellLength,
-            },
-            {
-                0.,
-                0.,
-                0.,
-            },
-            // every cell gets its own id space
-            particleId + ((std::numeric_limits<size_t>::max() / 2) * cellId)};
+        Particle_T p{{
+                         // particles are next to each other in X direction
+                         dist(_rng) * cellLength + cellLength * static_cast<double>(cellId),
+                         dist(_rng) * cellLength,
+                         dist(_rng) * cellLength,
+                     },
+                     {
+                         0.,
+                         0.,
+                         0.,
+                     },
+                     // every cell gets its own id space
+                     particleId + ((std::numeric_limits<size_t>::max() / 2) * cellId)};
         (cellId == 0 ? cells.first : cells.second).addParticle(p);
       }
       functor.SoALoader((cellId == 0 ? cells.first : cells.second),
@@ -179,14 +180,9 @@ class PatternBenchmark {
     for (auto vecOption : patternSet) {
       patterns.push_back(vecOption);
     }
-    constexpr size_t numPatterns = 4;
-    if (patterns.size() != numPatterns) {
-      utils::ExceptionHandler::exception(
-          "PatternBenchmark assumes there are only {} vectorization patterns, but"
-          "there is actually {}!",
-          numPatterns, patterns.size());
-    }
-    std::array<std::array<unsigned long, 4>, _benchmarkSize * _benchmarkSize> allResults{};
+    const size_t numPatterns = patterns.size();
+    std::vector<std::vector<unsigned long>> allResults(_benchmarkSize * _benchmarkSize,
+                                                       std::vector<unsigned long>(numPatterns, 0UL));
     std::map<std::string, autopas::utils::Timer> timer{
         {"Initialization", autopas::utils::Timer()},
         {"Functor", autopas::utils::Timer()},
@@ -323,5 +319,8 @@ class PatternBenchmark {
    * Suffix appended to the benchmark CSV output filenames. Set by LogicHandler from the global output suffix.
    */
   std::string outputSuffix;
+
+ private:
+  std::mt19937 _rng{std::random_device{}()};
 };
 }  // namespace autopas

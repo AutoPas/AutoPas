@@ -848,7 +848,7 @@ class MDFlexConfig {
    *
    */
   MDFlexOption<bool, __LINE__> createPatternBenchmarkOutput{
-      true, "create-pattern-benchmark-output", true,
+      false, "create-pattern-benchmark-output", true,
       "If true, benchmark pattern result output is created as two csv files. Possible Values: (true false)"};
   /**
    * The suffix for files created by the tuning logger.

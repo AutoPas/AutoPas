@@ -233,87 +233,10 @@ class LJFunctorHWY
   // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
-    // check if a pattern map with optimal pattern is provided
-
-    if (_patternBenchmark != nullptr) {
-      autopas::VectorizationPatternOption::Value vectorizationPattern =
-          (*_patternBenchmark).getBenchmarkResult(soa1.size(), soa2.size(), newton3);
-
-      switch (vectorizationPattern) {
-        case VectorizationPattern::p1xVec: {
-          if (newton3) {
-            SoAFunctorPairImpl<true, VectorizationPattern::p1xVec>(soa1, soa2);
-          } else {
-            SoAFunctorPairImpl<false, VectorizationPattern::p1xVec>(soa1, soa2);
-          }
-          break;
-        }
-        case VectorizationPattern::p2xVecDiv2: {
-          if (newton3) {
-            SoAFunctorPairImpl<true, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
-          } else {
-            SoAFunctorPairImpl<false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
-          }
-          break;
-        }
-        case VectorizationPattern::pVecDiv2x2: {
-          if (newton3) {
-            SoAFunctorPairImpl<true, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
-          } else {
-            SoAFunctorPairImpl<false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
-          }
-          break;
-        }
-        case VectorizationPattern::pVecx1: {
-          if (newton3) {
-            SoAFunctorPairImpl<true, VectorizationPattern::pVecx1>(soa1, soa2);
-          } else {
-            SoAFunctorPairImpl<false, VectorizationPattern::pVecx1>(soa1, soa2);
-          }
-          break;
-        }
-        default:
-          autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
-      }
-
-    } else {
-      switch (_vecPattern) {
-        case VectorizationPattern::p1xVec: {
-          if (newton3) {
-            SoAFunctorPairImpl<true, VectorizationPattern::p1xVec>(soa1, soa2);
-          } else {
-            SoAFunctorPairImpl<false, VectorizationPattern::p1xVec>(soa1, soa2);
-          }
-          break;
-        }
-        case VectorizationPattern::p2xVecDiv2: {
-          if (newton3) {
-            SoAFunctorPairImpl<true, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
-          } else {
-            SoAFunctorPairImpl<false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
-          }
-          break;
-        }
-        case VectorizationPattern::pVecDiv2x2: {
-          if (newton3) {
-            SoAFunctorPairImpl<true, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
-          } else {
-            SoAFunctorPairImpl<false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
-          }
-          break;
-        }
-        case VectorizationPattern::pVecx1: {
-          if (newton3) {
-            SoAFunctorPairImpl<true, VectorizationPattern::pVecx1>(soa1, soa2);
-          } else {
-            SoAFunctorPairImpl<false, VectorizationPattern::pVecx1>(soa1, soa2);
-          }
-          break;
-        }
-        default:
-          autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
-      }
-    }
+    const auto pat = _patternBenchmark != nullptr
+                         ? _patternBenchmark->getBenchmarkResult(soa1.size(), soa2.size(), newton3)
+                         : _vecPattern;
+    dispatchSoAFunctorPair(pat, newton3, soa1, soa2);
   }
 
  private:
@@ -818,6 +741,41 @@ class LJFunctorHWY
     }
 
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
+  }
+
+  /**
+   * Resolves a VectorizationPattern and newton3 flag to the correct SoAFunctorPairImpl instantiation.
+   */
+  inline void dispatchSoAFunctorPair(VectorizationPattern pat, bool newton3, autopas::SoAView<SoAArraysType> soa1,
+                                     autopas::SoAView<SoAArraysType> soa2) {
+    switch (pat) {
+      case VectorizationPattern::p1xVec:
+        if (newton3)
+          SoAFunctorPairImpl<true, VectorizationPattern::p1xVec>(soa1, soa2);
+        else
+          SoAFunctorPairImpl<false, VectorizationPattern::p1xVec>(soa1, soa2);
+        break;
+      case VectorizationPattern::p2xVecDiv2:
+        if (newton3)
+          SoAFunctorPairImpl<true, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+        else
+          SoAFunctorPairImpl<false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+        break;
+      case VectorizationPattern::pVecDiv2x2:
+        if (newton3)
+          SoAFunctorPairImpl<true, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+        else
+          SoAFunctorPairImpl<false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+        break;
+      case VectorizationPattern::pVecx1:
+        if (newton3)
+          SoAFunctorPairImpl<true, VectorizationPattern::pVecx1>(soa1, soa2);
+        else
+          SoAFunctorPairImpl<false, VectorizationPattern::pVecx1>(soa1, soa2);
+        break;
+      default:
+        autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
+    }
   }
 
   /**
