@@ -839,7 +839,7 @@ class MDFlexConfig {
    *
    */
   MDFlexOption<bool, __LINE__> useBenchmarkPatternSelection{
-      true, "use-benchmark-pattern-selection", true,
+      false, "use-benchmark-pattern-selection", true,
       "If true, benchmark-based vectorization pattern selection is applied; if false, standard AutoPas auto-tuning is "
       "used to select a globally applied pattern. Possible Values: (true false)"};
 

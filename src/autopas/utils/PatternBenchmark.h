@@ -26,8 +26,10 @@ template <typename Particle_T>
 concept PatternBenchmarkableParticle =
     std::constructible_from<Particle_T, std::array<double, 3>, std::array<double, 3>, size_t>;
 
-/* PatternBenchmark class contains all functionalities of the benchmark vectorization pattern selection.
- * It calculates and store the benchmark results
+/**
+ * Runs a startup micro-benchmark to determine the optimal vectorization pattern for each pair of SoA cell sizes.
+ * Results are stored as two lookup tables (Newton3 on/off) indexed by (firstBufferSize, secondBufferSize).
+ * Functors that support this benchmark consult the table via getBenchmarkResult() on every SoAFunctorPair call.
  */
 class PatternBenchmark {
  public:
@@ -155,7 +157,7 @@ class PatternBenchmark {
         t.reset();
       }
     }
-    unsigned long sum = std::accumulate(times.begin(), times.end(), static_cast<long>(0));
+    unsigned long sum = std::accumulate(times.begin(), times.end(), static_cast<unsigned long>(0));
     return sum;
   }
 
@@ -281,6 +283,7 @@ class PatternBenchmark {
    * @param firstBufferSize number of particles in the first buffer
    * @param secondBufferSize number of particles in the second buffer
    * @param newton3 whether newton3 optimization is applied.
+   * @return the optimal VectorizationPattern for the given buffer sizes and newton3 setting.
    */
   inline VectorizationPatternOption::Value getBenchmarkResult(size_t firstBufferSize, size_t secondBufferSize,
                                                               bool newton3) {
@@ -302,17 +305,23 @@ class PatternBenchmark {
   }
 
   /**
-   * both variables represent the optimal pattern results for vectorization pattern selection benchmarking. They are
-   * only set once at the beginning of the simulation.
+   * Optimal vectorization pattern for each (firstBufferSize, secondBufferSize) pair with Newton3 enabled.
+   * Set once by runBenchmark() and not modified afterwards.
    */
   std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3On;
+  /**
+   * Optimal vectorization pattern for each (firstBufferSize, secondBufferSize) pair with Newton3 disabled.
+   * Set once by runBenchmark() and not modified afterwards.
+   */
   std::array<autopas::VectorizationPatternOption::Value, _benchmarkSize * _benchmarkSize> _optimalPatternsNewton3Off;
 
   /**
    * boolean to determine if pattern benchmark has already been executed
    */
   bool _patternsCalculated{false};
-  // string which store the outputSuffix for the filenames of the pattern benchmark results
+  /**
+   * Suffix appended to the benchmark CSV output filenames. Set by LogicHandler from the global output suffix.
+   */
   std::string outputSuffix;
 };
 }  // namespace autopas
