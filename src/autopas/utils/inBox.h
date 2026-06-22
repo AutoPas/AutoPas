@@ -58,16 +58,18 @@ bool notInBox(const std::array<T, 3> &position, const std::array<P, 3> &low, con
  * If the boxes touch (= exact same floating point values), they are not considered to have overlap.
  *
  * @tparam T
+ * @tparam P
  * @param boxALow
  * @param boxAHigh
  * @param boxBLow
  * @param boxBHigh
  * @return
  */
-template <typename T>
-bool boxesOverlap(const std::array<T, 3> &boxALow, const std::array<T, 3> &boxAHigh, const std::array<T, 3> &boxBLow,
+template <typename T, typename P>
+bool boxesOverlap(const std::array<P, 3> &boxALow, const std::array<P, 3> &boxAHigh, const std::array<T, 3> &boxBLow,
                   const std::array<T, 3> &boxBHigh) {
-  static_assert(std::is_floating_point_v<T>, "boxesOverlap assumes floating point types");
+  static_assert(std::is_floating_point_v<T>, "boxesOverlap assumes floating point types for third and fourth argument");
+  static_assert(std::is_floating_point_v<P>, "boxesOverlap assumes floating point types for first and second argument");
 
   auto overlap1D = [&](size_t dim) { return boxAHigh[dim] > boxBLow[dim] and boxBHigh[dim] > boxALow[dim]; };
 

@@ -439,23 +439,12 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    * @param behavior @see IteratorBehavior
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+  void forEachInRegion(Lambda forEachLambda, const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner, IteratorBehavior behavior) {
     using namespace autopas::utils::ArrayMath::literals;
 
-    const std::array lower {
-      static_cast<Particle_T::ParticleSoAFloatPrecision>(lowerCorner.at(0)),
-      static_cast<Particle_T::ParticleSoAFloatPrecision>(lowerCorner.at(1)),
-      static_cast<Particle_T::ParticleSoAFloatPrecision>(lowerCorner.at(2))
-    };
-    const std::array higher {
-      static_cast<Particle_T::ParticleSoAFloatPrecision>(lowerCorner.at(0)),
-      static_cast<Particle_T::ParticleSoAFloatPrecision>(lowerCorner.at(1)),
-      static_cast<Particle_T::ParticleSoAFloatPrecision>(lowerCorner.at(2))
-    };
-
-    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lower - this->getVerletSkin());
-    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higher + this->getVerletSkin());
+    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
+    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
 
     const size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                       (stopIndex3D[2] - startIndex3D[2] + 1);

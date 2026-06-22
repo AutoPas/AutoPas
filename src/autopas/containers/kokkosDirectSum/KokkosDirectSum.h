@@ -172,7 +172,7 @@ template <class Particle_T>
                       int survivorIndex = Kokkos::atomic_fetch_inc(&survivorCounter(0));
                       survivors.template copyParticle<useHostView>(survivorIndex, owned, i);
                     } else {
-                      /* Particle is outside the container boundary */
+                      /* Particle is outside the container */
 
                       int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
                       migrants.template copyParticle<useHostView>(migrantIndex, owned, i);
@@ -189,6 +189,7 @@ template <class Particle_T>
                 survivors.resize(numSurvivors);
                 survivors.overrideSize(numSurvivors);
 
+                _ownedParticles.realloc(numSurvivors);
                 _ownedParticles = survivors;
               }
 
@@ -202,7 +203,7 @@ template <class Particle_T>
               _ownedParticles.markLayoutModified(owned.getLayout());
 
               migrants.template syncAll<HostSpace::execution_space>();
-              migrants.syncSoAToAoS();
+              migrants.convertTo(DataLayoutOption::aos);
               std::vector<Particle_T> migrantVector {};
               migrantVector.reserve(numMigrants);
 
@@ -264,8 +265,8 @@ template <class Particle_T>
             }
 
             template <typename Lambda>
-            void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                    const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+            void forEachInRegion(Lambda forEachLambda, const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+                    const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner, IteratorBehavior behavior) {
               // TODO: decide if we really want to use this/if we can merge it with the Kokkos functions
             }
 
@@ -284,22 +285,13 @@ template <class Particle_T>
               const auto& lowerCornerKokkos = Kokkos::Array{lowerCorner.at(0), lowerCorner.at(1), lowerCorner.at(2)};
               const auto& higherCornerKokkos = Kokkos::Array{higherCorner.at(0), higherCorner.at(1), higherCorner.at(2)};
 
-              if (_dataLayout == DataLayoutOption::aos) {
-                convertToAoS(); /* this guarantees syncing to the Host (AoS must not run on CUDA - so far) */
-                _ownedParticles.markLayoutModified(DataLayoutOption::aos);
-              }
-              else if (_dataLayout == DataLayoutOption::soa) {
-                convertToSoA();
-                _ownedParticles.template syncAll<ExecSpace>();
-                _haloParticles.template syncAll<ExecSpace>();
-              }
-
-              // TODO: make sure that no AoS runs on Cuda
               // TODO: decide on how to deduce this template parameters based on the ExecSpace
               constexpr bool host = false;
 
               /* owned or dummies; this basically filters out only halo, sequential, container only */
               if (behavior & 0b101) {
+                _ownedParticles.template syncAll<ExecSpace>();
+                _ownedParticles.convertTo(_dataLayout);
                 auto& owned = _ownedParticles;
                 Kokkos::parallel_for(label + "_owned", Kokkos::RangePolicy<ExecSpace>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i)  {
 
@@ -307,19 +299,21 @@ template <class Particle_T>
                     forEachLambda(i, owned);
                   }
                 });
-                _ownedParticles.template modifyAll<ExecSpace>();
-                owned.markLayoutModified(owned.getLayout());
+                owned.template modifyAll<ExecSpace>();
+                owned.markLayoutModified(_dataLayout);
               }
               /* halo or dummies; this basically filters out only owned, sequential, container only */
               if (behavior & 0b110)  {
+                _haloParticles.template syncAll<ExecSpace>();
+                _haloParticles.convertTo(_dataLayout);
                 auto& halo = _haloParticles;
                 Kokkos::parallel_for(label + "_halo", Kokkos::RangePolicy<ExecSpace>(0, _haloParticles.size()), KOKKOS_LAMBDA(int i)  {
                   if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
                     forEachLambda(i, halo);
                   }
                 });
-                _haloParticles.template modifyAll<ExecSpace>();
-                halo.markLayoutModified(halo.getLayout());
+                halo.template modifyAll<ExecSpace>();
+                halo.markLayoutModified(_dataLayout);
               }
               /* force sequential (sequential yes, but which particles? all? only owned? */
               if (behavior & 0b1000) {
@@ -344,15 +338,7 @@ template <class Particle_T>
             // TODO: declare that changes to particles is actually undefined behavior (as no memory syncs and data conversions are issued)
             template<class ExecSpace, bool regionIter, typename Result, typename Reduction, typename Lambda>
             void reduceInRegionKokkos(Lambda reduceLambda, Result& result, IteratorBehavior behavior, const std::array<double, 3>& lowerCorner, const std::array<double, 3>& higherCorner, const std::string& label = "reduceInRegionKokkos") {
-              if (_dataLayout == DataLayoutOption::aos) {
-                convertToAoS();
-              }
-              else if (_dataLayout == DataLayoutOption::soa) {
-                convertToSoA();
-                _ownedParticles.template syncAll<ExecSpace>();
-                _haloParticles.template syncAll<ExecSpace>();
-              }
-              // TODO: make sure that no AoS runs on Cuda
+
               // TODO: decide on how to deduce this template parameters based on the ExecSpace
               constexpr bool host = false;
 
@@ -361,6 +347,8 @@ template <class Particle_T>
 
               /* owned or dummies; this basically filters out only halo, sequential, container only */
               if (behavior & 0b101) {
+                _ownedParticles.template syncAll<ExecSpace>();
+                _ownedParticles.convertTo(_dataLayout);
                 auto& owned = _ownedParticles;
                 Kokkos::parallel_reduce(label + "_owned", Kokkos::RangePolicy<ExecSpace>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i, Result& localResult)  {
                   if (owned.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
@@ -370,6 +358,8 @@ template <class Particle_T>
               }
               /* halo or dummies; this basically filters out only owned, sequential, container only */
               if (behavior & 0b110) {
+                _haloParticles.template syncAll<ExecSpace>();
+                _haloParticles.convertTo(_dataLayout);
                 auto& halo = _haloParticles;
                 Kokkos::parallel_reduce(label + "_halo", Kokkos::RangePolicy<ExecSpace>(0, _haloParticles.size()), KOKKOS_LAMBDA(int i, Result& localResult)  {
                   if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
@@ -507,13 +497,19 @@ protected:
         }
 
         void convertToSoA() {
-          _ownedParticles.syncAoSToSoA();
-          _haloParticles.syncAoSToSoA();
+          _ownedParticles.convertTo(DataLayoutOption::soa);
+          _haloParticles.convertTo(DataLayoutOption::soa);
+
+          _ownedParticles.markLayoutModified(DataLayoutOption::soa);
+          _haloParticles.markLayoutModified(DataLayoutOption::soa);
         }
 
         void convertToAoS() {
-          _ownedParticles.syncSoAToAoS();
-          _haloParticles.syncSoAToAoS();
+          _ownedParticles.convertTo(DataLayoutOption::aos);
+          _haloParticles.convertTo(DataLayoutOption::aos);
+
+          _ownedParticles.markLayoutModified(DataLayoutOption::aos);
+          _haloParticles.markLayoutModified(DataLayoutOption::aos);
         }
 
         // Nearly a clone of DirectSum::getParticleImpl to guarantee that we fulfill all the requirements from getParticle in the ParticleContainerInterface's method description

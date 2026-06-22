@@ -649,8 +649,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @copydoc autopas::LinkedCells::forEachInRegion()
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner,
+  void forEachInRegion(Lambda forEachLambda, const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner,
                        IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
     for (size_t i = 0; i < _towerBlock.size(); ++i) {
       if (_towerBlock.ignoreCellForIteration(i, behavior)) {
@@ -1265,7 +1265,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * Outer vector is for Thread buffer to allow parallel particle insertion.
    * This has to be a mutable so we can call appendBuffersHelper() from const and non-const functions.
    */
-  mutable std::vector<std::vector<Particle_T>> _particlesToAdd;
+  mutable std::vector<std::vector<Particle_T>> _particlesToAdd; // TODO: what is the difference to LogicHandler buffer particles here?
 
   /**
    * Checks if there are particles in the buffers of _particlesToAdd.

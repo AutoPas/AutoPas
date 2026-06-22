@@ -43,7 +43,7 @@
 /**
  * Precision used for particle representations. If you want to test other precisions change it here.
  */
-using FloatPrecision = double;
+using FloatPrecision = float; // TODO: why not just use the precision defined in the particle class? Is there a case where this can differ?
 
 /**
  * Type of the Particles used in md-flexible.

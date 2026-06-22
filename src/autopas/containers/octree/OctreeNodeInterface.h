@@ -187,19 +187,22 @@ class OctreeNodeInterface {
 
   /**
    * Get the enclosed volume between two boxes a and b.
+   * @tparam T
+   * @tparam P
    * @param aMin The minimum coordinate of box a
    * @param aMax The maximum coordinate of box b
    * @param bMin The minimum coordinate of box a
    * @param bMax The maximum coordinate of box b
    * @return The enclosed volume or zero if the boxes do not overlap
    */
-  static double getEnclosedVolumeWith(const std::array<double, 3> &aMin, const std::array<double, 3> &aMax,
-                                      const std::array<double, 3> &bMin, const std::array<double, 3> &bMax) {
+  template <typename T, typename P> // TODO: static assert for check if float
+  static double getEnclosedVolumeWith(const std::array<T, 3> &aMin, const std::array<T, 3> &aMax,
+                                      const std::array<P, 3> &bMin, const std::array<P, 3> &bMax) {
     auto product = 1.0;
     int count = 0;
     for (auto d = 0; d < 3; ++d) {
-      auto minOnAxis = std::max(aMin[d], bMin[d]);
-      auto maxOnAxis = std::min(aMax[d], bMax[d]);
+      auto minOnAxis = std::max(aMin[d], static_cast<T>(bMin[d]));
+      auto maxOnAxis = std::min(aMax[d], static_cast<T>(bMax[d]));
       auto dim = (maxOnAxis - minOnAxis);
       if (dim > 0) {
         ++count;
@@ -214,11 +217,13 @@ class OctreeNodeInterface {
 
   /**
    * Calculate the overlap volume between the node's axis aligned bounding box and the given box.
+   * @tparam T
    * @param otherMin The minimum coordinate of the other box
    * @param otherMax The maximum coordinate of the other box
    * @return The volume enclosed by the two boxes
    */
-  double getEnclosedVolumeWith(const std::array<double, 3> &otherMin, const std::array<double, 3> &otherMax) {
+  template <typename T>
+  double getEnclosedVolumeWith(const std::array<T, 3> &otherMin, const std::array<T, 3> &otherMax) {
     return getEnclosedVolumeWith(this->getBoxMin(), this->getBoxMax(), otherMin, otherMax);
   }
 

@@ -305,8 +305,8 @@ class OctreeNodeWrapper : public ParticleCell<Particle_T> {
    * @param higherCorner Higher corner of region
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner) {
+  void forEachInRegion(Lambda forEachLambda, const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner) {
     withStaticNodeType(_pointer, [&](auto nodePtr) {
       // The iterator behavior is set to ownedOrHalo to include all particles inside this subtree. The baseclass
       // (Octree) decides whether this instance of OctreeNodeWrapper should be included in the iteration or not.

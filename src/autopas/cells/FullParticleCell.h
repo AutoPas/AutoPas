@@ -128,8 +128,8 @@ class FullParticleCell : public ParticleCell<Particle_T> {
    * @param behavior ownerships of particles that should be in-/excluded
    */
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-               const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+  void forEach(Lambda forEachLambda, const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+               const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner, IteratorBehavior behavior) {
     forEachImpl<true, true>(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
@@ -282,8 +282,8 @@ class FullParticleCell : public ParticleCell<Particle_T> {
   std::array<double, 3> _cellLength;
 
   template <bool ownershipCheck, bool regionCheck, typename Lambda>
-  void forEachImpl(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                   const std::array<double, 3> &higherCorner,
+  void forEachImpl(Lambda forEachLambda, const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+                   const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner,
                    IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     for (Particle_T &p : _particles) {
       if ((not ownershipCheck) or behavior.contains(p)) {

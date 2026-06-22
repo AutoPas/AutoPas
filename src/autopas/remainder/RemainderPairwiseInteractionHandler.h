@@ -289,7 +289,7 @@ class RemainderPairwiseInteractionHandler {
 
       // Helper function to obtain the lock responsible for a given position.
       // Implemented as lambda because it can reuse a lot of information that is known in this context.
-      const auto getSpacialLock = [&](const std::array<double, 3> &pos) -> std::mutex & {
+      const auto getSpacialLock = [&](const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &pos) -> std::mutex & {
         const auto posDistFromLowerCorner = pos - haloBoxMin;
         const auto relativePos = posDistFromLowerCorner * totalBoxLengthInv;
         // Lock coordinates are the position scaled by the number of locks

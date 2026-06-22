@@ -51,7 +51,8 @@ namespace autopas::utilsKokkos {
     }
 
     template <bool useHostView>
-    void addParticle(size_t index, const Particle_T& p) {
+    KOKKOS_INLINE_FUNCTION
+    void addParticle(size_t index, const Particle_T& p) const {
       if constexpr (useHostView) {
         view.view_host()(index) = p;
       } else {
@@ -60,6 +61,7 @@ namespace autopas::utilsKokkos {
     }
 
     template <size_t attribute, bool useHostView>
+    KOKKOS_INLINE_FUNCTION
     constexpr auto& operator() (size_t index) const {
       if constexpr(useHostView) {
         return view.view_host()(index).template operator()<static_cast<Particle_T::AttributeNames>(attribute)>();
@@ -78,11 +80,13 @@ namespace autopas::utilsKokkos {
     }
 
     template <bool useHostView>
+    KOKKOS_INLINE_FUNCTION
     Particle_T& getParticle (size_t index) {
       return useHostView? view.view_host()(index) : view.view_device()(index);
     }
 
     template <bool useHostView>
+    KOKKOS_INLINE_FUNCTION
     const Particle_T& getParticle (size_t index) const {
       return useHostView? view.view_host()(index) : view.view_device()(index);
     }

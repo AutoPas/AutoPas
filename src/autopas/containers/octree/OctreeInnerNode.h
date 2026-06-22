@@ -263,8 +263,8 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle_T> {
    * set to ownedOrHalo
    */
   template <typename Lambda>
-  void forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-               const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+  void forEach(Lambda forEachLambda, const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+               const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner, IteratorBehavior behavior) {
     for (auto &child : _children) {
       double vol = child->getEnclosedVolumeWith(lowerCorner, higherCorner);
       if (vol > 0.0)

@@ -24,7 +24,7 @@ namespace autopas::utilsKokkos {
     KokkosStorage() {}
 
     KokkosStorage(DataLayoutOption layout, size_t numParticles) : _layout(layout) {
-      resize(numParticles);
+      realloc(numParticles);
     }
 
     KokkosStorage(const KokkosStorage& other) {
@@ -91,17 +91,23 @@ namespace autopas::utilsKokkos {
       _aosDirty = false;
     }
 
-    // TODO: mark somewhere that this is not thread safe (!)
+    // TODO: mark somewhere that this is not thread safe (!), caller has to make sure of no race conditions
     void addParticle(const Particle_T &p) {
 
       // TODO: figure out how to deduce that...
-      constexpr bool useHostView = false;
+      constexpr bool useHostView = true;
 
       if (_currentSize == _capacity) {
         resize(_capacity+10);
       }
 
       size_t index = _currentSize++;
+
+      if constexpr (useHostView) {
+        syncAll<Kokkos::HostSpace>();
+      } else {
+        syncAll<Kokkos::DefaultExecutionSpace::execution_space>();
+      }
 
       switch (_layout) {
         case DataLayoutOption::aos: {
@@ -117,29 +123,11 @@ namespace autopas::utilsKokkos {
           break;
         }
       }
-    }
 
-    void syncAoSToSoA() {
-      if (_aosDirty) {
-        constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
-        constexpr auto I = std::make_index_sequence<tupleSize>();
-
-        const auto size = storageAoS.size();
-        storageSoA.resize(size);
-        _converter.convertToSoA(storageAoS, storageSoA, size, I);
-        _aosDirty = false;
-      }
-    }
-
-    void syncSoAToAoS() {
-      if (_soaDirty) {
-        constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
-        constexpr auto I = std::make_index_sequence<tupleSize>();
-
-        const auto size = storageSoA.size();
-        storageAoS.resize(size);
-        _converter.convertToAoS(storageSoA, storageAoS, size, I);
-        _soaDirty = false;
+      if constexpr (useHostView) {
+        modifyAll<Kokkos::HostSpace::execution_space>();
+      } else {
+        modifyAll<Kokkos::DefaultExecutionSpace::execution_space>();
       }
     }
 
@@ -245,6 +233,14 @@ namespace autopas::utilsKokkos {
       }
     }
 
+    void convertTo(autopas::DataLayoutOption targetLayout) {
+      if (targetLayout == DataLayoutOption::aos) {
+        syncSoAToAoS();
+      } else if (targetLayout == DataLayoutOption::soa) {
+        syncAoSToSoA();
+      }
+    }
+
     // TODO: rethink this interface and when this should be used
     void markLayoutModified(DataLayoutOption layout) {
       if (layout == DataLayoutOption::soa) {
@@ -305,13 +301,37 @@ namespace autopas::utilsKokkos {
 
   private:
 
+    void syncAoSToSoA() {
+      if (_aosDirty) {
+        constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
+        constexpr auto I = std::make_index_sequence<tupleSize>();
+
+        const auto size = storageAoS.size();
+        storageSoA.resize(size);
+        KokkosDataLayoutConverter::convertToSoA(storageAoS, storageSoA, size, I);
+        _aosDirty = false;
+      }
+    }
+
+    void syncSoAToAoS() {
+      if (_soaDirty) {
+        constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
+        constexpr auto I = std::make_index_sequence<tupleSize>();
+
+        const auto size = storageSoA.size();
+        storageAoS.resize(size);
+        KokkosDataLayoutConverter::convertToAoS(storageSoA, storageAoS, size, I);
+        _soaDirty = false;
+      }
+    }
+
     template <bool useHostView, std::size_t... I>
     KOKKOS_INLINE_FUNCTION
     void copyParticleImpl (int targetIndex, const KokkosStorage<Particle_T>& otherStorage, int sourceIndex, std::index_sequence<I...>) const {
 
       switch (_layout) {
         case DataLayoutOption::aos: {
-          ((this->storageAoS.template operator()<I+1, useHostView>(targetIndex) = otherStorage.getAoS().template operator()<I+1, useHostView>(sourceIndex)), ...);
+          this->storageAoS.template addParticle<useHostView>(targetIndex, otherStorage.getAoS().template getParticle<useHostView>(sourceIndex));
           break;
         }
         case DataLayoutOption::soa: {
@@ -320,8 +340,6 @@ namespace autopas::utilsKokkos {
         }
       }
     }
-
-    KokkosDataLayoutConverter<Particle_T> _converter {};
 
     DataLayoutOption _layout {DataLayoutOption::aos};
 

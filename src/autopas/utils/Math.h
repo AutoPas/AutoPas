@@ -284,8 +284,8 @@ bool isInUlp(FloatType lhs, FloatType rhs, unsigned int ulpDistance = MAX_ULP_DI
   }
 
   // In case the signs mismatch, return false
-  if (lhs < static_cast<FloatType>(0.0) && rhs > static_cast<FloatType>(0.0) ||
-      lhs > static_cast<FloatType>(0.0) && rhs < static_cast<FloatType>(0.0)) {
+  if ((lhs < static_cast<FloatType>(0.0) && rhs > static_cast<FloatType>(0.0)) ||
+      (lhs > static_cast<FloatType>(0.0) && rhs < static_cast<FloatType>(0.0))) {
     return false;
   }
 

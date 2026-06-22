@@ -669,18 +669,18 @@ class LogicHandler {
   double getVelocityMethodRFEstimate(const double skin, const double deltaT) {
     using autopas::utils::ArrayMath::dot;
     // Initialize the maximum velocity to zero
-    double maxVelocity = 0;
+    typename Particle_T::ParticleSoAFloatPrecision maxVelocity = 0;
     // Iterate over the owned particles in container to determine maximum velocity
     if (!getContainer().allowsKokkos()) {
       AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
       for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-        std::array<double, 3> tempVel = iter->getV();
-        double tempVelAbs = sqrt(dot(tempVel, tempVel));
+        std::array tempVel = iter->getV();
+        typename Particle_T::ParticleSoAFloatPrecision tempVelAbs = sqrt(dot(tempVel, tempVel));
         maxVelocity = std::max(tempVelAbs, maxVelocity);
       }
     } else {
 
-      auto lambda = KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T>& storage, double &localMaxVelocity) {
+      auto lambda = KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T>& storage, typename Particle_T::ParticleSoAFloatPrecision &localMaxVelocity) {
         const auto velX = storage.template operator()<Particle_T::AttributeNames::velocityX, ForEachHostFlag>(i);
         const auto velY = storage.template operator()<Particle_T::AttributeNames::velocityY, ForEachHostFlag>(i);
         const auto velZ = storage.template operator()<Particle_T::AttributeNames::velocityZ, ForEachHostFlag>(i);
@@ -691,7 +691,7 @@ class LogicHandler {
       };
 
       withStaticContainerType(getContainer(), [&lambda, &maxVelocity](auto& actualContainer) {
-        actualContainer.template reduceKokkos<DeviceSpace::execution_space, double, Kokkos::Max<double>>(lambda, maxVelocity, IteratorBehavior::owned | IteratorBehavior::containerOnly, "autopas::LogicHandler::getVelocityRFEstimate");
+        actualContainer.template reduceKokkos<DeviceSpace::execution_space, typename Particle_T::ParticleSoAFloatPrecision, Kokkos::Max<typename Particle_T::ParticleSoAFloatPrecision>>(lambda, maxVelocity, IteratorBehavior::owned | IteratorBehavior::containerOnly, "autopas::LogicHandler::getVelocityRFEstimate");
       });
     }
 
