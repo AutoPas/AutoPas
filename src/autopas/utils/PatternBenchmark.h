@@ -140,7 +140,7 @@ class PatternBenchmark {
     times.reserve(repetitions);
     functor.setVecPattern(vecPattern);
 
-    for (int n = 0; n < repetitions; ++n) {
+    for (size_t n = 0; n < repetitions; ++n) {
       // define scenario
       const std::pair<size_t, size_t> numParticlesPerCell{firstnumParticles, secondnumParticles};
 
@@ -203,7 +203,7 @@ class PatternBenchmark {
 
     std::array<PatternType, _benchmarkSize * _benchmarkSize> optimalPatterns{};
     for (size_t i = 0; i < _benchmarkSize * _benchmarkSize; i++) {
-      long min = allResults[i][PatternType::p1xVec];
+      unsigned long min = allResults[i][PatternType::p1xVec];
       PatternType minIndex = PatternType::p1xVec;
       for (const auto pattern : patterns) {
         if (allResults[i][pattern] < min) {
