@@ -38,7 +38,7 @@ class TraversalInterface {
   /**
    * Checks if the traversal is applicable to the current state of the domain. This is designed to only return false if
    * the traversal is inapplicable for domain-related issues. Domain-independent factors in a traversal being
-   * inapplicable should be handled by @link Configuration::hasCompatibleValues.
+   * inapplicable should be handled by @link Configuration::hasCompatibleValues @endlink.
    * @return true iff the traversal is applicable to the domain.
    */
   [[nodiscard]] virtual bool isApplicableToDomain() const = 0;

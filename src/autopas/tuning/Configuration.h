@@ -68,6 +68,7 @@ class Configuration {
    * Returns a short string representation of the configuration object, suitable for tabular output or test name.
    * @param fixedLength See Option::to_string().
    * @param forParameterizedTestName if true, creates a string representation that is safe for use as a test name.
+   * @return Short string representation.
    */
   [[nodiscard]] std::string toShortString(bool fixedLength = true, bool forParameterizedTestName = false) const {
     const std::string delimiter = forParameterizedTestName ? "_" : " , ";

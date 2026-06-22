@@ -21,7 +21,7 @@ namespace autopas::compatibleCSFs {
 
 /**
  * Lists all containers that support CSF < 1.0. Note, it is possible that a container supports this but one or more
- * traversals of that container do not. These should be filtered out in <traversal>::isApplicableToDomain().
+ * traversals of that container do not. These should be filtered out in TraversalInterface::isApplicableToDomain().
  * @return A list of all containers that support CSF < 1.0.
  */
 [[maybe_unused]] static const std::set<ContainerOption> allContainersSupportingSub1CSF() {

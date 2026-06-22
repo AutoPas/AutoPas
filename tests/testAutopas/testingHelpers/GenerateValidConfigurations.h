@@ -22,7 +22,13 @@
  * Struct to hold a container and a cell size factor.
  */
 struct ContainerConfiguration {
+  /**
+   * The container option.
+   */
   autopas::ContainerOption container;
+  /**
+   * The cell size factor.
+   */
   double cellSizeFactor;
 
   /**
