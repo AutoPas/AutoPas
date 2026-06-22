@@ -535,7 +535,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
       (numberOfConfigs - numConfigsExpectedNotApplicable) * autoTunerInfo.maxSamples + 1;
 
   ASSERT_GT(autoTunerInfo.tuningInterval, expectedNumberOfIterations)
-    << "The tuning interval must be greater than the expected number of iterations! Fix this test.";
+      << "The tuning interval must be greater than the expected number of iterations! Fix this test.";
 
   size_t collectedSamples = 0;
   size_t iterations = 0;
