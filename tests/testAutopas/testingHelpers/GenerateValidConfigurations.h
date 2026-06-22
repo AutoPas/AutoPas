@@ -83,6 +83,7 @@ inline std::ostream &operator<<(std::ostream &os, const ContainerConfiguration &
  * @param allowedDataLayoutOptions By default, all options.
  * @param allowedNewton3Options By default, all options.
  * @param allowedCellSizeFactors By default, {0.5, 1.0, 1.5}
+ * @param allowedVectorPatterns By default, all options.
  * @return
  */
 inline std::set<autopas::Configuration> generateAllValidConfigurations(
@@ -93,14 +94,15 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
         autopas::LoadEstimatorOption::getAllOptions(),
     const std::set<autopas::DataLayoutOption> &allowedDataLayoutOptions = autopas::DataLayoutOption::getAllOptions(),
     const std::set<autopas::Newton3Option> &allowedNewton3Options = autopas::Newton3Option::getAllOptions(),
-    const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5}) {
+    const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
+    const std::set<autopas::VectorizationPatternOption> &allowedVectorPatterns = autopas::VectorizationPatternOption::getAllOptions()) {
   if (interactionType == autopas::InteractionTypeOption::all) {
     std::set<autopas::Configuration> allConfigs;
     for (auto iType : autopas::InteractionTypeOption::getMostOptions()) {
       const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);
       const auto configs = autopas::SearchSpaceGenerators::cartesianProduct(
           allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-          allowedNewton3Options, &csfs, iType);
+          allowedNewton3Options, &csfs, allowedVectorPatterns, iType);
       allConfigs.insert(configs.begin(), configs.end());
     }
     return allConfigs;
@@ -108,7 +110,7 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);
     return autopas::SearchSpaceGenerators::cartesianProduct(allowedContainerOptions, allowedTraversalOptions,
                                                             allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-                                                            allowedNewton3Options, &csfs, interactionType);
+                                                            allowedNewton3Options, &csfs, allowedVectorPatterns, interactionType);
   }
 }
 

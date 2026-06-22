@@ -75,6 +75,7 @@ class Configuration {
                   container.to_string(fixedLength) + delimiter + std::to_string(cellSizeFactor) + delimiter +
                   traversal.to_string(fixedLength) + delimiter + loadEstimator.to_string(fixedLength) + delimiter +
                   dataLayout.to_string(fixedLength) + delimiter + newton3.to_string(fixedLength) +
+                    delimiter + vecPattern.to_string(fixedLength) +
                   (forParameterizedTestName ? "" : "}");
 
     // For parameterized test names, no punctuation is allowed except "_"

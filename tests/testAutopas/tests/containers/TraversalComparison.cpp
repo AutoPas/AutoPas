@@ -287,19 +287,16 @@ static auto toString = [](const auto &info) {
   auto [config, numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals,
         interactionType] = info.param;
   std::stringstream resStream;
-  resStream << config.container.to_string() << "_" << config.traversal.to_string()
-            << (interactionType == autopas::InteractionTypeOption::triwise ? "_3B" : "") << "_"
-            << config.dataLayout.to_string() << "_" << config.loadEstimator.to_string() << "_"
-            << (config.newton3 == autopas::Newton3Option::enabled ? "_N3" : "_noN3") << "_NP" << numParticles << "_NH"
-            << numHaloParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << "_CSF_"
-            << config.cellSizeFactor << "_" << (doSlightShift ? "withShift" : "noshift")
+  resStream << config.toShortString(false, true) << "_NP" << numParticles << "_NH"
+            << numHaloParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2]
+            << (doSlightShift ? "withShift" : "noshift")
             << (particleDeletionPosition == DeletionPosition::never ? "_NoDeletions" : "")
             << (particleDeletionPosition & DeletionPosition::beforeLists ? "_DeletionsBeforeLists" : "")
             << (particleDeletionPosition & DeletionPosition::afterLists ? "_DeletionsAfterLists" : "")
             << (globals ? "_globals" : "_noGlobals");
   std::string res = resStream.str();
-  std::replace(res.begin(), res.end(), '-', '_');
-  std::replace(res.begin(), res.end(), '.', '_');
+  std::ranges::replace(res, '-', '_');
+  std::ranges::replace(res, '.', '_');
   return res;
 };
 
