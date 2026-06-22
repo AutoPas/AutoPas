@@ -44,7 +44,7 @@ class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
    * @param useNewton3
    * @param typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
    */
-  explicit VLCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit VLCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                                       double interactionLength, const std::array<double, 3> &cellLength,
                                       DataLayoutOption dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
       : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
@@ -81,7 +81,7 @@ class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
   void setSortingThreshold(size_t sortingThreshold) override {}
 
  private:
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, class NeighborList>

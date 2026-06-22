@@ -36,7 +36,7 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Functo
    * Constructor of the colored sliced traversal.
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
-  explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
+  explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor,
                                    const double interactionLength, const std::array<double, 3> &cellLength,
                                    DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
       : SlicedBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,

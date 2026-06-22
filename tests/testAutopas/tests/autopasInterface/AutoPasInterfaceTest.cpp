@@ -39,6 +39,9 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setNumSamples(3);
 
+  autoPas.setAllowedVecPatterns({autopas::options::VectorizationPatternOption::p1xVec},
+                                autopas::InteractionTypeOption::pairwise);
+
   // init autopas
   autoPas.init();
 }
@@ -59,6 +62,8 @@ void defaultInit(AutoPasT &autoPas1, AutoPasT &autoPas2, size_t direction) {
     aP->setVerletSkin(skin);
     aP->setVerletRebuildFrequency(2);
     aP->setNumSamples(2);
+    aP->setAllowedVecPatterns({autopas::options::VectorizationPatternOption::p1xVec},
+                              autopas::InteractionTypeOption::pairwise);
     // init autopas
     aP->init();
   }

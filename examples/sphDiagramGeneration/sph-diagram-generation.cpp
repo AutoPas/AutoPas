@@ -39,7 +39,6 @@ void addParticles(AutoPasContainer &sph_system, int numParticles) {
 }
 
 int main(int argc, char *argv[]) {
-  autopas::Logger::create();
   std::array<double, 3> boxMin({0., 0., 0.}), boxMax{};
   boxMax[0] = 0.15;
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
@@ -113,6 +112,7 @@ int main(int argc, char *argv[]) {
   autoPas.setAllowedContainers(containerOptions);
   autoPas.setAllowedNewton3Options({useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled});
   autoPas.setAllowedDataLayouts({autopas::DataLayoutOption::aos});  // currently aos only!
+  autoPas.setAllowedVecPatterns({autopas::VectorizationPatternOption::p1xVec});
 
   autopas::TraversalOption traversalType;
   switch (*containerOptions.begin()) {

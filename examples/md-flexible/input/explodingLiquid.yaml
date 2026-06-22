@@ -11,7 +11,7 @@ selector-strategy                :  Fastest-Mean-Value
 tuning-strategies                :  [predictive-tuning]
 tuning-interval                  :  6000
 tuning-samples                   :  10
-functor                          :  Lennard-Jones-AVX2
+functor                          :  lj-hwy
 cutoff                           :  2
 box-min                          :  [0, 0, 0]
 box-max                          :  [15, 60, 15]
