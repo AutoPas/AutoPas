@@ -1467,6 +1467,7 @@ template <class Particle_T, bool applyShift, bool useMixing, FunctorN3Modes useN
           bool countFLOPs, bool relevantForTuning>
 struct FunctorBenchmarkTraits<mdLib::LJFunctorHWY<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
                                                   countFLOPs, relevantForTuning>> {
+  /// @copydoc autopas::FunctorBenchmarkTraits::supportsPatternBenchmark
   static constexpr bool supportsPatternBenchmark = true;
 };
 }  // namespace autopas
