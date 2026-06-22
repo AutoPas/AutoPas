@@ -801,6 +801,7 @@ class LJFunctorHWY
    * @param virialSumZ
    * @param uPotSum
    * @param restI In the remainder case, this is the number of elements left in the SoA.
+   * @param jVecStart The start index for the inner "j" loop.
    * @param jVecEnd The end index for the inner "j" loop.
    */
   template <bool reversed, bool newton3, bool remainderI, VectorizationPattern vecPattern>
