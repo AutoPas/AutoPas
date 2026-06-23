@@ -25,11 +25,8 @@ struct Box {
   std::array<double, 3> max;
 };
 
-static inline auto getTestableContainerOptions() { return autopas::ContainerOption::getAllOptions(); }
-
 template <typename AutoPasT>
-auto RegionParticleIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption,
-                                                 double cellSizeFactor) {
+auto RegionParticleIteratorTestBase::defaultInit(AutoPasT &autoPas, ContainerConfiguration containerConfig) {
   using namespace autopas::utils::ArrayMath::literals;
 
   autoPas.setBoxMin({0., 0., 0.});
@@ -38,10 +35,11 @@ auto RegionParticleIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopa
   autoPas.setVerletSkin(0.2);
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
-  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
+  autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerConfig.container});
   autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(
-      containerOption, autopas::InteractionTypeOption::pairwise));
-  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
+      containerConfig.container, autopas::InteractionTypeOption::pairwise));
+  autoPas.setAllowedCellSizeFactors(
+      autopas::NumberSetFinite<double>(std::set<double>({containerConfig.cellSizeFactor})));
 
   autoPas.init();
 
@@ -60,11 +58,11 @@ auto RegionParticleIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopa
 TEST_P(RegionParticleIteratorTestOne, testRegionAroundCorner) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
+  auto [containerConfig, useConstIterator, priorForceCalc, behavior] = GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
-  defaultInit(autoPas, containerOption, cellSizeFactor);
+  defaultInit(autoPas, containerConfig);
 
   const auto domainLength = autoPas.getBoxMax() - autoPas.getBoxMin();
   // draw a box around the lower corner of the domain
@@ -118,7 +116,7 @@ TEST_P(RegionParticleIteratorTestOne, testRegionAroundCorner) {
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTestOne,
-                         Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
+                         Combine(ValuesIn(generateAllValidContainerConfigurations()),
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
                          RegionParticleIteratorTestOne::PrintToStringParamName());
@@ -129,7 +127,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTestOne,
 TEST_F(RegionParticleIteratorTestOne, testInvalidBox) {
   // setup
   autopas::AutoPas<Molecule> autoPas{};
-  const auto [haloBoxMin, haloBoxMax] = defaultInit(autoPas, autopas::ContainerOption::directSum, 1.);
+  const auto [haloBoxMin, haloBoxMax] = defaultInit(autoPas, {autopas::ContainerOption::directSum, 1.});
 
   // helpers
   using autopas::utils::ArrayMath::mulScalar;
@@ -161,7 +159,7 @@ TEST_F(RegionParticleIteratorTestOne, testForceSequential) {
 
   /// setup
   autopas::AutoPas<Molecule> autoPas{};
-  const auto [haloBoxMin, haloBoxMax] = defaultInit(autoPas, autopas::ContainerOption::linkedCells, 1.);
+  const auto [haloBoxMin, haloBoxMax] = defaultInit(autoPas, {autopas::ContainerOption::linkedCells, 1.});
   const auto haloBoxSize = sub(haloBoxMax, haloBoxMin);
 
   // define a search box covering the first octant of the domain
@@ -227,11 +225,11 @@ TEST_F(RegionParticleIteratorTestOne, testForceSequential) {
 TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto containerOption = GetParam();
+  auto containerConfig = GetParam();
 
   autopas::AutoPas<Molecule> autoPas{};
   // Get a 10x10x10 box
-  defaultInit(autoPas, containerOption, 1.);
+  defaultInit(autoPas, containerConfig);
   const auto shortDistance = autoPas.getVerletSkin() * 0.1;
 
   // This function creates particle positions within the simulation box that are the offset-value distant from the
@@ -354,5 +352,6 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTestTwo, ValuesIn(getTestableContainerOptions()),
+INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTestTwo,
+                         ValuesIn(generateAllValidContainerConfigurations()),
                          RegionParticleIteratorTestTwo::PrintToStringParamName());
