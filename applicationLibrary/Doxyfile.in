@@ -3,7 +3,8 @@ PROJECT_LOGO           = @PROJECT_SOURCE_DIR@/docs/graphics/AutoPasLogo_Large.sv
 PROJECT_NUMBER         = @AutoPas_VERSION@
 STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@/applicationLibrary
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doc_doxygen_applicationLibrary/
-INPUT                  = @PROJECT_SOURCE_DIR@/applicationLibrary
+INPUT                  = @PROJECT_SOURCE_DIR@/applicationLibrary \
+                         @PROJECT_SOURCE_DIR@/src/autopas/baseFunctors   # Needed for copydoc functions from the base functor
 FILE_PATTERNS          = *.h \
                          *.cuh \
                          *.cpp \
