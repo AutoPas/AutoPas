@@ -287,9 +287,8 @@ static auto toString = [](const auto &info) {
   auto [config, numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals,
         interactionType] = info.param;
   std::stringstream resStream;
-  resStream << config.toShortString(false, true) << "_NP" << numParticles << "_NH"
-            << numHaloParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2]
-            << (doSlightShift ? "withShift" : "noshift")
+  resStream << config.toShortString(false, true) << "_NP" << numParticles << "_NH" << numHaloParticles << "_"
+            << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << (doSlightShift ? "withShift" : "noshift")
             << (particleDeletionPosition == DeletionPosition::never ? "_NoDeletions" : "")
             << (particleDeletionPosition & DeletionPosition::beforeLists ? "_DeletionsBeforeLists" : "")
             << (particleDeletionPosition & DeletionPosition::afterLists ? "_DeletionsAfterLists" : "")

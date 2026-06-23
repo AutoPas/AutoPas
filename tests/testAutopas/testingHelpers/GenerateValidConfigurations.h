@@ -101,7 +101,8 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     const std::set<autopas::DataLayoutOption> &allowedDataLayoutOptions = autopas::DataLayoutOption::getAllOptions(),
     const std::set<autopas::Newton3Option> &allowedNewton3Options = autopas::Newton3Option::getAllOptions(),
     const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
-    const std::set<autopas::VectorizationPatternOption> &allowedVectorPatterns = autopas::VectorizationPatternOption::getAllOptions()) {
+    const std::set<autopas::VectorizationPatternOption> &allowedVectorPatterns =
+        autopas::VectorizationPatternOption::getAllOptions()) {
   if (interactionType == autopas::InteractionTypeOption::all) {
     std::set<autopas::Configuration> allConfigs;
     for (auto iType : autopas::InteractionTypeOption::getMostOptions()) {
@@ -114,9 +115,9 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     return allConfigs;
   } else {
     const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);
-    return autopas::SearchSpaceGenerators::cartesianProduct(allowedContainerOptions, allowedTraversalOptions,
-                                                            allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-                                                            allowedNewton3Options, &csfs, allowedVectorPatterns, interactionType);
+    return autopas::SearchSpaceGenerators::cartesianProduct(
+        allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
+        allowedNewton3Options, &csfs, allowedVectorPatterns, interactionType);
   }
 }
 
