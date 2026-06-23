@@ -54,6 +54,9 @@ INSTANTIATE_TEST_SUITE_P(Generated, Newton3OnOffTest, ValuesIn([]() -> std::set<
 
 template <typename Functor_T>
 void Newton3OnOffTest::countFunctorCalls(autopas::Configuration config) {
+  // Check our assumption that this function has been provided a N3 disabled config
+  ASSERT_EQ(config.newton3, autopas::Newton3Option::disabled) << "countFunctorCalls requires a configuration with newton 3 disabled!";
+
   // TODO: Make test possible for direct sum SoA
   if (config.container == autopas::ContainerOption::directSum and config.dataLayout == autopas::DataLayoutOption::soa) {
     return;
@@ -77,6 +80,25 @@ void Newton3OnOffTest::countFunctorCalls(autopas::Configuration config) {
   Functor_T mockFunctor{};
 
   EXPECT_CALL(mockFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
+
+  // Check the traversal is applicable for both N3 on/off and if inapplicable for both, skip test.
+  const auto traversalInfo = container->getTraversalSelectorInfo();
+  auto traversalApplicable = [&](bool useNewton3) {
+    auto probeConfig = config;
+    probeConfig.newton3 = useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled;
+    return autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64, Functor_T>(
+               probeConfig, mockFunctor, traversalInfo) != nullptr;
+  };
+  const bool applicableNewton3 = traversalApplicable(/*useNewton3*/ true);
+  const bool applicableNonNewton3 = traversalApplicable(/*useNewton3*/ false);
+
+  // Both N3 modes should agree on applicability.
+  ASSERT_EQ(applicableNewton3, applicableNonNewton3)
+      << "Traversal " << config.traversal << " is applicable for only one Newton3 mode.";
+  // Skip this test if the traversal is not applicable to the domain.
+  if (not applicableNewton3) {
+    GTEST_SKIP() << "Traversal " << config.traversal << " is not applicable to the test domain.";
+  }
 
   if (config.dataLayout == autopas::DataLayoutOption::soa) {
     if (config.container == autopas::ContainerOption::linkedCellsReferences) {
@@ -246,7 +268,6 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::Configuration
 
   auto traversalSelectorInfo = container.getTraversalSelectorInfo();
 
-  // simulate iteration
   iterate(container, autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64, Functor_T>(
                          config, mockFunctor, traversalSelectorInfo));
 

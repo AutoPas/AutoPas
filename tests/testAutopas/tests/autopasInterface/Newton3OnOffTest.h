@@ -8,6 +8,8 @@
 
 #include <gtest/gtest.h>
 
+#include <tuple>
+
 #include "AutoPasTestBase.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -47,7 +49,7 @@ class Newton3OnOffTest : public AutoPasTestBase, public ::testing::WithParamInte
    * - for SoATriplet, there should be thrice as many functor calls without newton3 as with
    *
    * @tparam Functor_T (Mock) functor type
-   * @param config
+   * @param config The Configuration. Should be N3 disabled (will be enabled where relevant for comparison)
    */
   template <typename Functor_T>
   void countFunctorCalls(autopas::Configuration config);
