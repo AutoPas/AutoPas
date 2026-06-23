@@ -352,6 +352,5 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTestTwo,
-                         ValuesIn(generateAllValidContainerConfigurations()),
+INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTestTwo, ValuesIn(generateAllValidContainerConfigurations()),
                          RegionParticleIteratorTestTwo::PrintToStringParamName());

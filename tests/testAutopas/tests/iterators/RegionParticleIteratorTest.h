@@ -13,8 +13,8 @@
 #include "autopas/options/IteratorBehavior.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
 
-using testingTupleOne = std::tuple<ContainerConfiguration, bool /*testConstIterators*/,
-                                   bool /*priorForceCalc*/, autopas::IteratorBehavior>;
+using testingTupleOne =
+    std::tuple<ContainerConfiguration, bool /*testConstIterators*/, bool /*priorForceCalc*/, autopas::IteratorBehavior>;
 
 class RegionParticleIteratorTestBase : public AutoPasTestBase {
  protected:

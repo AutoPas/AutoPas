@@ -59,9 +59,8 @@ class ContainerIteratorTestBase : public testing::Test {
                        const autopas::IteratorBehavior &behavior);
 };
 
-using testingTuple =
-    std::tuple<ContainerConfiguration, bool /*regionIterator (true) or regular (false)*/,
-               bool /*testConstIterators*/, bool /*priorForceCalc*/, autopas::IteratorBehavior>;
+using testingTuple = std::tuple<ContainerConfiguration, bool /*regionIterator (true) or regular (false)*/,
+                                bool /*testConstIterators*/, bool /*priorForceCalc*/, autopas::IteratorBehavior>;
 class ContainerIteratorTest : public ContainerIteratorTestBase, public ::testing::WithParamInterface<testingTuple> {};
 
 class ContainerIteratorTestNonConst : public ContainerIteratorTestBase,
