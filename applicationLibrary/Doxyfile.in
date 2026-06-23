@@ -1,0 +1,45 @@
+PROJECT_NAME           = "applicationLibrary"
+PROJECT_LOGO           = @PROJECT_SOURCE_DIR@/docs/graphics/AutoPasLogo_Large.svg
+PROJECT_NUMBER         = @AutoPas_VERSION@
+STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@/applicationLibrary
+OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doc_doxygen_applicationLibrary/
+INPUT                  = @PROJECT_SOURCE_DIR@/applicationLibrary
+FILE_PATTERNS          = *.h \
+                         *.cuh \
+                         *.cpp \
+                         *.cu
+RECURSIVE              = YES
+# Exclude any "tests" directory anywhere in the tree.
+EXCLUDE_PATTERNS       = */tests/*
+HTML_HEADER            = @AUTOPAS_SOURCE_DIR@/docs/AutoPasHeader.html
+
+# EXTRACT_ALL           = NO # default NO
+# EXTRACT_PRIVATE       = NO # default NO
+EXTRACT_PACKAGE         = YES # default NO
+EXTRACT_STATIC          = YES # default NO
+# EXTRACT_LOCAL_CLASSES = YES # default YES
+# EXTRACT_LOCAL_METHODS = NO # default NO
+EXTRACT_ANON_NSPACES    = YES # default NO
+# HIDE_UNDOC_MEMBERS    = NO # default NO
+# HIDE_UNDOC_CLASSES    = NO # default NO
+# HIDE_FRIEND_COMPOUNDS = NO # default NO
+# HIDE_IN_BODY_DOCS     = NO # default NO
+
+JAVADOC_AUTOBRIEF      = YES # default NO
+QT_AUTOBRIEF           = YES # default NO
+
+#QUIET                 = NO # default NO
+#WARNINGS              = YES # default YES
+#WARN_IF_UNDOCUMENTED  = YES # default YES
+#WARN_IF_DOC_ERROR     = YES # default YES
+WARN_NO_PARAMDOC       = YES # default NO
+
+
+# Macro expansion settings:
+MACRO_EXPANSION        = YES
+
+IMAGE_PATH             = @PROJECT_SOURCE_DIR@/docs/graphics
+TEMPLATE_RELATIONS     = YES
+HAVE_DOT               = YES
+GENERATE_XML           = YES
+USE_MATHJAX            = YES # default NO - Needed for latex equation rendering. Used e.g. in AxilrodTellerMutoFunctor.h

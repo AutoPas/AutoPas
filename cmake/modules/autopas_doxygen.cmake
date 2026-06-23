@@ -36,6 +36,16 @@ if (DOXYGEN_FOUND)
         VERBATIM
     )
 
+    set(DOXYGEN_APPLICATIONLIBRARY_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_applicationLibrary)
+    configure_file(applicationLibrary/Doxyfile.in ${DOXYGEN_APPLICATIONLIBRARY_OUT} @ONLY)
+    add_custom_target(
+            doc_doxygen_applicationLibrary
+            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_APPLICATIONLIBRARY_OUT}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating documentation for applicationLibrary with Doxygen"
+            VERBATIM
+    )
+
     if(AUTOPAS_BUILD_EXAMPLES)
         set(DOXYGEN_MD-FLEXIBLE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile_md-flexible)
         # request to configure the file
