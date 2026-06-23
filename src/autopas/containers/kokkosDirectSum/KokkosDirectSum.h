@@ -34,10 +34,7 @@ template <class Particle_T>
 
         public:
             KokkosDirectSum(DataLayoutOption dataLayout, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double skin)
-                : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin), _dataLayout(dataLayout) {
-              _ownedParticles.setLayout(dataLayout);
-              _haloParticles.setLayout(dataLayout);
-            }
+                : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin), _dataLayout(dataLayout), _ownedParticles(dataLayout, 0), _haloParticles(dataLayout, 0) {}
 
             [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::kokkosDirectSum; }
 
@@ -122,7 +119,7 @@ template <class Particle_T>
             [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
 
               /* Prepare data structures */
-              utilsKokkos::KokkosStorage<Particle_T> migrants {_ownedParticles.getLayout(), _ownedParticles.size()};
+              utilsKokkos::KokkosStorage<Particle_T> migrants {_ownedParticles.getIntendedLayout(), _ownedParticles.size()};
 
               auto& boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
               auto& boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
@@ -156,7 +153,7 @@ template <class Particle_T>
               } else {
                 deleteHaloParticles();
 
-                utilsKokkos::KokkosStorage<Particle_T> survivors {_ownedParticles.getLayout(), _ownedParticles.size()};
+                utilsKokkos::KokkosStorage<Particle_T> survivors {_ownedParticles.getIntendedLayout(), _ownedParticles.size()};
 
                 Kokkos::View<int*, DeviceSpace> survivorCounter {"survivorCounter", 1};
 
@@ -200,10 +197,10 @@ template <class Particle_T>
               migrants.resize(numMigrants);
 
               _ownedParticles.template modifyAll<DeviceSpace::execution_space>();
-              _ownedParticles.markLayoutModified(owned.getLayout());
+              _ownedParticles.markLayoutModified(owned.getActiveLayout());
 
+              migrants.template convertTo<DeviceSpace::execution_space, useHostView>(DataLayoutOption::aos);
               migrants.template syncAll<HostSpace::execution_space>();
-              migrants.convertTo(DataLayoutOption::aos);
               std::vector<Particle_T> migrantVector {};
               migrantVector.reserve(numMigrants);
 
@@ -226,8 +223,13 @@ template <class Particle_T>
                 utils::optRef<typename ContainerIterator<Particle_T, true, false>::ParticleVecType> additionalVectors =
                   std::nullopt) override {
                 // Copy from DirectSum.h
-                convertToAoS();
-                return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
+
+              _ownedParticles.template syncAll<Kokkos::HostSpace::execution_space>();
+              _ownedParticles.template modifyAll<Kokkos::HostSpace::execution_space>();
+              _haloParticles.template syncAll<Kokkos::HostSpace::execution_space>();
+              _haloParticles.template modifyAll<Kokkos::HostSpace::execution_space>();
+              convertTo<Kokkos::HostSpace::execution_space, true>(DataLayoutOption::aos);
+              return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
             }
 
             [[nodiscard]] ContainerIterator<Particle_T, false, false> begin(
@@ -244,7 +246,11 @@ template <class Particle_T>
                 utils::optRef<typename ContainerIterator<Particle_T, true, true>::ParticleVecType> additionalVectors =
                     std::nullopt) override {
                 // Copy from DirectSum.h
-                convertToAoS();
+              _ownedParticles.template syncAll<Kokkos::HostSpace::execution_space>();
+              _ownedParticles.template modifyAll<Kokkos::HostSpace::execution_space>();
+              _haloParticles.template syncAll<Kokkos::HostSpace::execution_space>();
+              _haloParticles.template modifyAll<Kokkos::HostSpace::execution_space>();
+              convertTo<Kokkos::HostSpace::execution_space, true>(DataLayoutOption::aos);
                 return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
             }
 
@@ -279,7 +285,7 @@ template <class Particle_T>
               forEachInRegionKokkos<ExecSpace, false>(forEachLambda, behavior, boxMin, boxMax, label);
             }
 
-              template <class ExecSpace, bool regionIter, typename Lambda>
+            template <class ExecSpace, bool regionIter, typename Lambda>
             void forEachInRegionKokkos(Lambda forEachLambda, IteratorBehavior behavior, const std::array<double, 3> &lowerCorner, const std::array<double, 3>& higherCorner, const std::string& label = "forEachInRegionKokkos") {
 
               const auto& lowerCornerKokkos = Kokkos::Array{lowerCorner.at(0), lowerCorner.at(1), lowerCorner.at(2)};
@@ -291,7 +297,7 @@ template <class Particle_T>
               /* owned or dummies; this basically filters out only halo, sequential, container only */
               if (behavior & 0b101) {
                 _ownedParticles.template syncAll<ExecSpace>();
-                _ownedParticles.convertTo(_dataLayout);
+                _ownedParticles.template convertTo<ExecSpace, host>(_dataLayout);
                 auto& owned = _ownedParticles;
                 Kokkos::parallel_for(label + "_owned", Kokkos::RangePolicy<ExecSpace>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i)  {
 
@@ -305,7 +311,7 @@ template <class Particle_T>
               /* halo or dummies; this basically filters out only owned, sequential, container only */
               if (behavior & 0b110)  {
                 _haloParticles.template syncAll<ExecSpace>();
-                _haloParticles.convertTo(_dataLayout);
+                _haloParticles.template convertTo<ExecSpace, host>(_dataLayout);
                 auto& halo = _haloParticles;
                 Kokkos::parallel_for(label + "_halo", Kokkos::RangePolicy<ExecSpace>(0, _haloParticles.size()), KOKKOS_LAMBDA(int i)  {
                   if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
@@ -348,7 +354,7 @@ template <class Particle_T>
               /* owned or dummies; this basically filters out only halo, sequential, container only */
               if (behavior & 0b101) {
                 _ownedParticles.template syncAll<ExecSpace>();
-                _ownedParticles.convertTo(_dataLayout);
+                _ownedParticles.template convertTo<ExecSpace, host>(_dataLayout);
                 auto& owned = _ownedParticles;
                 Kokkos::parallel_reduce(label + "_owned", Kokkos::RangePolicy<ExecSpace>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i, Result& localResult)  {
                   if (owned.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
@@ -359,7 +365,7 @@ template <class Particle_T>
               /* halo or dummies; this basically filters out only owned, sequential, container only */
               if (behavior & 0b110) {
                 _haloParticles.template syncAll<ExecSpace>();
-                _haloParticles.convertTo(_dataLayout);
+                _haloParticles.template convertTo<ExecSpace, host>(_dataLayout);
                 auto& halo = _haloParticles;
                 Kokkos::parallel_reduce(label + "_halo", Kokkos::RangePolicy<ExecSpace>(0, _haloParticles.size()), KOKKOS_LAMBDA(int i, Result& localResult)  {
                   if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos, higherCornerKokkos)) {
@@ -450,7 +456,7 @@ protected:
               auto targetLayout = traversal->getDataLayout();
 
               if (targetLayout != _dataLayout) {
-                convertTo(targetLayout);
+                convertTo<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space, DSKokkosTraversalInterface<Particle_T>::useHostView>(targetLayout);
               }
 
               kokkosDsTraversal->setOwnedToTraverse(_ownedParticles, targetLayout);
@@ -471,15 +477,8 @@ protected:
             _ownedParticles.markLayoutModified(targetLayout);
             kokkosDsTraversal->retrieveOwned(_ownedParticles);
 
-            if (targetLayout == DataLayoutOption::aos) {
-              if (_dataLayout != targetLayout) {
-                convertToSoA();
-              }
-            }
-            else if (targetLayout == DataLayoutOption::soa) {
-              if (_dataLayout != targetLayout) {
-                convertToAoS();
-              }
+            if (targetLayout != _dataLayout) {
+              convertTo<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space, DSKokkosTraversalInterface<Particle_T>::useHostView>(_dataLayout);
             }
           }
           else {
@@ -487,29 +486,13 @@ protected:
           }
         }
 
+        template <typename ExecSpace, bool useHostView>
         void convertTo(DataLayoutOption layout) {
-          if (layout == DataLayoutOption::soa) {
-            convertToSoA();
-          }
-          else if (layout == DataLayoutOption::aos) {
-            convertToAoS();
-          }
-        }
+          _ownedParticles.template convertTo<ExecSpace, useHostView>(layout);
+          _ownedParticles.markLayoutModified(layout);
 
-        void convertToSoA() {
-          _ownedParticles.convertTo(DataLayoutOption::soa);
-          _haloParticles.convertTo(DataLayoutOption::soa);
-
-          _ownedParticles.markLayoutModified(DataLayoutOption::soa);
-          _haloParticles.markLayoutModified(DataLayoutOption::soa);
-        }
-
-        void convertToAoS() {
-          _ownedParticles.convertTo(DataLayoutOption::aos);
-          _haloParticles.convertTo(DataLayoutOption::aos);
-
-          _ownedParticles.markLayoutModified(DataLayoutOption::aos);
-          _haloParticles.markLayoutModified(DataLayoutOption::aos);
+          _haloParticles.template convertTo<ExecSpace, useHostView>(layout);
+          _haloParticles.markLayoutModified(layout);
         }
 
         // Nearly a clone of DirectSum::getParticleImpl to guarantee that we fulfill all the requirements from getParticle in the ParticleContainerInterface's method description

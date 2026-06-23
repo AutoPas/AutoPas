@@ -30,7 +30,8 @@ public:
   void setOwnedToTraverse(utilsKokkos::KokkosStorage<Particle_T>& input, DataLayoutOption targetLayout) {
 
     // No actual copy must be done as we do not want the content to be copied
-    _ownedParticles.setLayout(targetLayout);
+    _ownedParticles.setIntendedLayout(targetLayout);
+    _ownedParticles.setActiveLayout(targetLayout);
     _ownedParticles.overrideSize(input.size());
     _ownedParticles.overrideCapacity(input.getCapacity());
 
@@ -44,7 +45,10 @@ public:
 
   void setHaloToTraverse(utilsKokkos::KokkosStorage<Particle_T>& input, DataLayoutOption targetLayout) {
 
-    _haloParticles.setLayout(targetLayout);
+    _haloParticles.setIntendedLayout(targetLayout);
+    _haloParticles.setActiveLayout(targetLayout);
+    _haloParticles.overrideSize(input.size());
+    _haloParticles.overrideCapacity(input.getCapacity());
 
     if (targetLayout == DataLayoutOption::aos) {
       _haloParticles.getAoS() = input.getAoS();
@@ -55,7 +59,7 @@ public:
   }
 
   void retrieveOwned(utilsKokkos::KokkosStorage<Particle_T>& output) {
-    auto storageLayout = _ownedParticles.getLayout();
+    auto storageLayout = _ownedParticles.getActiveLayout();
 
     if (storageLayout == DataLayoutOption::aos) {
       output.getAoS() = _ownedParticles.getAoS();
@@ -66,7 +70,7 @@ public:
   }
 
   void retrieveHalo(utilsKokkos::KokkosStorage<Particle_T>& output) {
-    auto storageLayout = _haloParticles.getLayout();
+    auto storageLayout = _haloParticles.getActiveLayout();
 
     if (storageLayout == DataLayoutOption::aos) {
       output.getAoS() = _haloParticles.getAoS();
@@ -75,8 +79,6 @@ public:
       output.getSoA() = _haloParticles.getSoA();
     }
   }
-
-protected:
 
 #ifdef KOKKOS_ENABLE_CUDA
   using DeviceSpace = Kokkos::CudaSpace;
@@ -87,6 +89,8 @@ protected:
 #endif
 
   using HostSpace = Kokkos::HostSpace;
+
+protected:
 
   using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
 

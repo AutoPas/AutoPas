@@ -23,16 +23,17 @@ namespace autopas::utilsKokkos {
     // TODO: think about deleting this constructor
     KokkosStorage() {}
 
-    KokkosStorage(DataLayoutOption layout, size_t numParticles) : _layout(layout) {
+    KokkosStorage(DataLayoutOption layout, size_t numParticles) : _intendedLayout(layout), _activeLayout(layout) {
       realloc(numParticles);
     }
 
     KokkosStorage(const KokkosStorage& other) {
-      _layout = other.getLayout();
+      _intendedLayout = other.getIntendedLayout();
+      _activeLayout = other.getActiveLayout();
       _currentSize = other.size();
       _capacity = other.getCapacity();
 
-      switch (_layout) {
+      switch (_activeLayout) {
         case DataLayoutOption::aos: {
           storageAoS = other.getAoS();
           break;
@@ -45,7 +46,7 @@ namespace autopas::utilsKokkos {
     }
 
     void realloc(size_t numParticles) {
-      switch (_layout) {
+      switch (_activeLayout) {
         case DataLayoutOption::aos: {
           storageAoS.realloc(numParticles);
           break;
@@ -63,7 +64,7 @@ namespace autopas::utilsKokkos {
     void resize(size_t numParticles) {
       // TODO: check if numParticles < currentSize and decide how to handle that
 
-      switch (_layout) {
+      switch (_activeLayout) {
         case DataLayoutOption::aos: {
           storageAoS.resize(numParticles);
           _aosDirty = true;
@@ -94,7 +95,7 @@ namespace autopas::utilsKokkos {
     // TODO: mark somewhere that this is not thread safe (!), caller has to make sure of no race conditions
     void addParticle(const Particle_T &p) {
 
-      // TODO: figure out how to deduce that...
+      // TODO: figure out how to deduce that... or restict to adding particles only on the host as we cannot access the device view from without a kernel
       constexpr bool useHostView = true;
 
       if (_currentSize == _capacity) {
@@ -109,15 +110,16 @@ namespace autopas::utilsKokkos {
         syncAll<Kokkos::DefaultExecutionSpace::execution_space>();
       }
 
-      switch (_layout) {
+      // TODO: think about allowing another ExecSpace for conversion here (but must be consistent with the rest of the function!)
+      convertTo<Kokkos::HostSpace::execution_space, useHostView>(_activeLayout);
+
+      switch (_activeLayout) {
         case DataLayoutOption::aos: {
-          syncSoAToAoS();
           storageAoS.template addParticle<useHostView>(index, p);
           _aosDirty = true;
           break;
         }
         case DataLayoutOption::soa: {
-          syncAoSToSoA();
           storageSoA.template addParticle<Particle_T, useHostView>(index, p);
           _soaDirty = true;
           break;
@@ -134,7 +136,7 @@ namespace autopas::utilsKokkos {
     template <size_t attribute, bool useHostView = false>
     KOKKOS_INLINE_FUNCTION
     constexpr auto& operator() (int i) const {
-      switch (_layout) {
+      switch (_activeLayout) {
         case DataLayoutOption::aos: {
           return storageAoS.template operator()<attribute, useHostView>(i);
         }
@@ -191,7 +193,7 @@ namespace autopas::utilsKokkos {
 
     template <typename Target, std::size_t I>
     void sync() {
-      if (_layout == DataLayoutOption::soa) {
+      if (_activeLayout == DataLayoutOption::soa) {
         storageSoA.template sync<Target, I>();
       } else {
         /* Partial copy is not supported for AoS */
@@ -201,19 +203,19 @@ namespace autopas::utilsKokkos {
 
     template <typename Target>
     void syncAll() {
-      if (_layout == DataLayoutOption::soa) {
+      //if (_activeLayout == DataLayoutOption::soa) {
         constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
         constexpr auto I = std::make_index_sequence<tupleSize>();
 
         storageSoA.template syncAll<Target>(I);
-      } else {
+      //} else {
         storageAoS.template sync<Target>();
-      }
+      //}
     }
 
     template <typename Target, std::size_t I>
     void modify() {
-      if (_layout == DataLayoutOption::soa) {
+      if (_activeLayout == DataLayoutOption::soa) {
         storageSoA.template modify<Target, I>();
       } else {
         /* Partial copy is not supported for AoS */
@@ -223,21 +225,22 @@ namespace autopas::utilsKokkos {
 
     template <typename Target>
     void modifyAll() {
-      if (_layout == DataLayoutOption::soa) {
+      //if (_activeLayout == DataLayoutOption::soa) {
         constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
         constexpr auto I = std::make_index_sequence<tupleSize>();
 
         storageSoA.template modifyAll<Target>(I);
-      } else {
+      //} else {
         storageAoS.template modify<Target>();
-      }
+      //}
     }
 
-    void convertTo(autopas::DataLayoutOption targetLayout) {
+    template <typename ExecSpace, bool useHostView>
+    void convertTo(DataLayoutOption targetLayout) {
       if (targetLayout == DataLayoutOption::aos) {
-        syncSoAToAoS();
+        syncSoAToAoS<ExecSpace, useHostView>();
       } else if (targetLayout == DataLayoutOption::soa) {
-        syncAoSToSoA();
+        syncAoSToSoA<ExecSpace, useHostView>();
       }
     }
 
@@ -250,12 +253,20 @@ namespace autopas::utilsKokkos {
       }
     }
 
-    void setLayout(DataLayoutOption newLayout) {
-      _layout = newLayout;
+    void setActiveLayout(DataLayoutOption newLayout) {
+      _activeLayout = newLayout;
     }
 
-    DataLayoutOption getLayout() const {
-      return _layout;
+    void setIntendedLayout(DataLayoutOption newLayout) {
+      _intendedLayout = newLayout;
+    }
+
+    DataLayoutOption getActiveLayout() const {
+      return _activeLayout;
+    }
+
+    DataLayoutOption getIntendedLayout() const {
+      return _intendedLayout;
     }
 
     KOKKOS_INLINE_FUNCTION
@@ -301,6 +312,7 @@ namespace autopas::utilsKokkos {
 
   private:
 
+    template <typename ExecSpace, bool useHostView>
     void syncAoSToSoA() {
       if (_aosDirty) {
         constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
@@ -308,11 +320,13 @@ namespace autopas::utilsKokkos {
 
         const auto size = storageAoS.size();
         storageSoA.resize(size);
-        KokkosDataLayoutConverter::convertToSoA(storageAoS, storageSoA, size, I);
+        KokkosDataLayoutConverter::convertToSoA<ExecSpace, useHostView>(storageAoS, storageSoA, size, I);
+        _activeLayout = DataLayoutOption::soa;
         _aosDirty = false;
       }
     }
 
+    template <typename ExecSpace, bool useHostView>
     void syncSoAToAoS() {
       if (_soaDirty) {
         constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
@@ -320,7 +334,8 @@ namespace autopas::utilsKokkos {
 
         const auto size = storageSoA.size();
         storageAoS.resize(size);
-        KokkosDataLayoutConverter::convertToAoS(storageSoA, storageAoS, size, I);
+        KokkosDataLayoutConverter::convertToAoS<ExecSpace, useHostView>(storageSoA, storageAoS, size, I);
+        _activeLayout = DataLayoutOption::aos;
         _soaDirty = false;
       }
     }
@@ -329,7 +344,7 @@ namespace autopas::utilsKokkos {
     KOKKOS_INLINE_FUNCTION
     void copyParticleImpl (int targetIndex, const KokkosStorage<Particle_T>& otherStorage, int sourceIndex, std::index_sequence<I...>) const {
 
-      switch (_layout) {
+      switch (_activeLayout) {
         case DataLayoutOption::aos: {
           this->storageAoS.template addParticle<useHostView>(targetIndex, otherStorage.getAoS().template getParticle<useHostView>(sourceIndex));
           break;
@@ -341,7 +356,9 @@ namespace autopas::utilsKokkos {
       }
     }
 
-    DataLayoutOption _layout {DataLayoutOption::aos};
+    DataLayoutOption _activeLayout {DataLayoutOption::aos};
+    DataLayoutOption _intendedLayout {DataLayoutOption::soa};
+
 
     KokkosAoS<Particle_T> storageAoS {};
     Particle_T::KokkosSoAArraysType storageSoA {};
