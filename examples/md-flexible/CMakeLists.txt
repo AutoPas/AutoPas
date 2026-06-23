@@ -17,8 +17,9 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
-option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." ON)
-option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." ON)
+option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." OFF)
+option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor." OFF)
+option(MD_FLEXIBLE_FUNCTOR_HWY "Compile Highway Functor, which uses the best available SIMD instruction set supported by google highway." ON)
 option(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC "Compile auto vectorized Axilrod-Teller-Muto Functor." OFF)
 option(MD_FLEXIBLE_CALC_GLOBALS "Compiles md-flexible Functors with calculation of globals, including calculation of shift offset for LJ functors." OFF)
 
@@ -28,6 +29,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_HWY}>:MD_FLEXIBLE_FUNCTOR_HWY>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC>
         $<$<BOOL:${MD_FLEXIBLE_CALC_GLOBALS}>:MD_FLEXIBLE_CALC_GLOBALS>
 )
@@ -43,6 +45,9 @@ if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     endif()
     if (MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
         message(WARNING "Axilrod-Teller-Muto functor has not been implemented for Multi-Site Molecules")
+    endif()
+    if (MD_FLEXIBLE_FUNCTOR_HWY)
+        message(WARNING "Highway functor has not been implemented for Multi-Site Molecules")
     endif()
 endif()
 
@@ -96,13 +101,16 @@ add_test(
 
 # The AVX example should only be tested if AVX is available.
 set(HAS_AVX true)
-if (NOT AUTOPAS_USE_VECTORIZATION)
+if (NOT AUTOPAS_USE_AUTOVEC)
     # If no vectorization is used, don't enable the example.
     message(STATUS "No vectorization used, not adding md-flexible-avx.test-unaligned to ctest.")
     set(HAS_AVX false)
 elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "SSE")
     # If vectorization is set to SSE: don't enable the example
     message(STATUS "Only SSE specified, not adding md-flexible-avx.test-unaligned to ctest.")
+    set(HAS_AVX false)
+elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "SVE")
+    message(STATUS "SVE vectorization level, not adding md-flexible-avx.test-unaligned to ctest.")
     set(HAS_AVX false)
 elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "NATIVE")
     # If Vectorization is set to native: we try to figure out the vectorization level.
@@ -129,6 +137,7 @@ if (HAS_AVX)
             md-flexible
             --no-end-config
             --functor "${TEST_FUNCTOR}"
+            --vectorization-pattern 1xVectorLength
             --deltaT 0
             --particle-generator uniform
             --log-level debug
@@ -136,6 +145,11 @@ if (HAS_AVX)
             --particles-total 71
             --no-progress-bar
             CONFIGURATIONS checkExamples
+    )
+    set_tests_properties(
+            md-flexible-avx.test-unaligned
+            PROPERTIES
+            ENVIRONMENT  "${LSAN_OPTIONS_STR}"
     )
 else ()
   message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
@@ -151,6 +165,7 @@ add_test(
         --traversal all
         --cutoff 1.5
         --functor "${TEST_FUNCTOR}"
+        --vectorization-pattern 1xVectorLength
         --tuning-phases 1
         --particle-generator grid
         --particles-per-dimension 10
@@ -170,6 +185,15 @@ add_test(
         CONFIGURATIONS checkExamples
 )
 # cmake-format: on
+
+set_tests_properties(
+        md-flexible.test-static
+        md-flexible.test-sim
+        md-flexMeasurePerf
+        # This adds lsanignoreList.txt to ignore MPI internal leaks
+        PROPERTIES
+            ENVIRONMENT  "${LSAN_OPTIONS_STR}"
+)
 
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples md-flexible)

@@ -28,6 +28,9 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeHWY *);
+#endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -37,6 +40,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 
 #include "ParticleCommunicator.h"
 #include "Thermostat.h"
+#include "TimeDiscretization.h"
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
@@ -85,16 +89,15 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                        std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
-      _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr) {
+      _totalEnergySensor(configuration.energySensorOption.value) {
   _timers.total.start();
   _timers.initialization.start();
+  _totalEnergySensor.startMeasurement();
 
   // only create the writer if necessary since this also creates the output dir
-  if (_createVtkFiles) {
-    _vtkWriter =
-        std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
-                                            std::to_string(_configuration.iterations.value).size());
+  if (not configuration.vtkFileName.value.empty()) {
+    _vtkWriter.emplace(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
+                       std::to_string(_configuration.iterations.value).size());
   }
 
   const auto rank = _domainDecomposition->getDomainIndex();
@@ -104,6 +107,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.back() == '_' ? "" : "_";
   const auto outputSuffix =
       "Rank" + std::to_string(rank) + fillerBeforeSuffix + _configuration.outputSuffix.value + fillerAfterSuffix;
+
+  if (rank == 0) {
+    _globalLogger = std::make_unique<GlobalVariableLogger>(outputSuffix);
+  }
 
   if (_configuration.logFileName.value.empty()) {
     _outputStream = &std::cout;
@@ -120,12 +127,17 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   if (_configuration.getInteractionTypes().empty()) {
     std::string functorName{};
     std::tie(_configuration.functorOption.value, functorName) =
-#if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+        std::make_pair(MDFlexConfig::FunctorOption::lj12_6_HWY, "Lennard-Jones HWY Functor.");
+#elif defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6_AVX, "Lennard-Jones AVX Functor.");
 #elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6_SVE, "Lennard-Jones SVE Functor.");
-#else
+#elif defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6, "Lennard-Jones AutoVec Functor.");
+#else
+        std::make_pair(MDFlexConfig::FunctorOption::none, "");
+    std::cerr << "No functor specified and no valid fall-back LJ functor available!" << std::endl;
 #endif
     _configuration.addInteractionType(autopas::InteractionTypeOption::pairwise);
     std::cout << "WARNING: No functor was specified. Defaulting to " << functorName << std::endl;
@@ -140,6 +152,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                                               autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
                                           autopas::InteractionTypeOption::pairwise);
+  _autoPasContainer->setAllowedVecPatterns(_configuration.vecPatternOptions.value,
+                                           autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
   // Triwise specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
@@ -173,6 +187,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
   _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
+  _autoPasContainer->setDeltaT(_configuration.deltaT.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
@@ -207,6 +222,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
 void Simulation::finalize() {
   _timers.total.stop();
+  _totalEnergySensor.endMeasurement();
   autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
   logSimulationState();
@@ -216,7 +232,7 @@ void Simulation::finalize() {
 void Simulation::run() {
   _timers.simulate.start();
   while (needsMoreIterations()) {
-    if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
+    if (_vtkWriter.has_value() and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
       _timers.vtk.stop();
@@ -310,6 +326,19 @@ void Simulation::run() {
       updateThermostat();
     }
     _timers.nonBoundaryCalculations.stop();
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    // Summing the potential energy over all MPI ranks
+    double potentialEnergyOverMPIRanks{}, virialSumOverMPIRanks{};
+    autopas::AutoPas_MPI_Reduce(&_totalPotentialEnergy, &potentialEnergyOverMPIRanks, 1, AUTOPAS_MPI_DOUBLE,
+                                AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
+    autopas::AutoPas_MPI_Reduce(&_totalVirialSum, &virialSumOverMPIRanks, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM, 0,
+                                AUTOPAS_MPI_COMM_WORLD);
+    if (_domainDecomposition->getDomainIndex() == 0) {
+      _globalLogger->logGlobals(_iteration, potentialEnergyOverMPIRanks, virialSumOverMPIRanks);
+    }
+    _totalPotentialEnergy = 0.;
+    _totalVirialSum = 0.;
+#endif
 
     if (not _simulationIsPaused) {
       ++_iteration;
@@ -330,7 +359,7 @@ void Simulation::run() {
   _timers.simulate.stop();
 
   // Record last state of simulation.
-  if (_createVtkFiles) {
+  if (_vtkWriter.has_value()) {
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
   }
 }
@@ -358,7 +387,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
                       _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
-                      autopas::InteractionTypeOption::pairwise)
+                      _configuration.vecPatternOptions.value, autopas::InteractionTypeOption::pairwise)
                       .size();
 
         const size_t searchSpaceSizeTriwise =
@@ -368,7 +397,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                      autopas::InteractionTypeOption::triwise)
+                      _configuration.vecPatternOptions.value, autopas::InteractionTypeOption::triwise)
                       .size();
 
         return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
@@ -582,14 +611,26 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 bool Simulation::calculatePairwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+  const auto wasTuningIteration = applyWithChosenFunctor<bool>([&](auto &&functor) {
+    auto isTuningIteration = _autoPasContainer->computeInteractions(&functor);
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    _totalPotentialEnergy += functor.getPotentialEnergy();
+    _totalVirialSum += functor.getVirial();
+#endif
+    return isTuningIteration;
+  });
   return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor3B<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+  const auto wasTuningIteration = applyWithChosenFunctor3B<bool>([&](auto &&functor) {
+    auto isTuningIteration = _autoPasContainer->computeInteractions(&functor);
+#ifdef MD_FLEXIBLE_CALC_GLOBALS
+    _totalPotentialEnergy += functor.getPotentialEnergy();
+    _totalVirialSum += functor.getVirial();
+#endif
+    return isTuningIteration;
+  });
   return wasTuningIteration;
 }
 
@@ -666,6 +707,11 @@ void Simulation::logMeasurements() {
   const long reflectParticlesAtBoundaries = accumulateTime(_timers.reflectParticlesAtBoundaries.getTotalTime());
   const long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
   const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  double totalEnergy = _totalEnergySensor.getJoules();
+  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &totalEnergy, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
+#endif
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     const long wallClockTime = _timers.total.getTotalTime();
@@ -721,6 +767,9 @@ void Simulation::logMeasurements() {
     std::cout << "MFUPs/sec                          : " << mfups << "\n";
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     std::cout << "Mean Rebuild Frequency               : " << _autoPasContainer->getMeanRebuildFrequency() << "\n";
+#endif
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+    std::cout << "Total Energy Consumed (in Joules)    : " << totalEnergy << "\n";
 #endif
   }
 }
@@ -880,6 +929,15 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::lj12_6_HWY: {
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+      return f(LJFunctorTypeHWY{cutoff, std::ref(particlePropertiesLibrary)});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor HWY. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_HWY=ON`.");
+#endif
+    }
     default: {
       throw std::runtime_error("Unknown pairwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));
@@ -893,12 +951,12 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption3B.value) {
     case MDFlexConfig::FunctorOption3B::at: {
-#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
+#if defined(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
       return f(ATMFunctor{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for AxilrodTellerMuto Functor. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
+          "-DMD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC=ON`.");
 #endif
     }
     default: {
