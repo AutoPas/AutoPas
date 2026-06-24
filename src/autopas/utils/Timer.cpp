@@ -33,6 +33,7 @@ long autopas::utils::Timer::stop() {
   const auto diff = duration_cast<nanoseconds>(time - _startTime).count();
 
   _totalTime += diff;
+  _lapTime += diff;
 
   return _lapTime;
 }
