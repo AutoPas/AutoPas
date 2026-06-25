@@ -49,9 +49,11 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
       : ParticleContainerInterface<Particle_T>(skin),
         _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
+      // Throw exception - this config should have been caught by LogicHandler. Note: This is not a fundamental issue
+      // with the algorithm but simply has not been implemented.
       utils::ExceptionHandler::exception(
-          "Trying to construct a VerletListsLinkedBase with CSF < 1.0! Such configurations should not be allowed (they "
-          "should return false with Configuration::hasCompatibleValues).");
+          "Trying to construct a VerletListsLinkedBase with CSF < 1.0! This should never occur as the LogicHandler "
+          "should reject this (as Configuration::hasCompatibleValues should return false).");
     }
   }
 
