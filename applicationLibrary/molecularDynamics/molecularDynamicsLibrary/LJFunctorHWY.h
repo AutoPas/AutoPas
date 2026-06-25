@@ -11,7 +11,6 @@
 
 #include <algorithm>
 #include <optional>
-#include <utility>
 #include <vector>
 
 #include "ParticlePropertiesLibrary.h"
@@ -20,6 +19,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/SoASortedView.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace mdLib {
@@ -90,8 +90,6 @@ class LJFunctorHWY
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
-    _soaThreadData.resize(autopas::autopas_get_max_threads());
-
     if constexpr (countFLOPs) {
       AutoPasLog(DEBUG, "Using LJFunctorHWY with countFLOPs but FLOP counting is not implemented.");
     }
@@ -235,36 +233,37 @@ class LJFunctorHWY
   // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
+    autopas::SoASortedPairMeta meta = {0, {}, {}};
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec: {
         if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::p1xVec>(soa1, soa2);
+          SoAFunctorPairImpl<true, false, VectorizationPattern::p1xVec>(soa1, soa2, meta);
         } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::p1xVec>(soa1, soa2);
+          SoAFunctorPairImpl<false, false, VectorizationPattern::p1xVec>(soa1, soa2, meta);
         }
         break;
       }
       case VectorizationPattern::p2xVecDiv2: {
         if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+          SoAFunctorPairImpl<true, false, VectorizationPattern::p2xVecDiv2>(soa1, soa2, meta);
         } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+          SoAFunctorPairImpl<false, false, VectorizationPattern::p2xVecDiv2>(soa1, soa2, meta);
         }
         break;
       }
       case VectorizationPattern::pVecDiv2x2: {
         if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecDiv2x2>(soa1, soa2, meta);
         } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecDiv2x2>(soa1, soa2, meta);
         }
         break;
       }
       case VectorizationPattern::pVecx1: {
         if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecx1>(soa1, soa2);
+          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecx1>(soa1, soa2, meta);
         } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecx1>(soa1, soa2);
+          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecx1>(soa1, soa2, meta);
         }
         break;
       }
@@ -296,43 +295,40 @@ class LJFunctorHWY
    *   5. Scatter accumulated forces back to the original SoA indices.
    */
   inline void SoAFunctorPairSorted(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                   const std::array<double, 3> &sortingDirection, double sortingCutoff,
-                                   bool newton3) final {
+                                   const autopas::SoASortedPairMeta &meta, bool newton3) final {
     if (soa1.size() == 0 or soa2.size() == 0) {
       return;
     }
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec: {
         if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingDirection, sortingCutoff);
+          SoAFunctorPairImpl<true, true, VectorizationPattern::p1xVec>(soa1, soa2, meta);
         } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingDirection, sortingCutoff);
+          SoAFunctorPairImpl<false, true, VectorizationPattern::p1xVec>(soa1, soa2, meta);
         }
         break;
       }
       case VectorizationPattern::p2xVecDiv2: {
         if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingDirection, sortingCutoff);
+          SoAFunctorPairImpl<true, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, meta);
         } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingDirection,
-                                                                            sortingCutoff);
+          SoAFunctorPairImpl<false, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, meta);
         }
         break;
       }
       case VectorizationPattern::pVecDiv2x2: {
         if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingDirection, sortingCutoff);
+          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, meta);
         } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingDirection,
-                                                                            sortingCutoff);
+          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, meta);
         }
         break;
       }
       case VectorizationPattern::pVecx1: {
         if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingDirection, sortingCutoff);
+          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecx1>(soa1, soa2, meta);
         } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingDirection, sortingCutoff);
+          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecx1>(soa1, soa2, meta);
         }
         break;
       }
@@ -867,7 +863,7 @@ class LJFunctorHWY
    */
   template <bool newton3, bool sorted, VectorizationPattern vecPattern>
   inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                 const std::array<double, 3> &sortingDirection = {}, const double sortingCutoff = 0.0) {
+                                 const autopas::SoASortedPairMeta &meta) {
     if (soa1.size() == 0 || soa2.size() == 0) {
       return;
     }
@@ -875,7 +871,6 @@ class LJFunctorHWY
     const size_t n1 = soa1.size();
     const size_t n2 = soa2.size();
 
-    // Raw SoA pointers — used directly (unsorted) or as gather source for packing (sorted).
     const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
     const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
     const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
@@ -893,131 +888,24 @@ class LJFunctorHWY
     const auto *const __restrict typeID1Ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
     const auto *const __restrict typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
-    // Sorted-path caches. Member variables reused across calls to avoid reallocation.
-    auto &td = _soaThreadData[autopas::autopas_get_thread_num()];
-    auto &projIdx1 = td.projIdx1;
-    auto &projIdx2 = td.projIdx2;
-    auto &x1s = td.x1s;
-    auto &y1s = td.y1s;
-    auto &z1s = td.z1s;
-    auto &x2s = td.x2s;
-    auto &y2s = td.y2s;
-    auto &z2s = td.z2s;
-    auto &ownership1s = td.ownership1s;
-    auto &ownership2s = td.ownership2s;
-    auto &typeID1s = td.typeID1s;
-    auto &typeID2s = td.typeID2s;
-    // Force accumulators in sorted-index space. Zero-initialized because handleNewton3Reduction
-    // does a load-subtract-store sequence (fx2[j] -= fx), so the sorted cache must start at 0.
-    auto &fx1s = td.fx1s;
-    auto &fy1s = td.fy1s;
-    auto &fz1s = td.fz1s;
-    auto &fx2s = td.fx2s;
-    auto &fy2s = td.fy2s;
-    auto &fz2s = td.fz2s;
-    auto &maxIndex = td.maxIndex;
-    auto &minIndex = td.minIndex;
-    std::ptrdiff_t start_i = 0;
+    const double *const x1Data = x1Ptr;
+    const double *const y1Data = y1Ptr;
+    const double *const z1Data = z1Ptr;
+    const double *const x2Data = x2Ptr;
+    const double *const y2Data = y2Ptr;
+    const double *const z2Data = z2Ptr;
+    const auto *const owned1Data = ownedStatePtr1;
+    const auto *const owned2Data = ownedStatePtr2;
+    const size_t *const typeID1Data = typeID1Ptr;
+    const size_t *const typeID2Data = typeID2Ptr;
+    double *const fx1Data = fx1Ptr;
+    double *const fy1Data = fy1Ptr;
+    double *const fz1Data = fz1Ptr;
+    double *const fx2Data = fx2Ptr;
+    double *const fy2Data = fy2Ptr;
+    double *const fz2Data = fz2Ptr;
 
-    if constexpr (sorted) {
-      // Step 1: 1D projection, sort indices ascending.
-      projIdx1.resize(n1);
-      projIdx2.resize(n2);
-      for (size_t i = 0; i < n1; ++i) {
-        projIdx1[i] = {x1Ptr[i] * sortingDirection[0] + y1Ptr[i] * sortingDirection[1] + z1Ptr[i] * sortingDirection[2],
-                       i};
-      }
-      for (size_t j = 0; j < n2; ++j) {
-        projIdx2[j] = {x2Ptr[j] * sortingDirection[0] + y2Ptr[j] * sortingDirection[1] + z2Ptr[j] * sortingDirection[2],
-                       j};
-      }
-      std::sort(projIdx1.begin(), projIdx1.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
-      std::sort(projIdx2.begin(), projIdx2.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
-
-      // Step 2: pack into contiguous caches in sorted order.
-      x1s.resize(n1);
-      y1s.resize(n1);
-      z1s.resize(n1);
-      x2s.resize(n2);
-      y2s.resize(n2);
-      z2s.resize(n2);
-      ownership1s.resize(n1);
-      ownership2s.resize(n2);
-      typeID1s.resize(n1);
-      typeID2s.resize(n2);
-      fx1s.assign(n1, 0.0);
-      fy1s.assign(n1, 0.0);
-      fz1s.assign(n1, 0.0);
-      if constexpr (newton3) {
-        fx2s.assign(n2, 0.0);
-        fy2s.assign(n2, 0.0);
-        fz2s.assign(n2, 0.0);
-      }
-      for (size_t i = 0; i < n1; ++i) {
-        const size_t idx = projIdx1[i].second;
-        x1s[i] = x1Ptr[idx];
-        y1s[i] = y1Ptr[idx];
-        z1s[i] = z1Ptr[idx];
-        ownership1s[i] = ownedStatePtr1[idx];
-        typeID1s[i] = typeID1Ptr[idx];
-      }
-      for (size_t j = 0; j < n2; ++j) {
-        const size_t idx = projIdx2[j].second;
-        x2s[j] = x2Ptr[idx];
-        y2s[j] = y2Ptr[idx];
-        z2s[j] = z2Ptr[idx];
-        ownership2s[j] = ownedStatePtr2[idx];
-        typeID2s[j] = typeID2Ptr[idx];
-      }
-
-      // Step 3 Compute start_i -> leftmost particle (by sorted projection) that can still interact with at least one
-      // particle in soa2
-      const double threshold = projIdx2[0].first - sortingCutoff;
-      auto it = std::upper_bound(projIdx1.begin(), projIdx1.end(), threshold,
-                                 [](double val, const auto &elem) { return val < elem.first; });
-      start_i = it - projIdx1.begin();
-
-      // Step 4: compute max_index[i] (exclusive upper bound on inner-loop j). Single-pass since
-      // max_index[] is monotonically non-decreasing in i when both arrays are sorted ascending.
-      maxIndex.resize(n1, 0);
-      size_t jUpper = 0;
-      for (size_t i = start_i; i < n1; ++i) {
-        const double upperLimit = projIdx1[i].first + sortingCutoff;
-        while (jUpper < n2 and projIdx2[jUpper].first <= upperLimit) {
-          ++jUpper;
-        }
-        maxIndex[i] = jUpper;
-      }
-
-      minIndex.resize(n1, 0);
-      size_t jLower = 0;
-      for (size_t i = start_i; i < n1; ++i) {
-        const double lowerLimit = projIdx1[i].first - sortingCutoff;
-        while (jLower < n2 and projIdx2[jLower].first < lowerLimit) {
-          ++jLower;
-        }
-        minIndex[i] = jLower;
-      }
-    }
-
-    // After packing, data pointers alias either sorted caches or original SoA arrays.
-    const double *const x1Data = sorted ? x1s.data() : x1Ptr;
-    const double *const y1Data = sorted ? y1s.data() : y1Ptr;
-    const double *const z1Data = sorted ? z1s.data() : z1Ptr;
-    const double *const x2Data = sorted ? x2s.data() : x2Ptr;
-    const double *const y2Data = sorted ? y2s.data() : y2Ptr;
-    const double *const z2Data = sorted ? z2s.data() : z2Ptr;
-    const auto *const owned1Data = sorted ? ownership1s.data() : ownedStatePtr1;
-    const auto *const owned2Data = sorted ? ownership2s.data() : ownedStatePtr2;
-    const size_t *const typeID1Data = sorted ? typeID1s.data() : typeID1Ptr;
-    const size_t *const typeID2Data = sorted ? typeID2s.data() : typeID2Ptr;
-    // For sorted+newton3=false, fx2 writes go to fx1s as a harmless stand-in.
-    double *const fx1Data = sorted ? fx1s.data() : fx1Ptr;
-    double *const fy1Data = sorted ? fy1s.data() : fy1Ptr;
-    double *const fz1Data = sorted ? fz1s.data() : fz1Ptr;
-    double *const fx2Data = sorted ? (newton3 ? fx2s.data() : fx1s.data()) : fx2Ptr;
-    double *const fy2Data = sorted ? (newton3 ? fy2s.data() : fy1s.data()) : fy2Ptr;
-    double *const fz2Data = sorted ? (newton3 ? fz2s.data() : fz1s.data()) : fz2Ptr;
+    const std::ptrdiff_t start_i = sorted ? static_cast<std::ptrdiff_t>(meta.start_i) : 0;
 
     VectorDouble virialSumX = highway::Zero(tag_double);
     VectorDouble virialSumY = highway::Zero(tag_double);
@@ -1061,8 +949,8 @@ class LJFunctorHWY
         // maxIndex is monotonically non-decreasing, so the tightest valid bound for the i-block
         // [i, i + iStepSize - 1] is maxIndex of the last particle in the block. For p1xVec
         // (iStepSize=1) this collapses to maxIndex[i].
-        jVecEnd = maxIndex[i + iStepSize - 1];
-        jVecStart = minIndex[i];
+        jVecEnd = meta.maxIndex[i + iStepSize - 1];
+        jVecStart = meta.minIndex[i];
         if (jVecStart >= jVecEnd) {
           continue;
         }
@@ -1086,8 +974,8 @@ class LJFunctorHWY
         size_t jVecEnd = n2;
         size_t jVecStart = 0;
         if constexpr (sorted) {
-          jVecEnd = maxIndex[i + restI - 1];
-          jVecStart = minIndex[i];
+          jVecEnd = meta.maxIndex[i + restI - 1];
+          jVecStart = meta.minIndex[i];
           if (jVecStart < jVecEnd) {
             jVecStart = jVecStart - (jVecStart % jStepSize);
           }
@@ -1097,24 +985,6 @@ class LJFunctorHWY
                                                             z2Data, owned2Data, fx1Data, fy1Data, fz1Data, fx2Data,
                                                             fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX,
                                                             virialSumY, virialSumZ, uPotSum, restI, jVecStart, jVecEnd);
-        }
-      }
-    }
-
-    // Step 6: scatter accumulated forces back to the original SoA order (sorted only).
-    if constexpr (sorted) {
-      for (size_t k = static_cast<size_t>(start_i); k < n1; ++k) {
-        const size_t origIdx = projIdx1[k].second;
-        fx1Ptr[origIdx] += fx1s[k];
-        fy1Ptr[origIdx] += fy1s[k];
-        fz1Ptr[origIdx] += fz1s[k];
-      }
-      if constexpr (newton3) {
-        for (size_t k = 0; k < n2; ++k) {
-          const size_t origIdx = projIdx2[k].second;
-          fx2Ptr[origIdx] += fx2s[k];
-          fy2Ptr[origIdx] += fy2s[k];
-          fz2Ptr[origIdx] += fz2s[k];
         }
       }
     }
@@ -1708,16 +1578,6 @@ class LJFunctorHWY
   };
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
-  struct SoAThreadData {
-    std::vector<std::pair<double, size_t>> projIdx1, projIdx2;
-    std::vector<double, autopas::AlignedAllocator<double>> x1s, y1s, z1s, x2s, y2s, z2s;
-    std::vector<autopas::OwnershipState, autopas::AlignedAllocator<autopas::OwnershipState>> ownership1s, ownership2s;
-    std::vector<size_t, autopas::AlignedAllocator<size_t>> typeID1s, typeID2s;
-    std::vector<double, autopas::AlignedAllocator<double>> fx1s, fy1s, fz1s, fx2s, fy2s, fz2s;
-    std::vector<size_t> maxIndex;
-    std::vector<size_t> minIndex;
-  };
-
   // cutoff squared used in the AoS functor.
   const double _cutoffSquareAoS{0.};
   // epsilon, sigma and shift6 used in the AoS functor.
@@ -1731,7 +1591,6 @@ class LJFunctorHWY
   double _potentialEnergySum{0.};
   std::array<double, 3> _virialSum{0., 0., 0.};
   std::vector<AoSThreadData> _aosThreadData{};
-  std::vector<SoAThreadData> _soaThreadData{};
 
   // flag to indicate whether post-processing has been performed.
   bool _postProcessed{false};

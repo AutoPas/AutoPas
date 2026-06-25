@@ -7,9 +7,12 @@
 
 #pragma once
 
+#include <algorithm>
+
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/SoASortedView.h"
 
 namespace autopas::internal {
 /**
@@ -291,21 +294,67 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoAImpl(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
-  if (shouldUseSoASorting(cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size(), sortingDirection)) {
-    _functor.SoAFunctorPairSorted(cell1._particleSoABuffer, cell2._particleSoABuffer, sortingDirection, _sortingCutoff,
-                                  _useNewton3);
-    if constexpr (bidirectional) {
-      if (not _useNewton3) {
-        _functor.SoAFunctorPairSorted(cell2._particleSoABuffer, cell1._particleSoABuffer, sortingDirection,
-                                      _sortingCutoff, false);
+  if constexpr (requires {
+                  ParticleFunctor_T::getNeededAttr();
+                  ParticleFunctor_T::getComputedAttr();
+                }) {
+    if (shouldUseSoASorting(cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size(), sortingDirection)) {
+      using Particle_T = typename ParticleCell_T::ParticleType;
+      SoASortedView<Particle_T, ParticleFunctor_T> view1(cell1._particleSoABuffer, sortingDirection);
+      SoASortedView<Particle_T, ParticleFunctor_T> view2(cell2._particleSoABuffer, sortingDirection);
+
+      const auto &projIdx1 = view1.projIdx;
+      const auto &projIdx2 = view2.projIdx;
+      const size_t n1 = view1.getView().size();
+      const size_t n2 = view2.getView().size();
+
+      {
+        const double threshold = projIdx2[0].first - _sortingCutoff;
+        auto it = std::upper_bound(projIdx1.begin(), projIdx1.end(), threshold,
+                                   [](double val, const auto &elem) { return val < elem.first; });
+        const size_t start_i = static_cast<size_t>(it - projIdx1.begin());
+
+        std::vector<size_t> maxIndex(n1, 0);
+        std::vector<size_t> minIndex(n1, 0);
+        size_t jUpper = 0, jLower = 0;
+        for (size_t i = start_i; i < n1; ++i) {
+          while (jUpper < n2 and projIdx2[jUpper].first <= projIdx1[i].first + _sortingCutoff) ++jUpper;
+          maxIndex[i] = jUpper;
+          while (jLower < n2 and projIdx2[jLower].first < projIdx1[i].first - _sortingCutoff) ++jLower;
+          minIndex[i] = jLower;
+        }
+        _functor.SoAFunctorPairSorted(view1.getView(), view2.getView(), {start_i, maxIndex, minIndex}, _useNewton3);
       }
+
+      if constexpr (bidirectional) {
+        if (not _useNewton3) {
+          const double threshold = projIdx1[0].first - _sortingCutoff;
+          auto it = std::upper_bound(projIdx2.begin(), projIdx2.end(), threshold,
+                                     [](double val, const auto &elem) { return val < elem.first; });
+          const size_t start_i = static_cast<size_t>(it - projIdx2.begin());
+
+          std::vector<size_t> maxIndex(n2, 0);
+          std::vector<size_t> minIndex(n2, 0);
+          size_t jUpper = 0, jLower = 0;
+          for (size_t i = start_i; i < n2; ++i) {
+            while (jUpper < n1 and projIdx1[jUpper].first <= projIdx2[i].first + _sortingCutoff) ++jUpper;
+            maxIndex[i] = jUpper;
+            while (jLower < n1 and projIdx1[jLower].first < projIdx2[i].first - _sortingCutoff) ++jLower;
+            minIndex[i] = jLower;
+          }
+          _functor.SoAFunctorPairSorted(view2.getView(), view1.getView(), {start_i, maxIndex, minIndex}, false);
+        }
+      }
+
+      view1.scatterBack();
+      view2.scatterBack();
+      return;
     }
-  } else {
-    _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, _useNewton3);
-    if constexpr (bidirectional) {
-      if (not _useNewton3) {
-        _functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
-      }
+  }
+  _functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, _useNewton3);
+  if constexpr (bidirectional) {
+    if (not _useNewton3) {
+      _functor.SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
     }
   }
 }

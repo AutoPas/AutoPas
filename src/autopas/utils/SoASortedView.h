@@ -18,6 +18,16 @@
 namespace autopas {
 
 /**
+ * Precomputed index bounds for iterating a pre-sorted SoA pair. Produced by CellFunctor and
+ * consumed by SoAFunctorPairSorted overrides.
+ */
+struct SoASortedPairMeta {
+  size_t start_i;
+  const std::vector<size_t> &maxIndex;
+  const std::vector<size_t> &minIndex;
+};
+
+/**
  * A sorted view on a SoA buffer. Particles are projected onto a normalized direction vector, sorted
  * ascending by projection, and packed into a contiguous internal SoA, similar to SortedCellView
  * for AoS.
@@ -105,7 +115,7 @@ class SoASortedView {
   void zeroAttr(size_t n) {
     constexpr size_t attr = static_cast<size_t>(Functor_T::getComputedAttr()[AttrIdx]);
     auto *ptr = _sortedSoa.template begin<attr>();
-    std::fill(ptr, ptr + n, decltype(*ptr){});
+    std::fill(ptr, ptr + n, 0);
   }
 
   template <size_t... AttrIdxs>

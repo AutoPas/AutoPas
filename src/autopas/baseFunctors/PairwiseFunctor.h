@@ -8,10 +8,12 @@
 #pragma once
 
 #include <type_traits>
+#include <vector>
 
 #include "Functor.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
+#include "autopas/utils/SoASortedView.h"
 #include "autopas/utils/SoAView.h"
 
 namespace autopas {
@@ -39,7 +41,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * Constructor
    * @param cutoff
    */
-  explicit PairwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff){};
+  explicit PairwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff) {};
 
   virtual ~PairwiseFunctor() = default;
 
@@ -104,20 +106,19 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   /**
-   * SoAFunctorPair with interaction sorting along a projection axis.
-   * Implementations project all particles onto sortingDirection, sort both views by projection (ascending),
-   * then iterate with early break when |proj_j - proj_i| > sortingCutoff.
+   * SoAFunctorPair on pre-sorted, pre-packed SoA views. CellFunctor handles projection, sorting, packing, and
+   * computing the index bounds; this function receives contiguous sorted views and only needs to run the kernel.
    *
-   * @param soa1 First SoA view.
-   * @param soa2 Second SoA view.
-   * @param sortingDirection Normalized vector along the cell-pair axis.
-   * @param sortingCutoff 1D cutoff for early break (normally the interaction cutoff).
+   * The default implementation ignores the index bounds and falls back to SoAFunctorPair.
+   *
+   * @param soa1 Sorted, packed view of cell 1 particles.
+   * @param soa2 Sorted, packed view of cell 2 particles.
+   * @param meta Precomputed start_i, maxIndex, minIndex for loop-bound pruning.
    * @param newton3 Whether to apply Newton's third law.
    */
   virtual void SoAFunctorPairSorted(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2,
-                                    const std::array<double, 3> &sortingDirection, double sortingCutoff, bool newton3) {
-    (void)sortingDirection;
-    (void)sortingCutoff;
+                                    const SoASortedPairMeta &meta, bool newton3) {
+    (void)meta;
     SoAFunctorPair(soa1, soa2, newton3);
   }
 
