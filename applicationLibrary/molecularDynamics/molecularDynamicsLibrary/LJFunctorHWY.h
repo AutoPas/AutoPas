@@ -339,6 +339,32 @@ class LJFunctorHWY
 
  private:
   /**
+   * Number of i-particles processed per outer-loop step for the given vectorization pattern.
+   * @tparam vecPattern
+   */
+  template <VectorizationPattern vecPattern>
+  static size_t iStepSize() {
+    if constexpr (vecPattern == VectorizationPattern::p1xVec) return 1;
+    if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) return 2;
+    if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) return _vecLengthDouble / 2;
+    if constexpr (vecPattern == VectorizationPattern::pVecx1) return _vecLengthDouble;
+    return 1;
+  }
+
+  /**
+   * Number of j-particles processed per inner-loop step for the given vectorization pattern.
+   * @tparam vecPattern
+   */
+  template <VectorizationPattern vecPattern>
+  static size_t jStepSize() {
+    if constexpr (vecPattern == VectorizationPattern::p1xVec) return _vecLengthDouble;
+    if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) return _vecLengthDouble / 2;
+    if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) return 2;
+    if constexpr (vecPattern == VectorizationPattern::pVecx1) return 1;
+    return 1;
+  }
+
+  /**
    * Checks whether the loop over i should be continued. This depends on the respective VectorizationPattern.
    *
    * @tparam reversed Whether iterating backwards over i.
@@ -362,25 +388,7 @@ class LJFunctorHWY
         return false;
       }
     } else {
-      if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-        return i < vecEnd;
-      } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-        return i < (vecEnd - 1);
-      } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-        // Switching to signed long to avoid integer underflows.
-        // Note: The narrowing conversion of _vecLengthDouble shouldn't cause issues as it is not expected to be so
-        // large.
-        const long criterion = vecEnd - _vecLengthDouble / 2 + 1;
-        return i < criterion;
-      } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-        // Switching to signed long to avoid integer underflows.
-        // Note: The narrowing conversion of _vecLengthDouble shouldn't cause issues as it is not expected to be so
-        // large.
-        const long criterion = vecEnd - _vecLengthDouble + 1;
-        return i < criterion;
-      } else {
-        return false;
-      }
+      return i + static_cast<long>(iStepSize<vecPattern>()) <= vecEnd;
     }
   }
 
@@ -393,15 +401,7 @@ class LJFunctorHWY
    */
   template <VectorizationPattern vecPattern>
   static constexpr void decrementFirstLoop(std::ptrdiff_t &i) {
-    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      --i;
-    } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-      i -= 2;
-    } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-      i -= _vecLengthDouble / 2;
-    } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-      i -= _vecLengthDouble;
-    }
+    i -= static_cast<std::ptrdiff_t>(iStepSize<vecPattern>());
   }
 
   /**
@@ -413,15 +413,7 @@ class LJFunctorHWY
    */
   template <VectorizationPattern vecPattern>
   static constexpr void incrementFirstLoop(std::ptrdiff_t &i) {
-    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      ++i;
-    } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-      i += 2;
-    } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-      i += _vecLengthDouble / 2;
-    } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-      i += _vecLengthDouble;
-    }
+    i += static_cast<std::ptrdiff_t>(iStepSize<vecPattern>());
   }
 
   /**
@@ -448,26 +440,9 @@ class LJFunctorHWY
    */
   template <VectorizationPattern vecPattern>
   static constexpr bool checkSecondLoopCondition(std::ptrdiff_t i, size_t j) {
-    std::ptrdiff_t limit = 0;
-
-    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      // Round i down to the next multiple of _vecLengthDouble
-      limit = i - (i % _vecLengthDouble);
-    } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-      // Round i down to the next multiple of _vecLengthDouble / 2
-      const std::ptrdiff_t block = _vecLengthDouble / 2;
-      limit = i - (i % block);
-    } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-      // Round i down to the next multiple of 2
-      limit = i - (i % 2);
-    } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-      // Rounding to a multiple of 1 is a no-op
-      limit = i;
-    } else {
-      // Unknown vectorization pattern
-      return false;
-    }
-
+    // Round i down to the nearest multiple of jStep (the j-lane width) to get the exclusive upper bound.
+    const std::ptrdiff_t jStep = static_cast<std::ptrdiff_t>(jStepSize<vecPattern>());
+    const std::ptrdiff_t limit = i - (i % jStep);
     return j < static_cast<size_t>(limit);
   }
 
@@ -480,15 +455,7 @@ class LJFunctorHWY
    */
   template <VectorizationPattern vecPattern>
   static constexpr void incrementSecondLoop(std::ptrdiff_t &j) {
-    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      j += _vecLengthDouble;
-    } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-      j += _vecLengthDouble / 2;
-    } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-      j += 2;
-    } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-      ++j;
-    }
+    j += static_cast<std::ptrdiff_t>(jStepSize<vecPattern>());
   }
 
   /**
@@ -501,17 +468,8 @@ class LJFunctorHWY
    */
   template <VectorizationPattern vecPattern>
   static constexpr int obtainJLoopRemainderLength(const std::ptrdiff_t j) {
-    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      return static_cast<int>(j & (_vecLengthDouble - 1));
-    } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-      return static_cast<int>(j & (_vecLengthDouble / 2 - 1));
-    } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-      return static_cast<int>(j & (1));
-    } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-      return 0;
-    } else {
-      return -1;
-    }
+    // jStep is always a power of two, so j % jStep == j & (jStep - 1).
+    return static_cast<int>(j & (static_cast<std::ptrdiff_t>(jStepSize<vecPattern>()) - 1));
   }
 
   /**
@@ -912,33 +870,8 @@ class LJFunctorHWY
     VectorDouble virialSumZ = highway::Zero(tag_double);
     VectorDouble uPotSum = highway::Zero(tag_double);
 
-    // Number of i-particles processed per main-loop step. Local so the compiler can const-fold
-    // even when _vecLengthDouble is not constexpr on the target architecture (e.g. ARM SVE).
-    const size_t iStepSize = [&]() -> size_t {
-      if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-        return 1;
-      } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-        return 2;
-      } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-        return _vecLengthDouble / 2;
-      } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-        return _vecLengthDouble;
-      }
-      return 1;
-    }();
-
-    const size_t jStepSize = [&]() -> size_t {
-      if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-        return _vecLengthDouble;
-      } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-        return _vecLengthDouble / 2;
-      } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-        return 2;
-      } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-        return 1;
-      }
-      return 1;
-    }();
+    const size_t iStep = iStepSize<vecPattern>();
+    const size_t jStep = jStepSize<vecPattern>();
 
     // Step 5: vectorized interaction loop.
     std::ptrdiff_t i = start_i;
@@ -947,14 +880,14 @@ class LJFunctorHWY
       size_t jVecStart = 0;
       if constexpr (sorted) {
         // maxIndex is monotonically non-decreasing, so the tightest valid bound for the i-block
-        // [i, i + iStepSize - 1] is maxIndex of the last particle in the block. For p1xVec
-        // (iStepSize=1) this collapses to maxIndex[i].
-        jVecEnd = meta.maxIndex[i + iStepSize - 1];
+        // [i, i + iStep - 1] is maxIndex of the last particle in the block. For p1xVec
+        // (iStep=1) this collapses to maxIndex[i].
+        jVecEnd = meta.maxIndex[i + iStep - 1];
         jVecStart = meta.minIndex[i];
         if (jVecStart >= jVecEnd) {
           continue;
         }
-        jVecStart = jVecStart - (jVecStart % jStepSize);
+        jVecStart = jVecStart - (jVecStart % jStep);
         if constexpr (vecPattern == VectorizationPattern::p1xVec) {
           if (owned1Data[i] == autopas::OwnershipState::dummy) continue;
         }
@@ -977,7 +910,7 @@ class LJFunctorHWY
           jVecEnd = meta.maxIndex[i + restI - 1];
           jVecStart = meta.minIndex[i];
           if (jVecStart < jVecEnd) {
-            jVecStart = jVecStart - (jVecStart % jStepSize);
+            jVecStart = jVecStart - (jVecStart % jStep);
           }
         }
         if (jVecStart < jVecEnd) {
