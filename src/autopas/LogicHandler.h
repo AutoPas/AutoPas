@@ -1343,7 +1343,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
         " to the configuration queue during simulation (potentially by a tuning strategy).");
     AutoPasLog(WARN, "Configuration rejected: {}", config.toString());
     // Such illegal configurations should be filtered out in the generation of the search space.
-    return {nullptr, /*rejectIndefinitely*/ false};
+    return {nullptr, /*rejectIndefinitely*/ true};
   }
 
   // Check if the functor supports the required Newton 3 mode
