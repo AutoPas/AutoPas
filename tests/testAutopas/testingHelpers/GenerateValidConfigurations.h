@@ -103,10 +103,11 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
     const std::set<autopas::VectorizationPatternOption> &allowedVectorPatterns =
         autopas::VectorizationPatternOption::getAllOptions()) {
+
+  const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);
   if (interactionType == autopas::InteractionTypeOption::all) {
     std::set<autopas::Configuration> allConfigs;
     for (auto iType : autopas::InteractionTypeOption::getMostOptions()) {
-      const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);
       const auto configs = autopas::SearchSpaceGenerators::cartesianProduct(
           allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
           allowedNewton3Options, &csfs, allowedVectorPatterns, iType);
@@ -114,7 +115,6 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     }
     return allConfigs;
   } else {
-    const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);
     return autopas::SearchSpaceGenerators::cartesianProduct(
         allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
         allowedNewton3Options, &csfs, allowedVectorPatterns, interactionType);
