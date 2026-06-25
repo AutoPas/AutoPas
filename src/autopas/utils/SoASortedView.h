@@ -21,10 +21,10 @@ namespace autopas {
  * Precomputed index bounds for iterating a pre-sorted SoA pair. Produced by CellFunctor and
  * consumed by SoAFunctorPairSorted overrides.
  */
-struct SoASortedPairMeta {
+struct SoASortingData {
   size_t start_i;
-  const std::vector<size_t> &maxIndex;
-  const std::vector<size_t> &minIndex;
+  std::vector<size_t> maxIndex;
+  std::vector<size_t> minIndex;
 };
 
 /**

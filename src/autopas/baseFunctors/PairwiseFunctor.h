@@ -41,7 +41,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * Constructor
    * @param cutoff
    */
-  explicit PairwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff){};
+  explicit PairwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff) {};
 
   virtual ~PairwiseFunctor() = default;
 
@@ -117,7 +117,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * @param newton3 Whether to apply Newton's third law.
    */
   virtual void SoAFunctorPairSorted(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2,
-                                    const SoASortedPairMeta &meta, bool newton3) {
+                                    const SoASortingData &meta, bool newton3) {
     (void)meta;
     SoAFunctorPair(soa1, soa2, newton3);
   }

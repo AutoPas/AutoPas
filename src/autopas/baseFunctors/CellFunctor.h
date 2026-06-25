@@ -107,6 +107,15 @@ class CellFunctor {
   }
 
   /**
+   * Computes the per-particle index bounds into projIdxJ needed by SoAFunctorPairSorted.
+   * @param projIdxI Sorted projections of the outer-loop cell.
+   * @param projIdxJ Sorted projections of the inner-loop cell.
+   * @return SoASortedPairMeta with start_i and per-i upper/lower bounds into j.
+   */
+  [[nodiscard]] SoASortingData computeSortingData(const std::vector<std::pair<double, size_t>> &projIdxI,
+                                                  const std::vector<std::pair<double, size_t>> &projIdxJ) const;
+
+  /**
    * Applies the functor to all particle pairs exploiting Newton's third law of motion.
    * There is only one version of this function as newton3 is always allowed to be applied inside a cell.
    * The value of newton3 defines how to apply the aos functor:
@@ -292,6 +301,31 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::computeSortingData(
+    const std::vector<std::pair<double, size_t>> &projIdxI,
+    const std::vector<std::pair<double, size_t>> &projIdxJ) const {
+  const size_t nI = projIdxI.size();
+  const size_t nJ = projIdxJ.size();
+
+  const double threshold = projIdxJ[0].first - _sortingCutoff;
+  auto start_iter = std::upper_bound(projIdxI.begin(), projIdxI.end(), threshold,
+                                     [](double val, const auto &elem) { return val < elem.first; });
+  const size_t start_i = static_cast<size_t>(start_iter - projIdxI.begin());
+
+  std::vector<size_t> maxIndex(nI, 0);
+  std::vector<size_t> minIndex(nI, 0);
+  size_t jUpper = 0, jLower = 0;
+  for (size_t i = start_i; i < nI; ++i) {
+    while (jUpper < nJ and projIdxJ[jUpper].first <= projIdxI[i].first + _sortingCutoff) ++jUpper;
+    maxIndex[i] = jUpper;
+    while (jLower < nJ and projIdxJ[jLower].first < projIdxI[i].first - _sortingCutoff) ++jLower;
+    minIndex[i] = jLower;
+  }
+
+  return {start_i, std::move(maxIndex), std::move(minIndex)};
+}
+
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoAImpl(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
   if constexpr (requires {
@@ -303,46 +337,13 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
       SoASortedView<Particle_T, ParticleFunctor_T> view1(cell1._particleSoABuffer, sortingDirection);
       SoASortedView<Particle_T, ParticleFunctor_T> view2(cell2._particleSoABuffer, sortingDirection);
 
-      const auto &projIdx1 = view1.projIdx;
-      const auto &projIdx2 = view2.projIdx;
-      const size_t n1 = view1.getView().size();
-      const size_t n2 = view2.getView().size();
-
-      {
-        const double threshold = projIdx2[0].first - _sortingCutoff;
-        auto it = std::upper_bound(projIdx1.begin(), projIdx1.end(), threshold,
-                                   [](double val, const auto &elem) { return val < elem.first; });
-        const size_t start_i = static_cast<size_t>(it - projIdx1.begin());
-
-        std::vector<size_t> maxIndex(n1, 0);
-        std::vector<size_t> minIndex(n1, 0);
-        size_t jUpper = 0, jLower = 0;
-        for (size_t i = start_i; i < n1; ++i) {
-          while (jUpper < n2 and projIdx2[jUpper].first <= projIdx1[i].first + _sortingCutoff) ++jUpper;
-          maxIndex[i] = jUpper;
-          while (jLower < n2 and projIdx2[jLower].first < projIdx1[i].first - _sortingCutoff) ++jLower;
-          minIndex[i] = jLower;
-        }
-        _functor.SoAFunctorPairSorted(view1.getView(), view2.getView(), {start_i, maxIndex, minIndex}, _useNewton3);
-      }
+      _functor.SoAFunctorPairSorted(view1.getView(), view2.getView(), computeSortingData(view1.projIdx, view2.projIdx),
+                                    _useNewton3);
 
       if constexpr (bidirectional) {
         if (not _useNewton3) {
-          const double threshold = projIdx1[0].first - _sortingCutoff;
-          auto it = std::upper_bound(projIdx2.begin(), projIdx2.end(), threshold,
-                                     [](double val, const auto &elem) { return val < elem.first; });
-          const size_t start_i = static_cast<size_t>(it - projIdx2.begin());
-
-          std::vector<size_t> maxIndex(n2, 0);
-          std::vector<size_t> minIndex(n2, 0);
-          size_t jUpper = 0, jLower = 0;
-          for (size_t i = start_i; i < n2; ++i) {
-            while (jUpper < n1 and projIdx1[jUpper].first <= projIdx2[i].first + _sortingCutoff) ++jUpper;
-            maxIndex[i] = jUpper;
-            while (jLower < n1 and projIdx1[jLower].first < projIdx2[i].first - _sortingCutoff) ++jLower;
-            minIndex[i] = jLower;
-          }
-          _functor.SoAFunctorPairSorted(view2.getView(), view1.getView(), {start_i, maxIndex, minIndex}, false);
+          _functor.SoAFunctorPairSorted(view2.getView(), view1.getView(),
+                                        computeSortingData(view2.projIdx, view1.projIdx), false);
         }
       }
 
