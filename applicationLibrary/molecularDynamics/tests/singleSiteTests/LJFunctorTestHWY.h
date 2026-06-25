@@ -35,50 +35,37 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
   void setupPPL();
 
   /**
-   * Checks equality of SoALoader, SoAFunctorPair and SoAExtractor.
-   * Expects that particles are loaded and extracted in the same order.
-   * In all comparisons first is HWY, second Autovec
+   * Cell-pair adjacency geometry controlling cell positions and sorting direction.
+   * All cells are full-size cubes [_lowCorner, _highCorner] placed adjacent to one another.
    *
-   * Checks SoAFunctorPair(soa1, soa2, newton3)
+   * face        — cell2 to the right  of cell1 along x (sorting axis {1,0,0})
+   * edge        — cell2 to the upper-right of cell1 along x,y (sorting axis {1/√2, 1/√2, 0})
+   * corner      — cell2 diagonally above cell1 along x,y,z (sorting axis {1/√3, 1/√3, 1/√3})
    *
-   * @tparam mixing
-   * @param newton3
-   * @param doDeleteSomeParticles
-   * @param useUnalignedViews
-   * @param pattern
-   */
-  template <bool mixing>
-  void testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews,
-                                           VectorizationPattern pattern);
-
-  /**
-   * Cell-pair adjacency geometry used by testLJFunctorvsLJFunctorHWYTwoCellsSorted.
-   *
-   * face        — cells share a face, cell2 to the right of cell1 (sorting axis {1,0,0})
-   * edge        — cells share an edge, cell2 to the upper-right of cell1 (sorting axis {1/√2, 1/√2, 0})
-   * corner      — cells share a corner, cell2 diagonally above cell1 (sorting axis {1/√3, 1/√3, 1/√3})
-   *
-   * The *Reversed variants swap cell1 and cell2, placing cell2 to the left/below cell1 in the
-   * projection axis. This exercises minIndex > 0, i.e. left-side j pruning.
-   * faceReversed   — cell2 to the left of cell1 (sorting axis {1,0,0})
-   * edgeReversed   — cell2 to the lower-left of cell1 (sorting axis {1/√2, 1/√2, 0})
-   * cornerReversed — cell2 diagonally below cell1 (sorting axis {1/√3, 1/√3, 1/√3})
+   * The *Reversed variants swap cell1 and cell2, so cell1 has higher projections than cell2.
+   * This exercises minIndex > 0 (left-side j pruning) in the sorted path.
+   * faceReversed   — cell1 to the right  of cell2 (sorting axis {1,0,0})
+   * edgeReversed   — cell1 to the upper-right of cell2 (sorting axis {1/√2, 1/√2, 0})
+   * cornerReversed — cell1 diagonally above cell2 (sorting axis {1/√3, 1/√3, 1/√3})
    */
   enum class CellGeometry { face, edge, corner, faceReversed, edgeReversed, cornerReversed };
 
   /**
-   * Checks that SoAFunctorPairSorted on HWY matches the (unsorted) SoAFunctorPair on the autovec functor.
-   * The cell-pair geometry is controlled by @p geometry, which also determines the sorting direction.
+   * Verifies that the HWY functor matches the autovec SoAFunctorPair reference for a cell pair.
+   * Cell positions and sorting direction are determined by @p geometry.
+   * If @tparam sorted is true, the HWY path uses SoASortedView + SoAFunctorPairSorted;
+   * otherwise it uses SoAFunctorPair directly.
    *
    * @tparam mixing
+   * @tparam sorted whether to exercise the sorted or unsorted HWY code path
    * @param newton3
    * @param doDeleteSomeParticles
    * @param pattern
-   * @param geometry cell-pair adjacency type
+   * @param geometry cell-pair adjacency type, determines cell bounds and sorting direction
    */
-  template <bool mixing>
-  void testLJFunctorvsLJFunctorHWYTwoCellsSorted(bool newton3, bool doDeleteSomeParticles, VectorizationPattern pattern,
-                                                 CellGeometry geometry);
+  template <bool mixing, bool sorted>
+  void testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, VectorizationPattern pattern,
+                                           CellGeometry geometry);
 
   /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
