@@ -23,8 +23,8 @@ namespace autopas {
  */
 struct SoASortingData {
   size_t start_i;
-  std::vector<size_t> maxIndex;
-  std::vector<size_t> minIndex;
+  const std::vector<size_t> &maxIndex;
+  const std::vector<size_t> &minIndex;
 };
 
 /**
@@ -51,8 +51,12 @@ class SoASortedView {
    * an internal SoA. Computed attributes are zero-initialized.
    * @param source View of the source SoA buffer to sort.
    * @param sortingDirection Normalized direction vector along which to sort.
+   * @param cachedSoa Reference to a persistent SoA buffer to avoid allocations.
+   * @param cachedProjIdx Reference to a persistent projection vector to avoid allocations.
    */
-  SoASortedView(SoAView<SoAArraysType> source, const std::array<double, 3> &sortingDirection) : _source(source) {
+  SoASortedView(SoAView<SoAArraysType> source, const std::array<double, 3> &sortingDirection,
+                SoA<SoAArraysType> &cachedSoa, std::vector<std::pair<double, size_t>> &cachedProjIdx)
+      : _source(source), _sortedSoa(cachedSoa), projIdx(cachedProjIdx) {
     const size_t n = source.size();
     if (n == 0) return;
 
@@ -93,7 +97,7 @@ class SoASortedView {
   /**
    * Sorted (projection value, original index) pairs, ascending by projection.
    */
-  std::vector<std::pair<double, size_t>> projIdx;
+  std::vector<std::pair<double, size_t>> &projIdx;
 
  private:
   template <size_t AttrIdx>
@@ -139,7 +143,7 @@ class SoASortedView {
   }
 
   SoAView<SoAArraysType> _source;
-  SoA<SoAArraysType> _sortedSoa;
+  SoA<SoAArraysType> &_sortedSoa;
 };
 
 }  // namespace autopas

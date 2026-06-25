@@ -13,6 +13,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoASortedView.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas::internal {
 /**
@@ -37,7 +38,11 @@ class CellFunctor {
    * @param useNewton3 Parameter to specify whether newton3 is used or not.
    */
   explicit CellFunctor(ParticleFunctor_T &f, const double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
-      : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
+      : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {
+    if (dataLayout == DataLayoutOption::soa) {
+      _soaThreadData.resize(autopas::autopas_get_max_threads());
+    }
+  }
 
   /**
    * Process the interactions inside one cell.
@@ -110,10 +115,14 @@ class CellFunctor {
    * Computes the per-particle index bounds into projIdxJ needed by SoAFunctorPairSorted.
    * @param projIdxI Sorted projections of the outer-loop cell.
    * @param projIdxJ Sorted projections of the inner-loop cell.
+   * @param maxIndexCache Cache to store the computed maxIndex.
+   * @param minIndexCache Cache to store the computed minIndex.
    * @return SoASortedPairMeta with start_i and per-i upper/lower bounds into j.
    */
   [[nodiscard]] SoASortingData computeSortingData(const std::vector<std::pair<double, size_t>> &projIdxI,
-                                                  const std::vector<std::pair<double, size_t>> &projIdxJ) const;
+                                                  const std::vector<std::pair<double, size_t>> &projIdxJ,
+                                                  std::vector<size_t> &maxIndexCache,
+                                                  std::vector<size_t> &minIndexCache) const;
 
   /**
    * Applies the functor to all particle pairs exploiting Newton's third law of motion.
@@ -163,6 +172,17 @@ class CellFunctor {
   const DataLayoutOption::Value _dataLayout;
 
   const bool _useNewton3;
+
+  struct SoAThreadData {
+    SoA<typename ParticleCell_T::ParticleType::SoAArraysType> sortedSoa1;
+    SoA<typename ParticleCell_T::ParticleType::SoAArraysType> sortedSoa2;
+    std::vector<std::pair<double, size_t>> projIdx1;
+    std::vector<std::pair<double, size_t>> projIdx2;
+    std::vector<size_t> maxIndex;
+    std::vector<size_t> minIndex;
+  };
+
+  std::vector<SoAThreadData> _soaThreadData{};
 };
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
@@ -302,8 +322,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::computeSortingData(
-    const std::vector<std::pair<double, size_t>> &projIdxI,
-    const std::vector<std::pair<double, size_t>> &projIdxJ) const {
+    const std::vector<std::pair<double, size_t>> &projIdxI, const std::vector<std::pair<double, size_t>> &projIdxJ,
+    std::vector<size_t> &maxIndexCache, std::vector<size_t> &minIndexCache) const {
   const size_t nI = projIdxI.size();
   const size_t nJ = projIdxJ.size();
 
@@ -312,17 +332,17 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
                                      [](double val, const auto &elem) { return val < elem.first; });
   const size_t start_i = static_cast<size_t>(start_iter - projIdxI.begin());
 
-  std::vector<size_t> maxIndex(nI, 0);
-  std::vector<size_t> minIndex(nI, 0);
+  maxIndexCache.assign(nI, 0);
+  minIndexCache.assign(nI, 0);
   size_t jUpper = 0, jLower = 0;
   for (size_t i = start_i; i < nI; ++i) {
     while (jUpper < nJ and projIdxJ[jUpper].first <= projIdxI[i].first + _sortingCutoff) ++jUpper;
-    maxIndex[i] = jUpper;
+    maxIndexCache[i] = jUpper;
     while (jLower < nJ and projIdxJ[jLower].first < projIdxI[i].first - _sortingCutoff) ++jLower;
-    minIndex[i] = jLower;
+    minIndexCache[i] = jLower;
   }
 
-  return {start_i, std::move(maxIndex), std::move(minIndex)};
+  return {start_i, maxIndexCache, minIndexCache};
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
@@ -334,16 +354,22 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
                 }) {
     if (shouldUseSoASorting(cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size(), sortingDirection)) {
       using Particle_T = typename ParticleCell_T::ParticleType;
-      SoASortedView<Particle_T, ParticleFunctor_T> view1(cell1._particleSoABuffer, sortingDirection);
-      SoASortedView<Particle_T, ParticleFunctor_T> view2(cell2._particleSoABuffer, sortingDirection);
+      auto &thread_data = _soaThreadData[autopas::autopas_get_thread_num()];
 
-      _functor.SoAFunctorPairSorted(view1.getView(), view2.getView(), computeSortingData(view1.projIdx, view2.projIdx),
-                                    _useNewton3);
+      SoASortedView<Particle_T, ParticleFunctor_T> view1(cell1._particleSoABuffer, sortingDirection,
+                                                         thread_data.sortedSoa1, thread_data.projIdx1);
+      SoASortedView<Particle_T, ParticleFunctor_T> view2(cell2._particleSoABuffer, sortingDirection,
+                                                         thread_data.sortedSoa2, thread_data.projIdx2);
+
+      _functor.SoAFunctorPairSorted(
+          view1.getView(), view2.getView(),
+          computeSortingData(view1.projIdx, view2.projIdx, thread_data.maxIndex, thread_data.minIndex), _useNewton3);
 
       if constexpr (bidirectional) {
         if (not _useNewton3) {
-          _functor.SoAFunctorPairSorted(view2.getView(), view1.getView(),
-                                        computeSortingData(view2.projIdx, view1.projIdx), false);
+          _functor.SoAFunctorPairSorted(
+              view2.getView(), view1.getView(),
+              computeSortingData(view2.projIdx, view1.projIdx, thread_data.maxIndex, thread_data.minIndex), false);
         }
       }
 

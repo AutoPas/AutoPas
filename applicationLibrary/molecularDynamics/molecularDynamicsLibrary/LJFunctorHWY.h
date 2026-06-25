@@ -233,7 +233,8 @@ class LJFunctorHWY
   // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
-    autopas::SoASortingData sortingData = {0, {}, {}};
+    static const std::vector<size_t> emptyVec{};
+    autopas::SoASortingData sortingData = {0, emptyVec, emptyVec};
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec: {
         if (newton3) {
