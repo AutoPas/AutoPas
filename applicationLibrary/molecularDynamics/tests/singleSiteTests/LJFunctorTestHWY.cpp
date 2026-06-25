@@ -99,46 +99,46 @@ bool LJFunctorTestHWY::checkAoSParticlesAreEqual(const FMCell &cell1, const FMCe
 
 template <bool mixing, bool sorted>
 void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles,
-                                                           VectorizationPattern pattern, CellGeometry geometry) {
+                                                           VectorizationPattern pattern, CellLayout geometry) {
   std::array<double, 3> cell1Low{}, cell1High{}, cell2Low{}, cell2High{}, sortingDirection{};
 
   switch (geometry) {
-    case CellGeometry::face:
+    case CellLayout::face:
       cell1Low = _lowCorner;
       cell1High = _highCorner;
       cell2Low = {_highCorner[0], _lowCorner[1], _lowCorner[2]};
       cell2High = {2 * _highCorner[0], _highCorner[1], _highCorner[2]};
       sortingDirection = {1.0, 0.0, 0.0};
       break;
-    case CellGeometry::edge:
+    case CellLayout::edge:
       cell1Low = _lowCorner;
       cell1High = _highCorner;
       cell2Low = {_highCorner[0], _highCorner[1], _lowCorner[2]};
       cell2High = {2 * _highCorner[0], 2 * _highCorner[1], _highCorner[2]};
       sortingDirection = {1.0 / std::sqrt(2.0), 1.0 / std::sqrt(2.0), 0.0};
       break;
-    case CellGeometry::corner:
+    case CellLayout::corner:
       cell1Low = _lowCorner;
       cell1High = _highCorner;
       cell2Low = _highCorner;
       cell2High = {2 * _highCorner[0], 2 * _highCorner[1], 2 * _highCorner[2]};
       sortingDirection = {1.0 / std::sqrt(3.0), 1.0 / std::sqrt(3.0), 1.0 / std::sqrt(3.0)};
       break;
-    case CellGeometry::faceReversed:
+    case CellLayout::faceReversed:
       cell1Low = {_highCorner[0], _lowCorner[1], _lowCorner[2]};
       cell1High = {2 * _highCorner[0], _highCorner[1], _highCorner[2]};
       cell2Low = _lowCorner;
       cell2High = _highCorner;
       sortingDirection = {1.0, 0.0, 0.0};
       break;
-    case CellGeometry::edgeReversed:
+    case CellLayout::edgeReversed:
       cell1Low = {_highCorner[0], _highCorner[1], _lowCorner[2]};
       cell1High = {2 * _highCorner[0], 2 * _highCorner[1], _highCorner[2]};
       cell2Low = _lowCorner;
       cell2High = _highCorner;
       sortingDirection = {1.0 / std::sqrt(2.0), 1.0 / std::sqrt(2.0), 0.0};
       break;
-    case CellGeometry::cornerReversed:
+    case CellLayout::cornerReversed:
       cell1Low = _highCorner;
       cell1High = {2 * _highCorner[0], 2 * _highCorner[1], 2 * _highCorner[2]};
       cell2Low = _lowCorner;
@@ -229,7 +229,6 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
   EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), energyTol) << "global uPot";
   EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), energyTol) << "global virial";
 }
-
 
 template <bool mixing>
 void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles,
@@ -539,9 +538,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellUseUnalignedViews) {
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsFace) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testLJFunctorvsLJFunctorHWYTwoCells<true, false>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::face);
+    testLJFunctorvsLJFunctorHWYTwoCells<true, false>(newton3, doDeleteSomeParticle, vecPattern, CellLayout::face);
   } else {
-    testLJFunctorvsLJFunctorHWYTwoCells<false, false>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::face);
+    testLJFunctorvsLJFunctorHWYTwoCells<false, false>(newton3, doDeleteSomeParticle, vecPattern, CellLayout::face);
   }
 }
 
@@ -552,9 +551,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsFace) {
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedFace) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testLJFunctorvsLJFunctorHWYTwoCells<true, true>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::face);
+    testLJFunctorvsLJFunctorHWYTwoCells<true, true>(newton3, doDeleteSomeParticle, vecPattern, CellLayout::face);
   } else {
-    testLJFunctorvsLJFunctorHWYTwoCells<false, true>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::face);
+    testLJFunctorvsLJFunctorHWYTwoCells<false, true>(newton3, doDeleteSomeParticle, vecPattern, CellLayout::face);
   }
 }
 
@@ -565,9 +564,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedFace) {
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsEdge) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testLJFunctorvsLJFunctorHWYTwoCells<true, false>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::edge);
+    testLJFunctorvsLJFunctorHWYTwoCells<true, false>(newton3, doDeleteSomeParticle, vecPattern, CellLayout::edge);
   } else {
-    testLJFunctorvsLJFunctorHWYTwoCells<false, false>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::edge);
+    testLJFunctorvsLJFunctorHWYTwoCells<false, false>(newton3, doDeleteSomeParticle, vecPattern, CellLayout::edge);
   }
 }
 
@@ -578,9 +577,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsEdge) {
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedEdge) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testLJFunctorvsLJFunctorHWYTwoCells<true, true>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::edge);
+    testLJFunctorvsLJFunctorHWYTwoCells<true, true>(newton3, doDeleteSomeParticle, vecPattern, CellLayout::edge);
   } else {
-    testLJFunctorvsLJFunctorHWYTwoCells<false, true>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::edge);
+    testLJFunctorvsLJFunctorHWYTwoCells<false, true>(newton3, doDeleteSomeParticle, vecPattern, CellLayout::edge);
   }
 }
 
@@ -591,9 +590,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedEdge) {
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsCorner) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testLJFunctorvsLJFunctorHWYTwoCells<true, false>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::corner);
+    testLJFunctorvsLJFunctorHWYTwoCells<true, false>(newton3, doDeleteSomeParticle, vecPattern, CellLayout::corner);
   } else {
-    testLJFunctorvsLJFunctorHWYTwoCells<false, false>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::corner);
+    testLJFunctorvsLJFunctorHWYTwoCells<false, false>(newton3, doDeleteSomeParticle, vecPattern, CellLayout::corner);
   }
 }
 
@@ -604,9 +603,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsCorner) {
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedCorner) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
-    testLJFunctorvsLJFunctorHWYTwoCells<true, true>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::corner);
+    testLJFunctorvsLJFunctorHWYTwoCells<true, true>(newton3, doDeleteSomeParticle, vecPattern, CellLayout::corner);
   } else {
-    testLJFunctorvsLJFunctorHWYTwoCells<false, true>(newton3, doDeleteSomeParticle, vecPattern, CellGeometry::corner);
+    testLJFunctorvsLJFunctorHWYTwoCells<false, true>(newton3, doDeleteSomeParticle, vecPattern, CellLayout::corner);
   }
 }
 
@@ -618,10 +617,10 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsFaceReversed) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
     testLJFunctorvsLJFunctorHWYTwoCells<true, false>(newton3, doDeleteSomeParticle, vecPattern,
-                                                     CellGeometry::faceReversed);
+                                                     CellLayout::faceReversed);
   } else {
     testLJFunctorvsLJFunctorHWYTwoCells<false, false>(newton3, doDeleteSomeParticle, vecPattern,
-                                                      CellGeometry::faceReversed);
+                                                      CellLayout::faceReversed);
   }
 }
 
@@ -633,10 +632,10 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedFaceReversed) 
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
     testLJFunctorvsLJFunctorHWYTwoCells<true, true>(newton3, doDeleteSomeParticle, vecPattern,
-                                                    CellGeometry::faceReversed);
+                                                    CellLayout::faceReversed);
   } else {
     testLJFunctorvsLJFunctorHWYTwoCells<false, true>(newton3, doDeleteSomeParticle, vecPattern,
-                                                     CellGeometry::faceReversed);
+                                                     CellLayout::faceReversed);
   }
 }
 
@@ -648,10 +647,10 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsEdgeReversed) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
     testLJFunctorvsLJFunctorHWYTwoCells<true, false>(newton3, doDeleteSomeParticle, vecPattern,
-                                                     CellGeometry::edgeReversed);
+                                                     CellLayout::edgeReversed);
   } else {
     testLJFunctorvsLJFunctorHWYTwoCells<false, false>(newton3, doDeleteSomeParticle, vecPattern,
-                                                      CellGeometry::edgeReversed);
+                                                      CellLayout::edgeReversed);
   }
 }
 
@@ -663,10 +662,10 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedEdgeReversed) 
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
     testLJFunctorvsLJFunctorHWYTwoCells<true, true>(newton3, doDeleteSomeParticle, vecPattern,
-                                                    CellGeometry::edgeReversed);
+                                                    CellLayout::edgeReversed);
   } else {
     testLJFunctorvsLJFunctorHWYTwoCells<false, true>(newton3, doDeleteSomeParticle, vecPattern,
-                                                     CellGeometry::edgeReversed);
+                                                     CellLayout::edgeReversed);
   }
 }
 
@@ -678,10 +677,10 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsCornerReversed) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
     testLJFunctorvsLJFunctorHWYTwoCells<true, false>(newton3, doDeleteSomeParticle, vecPattern,
-                                                     CellGeometry::cornerReversed);
+                                                     CellLayout::cornerReversed);
   } else {
     testLJFunctorvsLJFunctorHWYTwoCells<false, false>(newton3, doDeleteSomeParticle, vecPattern,
-                                                      CellGeometry::cornerReversed);
+                                                      CellLayout::cornerReversed);
   }
 }
 
@@ -693,10 +692,10 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedCornerReversed
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   if (mixing) {
     testLJFunctorvsLJFunctorHWYTwoCells<true, true>(newton3, doDeleteSomeParticle, vecPattern,
-                                                    CellGeometry::cornerReversed);
+                                                    CellLayout::cornerReversed);
   } else {
     testLJFunctorvsLJFunctorHWYTwoCells<false, true>(newton3, doDeleteSomeParticle, vecPattern,
-                                                     CellGeometry::cornerReversed);
+                                                     CellLayout::cornerReversed);
   }
 }
 

@@ -48,7 +48,7 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
    * edgeReversed   — cell1 to the upper-right of cell2 (sorting axis {1/√2, 1/√2, 0})
    * cornerReversed — cell1 diagonally above cell2 (sorting axis {1/√3, 1/√3, 1/√3})
    */
-  enum class CellGeometry { face, edge, corner, faceReversed, edgeReversed, cornerReversed };
+  enum class CellLayout { face, edge, corner, faceReversed, edgeReversed, cornerReversed };
 
   /**
    * Verifies that the HWY functor matches the autovec SoAFunctorPair reference for a cell pair.
@@ -65,7 +65,7 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
    */
   template <bool mixing, bool sorted>
   void testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, VectorizationPattern pattern,
-                                           CellGeometry geometry);
+                                           CellLayout geometry);
 
   /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
