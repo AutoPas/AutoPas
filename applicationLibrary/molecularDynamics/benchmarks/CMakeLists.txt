@@ -3,13 +3,12 @@
 # standalone AutoPas builds are not penalized by the extra fetch + compile.
 
 option_conditional(
-    AUTOPAS_BUILD_BENCHMARKS
-    "Build google-benchmark based micro-benchmarks (will be downloaded if not available)"
-    OFF
+        AUTOPAS_BUILD_BENCHMARKS
+        "Build google-benchmark based micro-benchmarks (will be downloaded if not available)"
+        OFF
 )
 
 if (NOT AUTOPAS_BUILD_BENCHMARKS)
-    message(STATUS "AUTOPAS_BUILD_BENCHMARKS is disabled. Not building benchmarks.")
     return()
 endif ()
 
@@ -20,8 +19,8 @@ include(autopas_benchmark)
 add_executable(LJFunctorHWYBench LJFunctorHWYBench.cpp)
 
 target_link_libraries(
-    LJFunctorHWYBench
-    PRIVATE
+        LJFunctorHWYBench
+        PRIVATE
         autopas
         autopasTools
         molecularDynamicsLibrary

@@ -2,7 +2,7 @@
  * @file SoASortedView.h
  *
  * @date 25.06.2026
- * @author Henry Meyran
+ * @author hmeyran
  */
 
 #pragma once
