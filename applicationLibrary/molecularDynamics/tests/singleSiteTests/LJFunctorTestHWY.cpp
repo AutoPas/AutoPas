@@ -99,10 +99,10 @@ bool LJFunctorTestHWY::checkAoSParticlesAreEqual(const FMCell &cell1, const FMCe
 
 template <bool mixing, bool sorted>
 void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles,
-                                                           VectorizationPattern pattern, CellLayout geometry) {
+                                                           VectorizationPattern pattern, CellLayout layout) {
   std::array<double, 3> cell1Low{}, cell1High{}, cell2Low{}, cell2High{}, sortingDirection{};
 
-  switch (geometry) {
+  switch (layout) {
     case CellLayout::face:
       cell1Low = _lowCorner;
       cell1High = _highCorner;

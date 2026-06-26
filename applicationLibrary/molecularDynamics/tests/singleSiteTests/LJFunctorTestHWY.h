@@ -44,9 +44,9 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
    *
    * The *Reversed variants swap cell1 and cell2, so cell1 has higher projections than cell2.
    * This exercises minIndex > 0 (left-side j pruning) in the sorted path.
-   * faceReversed   — cell1 to the right  of cell2 (sorting axis {1,0,0})
-   * edgeReversed   — cell1 to the upper-right of cell2 (sorting axis {1/√2, 1/√2, 0})
-   * cornerReversed — cell1 diagonally above cell2 (sorting axis {1/√3, 1/√3, 1/√3})
+   * faceReversed   — cell1 to the right  of cell2
+   * edgeReversed   — cell1 to the upper-right of cell2
+   * cornerReversed — cell1 diagonally above cell2
    */
   enum class CellLayout { face, edge, corner, faceReversed, edgeReversed, cornerReversed };
 
@@ -61,11 +61,11 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
    * @param newton3
    * @param doDeleteSomeParticles
    * @param pattern
-   * @param geometry cell-pair adjacency type, determines cell bounds and sorting direction
+   * @param layout cell-pair adjacency type, determines cell bounds and sorting direction
    */
   template <bool mixing, bool sorted>
   void testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, VectorizationPattern pattern,
-                                           CellLayout geometry);
+                                           CellLayout layout);
 
   /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
