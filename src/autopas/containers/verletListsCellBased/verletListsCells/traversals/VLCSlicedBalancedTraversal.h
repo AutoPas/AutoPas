@@ -77,6 +77,10 @@ class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
   void setAoSSortingThreshold(size_t aosSortingThreshold) override {}
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold) override {}
 
  private:
   PairwiseFunctor &_functor;

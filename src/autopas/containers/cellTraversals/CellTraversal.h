@@ -50,10 +50,10 @@ class CellTraversal {
   /**
    * Set the SoA sorting-threshold for traversals that use the CellFunctor.
    * If the sum of the SoA buffer sizes of two cells exceeds this value, the SoA path uses SoAFunctorPairSorted.
-   * Default is a no-op; override in traversals that hold a CellFunctor.
+   * Traversals that hold a CellFunctor should forward to it; others should explicitly override with an empty body.
    * @param soaSortingThreshold Sum of the SoA buffer sizes from which SoA sorting should be enabled.
    */
-  virtual void setSoASortingThreshold(size_t soaSortingThreshold) {}
+  virtual void setSoASortingThreshold(size_t soaSortingThreshold) = 0;
 
  protected:
   /**
