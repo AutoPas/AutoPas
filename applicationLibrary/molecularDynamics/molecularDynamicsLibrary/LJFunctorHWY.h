@@ -119,7 +119,7 @@ class LJFunctorHWY
 
   /**
    * Specifies whether the functor is capable of using the specified Vectorization Pattern in the SoA functor.
-   * Thi functor can handle p1xVec, p2xVecDiv2, pVecDiv2x2, pVecx1
+   * This functor can handle p1xVec, p2xVecDiv2, pVecDiv2x2, pVecx1
    *
    * @param vecPattern
    * @return whether the functor is capable of using the specified Vectorization Pattern
@@ -162,7 +162,6 @@ class LJFunctorHWY
     const auto f = dr * fac;
     i.addF(f);
     if (newton3) {
-      // only if we use newton 3 here, we want to
       j.subF(f);
     }
     if (calculateGlobals) {
@@ -210,9 +209,7 @@ class LJFunctorHWY
     auto virialSumZ = highway::Zero(tag_double);
     auto uPotSum = highway::Zero(tag_double);
 
-    for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soa.size()) - 1;
-         checkFirstLoopCondition<true, VectorizationPattern::p1xVec>(i, 0);
-         decrementFirstLoop<VectorizationPattern::p1xVec>(i)) {
+    for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soa.size()) - 1; i >= 0; i -= 1) {
       static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
 
@@ -345,72 +342,6 @@ class LJFunctorHWY
   }
 
   /**
-   * Checks whether the loop over i should be continued. This depends on the respective VectorizationPattern.
-   *
-   * @tparam reversed Whether iterating backwards over i.
-   * @tparam vecPattern
-   * @param i
-   * @param vecEnd
-   * @return true if the loop over i should be continued, else false.
-   */
-  template <bool reversed, VectorizationPattern vecPattern>
-  static constexpr bool checkFirstLoopCondition(const std::ptrdiff_t i, const long vecEnd) {
-    if constexpr (reversed) {
-      if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-        return i >= 0;
-      } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-        return i >= 1;
-      } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-        return i >= _vecLengthDouble / 2;
-      } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-        return i >= _vecLengthDouble;
-      } else {
-        return false;
-      }
-    } else {
-      return i + static_cast<long>(iStepSize<vecPattern>()) <= vecEnd;
-    }
-  }
-
-  /**
-   * Calculates the step size by which i is decremented in the outer loop, depending on VectorizationPattern. Should
-   * only be called when iterating backwards over i.
-   *
-   * @tparam vecPattern
-   * @param i
-   */
-  template <VectorizationPattern vecPattern>
-  static constexpr void decrementFirstLoop(std::ptrdiff_t &i) {
-    i -= static_cast<std::ptrdiff_t>(iStepSize<vecPattern>());
-  }
-
-  /**
-   * Calculates the step size by which i is incremented in the outer loop, depending on VectorizationPattern.
-   * Should only be called when iterating forwards over i.
-   *
-   * @tparam vecPattern
-   * @param i
-   */
-  template <VectorizationPattern vecPattern>
-  static constexpr void incrementFirstLoop(std::ptrdiff_t &i) {
-    i += static_cast<std::ptrdiff_t>(iStepSize<vecPattern>());
-  }
-
-  /**
-   * Determines the number of registers filled in the case of a final, only partially filled, kernel call in the loop
-   * over i.
-   *
-   * @tparam reversed
-   * @param i
-   * @param vecEnd
-   * @return the number of lanes filled.
-   */
-  template <bool reversed>
-  static constexpr int obtainILoopRemainderLength(std::ptrdiff_t i, const int vecEnd) {
-    return reversed ? (i < 0 ? 0 : i + 1) : vecEnd - i;
-  }
-
-  /**
    * Checks whether the inner loop over j should be continued. This depends on the respective VectorizationPattern.
    *
    * @tparam vecPattern
@@ -425,33 +356,6 @@ class LJFunctorHWY
     const std::ptrdiff_t limit = i - (i % jStep);
     return j < static_cast<size_t>(limit);
   }
-
-  /**
-   * Calculates the step size by which j is incremented in the inner loop, depending on VectorizationPattern.
-   * Should only be called when iterating forwards over i.
-   *
-   * @tparam vecPattern
-   * @param j
-   */
-  template <VectorizationPattern vecPattern>
-  static constexpr void incrementSecondLoop(std::ptrdiff_t &j) {
-    j += static_cast<std::ptrdiff_t>(jStepSize<vecPattern>());
-  }
-
-  /**
-   * Determines the number of registers filled in the case of a final, only partially filled, kernel call in the loop
-   * over j.
-   *
-   * @tparam vecPattern
-   * @param j
-   * @return the number of lanes filled.
-   */
-  template <VectorizationPattern vecPattern>
-  static constexpr int obtainJLoopRemainderLength(const std::ptrdiff_t j) {
-    // jStep is always a power of two, so j % jStep == j & (jStep - 1).
-    return static_cast<int>(j & (static_cast<std::ptrdiff_t>(jStepSize<vecPattern>()) - 1));
-  }
-
   /**
    * Depending on the vectorization pattern, this function fills the registers for the loop over i. This includes the
    * positions and the ownership state.
@@ -764,14 +668,15 @@ class LJFunctorHWY
     fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI,
                                                      restI);
     auto j = static_cast<std::ptrdiff_t>(jVecStart);
-    for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j); incrementSecondLoop<vecPattern>(j)) {
+    for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j);
+         j += static_cast<std::ptrdiff_t>(jStepSize<vecPattern>())) {
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
           fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j], fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
           uPotSum, restI, 0);
     }
 
-    const int restJ = obtainJLoopRemainderLength<vecPattern>(jVecEnd);
+    const int restJ = static_cast<int>(jVecEnd & (jStepSize<vecPattern>() - 1));
     if (restJ > 0) {
       SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
@@ -836,9 +741,9 @@ class LJFunctorHWY
     const size_t iStep = iStepSize<vecPattern>();
     const size_t jStep = jStepSize<vecPattern>();
 
-    // Step 5: vectorized interaction loop.
     std::ptrdiff_t i = startI;
-    for (; checkFirstLoopCondition<false, vecPattern>(i, n1); incrementFirstLoop<vecPattern>(i)) {
+    for (; i + static_cast<std::ptrdiff_t>(iStep) <= static_cast<std::ptrdiff_t>(n1);
+         i += static_cast<std::ptrdiff_t>(iStep)) {
       size_t jVecEnd;
       size_t jVecStart = 0;
       if constexpr (sorted) {
@@ -846,10 +751,13 @@ class LJFunctorHWY
         // [i, i + iStep - 1] is maxIndex of the last particle in the block. For p1xVec
         // (iStep=1) this collapses to maxIndex[i].
         jVecEnd = sortingData->maxIndex[i + iStep - 1];
+        // minIndex is monotonically non-decreasing, so the tightest valid lower bound for the
+        // i-block [i, i + iStep - 1] is always minIndex[i], the minimum across the block.
         jVecStart = sortingData->minIndex[i];
         if (jVecStart >= jVecEnd) {
           continue;
         }
+        // Round down to the nearest full SIMD lane boundary so the j-loop starts aligned.
         jVecStart = jVecStart - (jVecStart % jStep);
         if constexpr (vecPattern == VectorizationPattern::p1xVec) {
           if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) continue;
@@ -863,7 +771,7 @@ class LJFunctorHWY
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       // Rest I can't occur in 1xVec case
-      const int restI = obtainILoopRemainderLength<false>(i, n1);
+      const int restI = static_cast<int>(n1) - static_cast<int>(i);
       if (restI > 0) {
         // Remainder block covers [i, i + restI - 1]. Same monotonicity argument as above.
         size_t jVecEnd = n2;
