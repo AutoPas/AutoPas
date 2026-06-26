@@ -7,9 +7,8 @@
 
 #include "autopas/options/TuningMetricOption.h"
 
-std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node& node,
-                                                                            const std::string &errMsg,
-                                                                            bool allThrowsError) {
+std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node &node, const std::string &errMsg,
+                                                                      bool allThrowsError) {
   std::string value;
   if (node.IsSequence()) {
     if (node.size() != 1) {
@@ -850,12 +849,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
       } else if (key == config.loadBalancer.name) {
         expected = "YAML-sequence of possible values.";
         description = config.loadBalancer.description;
-        
+
         // A common mistake is that users parse "all" to mean A Load-balancing Library (ALL). If this is received, make
         // it upper case, resulting in A Load-balancing Library being correctly parsed. To do so, we use
-        // parseSequenceOneElementExpected with allThrowsError=false to avoid the error.  
+        // parseSequenceOneElementExpected with allThrowsError=false to avoid the error.
         auto loadBalancerString =
-          parseSequenceOneElementExpected(node[key], "Pass Exactly one load balancer option!", false);
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one load balancer option!", false);
         if (loadBalancerString == "all") {
           loadBalancerString = "ALL";
         }

@@ -54,12 +54,12 @@ bool parseYamlFile(MDFlexConfig &config);
  * @param node The current YAML::Node, that should be parsed
  * @param errMsg The error message thrown if multiple options are passed
  * @param allThrowsError If true (default), the value "all" is rejected with errMsg, because parsing it as an option
- * would expand it into multiple options. Set to false if we want to allow "all" silently (e.g. for load-balancer, 
+ * would expand it into multiple options. Set to false if we want to allow "all" silently (e.g. for load-balancer,
  * where all probably means "A Load-balancing Library (ALL)")
  * @return String representation of the parsed node
  */
-std::string parseSequenceOneElementExpected(const YAML::Node& node, const std::string &errMsg,
-                                                  bool allThrowsError = true);
+std::string parseSequenceOneElementExpected(const YAML::Node &node, const std::string &errMsg,
+                                            bool allThrowsError = true);
 
 /**
  * Creates an error message for all non-object-keys
