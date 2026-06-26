@@ -58,7 +58,7 @@ bool parseYamlFile(MDFlexConfig &config);
  * where all probably means "A Load-balancing Library (ALL)")
  * @return String representation of the parsed node
  */
-const std::string parseSequenceOneElementExpected(const YAML::Node node, const std::string &errMsg,
+std::string parseSequenceOneElementExpected(const YAML::Node& node, const std::string &errMsg,
                                                   bool allThrowsError = true);
 
 /**

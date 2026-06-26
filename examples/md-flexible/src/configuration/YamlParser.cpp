@@ -7,7 +7,7 @@
 
 #include "autopas/options/TuningMetricOption.h"
 
-const std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node node,
+std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node& node,
                                                                             const std::string &errMsg,
                                                                             bool allThrowsError) {
   std::string value;
@@ -861,7 +861,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
 
         const auto parsedOptions = LoadBalancerOption::parseOptions(loadBalancerString);
-
+        if (parsedOptions.empty()) {
+          throw std::runtime_error("No valid load balancer option found!");
+        }
         config.loadBalancer.value = *parsedOptions.begin();
 
 #ifndef MD_FLEXIBLE_ENABLE_ALLLBL
