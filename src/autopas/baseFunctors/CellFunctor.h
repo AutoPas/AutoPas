@@ -113,7 +113,7 @@ class CellFunctor {
    * @param sortingDirection No sorting when the sorting direction is {0., 0., 0.}.
    * @return whether the AoSFunctor should use the SortedCellView.
    */
-  [[nodiscard]] bool shouldUseSorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
+  [[nodiscard]] bool shouldUseAoSSorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
     return particleCount >= _aosSortingThreshold and
            (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
   }
@@ -304,7 +304,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
     }
   };
 
-  if (shouldUseSorting(cell1.size() + cell2.size(), sortingDirection)) {
+  if (shouldUseAoSSorting(cell1.size() + cell2.size(), sortingDirection)) {
     // Use sorted cell views
     SortedCellView<ParticleCell_T> cell1Sorted(cell1, sortingDirection);
     SortedCellView<ParticleCell_T> cell2Sorted(cell2, sortingDirection);
@@ -335,17 +335,26 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
   const size_t nI = projIdxI.size();
   const size_t nJ = projIdxJ.size();
 
+  // Compute startI: the first i-particle that can interact with any j-particle.
+  // Any i with projI[i] <= projJ[0] - cutoff is further than cutoff from every j along the sorting axis,
+  // so it cannot contribute an interaction and is skipped.
   const double threshold = projIdxJ[0].first - _sortingCutoff;
   auto start_iter = std::upper_bound(projIdxI.begin(), projIdxI.end(), threshold,
                                      [](double val, const auto &elem) { return val < elem.first; });
   const size_t startI = static_cast<size_t>(start_iter - projIdxI.begin());
 
+  // Compute maxIndexCache and minIndexCache in a single O(nI + nJ) sweep.
+  // Both bounds are monotonically non-decreasing with i because projIdxI is sorted, so each pointer only
+  // advances, this is approximate but avoids a O(n^2) scan.
+  // For each i, the j-particles in [minIndex, maxIndex) are the candidates satisfying the 1-D cutoff check.
   maxIndexCache.assign(nI, 0);
   minIndexCache.assign(nI, 0);
   size_t jUpper = 0, jLower = 0;
   for (size_t i = startI; i < nI; ++i) {
+    // jUpper: first j where projJ > projI[i] + cutoff (exclusive upper bound).
     while (jUpper < nJ and projIdxJ[jUpper].first <= projIdxI[i].first + _sortingCutoff) ++jUpper;
     maxIndexCache[i] = jUpper;
+    // jLower: first j where projJ >= projI[i] - cutoff (lower bound).
     while (jLower < nJ and projIdxJ[jLower].first < projIdxI[i].first - _sortingCutoff) ++jLower;
     minIndexCache[i] = jLower;
   }
