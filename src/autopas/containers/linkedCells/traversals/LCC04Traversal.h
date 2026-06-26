@@ -68,7 +68,9 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, publ
   /**
    * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
    */
-  void setAoSSortingThreshold(size_t aosSortingThreshold) override { _cellHandler.setAoSSortingThreshold(aosSortingThreshold); }
+  void setAoSSortingThreshold(size_t aosSortingThreshold) override {
+    _cellHandler.setAoSSortingThreshold(aosSortingThreshold);
+  }
   /** @copydoc autopas::CellTraversal::setSoASortingThreshold() */
   void setSoASortingThreshold(size_t soaSortingThreshold) override {
     _cellHandler.setSoASortingThreshold(soaSortingThreshold);

@@ -181,12 +181,14 @@ class CellFunctor3B {
 };
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThreshold(size_t aosSortingThreshold) {
+void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThreshold(
+    size_t aosSortingThreshold) {
   _aosSortingThreshold = aosSortingThreshold;
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
+void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThreshold(
+    size_t soaSortingThreshold) {
   _soaSortingThreshold = soaSortingThreshold;
 }
 

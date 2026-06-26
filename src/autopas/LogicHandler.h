@@ -79,15 +79,10 @@ class LogicHandler {
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
-      _currentContainerSelectorInfo = ContainerSelectorInfo{_logicHandlerInfo.boxMin,
-                                                            _logicHandlerInfo.boxMax,
-                                                            _logicHandlerInfo.cutoff,
-                                                            configuration.cellSizeFactor,
-                                                            _logicHandlerInfo.verletSkin,
-                                                            _verletClusterSize,
-                                                            _aosSortingThreshold,
-                                                            configuration.loadEstimator,
-                                                            _soaSortingThreshold};
+      _currentContainerSelectorInfo =
+          ContainerSelectorInfo{_logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,     _logicHandlerInfo.cutoff,
+                                configuration.cellSizeFactor, _logicHandlerInfo.verletSkin, _verletClusterSize,
+                                _aosSortingThreshold,         configuration.loadEstimator,  _soaSortingThreshold};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();

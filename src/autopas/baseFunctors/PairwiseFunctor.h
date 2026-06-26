@@ -109,7 +109,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * SoAFunctorPair on pre-sorted, pre-packed SoA views. CellFunctor handles projection, sorting, packing, and
    * computing the index bounds; this function receives contiguous sorted views and only needs to run the kernel.
    *
-   * The default implementation ignores the index bounds and falls back to SoAFunctorPair.
+   * Must be overridden by functors that set supportsSoASorting=true; the default throws.
    *
    * @param soa1 Sorted, packed view of cell 1 particles.
    * @param soa2 Sorted, packed view of cell 2 particles.
@@ -118,8 +118,14 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    */
   virtual void SoAFunctorPairSorted(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2,
                                     const SoASortingData &sortingData, bool newton3) {
-    (void)sortingData;
-    SoAFunctorPair(soa1, soa2, newton3);
+    if constexpr (not CRTP_T::supportsSoASorting) {
+      autopas::utils::ExceptionHandler::exception(
+          "SoAFunctorPairSorted() called on functor {} which has supportsSoASorting=false.", typeid(CRTP_T).name());
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Functor {} has supportsSoASorting=true but does not implement SoAFunctorPairSorted().",
+          typeid(CRTP_T).name());
+    }
   }
 
   /**

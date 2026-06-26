@@ -1346,6 +1346,8 @@ class LJFunctorHWY
         Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY, Particle_T::AttributeNames::forceZ};
   }
 
+  static constexpr bool supportsSoASorting = true;
+
   /**
    *
    * @return useMixing

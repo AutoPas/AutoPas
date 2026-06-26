@@ -356,10 +356,7 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoAImpl(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
-  if constexpr (requires {
-                  ParticleFunctor_T::getNeededAttr();
-                  ParticleFunctor_T::getComputedAttr();
-                }) {
+  if constexpr (ParticleFunctor_T::supportsSoASorting) {
     if (shouldUseSoASorting(cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size(), sortingDirection)) {
       using Particle_T = ParticleCell_T::ParticleType;
       auto &thread_data = _soaThreadData[autopas::autopas_get_thread_num()];
