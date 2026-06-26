@@ -28,7 +28,3 @@ venv/
 *.csv
 *.out
 *.log
-
-data/
-.cache
-.claude

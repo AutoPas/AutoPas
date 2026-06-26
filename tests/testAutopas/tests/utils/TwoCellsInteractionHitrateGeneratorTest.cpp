@@ -22,12 +22,27 @@ using CellType = std::vector<MoleculeType>;
 
 namespace {
 
+/**
+ * Cutoff radius used across all tests.
+ */
 constexpr double kCutoff = 3.0;
+/**
+ * Shared x-coordinate of the boundary plane between the two cells.
+ */
 constexpr double kBoundary = 10.0;
-constexpr double kExtent = 8.0;  // > 1.5 * kCutoff = 4.5
+/**
+ * x-extent of each cell; must exceed 1.2 * kCutoff so the far zone fits.
+ */
+constexpr double kExtent = 8.0;
 
+/**
+ * Bounding box of cell 1: occupies [kBoundary - kExtent, kBoundary] in x.
+ */
 const std::array<double, 3> kBoxMin1 = {kBoundary - kExtent, 0., 0.};
 const std::array<double, 3> kBoxMax1 = {kBoundary, 8., 8.};
+/**
+ * Bounding box of cell 2: occupies [kBoundary, kBoundary + kExtent] in x.
+ */
 const std::array<double, 3> kBoxMin2 = {kBoundary, 0., 0.};
 const std::array<double, 3> kBoxMax2 = {kBoundary + kExtent, 8., 8.};
 
@@ -40,6 +55,14 @@ double dist3D(const MoleculeType &a, const MoleculeType &b) {
   return std::sqrt(d);
 }
 
+/**
+ * Fills two cells with n particles at the requested hitrate using the module-level box definitions.
+ * @param v1 Target vector for cell 1 particles.
+ * @param v2 Target vector for cell 2 particles.
+ * @param n Number of particles per cell.
+ * @param hitrate Fraction of particle pairs that are within cutoff distance.
+ * @param seed RNG seed for deterministic placement.
+ */
 void fill(CellType &v1, CellType &v2, std::size_t n, double hitrate, unsigned int seed = 42) {
   autopasTools::PseudoContainer c1(v1), c2(v2);
   autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
