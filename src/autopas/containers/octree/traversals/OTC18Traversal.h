@@ -126,7 +126,9 @@ class OTC18Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
   void setAoSSortingThreshold(size_t aosSortingThreshold) override {
     _cellFunctor.setAoSSortingThreshold(aosSortingThreshold);
   }
-  /** @copydoc autopas::CellTraversal::setSoASortingThreshold() */
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
+   */
   void setSoASortingThreshold(size_t soaSortingThreshold) override {
     _cellFunctor.setSoASortingThreshold(soaSortingThreshold);
   }

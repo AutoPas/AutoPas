@@ -20,8 +20,6 @@
 using MoleculeType = mdLib::MoleculeLJ;
 using CellType = std::vector<MoleculeType>;
 
-namespace {
-
 /**
  * Cutoff radius used across all tests.
  */
@@ -46,6 +44,12 @@ const std::array<double, 3> kBoxMax1 = {kBoundary, 8., 8.};
 const std::array<double, 3> kBoxMin2 = {kBoundary, 0., 0.};
 const std::array<double, 3> kBoxMax2 = {kBoundary + kExtent, 8., 8.};
 
+/**
+ * Computes the Euclidean distance between two particles.
+ * @param a First particle.
+ * @param b Second particle.
+ * @return Distance between a and b.
+ */
 double dist3D(const MoleculeType &a, const MoleculeType &b) {
   double d = 0.;
   for (int dim = 0; dim < 3; ++dim) {
@@ -68,8 +72,6 @@ void fill(CellType &v1, CellType &v2, std::size_t n, double hitrate, unsigned in
   autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
       c1, c2, kBoxMin1, kBoxMax1, kBoxMin2, kBoxMax2, n, hitrate, kCutoff, MoleculeType{}, seed);
 }
-
-}  // namespace
 
 /**
  * Both cells receive exactly n particles for every (n, hitrate) combination.

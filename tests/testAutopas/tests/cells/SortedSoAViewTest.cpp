@@ -13,7 +13,9 @@
 using TestFunctor = LJFunctorType<>;
 using TestView = autopas::SortedSoAView<Molecule, TestFunctor>;
 
-// Fills a cell with n particles at positions (i, 0, 0) for i in [0, n).
+/**
+ * Fills a cell with n particles at positions (i, 0, 0) for i in [0, n).
+ */
 static FMCell makeLineCell(size_t n) {
   FMCell cell;
   for (size_t i = 0; i < n; ++i) {
@@ -23,7 +25,9 @@ static FMCell makeLineCell(size_t n) {
   return cell;
 }
 
-// Loads a cell's SoA buffer using a temporary LJFunctor instance.
+/**
+ * Loads a cell's SoA buffer using a temporary LJFunctor instance.
+ */
 static void loadSoA(FMCell &cell) {
   constexpr double cutoff = 10.0;
   TestFunctor f(cutoff);

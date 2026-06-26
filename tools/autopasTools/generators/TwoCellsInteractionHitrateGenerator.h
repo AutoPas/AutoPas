@@ -1,7 +1,7 @@
 /**
  * @file TwoCellsInteractionHitrateGenerator.h
  *
- *  * @date 26.06.2026
+ * @date 26.06.2026
  * @author hmeyran
  */
 
