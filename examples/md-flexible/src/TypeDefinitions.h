@@ -53,7 +53,11 @@ using FloatPrecision = float; // TODO: why not just use the precision defined in
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
+#ifdef AUTOPAS_ENABLE_KOKKOS
 using ParticleType = mdLib::KokkosMoleculeLJ;
+#else
+using ParticleType = mdLib::MoleculeLJ;
+#endif
 #endif
 
 namespace mdFlexibleTypeDefs {
@@ -94,6 +98,7 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas:
 
 #endif
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
 #ifdef KOKKOS_ENABLE_CUDA
 using MemSpace = Kokkos::CudaSpace;
 #else
@@ -104,6 +109,7 @@ using MemSpace = Kokkos::HostSpace;
  * Type of LJFunctorTypeKokkos used in md-flexible
  */
 using LJFunctorTypeKokkos = mdLib::LJFunctorKokkos<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+#endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**

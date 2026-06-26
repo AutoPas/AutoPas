@@ -8,8 +8,7 @@
 
 #include "autopas/containers/kokkosDirectSum/traversals/DSKokkosTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
-
-#include <Kokkos_Core.hpp>
+#include "autopas/baseFunctors/KokkosFunctor.h"
 
 namespace autopas {
 
@@ -24,6 +23,57 @@ struct TeamTraversalFunctor {
     FloatPrecision _cutoffSquared;
     size_t _M;
 
+    struct ReductionResult {
+      FloatPrecision virialSum;
+      FloatPrecision uPotSum;
+    };
+
+    KOKKOS_INLINE_FUNCTION
+    void init(ReductionResult& result) const {
+      result.virialSum = 0.;
+      result.uPotSum = 0.;
+    }
+
+    KOKKOS_INLINE_FUNCTION
+    void join(ReductionResult& result, const ReductionResult& src) const {
+      result.virialSum += src.virialSum;
+      result.uPotSum += src.uPotSum;
+    }
+
+    KOKKOS_INLINE_FUNCTION
+    void operator()(const MemberType& teamHandle, ReductionResult& localResult) const {
+        const int i = teamHandle.league_rank();
+
+        FloatPrecision fxAcc = 0.;
+        FloatPrecision fyAcc = 0.;
+        FloatPrecision fzAcc = 0.;
+
+        const auto x1 = _storageA.template operator()<Particle_T::AttributeNames::posX, false>(i);
+        const auto y1 = _storageA.template operator()<Particle_T::AttributeNames::posY, false>(i);
+        const auto z1 = _storageA.template operator()<Particle_T::AttributeNames::posZ, false>(i);
+
+        FloatPrecision virialSum = 0.;
+        FloatPrecision uPotSum = 0;
+
+        Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamHandle, _M), [&](int j,
+            FloatPrecision& localFxAcc,
+            FloatPrecision& localFyAcc,
+            FloatPrecision& localFzAcc,
+            FloatPrecision& localVirialSum,
+            FloatPrecision& localUPotSum) {
+                _func->ForceKernelKokkos(x1, y1, z1, _storageB, localFxAcc, localFyAcc, localFzAcc, localVirialSum, localUPotSum, _cutoffSquared, i, j);
+            }, fxAcc, fyAcc, fzAcc, virialSum, uPotSum);
+
+        Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
+          localResult.virialSum += virialSum;
+          localResult.uPotSum += uPotSum;
+
+          _storageA.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
+          _storageA.template operator()<Particle_T::AttributeNames::forceY, false>(i) += fyAcc;
+          _storageA.template operator()<Particle_T::AttributeNames::forceZ, false>(i) += fzAcc;
+        });
+    }
+
     KOKKOS_INLINE_FUNCTION
     void operator()(const MemberType& teamHandle) const {
         const int i = teamHandle.league_rank();
@@ -36,22 +86,21 @@ struct TeamTraversalFunctor {
         const auto y1 = _storageA.template operator()<Particle_T::AttributeNames::posY, false>(i);
         const auto z1 = _storageA.template operator()<Particle_T::AttributeNames::posZ, false>(i);
 
+        FloatPrecision virialSum = 0.;
+        FloatPrecision uPotSum = 0;
+
         Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamHandle, _M), [&](int j,
             FloatPrecision& localFxAcc,
             FloatPrecision& localFyAcc,
             FloatPrecision& localFzAcc) {
-                _func->ForceKernelKokkos(x1, y1, z1, _storageB, localFxAcc, localFyAcc, localFzAcc, _cutoffSquared, i, j);
+                _func->ForceKernelKokkos(x1, y1, z1, _storageB, localFxAcc, localFyAcc, localFzAcc, virialSum, uPotSum, _cutoffSquared, i, j);
             }, fxAcc, fyAcc, fzAcc);
 
         Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
-            const int index = teamHandle.league_rank();
-            const FloatPrecision oldFx = _storageA.template operator()<Particle_T::AttributeNames::forceX, false>(index);
-            const FloatPrecision oldFy = _storageA.template operator()<Particle_T::AttributeNames::forceY, false>(index);
-            const FloatPrecision oldFz = _storageA.template operator()<Particle_T::AttributeNames::forceZ, false>(index);
-
-            _storageA.template operator()<Particle_T::AttributeNames::forceX, false>(index) = oldFx + fxAcc;
-            _storageA.template operator()<Particle_T::AttributeNames::forceY, false>(index) = oldFy + fyAcc;
-            _storageA.template operator()<Particle_T::AttributeNames::forceZ, false>(index) = oldFz + fzAcc;
+          const int index = teamHandle.league_rank();
+          const FloatPrecision oldFx = _storageA.template operator()<Particle_T::AttributeNames::forceX, false>(index);
+          const FloatPrecision oldFy = _storageA.template operator()<Particle_T::AttributeNames::forceY, false>(index);
+          const FloatPrecision oldFz = _storageA.template operator()<Particle_T::AttributeNames::forceZ, false>(index);
         });
     }
 };
@@ -108,10 +157,24 @@ protected:
     typename DSKokkosTraversalInterface<Particle_T>::FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
 
     TeamTraversalFunctor<Functor, Particle_T, typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace> functor {storageA, storageB, func, cutoffSquared, M};
-
     auto teamPolicy = Kokkos::TeamPolicy<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space>(N, _teamSize, Kokkos::AUTO);
-    using MemberType = Kokkos::TeamPolicy<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space>::member_type;
-    Kokkos::parallel_for("autopas::TeamsTraversalSoA", teamPolicy, functor);
+
+    constexpr bool calculateGlobals = Functor::globalCalculationRequested();
+
+    if constexpr (calculateGlobals) {
+      typename TeamTraversalFunctor<Functor, Particle_T, typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace>::ReductionResult globalResult {};
+      Kokkos::parallel_reduce("autopas::KokkosDsTeamsTraversal_Globals", teamPolicy, functor, globalResult);
+
+      AutoPasLog(INFO, "Final potential energy {}", globalResult.uPotSum / 12.);
+      AutoPasLog(INFO, "Final virial           {}", globalResult.virialSum / 2.);
+
+      auto kokkosFunc = dynamic_cast<KokkosFunctor*>(func);
+
+      kokkosFunc->setPotentialEnergy(static_cast<double>(globalResult.uPotSum / 12.));
+      kokkosFunc->setVirial(static_cast<double>(globalResult.virialSum / 2.));
+    } else {
+      Kokkos::parallel_for("autopas::KokkosDsTeamsTraversal_NoGlobals", teamPolicy, functor);
+    }
   }
 
 private:

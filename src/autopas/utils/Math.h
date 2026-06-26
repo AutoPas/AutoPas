@@ -9,7 +9,9 @@
 #include <Eigen/Core>
 #include <cmath>
 #include <vector>
+#ifdef AUTOPAS_ENABLE_KOKKOS
 #include "Kokkos_Core.hpp"
+#endif
 
 namespace autopas::utils::Math {
 /**
@@ -309,6 +311,7 @@ bool isNearRel(FloatType a, FloatType b, double maxRelativeDifference = EPSILON_
   return diff <= absoluteDifference;
 }
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
 template <std::floating_point FloatType>
 KOKKOS_INLINE_FUNCTION
 bool isNearRelKokkos(FloatType a, FloatType b, double maxRelativeDifference = EPSILON_RELATIVE_EQUALITY) {
@@ -317,6 +320,7 @@ bool isNearRelKokkos(FloatType a, FloatType b, double maxRelativeDifference = EP
   const auto diff = Kokkos::abs(a - b);
   return diff <= absoluteDifference;
 }
+#endif
 
 /**
  * Determines if two doubles are near each other. This function should be preferred to comparing with ==.

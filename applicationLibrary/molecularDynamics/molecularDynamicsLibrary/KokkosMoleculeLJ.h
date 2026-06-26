@@ -6,6 +6,8 @@
 
 #pragma once
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
+
 #include <vector>
 
 #include "autopas/particles/ParticleDefinitions.h"
@@ -429,6 +431,12 @@ class KokkosMoleculeLJ {
     _f[2] += increment[2];
   }
 
+  void subF(const std::array<ParticleSoAFloatPrecision, 3>& decrement) {
+    _f[0] -= decrement[0];
+    _f[1] -= decrement[1];
+    _f[2] -= decrement[2];
+  }
+
   void addR(const std::array<ParticleSoAFloatPrecision, 3>& increment) {
     _r[0] += increment[0];
     _r[1] += increment[1];
@@ -494,3 +502,5 @@ class KokkosMoleculeLJ {
 };
 
 }  // namespace mdLib
+
+#endif

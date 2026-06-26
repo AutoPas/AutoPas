@@ -35,7 +35,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @param typeId Id of the type of the particle. Used in conjunction with ParticlePropertiesLibrary to access
    * molecular information such as site types and relative site positions.
    */
-  MultisiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
+  MultisiteMoleculeLJ(std::array<ParticleSoAFloatPrecision, 3> r, std::array<ParticleSoAFloatPrecision, 3> v, std::array<double, 4> q,
                       std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0);
 
   /**

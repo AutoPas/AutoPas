@@ -5,6 +5,8 @@
  */
 
 #pragma once
+
+#ifdef AUTOPAS_ENABLE_KOKKOS
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
 #include <tuple>
@@ -152,3 +154,5 @@ namespace autopas::utilsKokkos {
   };
 
 }
+
+#endif

@@ -6,6 +6,8 @@
 
 #pragma once
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
+
 #include "Kokkos_Timer.hpp"
 
 namespace autopas::utilsKokkos {
@@ -63,3 +65,5 @@ class KokkosTimer {
   Kokkos::Timer _timer {};
 };
 }  // namespace autopas::utils
+
+#endif

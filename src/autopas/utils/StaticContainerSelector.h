@@ -37,8 +37,10 @@ decltype(auto) withStaticContainerType(ParticleContainerInterface<Particle_T> &c
   switch (container.getContainerType()) {
     case ContainerOption::directSum:
       return function(dynamic_cast<DirectSum<Particle_T> &>(container));
+#ifdef AUTOPAS_ENABLE_KOKKOS
     case ContainerOption::kokkosDirectSum:
       return function(dynamic_cast<KokkosDirectSum<Particle_T> &>(container));
+#endif
     case ContainerOption::linkedCells:
       return function(dynamic_cast<LinkedCells<Particle_T> &>(container));
     case ContainerOption::linkedCellsReferences:

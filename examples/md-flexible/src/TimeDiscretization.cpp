@@ -9,14 +9,15 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "../../../src/autopas/utilsKokkos/WrapKokkos.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "autopas/utils/WrapKokkos.h"
-
 #include "autopas/utilsKokkos/KokkosStorage.h"
 
 namespace TimeDiscretization {
 
+
+#ifdef AUTOPAS_ENABLE_KOKKOS
 // TODO: it might make sense to outsource this to a common location to avoid duplication
 #ifdef KOKKOS_ENABLE_CUDA
   using DeviceSpace = Kokkos::CudaSpace;
@@ -24,6 +25,7 @@ namespace TimeDiscretization {
 #else
   using DeviceSpace = Kokkos::HostSpace;
   constexpr bool ForEachHostFlag = true;
+#endif
 #endif
 
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
@@ -80,6 +82,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 #endif
     }
   } else {
+#ifdef AUTOPAS_ENABLE_KOKKOS
    autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage) {
     ParticleType::ParticleSoAFloatPrecision m = storage.operator()<ParticleType::AttributeNames::mass, ForEachHostFlag>(i);
     ParticleType::ParticleSoAFloatPrecision vX = storage.operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i);
@@ -118,6 +121,8 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     storage.operator()<ParticleType::AttributeNames::posZ, ForEachHostFlag>(i) = pZ + displacementZ;
 
   }, autopas::IteratorBehavior::owned, "mdFlexible::TimeDiscretization::calculatePositionsAndResetForces");
+#endif
+    // TODO: throw exception
   }
 #ifndef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   /*
@@ -228,7 +233,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
     }
   }
   else {
-
+#ifdef AUTOPAS_ENABLE_KOKKOS
     autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage) {
       //const auto mass = particlePropertiesLibrary.getMolMass(storage.template get<ParticleType::AttributeNames::typeId, true>(i));
       const ParticleType::ParticleSoAFloatPrecision mass = storage.operator()<ParticleType::AttributeNames::mass, ForEachHostFlag>(i);
@@ -252,7 +257,8 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
       storage.operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i) = vY + vUpdateY;
       storage.operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i) = vZ + vUpdateZ;
     }, autopas::IteratorBehavior::owned, "mdFlexible::TimeDiscretization::calculateVelocities");
-
+#endif
+    // TODO: throw exception
   }
 }
 

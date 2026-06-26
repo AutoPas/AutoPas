@@ -21,6 +21,8 @@
 
 namespace autopas {
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
+
 template <class Functor, class Particle_T, class ExecSpace>
 struct SoABufferTraversalFunctor {
     using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
@@ -46,12 +48,15 @@ struct SoABufferTraversalFunctor {
         FloatPrecision fyAcc = 0.;
         FloatPrecision fzAcc = 0.;
 
+        FloatPrecision virialSum = 0.;
+        FloatPrecision uPotSum = 0.;
+
         for (int j = 0; j < _ownedSize; ++j) {
             FloatPrecision fx = -fxAcc;
             FloatPrecision fy = -fyAcc;
             FloatPrecision fz = -fzAcc;
 
-            _f->ForceKernelKokkos(x1, y1, z1, _ownedBuffer, fxAcc, fyAcc, fzAcc, _cutoffSquared, i, j);
+            _f->ForceKernelKokkos(x1, y1, z1, _ownedBuffer, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, _cutoffSquared, i, j);
 
             fx += fxAcc;
             fy += fyAcc;
@@ -63,7 +68,7 @@ struct SoABufferTraversalFunctor {
         }
 
         for (int j = 0; j < _haloSize; ++j) {
-            _f->ForceKernelKokkos(x1, y1, z1, _haloBuffer, fxAcc, fyAcc, fzAcc, _cutoffSquared, i, j);
+            _f->ForceKernelKokkos(x1, y1, z1, _haloBuffer, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, _cutoffSquared, i, j);
         }
 
         storage.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
@@ -72,13 +77,19 @@ struct SoABufferTraversalFunctor {
     }
 };
 
+#endif
+
 /**
  * Handles pairwise interactions involving particle buffers (particles not yet inserted into the main container).
  * This includes Buffer <-> Container and Buffer <-> Buffer interactions.
  *
  * @tparam Particle_T
  */
-template <typename Particle_T, typename ExecSpace>
+template <typename Particle_T
+#ifdef AUTOPAS_ENABLE_KOKKOS
+,typename ExecSpace
+#endif
+>
 class RemainderPairwiseInteractionHandler {
  public:
   /**
@@ -210,6 +221,7 @@ class RemainderPairwiseInteractionHandler {
     bool requiresKokkos = container.allowsKokkos();
 
     if (requiresKokkos) {
+#ifdef AUTOPAS_ENABLE_KOKKOS
       // 1. Loop over all buffers and determine the size of the KokkosStorage objects
       size_t haloSize = 0;
       size_t ownedSize = 0;
@@ -278,6 +290,8 @@ class RemainderPairwiseInteractionHandler {
           p.addF({fx2.view_host()(offset), fy2.view_host()(offset), fz2.view_host()(offset++)});
         }
       }
+#endif
+      // TODO: throw exception
     } else {
       // Bunch of shorthands
       const auto cutoff = container.getCutoff();

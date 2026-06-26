@@ -4,6 +4,8 @@
  * @author Luis Gall
  */
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
+
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utilsKokkos/KokkosTimer.h"
 
@@ -36,3 +38,5 @@ long autopas::utilsKokkos::KokkosTimer::stop() {
 void autopas::utilsKokkos::KokkosTimer::reset() { _totalTime = 0; }
 
 void autopas::utilsKokkos::KokkosTimer::addTime(long nanoseconds) { _totalTime += nanoseconds; }
+
+#endif

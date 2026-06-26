@@ -192,10 +192,13 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   std::array<options::BoundaryTypeOption, _dimensionCount> _boundaryType;
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
   /**
    * Boundary condition types of all dimensions as Kokkos Array
    */
   Kokkos::Array<options::BoundaryTypeOption, _dimensionCount> _boundaryTypeKokkos;
+
+#endif
 
   /**
    * Indicates if MPI is enabled and if it will be used.

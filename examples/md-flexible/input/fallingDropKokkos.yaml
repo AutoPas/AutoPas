@@ -7,10 +7,10 @@ verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 container-layout                 :  [ SoA ]
 data-layout                      :  [ SoA ]
-traversal                        :  [ ds_kokkos_flat, ds_kokkos_teams, ds_kokkos_chunks ] # Please see AllOptions.yaml for a comprehensive list of traversals
+traversal                        :  [ ds_kokkos_teams ] # Please see AllOptions.yaml for a comprehensive list of traversals
 tuning-strategies                :  []
 tuning-interval                  :  2500
-tuning-samples                   :  3
+tuning-samples                   :  1
 tuning-max-evidence              :  10
 functor                          :  Lennard-Jones Kokkos
 newton3                          :  [disabled]
@@ -58,10 +58,11 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  fallingDrop
+vtk-filename                     :  fallingDropKokkos_SoA_SoA
 vtk-write-frequency              :  200
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  info
 kokkos-chunk-size                :  [64]
 kokkos-team-size                 :  [64]
+log-file                         :  global_test_kokkos_cuda.txt

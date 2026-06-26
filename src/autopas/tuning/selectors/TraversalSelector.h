@@ -12,9 +12,11 @@
 #include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
+#ifdef AUTOPAS_ENABLE_KOKKOS
 #include "autopas/containers/kokkosDirectSum/traversals/KokkosDsFlatTraversal.h"
 #include "autopas/containers/kokkosDirectSum/traversals/KokkosDsTeamsTraversal.h"
 #include "autopas/containers/kokkosDirectSum/traversals/KokkosDsChunksTraversal.h"
+#endif
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
@@ -138,6 +140,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
       break;
     }
     // Kokkos Direct sum
+#ifdef AUTOPAS_ENABLE_KOKKOS
     case TraversalOption::ds_kokkos_flat: {
       traversal = std::make_unique<KokkosDsFlatTraversal<PairwiseFunctor_T, typename ParticleCell_T::ParticleType>>(
         &pairwiseFunctor, dataLayout, useNewton3);
@@ -153,6 +156,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
         &pairwiseFunctor, dataLayout, useNewton3, kokkosChunkSize, kokkosChunkSize);
       break;
     }
+#endif
     // Linked cell
     case TraversalOption::lc_sliced: {
       traversal = std::make_unique<LCSlicedTraversal<ParticleCell_T, PairwiseFunctor_T>>(

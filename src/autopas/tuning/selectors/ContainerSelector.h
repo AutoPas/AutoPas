@@ -60,11 +60,12 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
       container = std::make_unique<DirectSum<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, sortingThreshold);
       break;
     }
-
+#ifdef AUTOPAS_ENABLE_KOKKOS
     case ContainerOption::kokkosDirectSum: {
       container = std::make_unique<KokkosDirectSum<Particle_T>>(dataLayout, boxMin, boxMax, verletSkin);
       break;
     }
+#endif
 
     case ContainerOption::linkedCells: {
       container = std::make_unique<LinkedCells<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor,

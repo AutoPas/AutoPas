@@ -6,6 +6,8 @@
 
 #pragma once
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
+
 #include <Kokkos_Core.hpp>
 
 #include "KokkosAoS.h"
@@ -372,3 +374,5 @@ namespace autopas::utilsKokkos {
   };
 
 }
+
+#endif

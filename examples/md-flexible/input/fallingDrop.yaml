@@ -11,14 +11,14 @@ tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
-functor                          :  Lennard-Jones AVX
+functor                          :  Lennard-Jones
 newton3                          :  [disabled, enabled]
 cutoff                           :  3
 box-min                          :  [0, 0, 0]
 box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
 deltaT                           :  0.0005
-iterations                       :  15000
+iterations                       :  30000
 energy-sensor                    :  rapl
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,-12]
@@ -42,6 +42,7 @@ Objects:
       box-length                 :  [48, 28, 10]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
+      particle-mass              :  1.
   Sphere:
     0:  
       center                     :  [18, 15, 30]
@@ -49,14 +50,16 @@ Objects:
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
+      particle-mass              :  2.
 # thermostat:
 #   initialTemperature             :  1
 #   targetTemperature              :  4
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  fallingDrop
+vtk-filename                     :  fallingDrop_AutoPas
 vtk-write-frequency              :  1000
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  info
+log-file                         :  global_test_autopas.txt

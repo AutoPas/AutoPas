@@ -21,6 +21,7 @@
 #include "src/ParticleCommunicator.h"
 #include "src/TypeDefinitions.h"
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
 // TODO: it might make sense to outsource this to a common location to avoid duplication
 #ifdef KOKKOS_ENABLE_CUDA
   using DeviceSpace = Kokkos::CudaSpace;
@@ -28,6 +29,8 @@ constexpr bool ForEachHostFlag = false;
 #else
 using DeviceSpace = Kokkos::HostSpace;
 constexpr bool ForEachHostFlag = true;
+#endif
+
 #endif
 
 RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
@@ -38,7 +41,9 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
       _globalBoxMin(configuration.boxMin.value),
       _globalBoxMax(configuration.boxMax.value),
       _boundaryType(configuration.boundaryOption.value),
+#ifdef AUTOPAS_ENABLE_KOKKOS
       _boundaryTypeKokkos({configuration.boundaryOption.value.at(0), configuration.boundaryOption.value.at(1), configuration.boundaryOption.value.at(2)}),
+#endif
       _mpiCommunicationNeeded(
 #if defined(AUTOPAS_INCLUDE_MPI)
           true
@@ -183,7 +188,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
       static_cast<size_t>(autoPasContainer.getNumberOfParticles() * (haloActualVolume / localBoxVolume) * 1.1));
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
-    const auto periodicBCs = _boundaryTypeKokkos[dimensionIndex] == options::BoundaryTypeOption::periodic;
+    const auto periodicBCs = _boundaryType[dimensionIndex] == options::BoundaryTypeOption::periodic;
     const auto atGlobalMinBoundary = isNearRel(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex]);
     const auto atGlobalMaxBoundary = isNearRel(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex]);
 
@@ -252,7 +257,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
   std::vector<ParticleType> remainingEmigrants;
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // if this rank spans the whole dimension but is not periodic -> skip.
-    if (_boundaryTypeKokkos[dimensionIndex] != options::BoundaryTypeOption::periodic and
+    if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::periodic and
         isNearRel(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex]) and
         isNearRel(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex]))
       continue;
@@ -293,7 +298,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
     }
   }
   // sanity check: if the simulation is a closed system there should be no emigrants left at this point.
-  if (std::all_of(_boundaryTypeKokkos.begin(), _boundaryTypeKokkos.end(),
+  if (std::all_of(_boundaryType.begin(), _boundaryType.end(),
                   [](const auto &boundary) {
                     return boundary == options::BoundaryTypeOption::periodic or
                            boundary == options::BoundaryTypeOption::reflective;
@@ -316,7 +321,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
   const bool containerAllowsKokkos = autoPasContainer.containerAllowsKokkos();
 
   if (containerAllowsKokkos) {
-
+#ifdef AUTOPAS_ENABLE_KOKKOS
     constexpr auto dimCount = _dimensionCount;
     const auto sixthRootOfTwo = _sixthRootOfTwo;
     const auto maxReflSkin = _maxReflectiveSkin;
@@ -386,6 +391,8 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
       storage.template operator()<ParticleType::AttributeNames::forceZ, ForEachHostFlag>(i) += force[2];
 
     }, autopas::IteratorBehavior::owned, "mdFlexible::RegularGridDecomposition::refectParticlesAtBoundaries");
+#endif
+    // TODO: throw exception
   } else {
     using autopas::utils::Math::isNearRel;
     std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};

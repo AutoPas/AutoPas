@@ -145,6 +145,112 @@ class Simulation {
    */
   constexpr static auto _floatStringPrecision = 3;
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
+  struct KokkosTimers {
+    /**
+     * Records the time used for the position updates of all particles.
+     */
+    autopas::utilsKokkos::KokkosTimer positionUpdate;
+
+    /**
+     * Records the time used for the quaternion updates of all particles.
+     */
+    autopas::utilsKokkos::KokkosTimer quaternionUpdate;
+
+    /**
+     * Records the time used for the total force update of all particles.
+     */
+    autopas::utilsKokkos::KokkosTimer forceUpdateTotal;
+
+    /**
+     * Records the time used for the pairwise force update of all particles.
+     */
+    autopas::utilsKokkos::KokkosTimer forceUpdatePairwise;
+
+    /**
+     * Records the time used for the triwise force update of all particles.
+     */
+    autopas::utilsKokkos::KokkosTimer forceUpdateTriwise;
+
+    /**
+     * Records the time used for the force update of all particles during the tuning iterations.
+     */
+    autopas::utilsKokkos::KokkosTimer forceUpdateTuning;
+
+    /**
+     * Records the time used for force updates of all particles during the non tuning iterations.
+     */
+    autopas::utilsKokkos::KokkosTimer forceUpdateNonTuning;
+
+    /**
+     * Records the time used for the velocity updates of all particles.
+     */
+    autopas::utilsKokkos::KokkosTimer velocityUpdate;
+
+    /**
+     * Records the time used for the angular velocity updates of all particles.
+     */
+    autopas::utilsKokkos::KokkosTimer angularVelocityUpdate;
+
+    /**
+     * Records the time used for actively simulating the provided scenario.
+     * This excludes initialization time, among others.
+     */
+    autopas::utilsKokkos::KokkosTimer simulate;
+
+    /**
+     * Records the time used for the creation of the timestep records.
+     */
+    autopas::utilsKokkos::KokkosTimer vtk;
+
+    /**
+     * Records the time used for the initialization of the simulation.
+     */
+    autopas::utilsKokkos::KokkosTimer initialization;
+
+    /**
+     * Records the total time required for the simulation.
+     */
+    autopas::utilsKokkos::KokkosTimer total;
+
+    /**
+     * Records the time required for the thermostat updates.
+     */
+    autopas::utilsKokkos::KokkosTimer thermostat;
+
+    /**
+     * Records the time required to exchange the halo particles.
+     */
+    autopas::utilsKokkos::KokkosTimer haloParticleExchange;
+
+    /**
+     * Records the time required to reflect particles.
+     */
+    autopas::utilsKokkos::KokkosTimer reflectParticlesAtBoundaries;
+
+    /**
+     * Records the time required to exchange migrating particles.
+     */
+    autopas::utilsKokkos::KokkosTimer migratingParticleExchange;
+
+    /**
+     * Records the time required for load balancing.
+     */
+    autopas::utilsKokkos::KokkosTimer loadBalancing;
+
+    /**
+     * Used for the diffuse load balancing as the metric to determine the imbalance.
+     */
+    autopas::utilsKokkos::KokkosTimer computationalLoad;
+
+    /**
+     * Records the time required for the update of the AutoPas container.
+     */
+    autopas::utilsKokkos::KokkosTimer updateContainer;
+  };
+
+  struct KokkosTimers _timers;
+#else
   /**
    * Struct containing all timers used for the simulation.
    */
@@ -251,120 +357,16 @@ class Simulation {
     autopas::utils::Timer updateContainer;
   };
 
-  struct KokkosTimers {
-    /**
-     * Records the time used for the position updates of all particles.
-     */
-    autopas::utilsKokkos::KokkosTimer positionUpdate;
-
-    /**
-     * Records the time used for the quaternion updates of all particles.
-     */
-    autopas::utilsKokkos::KokkosTimer quaternionUpdate;
-
-    /**
-     * Records the time used for the total force update of all particles.
-     */
-    autopas::utilsKokkos::KokkosTimer forceUpdateTotal;
-
-    /**
-     * Records the time used for the pairwise force update of all particles.
-     */
-    autopas::utilsKokkos::KokkosTimer forceUpdatePairwise;
-
-    /**
-     * Records the time used for the triwise force update of all particles.
-     */
-    autopas::utilsKokkos::KokkosTimer forceUpdateTriwise;
-
-    /**
-     * Records the time used for the force update of all particles during the tuning iterations.
-     */
-    autopas::utilsKokkos::KokkosTimer forceUpdateTuning;
-
-    /**
-     * Records the time used for force updates of all particles during the non tuning iterations.
-     */
-    autopas::utilsKokkos::KokkosTimer forceUpdateNonTuning;
-
-    /**
-     * Records the time used for the velocity updates of all particles.
-     */
-    autopas::utilsKokkos::KokkosTimer velocityUpdate;
-
-    /**
-     * Records the time used for the angular velocity updates of all particles.
-     */
-    autopas::utilsKokkos::KokkosTimer angularVelocityUpdate;
-
-    /**
-     * Records the time used for actively simulating the provided scenario.
-     * This excludes initialization time, among others.
-     */
-    autopas::utilsKokkos::KokkosTimer simulate;
-
-    /**
-     * Records the time used for the creation of the timestep records.
-     */
-    autopas::utilsKokkos::KokkosTimer vtk;
-
-    /**
-     * Records the time used for the initialization of the simulation.
-     */
-    autopas::utilsKokkos::KokkosTimer initialization;
-
-    /**
-     * Records the total time required for the simulation.
-     */
-    autopas::utilsKokkos::KokkosTimer total;
-
-    /**
-     * Records the time required for the thermostat updates.
-     */
-    autopas::utilsKokkos::KokkosTimer thermostat;
-
-    /**
-     * Records the time required to exchange the halo particles.
-     */
-    autopas::utilsKokkos::KokkosTimer haloParticleExchange;
-
-    /**
-     * Records the time required to reflect particles.
-     */
-    autopas::utilsKokkos::KokkosTimer reflectParticlesAtBoundaries;
-
-    /**
-     * Records the time required to exchange migrating particles.
-     */
-    autopas::utilsKokkos::KokkosTimer migratingParticleExchange;
-
-    /**
-     * Records the time required for load balancing.
-     */
-    autopas::utilsKokkos::KokkosTimer loadBalancing;
-
-    /**
-     * Used for the diffuse load balancing as the metric to determine the imbalance.
-     */
-    autopas::utilsKokkos::KokkosTimer computationalLoad;
-
-    /**
-     * Records the time required for the update of the AutoPas container.
-     */
-    autopas::utilsKokkos::KokkosTimer updateContainer;
-  };
+  /**
+ * The timers used during the simulation.
+ */
+  struct Timers _timers;
+#endif
 
   /**
    * Sensor for energy measurement
    */
   autopas::utils::EnergySensor _totalEnergySensor;
-
-  /**
-   * The timers used during the simulation.
-   */
-  // struct Timers _timers;
-
-  struct KokkosTimers _kokkosTimers;
 
   /**
    * Parallel VTK file writer. Optional.

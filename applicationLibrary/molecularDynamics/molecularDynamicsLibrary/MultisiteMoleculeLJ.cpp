@@ -7,7 +7,7 @@
 #include "MultisiteMoleculeLJ.h"
 
 namespace mdLib {
-MultisiteMoleculeLJ::MultisiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
+MultisiteMoleculeLJ::MultisiteMoleculeLJ(std::array<ParticleSoAFloatPrecision, 3> r, std::array<ParticleSoAFloatPrecision, 3> v, std::array<double, 4> q,
                                          std::array<double, 3> angularVel, unsigned long moleculeId,
                                          unsigned long typeId)
     : mdLib::MoleculeLJ(r, v, moleculeId, typeId), _q(q), _angularVel(angularVel), _torque({0., 0., 0.}) {}

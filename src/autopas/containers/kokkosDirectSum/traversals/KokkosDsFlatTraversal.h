@@ -8,6 +8,7 @@
 
 #include "autopas/containers/kokkosDirectSum/traversals/DSKokkosTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/baseFunctors/KokkosFunctor.h"
 
 #include <Kokkos_Core.hpp>
 
@@ -17,14 +18,43 @@ template <class Functor, class Particle_T>
 struct FlatTraversalFunctor {
   using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
 
+  /*
+  FlatTraversalFunctor(utilsKokkos::KokkosStorage<Particle_T>& storA, utilsKokkos::KokkosStorage<Particle_T>& storB,
+  Functor* f, FloatPrecision cutoffSquared, size_t m) : _storageA(storA), _storageB(storB),
+  _func(f), _cutoffSquared(cutoffSquared), M(m) {
+    Kokkos::printf("Test");
+  }
+
+  FlatTraversalFunctor() {}
+  */
+
   utilsKokkos::KokkosStorage<Particle_T> _storageA;
   utilsKokkos::KokkosStorage<Particle_T> _storageB;
   Functor* _func;
   FloatPrecision _cutoffSquared;
   size_t M;
 
+  struct ReductionResult {
+    FloatPrecision virialSum;
+    FloatPrecision uPotSum;
+  };
+
+  using value_type = ReductionResult;
+
   KOKKOS_INLINE_FUNCTION
-  void operator()(const int i) const {
+  void init(value_type& result) const {
+    result.virialSum = 0.;
+    result.uPotSum = 0.;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void join(value_type& result, const value_type& src) const {
+    result.virialSum += src.virialSum;
+    result.uPotSum += src.uPotSum;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const int i, value_type& localResult) const {
     FloatPrecision fxAcc = 0.;
     FloatPrecision fyAcc = 0.;
     FloatPrecision fzAcc = 0.;
@@ -33,8 +63,36 @@ struct FlatTraversalFunctor {
     const auto y1 = _storageA.template operator()<Particle_T::AttributeNames::posY, false>(i);
     const auto z1 = _storageA.template operator()<Particle_T::AttributeNames::posZ, false>(i);
 
+    FloatPrecision virialSum = 0.;
+    FloatPrecision uPotSum = 0;
+
     for (int j = 0; j < M; ++j) {
-      _func->ForceKernelKokkos(x1, y1, z1, _storageB, fxAcc, fyAcc, fzAcc, _cutoffSquared, i, j);
+      _func->ForceKernelKokkos(x1, y1, z1, _storageB, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, _cutoffSquared, i, j);
+    }
+
+    _storageA.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
+    _storageA.template operator()<Particle_T::AttributeNames::forceY, false>(i) += fyAcc;
+    _storageA.template operator()<Particle_T::AttributeNames::forceZ, false>(i) += fzAcc;
+
+    localResult.virialSum += virialSum;
+    localResult.uPotSum += uPotSum;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const int i) const {
+    FloatPrecision fxAcc = 0.;
+    FloatPrecision fyAcc = 0.;
+    FloatPrecision fzAcc = 0.;
+
+    FloatPrecision virialSum = 0.;
+    FloatPrecision uPotSum = 0;
+
+    const auto x1 = _storageA.template operator()<Particle_T::AttributeNames::posX, false>(i);
+    const auto y1 = _storageA.template operator()<Particle_T::AttributeNames::posY, false>(i);
+    const auto z1 = _storageA.template operator()<Particle_T::AttributeNames::posZ, false>(i);
+
+    for (int j = 0; j < M; ++j) {
+      _func->ForceKernelKokkos(x1, y1, z1, _storageB, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, _cutoffSquared, i, j);
     }
 
     _storageA.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
@@ -96,7 +154,21 @@ protected:
     FlatTraversalFunctor<Functor, Particle_T> functor {storageA, storageB, func, cutoffSquared, M};
 
     auto rangePolicy = Kokkos::RangePolicy<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space>(0, N);
-    Kokkos::parallel_for("autopas::FlatTraversal", rangePolicy, functor);
+
+    constexpr bool calculateGlobals = Functor::globalCalculationRequested();
+
+    if constexpr (calculateGlobals) {
+      typename FlatTraversalFunctor<Functor, Particle_T>::value_type globalResult {};
+
+      Kokkos::parallel_reduce("autopas::KokkosDsFlatTraversal_Globals", rangePolicy, functor, globalResult);
+      auto kokkosFunc = dynamic_cast<KokkosFunctor*>(func);
+
+      kokkosFunc->setPotentialEnergy(static_cast<double>(globalResult.uPotSum));
+      kokkosFunc->setVirial(static_cast<double>(globalResult.virialSum));
+
+    } else {
+      Kokkos::parallel_for("autopas::KokkosDsFlatTraversal_NoGlobals", rangePolicy, functor);
+    }
   }
 private:
 

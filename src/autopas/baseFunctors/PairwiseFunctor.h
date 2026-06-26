@@ -74,11 +74,14 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
     utils::ExceptionHandler::exception("{}::SoAFunctorSingle: not implemented", this->getName());
   }
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
   KOKKOS_INLINE_FUNCTION
-  virtual void ForceKernelKokkos(const FloatPrecision& xPos1, const FloatPrecision& yPos1, const FloatPrecision& zPos1, const utilsKokkos::KokkosStorage<Particle_T>& storage2,
-    FloatPrecision& fxAcc, FloatPrecision& fyAcc, FloatPrecision& fzAcc, FloatPrecision cutoffSquared, int i, int j) {
-    utils::ExceptionHandler::exception("{}::SoAKernelKokkos: not implemented", this->getName());
+  virtual void ForceKernelKokkos(const FloatPrecision &x1, const FloatPrecision &y1, const FloatPrecision &z1,
+                       const autopas::utilsKokkos::KokkosStorage<Particle_T>& storage2, FloatPrecision &fxAcc, FloatPrecision &fyAcc,
+                       FloatPrecision &fzAcc, FloatPrecision &virialSum,  FloatPrecision& uPotSum, FloatPrecision cutoffSquared, int i, int j) {
+    //TODO: Kokkos-compatible exception utils::ExceptionHandler::exception("{}::SoAKernelKokkos: not implemented", this->getName());
   }
+#endif
 
   /**
    * PairwiseFunctor for structure of arrays (SoA) for neighbor lists

@@ -6,6 +6,8 @@
 
 #pragma once
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
+
 #include <Kokkos_Core.hpp>
 #include "autopas/utilsKokkos/KokkosAoS.h"
 #include "autopas/utilsKokkos/KokkosDataLayoutConverter.h"
@@ -101,3 +103,5 @@ protected:
 
 };
 }
+
+#endif

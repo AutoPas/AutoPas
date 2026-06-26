@@ -4,6 +4,8 @@
  * @author Luis Gall
  */
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
+
 #include "KokkosMoleculeLJ.h"
 
 namespace mdLib {
@@ -29,3 +31,5 @@ std::string KokkosMoleculeLJ::toString() const {
   return text.str();
 }
 }  // namespace mdLib
+
+#endif

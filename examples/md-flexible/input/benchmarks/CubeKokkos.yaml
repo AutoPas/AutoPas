@@ -13,7 +13,7 @@ cutoff                           : 3
 box-min                          : [0, 0, 0]
 box-max                          : [100, 100, 100]
 cell-size                        : [1]
-deltaT                           : 0.0025
+deltaT                           : 0.0
 iterations                       : 1000
 boundary-type                    : [reflective, reflective, reflective]
 globalForce                      : [0, 0, 0]
@@ -33,6 +33,6 @@ Objects:
       particle-mass              : 1.
 vtk-filename                     : benchmarkCubeKokkos
 vtk-write-frequency              : 200
-kokkos-team-size                 : [64]
-kokkos-chunk-size                : [64]
+kokkos-team-size                 : [20]
+kokkos-chunk-size                : [20]
 no-end-config                    : true

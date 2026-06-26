@@ -6,6 +6,8 @@
 
 // This file is oriented on the implementation of the CellBasedParticleContainer, just that it does not use any cells to store particles
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
+
 #pragma once
 
 #include <Kokkos_Core.hpp>
@@ -607,3 +609,5 @@ protected:
 
         };
 }
+
+#endif

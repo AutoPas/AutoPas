@@ -41,6 +41,8 @@
 
 namespace autopas {
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
+
 // TODO: it might make sense to outsource this to a common location to avoid duplication
 #ifdef KOKKOS_ENABLE_CUDA
   using DeviceSpace = Kokkos::CudaSpace;
@@ -64,6 +66,8 @@ struct UpdateRebuildPositionsFunctor {
     storage.template operator()<Particle_T::AttributeNames::rebuildZ, ForEachHostFlag>(i) = pZ;
   }
 };
+
+#endif
 
 /**
  * The LogicHandler takes care of the containers s.t. they are all in the same valid state.
@@ -679,7 +683,7 @@ class LogicHandler {
         maxVelocity = std::max(tempVelAbs, maxVelocity);
       }
     } else {
-
+#ifdef AUTOPAS_ENABLE_KOKKOS
       auto lambda = KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T>& storage, typename Particle_T::ParticleSoAFloatPrecision &localMaxVelocity) {
         const auto velX = storage.template operator()<Particle_T::AttributeNames::velocityX, ForEachHostFlag>(i);
         const auto velY = storage.template operator()<Particle_T::AttributeNames::velocityY, ForEachHostFlag>(i);
@@ -693,6 +697,8 @@ class LogicHandler {
       withStaticContainerType(getContainer(), [&lambda, &maxVelocity](auto& actualContainer) {
         actualContainer.template reduceKokkos<DeviceSpace::execution_space, typename Particle_T::ParticleSoAFloatPrecision, Kokkos::Max<typename Particle_T::ParticleSoAFloatPrecision>>(lambda, maxVelocity, IteratorBehavior::owned | IteratorBehavior::containerOnly, "autopas::LogicHandler::getVelocityRFEstimate");
       });
+#endif
+      // TODO: throw exception
     }
 
     // return the rebuild frequency estimate
@@ -898,7 +904,11 @@ class LogicHandler {
   /**
    * Handles pairwise interactions of buffer particles (the remainder).
    */
-  RemainderPairwiseInteractionHandler<Particle_T, DeviceSpace::execution_space> _remainderPairwiseInteractionHandler;
+  RemainderPairwiseInteractionHandler<Particle_T
+#ifdef AUTOPAS_ENABLE_KOKKOS
+  , DeviceSpace::execution_space
+#endif
+  > _remainderPairwiseInteractionHandler;
 
   /**
    * Handles triwise interactions of buffer particles (the remainder).
@@ -1002,12 +1012,14 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
     }
   }
   else {
-
+#ifdef AUTOPAS_ENABLE_KOKKOS
     UpdateRebuildPositionsFunctor<Particle_T> functor{};
 
     withStaticContainerType(getContainer(), [&functor] (auto& actualContainer) {
       actualContainer.template forEachKokkos<DeviceSpace::execution_space>(functor, IteratorBehavior::owned | IteratorBehavior::containerOnly, "autopas::LogicHandler::updateRebuildPositions");
     });
+#endif
+    // TODO: throw exception
   }
 #endif
 }
@@ -1073,6 +1085,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   }
   else {
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
     bool test = _neighborListInvalidDoDynamicRebuild;
 
     auto lambda = KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T>& storage, bool& local) {
@@ -1098,7 +1111,8 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
       actualContainer.template reduceKokkos<DeviceSpace::execution_space, bool, Kokkos::LOr<bool>>(lambda, test, IteratorBehavior::owned | IteratorBehavior::containerOnly, "autopas::LogicHandler::checkNeighborListsInvalid");
     });
     _neighborListInvalidDoDynamicRebuild = test;
-
+#endif
+    // TODO: throw exception
   }
 
 #endif
@@ -1454,15 +1468,15 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   const auto allContainerTraversals =
       compatibleTraversals::allCompatibleTraversals(config.container, config.interactionType);
   if (allContainerTraversals.find(config.traversal) == allContainerTraversals.end()) {
-    AutoPasLog(WARN, "Configuration rejected: Container {} does not support the traversal {}.", config.container,
-               config.traversal);
+    AutoPasLog(WARN, "Configuration rejected: Container {} does not support the traversal {}.", ContainerOption::getOptionNames().at(config.container),
+               TraversalOption::getOptionNames().at(config.traversal));
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
   // Check if the functor supports the required Newton 3 mode
   if ((config.newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
       (config.newton3 == Newton3Option::disabled and not functor.allowsNonNewton3())) {
-    AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!", config.newton3);
+    AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!", Newton3Option::getOptionNames().at(config.newton3));
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
