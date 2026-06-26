@@ -1,13 +1,17 @@
 /**
  * @file TwoCellsInteractionHitrateGenerator.h
- * @author H. Meyran
+ *
+ *  * @date 26.06.2026
+ * @author hmeyran
  */
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <random>
+#include <vector>
 
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -22,8 +26,8 @@ namespace autopasTools::generators::TwoCellsInteractionHitrateGenerator {
  *
  * Preconditions (checked via ExceptionHandler):
  *   - boxMax1[0] == boxMin2[0]                      — shared boundary
- *   - (boxMax1[0] - boxMin1[0]) > 1.5 * cutoff      — cell1 x-extent sufficient for far zone
- *   - (boxMax2[0] - boxMin2[0]) > 1.5 * cutoff      — cell2 x-extent sufficient for far zone
+ *   - (boxMax1[0] - boxMin1[0]) > 1.2 * cutoff      — cell1 x-extent sufficient for far zone (factor is arbitrary)
+ *   - (boxMax2[0] - boxMin2[0]) > 1.2 * cutoff      — cell2 x-extent sufficient for far zone (factor is arbitrary)
  *   - hitrate in [0.0, 1.0]
  *
  * Particle IDs are assigned sequentially starting from defaultParticle.getID():
@@ -36,8 +40,8 @@ namespace autopasTools::generators::TwoCellsInteractionHitrateGenerator {
  *   - The remaining n-k far particles have an x-distance >= cutoff to every particle
  *     in the other cell, so they produce no cross-cell interactions.
  *
- * @tparam Container Any container supporting addParticle().
- * @tparam Particle Particle type.
+ * @tparam Container_T Any container supporting addParticle().
+ * @tparam Particle_T Particle type; must support setR(), setID(), setOwnershipState(), and getID().
  * @param cell1 First cell (x < boundary).
  * @param cell2 Second cell (x >= boundary).
  * @param boxMin1 Minimum coordinates of cell1.
@@ -50,26 +54,26 @@ namespace autopasTools::generators::TwoCellsInteractionHitrateGenerator {
  * @param defaultParticle Template particle; IDs are assigned sequentially starting from defaultParticle.getID().
  * @param seed Random seed for reproducibility.
  */
-template <class Container, class Particle>
-void fillWithParticles(Container &cell1, Container &cell2, const std::array<double, 3> &boxMin1,
+template <class Container_T, class Particle_T>
+void fillWithParticles(Container_T &cell1, Container_T &cell2, const std::array<double, 3> &boxMin1,
                        const std::array<double, 3> &boxMax1, const std::array<double, 3> &boxMin2,
                        const std::array<double, 3> &boxMax2, std::size_t n, double hitrate, double cutoff,
-                       const Particle &defaultParticle = Particle{}, unsigned int seed = 42) {
+                       const Particle_T &defaultParticle = Particle_T{}, unsigned int seed = 42) {
   if (std::abs(boxMax1[0] - boxMin2[0]) > 1e-10) {
     autopas::utils::ExceptionHandler::exception(
         "TwoCellsInteractionHitrateGenerator: cells must share an x-boundary "
         "(boxMax1[0]={} != boxMin2[0]={})",
         boxMax1[0], boxMin2[0]);
   }
-  if ((boxMax1[0] - boxMin1[0]) <= 1.5 * cutoff) {
+  if ((boxMax1[0] - boxMin1[0]) <= 1.2 * cutoff) {
     autopas::utils::ExceptionHandler::exception(
-        "TwoCellsInteractionHitrateGenerator: cell1 x-extent ({}) must be > 1.5 * cutoff ({})", boxMax1[0] - boxMin1[0],
-        1.5 * cutoff);
+        "TwoCellsInteractionHitrateGenerator: cell1 x-extent ({}) must be > 1.2 * cutoff ({})", boxMax1[0] - boxMin1[0],
+        1.2 * cutoff);
   }
-  if ((boxMax2[0] - boxMin2[0]) <= 1.5 * cutoff) {
+  if ((boxMax2[0] - boxMin2[0]) <= 1.2 * cutoff) {
     autopas::utils::ExceptionHandler::exception(
-        "TwoCellsInteractionHitrateGenerator: cell2 x-extent ({}) must be > 1.5 * cutoff ({})", boxMax2[0] - boxMin2[0],
-        1.5 * cutoff);
+        "TwoCellsInteractionHitrateGenerator: cell2 x-extent ({}) must be > 1.2 * cutoff ({})", boxMax2[0] - boxMin2[0],
+        1.2 * cutoff);
   }
   if (hitrate < 0.0 || hitrate > 1.0) {
     autopas::utils::ExceptionHandler::exception("TwoCellsInteractionHitrateGenerator: hitrate ({}) must be in [0, 1]",
@@ -89,42 +93,52 @@ void fillWithParticles(Container &cell1, Container &cell2, const std::array<doub
 
   auto uniform = [&](double lo, double hi) { return std::uniform_real_distribution<double>(lo, hi)(rng); };
 
+  std::vector<Particle_T> particles1, particles2;
+  particles1.reserve(n);
+  particles2.reserve(n);
+
   // k paired (in-range) particles: 3D distance between partners = 2·dx < cutoff
   for (std::size_t i = 0; i < k; ++i) {
     const double dx = dxDist(rng);
     const double y = uniform(boxMin1[1], boxMax1[1]);
     const double z = uniform(boxMin1[2], boxMax1[2]);
 
-    Particle p1(defaultParticle);
+    Particle_T p1(defaultParticle);
     p1.setR({boundary - dx, y, z});
     p1.setID(idBase + i);
     p1.setOwnershipState(autopas::OwnershipState::owned);
-    cell1.addParticle(p1);
+    particles1.push_back(p1);
 
-    Particle p2(defaultParticle);
+    Particle_T p2(defaultParticle);
     p2.setR({boundary + dx, y, z});
     p2.setID(idBase + n + i);
     p2.setOwnershipState(autopas::OwnershipState::owned);
-    cell2.addParticle(p2);
+    particles2.push_back(p2);
   }
 
   // n-k far particles in cell1: x-distance to any cell2 particle >= cutoff
   for (std::size_t i = 0; i < farCount; ++i) {
-    Particle p(defaultParticle);
+    Particle_T p(defaultParticle);
     p.setR({uniform(boxMin1[0], boundary - cutoff), uniform(boxMin1[1], boxMax1[1]), uniform(boxMin1[2], boxMax1[2])});
     p.setID(idBase + k + i);
     p.setOwnershipState(autopas::OwnershipState::owned);
-    cell1.addParticle(p);
+    particles1.push_back(p);
   }
 
   // n-k far particles in cell2: x-distance to any cell1 particle >= cutoff
   for (std::size_t i = 0; i < farCount; ++i) {
-    Particle p(defaultParticle);
+    Particle_T p(defaultParticle);
     p.setR({uniform(boundary + cutoff, boxMax2[0]), uniform(boxMin2[1], boxMax2[1]), uniform(boxMin2[2], boxMax2[2])});
     p.setID(idBase + n + k + i);
     p.setOwnershipState(autopas::OwnershipState::owned);
-    cell2.addParticle(p);
+    particles2.push_back(p);
   }
+
+  std::shuffle(particles1.begin(), particles1.end(), rng);
+  std::shuffle(particles2.begin(), particles2.end(), rng);
+
+  for (auto &p : particles1) cell1.addParticle(p);
+  for (auto &p : particles2) cell2.addParticle(p);
 }
 
 }  // namespace autopasTools::generators::TwoCellsInteractionHitrateGenerator

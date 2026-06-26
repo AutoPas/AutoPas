@@ -1346,6 +1346,9 @@ class LJFunctorHWY
         Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY, Particle_T::AttributeNames::forceZ};
   }
 
+  /**
+   * @copydoc autopas::Functor::supportsSoASorting
+   */
   static constexpr bool supportsSoASorting = true;
 
   /**
