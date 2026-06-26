@@ -35,7 +35,7 @@ long autopas::utils::Timer::stop() {
   _totalTime += diff;
   _lapTime += diff;
 
-  return _lapTime;
+  return diff;
 }
 
 void autopas::utils::Timer::reset() {
