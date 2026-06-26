@@ -113,12 +113,12 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    *
    * @param soa1 Sorted, packed view of cell 1 particles.
    * @param soa2 Sorted, packed view of cell 2 particles.
-   * @param meta Precomputed start_i, maxIndex, minIndex for loop-bound pruning.
+   * @param sortingData Precomputed start_i, maxIndex, minIndex for loop-bound pruning.
    * @param newton3 Whether to apply Newton's third law.
    */
   virtual void SoAFunctorPairSorted(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2,
-                                    const SoASortingData &meta, bool newton3) {
-    (void)meta;
+                                    const SoASortingData &sortingData, bool newton3) {
+    (void)sortingData;
     SoAFunctorPair(soa1, soa2, newton3);
   }
 
