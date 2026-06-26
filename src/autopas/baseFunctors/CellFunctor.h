@@ -99,7 +99,7 @@ class CellFunctor {
    * @param projIdxJ Sorted projections of the inner-loop cell.
    * @param maxIndexCache Cache to store the computed maxIndex.
    * @param minIndexCache Cache to store the computed minIndex.
-   * @return SoASortedPairMeta with start_i and per-i upper/lower bounds into j.
+   * @return SoASortedPairMeta with startI and per-i upper/lower bounds into j.
    */
   [[nodiscard]] SoASortingData computeSortingData(const std::vector<std::pair<double, size_t>> &projIdxI,
                                                   const std::vector<std::pair<double, size_t>> &projIdxJ,
@@ -118,6 +118,12 @@ class CellFunctor {
            (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
   }
 
+  /**
+   * Evaluate whether the SoA path should use sorted pair iteration, depending on the set SoA sorting threshold.
+   * @param particleCount Total number of involved particles (sum of both SoA buffer sizes).
+   * @param sortingDirection No sorting when the sorting direction is {0., 0., 0.}.
+   * @return Whether the SoA path should use SoAFunctorPairSorted.
+   */
   [[nodiscard]] bool shouldUseSoASorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
     return particleCount >= _soaSortingThreshold and
            (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
@@ -172,7 +178,10 @@ class CellFunctor {
 
   const bool _useNewton3;
 
-  struct SoAThreadData {
+  /**
+   * Per-thread persistent buffers for the SoA sorting path, allocated once and reused across calls.
+   */
+  struct alignas(64) SoAThreadData {
     SoA<typename ParticleCell_T::ParticleType::SoAArraysType> sortedSoa1;
     SoA<typename ParticleCell_T::ParticleType::SoAArraysType> sortedSoa2;
     std::vector<std::pair<double, size_t>> projIdx1;
@@ -196,8 +205,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortin
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(ParticleCell_T &cell) {
-  const bool isAoS = _dataLayout == DataLayoutOption::aos ? true : false;
-  const bool isSoA = _dataLayout == DataLayoutOption::soa ? true : false;
+  const bool isAoS = _dataLayout == DataLayoutOption::aos;
+  const bool isSoA = _dataLayout == DataLayoutOption::soa;
 
   // Return early if the cell is empty.
   if ((isSoA and cell._particleSoABuffer.size() == 0) or (isAoS and cell.isEmpty())) {
@@ -218,8 +227,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPair(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
-  const bool isAoS = _dataLayout == DataLayoutOption::aos ? true : false;
-  const bool isSoA = _dataLayout == DataLayoutOption::soa ? true : false;
+  const bool isAoS = _dataLayout == DataLayoutOption::aos;
+  const bool isSoA = _dataLayout == DataLayoutOption::soa;
 
   // Return early if a cell is empty.
   if ((isSoA and (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0)) or
@@ -329,19 +338,19 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
   const double threshold = projIdxJ[0].first - _sortingCutoff;
   auto start_iter = std::upper_bound(projIdxI.begin(), projIdxI.end(), threshold,
                                      [](double val, const auto &elem) { return val < elem.first; });
-  const size_t start_i = static_cast<size_t>(start_iter - projIdxI.begin());
+  const size_t startI = static_cast<size_t>(start_iter - projIdxI.begin());
 
   maxIndexCache.assign(nI, 0);
   minIndexCache.assign(nI, 0);
   size_t jUpper = 0, jLower = 0;
-  for (size_t i = start_i; i < nI; ++i) {
+  for (size_t i = startI; i < nI; ++i) {
     while (jUpper < nJ and projIdxJ[jUpper].first <= projIdxI[i].first + _sortingCutoff) ++jUpper;
     maxIndexCache[i] = jUpper;
     while (jLower < nJ and projIdxJ[jLower].first < projIdxI[i].first - _sortingCutoff) ++jLower;
     minIndexCache[i] = jLower;
   }
 
-  return {start_i, maxIndexCache, minIndexCache};
+  return {startI, maxIndexCache, minIndexCache};
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>

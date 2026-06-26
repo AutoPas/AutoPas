@@ -110,7 +110,7 @@ void fillCell(FMCell &cell, const std::array<double, 3> &low, const std::array<d
 }
 
 /**
- * Builds nighborLists for use in the VerletList Benchmark
+ * Builds neighborLists for use in the VerletList Benchmark
  * @param cell Cell to build NeighborLists for
  * @param interactionLen
  * @param newton3 wether newton3 optimization is being used or not
@@ -466,7 +466,7 @@ static void BM_SoAFunctorPairFaceUniform(benchmark::State &state) {
  * @name BM_SoA_Pair_Face_Uniform
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern}
- * - Sweeps kNValuesReduced, both newton3 on and off with all VecPatterns.
+ * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
  * - This is part of the Layout study.
  */
 BENCHMARK(BM_SoAFunctorPairFaceUniform)

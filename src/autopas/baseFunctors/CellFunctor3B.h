@@ -185,15 +185,15 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSort
   _aosSortingThreshold = aosSortingThreshold;
 }
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
   _soaSortingThreshold = soaSortingThreshold;
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(ParticleCell_T &cell) {
-  const bool isAoS = _dataLayout == DataLayoutOption::aos ? true : false;
-  const bool isSoA = _dataLayout == DataLayoutOption::soa ? true : false;
+  const bool isAoS = _dataLayout == DataLayoutOption::aos;
+  const bool isSoA = _dataLayout == DataLayoutOption::soa;
 
   // Return early if the cell is empty.
   if ((isSoA and cell._particleSoABuffer.size() == 0) or (isAoS and cell.isEmpty())) {
@@ -213,10 +213,9 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPair(
-
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
-  const bool isAoS = _dataLayout == DataLayoutOption::aos ? true : false;
-  const bool isSoA = _dataLayout == DataLayoutOption::soa ? true : false;
+  const bool isAoS = _dataLayout == DataLayoutOption::aos;
+  const bool isSoA = _dataLayout == DataLayoutOption::soa;
 
   // Return early if a cell is empty.
   if ((isSoA and (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0)) or
@@ -246,11 +245,10 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellTriple(
-
     ParticleCell_T &cell1, ParticleCell_T &cell2, ParticleCell_T &cell3,
     const std::array<double, 3> &sortingDirection) {
-  const bool isAoS = _dataLayout == DataLayoutOption::aos ? true : false;
-  const bool isSoA = _dataLayout == DataLayoutOption::soa ? true : false;
+  const bool isAoS = _dataLayout == DataLayoutOption::aos;
+  const bool isSoA = _dataLayout == DataLayoutOption::soa;
 
   // Return early if a cell is empty.
   if ((isSoA and (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0 or

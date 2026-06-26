@@ -825,8 +825,8 @@ class LJFunctorHWY
     const auto *const __restrict typeID1Ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
     const auto *const __restrict typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
-    const std::ptrdiff_t start_i =
-        sorted && sortingData != nullptr ? static_cast<std::ptrdiff_t>(sortingData->start_i) : 0;
+    const std::ptrdiff_t startI =
+        sorted && sortingData != nullptr ? static_cast<std::ptrdiff_t>(sortingData->startI) : 0;
 
     VectorDouble virialSumX = highway::Zero(tag_double);
     VectorDouble virialSumY = highway::Zero(tag_double);
@@ -837,7 +837,7 @@ class LJFunctorHWY
     const size_t jStep = jStepSize<vecPattern>();
 
     // Step 5: vectorized interaction loop.
-    std::ptrdiff_t i = start_i;
+    std::ptrdiff_t i = startI;
     for (; checkFirstLoopCondition<false, vecPattern>(i, n1); incrementFirstLoop<vecPattern>(i)) {
       size_t jVecEnd;
       size_t jVecStart = 0;

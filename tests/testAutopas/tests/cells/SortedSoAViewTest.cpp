@@ -10,14 +10,10 @@
 #include "autopasTools/generators/UniformGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
-// LJFunctorType<> provides getNeededAttr() (positions, typeId, id) and getComputedAttr() (forces).
 using TestFunctor = LJFunctorType<>;
 using TestView = autopas::SortedSoAView<Molecule, TestFunctor>;
 
-/**
- * Fills a cell with n particles at positions (i, 0, 0) for i in [0, n).
- * Returns the cell with particles sorted along x by construction.
- */
+// Fills a cell with n particles at positions (i, 0, 0) for i in [0, n).
 static FMCell makeLineCell(size_t n) {
   FMCell cell;
   for (size_t i = 0; i < n; ++i) {
@@ -27,9 +23,7 @@ static FMCell makeLineCell(size_t n) {
   return cell;
 }
 
-/**
- * Loads a cell's SoA buffer using a temporary LJFunctor instance.
- */
+// Loads a cell's SoA buffer using a temporary LJFunctor instance.
 static void loadSoA(FMCell &cell) {
   constexpr double cutoff = 10.0;
   TestFunctor f(cutoff);

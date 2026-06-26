@@ -346,7 +346,7 @@ class CellFunctorSortingDataTest : public AutoPasTestBase {
 };
 
 /**
- * start_i skips i particles whose projection lies entirely below projJ[0] - cutoff.
+ * startI skips i particles whose projection lies entirely below projJ[0] - cutoff.
  * With projI = {1, 4, 7}, projJ = {5, 8}, cutoff = 3:
  *   threshold = 5 - 3 = 2 → first i where projI > 2 is index 1 (projI[1] = 4).
  */
@@ -357,7 +357,7 @@ TEST_F(CellFunctorSortingDataTest, testStartI) {
 
   const auto data = _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
 
-  EXPECT_EQ(data.start_i, 1u);
+  EXPECT_EQ(data.startI, 1u);
 }
 
 /**
@@ -373,7 +373,7 @@ TEST_F(CellFunctorSortingDataTest, testMaxIndex) {
 
   _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
 
-  // start_i = 1 (projI[0]=0 <= threshold=3 so skipped)
+  // startI = 1 (projI[0]=0 <= threshold=3 so skipped)
   EXPECT_EQ(maxIdx[1], 2u);
   EXPECT_EQ(maxIdx[2], 3u);
 }
@@ -398,7 +398,7 @@ TEST_F(CellFunctorSortingDataTest, testMinIndex) {
 /**
  * When projI lies entirely below projJ - cutoff no i can interact with any j.
  * projI = {0, 1}, projJ = {10, 11}, cutoff = 3 → threshold = 10-3=7,
- * both projI values <= 7, so start_i = 2 = nI.
+ * both projI values <= 7, so startI = 2 = nI.
  */
 TEST_F(CellFunctorSortingDataTest, testAllPruned) {
   auto projI = makeProjIdx({0.0, 1.0});
@@ -407,5 +407,5 @@ TEST_F(CellFunctorSortingDataTest, testAllPruned) {
 
   const auto data = _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
 
-  EXPECT_EQ(data.start_i, 2u);
+  EXPECT_EQ(data.startI, 2u);
 }
