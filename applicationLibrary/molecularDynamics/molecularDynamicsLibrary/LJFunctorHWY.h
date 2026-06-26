@@ -19,7 +19,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/SoASortedView.h"
+#include "autopas/utils/SortedSoAView.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace mdLib {
@@ -233,38 +233,36 @@ class LJFunctorHWY
   // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
-    static const std::vector<size_t> emptyVec{};
-    autopas::SoASortingData sortingData = {0, emptyVec, emptyVec};
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec: {
         if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<true, false, VectorizationPattern::p1xVec>(soa1, soa2);
         } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<false, false, VectorizationPattern::p1xVec>(soa1, soa2);
         }
         break;
       }
       case VectorizationPattern::p2xVecDiv2: {
         if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<true, false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
         } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<false, false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
         }
         break;
       }
       case VectorizationPattern::pVecDiv2x2: {
         if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
         } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
         }
         break;
       }
       case VectorizationPattern::pVecx1: {
         if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecx1>(soa1, soa2);
         } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecx1>(soa1, soa2);
         }
         break;
       }
@@ -284,33 +282,33 @@ class LJFunctorHWY
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec: {
         if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<true, true, VectorizationPattern::p1xVec>(soa1, soa2, &sortingData);
         } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<false, true, VectorizationPattern::p1xVec>(soa1, soa2, &sortingData);
         }
         break;
       }
       case VectorizationPattern::p2xVecDiv2: {
         if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<true, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, &sortingData);
         } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<false, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, &sortingData);
         }
         break;
       }
       case VectorizationPattern::pVecDiv2x2: {
         if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, &sortingData);
         } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, &sortingData);
         }
         break;
       }
       case VectorizationPattern::pVecx1: {
         if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecx1>(soa1, soa2, &sortingData);
         } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecx1>(soa1, soa2, &sortingData);
         }
         break;
       }
@@ -798,12 +796,11 @@ class LJFunctorHWY
    * @tparam vecPattern Vectorization pattern. All four patterns are supported on both paths.
    * @param soa1
    * @param soa2
-   * @param sortingDirection Normalized axis for 1D projection (sorted path only).
-   * @param sortingCutoff    1D cutoff for the upper-bound computation (sorted path only).
+   * @param sortingData Pruning data needed for sorting optimization.
    */
   template <bool newton3, bool sorted, VectorizationPattern vecPattern>
   inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                 const autopas::SoASortingData &sortingData) {
+                                 const autopas::SoASortingData *sortingData = nullptr) {
     if (soa1.size() == 0 || soa2.size() == 0) {
       return;
     }
@@ -828,24 +825,8 @@ class LJFunctorHWY
     const auto *const __restrict typeID1Ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
     const auto *const __restrict typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
-    const double *const x1Data = x1Ptr;
-    const double *const y1Data = y1Ptr;
-    const double *const z1Data = z1Ptr;
-    const double *const x2Data = x2Ptr;
-    const double *const y2Data = y2Ptr;
-    const double *const z2Data = z2Ptr;
-    const auto *const owned1Data = ownedStatePtr1;
-    const auto *const owned2Data = ownedStatePtr2;
-    const size_t *const typeID1Data = typeID1Ptr;
-    const size_t *const typeID2Data = typeID2Ptr;
-    double *const fx1Data = fx1Ptr;
-    double *const fy1Data = fy1Ptr;
-    double *const fz1Data = fz1Ptr;
-    double *const fx2Data = fx2Ptr;
-    double *const fy2Data = fy2Ptr;
-    double *const fz2Data = fz2Ptr;
-
-    const std::ptrdiff_t start_i = sorted ? static_cast<std::ptrdiff_t>(sortingData.start_i) : 0;
+    const std::ptrdiff_t start_i =
+        sorted && sortingData != nullptr ? static_cast<std::ptrdiff_t>(sortingData->start_i) : 0;
 
     VectorDouble virialSumX = highway::Zero(tag_double);
     VectorDouble virialSumY = highway::Zero(tag_double);
@@ -864,22 +845,21 @@ class LJFunctorHWY
         // maxIndex is monotonically non-decreasing, so the tightest valid bound for the i-block
         // [i, i + iStep - 1] is maxIndex of the last particle in the block. For p1xVec
         // (iStep=1) this collapses to maxIndex[i].
-        jVecEnd = sortingData.maxIndex[i + iStep - 1];
-        jVecStart = sortingData.minIndex[i];
+        jVecEnd = sortingData->maxIndex[i + iStep - 1];
+        jVecStart = sortingData->minIndex[i];
         if (jVecStart >= jVecEnd) {
           continue;
         }
         jVecStart = jVecStart - (jVecStart % jStep);
         if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-          if (owned1Data[i] == autopas::OwnershipState::dummy) continue;
+          if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) continue;
         }
       } else {
         jVecEnd = n2;
       }
-      handleILoopBody<false, newton3, false, vecPattern>(i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data, z2Data,
-                                                         owned2Data, fx1Data, fy1Data, fz1Data, fx2Data, fy2Data,
-                                                         fz2Data, typeID1Data, typeID2Data, virialSumX, virialSumY,
-                                                         virialSumZ, uPotSum, 0, jVecStart, jVecEnd);
+      handleILoopBody<false, newton3, false, vecPattern>(
+          i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr,
+          fy2Ptr, fz2Ptr, typeID1Ptr, typeID2Ptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, jVecStart, jVecEnd);
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       // Rest I can't occur in 1xVec case
@@ -889,17 +869,17 @@ class LJFunctorHWY
         size_t jVecEnd = n2;
         size_t jVecStart = 0;
         if constexpr (sorted) {
-          jVecEnd = sortingData.maxIndex[i + restI - 1];
-          jVecStart = sortingData.minIndex[i];
+          jVecEnd = sortingData->maxIndex[i + restI - 1];
+          jVecStart = sortingData->minIndex[i];
           if (jVecStart < jVecEnd) {
             jVecStart = jVecStart - (jVecStart % jStep);
           }
         }
         if (jVecStart < jVecEnd) {
-          handleILoopBody<false, newton3, true, vecPattern>(i, x1Data, y1Data, z1Data, owned1Data, x2Data, y2Data,
-                                                            z2Data, owned2Data, fx1Data, fy1Data, fz1Data, fx2Data,
-                                                            fy2Data, fz2Data, typeID1Data, typeID2Data, virialSumX,
-                                                            virialSumY, virialSumZ, uPotSum, restI, jVecStart, jVecEnd);
+          handleILoopBody<false, newton3, true, vecPattern>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr,
+                                                            ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr, fy2Ptr,
+                                                            fz2Ptr, typeID1Ptr, typeID2Ptr, virialSumX, virialSumY,
+                                                            virialSumZ, uPotSum, restI, jVecStart, jVecEnd);
         }
       }
     }

@@ -13,8 +13,8 @@
 #include "Functor.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
-#include "autopas/utils/SoASortedView.h"
 #include "autopas/utils/SoAView.h"
+#include "autopas/utils/SortedSoAView.h"
 
 namespace autopas {
 

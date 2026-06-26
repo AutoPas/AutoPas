@@ -11,8 +11,7 @@
 
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/SoASortedView.h"
+#include "autopas/utils/SortedSoAView.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas::internal {
@@ -353,12 +352,12 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
                   ParticleFunctor_T::getComputedAttr();
                 }) {
     if (shouldUseSoASorting(cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size(), sortingDirection)) {
-      using Particle_T = typename ParticleCell_T::ParticleType;
+      using Particle_T = ParticleCell_T::ParticleType;
       auto &thread_data = _soaThreadData[autopas::autopas_get_thread_num()];
 
-      SoASortedView<Particle_T, ParticleFunctor_T> view1(cell1._particleSoABuffer, sortingDirection,
+      SortedSoAView<Particle_T, ParticleFunctor_T> view1(cell1._particleSoABuffer, sortingDirection,
                                                          thread_data.sortedSoa1, thread_data.projIdx1);
-      SoASortedView<Particle_T, ParticleFunctor_T> view2(cell2._particleSoABuffer, sortingDirection,
+      SortedSoAView<Particle_T, ParticleFunctor_T> view2(cell2._particleSoABuffer, sortingDirection,
                                                          thread_data.sortedSoa2, thread_data.projIdx2);
 
       _functor.SoAFunctorPairSorted(

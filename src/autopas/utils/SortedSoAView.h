@@ -12,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include "SoA.h"
 #include "SoAView.h"
 
 namespace autopas {
@@ -42,8 +41,8 @@ struct SoASortingData {
  * @tparam Functor_T Functor type providing getNeededAttr() and getComputedAttr().
  */
 template <class Particle_T, class Functor_T>
-class SoASortedView {
-  using SoAArraysType = typename Particle_T::SoAArraysType;
+class SortedSoAView {
+  using SoAArraysType = Particle_T::SoAArraysType;
 
  public:
   /**
@@ -54,7 +53,7 @@ class SoASortedView {
    * @param cachedSoa Reference to a persistent SoA buffer to avoid allocations.
    * @param cachedProjIdx Reference to a persistent projection vector to avoid allocations.
    */
-  SoASortedView(SoAView<SoAArraysType> source, const std::array<double, 3> &sortingDirection,
+  SortedSoAView(SoAView<SoAArraysType> source, const std::array<double, 3> &sortingDirection,
                 SoA<SoAArraysType> &cachedSoa, std::vector<std::pair<double, size_t>> &cachedProjIdx)
       : _source(source), _sortedSoa(cachedSoa), projIdx(cachedProjIdx) {
     const size_t n = source.size();
