@@ -119,7 +119,8 @@ TEST_F(TwoCellsInteractionHitrateGeneratorTest, testInteractionCountHitrateZero)
 }
 
 /**
- * The k explicitly paired partners (cell1[i], cell2[i]) are within cutoff.
+ * At least k cross-cell pairs are within cutoff after filling.
+ * Particles are shuffled so we count all in-range pairs rather than checking by index.
  */
 TEST_F(TwoCellsInteractionHitrateGeneratorTest, testPairedParticlesInRange) {
   for (std::size_t n : {1ul, 10ul, 21ul}) {
@@ -127,33 +128,44 @@ TEST_F(TwoCellsInteractionHitrateGeneratorTest, testPairedParticlesInRange) {
       CellType v1, v2;
       fill(v1, v2, n, hitrate);
       const auto k = static_cast<std::size_t>(std::round(static_cast<double>(n) * hitrate));
-      for (std::size_t i = 0; i < k; ++i) {
-        EXPECT_LT(dist3D(v1[i], v2[i]), kCutoff)
-            << "pair " << i << " out of range (n=" << n << " hitrate=" << hitrate << ")";
+      std::size_t inRangeCount = 0;
+      for (const auto &p1 : v1) {
+        for (const auto &p2 : v2) {
+          if (dist3D(p1, p2) < kCutoff) {
+            ++inRangeCount;
+          }
+        }
       }
+      EXPECT_GE(inRangeCount, k) << "n=" << n << " hitrate=" << hitrate;
     }
   }
 }
 
 /**
- * Far particles (indices k..n-1) are out of range of every particle in the other cell.
- * This holds because x-distance alone exceeds cutoff for all far<->any-other-cell pairs.
+ * Far particles are out of range of every particle in the other cell.
+ * Far particles are identified geometrically: cell1 far particles have x < boundary - cutoff,
+ * cell2 far particles have x > boundary + cutoff.
  */
 TEST_F(TwoCellsInteractionHitrateGeneratorTest, testFarParticlesOutOfRange) {
   constexpr std::size_t n = 20;
   constexpr double hitrate = 0.5;
   CellType v1, v2;
   fill(v1, v2, n, hitrate);
-  const auto k = static_cast<std::size_t>(std::round(static_cast<double>(n) * hitrate));
 
-  for (std::size_t i = k; i < n; ++i) {
-    for (const auto &p2 : v2) {
-      EXPECT_GE(dist3D(v1[i], p2), kCutoff) << "far cell1[" << i << "] within cutoff of a cell2 particle";
+  for (const auto &p1 : v1) {
+    if (p1.getR()[0] < kBoundary - kCutoff) {
+      for (const auto &p2 : v2) {
+        EXPECT_GE(dist3D(p1, p2), kCutoff)
+            << "far cell1 particle at x=" << p1.getR()[0] << " within cutoff of a cell2 particle";
+      }
     }
   }
-  for (std::size_t i = k; i < n; ++i) {
-    for (const auto &p1 : v1) {
-      EXPECT_GE(dist3D(v2[i], p1), kCutoff) << "far cell2[" << i << "] within cutoff of a cell1 particle";
+  for (const auto &p2 : v2) {
+    if (p2.getR()[0] > kBoundary + kCutoff) {
+      for (const auto &p1 : v1) {
+        EXPECT_GE(dist3D(p1, p2), kCutoff)
+            << "far cell2 particle at x=" << p2.getR()[0] << " within cutoff of a cell1 particle";
+      }
     }
   }
 }
