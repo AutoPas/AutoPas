@@ -184,6 +184,9 @@ protected:
       typename ChunksTraversalFunctor<Functor, Particle_T, typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace>::ReductionResult globalResult {};
       Kokkos::parallel_reduce("autopas::KokkosDsChunksTraversal_Globals", teamPolicy, functor, globalResult);
 
+      AutoPasLog(INFO, "Final potential energy {}", static_cast<double>(globalResult.uPotSum) / 12.);
+      AutoPasLog(INFO, "Final virial           {}", static_cast<double>(globalResult.virialSum) * 0.5);
+
       auto kokkosFunc = dynamic_cast<KokkosFunctor*>(func);
 
       kokkosFunc->setPotentialEnergy(static_cast<double>(globalResult.uPotSum));

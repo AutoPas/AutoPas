@@ -161,10 +161,14 @@ protected:
       typename FlatTraversalFunctor<Functor, Particle_T>::value_type globalResult {};
 
       Kokkos::parallel_reduce("autopas::KokkosDsFlatTraversal_Globals", rangePolicy, functor, globalResult);
+
+      AutoPasLog(INFO, "Final potential energy {}", static_cast<double>(globalResult.uPotSum) / 12.);
+      AutoPasLog(INFO, "Final virial           {}", static_cast<double>(globalResult.virialSum) * 0.5);
+
       auto kokkosFunc = dynamic_cast<KokkosFunctor*>(func);
 
-      kokkosFunc->setPotentialEnergy(static_cast<double>(globalResult.uPotSum));
-      kokkosFunc->setVirial(static_cast<double>(globalResult.virialSum));
+      kokkosFunc->setPotentialEnergy(static_cast<double>(globalResult.uPotSum) / 12.);
+      kokkosFunc->setVirial(static_cast<double>(globalResult.virialSum) * 0.5);
 
     } else {
       Kokkos::parallel_for("autopas::KokkosDsFlatTraversal_NoGlobals", rangePolicy, functor);

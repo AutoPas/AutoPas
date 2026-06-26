@@ -172,7 +172,7 @@ class LJFunctorKokkos
 
  private:
   KOKKOS_INLINE_FUNCTION
-  static void ljPair(FloatPrecision dr2, FloatPrecision& fac, FloatPrecision& uPot) {
+  void ljPair(FloatPrecision dr2, FloatPrecision& fac, FloatPrecision& uPot) {
 
     const FloatPrecision sigmaSquared = 1.; // TODO: extract that somehow somewhere else
     const FloatPrecision epsilon24 = 24.; // TODO: extract that somehow somewhere else
@@ -187,7 +187,9 @@ class LJFunctorKokkos
     fac = epsilon24 * (lj12 + lj12m6) * invDr2;
 
     if constexpr (calculateGlobals) {
-      const FloatPrecision shift6 = 42.; // TODO: extract that somehow
+      const FloatPrecision sigmaDivCutoff2 = sigmaSquared / _cutoffSquared;
+      const FloatPrecision sigmaDivCutoff6 = sigmaDivCutoff2 * sigmaDivCutoff2 * sigmaDivCutoff2;
+      const FloatPrecision shift6 = epsilon24 * (sigmaDivCutoff6 - sigmaDivCutoff6 * sigmaDivCutoff6);
       uPot = epsilon24 * lj12m6 + shift6;
     }
   }
