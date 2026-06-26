@@ -93,6 +93,19 @@ class CellFunctor {
    */
   void setSoASortingThreshold(size_t soaSortingThreshold);
 
+  /**
+   * Computes the per-particle index bounds into projIdxJ needed by SoAFunctorPairSorted.
+   * @param projIdxI Sorted projections of the outer-loop cell.
+   * @param projIdxJ Sorted projections of the inner-loop cell.
+   * @param maxIndexCache Cache to store the computed maxIndex.
+   * @param minIndexCache Cache to store the computed minIndex.
+   * @return SoASortedPairMeta with start_i and per-i upper/lower bounds into j.
+   */
+  [[nodiscard]] SoASortingData computeSortingData(const std::vector<std::pair<double, size_t>> &projIdxI,
+                                                  const std::vector<std::pair<double, size_t>> &projIdxJ,
+                                                  std::vector<size_t> &maxIndexCache,
+                                                  std::vector<size_t> &minIndexCache) const;
+
  private:
   /**
    * Evaluate whether the AoSFunctor should use sorting, depending on the set sorting threshold.
@@ -109,19 +122,6 @@ class CellFunctor {
     return particleCount >= _soaSortingThreshold and
            (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
   }
-
-  /**
-   * Computes the per-particle index bounds into projIdxJ needed by SoAFunctorPairSorted.
-   * @param projIdxI Sorted projections of the outer-loop cell.
-   * @param projIdxJ Sorted projections of the inner-loop cell.
-   * @param maxIndexCache Cache to store the computed maxIndex.
-   * @param minIndexCache Cache to store the computed minIndex.
-   * @return SoASortedPairMeta with start_i and per-i upper/lower bounds into j.
-   */
-  [[nodiscard]] SoASortingData computeSortingData(const std::vector<std::pair<double, size_t>> &projIdxI,
-                                                  const std::vector<std::pair<double, size_t>> &projIdxJ,
-                                                  std::vector<size_t> &maxIndexCache,
-                                                  std::vector<size_t> &minIndexCache) const;
 
   /**
    * Applies the functor to all particle pairs exploiting Newton's third law of motion.
