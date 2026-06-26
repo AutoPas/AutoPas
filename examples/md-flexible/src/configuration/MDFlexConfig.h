@@ -109,9 +109,7 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
+      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
       return retStruct;
     }
   };
@@ -589,7 +587,7 @@ class MDFlexConfig {
    * sorts particles by their projection onto the cell-pair direction vector before computing interactions.
    */
   MDFlexOption<size_t, __LINE__> soaSortingThreshold{
-      8, "soa-sorting-threshold", true,
+      25, "soa-sorting-threshold", true,
       "Threshold for the SoA functor pair path to start sorting. If the sum of the SoA buffer sizes of two cells is "
       "greater or equal to that value, particles are sorted by their projection onto the cell-pair direction vector "
       "before computing interactions."};
