@@ -17,7 +17,7 @@
  *   3. Baselines: AoSFunctor, SoAFunctorSingle, SoAFunctorVerlet — single cell,
  *      varying N and newton3. Reference points for absolute throughput.
  *
- * Cell size: kCellSize = 5 (≈ 1.67 × cutoff), N ∈ {10…150} per cell.
+ * Cell size: kCellSize = 4 (≈ 1.33 × cutoff), N ∈ {10…150} per cell.
  */
 
 #include <benchmark/benchmark.h>
@@ -66,9 +66,9 @@ constexpr std::array<double, 3> kHigh{5.0, 5.0, 5.0};
  */
 constexpr double kBoundary = 5.0;
 /**
- * X-extent of each pair cell (> 1.5 * kCutoff = 4.5) used by the Benchmarks.
+ * X-extent of each pair cell (has to be > 1.2 * kCutoff due to hitrate generator ) used by the Benchmarks.
  */
-constexpr double kCellSize = 5.0;
+constexpr double kCellSize = 4.0;
 
 /**
  * Number of Particles swept by the Benchmarks in the Hitrate, Layout and Baseline Benchmarks.
