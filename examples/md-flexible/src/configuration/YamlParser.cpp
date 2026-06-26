@@ -320,11 +320,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.pauseSimulationDuringTuning.description;
 
         config.pauseSimulationDuringTuning.value = node[key].as<bool>();
-      } else if (key == config.sortingThreshold.name) {
+      } else if (key == config.aosSortingThreshold.name) {
         expected = "Unsigned Integer >= 0.";
-        description = config.sortingThreshold.description;
+        description = config.aosSortingThreshold.description;
 
-        config.sortingThreshold.value = node[key].as<size_t>();
+        config.aosSortingThreshold.value = node[key].as<size_t>();
       } else if (key == config.soaSortingThreshold.name) {
         expected = "Unsigned Integer >= 0.";
         description = config.soaSortingThreshold.description;

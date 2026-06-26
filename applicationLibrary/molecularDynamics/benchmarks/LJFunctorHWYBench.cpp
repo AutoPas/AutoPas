@@ -192,7 +192,7 @@ BENCHMARK(BM_AoSFunctor)->ArgsProduct({kNValues, {0, 1}})->ArgNames({"N", "n3"})
  * - state.range(1): Wether to use newton3 optimization or not.
  *
  * Uses the same cell layout and UniformGenerator as BM_SoAFunctorSortedPairFaceUniform so that
- * the two benchmarks are directly comparable. Sorting is forced by setting sortingThreshold=0 and
+ * the two benchmarks are directly comparable. Sorting is forced by setting aosSortingThreshold=0 and
  * passing the face-normal direction (x-axis). No SoA load/extract is involved.
  */
 static void BM_AoSFunctorSortedPairFaceUniform(benchmark::State &state) {
@@ -210,7 +210,7 @@ static void BM_AoSFunctorSortedPairFaceUniform(benchmark::State &state) {
 
   autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::aos, newton3);
-  cellFunctor.setSortingThreshold(0);  // always take the sorted path
+  cellFunctor.setAoSSortingThreshold(0);  // always take the sorted path
 
   const std::array<double, 3> sortingDirection{1.0, 0.0, 0.0};
 

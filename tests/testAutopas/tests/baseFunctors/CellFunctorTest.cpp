@@ -172,7 +172,7 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionPair) {
   constexpr autopas::OwnershipState ownedOrHalo = autopas::OwnershipState::owned | autopas::OwnershipState::halo;
 
   // Test with and without sorting
-  for (const auto sortingThreshold : {0, 100}) {
+  for (const auto aosSortingThreshold : {0, 100}) {
     // Test all reasonable combinations of owned / halo particles and cells
     for (const auto ownershipParticleA : {owned, halo}) {
       for (const auto ownershipParticleB : {owned, halo}) {
@@ -184,7 +184,7 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionPair) {
             ljFunctor.initTraversal();
 
             CellFunctorType cellFunctor(ljFunctor, cutoff);
-            cellFunctor.setSortingThreshold(sortingThreshold);
+            cellFunctor.setAoSSortingThreshold(aosSortingThreshold);
 
             const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
                 cellFunctor, ownershipParticleA, ownershipParticleB, ownershipCellA, ownerShipStateCellB,
@@ -255,7 +255,7 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionSingle) {
   constexpr autopas::OwnershipState ownedOrHalo = autopas::OwnershipState::owned | autopas::OwnershipState::halo;
 
   // Test with and without sorting
-  for (const auto sortingThreshold : {0, 100}) {
+  for (const auto aosSortingThreshold : {0, 100}) {
     // Test all reasonable combinations of owned / halo particles and cells
     for (const auto ownershipParticleA : {owned, halo}) {
       for (const auto ownershipParticleB : {owned, halo}) {
@@ -274,7 +274,7 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionSingle) {
           ljFunctor.initTraversal();
 
           CellFunctorType cellFunctor(ljFunctor, cutoff);
-          cellFunctor.setSortingThreshold(sortingThreshold);
+          cellFunctor.setAoSSortingThreshold(aosSortingThreshold);
 
           const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
               cellFunctor, ownershipParticleA, ownershipParticleB, ownershipCellA, ownershipCellA,

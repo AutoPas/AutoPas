@@ -142,9 +142,9 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   // Construct container
   constexpr double skin = _cutoff * 0.1;
   constexpr unsigned int rebuildFrequency = 1;
-  const size_t sortingThreshold = useSorting ? 5 : std::numeric_limits<size_t>::max();
+  const size_t aosSortingThreshold = useSorting ? 5 : std::numeric_limits<size_t>::max();
   const auto containerInfo = autopas::ContainerSelectorInfo{
-      _boxMin, boxMax, _cutoff, cellSizeFactor, skin, 32, sortingThreshold, autopas::LoadEstimatorOption::none};
+      _boxMin, boxMax, _cutoff, cellSizeFactor, skin, 32, aosSortingThreshold, autopas::LoadEstimatorOption::none};
   auto container = autopas::ContainerSelector<Molecule>::generateContainer(containerOption, containerInfo);
 
   autopasTools::generators::UniformGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),

@@ -82,9 +82,9 @@ class LCC08CellHandler {
   inline void processBaseCellTriwise(std::vector<ParticleCell_T> &cells, unsigned long baseIndex);
 
   /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
    */
-  void setSortingThreshold(size_t sortingThreshold) { _cellFunctor.setSortingThreshold(sortingThreshold); }
+  void setAoSSortingThreshold(size_t aosSortingThreshold) { _cellFunctor.setAoSSortingThreshold(aosSortingThreshold); }
   /**
    * @copydoc autopas::CellTraversal::setSoASortingThreshold()
    */

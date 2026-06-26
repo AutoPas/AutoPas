@@ -38,7 +38,7 @@ class LogicHandlerInfo {
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
-  size_t sortingThreshold{8};
+  size_t aosSortingThreshold{8};
   /**
    * Number of particles in two SoA buffers from which SoA sorting should be performed.
    */

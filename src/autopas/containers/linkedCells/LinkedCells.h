@@ -56,16 +56,16 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    * @param cutoff
    * @param skin
    * @param cellSizeFactor cell size factor relative to cutoff
-   * @param sortingThreshold number of particles in two cells from which AoS sorting should be performed
+   * @param aosSortingThreshold number of particles in two cells from which AoS sorting should be performed
    * @param soaSortingThreshold Sum of the SoA buffer sizes of two cells from which SoA sorting should be enabled.
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
   LinkedCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-              const double skin, const double cellSizeFactor = 1.0, const size_t sortingThreshold = 8,
+              const double skin, const double cellSizeFactor = 1.0, const size_t aosSortingThreshold = 8,
               const size_t soaSortingThreshold = 8,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold,
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThreshold,
                                                      soaSortingThreshold),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
@@ -582,7 +582,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
     if (traversalInterface && cellTraversal) {
-      cellTraversal->setSortingThreshold(this->_sortingThreshold);
+      cellTraversal->setAoSSortingThreshold(this->_aosSortingThreshold);
       cellTraversal->setSoASortingThreshold(this->_soaSortingThreshold);
       cellTraversal->setCellsToTraverse(this->_cells);
     } else {

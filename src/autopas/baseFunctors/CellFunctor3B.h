@@ -83,12 +83,12 @@ class CellFunctor3B {
   [[nodiscard]] bool getBidirectional() const { return bidirectional; }
 
   /**
-   * Set the sorting-threshold for AoS traversals.
+   * Set the aos-sorting-threshold for AoS traversals.
    * If the sum of the number of particles in three cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
-   * @param sortingThreshold Sum of the number of particles in three cells from which sorting should be enabled.
+   * @param aosSortingThreshold Sum of the number of particles in three cells from which sorting should be enabled.
    */
-  void setSortingThreshold(size_t sortingThreshold);
+  void setAoSSortingThreshold(size_t aosSortingThreshold);
 
   /**
    * Set the SoA sorting-threshold.
@@ -105,7 +105,7 @@ class CellFunctor3B {
    * @return whether the AoSFunctor should use the SortedCellView.
    */
   [[nodiscard]] bool shouldUseSorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
-    return particleCount >= _sortingThreshold and
+    return particleCount >= _aosSortingThreshold and
            (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
   }
 
@@ -167,7 +167,7 @@ class CellFunctor3B {
    * The default threshold is (blindly) taken from CellFunctor.h. For some more details see:
    * https://github.com/AutoPas/AutoPas/pull/619
    */
-  size_t _sortingThreshold{8};
+  size_t _aosSortingThreshold{8};
 
   /**
    * Min. number of particles in two SoA buffers to start SoA-level sorting.
@@ -181,8 +181,8 @@ class CellFunctor3B {
 };
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSortingThreshold(size_t sortingThreshold) {
-  _sortingThreshold = sortingThreshold;
+void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThreshold(size_t aosSortingThreshold) {
+  _aosSortingThreshold = aosSortingThreshold;
 }
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
@@ -290,7 +290,7 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
     }
   };
 
-  if (cell.size() >= _sortingThreshold) {
+  if (cell.size() >= _aosSortingThreshold) {
     SortedCellView<ParticleCell_T> cellSorted(cell, utils::ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
     for (auto cellIter1 = cellSorted._particles.begin(); cellIter1 != cellSorted._particles.end(); ++cellIter1) {

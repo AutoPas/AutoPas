@@ -65,7 +65,7 @@ class LogicHandler {
         _remainderPairwiseInteractionHandler(_spatialLocks),
         _remainderTriwiseInteractionHandler(_spatialLocks),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
-        _sortingThreshold(logicHandlerInfo.sortingThreshold),
+        _aosSortingThreshold(logicHandlerInfo.aosSortingThreshold),
         _soaSortingThreshold(logicHandlerInfo.soaSortingThreshold),
         _iterationLogger(outputSuffix,
                          std::any_of(tunerManager->getAutoTuners().begin(), tunerManager->getAutoTuners().end(),
@@ -85,7 +85,7 @@ class LogicHandler {
                                                             configuration.cellSizeFactor,
                                                             _logicHandlerInfo.verletSkin,
                                                             _verletClusterSize,
-                                                            _sortingThreshold,
+                                                            _aosSortingThreshold,
                                                             configuration.loadEstimator,
                                                             _soaSortingThreshold};
       _currentContainer =
@@ -838,7 +838,7 @@ class LogicHandler {
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
-  size_t _sortingThreshold;
+  size_t _aosSortingThreshold;
 
   /**
    * Number of particles in two SoA buffers from which SoA sorting should be performed.
@@ -1357,7 +1357,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _sortingThreshold, config.loadEstimator, _soaSortingThreshold);
+                            _verletClusterSize, _aosSortingThreshold, config.loadEstimator, _soaSortingThreshold);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.

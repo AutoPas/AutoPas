@@ -1137,18 +1137,18 @@ class AutoPas {
   const std::string &getRuleFileName() const { return _tuningStrategyFactoryInfo.ruleFileName; }
 
   /**
-   * Set the sorting-threshold for traversals that use the CellFunctor
+   * Set the aos-sorting-threshold for traversals that use the CellFunctor
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
-   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
+   * @param aosSortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
-  void setSortingThreshold(size_t sortingThreshold) { _sortingThreshold = sortingThreshold; }
+  void setAoSSortingThreshold(size_t aosSortingThreshold) { _aosSortingThreshold = aosSortingThreshold; }
 
   /**
-   * Get the sorting-threshold for traversals that use the CellFunctor.
-   * @return sorting-threshold
+   * Get the aos-sorting-threshold for traversals that use the CellFunctor.
+   * @return aos-sorting-threshold
    */
-  size_t getSortingThreshold() const { return _sortingThreshold; }
+  size_t getAoSSortingThreshold() const { return _aosSortingThreshold; }
 
   /**
    * Set the SoA sorting-threshold.
@@ -1262,7 +1262,7 @@ class AutoPas {
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
-  size_t _sortingThreshold{8};
+  size_t _aosSortingThreshold{8};
   /**
    * Number of particles in two SoA buffers from which SoA sorting should be performed.
    */

@@ -26,7 +26,7 @@ class ContainerSelectorInfo {
         cellSizeFactor(1.),
         verletSkin(0.),
         verletClusterSize(64),
-        sortingThreshold(0),
+        aosSortingThreshold(0),
         soaSortingThreshold(0),
         loadEstimator(LoadEstimatorOption::none) {}
 
@@ -40,14 +40,14 @@ class ContainerSelectorInfo {
    * @param verletSkin Length added to the cutoff for the verlet lists' skin per timestep inbetween
    * rebuilding lists.
    * @param verletClusterSize Size of verlet Clusters
-   * @param sortingThreshold Number of particles in two cells from which sorting should be performed
+   * @param aosSortingThreshold Number of particles in two cells from which sorting should be performed
    * @param loadEstimator load estimation algorithm for balanced traversals.
    * @param soaSortingThreshold Number of particles in two SoA buffers from which SoA sorting should be performed.
    * Defaults to 8.
    */
   explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                  double cutoff, double cellSizeFactor, double verletSkin,
-                                 unsigned int verletClusterSize, size_t sortingThreshold,
+                                 unsigned int verletClusterSize, size_t aosSortingThreshold,
                                  LoadEstimatorOption loadEstimator, size_t soaSortingThreshold = 8)
       : boxMin(boxMin),
         boxMax(boxMax),
@@ -55,7 +55,7 @@ class ContainerSelectorInfo {
         cellSizeFactor(cellSizeFactor),
         verletSkin(verletSkin),
         verletClusterSize(verletClusterSize),
-        sortingThreshold(sortingThreshold),
+        aosSortingThreshold(aosSortingThreshold),
         soaSortingThreshold(soaSortingThreshold),
         loadEstimator(loadEstimator) {}
 
@@ -66,7 +66,7 @@ class ContainerSelectorInfo {
    */
   bool operator==(const ContainerSelectorInfo &other) const {
     return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin and
-           verletClusterSize == other.verletClusterSize and sortingThreshold == other.sortingThreshold and
+           verletClusterSize == other.verletClusterSize and aosSortingThreshold == other.aosSortingThreshold and
            soaSortingThreshold == other.soaSortingThreshold and loadEstimator == other.loadEstimator;
   }
 
@@ -80,15 +80,15 @@ class ContainerSelectorInfo {
   /**
    * Comparison operator for ContainerSelectorInfo objects.
    * Configurations are compared member wise in the order: cellSizeFactor, verletSkin, verletClusterSize,
-   * sortingThreshold, loadEstimator
+   * aosSortingThreshold, loadEstimator
    *
    * @param other
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkin, verletClusterSize, sortingThreshold, soaSortingThreshold,
+    return std::tie(cellSizeFactor, verletSkin, verletClusterSize, aosSortingThreshold, soaSortingThreshold,
                     loadEstimator) < std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize,
-                                              other.sortingThreshold, other.soaSortingThreshold, other.loadEstimator);
+                                              other.aosSortingThreshold, other.soaSortingThreshold, other.loadEstimator);
   }
 
   /**
@@ -121,7 +121,7 @@ class ContainerSelectorInfo {
   /**
    * Threshold beyond which, if the sum of the number of particles in two cells is greater, the cells are sorted.
    */
-  size_t sortingThreshold;
+  size_t aosSortingThreshold;
   /**
    * Threshold beyond which, if the sum of the SoA buffer sizes of two cells is greater, SoA sorting is applied.
    */

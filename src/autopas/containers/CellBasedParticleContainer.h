@@ -33,11 +33,11 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @param boxMax
    * @param cutoff
    * @param skin
-   * @param sortingThreshold Sum of the number of particles in two cells from which AoS sorting should be enabled.
+   * @param aosSortingThreshold Sum of the number of particles in two cells from which AoS sorting should be enabled.
    * @param soaSortingThreshold Sum of the SoA buffer sizes of two cells from which SoA sorting should be enabled.
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                             const double cutoff, const double skin, const size_t sortingThreshold,
+                             const double cutoff, const double skin, const size_t aosSortingThreshold,
                              const size_t soaSortingThreshold = 8)
       : ParticleContainerInterface<ParticleType>(skin),
         _cells(),
@@ -45,7 +45,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
         _boxMax(boxMax),
         _cutoff(cutoff),
         _skin(skin),
-        _sortingThreshold(sortingThreshold),
+        _aosSortingThreshold(aosSortingThreshold),
         _soaSortingThreshold(soaSortingThreshold) {}
 
   /**
@@ -164,7 +164,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * If the number of particles in a cell or cell pair exceeds this threshold, the particles will be sorted.
    * To be forwarded to cell traversals.
    */
-  size_t _sortingThreshold;
+  size_t _aosSortingThreshold;
   /**
    * If the sum of the SoA buffer sizes of two cells exceeds this threshold, SoAFunctorPairSorted is used.
    */
