@@ -1212,6 +1212,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       if (not autoTuner.patternBenchmark._patternsCalculated) {
         autoTuner.patternBenchmark.runBenchmark<Functor, Particle_T>(functor,
                                                                      _logicHandlerInfo.createPatternBenchmarkOutput);
+        // The benchmark selects the pattern at runtime, so the tuner only needs to explore 1xVec configurations.
+        autoTuner.restrictSearchSpaceToVecPattern(VectorizationPatternOption::p1xVec);
       }
       functor.setPatternBenchmark(&(autoTuner.patternBenchmark));
     }

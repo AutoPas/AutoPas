@@ -277,6 +277,12 @@ class AutoTuner {
    */
   const std::set<Configuration> &getSearchSpace() const;
 
+  /**
+   * Remove all configurations from the search space and config queue that do not match the given vecPattern.
+   * @param pattern The vecPattern to keep.
+   */
+  void restrictSearchSpaceToVecPattern(VectorizationPatternOption pattern);
+
  private:
   /**
    * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
