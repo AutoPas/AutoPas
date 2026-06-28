@@ -506,6 +506,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     if (dsTraversal && cellTraversal) {
       cellTraversal->setAoSSortingThreshold(this->_aosSortingThreshold);
       cellTraversal->setSoASortingThreshold(this->_soaSortingThreshold);
+      cellTraversal->setSortingThresholdBenchmark(this->_sortingThresholdBenchmark);
       cellTraversal->setCellsToTraverse(this->_cells);
     } else {
       utils::ExceptionHandler::exception(

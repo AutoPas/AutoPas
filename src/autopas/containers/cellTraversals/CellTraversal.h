@@ -10,6 +10,8 @@
 #include <array>
 #include <vector>
 
+#include "autopas/utils/SortingThresholdBenchmark.h"
+
 namespace autopas {
 
 /**
@@ -54,6 +56,13 @@ class CellTraversal {
    * @param soaSortingThreshold Sum of the SoA buffer sizes from which SoA sorting should be enabled.
    */
   virtual void setSoASortingThreshold(size_t soaSortingThreshold) = 0;
+
+  /**
+   * Set the SortingThresholdBenchmark for direction-aware SoA sorting threshold lookup.
+   * Traversals that hold a CellFunctor should forward to it; others can rely on the default no-op.
+   * @param benchmark Pointer owned by the active AutoTuner, or nullptr to fall back to the fixed threshold.
+   */
+  virtual void setSortingThresholdBenchmark(SortingThresholdBenchmark *benchmark) { (void)benchmark; }
 
  protected:
   /**

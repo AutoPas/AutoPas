@@ -170,6 +170,17 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   size_t _soaSortingThreshold;
 
+  /**
+   * Pointer to the benchmark object used for direction-aware SoA sorting threshold lookup.
+   * Null by default (falls back to the fixed _soaSortingThreshold in CellFunctor).
+   * Set by LogicHandler after running SortingThresholdBenchmark; pushed to traversals in prepareTraversal().
+   */
+  SortingThresholdBenchmark *_sortingThresholdBenchmark{nullptr};
+
+  void setSortingThresholdBenchmark(SortingThresholdBenchmark *benchmark) override {
+    _sortingThresholdBenchmark = benchmark;
+  }
+
  private:
   std::array<double, 3> _boxMin;
   std::array<double, 3> _boxMax;

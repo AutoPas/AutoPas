@@ -187,6 +187,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     if (traversalInterface && cellPairTraversal) {
       cellPairTraversal->setAoSSortingThreshold(this->_aosSortingThreshold);
       cellPairTraversal->setSoASortingThreshold(this->_soaSortingThreshold);
+      cellPairTraversal->setSortingThresholdBenchmark(this->_sortingThresholdBenchmark);
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       utils::ExceptionHandler::exception(

@@ -63,6 +63,12 @@ class LCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell_T, Func
   void setSoASortingThreshold(size_t soaSortingThreshold) override {
     _cellHandler.setSoASortingThreshold(soaSortingThreshold);
   }
+  /**
+   * @copydoc autopas::CellTraversal::setSortingThresholdBenchmark()
+   */
+  void setSortingThresholdBenchmark(autopas::SortingThresholdBenchmark *benchmark) override {
+    _cellHandler.setSortingThresholdBenchmark(benchmark);
+  }
 
  private:
   LCC08CellHandler<ParticleCell_T, Functor_T> _cellHandler;

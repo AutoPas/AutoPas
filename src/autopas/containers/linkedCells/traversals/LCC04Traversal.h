@@ -77,6 +77,12 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, publ
   void setSoASortingThreshold(size_t soaSortingThreshold) override {
     _cellHandler.setSoASortingThreshold(soaSortingThreshold);
   }
+  /**
+   * @copydoc autopas::CellTraversal::setSortingThresholdBenchmark()
+   */
+  void setSortingThresholdBenchmark(autopas::SortingThresholdBenchmark *benchmark) override {
+    _cellHandler.setSortingThresholdBenchmark(benchmark);
+  }
 
  private:
   void traverseSingleColor(std::vector<ParticleCell_T> &cells, int color);

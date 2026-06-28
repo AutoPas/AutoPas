@@ -330,6 +330,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.soaSortingThreshold.description;
 
         config.soaSortingThreshold.value = node[key].as<size_t>();
+      } else if (key == config.useSortingThresholdBenchmark.name) {
+        expected = "Boolean (true/false).";
+        description = config.useSortingThresholdBenchmark.description;
+
+        config.useSortingThresholdBenchmark.value = node[key].as<bool>();
       } else if (key == config.traversalOptions.name) {
         expected = "YAML-sequence of possible values.";
         description = config.traversalOptions.description;

@@ -17,6 +17,7 @@
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/utils/EnergySensor.h"
+#include "autopas/utils/SortingThresholdBenchmark.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
@@ -440,5 +441,12 @@ class AutoTuner {
    * significantly slower than the fastest configuration by more than _earlyStoppingFactor.
    */
   bool _earlyStoppingOfResampling{false};
+
+ public:
+  /**
+   * Stores the results of the SoA sorting threshold benchmark.
+   * LogicHandler runs it lazily on the first call and injects the pointer into the active container.
+   */
+  SortingThresholdBenchmark sortingThresholdBenchmark{};
 };
 }  // namespace autopas

@@ -9,6 +9,7 @@
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/SortingThresholdBenchmark.h"
 
 namespace autopas::internal {
 /**
@@ -96,6 +97,13 @@ class CellFunctor3B {
    * @param soaSortingThreshold Threshold value.
    */
   void setSoASortingThreshold(size_t soaSortingThreshold);
+
+  /**
+   * No-op: CellFunctor3B has no SoA sorting path.
+   * Provided for interface parity with CellFunctor so that traversals using a conditional CellFunctorType
+   * (e.g. DSSequentialTraversal) compile for both pairwise and triwise cases.
+   */
+  void setSortingThresholdBenchmark(autopas::SortingThresholdBenchmark * /*benchmark*/) {}
 
  private:
   /**

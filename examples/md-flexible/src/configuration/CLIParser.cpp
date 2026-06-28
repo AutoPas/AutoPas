@@ -58,6 +58,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.deltaT,
       config.aosSortingThreshold,
       config.soaSortingThreshold,
+      config.useSortingThresholdBenchmark,
       config.distributionMean,
       config.distributionStdDev,
       config.dontCreateEndConfig,
@@ -242,6 +243,16 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.soaSortingThreshold.value = stoul(strArg);
         } catch (const exception &) {
           cerr << "Error parsing value for soa-sorting-threshold: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.useSortingThresholdBenchmark)::getoptChar: {
+        try {
+          config.useSortingThresholdBenchmark.value =
+              autopas::utils::StringUtils::parseBoolOption(strArg, config.useSortingThresholdBenchmark.name);
+        } catch (const exception &) {
+          cerr << "Error parsing 'use-sorting-threshold-benchmark': " << optarg << endl;
           displayHelp = true;
         }
         break;

@@ -44,6 +44,11 @@ class LogicHandlerInfo {
    */
   size_t soaSortingThreshold{25};
   /**
+   * If true, LogicHandler runs SortingThresholdBenchmark on the first iterate() call and uses
+   * the results to override the fixed soaSortingThreshold in CellFunctor.
+   */
+  bool useSortingThresholdBenchmark{false};
+  /**
    * Time step used in the simulation.
    * This is currently used in rebuild frequency estimation for dynamic containers.
    */

@@ -12,6 +12,7 @@
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/SortedSoAView.h"
+#include "autopas/utils/SortingThresholdBenchmark.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas::internal {
@@ -94,6 +95,14 @@ class CellFunctor {
   void setSoASortingThreshold(size_t soaSortingThreshold);
 
   /**
+   * Set the SortingThresholdBenchmark to use for direction-aware threshold lookup.
+   * When set, overrides the fixed _soaSortingThreshold in shouldUseSoASorting().
+   * Pass nullptr to fall back to the fixed threshold.
+   * @param benchmark Pointer to the benchmark object owned by the active AutoTuner, or nullptr.
+   */
+  void setSortingThresholdBenchmark(autopas::SortingThresholdBenchmark *benchmark) { _threshold_benchmark = benchmark; }
+
+  /**
    * Computes conservative per-particle index bounds into projIdxJ based on a 1-D projection cutoff check.
    *
    * Particles are projected onto the sorting axis. A pair can only interact if their 1-D projection distance
@@ -143,8 +152,12 @@ class CellFunctor {
    * @return Whether the SoA path should use SoAFunctorPairSorted.
    */
   [[nodiscard]] bool shouldUseSoASorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
-    return particleCount >= _soaSortingThreshold and
-           (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
+    if (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0) {
+      const auto threshold =
+          _threshold_benchmark ? _threshold_benchmark->getThreshold(sortingDirection) : _soaSortingThreshold;
+      return particleCount >= threshold;
+    }
+    return false;
   }
 
   /**
@@ -176,6 +189,8 @@ class CellFunctor {
    */
   void processCellPairSoAImpl(ParticleCell_T &cell1, ParticleCell_T &cell2,
                               const std::array<double, 3> &sortingDirection);
+
+  autopas::SortingThresholdBenchmark *_threshold_benchmark{nullptr};
 
   ParticleFunctor_T &_functor;
 
