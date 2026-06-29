@@ -45,8 +45,9 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
         _boxMax(boxMax),
         _cutoff(cutoff),
         _skin(skin),
-        _aosSortingThreshold(aosSortingThreshold),
-        _soaSortingThreshold(soaSortingThreshold) {}
+        _aosSortingThreshold(aosSortingThreshold) {
+    _soaSortingThresholds.fill(soaSortingThreshold);
+  }
 
   /**
    * Destructor of CellBasedParticleContainer.
@@ -166,20 +167,12 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   size_t _aosSortingThreshold;
   /**
-   * If the sum of the SoA buffer sizes of two cells exceeds this threshold, SoAFunctorPairSorted is used.
+   * Per-direction SoA sorting thresholds, indexed by zero-count in sortingDirection.
+   * Initialized from the scalar soaSortingThreshold; overridden per-direction by setSoASortingThresholds().
    */
-  size_t _soaSortingThreshold;
+  std::array<size_t, 3> _soaSortingThresholds{};
 
-  /**
-   * Pointer to the benchmark object used for direction-aware SoA sorting threshold lookup.
-   * Null by default (falls back to the fixed _soaSortingThreshold in CellFunctor).
-   * Set by LogicHandler after running SortingThresholdBenchmark; pushed to traversals in prepareTraversal().
-   */
-  SortingThresholdBenchmark *_sortingThresholdBenchmark{nullptr};
-
-  void setSortingThresholdBenchmark(SortingThresholdBenchmark *benchmark) override {
-    _sortingThresholdBenchmark = benchmark;
-  }
+  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override { _soaSortingThresholds = thresholds; }
 
  private:
   std::array<double, 3> _boxMin;

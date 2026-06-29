@@ -12,7 +12,6 @@
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/SortedSoAView.h"
-#include "autopas/utils/SortingThresholdBenchmark.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas::internal {
@@ -94,13 +93,7 @@ class CellFunctor {
    */
   void setSoASortingThreshold(size_t soaSortingThreshold);
 
-  /**
-   * Set the SortingThresholdBenchmark to use for direction-aware threshold lookup.
-   * When set, overrides the fixed _soaSortingThreshold in shouldUseSoASorting().
-   * Pass nullptr to fall back to the fixed threshold.
-   * @param benchmark Pointer to the benchmark object owned by the active AutoTuner, or nullptr.
-   */
-  void setSortingThresholdBenchmark(autopas::SortingThresholdBenchmark *benchmark) { _threshold_benchmark = benchmark; }
+  void setSoASortingThresholds(std::array<size_t, 3> thresholds);
 
   /**
    * Computes conservative per-particle index bounds into projIdxJ based on a 1-D projection cutoff check.
@@ -153,9 +146,8 @@ class CellFunctor {
    */
   [[nodiscard]] bool shouldUseSoASorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
     if (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0) {
-      const auto threshold =
-          _threshold_benchmark ? _threshold_benchmark->getThreshold(sortingDirection) : _soaSortingThreshold;
-      return particleCount >= threshold;
+      const auto zeroCount = std::count(std::begin(sortingDirection), std::end(sortingDirection), 0.0);
+      return particleCount >= _soaSortingThresholds[static_cast<size_t>(zeroCount)];
     }
     return false;
   }
@@ -190,8 +182,6 @@ class CellFunctor {
   void processCellPairSoAImpl(ParticleCell_T &cell1, ParticleCell_T &cell2,
                               const std::array<double, 3> &sortingDirection);
 
-  autopas::SortingThresholdBenchmark *_threshold_benchmark{nullptr};
-
   ParticleFunctor_T &_functor;
 
   const double _sortingCutoff;
@@ -205,7 +195,7 @@ class CellFunctor {
   /**
    * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
    */
-  size_t _soaSortingThreshold{25};
+  std::array<size_t, 3> _soaSortingThresholds{25};
 
   const DataLayoutOption::Value _dataLayout;
 
@@ -233,7 +223,12 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortin
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
-  _soaSortingThreshold = soaSortingThreshold;
+  _soaSortingThresholds.fill(soaSortingThreshold);
+}
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThresholds(
+    std::array<size_t, 3> thresholds) {
+  _soaSortingThresholds = thresholds;
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>

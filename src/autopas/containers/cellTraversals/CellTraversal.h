@@ -10,8 +10,6 @@
 #include <array>
 #include <vector>
 
-#include "autopas/utils/SortingThresholdBenchmark.h"
-
 namespace autopas {
 
 /**
@@ -58,11 +56,12 @@ class CellTraversal {
   virtual void setSoASortingThreshold(size_t soaSortingThreshold) = 0;
 
   /**
-   * Set the SortingThresholdBenchmark for direction-aware SoA sorting threshold lookup.
-   * Traversals that hold a CellFunctor should forward to it; others can rely on the default no-op.
-   * @param benchmark Pointer owned by the active AutoTuner, or nullptr to fall back to the fixed threshold.
+   * Set per-direction SoA sorting thresholds for traversals that use CellFunctor.
+   * Traversals owning a CellFunctor (or LCC08CellHandler) should override and forward.
+   * Others may rely on this default no-op.
+   * @param thresholds Array indexed by zero-count in sortingDirection (0=Corner, 1=Edge, 2=Face).
    */
-  virtual void setSortingThresholdBenchmark(SortingThresholdBenchmark *benchmark) { (void)benchmark; }
+  virtual void setSoASortingThresholds(std::array<size_t, 3> thresholds) { (void)thresholds; }
 
  protected:
   /**

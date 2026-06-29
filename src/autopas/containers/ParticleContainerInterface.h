@@ -18,7 +18,6 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
-#include "autopas/utils/SortingThresholdBenchmark.h"
 #include "autopas/utils/inBox.h"
 #include "autopas/utils/optRef.h"
 
@@ -253,12 +252,12 @@ class ParticleContainerInterface {
   virtual void computeInteractions(TraversalInterface *traversal) = 0;
 
   /**
-   * Set the SortingThresholdBenchmark to use for direction-aware SoA sorting threshold lookup.
-   * Cell-based containers store the pointer and forward it to traversals in prepareTraversal().
-   * Containers without a CellFunctor (e.g. VerletClusterLists) can leave this as a no-op.
-   * @param benchmark Pointer owned by the active AutoTuner, or nullptr to disable.
+   * Set per-direction SoA sorting thresholds.
+   * Cell-based containers store these and forward to traversals in prepareTraversal().
+   * Containers without a CellFunctor (e.g. VerletClusterLists) can rely on this default no-op.
+   * @param thresholds Array of three per-direction thresholds.
    */
-  virtual void setSortingThresholdBenchmark(SortingThresholdBenchmark *benchmark) { (void)benchmark; }
+  virtual void setSoASortingThresholds(std::array<size_t, 3> thresholds) { (void)thresholds; }
 
   /**
    * Get the upper corner of the container without halo.

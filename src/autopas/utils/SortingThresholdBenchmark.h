@@ -2,16 +2,18 @@
  * @file SortingThresholdBenchmark.h
  * @date 27.06.2026
  * @author hmeyran
+ * @todo Add outputs for analysis
  */
 
 #pragma once
 
-#include <algorithm>
 #include <array>
 
-namespace autopas {
+#include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/utils/Timer.h"
+#include "autopasTools/generators/UniformGenerator.h"
 
-using size_t = std::size_t;
+namespace autopas {
 
 /**
  * Determines the per-direction-type particle-count threshold at which using the sorted SoA path
@@ -31,29 +33,29 @@ class SortingThresholdBenchmark {
    */
   bool _hasRun{false};
 
+  /**
+   * Initializes all thresholds to the compile-time default.
+   */
   SortingThresholdBenchmark() { _thresholds.fill(25); }
 
   /**
-   * Return the threshold for the given sortingDirection.
-   * @param sortingDirection Normalized direction vector; the number of zero components selects the index.
-   * @return Particle count below which the unsorted path is used.
+   * Return all three per-direction-type thresholds.
+   * Index 0 = Corner (zero zeros), 1 = Edge (one zero), 2 = Face (two zeros).
+   * @return Copy of the internal threshold array.
    */
-  size_t getThreshold(const std::array<double, 3> &sortingDirection) const {
-    const auto zeroCount = std::count(std::begin(sortingDirection), std::end(sortingDirection), 0.0);
-    return _thresholds[static_cast<size_t>(zeroCount)];
-  }
+  std::array<size_t, 3> getThresholds() const { return _thresholds; }
 
   /**
-   * Stub: sets _hasRun and fills all thresholds with the default value.
-   * Replace the body of this function with the actual micro-benchmark once the wiring is validated.
-   * @tparam Functor_T
-   * @tparam Particle_T
-   * @param functor
-   * @param sortingCutoff
+   * Runs the micro-benchmark for all three direction types and stores the resulting thresholds.
+   * @tparam Functor_T Pairwise functor type.
+   * @tparam Particle_T Particle type.
+   * @param functor Functor instance used to drive the benchmark cells.
    */
   template <class Functor_T, class Particle_T>
-  void runBenchmark(Functor_T & /*functor*/, double /*sortingCutoff*/) {
-    _thresholds.fill(25);
+  void runBenchmark(Functor_T &functor) {
+    for (size_t layout = 0; layout < 3; layout++) {
+      _thresholds[layout] = runSearch<Functor_T, Particle_T>(functor, layout);
+    }
     _hasRun = true;
   }
 
@@ -63,6 +65,123 @@ class SortingThresholdBenchmark {
    * Index = number of zero components in sortingDirection (0=Corner, 1=Edge, 2=Face).
    */
   std::array<size_t, 3> _thresholds{};
+
+  // TODO: Find system to adjust based on input size
+  /** Number of timed calls per repetition; amortizes timer overhead within a single rep. */
+  size_t iterations = 10;
+  // TODO: Try out different number of repetitions
+  /** Number of independent measurement repetitions per particle count; the mean is taken over these. */
+  size_t repetitions = 25;
+  /** Upper bound on the particle count searched by the binary search. */
+  size_t max_particles = 500;
+
+  /**
+   * Measures the mean per-repetition time for the sorted and unsorted SoA pair interaction paths
+   * at a given particle count for one direction type.
+   *
+   * Particles are regenerated each repetition so the sort always operates on fresh random data.
+   * The sorted path is controlled by passing the layout-specific sortingDirection; the unsorted
+   * path is forced by passing a zero direction (CellFunctor skips sorting when direction is zero).
+   * @tparam Functor_T Pairwise functor type.
+   * @tparam Particle_T Particle type.
+   * @param functor Functor instance used to drive the benchmark.
+   * @param layout Direction-type index (0=Corner, 1=Edge, 2=Face).
+   * @param numParticles Number of particles placed in each of the two cells.
+   * @return {sorted_time_ns, unsorted_time_ns}, each averaged over repetitions.
+   */
+  template <class Functor_T, class Particle_T>
+  std::pair<size_t, size_t> executeRun(Functor_T &functor, size_t layout, size_t numParticles) {
+    using BenchCell = FullParticleCell<Particle_T>;
+    using BenchCF = internal::CellFunctor<BenchCell, Functor_T, false>;
+
+    const Particle_T defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
+    const double cutoff = functor.getCutoff();
+    const double inv_sqrt3 = 1. / sqrt(3.);
+    BenchCF cellFunctor = {functor, functor.getCutoff(), DataLayoutOption::soa, false};
+    // Set to 0 so if sorting happens or not can be entirely controlled through sorting direction
+    cellFunctor.setSoASortingThreshold(0);
+    BenchCell cell1, cell2;
+
+    std::array cell1Low = {0., 0., 0.};
+    std::array cell1High = {cutoff, cutoff, cutoff};
+
+    std::array cell2Low = {0., 0., 0.};
+    std::array cell2High = {cutoff, cutoff, cutoff};
+
+    std::array sortingDirection = {0., 0., 0.};
+
+    switch (layout) {
+      case 0:
+        cell2Low = {cutoff, cutoff, cutoff};
+        cell2High = {2. * cutoff, 2. * cutoff, 2. * cutoff};
+        sortingDirection = {inv_sqrt3, inv_sqrt3, inv_sqrt3};
+        break;
+      case 1:
+        cell2Low = {cutoff, cutoff, 0.};
+        cell2High = {2. * cutoff, 2. * cutoff, cutoff};
+        sortingDirection = {0.5, 0.5, 0.};
+        break;
+      case 2:
+        cell2Low = {cutoff, 0., 0.};
+        cell2High = {2 * cutoff, cutoff, cutoff};
+        sortingDirection = {1, 0., 0.};
+        break;
+    }
+    utils::Timer sortedTimer, unsortedTimer;
+    for (int i = 0; i < repetitions; i++) {
+      cell1.clear();
+      cell2.clear();
+
+      autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, cell1Low, cell1High,
+                                                                    numParticles);
+      autopasTools::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, cell2Low, cell2High,
+                                                                    numParticles);
+      functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
+      functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
+
+      unsortedTimer.start();
+      for (int j = 0; j < iterations; j++) {
+        cellFunctor.processCellPairSoAImpl(cell1, cell2, {0., 0., 0.});
+      }
+      unsortedTimer.stop();
+
+      sortedTimer.start();
+      for (int j = 0; j < iterations; j++) {
+        cellFunctor.processCellPairSoAImpl(cell1, cell2, sortingDirection);
+      }
+      sortedTimer.stop();
+    }
+
+    return {sortedTimer.getTotalTime() / repetitions, unsortedTimer.getTotalTime() / repetitions};
+  }
+
+  /**
+   * Binary-searches over particle count to find the smallest n at which the sorted path is faster
+   * than the unsorted path for a given direction type.
+   * @tparam Functor_T Pairwise functor type.
+   * @tparam Particle_T Particle type.
+   * @param functor Functor instance used to drive the benchmark.
+   * @param layout Direction-type index (0=Corner, 1=Edge, 2=Face).
+   * @return Smallest particle count at which sorted beats unsorted, or max_particles if never.
+   */
+  template <class Functor_T, class Particle_T>
+  size_t runSearch(Functor_T &functor, size_t layout) {
+    // TODO: Maybe run benchmarks +-5 particles around low_count to find stable point
+    size_t low_count = 0;
+    size_t high_count = max_particles;
+
+    while (low_count < high_count) {
+      size_t mid = low_count + (high_count - low_count) / 2;
+
+      auto [sorted_t, unsorted_t] = executeRun<Functor_T, Particle_T>(functor, layout, mid);
+      if (sorted_t < unsorted_t) {
+        high_count = mid;
+      } else {
+        low_count = mid + 1;
+      }
+    }
+    return low_count;
+  }
 };
 
 }  // namespace autopas

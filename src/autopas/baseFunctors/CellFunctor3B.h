@@ -9,8 +9,6 @@
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/SortingThresholdBenchmark.h"
-
 namespace autopas::internal {
 /**
  * A cell functor. This functor is built from the normal Functor of the template
@@ -103,7 +101,7 @@ class CellFunctor3B {
    * Provided for interface parity with CellFunctor so that traversals using a conditional CellFunctorType
    * (e.g. DSSequentialTraversal) compile for both pairwise and triwise cases.
    */
-  void setSortingThresholdBenchmark(autopas::SortingThresholdBenchmark * /*benchmark*/) {}
+  void setSoASortingThresholds(std::array<size_t, 3> /*thresholds*/) {}
 
  private:
   /**
