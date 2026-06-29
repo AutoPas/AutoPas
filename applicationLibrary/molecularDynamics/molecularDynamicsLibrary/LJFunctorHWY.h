@@ -17,6 +17,8 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/FunctorBenchmarkTraits.h"
+#include "autopas/utils/PatternBenchmark.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace mdLib {
@@ -231,42 +233,10 @@ class LJFunctorHWY
   // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
-    switch (_vecPattern) {
-      case VectorizationPattern::p1xVec: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, VectorizationPattern::p1xVec>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, VectorizationPattern::p1xVec>(soa1, soa2);
-        }
-        break;
-      }
-      case VectorizationPattern::p2xVecDiv2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
-        }
-        break;
-      }
-      case VectorizationPattern::pVecDiv2x2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
-        }
-        break;
-      }
-      case VectorizationPattern::pVecx1: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, VectorizationPattern::pVecx1>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, VectorizationPattern::pVecx1>(soa1, soa2);
-        }
-        break;
-      }
-      default:
-        autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
-    }
+    const auto pat = _patternBenchmark != nullptr
+                         ? _patternBenchmark->getBenchmarkResult(soa1.size(), soa2.size(), newton3)
+                         : _vecPattern;
+    dispatchSoAFunctorPair(pat, newton3, soa1, soa2);
   }
 
  private:
@@ -771,6 +741,41 @@ class LJFunctorHWY
     }
 
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
+  }
+
+  /**
+   * Resolves a VectorizationPattern and newton3 flag to the correct SoAFunctorPairImpl instantiation.
+   */
+  inline void dispatchSoAFunctorPair(VectorizationPattern pat, bool newton3, autopas::SoAView<SoAArraysType> soa1,
+                                     autopas::SoAView<SoAArraysType> soa2) {
+    switch (pat) {
+      case VectorizationPattern::p1xVec:
+        if (newton3)
+          SoAFunctorPairImpl<true, VectorizationPattern::p1xVec>(soa1, soa2);
+        else
+          SoAFunctorPairImpl<false, VectorizationPattern::p1xVec>(soa1, soa2);
+        break;
+      case VectorizationPattern::p2xVecDiv2:
+        if (newton3)
+          SoAFunctorPairImpl<true, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+        else
+          SoAFunctorPairImpl<false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+        break;
+      case VectorizationPattern::pVecDiv2x2:
+        if (newton3)
+          SoAFunctorPairImpl<true, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+        else
+          SoAFunctorPairImpl<false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+        break;
+      case VectorizationPattern::pVecx1:
+        if (newton3)
+          SoAFunctorPairImpl<true, VectorizationPattern::pVecx1>(soa1, soa2);
+        else
+          SoAFunctorPairImpl<false, VectorizationPattern::pVecx1>(soa1, soa2);
+        break;
+      default:
+        autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
+    }
   }
 
   /**
@@ -1396,6 +1401,13 @@ class LJFunctorHWY
    */
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
+  /**
+   * Setter for the patternBenchmark attribute for functors that use this benchmark to select performance efficient
+   * vectorization patterns
+   * @param patternBenchmark pointer to the pattern benchmark object
+   */
+  void setPatternBenchmark(autopas::PatternBenchmark *patternBenchmark) final { _patternBenchmark = patternBenchmark; }
+
  private:
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
@@ -1441,5 +1453,21 @@ class LJFunctorHWY
   static constexpr std::array<VectorizationPattern, 4> _vecPatternsAllowed = {
       VectorizationPattern::p1xVec, VectorizationPattern::p2xVecDiv2, VectorizationPattern::pVecDiv2x2,
       VectorizationPattern::pVecx1};
+
+  autopas::PatternBenchmark *_patternBenchmark = nullptr;
 };
 }  // namespace mdLib
+
+namespace autopas {
+/**
+ * Opt-in: LJFunctorHWY supports PatternBenchmark because it has a real setVecPattern() implementation and
+ * dispatches SoAFunctorPair to different SIMD kernels depending on the active pattern.
+ */
+template <class Particle_T, bool applyShift, bool useMixing, FunctorN3Modes useNewton3, bool calculateGlobals,
+          bool countFLOPs, bool relevantForTuning>
+struct FunctorBenchmarkTraits<mdLib::LJFunctorHWY<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                  countFLOPs, relevantForTuning>> {
+  /// @copydoc autopas::FunctorBenchmarkTraits::supportsPatternBenchmark
+  static constexpr bool supportsPatternBenchmark = true;
+};
+}  // namespace autopas

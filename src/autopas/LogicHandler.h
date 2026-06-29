@@ -26,6 +26,7 @@
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/utils/FunctorBenchmarkTraits.h"
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -89,6 +90,9 @@ class LogicHandler {
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
+
+      // give outputSuffix to PatternBenchmark object in AutoTuner
+      tuner->patternBenchmark.outputSuffix = outputSuffix;
     }
 
     // initialize locks needed for remainder traversal
@@ -1160,10 +1164,12 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
   // https://github.com/AutoPas/AutoPas/issues/916
   LiveInfo info{};
+  bool infoGathered = false;
 #ifdef AUTOPAS_LOG_LIVEINFO
   auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
   info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
               _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
+  infoGathered = true;
   _liveInfoLogger.logLiveInfo(info, _iteration);
 #endif
 
@@ -1184,7 +1190,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
   if (_tuningManager->needsLiveInfo(_iteration)) {
     // If live info has not been gathered yet, gather it now and send it to the tuner.
-    if (info.get().empty()) {
+    if (not infoGathered) {
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
       info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
                   _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
@@ -1199,6 +1205,19 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
   auto configuration = _tuningManager->getCurrentConfig(interactionType);
 
+  // Override regular vecPattern auto-tuning with benchmark-based pattern selection if the functor supports it.
+  if constexpr (FunctorBenchmarkTraits<Functor>::supportsPatternBenchmark) {
+    if (_logicHandlerInfo.useBenchmarkPatternSelection) {
+      auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
+      if (not autoTuner.patternBenchmark._patternsCalculated) {
+        autoTuner.patternBenchmark.runBenchmark<Functor, Particle_T>(functor,
+                                                                     _logicHandlerInfo.createPatternBenchmarkOutput);
+        // The benchmark selects the pattern at runtime, so the tuner only needs to explore 1xVec configurations.
+        autoTuner.restrictSearchSpaceToVecPattern(VectorizationPatternOption::p1xVec);
+      }
+      functor.setPatternBenchmark(&(autoTuner.patternBenchmark));
+    }
+  }
   // loop as long as we don't get a valid configuration
   do {
     // applicability check also sets the container

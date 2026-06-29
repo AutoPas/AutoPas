@@ -356,7 +356,9 @@ std::string MDFlexConfig::to_string() const {
     os << indent;
     printOption(newton3Options3B, -indentWidth);
   }
-
+  printOption(vecPatternOptions);
+  printOption(useBenchmarkPatternSelection);
+  printOption(createPatternBenchmarkOutput);
   printOption(cutoff);
   printOption(boxMin);
   printOption(boxMax);
