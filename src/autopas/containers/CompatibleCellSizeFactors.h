@@ -17,9 +17,10 @@ namespace autopas::compatibleCSFs {
  * @return set of all containers that support CSF > 1.0.
  */
 [[maybe_unused]] static const std::set<ContainerOption>& allContainersSupportingSuper1CSF() {
-  return {ContainerOption::linkedCells,        ContainerOption::linkedCellsReferences,
+  static const std::set<ContainerOption> s{ContainerOption::linkedCells, ContainerOption::linkedCellsReferences,
           ContainerOption::varVerletListsAsBuild, ContainerOption::verletLists,
           ContainerOption::verletListsCells,   ContainerOption::pairwiseVerletLists};
+  return s;
 }
 
 /**
@@ -28,7 +29,8 @@ namespace autopas::compatibleCSFs {
  * @return A list of all containers that support CSF < 1.0.
  */
 [[maybe_unused]] static const std::set<ContainerOption>& allContainersSupportingSub1CSF() {
-  return {ContainerOption::linkedCells, ContainerOption::linkedCellsReferences};
+  static const std::set<ContainerOption> s{ContainerOption::linkedCells, ContainerOption::linkedCellsReferences};
+  return s;
 }
 
 }  // namespace autopas::compatibleCSFs
