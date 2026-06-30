@@ -2,7 +2,6 @@
  * @file SortingThresholdBenchmark.h
  * @date 27.06.2026
  * @author hmeyran
- * @todo Add outputs for analysis
  */
 
 #pragma once
@@ -11,6 +10,7 @@
 
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/logging/Logger.h"
 #include "autopasTools/generators/UniformGenerator.h"
 
 namespace autopas {
@@ -66,11 +66,18 @@ class SortingThresholdBenchmark {
    */
   std::array<size_t, 3> _thresholds{};
 
-  // TODO: Find system to adjust based on input size
-  /** Number of timed calls per repetition; amortizes timer overhead within a single rep. */
+  /**
+   * Number of timed calls per repetition; amortizes timer overhead within a single rep.
+   * @todo: Find System to adjust this based on input size. Could do something like:
+   * iterations = max(baseIter/numParticles, 10) -> i.e. scale iterations inversely to input size, with a minimum number
+   * of iterations
+   */
   size_t iterations = 10;
-  // TODO: Try out different number of repetitions
-  /** Number of independent measurement repetitions per particle count; the mean is taken over these. */
+
+  /**
+   * Number of independent measurement repetitions per particle count; the mean is taken over these.
+   * @todo: Try out different numbers of iterations
+   */
   size_t repetitions = 25;
   /** Upper bound on the particle count searched by the binary search. */
   size_t max_particles = 500;
@@ -127,8 +134,9 @@ class SortingThresholdBenchmark {
         sortingDirection = {1, 0., 0.};
         break;
     }
+    constexpr std::array<std::string_view, 3> layoutNames = {"Corner", "Edge", "Face"};
     utils::Timer sortedTimer, unsortedTimer;
-    for (int i = 0; i < repetitions; i++) {
+    for (size_t i = 0; i < repetitions; i++) {
       cell1.clear();
       cell2.clear();
 
@@ -139,20 +147,30 @@ class SortingThresholdBenchmark {
       functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
       functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
 
+      long beforeUnsorted = unsortedTimer.getTotalTime();
       unsortedTimer.start();
-      for (int j = 0; j < iterations; j++) {
+      for (size_t j = 0; j < iterations; j++) {
         cellFunctor.processCellPairSoAImpl(cell1, cell2, {0., 0., 0.});
       }
       unsortedTimer.stop();
 
+      long beforeSorted = sortedTimer.getTotalTime();
       sortedTimer.start();
-      for (int j = 0; j < iterations; j++) {
+      for (size_t j = 0; j < iterations; j++) {
         cellFunctor.processCellPairSoAImpl(cell1, cell2, sortingDirection);
       }
       sortedTimer.stop();
+
+      AutoPasLog(DEBUG, "SortingThresholdBenchmark rep {}/{} layout={} n={}: unsorted={}ns sorted={}ns", i + 1,
+                 repetitions, layoutNames[layout], numParticles, unsortedTimer.getTotalTime() - beforeUnsorted,
+                 sortedTimer.getTotalTime() - beforeSorted);
     }
 
-    return {sortedTimer.getTotalTime() / repetitions, unsortedTimer.getTotalTime() / repetitions};
+    const long meanSorted = sortedTimer.getTotalTime() / static_cast<long>(repetitions);
+    const long meanUnsorted = unsortedTimer.getTotalTime() / static_cast<long>(repetitions);
+    AutoPasLog(INFO, "SortingThresholdBenchmark layout={} n={}: mean unsorted={}ns mean sorted={}ns",
+               layoutNames[layout], numParticles, meanUnsorted, meanSorted);
+    return {static_cast<size_t>(meanSorted), static_cast<size_t>(meanUnsorted)};
   }
 
   /**
@@ -167,6 +185,7 @@ class SortingThresholdBenchmark {
   template <class Functor_T, class Particle_T>
   size_t runSearch(Functor_T &functor, size_t layout) {
     // TODO: Maybe run benchmarks +-5 particles around low_count to find stable point
+    constexpr std::array<std::string_view, 3> layoutNames = {"Corner", "Edge", "Face"};
     size_t low_count = 0;
     size_t high_count = max_particles;
 
@@ -176,10 +195,15 @@ class SortingThresholdBenchmark {
       auto [sorted_t, unsorted_t] = executeRun<Functor_T, Particle_T>(functor, layout, mid);
       if (sorted_t < unsorted_t) {
         high_count = mid;
+        AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted({}ns) < unsorted({}ns) → high={}",
+                   layoutNames[layout], mid, sorted_t, unsorted_t, high_count);
       } else {
         low_count = mid + 1;
+        AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted({}ns) >= unsorted({}ns) → low={}",
+                   layoutNames[layout], mid, sorted_t, unsorted_t, low_count);
       }
     }
+    AutoPasLog(INFO, "SortingThresholdBenchmark layout={} threshold={}", layoutNames[layout], low_count);
     return low_count;
   }
 };
