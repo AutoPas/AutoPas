@@ -21,6 +21,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SortedSoAView.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/optRef.h"
 
 namespace mdLib {
 
@@ -279,33 +280,33 @@ class LJFunctorHWY
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec: {
         if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::p1xVec>(soa1, soa2, &sortingData);
+          SoAFunctorPairImpl<true, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
         } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::p1xVec>(soa1, soa2, &sortingData);
+          SoAFunctorPairImpl<false, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
         }
         break;
       }
       case VectorizationPattern::p2xVecDiv2: {
         if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, &sortingData);
+          SoAFunctorPairImpl<true, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
         } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, &sortingData);
+          SoAFunctorPairImpl<false, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
         }
         break;
       }
       case VectorizationPattern::pVecDiv2x2: {
         if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, &sortingData);
+          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
         } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, &sortingData);
+          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
         }
         break;
       }
       case VectorizationPattern::pVecx1: {
         if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecx1>(soa1, soa2, &sortingData);
+          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
         } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecx1>(soa1, soa2, &sortingData);
+          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
         }
         break;
       }
@@ -720,7 +721,7 @@ class LJFunctorHWY
    */
   template <bool newton3, bool sorted, VectorizationPattern vecPattern>
   inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                 const autopas::SoASortingData *sortingData = nullptr) {
+                                 autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
     if (soa1.size() == 0 || soa2.size() == 0) {
       return;
     }
@@ -746,7 +747,7 @@ class LJFunctorHWY
     const auto *const __restrict typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
     const std::ptrdiff_t startI =
-        sorted && sortingData != nullptr ? static_cast<std::ptrdiff_t>(sortingData->startI) : 0;
+        sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().startI) : 0;
 
     VectorDouble virialSumX = highway::Zero(tag_double);
     VectorDouble virialSumY = highway::Zero(tag_double);
@@ -762,13 +763,14 @@ class LJFunctorHWY
       size_t jVecEnd{};
       size_t jVecStart = 0;
       if constexpr (sorted) {
+        const auto &sd = sortingData->get();
         // maxIndex is monotonically non-decreasing, so the tightest valid bound for the i-block
         // [i, i + iStep - 1] is maxIndex of the last particle in the block. For p1xVec
         // (iStep=1) this collapses to maxIndex[i].
-        jVecEnd = sortingData->maxIndex[i + iStep - 1];
+        jVecEnd = sd.maxIndex[i + iStep - 1];
         // minIndex is monotonically non-decreasing, so the tightest valid lower bound for the
         // i-block [i, i + iStep - 1] is always minIndex[i], the minimum across the block.
-        jVecStart = sortingData->minIndex[i];
+        jVecStart = sd.minIndex[i];
         // If this check is true it means there are no particles in soa2 that can interact with particles in soa1
         // I.e. the hitrate in this case is 0%.
         if (jVecStart >= jVecEnd) {
@@ -794,8 +796,9 @@ class LJFunctorHWY
         size_t jVecEnd = n2;
         size_t jVecStart = 0;
         if constexpr (sorted) {
-          jVecEnd = sortingData->maxIndex[i + restI - 1];
-          jVecStart = sortingData->minIndex[i];
+          const auto &sd = sortingData->get();
+          jVecEnd = sd.maxIndex[i + restI - 1];
+          jVecStart = sd.minIndex[i];
           if (jVecStart < jVecEnd) {
             // Round down to nearest full SIMD lane boundary.
             jVecStart = jVecStart - (jVecStart % jStep);
