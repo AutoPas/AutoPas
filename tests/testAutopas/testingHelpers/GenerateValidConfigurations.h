@@ -103,7 +103,6 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
     const std::set<autopas::VectorizationPatternOption> &allowedVectorPatterns =
         autopas::VectorizationPatternOption::getAllOptions()) {
-
   const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);
   if (interactionType == autopas::InteractionTypeOption::all) {
     std::set<autopas::Configuration> allConfigs;
@@ -141,22 +140,24 @@ inline std::set<ContainerConfiguration> generateAllValidContainerConfigurations(
       const auto interactionType = autopas::InteractionTypeOption(autopas::InteractionTypeOption::pairwise);
       const auto traversals = autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType);
       if (traversals.empty()) {
-        autopas::utils::ExceptionHandler::exception("{} has no compatible traversals with interaction type {}! This "
-                                                    "suggests that either that something is incorrect with this "
-                                                    "container or that generateAllValidContainerConfigurations's "
-                                                    "assumption that all containers have at least one {} compatible "
-                                                    "traversal no longer holds!", containerOption.to_string(),
-                                                    interactionType.to_string(), interactionType.to_string());
+        autopas::utils::ExceptionHandler::exception(
+            "{} has no compatible traversals with interaction type {}! This "
+            "suggests that either that something is incorrect with this "
+            "container or that generateAllValidContainerConfigurations's "
+            "assumption that all containers have at least one {} compatible "
+            "traversal no longer holds!",
+            containerOption.to_string(), interactionType.to_string(), interactionType.to_string());
         continue;
       }
       const auto &traversalOption = *traversals.begin();
       const auto loadEstimators = autopas::loadEstimators::getApplicableLoadEstimators(
           containerOption, traversalOption, autopas::LoadEstimatorOption::getAllOptions());
       if (loadEstimators.empty()) {
-        autopas::utils::ExceptionHandler::exception("{} with traversal {} has no applicable load estimators! Either "
-                                                    "something is incorrect or generateAllValidContainerConfigurations's "
-                                                    "assumption that there is always an applicable load estimator (even "
-                                                    "if 'none') no longer holds.");
+        autopas::utils::ExceptionHandler::exception(
+            "{} with traversal {} has no applicable load estimators! Either "
+            "something is incorrect or generateAllValidContainerConfigurations's "
+            "assumption that there is always an applicable load estimator (even "
+            "if 'none') no longer holds.");
         continue;
       }
       const auto &loadEstimatorOption = *loadEstimators.begin();
