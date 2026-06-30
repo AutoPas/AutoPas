@@ -94,12 +94,30 @@ class CellFunctor {
   void setSoASortingThreshold(size_t soaSortingThreshold);
 
   /**
-   * Computes the per-particle index bounds into projIdxJ needed by SoAFunctorPairSorted.
-   * @param projIdxI Sorted projections of the outer-loop cell.
-   * @param projIdxJ Sorted projections of the inner-loop cell.
-   * @param maxIndexCache Cache to store the computed maxIndex.
-   * @param minIndexCache Cache to store the computed minIndex.
-   * @return SoASortedPairMeta with startI and per-i upper/lower bounds into j.
+   * Computes conservative per-particle index bounds into projIdxJ based on a 1-D projection cutoff check.
+   *
+   * Particles are projected onto the sorting axis. A pair can only interact if their 1-D projection distance
+   * is within the cutoff (necessary but not sufficient condition for a 3-D interaction). Because both projIdxI
+   * and projIdxJ are sorted, a two-pointer sweep computes the bounds in O(nI + nJ).
+   *
+   * The returned SoASortingData contains:
+   * - startI: index of the first i-particle that could interact with any j-particle. All i before startI
+   *   project farther than cutoff below projIdxJ[0] and can be skipped unconditionally.
+   * - maxIndex[i]: exclusive upper bound; the first j where projJ > projI[i] + cutoff. A functor iterating
+   *   j up to (but not including) this index will not miss any candidate pair for particle i.
+   * - minIndex[i]: inclusive lower bound; the first j where projJ >= projI[i] - cutoff. A functor may start
+   *   its j-loop here and skip all earlier j-particles for particle i.
+   *
+   * Both maxIndex and minIndex are monotonically non-decreasing with i. A functor processing i-particles in
+   * order can therefore advance its j-loop bounds without backtracking, and may also derive valid bounds for
+   * a contiguous block of i-particles (For example with VecPatterns != 1xVec) by taking minIndex of the first and
+   * maxIndex of the last.
+   *
+   * @param projIdxI Sorted (projection, original index) pairs for the outer-loop (i) cell.
+   * @param projIdxJ Sorted (projection, original index) pairs for the inner-loop (j) cell.
+   * @param maxIndexCache Output buffer for maxIndex; resized and overwritten by this function.
+   * @param minIndexCache Output buffer for minIndex; resized and overwritten by this function.
+   * @return SoASortingData with startI and per-i index bounds into projIdxJ.
    */
   [[nodiscard]] SoASortingData computeSortingData(const std::vector<std::pair<double, size_t>> &projIdxI,
                                                   const std::vector<std::pair<double, size_t>> &projIdxJ,
