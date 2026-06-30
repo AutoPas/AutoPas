@@ -1,6 +1,6 @@
 /**
  * @file LJFunctorHWYBench.cpp
- * @date 25.6.2026
+ * @date 25.06.2026
  * @author hmeyran
  *
  * Micro-benchmarks for mdLib::LJFunctorHWY covering three groups:
@@ -43,7 +43,7 @@ using MoleculeType = mdLib::MoleculeLJ;
 using FMCell = autopas::FullParticleCell<MoleculeType>;
 using VectorizationPattern = autopas::VectorizationPatternOption::Value;
 /**
- * Cutoff used by the Benchmarks
+ * Cutoff used by the Benchmarks.
  */
 constexpr double kCutoff = 3.0;
 /**
@@ -109,7 +109,7 @@ void fillCell(FMCell &cell, const std::array<double, 3> &low, const std::array<d
 }
 
 /**
- * Builds neighborLists for use in the VerletList Benchmark
+ * Builds neighborLists for use in the VerletList Benchmark.
  * @param cell Cell to build NeighborLists for
  * @param interactionLen
  * @param newton3 Whether newton3 optimization is being used or not
@@ -123,7 +123,9 @@ std::vector<std::vector<std::size_t, autopas::AlignedAllocator<std::size_t>>> bu
   const double interactionLenSq = interactionLen * interactionLen;
   for (std::size_t i = 0; i < cell.size(); ++i) {
     for (std::size_t j = newton3 ? i + 1 : 0; j < cell.size(); ++j) {
-      if (i == j) continue;
+      if (i == j) {
+        continue;
+      }
       const auto dr = cell[i].getR() - cell[j].getR();
       if (autopas::utils::ArrayMath::dot(dr, dr) <= interactionLenSq) {
         lists[i].push_back(j);
@@ -146,7 +148,7 @@ BenchFunctor makeFunctor() {
 }  // namespace
 
 /**
- * Benchmark of the AoSFunctor
+ * Benchmark of the AoSFunctor.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
  * - state.range(1): Whether to use newton3 optimization or not.
@@ -169,7 +171,9 @@ static void BM_AoSFunctor(benchmark::State &state) {
   for (auto _ : state) {
     for (std::size_t i = 0; i < n; ++i) {
       for (std::size_t j = newton3 ? i + 1 : 0; j < n; ++j) {
-        if (i == j) continue;
+        if (i == j) {
+          continue;
+        }
         functor.AoSFunctor(cell[i], cell[j], newton3);
       }
     }
@@ -178,8 +182,8 @@ static void BM_AoSFunctor(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
+ * Benchmarks the AoSFunctor by sweeping kNValues and newton3.
  * @name BM_AoS
- * @brief Benchmarks the AoSFunctor by sweeping kNValues and newton3.
  * @details
  * - Arguments: {Number of Particles, newton3}
  * - Sweeps kNValues with both newton3 on and off
@@ -225,8 +229,8 @@ static void BM_AoSFunctorSortedPairFace(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
+ * Benchmarks the sorted AoSFunctor pair path in a Face Layout by sweeping kNValues and newton3.
  * @name BM_AoS_PairSorted_Face
- * @brief Benchmarks the sorted AoSFunctor pair path in a Face Layout by sweeping kNValues and newton3.
  * @details
  * - Arguments: {Number of Particles, newton3}
  * - Sweeps kNValues with both newton3 on and off
@@ -238,7 +242,7 @@ BENCHMARK(BM_AoSFunctorSortedPairFace)
     ->Name("BM_AoS_PairSorted_Face");
 
 /**
- * Benchmark of the SoAFunctorSingle
+ * Benchmark of the SoAFunctorSingle.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
  * - state.range(1): Whether to use newton3 optimization or not.
@@ -267,8 +271,8 @@ static void BM_SoAFunctorSingle(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
+ * Benchmarks the SoAFunctorSingle by sweeping kNValues and newton3.
  * @name BM_SoA_Single
- * @brief Benchmarks the SoAFunctorSingle by sweeping kNValues and newton3.
  * @details
  * - Arguments: {Number of Particles, newton3}
  * - Sweeps kNValues with both newton3 on and off
@@ -324,8 +328,8 @@ static void BM_SoAFunctorPairHitrate(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
+ * Benchmarks the unsorted SoAFunctorPair by sweeping kNValues, newton3, and hitrate.
  * @name BM_SoA_Pair_Hitrate
- * @brief Benchmarks the unsorted SoAFunctorPair by sweeping kNValues, newton3, and hitrate.
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern, hitrate}
  * - Sweeps kNValues, both newton3 on and off, kFixedVecPattern with all hitrates defined in the global hitrates
@@ -337,8 +341,8 @@ BENCHMARK(BM_SoAFunctorPairHitrate)
     ->Repetitions(5)
     ->Name("BM_SoA_Pair_Hitrate");
 /**
+ * Benchmarks the unsorted SoAFunctorPair across all VecPatterns, sweeping kNValuesReduced, newton3, and hitrate.
  * @name BM_SoA_Pair_VecPatterns
- * @brief Benchmarks the unsorted SoAFunctorPair across all VecPatterns, sweeping kNValuesReduced, newton3, and hitrate.
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern, hitrate}
  * - Sweeps kNValuesReduced, both newton3 on and off, all VecPatterns with all hitrates defined in the global hitrates
@@ -402,8 +406,8 @@ static void BM_SoAFunctorPairSortedHitrate(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
+ * Benchmarks the sorted SoAFunctorPair sweeping kNValues, newton3, and hitrate.
  * @name BM_SoA_PairSorted_Hitrate
- * @brief Benchmarks the sorted SoAFunctorPair sweeping kNValues, newton3, and hitrate.
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern, hitrate}
  * - Sweeps kNValues, both newton3 on and off, kFixedVecPattern with all hitrates defined in the global hitrates
@@ -415,8 +419,8 @@ BENCHMARK(BM_SoAFunctorPairSortedHitrate)
     ->Repetitions(5)
     ->Name("BM_SoA_PairSorte_Hitrate");
 /**
+ * Benchmarks the sorted SoAFunctorPair across all VecPatterns, sweeping kNValuesReduced, newton3, and hitrate.
  * @name BM_SoA_PairSorted_VecPatterns
- * @brief Benchmarks the sorted SoAFunctorPair across all VecPatterns, sweeping kNValuesReduced, newton3, and hitrate.
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern, hitrate}
  * - Sweeps kNValuesReduced, both newton3 on and off, all VecPatterns with all hitrates defined in the global hitrates
@@ -476,9 +480,8 @@ static void BM_SoAFunctorPairFace(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
+ * Benchmarks the unsorted SoAFunctorPair in a Face Layout across all VecPatterns, sweeping kNValues and newton3.
  * @name BM_SoA_Pair_Face
- * @brief Benchmarks the unsorted SoAFunctorPair in a Face Layout across all VecPatterns, sweeping kNValues and
- * newton3.
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern}
  * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
@@ -541,9 +544,8 @@ static void BM_SoAFunctorSortedPairFace(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
+ *  Benchmarks the sorted SoAFunctorPair in a Face Layout across all VecPatterns, sweeping kNValues and newton3.
  * @name BM_SoA_PairSorted_Face
- * @brief Benchmarks the sorted SoAFunctorPair in a Face Layout across all VecPatterns, sweeping kNValues and
- * newton3.
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern}
  * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
@@ -605,9 +607,8 @@ static void BM_SoAFunctorPairEdge(benchmark::State &state) {
 }
 
 /**
+ * Benchmarks the unsorted SoAFunctorPair in an Edge Layout across all VecPatterns, sweeping kNValues and newton3.
  * @name BM_SoA_Pair_Edge
- * @brief Benchmarks the unsorted SoAFunctorPair in an Edge Layout across all VecPatterns, sweeping kNValues and
- * newton3.
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern}
  * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
@@ -669,9 +670,8 @@ static void BM_SoAFunctorPairCorner(benchmark::State &state) {
 }
 
 /**
+ * Benchmarks the unsorted SoAFunctorPair in a Corner Layout across all VecPatterns, sweeping kNValues and newton3.
  * @name BM_SoA_Pair_Corner
- * @brief Benchmarks the unsorted SoAFunctorPair in a Corner Layout across all VecPatterns, sweeping kNValues and
- * newton3.
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern}
  * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
@@ -737,9 +737,8 @@ static void BM_SoAFunctorSortedPairEdge(benchmark::State &state) {
 }
 
 /**
+ * Benchmarks the sorted SoAFunctorPair in an Edge Layout across all VecPatterns, sweeping kNValues and newton3.
  * @name BM_SoA_PairSorted_Edge
- * @brief Benchmarks the sorted SoAFunctorPair in an Edge Layout across all VecPatterns, sweeping kNValues and
- * newton3.
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern}
  * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
@@ -805,9 +804,8 @@ static void BM_SoAFunctorSortedPairCorner(benchmark::State &state) {
 }
 
 /**
+ * Benchmarks the sorted SoAFunctorPair in a Corner Layout across all VecPatterns, sweeping kNValues and newton3.
  * @name BM_SoA_PairSorted_Corner
- * @brief Benchmarks the sorted SoAFunctorPair in a Corner Layout across all VecPatterns, sweeping kNValues and
- * newton3.
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern}
  * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
@@ -824,7 +822,7 @@ BENCHMARK(BM_SoAFunctorSortedPairCorner)
     ->Name("BM_SoA_PairSorted_Corner");
 
 /**
- * Benchmark of the SoAFunctorVerlet
+ * Benchmark of the SoAFunctorVerlet.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
  * - state.range(1): Whether to use newton3 optimization or not.
@@ -858,8 +856,8 @@ static void BM_SoAFunctorVerlet(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
+ * Benchmarks the SoAFunctorVerlet by sweeping kNValues and newton3.
  * @name BM_SoA_Verlet
- * @brief Benchmarks the SoAFunctorVerlet by sweeping kNValues and newton3.
  * @details
  * - Arguments: {Number of Particles, newton3}
  * - Sweeps kNValues with both newton3 on and off

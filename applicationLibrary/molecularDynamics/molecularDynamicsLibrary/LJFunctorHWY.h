@@ -779,7 +779,9 @@ class LJFunctorHWY
         // Round down to the nearest full SIMD lane boundary so the j-loop starts aligned.
         jVecStart = jVecStart - (jVecStart % jStep);
         if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-          if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) continue;
+          if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
+            continue;
+          }
         }
       } else {
         jVecEnd = n2;

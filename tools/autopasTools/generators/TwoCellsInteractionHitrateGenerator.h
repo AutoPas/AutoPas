@@ -137,8 +137,12 @@ void fillWithParticles(Container_T &cell1, Container_T &cell2, const std::array<
   std::shuffle(particles1.begin(), particles1.end(), rng);
   std::shuffle(particles2.begin(), particles2.end(), rng);
 
-  for (auto &p : particles1) cell1.addParticle(p);
-  for (auto &p : particles2) cell2.addParticle(p);
+  for (auto &p : particles1) {
+    cell1.addParticle(p);
+  }
+  for (auto &p : particles2) {
+    cell2.addParticle(p);
+  }
 }
 
 }  // namespace autopasTools::generators::TwoCellsInteractionHitrateGenerator

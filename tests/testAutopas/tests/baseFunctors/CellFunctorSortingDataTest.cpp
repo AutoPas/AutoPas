@@ -1,7 +1,7 @@
 /**
  * @file CellFunctorSortingDataTest.cpp
  * @author hmeyran
- * @date 30.06.26
+ * @date 30.06.2026
  *  Unit tests for CellFunctor::computeSortingData
  *
  *  Uses synthetic sorted projection vectors so expected bounds can be verified
@@ -17,7 +17,9 @@
 std::vector<std::pair<double, size_t>> makeProjIdx(std::initializer_list<double> projs) {
   std::vector<std::pair<double, size_t>> v;
   size_t idx = 0;
-  for (double p : projs) v.push_back({p, idx++});
+  for (double p : projs) {
+    v.push_back({p, idx++});
+  }
   return v;
 }
 

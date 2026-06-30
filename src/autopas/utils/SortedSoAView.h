@@ -57,7 +57,9 @@ class SortedSoAView {
                 SoA<SoAArraysType> &cachedSoa, std::vector<std::pair<double, size_t>> &cachedProjIdx)
       : _source(source), _sortedSoa(cachedSoa), projIdx(cachedProjIdx) {
     const size_t n = source.size();
-    if (n == 0) return;
+    if (n == 0) {
+      return;
+    }
 
     // Step 1: project each particle onto sortingDirection and sort indices ascending.
     projIdx.resize(n);

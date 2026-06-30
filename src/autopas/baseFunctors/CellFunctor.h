@@ -78,7 +78,7 @@ class CellFunctor {
   [[nodiscard]] bool getBidirectional() const { return bidirectional; }
 
   /**
-   * Set the aos-sorting-threshold
+   * Set the aos-sorting-threshold.
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
    * @param aosSortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
@@ -370,10 +370,14 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
   size_t jUpper = 0, jLower = 0;
   for (size_t i = startI; i < nI; ++i) {
     // jUpper: first j where projJ > projI[i] + cutoff (exclusive upper bound).
-    while (jUpper < nJ and projIdxJ[jUpper].first <= projIdxI[i].first + _sortingCutoff) ++jUpper;
+    while (jUpper < nJ and projIdxJ[jUpper].first <= projIdxI[i].first + _sortingCutoff) {
+      ++jUpper;
+    }
     maxIndexCache[i] = jUpper;
     // jLower: first j where projJ >= projI[i] - cutoff (lower bound).
-    while (jLower < nJ and projIdxJ[jLower].first < projIdxI[i].first - _sortingCutoff) ++jLower;
+    while (jLower < nJ and projIdxJ[jLower].first < projIdxI[i].first - _sortingCutoff) {
+      ++jLower;
+    }
     minIndexCache[i] = jLower;
   }
 
