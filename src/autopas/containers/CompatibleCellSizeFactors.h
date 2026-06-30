@@ -12,11 +12,14 @@
 
 namespace autopas::compatibleCSFs {
 /**
- * Lists all containers only supporting CSF 1 (or ignore CSF).
- * @return set of all containers that only support CSF 1 (or ignore CSF)
+ * Lists all containers that support CSF > 1.0. Note, it is possible that a container supports this but one or more traversals of that container
+ * do not. These should be filtered out in TraversalInterface::isApplicableToDomain().
+ * @return set of all containers that support CSF > 1.0.
  */
-[[maybe_unused]] static const std::set<ContainerOption> allContainersOnlySupportingCSF1() {
-  return {ContainerOption::octree, ContainerOption::verletClusterLists, ContainerOption::directSum};
+[[maybe_unused]] static const std::set<ContainerOption> allContainersSupportingSuper1CSF() {
+  return {ContainerOption::linkedCells,        ContainerOption::linkedCellsReferences,
+          ContainerOption::varVerletListsAsBuild, ContainerOption::verletLists,
+          ContainerOption::verletListsCells,   ContainerOption::pairwiseVerletLists};
 }
 
 /**

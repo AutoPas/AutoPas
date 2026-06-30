@@ -90,8 +90,8 @@ bool autopas::Configuration::hasCompatibleValues() const {
     }
   }
 
-  const auto allContainersSupportingOnlyCSF1 = compatibleCSFs::allContainersOnlySupportingCSF1();
-  if (allContainersSupportingOnlyCSF1.contains(container) and cellSizeFactor != 1.0) {
+  const auto allContainersSupportingSuper1CSF = compatibleCSFs::allContainersSupportingSuper1CSF();
+  if ((not allContainersSupportingSuper1CSF.contains(container)) and cellSizeFactor > 1.0) {
     return false;
   }
 
