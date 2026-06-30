@@ -24,7 +24,6 @@
 
 using ::testing::_;
 
-
 /**
  * This test checks (pairwise) whether the boxes split on one layer are correctly aligned with themselves.
  */
