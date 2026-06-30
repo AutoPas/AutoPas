@@ -47,8 +47,8 @@ class ContainerSelectorInfo {
    */
   explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                  double cutoff, double cellSizeFactor, double verletSkin,
-                                 unsigned int verletClusterSize, size_t aosSortingThreshold,
-                                 LoadEstimatorOption loadEstimator, size_t soaSortingThreshold = 25)
+                                 unsigned int verletClusterSize, size_t aosSortingThreshold, size_t soaSortingThreshold,
+                                 LoadEstimatorOption loadEstimator)
       : boxMin(boxMin),
         boxMax(boxMax),
         cutoff(cutoff),

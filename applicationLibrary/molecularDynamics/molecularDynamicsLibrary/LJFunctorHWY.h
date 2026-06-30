@@ -321,11 +321,20 @@ class LJFunctorHWY
    */
   template <VectorizationPattern vecPattern>
   static size_t iStepSize() {
-    if constexpr (vecPattern == VectorizationPattern::p1xVec) return 1;
-    if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) return 2;
-    if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) return _vecLengthDouble / 2;
-    if constexpr (vecPattern == VectorizationPattern::pVecx1) return _vecLengthDouble;
-    return 1;
+    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+      return 1;
+    }
+    if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+      return 2;
+    }
+    if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+      return _vecLengthDouble / 2;
+    }
+    if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+      return _vecLengthDouble;
+    }
+    autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
+    return {};
   }
 
   /**
@@ -334,11 +343,20 @@ class LJFunctorHWY
    */
   template <VectorizationPattern vecPattern>
   static size_t jStepSize() {
-    if constexpr (vecPattern == VectorizationPattern::p1xVec) return _vecLengthDouble;
-    if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) return _vecLengthDouble / 2;
-    if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) return 2;
-    if constexpr (vecPattern == VectorizationPattern::pVecx1) return 1;
-    return 1;
+    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+      return _vecLengthDouble;
+    }
+    if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+      return _vecLengthDouble / 2;
+    }
+    if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+      return 2;
+    }
+    if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+      return 1;
+    }
+    autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
+    return {};
   }
 
   /**
@@ -691,14 +709,11 @@ class LJFunctorHWY
    * Templatized implementation of SoAFunctorPair.
    *
    * When sorted=false the original SoA arrays are iterated directly.
-   * When sorted=true particles are projected onto sortingDirection, sorted
-   * ascending, packed into contiguous caches, and the inner j-loop is bounded
-   * by a per-particle 1D projection upper bound. Forces are scattered back
-   * after the loop.
+   * When sorted=true the iteration is pruned via the supplied sortingData.
    *
    * @tparam newton3
-   * @tparam sorted Whether to sort+pack particles before iterating.
-   * @tparam vecPattern Vectorization pattern. All four patterns are supported on both paths.
+   * @tparam sorted Whether to use pruned index data in sortingData.
+   * @tparam vecPattern Vectorization pattern.
    * @param soa1
    * @param soa2
    * @param sortingData Pruning data needed for sorting optimization.
@@ -744,7 +759,7 @@ class LJFunctorHWY
     std::ptrdiff_t i = startI;
     for (; i + static_cast<std::ptrdiff_t>(iStep) <= static_cast<std::ptrdiff_t>(n1);
          i += static_cast<std::ptrdiff_t>(iStep)) {
-      size_t jVecEnd;
+      size_t jVecEnd{};
       size_t jVecStart = 0;
       if constexpr (sorted) {
         // maxIndex is monotonically non-decreasing, so the tightest valid bound for the i-block

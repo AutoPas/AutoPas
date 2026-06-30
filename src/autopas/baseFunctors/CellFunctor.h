@@ -336,12 +336,12 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
   const size_t nJ = projIdxJ.size();
 
   // Compute startI: the first i-particle that can interact with any j-particle.
-  // Any i with projI[i] <= projJ[0] - cutoff is further than cutoff from every j along the sorting axis,
+  // Any i with `projI[i] <= projJ[0] - cutoff` is further than cutoff from every j along the sorting axis,
   // so it cannot contribute an interaction and is skipped.
   const double threshold = projIdxJ[0].first - _sortingCutoff;
-  auto start_iter = std::upper_bound(projIdxI.begin(), projIdxI.end(), threshold,
-                                     [](double val, const auto &elem) { return val < elem.first; });
-  const size_t startI = static_cast<size_t>(start_iter - projIdxI.begin());
+  auto startIter = std::upper_bound(projIdxI.begin(), projIdxI.end(), threshold,
+                                    [](double val, const auto &elem) { return val < elem.first; });
+  const size_t startI = static_cast<size_t>(startIter - projIdxI.begin());
 
   // Compute maxIndexCache and minIndexCache in a single O(nI + nJ) sweep.
   // Both bounds are monotonically non-decreasing with i because projIdxI is sorted, so each pointer only
@@ -368,22 +368,22 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
   if constexpr (ParticleFunctor_T::supportsSoASorting) {
     if (shouldUseSoASorting(cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size(), sortingDirection)) {
       using Particle_T = ParticleCell_T::ParticleType;
-      auto &thread_data = _soaThreadData[autopas::autopas_get_thread_num()];
+      auto &threadData = _soaThreadData[autopas::autopas_get_thread_num()];
 
       SortedSoAView<Particle_T, ParticleFunctor_T> view1(cell1._particleSoABuffer, sortingDirection,
-                                                         thread_data.sortedSoa1, thread_data.projIdx1);
+                                                         threadData.sortedSoa1, threadData.projIdx1);
       SortedSoAView<Particle_T, ParticleFunctor_T> view2(cell2._particleSoABuffer, sortingDirection,
-                                                         thread_data.sortedSoa2, thread_data.projIdx2);
+                                                         threadData.sortedSoa2, threadData.projIdx2);
 
       _functor.SoAFunctorPairSorted(
           view1.getView(), view2.getView(),
-          computeSortingData(view1.projIdx, view2.projIdx, thread_data.maxIndex, thread_data.minIndex), _useNewton3);
+          computeSortingData(view1.projIdx, view2.projIdx, threadData.maxIndex, threadData.minIndex), _useNewton3);
 
       if constexpr (bidirectional) {
         if (not _useNewton3) {
           _functor.SoAFunctorPairSorted(
               view2.getView(), view1.getView(),
-              computeSortingData(view2.projIdx, view1.projIdx, thread_data.maxIndex, thread_data.minIndex), false);
+              computeSortingData(view2.projIdx, view1.projIdx, threadData.maxIndex, threadData.minIndex), false);
         }
       }
 

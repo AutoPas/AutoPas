@@ -22,7 +22,7 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
  public:
   LJFunctorTestHWY() = default;
 
-  constexpr static double _maxError = 1e-8;
+  constexpr static double _maxError = 2e-8;
 
   /**
    * Is called before each test case

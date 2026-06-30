@@ -225,9 +225,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
   ljFunctor.endTraversal(newton3);
   ljFunctorHWY.endTraversal(newton3);
 
-  constexpr double energyTol = sorted ? 2 * _maxError : _maxError;
-  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), energyTol) << "global uPot";
-  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), energyTol) << "global virial";
+  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), _maxError) << "global uPot";
+  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), _maxError) << "global virial";
 }
 
 template <bool mixing>
