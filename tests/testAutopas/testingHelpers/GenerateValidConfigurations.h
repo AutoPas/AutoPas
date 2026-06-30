@@ -138,14 +138,27 @@ inline std::set<ContainerConfiguration> generateAllValidContainerConfigurations(
       // Create a dummy configuration to check validity
       // We use pairwise interaction as default, since it should not matter for container/csf compatibility.
       // We also use the first valid traversal for this container.
-      const auto interactionType = autopas::InteractionTypeOption::pairwise;
+      const auto interactionType = autopas::InteractionTypeOption(autopas::InteractionTypeOption::pairwise);
       const auto traversals = autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType);
       if (traversals.empty()) {
+        autopas::utils::ExceptionHandler::exception("{} has no compatible traversals with interaction type {}! This "
+                                                    "suggests that either that something is incorrect with this "
+                                                    "container or that generateAllValidContainerConfigurations's "
+                                                    "assumption that all containers have at least one {} compatible "
+                                                    "traversal no longer holds!", containerOption.to_string(),
+                                                    interactionType.to_string(), interactionType.to_string());
         continue;
       }
       const auto &traversalOption = *traversals.begin();
       const auto loadEstimators = autopas::loadEstimators::getApplicableLoadEstimators(
           containerOption, traversalOption, autopas::LoadEstimatorOption::getAllOptions());
+      if (loadEstimators.empty()) {
+        autopas::utils::ExceptionHandler::exception("{} with traversal {} has no applicable load estimators! Either "
+                                                    "something is incorrect or generateAllValidContainerConfigurations's "
+                                                    "assumption that there is always an applicable load estimator (even "
+                                                    "if 'none') no longer holds.");
+        continue;
+      }
       const auto &loadEstimatorOption = *loadEstimators.begin();
 
       const autopas::Configuration configuration{containerOption,
