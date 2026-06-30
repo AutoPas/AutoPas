@@ -764,12 +764,12 @@ class LJFunctorHWY
       size_t jVecStart = 0;
       if constexpr (sorted) {
         const auto &sd = sortingData->get();
-        // maxIndex is monotonically non-decreasing, so the tightest valid bound for the i-block
-        // [i, i + iStep - 1] is maxIndex of the last particle in the block. For p1xVec
+        // maxIndex is monotonically non-decreasing, so the tightest valid bound for [i, i + iStep - 1] (the i values
+        // handled in one iteration) is maxIndex of the last particle in the block. For p1xVec
         // (iStep=1) this collapses to maxIndex[i].
         jVecEnd = sd.maxIndex[i + iStep - 1];
-        // minIndex is monotonically non-decreasing, so the tightest valid lower bound for the
-        // i-block [i, i + iStep - 1] is always minIndex[i], the minimum across the block.
+        // minIndex is monotonically non-decreasing, so the tightest valid lower bound [i, i + iStep - 1] (the i values
+        // handled in one iteration) is always minIndex[i], the minimum across the block.
         jVecStart = sd.minIndex[i];
         // If this check is true it means there are no particles in soa2 that can interact with particles in soa1
         // I.e. the hitrate in this case is 0%.
