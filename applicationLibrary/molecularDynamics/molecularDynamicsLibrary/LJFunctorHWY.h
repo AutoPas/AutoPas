@@ -185,7 +185,7 @@ class LJFunctorHWY
 
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
-   * This functor will always do a newton3 like traversal of the soa.
+   * This functor will always do a newton3 like traversal of the SoA using only the 1xVec Pattern.
    */
   inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, const bool newton3) final {
     if (soa.size() == 0) return;
