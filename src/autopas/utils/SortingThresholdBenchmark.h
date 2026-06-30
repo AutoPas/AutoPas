@@ -28,12 +28,6 @@ namespace autopas {
 class SortingThresholdBenchmark {
  public:
   /**
-   * Whether runBenchmark() has already been called.
-   * Checked by LogicHandler to avoid re-running the benchmark on every iteration.
-   */
-  bool _hasRun{false};
-
-  /**
    * Initializes all thresholds to the compile-time default.
    */
   SortingThresholdBenchmark() { _thresholds.fill(25); }
@@ -44,6 +38,12 @@ class SortingThresholdBenchmark {
    * @return Copy of the internal threshold array.
    */
   std::array<size_t, 3> getThresholds() const { return _thresholds; }
+
+  /**
+   * Returns whether runBenchmark() has already been called.
+   * @return True if the benchmark has run.
+   */
+  [[nodiscard]] bool hasRun() const { return _hasRun; }
 
   /**
    * Runs the micro-benchmark for all three direction types and stores the resulting thresholds.
@@ -60,6 +60,11 @@ class SortingThresholdBenchmark {
   }
 
  private:
+  /**
+   * Set to true by runBenchmark() once the benchmark has completed.
+   */
+  bool _hasRun{false};
+
   /**
    * Per-direction-type threshold values.
    * Index = number of zero components in sortingDirection (0=Corner, 1=Edge, 2=Face).
