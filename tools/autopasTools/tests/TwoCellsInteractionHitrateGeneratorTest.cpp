@@ -16,8 +16,13 @@
 #include "autopasTools/PseudoContainer.h"
 #include "autopasTools/generators/TwoCellsInteractionHitrateGenerator.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
-
+/**
+ * Particle type used across all tests.
+ */
 using MoleculeType = mdLib::MoleculeLJ;
+/**
+ * Container type for a single cell's particles.
+ */
 using CellType = std::vector<MoleculeType>;
 
 /**
@@ -31,14 +36,22 @@ constexpr double kCutoff = 3.0;
 constexpr double kCellSize = 8.0;
 
 /**
- * Bounding box of cell 1: occupies [0, kCellSize] in all dimensions.
+ * Lower corner of the Bounding box of cell 1.
+ * Bounding box occupies [0, kCellSize] in all dimensions.
  */
 const std::array<double, 3> kBoxMin1 = {0., 0., 0.};
+/**
+ * Upper corner of cell 1's bounding box.
+ */
 const std::array<double, 3> kBoxMax1 = {kCellSize, kCellSize, kCellSize};
 /**
- * Bounding box of cell 2: adjacent to cell 1, occupies [kCellSize, 2*kCellSize] in x.
+ * Lower corner of the Bounding box of cell 2.
+ * The Bounding box is adjacent to cell 1, occupies [kCellSize, 2*kCellSize] in x.
  */
 const std::array<double, 3> kBoxMin2 = {kCellSize, 0., 0.};
+/**
+ * Upper corner of cell 2's bounding box.
+ */
 const std::array<double, 3> kBoxMax2 = {2. * kCellSize, kCellSize, kCellSize};
 
 /**

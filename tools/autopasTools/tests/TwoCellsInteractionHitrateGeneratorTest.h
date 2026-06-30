@@ -9,6 +9,9 @@
 
 #include "AutoPasTestBase.h"
 
+/**
+ * Tests for autopasTools::generators::TwoCellsInteractionHitrateGenerator.
+ */
 class TwoCellsInteractionHitrateGeneratorTest : public AutoPasTestBase {
  public:
   TwoCellsInteractionHitrateGeneratorTest() : AutoPasTestBase() {}

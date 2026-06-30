@@ -769,6 +769,8 @@ class LJFunctorHWY
         // minIndex is monotonically non-decreasing, so the tightest valid lower bound for the
         // i-block [i, i + iStep - 1] is always minIndex[i], the minimum across the block.
         jVecStart = sortingData->minIndex[i];
+        // If this check is true it means there are no particles in soa2 that can interact with particles in soa1
+        // I.e. the hitrate in this case is 0%.
         if (jVecStart >= jVecEnd) {
           continue;
         }
@@ -795,9 +797,12 @@ class LJFunctorHWY
           jVecEnd = sortingData->maxIndex[i + restI - 1];
           jVecStart = sortingData->minIndex[i];
           if (jVecStart < jVecEnd) {
+            // Round down to nearest full SIMD lane boundary.
             jVecStart = jVecStart - (jVecStart % jStep);
           }
         }
+        // If this check is false it means there are no particles in soa2 that can interact with particles in soa1
+        // I.e. the hitrate in this case is 0%.
         if (jVecStart < jVecEnd) {
           handleILoopBody<false, newton3, true, vecPattern>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr,
                                                             ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr, fy2Ptr,
