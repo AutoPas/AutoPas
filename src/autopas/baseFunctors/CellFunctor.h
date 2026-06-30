@@ -363,7 +363,7 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
 
   // Compute maxIndexCache and minIndexCache in a single O(nI + nJ) sweep.
   // Both bounds are monotonically non-decreasing with i because projIdxI is sorted, so each pointer only
-  // advances, this is approximate but avoids a O(n^2) scan.
+  // advances, this includes some particles redundant for calculation but avoids a O(n^2) scan.
   // For each i, the j-particles in [minIndex, maxIndex) are the candidates satisfying the 1-D cutoff check.
   maxIndexCache.assign(nI, 0);
   minIndexCache.assign(nI, 0);
