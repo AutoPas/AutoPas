@@ -40,7 +40,8 @@ INSTANTIATE_TEST_SUITE_P(
       autopas::ContainerSelectorInfo containerInfo(
           Newton3OnOffTest::getBoxMin(), Newton3OnOffTest::getBoxMax(), Newton3OnOffTest::getCutoff(),
           Newton3OnOffTest::getCellSizeFactor(), Newton3OnOffTest::getVerletSkin(), Newton3OnOffTest::getClusterSize(),
-          Newton3OnOffTest::getAoSSortingThreshold(), autopas::LoadEstimatorOption::none);
+          Newton3OnOffTest::getAoSSortingThreshold(), Newton3OnOffTest::getSoASortingThreshold(),
+          autopas::LoadEstimatorOption::none);
 
       // generate for all containers
       for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
@@ -113,7 +114,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   }
   const autopas::ContainerSelectorInfo containerInfo(getBoxMin(), getBoxMax(), getCutoff(), getCellSizeFactor(),
                                                      getVerletSkin(), getClusterSize(), getAoSSortingThreshold(),
-                                                     autopas::LoadEstimatorOption::none);
+                                                     getSoASortingThreshold(), autopas::LoadEstimatorOption::none);
   auto container = autopas::ContainerSelector<ParticleFP64>::generateContainer(containerOption, containerInfo);
 
   const ParticleFP64 defaultParticle{};

@@ -79,10 +79,10 @@ class LogicHandler {
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
-      _currentContainerSelectorInfo =
-          ContainerSelectorInfo{_logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,     _logicHandlerInfo.cutoff,
-                                configuration.cellSizeFactor, _logicHandlerInfo.verletSkin, _verletClusterSize,
-                                _aosSortingThreshold,         configuration.loadEstimator,  _soaSortingThreshold};
+      _currentContainerSelectorInfo = ContainerSelectorInfo{
+          _logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,     _logicHandlerInfo.cutoff,
+          configuration.cellSizeFactor, _logicHandlerInfo.verletSkin, _verletClusterSize,
+          _aosSortingThreshold,         _soaSortingThreshold,         configuration.loadEstimator};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
@@ -1352,7 +1352,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _aosSortingThreshold, config.loadEstimator, _soaSortingThreshold);
+                            _verletClusterSize, _aosSortingThreshold, _soaSortingThreshold, config.loadEstimator);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.

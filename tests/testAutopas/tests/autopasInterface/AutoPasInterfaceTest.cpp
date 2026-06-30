@@ -479,6 +479,7 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   constexpr double interactionLength = cutoffLocal + skinLocal;
   constexpr unsigned int clusterSize = 4;
   constexpr size_t aosSortingThreshold = 8;
+  constexpr size_t soaSortingThreshold = 8;
   const std::array<double, 3> boxMinLocal{0., 0., 0.};
   const std::array<double, 3> boxMaxLocal{33., 11., 11.};
   const auto cellsPerDim = static_cast_copy_array<unsigned long>(ceil(boxMaxLocal * (1. / interactionLength)));
@@ -487,7 +488,8 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   LJFunctorGlobals functor(cutoffLocal);
   const autopas::ContainerSelectorInfo containerSelectorInfo{boxMinLocal,         boxMaxLocal,       cutoffLocal,
                                                              conf.cellSizeFactor, skinLocal,         clusterSize,
-                                                             aosSortingThreshold, conf.loadEstimator};
+                                                             aosSortingThreshold, soaSortingThreshold,
+                                                             conf.loadEstimator};
 
   auto container = autopas::ContainerSelector<Molecule>::generateContainer(conf.container, containerSelectorInfo);
   auto traversalPtr = autopas::TraversalSelector::generateTraversalFromConfig<Molecule, LJFunctorGlobals>(
