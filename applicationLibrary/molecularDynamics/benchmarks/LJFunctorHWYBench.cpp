@@ -225,18 +225,17 @@ static void BM_AoSFunctorSortedPairFace(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
- * @name BM_AoS_PairSorted_Face_Uniform
- * @brief Benchmarks the sorted AoSFunctor pair path (face layout, uniform) by sweeping kNValues and newton3.
+ * @name BM_AoS_PairSorted_Face
+ * @brief Benchmarks the sorted AoSFunctor pair path in a Face Layout by sweeping kNValues and newton3.
  * @details
  * - Arguments: {Number of Particles, newton3}
  * - Sweeps kNValues with both newton3 on and off
- * - This is part of the Layout study; directly comparable to BM_SoA_PairSorted_Face_Uniform.
  */
 BENCHMARK(BM_AoSFunctorSortedPairFace)
     ->ArgsProduct({kNValues, {0, 1}})
     ->ArgNames({"N", "n3"})
     ->Repetitions(5)
-    ->Name("BM_AoS_PairSorted_Face_Uniform");
+    ->Name("BM_AoS_PairSorted_Face");
 
 /**
  * Benchmark of the SoAFunctorSingle
@@ -338,7 +337,7 @@ BENCHMARK(BM_SoAFunctorPairHitrate)
     ->Repetitions(5)
     ->Name("BM_SoA_Pair_Hitrate");
 /**
- * @name BM_SoA_Pair_Face_VecPatterns
+ * @name BM_SoA_Pair_VecPatterns
  * @brief Benchmarks the unsorted SoAFunctorPair across all VecPatterns, sweeping kNValuesReduced, newton3, and hitrate.
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern, hitrate}
@@ -842,7 +841,7 @@ static void BM_SoAFunctorVerlet(benchmark::State &state) {
   FMCell cell;
   fillCell(cell, kLow, kHigh, n, seed++);
 
-  const double skin = 0.5;
+  const double skin = 0.2;
   const auto lists = buildNeighborLists(cell, kCutoff + skin, newton3);
 
   auto functor = makeFunctor();
