@@ -10,6 +10,7 @@
  * GTest entry point for autopasTools tests.
  * @param argc unused
  * @param argv unused
+ * @returns exit status
  */
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
