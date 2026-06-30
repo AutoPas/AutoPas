@@ -486,10 +486,9 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   const autopas::TraversalSelectorInfo traversalSelectorInfo{
       cellsPerDim, interactionLength, {interactionLength, interactionLength, interactionLength}, clusterSize};
   LJFunctorGlobals functor(cutoffLocal);
-  const autopas::ContainerSelectorInfo containerSelectorInfo{boxMinLocal,         boxMaxLocal,       cutoffLocal,
-                                                             conf.cellSizeFactor, skinLocal,         clusterSize,
-                                                             aosSortingThreshold, soaSortingThreshold,
-                                                             conf.loadEstimator};
+  const autopas::ContainerSelectorInfo containerSelectorInfo{
+      boxMinLocal, boxMaxLocal,         cutoffLocal,         conf.cellSizeFactor, skinLocal,
+      clusterSize, aosSortingThreshold, soaSortingThreshold, conf.loadEstimator};
 
   auto container = autopas::ContainerSelector<Molecule>::generateContainer(conf.container, containerSelectorInfo);
   auto traversalPtr = autopas::TraversalSelector::generateTraversalFromConfig<Molecule, LJFunctorGlobals>(

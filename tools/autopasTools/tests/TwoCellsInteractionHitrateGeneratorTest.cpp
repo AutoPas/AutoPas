@@ -24,25 +24,22 @@ using CellType = std::vector<MoleculeType>;
  * Cutoff radius used across all tests.
  */
 constexpr double kCutoff = 3.0;
-/**
- * Shared x-coordinate of the boundary plane between the two cells.
- */
-constexpr double kBoundary = 10.0;
-/**
- * x-extent of each cell; must exceed 1.2 * kCutoff so the far zone fits.
- */
-constexpr double kExtent = 8.0;
 
 /**
- * Bounding box of cell 1: occupies [kBoundary - kExtent, kBoundary] in x.
+ * Each cell has dimensions kCellSize x kCellSize x kCellSize.
  */
-const std::array<double, 3> kBoxMin1 = {kBoundary - kExtent, 0., 0.};
-const std::array<double, 3> kBoxMax1 = {kBoundary, 8., 8.};
+constexpr double kCellSize = 8.0;
+
 /**
- * Bounding box of cell 2: occupies [kBoundary, kBoundary + kExtent] in x.
+ * Bounding box of cell 1: occupies [0, kCellSize] in all dimensions.
  */
-const std::array<double, 3> kBoxMin2 = {kBoundary, 0., 0.};
-const std::array<double, 3> kBoxMax2 = {kBoundary + kExtent, 8., 8.};
+const std::array<double, 3> kBoxMin1 = {0., 0., 0.};
+const std::array<double, 3> kBoxMax1 = {kCellSize, kCellSize, kCellSize};
+/**
+ * Bounding box of cell 2: adjacent to cell 1, occupies [kCellSize, 2*kCellSize] in x.
+ */
+const std::array<double, 3> kBoxMin2 = {kCellSize, 0., 0.};
+const std::array<double, 3> kBoxMax2 = {2. * kCellSize, kCellSize, kCellSize};
 
 /**
  * Computes the Euclidean distance between two particles.
@@ -143,8 +140,8 @@ TEST_F(TwoCellsInteractionHitrateGeneratorTest, testPairedParticlesInRange) {
 
 /**
  * Far particles are out of range of every particle in the other cell.
- * Far particles are identified geometrically: cell1 far particles have x < boundary - cutoff,
- * cell2 far particles have x > boundary + cutoff.
+ * A cell1 particle is "far" if its x-coordinate is more than kCutoff below kBoxMax1[0] (the shared
+ * face). A cell2 particle is "far" if its x-coordinate is more than kCutoff above kBoxMin2[0].
  */
 TEST_F(TwoCellsInteractionHitrateGeneratorTest, testFarParticlesOutOfRange) {
   constexpr std::size_t n = 20;
@@ -153,7 +150,7 @@ TEST_F(TwoCellsInteractionHitrateGeneratorTest, testFarParticlesOutOfRange) {
   fill(v1, v2, n, hitrate);
 
   for (const auto &p1 : v1) {
-    if (p1.getR()[0] < kBoundary - kCutoff) {
+    if (p1.getR()[0] < kBoxMax1[0] - kCutoff) {
       for (const auto &p2 : v2) {
         EXPECT_GE(dist3D(p1, p2), kCutoff)
             << "far cell1 particle at x=" << p1.getR()[0] << " within cutoff of a cell2 particle";
@@ -161,7 +158,7 @@ TEST_F(TwoCellsInteractionHitrateGeneratorTest, testFarParticlesOutOfRange) {
     }
   }
   for (const auto &p2 : v2) {
-    if (p2.getR()[0] > kBoundary + kCutoff) {
+    if (p2.getR()[0] > kBoxMin2[0] + kCutoff) {
       for (const auto &p1 : v1) {
         EXPECT_GE(dist3D(p1, p2), kCutoff)
             << "far cell2 particle at x=" << p2.getR()[0] << " within cutoff of a cell1 particle";
@@ -208,7 +205,7 @@ TEST_F(TwoCellsInteractionHitrateGeneratorTest, testDeterminism) {
 TEST_F(TwoCellsInteractionHitrateGeneratorTest, testPreconditionNonAdjacentCells) {
   CellType v1, v2;
   autopasTools::PseudoContainer c1(v1), c2(v2);
-  const std::array<double, 3> gappedMin2 = {kBoundary + 1.0, 0., 0.};
+  const std::array<double, 3> gappedMin2 = {kBoxMax1[0] + 1.0, 0., 0.};
   auto call = [&]() {
     autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
         c1, c2, kBoxMin1, kBoxMax1, gappedMin2, kBoxMax2, 10ul, 0.5, kCutoff, MoleculeType{});
@@ -231,13 +228,14 @@ TEST_F(TwoCellsInteractionHitrateGeneratorTest, testPreconditionHitrateOutOfRang
 }
 
 /**
- * A cell whose x-extent is <= 1.5 * cutoff (insufficient for the far zone) must throw.
+ * A cell whose x-width does not exceed 1.2 * kCutoff violates the factor set in the Generator, so it is too narrow and
+ * should throw.
  */
 TEST_F(TwoCellsInteractionHitrateGeneratorTest, testPreconditionCellTooNarrow) {
   CellType v1, v2;
   autopasTools::PseudoContainer c1(v1), c2(v2);
-  // x-extent = kCutoff exactly, which is <= 1.5 * kCutoff
-  const std::array<double, 3> tooNarrowMin1 = {kBoundary - kCutoff, 0., 0.};
+  // Shrink cell1 so its x-extent equals kCutoff, which is below the required minimum of 1.2 * kCutoff.
+  const std::array<double, 3> tooNarrowMin1 = {kBoxMax1[0] - kCutoff, 0., 0.};
   auto call = [&]() {
     autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
         c1, c2, tooNarrowMin1, kBoxMax1, kBoxMin2, kBoxMax2, 10ul, 0.5, kCutoff, MoleculeType{});

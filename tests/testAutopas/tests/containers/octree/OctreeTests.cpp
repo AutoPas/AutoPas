@@ -481,8 +481,8 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Construct container
   auto container = ContainerSelector<Molecule>::generateContainer(
-      containerOption,
-      ContainerSelectorInfo{boxMin, boxMax, cutoff, cellSizeFactor, skin, 32, 8, 8, autopas::LoadEstimatorOption::none});
+      containerOption, ContainerSelectorInfo{boxMin, boxMax, cutoff, cellSizeFactor, skin, 32, 8, 8,
+                                             autopas::LoadEstimatorOption::none});
 
   // Create a functor that is able to calculate forces
   LJFunctorType<true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both, false /*calculateGlobals*/>
