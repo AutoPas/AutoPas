@@ -17,7 +17,8 @@
  *   3. Baselines: AoSFunctor, SoAFunctorSingle, SoAFunctorVerlet — single cell,
  *      varying N and newton3. Reference points for absolute throughput.
  *
- * Cell size: kCellSize = 4 (≈ 1.33 × cutoff); both cells are equal-sized cubes. N ∈ {10…150} per cell.
+ * Cell size: kCellSize = 4 (≈ 1.33 × cutoff); both cells are equal-sized cubes with side lengths kCellSize. N ∈
+ * {10…150} per cell. All Benchmark generate particles with rotating seeds per repetition: 42 + repetition_index
  */
 
 #include <benchmark/benchmark.h>
@@ -111,7 +112,7 @@ void fillCell(FMCell &cell, const std::array<double, 3> &low, const std::array<d
  * Builds neighborLists for use in the VerletList Benchmark
  * @param cell Cell to build NeighborLists for
  * @param interactionLen
- * @param newton3 wether newton3 optimization is being used or not
+ * @param newton3 Whether newton3 optimization is being used or not
  * @return
  */
 std::vector<std::vector<std::size_t, autopas::AlignedAllocator<std::size_t>>> buildNeighborLists(const FMCell &cell,
@@ -148,9 +149,9 @@ BenchFunctor makeFunctor() {
  * Benchmark of the AoSFunctor
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
- * - state.range(1): Wether to use newton3 optimization or not.
+ * - state.range(1): Whether to use newton3 optimization or not.
  *
- * The Benchmark uses fillCell() with kLow, kHigh and the seed 42.
+ * The Benchmark uses fillCell() with kLow and kHigh.
  * It manually loops through all particles, applying the AoSFunctor for each needed pair (depending on newton3)
  * and measures the total calculation time.
  */
@@ -158,8 +159,9 @@ static void BM_AoSFunctor(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
 
+  static unsigned seed = 42;
   FMCell cell;
-  fillCell(cell, kLow, kHigh, n, 42);
+  fillCell(cell, kLow, kHigh, n, seed++);
 
   auto functor = makeFunctor();
   functor.initTraversal();
@@ -187,7 +189,7 @@ BENCHMARK(BM_AoSFunctor)->ArgsProduct({kNValues, {0, 1}})->ArgNames({"N", "n3"})
  * Benchmark of the AoSFunctorPair (sorted path) with Cells in a Face Layout, via CellFunctor.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
- * - state.range(1): Wether to use newton3 optimization or not.
+ * - state.range(1): Whether to use newton3 optimization or not.
  *
  * Uses the same cell layout and UniformGenerator as BM_SoAFunctorSortedPairFace so that
  * the two benchmarks are directly comparable. Sorting is forced by setting aosSortingThreshold=0 and
@@ -197,11 +199,13 @@ static void BM_AoSFunctorSortedPairFace(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
 
+  static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, 42);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]},
-                                                                {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, 43);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopasTools::generators::UniformGenerator::fillWithParticles(
+      cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]}, {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, seed + 1);
+  seed += 2;
 
   auto functor = makeFunctor();
   functor.initTraversal();
@@ -236,9 +240,9 @@ BENCHMARK(BM_AoSFunctorSortedPairFace)
  * Benchmark of the SoAFunctorSingle
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
- * - state.range(1): Wether to use newton3 optimization or not.
+ * - state.range(1): Whether to use newton3 optimization or not.
  *
- * The Benchmark uses fillCell() with kLow, kHigh and the seed 42.
+ * The Benchmark uses fillCell() with kLow and kHigh.
  * It measures total time of the SoALoader + SoaFunctorSingle + SoAExtractor to get a full picture and capture memory
  * performance.
  */
@@ -246,8 +250,9 @@ static void BM_SoAFunctorSingle(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
 
+  static unsigned seed = 42;
   FMCell cell;
-  fillCell(cell, kLow, kHigh, n, 42);
+  fillCell(cell, kLow, kHigh, n, seed++);
 
   auto functor = makeFunctor();
   functor.initTraversal();
@@ -276,12 +281,12 @@ BENCHMARK(BM_SoAFunctorSingle)
  * Benchmark of the SoAFunctorPair (unsorted path) with Cells in a Face Layout, via CellFunctor.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
- * - state.range(1): Wether to use newton3 optimization or not.
+ * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
  * - state.range(3): The hitrate to use.
  *
  * The Benchmark uses the TwoCellsInteractionHitrateGenerator to generate the cells in a Face Layout with the specified
- * n and hitrate using the seed 42. It measures total time of the SoALoader + SoAFunctorPair + SoAExtractor (Loader
+ * n and hitrate. It measures total time of the SoALoader + SoAFunctorPair + SoAExtractor (Loader
  * and Extractor for both SoAs) to get a full picture and capture memory performance.
  * Sorting is disabled by passing a zero sortingDirection to the CellFunctor.
  */
@@ -291,11 +296,12 @@ static void BM_SoAFunctorPairHitrate(benchmark::State &state) {
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
   const double hitrate = state.range(3) / 100.0;
 
+  static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
       cell1, cell2, kLow, kHigh, {kHigh[0], kLow[1], kLow[2]}, {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, hitrate,
-      kCutoff, defaultParticle, /*seed=*/42);
+      kCutoff, defaultParticle, seed++);
 
   auto functor = makeFunctor();
   functor.setVecPattern(pattern);
@@ -348,12 +354,12 @@ BENCHMARK(BM_SoAFunctorPairHitrate)
  * Benchmark of the SoAFunctorPairSorted (sorted path) with Cells in a Face Layout, via CellFunctor.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
- * - state.range(1): Wether to use newton3 optimization or not.
+ * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
  * - state.range(3): The hitrate to use.
  *
  * The Benchmark uses the TwoCellsInteractionHitrateGenerator to generate the cells in a Face Layout with the specified
- * n and hitrate using the seed 42. It measures total time of the SoALoader + SoAFunctorPairSorted + SoAExtractor
+ * n and hitrate. It measures total time of the SoALoader + SoAFunctorPairSorted + SoAExtractor
  * (Loader and Extractor for both SoAs) to get a full picture and capture memory performance.
  * Sorting is forced by setting soaSortingThreshold=0 and passing the face-normal direction (x-axis).
  */
@@ -363,11 +369,12 @@ static void BM_SoAFunctorPairSortedHitrate(benchmark::State &state) {
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
   const double hitrate = state.range(3) / 100.0;
 
+  static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
       cell1, cell2, kLow, kHigh, {kHigh[0], kLow[1], kLow[2]}, {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, hitrate,
-      kCutoff, defaultParticle, /*seed=*/42);
+      kCutoff, defaultParticle, seed++);
 
   auto functor = makeFunctor();
   functor.setVecPattern(pattern);
@@ -423,7 +430,7 @@ BENCHMARK(BM_SoAFunctorPairSortedHitrate)
  * Benchmark of the SoAFunctorPair (unsorted path) with Cells in a Face Layout, via CellFunctor.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
- * - state.range(1): Wether to use newton3 optimization or not.
+ * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
  *
  * The Benchmark uses the UniformGenerator to generate the cells in a Face Layout, without a specified hitrate.
@@ -436,11 +443,13 @@ static void BM_SoAFunctorPairFace(benchmark::State &state) {
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
 
+  static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, 42);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]},
-                                                                {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, 43);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopasTools::generators::UniformGenerator::fillWithParticles(
+      cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]}, {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, seed + 1);
+  seed += 2;
 
   auto functor = makeFunctor();
   functor.setVecPattern(pattern);
@@ -481,7 +490,7 @@ BENCHMARK(BM_SoAFunctorPairFace)
  * Benchmark of the SoAFunctorPairSorted (sorted path) with Cells in a Face Layout, via CellFunctor.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
- * - state.range(1): Wether to use newton3 optimization or not.
+ * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
  *
  * The Benchmark uses the UniformGenerator to generate the cells in a Face Layout, without a specified hitrate.
@@ -494,11 +503,13 @@ static void BM_SoAFunctorSortedPairFace(benchmark::State &state) {
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
 
+  static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, 42);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]},
-                                                                {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, 43);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopasTools::generators::UniformGenerator::fillWithParticles(
+      cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]}, {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, seed + 1);
+  seed += 2;
 
   auto functor = makeFunctor();
   functor.setVecPattern(pattern);
@@ -542,7 +553,7 @@ BENCHMARK(BM_SoAFunctorSortedPairFace)
  * Benchmark of the SoAFunctorPair (unsorted path) with Cells in an Edge Layout, via CellFunctor.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
- * - state.range(1): Wether to use newton3 optimization or not.
+ * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
  *
  * The Benchmark uses the UniformGenerator to generate the cells in an Edge Layout, without a specified hitrate.
@@ -555,12 +566,14 @@ static void BM_SoAFunctorPairEdge(benchmark::State &state) {
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
 
+  static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, 42);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
   autopasTools::generators::UniformGenerator::fillWithParticles(
       cell2, defaultParticle, {kLow[0] + kCellSize, kLow[1] + kCellSize, kLow[2]},
-      {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2]}, n, 43);
+      {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2]}, n, seed + 1);
+  seed += 2;
 
   auto functor = makeFunctor();
   functor.setVecPattern(pattern);
@@ -602,7 +615,7 @@ BENCHMARK(BM_SoAFunctorPairEdge)
  * Benchmark of the SoAFunctorPair (unsorted path) with Cells in a Corner Layout, via CellFunctor.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
- * - state.range(1): Wether to use newton3 optimization or not.
+ * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
  *
  * The Benchmark uses the UniformGenerator to generate the cells in a Corner Layout, without a specified hitrate.
@@ -615,12 +628,14 @@ static void BM_SoAFunctorPairCorner(benchmark::State &state) {
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
 
+  static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, 42);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
   autopasTools::generators::UniformGenerator::fillWithParticles(
       cell2, defaultParticle, {kLow[0] + kCellSize, kLow[1] + kCellSize, kLow[2] + kCellSize},
-      {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2] + kCellSize}, n, 43);
+      {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2] + kCellSize}, n, seed + 1);
+  seed += 2;
 
   auto functor = makeFunctor();
   functor.setVecPattern(pattern);
@@ -662,7 +677,7 @@ BENCHMARK(BM_SoAFunctorPairCorner)
  * Benchmark of the SoAFunctorPairSorted (sorted path) with Cells in an Edge Layout, via CellFunctor.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
- * - state.range(1): Wether to use newton3 optimization or not.
+ * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
  *
  * The Benchmark uses the UniformGenerator to generate the cells in an Edge Layout, without a specified hitrate.
@@ -675,12 +690,14 @@ static void BM_SoAFunctorSortedPairEdge(benchmark::State &state) {
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
 
+  static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, 42);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
   autopasTools::generators::UniformGenerator::fillWithParticles(
       cell2, defaultParticle, {kLow[0] + kCellSize, kLow[1] + kCellSize, kLow[2]},
-      {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2]}, n, 43);
+      {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2]}, n, seed + 1);
+  seed += 2;
 
   auto functor = makeFunctor();
   functor.setVecPattern(pattern);
@@ -726,7 +743,7 @@ BENCHMARK(BM_SoAFunctorSortedPairEdge)
  * Benchmark of the SoAFunctorPairSorted (sorted path) with Cells in a Corner Layout, via CellFunctor.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
- * - state.range(1): Wether to use newton3 optimization or not.
+ * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
  *
  * The Benchmark uses the UniformGenerator to generate the cells in a Corner Layout, without a specified hitrate.
@@ -739,12 +756,14 @@ static void BM_SoAFunctorSortedPairCorner(benchmark::State &state) {
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
 
+  static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, 42);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
   autopasTools::generators::UniformGenerator::fillWithParticles(
       cell2, defaultParticle, {kLow[0] + kCellSize, kLow[1] + kCellSize, kLow[2] + kCellSize},
-      {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2] + kCellSize}, n, 43);
+      {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2] + kCellSize}, n, seed + 1);
+  seed += 2;
 
   auto functor = makeFunctor();
   functor.setVecPattern(pattern);
@@ -790,9 +809,9 @@ BENCHMARK(BM_SoAFunctorSortedPairCorner)
  * Benchmark of the SoAFunctorVerlet
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell
- * - state.range(1): Wether to use newton3 optimization or not.
+ * - state.range(1): Whether to use newton3 optimization or not.
  *
- * The Benchmark uses fillCell() with kLow, kHigh and the seed 42.
+ * The Benchmark uses fillCell() with kLow and kHigh.
  * It measures total time of the SoALoader + SoAFunctorVerlet + SoAExtractor to get a full picture and capture memory
  * performance. The NeighborList generation is NOT timed.
  */
@@ -800,8 +819,9 @@ static void BM_SoAFunctorVerlet(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
 
+  static unsigned seed = 42;
   FMCell cell;
-  fillCell(cell, kLow, kHigh, n, 42);
+  fillCell(cell, kLow, kHigh, n, seed++);
 
   const double skin = 0.5;
   const auto lists = buildNeighborLists(cell, kCutoff + skin, newton3);
