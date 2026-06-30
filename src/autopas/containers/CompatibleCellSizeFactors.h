@@ -12,14 +12,13 @@
 
 namespace autopas::compatibleCSFs {
 /**
- * Lists all containers that support CSF > 1.0. Note, it is possible that a container supports this but one or more traversals of that container
- * do not. These should be filtered out in TraversalInterface::isApplicableToDomain().
+ * Lists all containers that support CSF > 1.0. Note, it is possible that a container supports this but one or more
+ * traversals of that container do not. These should be filtered out in TraversalInterface::isApplicableToDomain().
  * @return set of all containers that support CSF > 1.0.
  */
-[[maybe_unused]] static const std::set<ContainerOption>& allContainersSupportingSuper1CSF() {
-  static const std::set<ContainerOption> s{ContainerOption::linkedCells, ContainerOption::linkedCellsReferences,
-          ContainerOption::varVerletListsAsBuild, ContainerOption::verletLists,
-          ContainerOption::verletListsCells,   ContainerOption::pairwiseVerletLists};
+[[maybe_unused]] static const std::set<ContainerOption> &allContainersSupportingSuper1CSF() {
+  static const std::set<ContainerOption> s{ContainerOption::linkedCells, ContainerOption::linkedCellsReferences, ContainerOption::varVerletListsAsBuild,
+          ContainerOption::verletLists, ContainerOption::verletListsCells,      ContainerOption::pairwiseVerletLists};
   return s;
 }
 
@@ -28,7 +27,7 @@ namespace autopas::compatibleCSFs {
  * traversals of that container do not. These should be filtered out in TraversalInterface::isApplicableToDomain().
  * @return A list of all containers that support CSF < 1.0.
  */
-[[maybe_unused]] static const std::set<ContainerOption>& allContainersSupportingSub1CSF() {
+[[maybe_unused]] static const std::set<ContainerOption> &allContainersSupportingSub1CSF() {
   static const std::set<ContainerOption> s{ContainerOption::linkedCells, ContainerOption::linkedCellsReferences};
   return s;
 }
