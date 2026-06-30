@@ -15,6 +15,41 @@ from sklearn.multioutput import MultiOutputClassifier
 import pickle
 import numpy as np
 
+# Ordered list of the tuning-result CSV columns that, joined together, make up a single algorithmic configuration.
+# This is the single source of truth for the configuration components: it defines the order in which they are
+# concatenated into the 'alg_config' target label here, and it is stored in the model file so that predict.py can
+# split a prediction back into the same components (and the C++ side reads these exact names as JSON keys). To add a
+# new tunable component in the future, add its CSV column name here (and to the C++ DecisionTreeTuning::updateConfigQueue).
+CONFIG_COLUMNS = ['Container', 'Traversal', 'Load Estimator', 'Data Layout', 'Newton 3', 'CellSizeFactor',
+                  'VectorizationPattern']
+
+
+def build_alg_config(tuning_results_df: pd.DataFrame) -> pd.Series:
+    """
+    Build the combined 'alg_config' target label by joining the configuration component columns of a tuning results
+    DataFrame, in the order given by CONFIG_COLUMNS.
+
+    Column names are stripped before lookup so the join is robust to header spacing in the CSV.
+
+    Args:
+        tuning_results_df (pd.DataFrame): A DataFrame loaded from a tuning results CSV.
+
+    Returns:
+        pd.Series: A Series with the components joined by ';' for each row.
+
+    Raises:
+        KeyError: If any column in CONFIG_COLUMNS is missing from the DataFrame. This typically means a new
+            configuration component was added to AutoPas but not to CONFIG_COLUMNS (or vice versa).
+    """
+    tuning_results_df.columns = tuning_results_df.columns.str.strip()
+    missing_columns = [column for column in CONFIG_COLUMNS if column not in tuning_results_df.columns]
+    if missing_columns:
+        raise KeyError(f"The following configuration component columns are missing from the tuning results CSV: "
+                       f"{missing_columns}. Available columns: {list(tuning_results_df.columns)}. Make sure "
+                       f"CONFIG_COLUMNS in train.py matches the columns written by AutoPas.")
+    return tuning_results_df[CONFIG_COLUMNS].astype(str).agg(';'.join, axis=1)
+
+
 def extract_filename(path_to_file: str) -> str:
     """
     Extract the filename from a path.
@@ -113,12 +148,7 @@ def load_data_from_directory(results_dir: str) -> tuple:
                 tuning_results_df = pd.read_csv(tuning_results_file)
 
                 # Combine the algorithmic configuration into one column
-                tuning_results_df['alg_config'] = (tuning_results_df['Container'] + ';'
-                                                   + tuning_results_df['Traversal']
-                                                   + ';' + tuning_results_df['Load Estimator'] + ';'
-                                                   + tuning_results_df['Data Layout'] + ';'
-                                                   + tuning_results_df['Newton 3'] + ';'
-                                                   + tuning_results_df['CellSizeFactor'].map(str))
+                tuning_results_df['alg_config'] = build_alg_config(tuning_results_df)
 
                 # Merge them on 'Iteration' column
                 merged_df = pd.merge(live_info_df, tuning_results_df, on='Iteration', how='right')
@@ -136,12 +166,7 @@ def load_data_from_directory(results_dir: str) -> tuple:
                 tuning_results_df = pd.read_csv(tuning_results_file)
 
                 # Combine the algorithmic configuration into one column
-                tuning_results_df['alg_config'] = (tuning_results_df['Container'] + ';'
-                                                   + tuning_results_df['Traversal']
-                                                   + ';' + tuning_results_df['Load Estimator'] + ';'
-                                                   + tuning_results_df['Data Layout'] + ';'
-                                                   + tuning_results_df['Newton 3'] + ';'
-                                                   + tuning_results_df['CellSizeFactor'].map(str))
+                tuning_results_df['alg_config'] = build_alg_config(tuning_results_df)
 
                 # Merge them on 'Iteration' column
                 merged_df = pd.merge(live_info_df, tuning_results_df, on='Iteration', how='right')
@@ -227,8 +252,9 @@ def save_models_and_encoders(pairwise_model: RandomForestClassifier, triwise_mod
     Save the trained models, LabelEncoder, and feature list to a file.
 
     This function saves the trained RandomForestClassifier models and LabelEncoders for both pairwise and triwise
-    interactions, as well as the list of features used, as a dictionary in a pickle file so they can be loaded together
-    later for making predictions.
+    interactions, the list of features used, and the ordered configuration component names (CONFIG_COLUMNS) used to
+    build the prediction labels, as a dictionary in a pickle file so they can be loaded together later for making
+    predictions.
 
     Args:
         pairwise_model (RandomForestClassifier): The trained RandomForestClassifier model for pairwise interactions.
@@ -245,7 +271,8 @@ def save_models_and_encoders(pairwise_model: RandomForestClassifier, triwise_mod
         'triwise_model': triwise_model,
         'pairwise_label_encoder': pairwise_label_encoder,
         'triwise_label_encoder': triwise_label_encoder,
-        'features': features
+        'features': features,
+        'config_columns': CONFIG_COLUMNS
     }
     print(combined_data)
     with open(output_file, 'wb') as f:

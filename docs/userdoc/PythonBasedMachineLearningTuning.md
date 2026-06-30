@@ -23,7 +23,7 @@ To create the enviroment:
 python -m venv </path/to/new/virtual/environment>
 ```
 
-To activate the enviroment:
+To activate the environment:
 ```bash
 source </path/to/new/virtual/environment>/bin/activate
 ```
@@ -33,6 +33,17 @@ Install dependencies using pip. For tested dependencies required by the decision
 ```bash
 pip install -r <autopas_src_dir>/src/autopas/tuning/tuningStrategy/decisionTreeTuning/requirements.txt
 ```
+
+### Building AutoPas with the Python venv
+
+**After** activating the environment on the CLI, you can enable python-based tuning with
+
+```bash
+cmake .. -DAUTOPAS_ENABLE_PYTHON_BASED_TUNING=ON
+```
+
+If you do this before activating the environment, AutoPas may find the system Python instead, potentially without the necessary dependencies.
+
 
 ## Generate the data
 

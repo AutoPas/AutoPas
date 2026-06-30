@@ -11,13 +11,18 @@
 #include <gtest/gtest.h>
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
 #include <pybind11/embed.h>
+#include <pybind11/stl.h>
 #endif
 
 #include <filesystem>  // For checking the existence of test files
+#include <set>
+#include <string>
 
 #include "autopas/options/InteractionTypeOption.h"
+#include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/StringUtils.h"
 
 namespace autopas {
 
@@ -142,6 +147,54 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
       utils::ExceptionHandler::AutoPasException);
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF";
+#endif
+}
+
+/**
+ * @test TestConfigColumnsMatchCSVHeader
+ *
+ * Guards against a configuration component being added to (or removed from) the C++ `Configuration` class without
+ * `CONFIG_COLUMNS` in train.py being updated to match. The training/prediction scripts rely on `CONFIG_COLUMNS` being
+ * exactly the set of configuration components written to the tuning results CSV. That CSV header is produced by
+ * `Configuration::getCSVHeader()`, so this test asserts that the names in the header (minus `Interaction Type`, which
+ * is deliberately handled separately) equal `CONFIG_COLUMNS`.
+ */
+TEST(DecisionTreeTuningTest, TestConfigColumnsMatchCSVHeader) {
+#ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
+  // Constructing a DecisionTreeTuning initializes the shared static Python interpreter and appends the script
+  // directory (containing train.py) to sys.path. We reuse it here rather than creating our own scoped_interpreter,
+  // which pybind would reject if one already exists (avoiding any test-ordering hazard).
+  std::set<autopas::Configuration> searchSpace;
+  const std::string modelPath = std::string(AUTOPAS_DT_TEST_MODEL_DIR) + "/test_model.pkl";
+  ASSERT_TRUE(std::filesystem::exists(modelPath))
+      << "Test model file does not exist. Did the generate_dt_test_models target run?";
+  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise);
+
+  // Read CONFIG_COLUMNS from train.py
+  std::set<std::string> configColumns;
+  try {
+    const auto configColumnsList =
+        py::module::import("train").attr("CONFIG_COLUMNS").cast<std::vector<std::string>>();
+    configColumns.insert(configColumnsList.begin(), configColumnsList.end());
+  } catch (const py::error_already_set &e) {
+    FAIL() << "Failed to read CONFIG_COLUMNS from train.py: " << e.what();
+  }
+
+  // Build the expected set from the CSV header
+  std::set<std::string> expectedColumns;
+  for (const auto &column : autopas::utils::StringUtils::tokenize(autopas::Configuration().getCSVHeader(), ",")) {
+    if (column != "Interaction Type") {
+      expectedColumns.insert(column);
+    }
+  }
+
+  EXPECT_EQ(expectedColumns, configColumns)
+      << "CONFIG_COLUMNS in train.py does not match the configuration components written by "
+         "Configuration::getCSVHeader(). A configuration component was likely added to or removed from the "
+         "Configuration class without updating CONFIG_COLUMNS (and the C++ DecisionTreeTuning::updateConfigQueue) "
+         "accordingly.";
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF";
 #endif

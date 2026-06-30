@@ -58,6 +58,16 @@ class DecisionTreeTuning:
         except KeyError:
             raise Exception("The Features were not found.")
 
+        # The ordered list of configuration component names that make up a prediction label. This is stored by train.py
+        # so that the components (and their order) stay in sync between training and prediction. See CONFIG_COLUMNS in
+        # train.py.
+        try:
+            self.config_columns = combined_data['config_columns']
+        except KeyError:
+            raise Exception("The configuration component names ('config_columns') were not found in the model file. "
+                            "This model was likely trained with an older version of train.py; please retrain it with "
+                            "the current train.py.")
+
         # Check that the model exists (e.g. that a triwise model was actually trained)
         if self.model is None:
             raise Exception(f"There is no model for {interaction_type} interactions. This could be because no Tuning Results"
@@ -117,15 +127,15 @@ class DecisionTreeTuning:
         prediction = self.label_encoder.inverse_transform([predicted_class_id])[0]
         prediction_split = prediction.split(";")
 
-        prediction = {
-            "Container": prediction_split[0],
-            "Traversal": prediction_split[1],
-            "Load Estimator": prediction_split[2],
-            "Data Layout": prediction_split[3],
-            "Newton 3": prediction_split[4],
-            "CellSizeFactor": prediction_split[5],
-            "confidence": probabilities[predicted_class_id]
-        }
+        # The predicted label is the configuration components joined by ';' (see build_alg_config in train.py), so the
+        # number of parts must match the number of component names stored with the model.
+        if len(prediction_split) != len(self.config_columns):
+            raise ValueError(f"The predicted configuration has {len(prediction_split)} components "
+                             f"({prediction_split}), but the model expects {len(self.config_columns)} "
+                             f"({self.config_columns}). The model file may be inconsistent with predict.py.")
+
+        prediction = dict(zip(self.config_columns, prediction_split))
+        prediction["confidence"] = probabilities[predicted_class_id]
 
         return json.dumps(prediction)
 
