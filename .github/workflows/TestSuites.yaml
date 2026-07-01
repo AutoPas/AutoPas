@@ -299,15 +299,15 @@ jobs:
       matrix:
         # On macOS the aliases clang and gcc both point by default to Apple Clang
         # To use GNU gcc, we need to explicitly point to the installation directory or use the versioned
-        # executable as installed by brew (in this workflow gcc@14)
-        compiler: [ [ clang, clang++ ], [ gcc-14, g++-14 ] ]
+        # executable as installed by brew (in this workflow gcc@16)
+        compiler: [ [ clang, clang++ ], [ gcc-16, g++-16 ] ]
     name: macOS Build, Compile, and Run using ${{matrix.compiler[0]}}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Install requirements
         run: |
-          brew install libomp gcc@14 ninja
+          brew install libomp gcc@16 ninja
       - name: Configure and Build md-flexible
         # Only compile HWY functor.
         run: |
