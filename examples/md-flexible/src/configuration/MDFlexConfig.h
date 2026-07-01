@@ -33,6 +33,7 @@
 #include "src/configuration/objects/Sphere.h"
 #include "src/domainDecomposition/LoadBalancerOption.h"
 #include "src/options/BoundaryTypeOption.h"
+#include "/Users/melisaaslan/IDP/AutoPas/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/SimulationParticleTypes.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
@@ -617,6 +618,16 @@ class MDFlexConfig {
   MDFlexOption<GeneratorOption, __LINE__> generatorOption{
       GeneratorOption::grid, "particle-generator", true,
       "Scenario generator. Possible Values: (grid uniform gaussian sphere closestPacking) Default: grid"};
+
+  // Wettability
+  /**
+   * zeta: reduced solid-fluid interaction energy (Becker et al. 2014, eq. 2).
+   * effective_epsilon_fw = zeta * epsilon_ff
+   */
+  MDFlexOption<double, __LINE__> zeta{
+      ParticleTypes::ZETA, "zeta", true,
+      "Reduced solid-fluid interaction energy (Becker et al. 2014). Controls wettability: "
+      "low zeta = hydrophobic, high zeta = hydrophilic."};
 
   // Site Type Generation
   /**

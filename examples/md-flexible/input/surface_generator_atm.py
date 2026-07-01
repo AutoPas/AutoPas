@@ -1,4 +1,7 @@
-# AutoPas/examples/md-flexible/input/surface_generator.py
+# AutoPas/examples/md-flexible/input/surface_generator_atm.py
+# Generates sessile drop YAML configs using the Axilrod-Teller-Muto (ATM) 3-body potential.
+# Wall particles (type 1-5) are frozen by TimeDiscretization.cpp — no forces, no movement.
+# ATM computes fluid-fluid-fluid and fluid-fluid-wall triplets only (wall-wall skipped by functor).
 import sys
 
 VALID_SURFACES = ["smooth", "boss", "pit", "grid", "dual_boss"]
@@ -13,18 +16,26 @@ WALL_CENTER_Y = WALL_Y0 + WALL_SIZE // 2
 ITERATIONS = 1000000
 DELTA_T = 0.0005
 GRAVITY_Z = -0.0001
-TEMPERATURE = 0.3
+TEMPERATURE = 0.6
 VTK_WRITE_FREQUENCY = 1000
-# Fluid-fluid LJ epsilon. Also enters fluid-wall via: effective_epsilon_fw = ZETA * EPSILON_FF
-EPSILON_FF = 1.0
-# Wall-wall self-interaction epsilon. Wall particles are frozen, so this does NOT
-# affect fluid-wall attraction or wetting. Only used for wall-wall LJ (irrelevant).
-EPSILON_WW = 1.0
-# Fluid-wall wettability: effective_epsilon_fw = ZETA * EPSILON_FF  (paper model).
-# Must match FLUID_WALL_EPSILON_SCALE in SimulationParticleTypes.h.
-# To change wetting, edit both this constant and FLUID_WALL_EPSILON_SCALE, then recompile.
-ZETA = 0.6
 RADIUS = 17
+
+# LJ epsilon values — registered in ParticlePropertiesLibrary but NOT used by the ATM functor.
+# The ATM functor only reads nu. These are here so the YAML parser does not complain.
+EPSILON_FF = 1.0  # fluid-fluid (type 0)
+EPSILON_WW = 1.0  # wall types (1-5), frozen — irrelevant for dynamics
+
+# ATM parameter nu: dimensionless in reduced LJ units.
+# 0.073 is the standard value for Argon-like fluids.
+# Fluid-wall wetting in ATM is controlled by NU_WALL via geometric mixing:
+#   nu_mixed(fluid-fluid-wall) = cbrt(NU_FLUID^2 * NU_WALL)
+# There is no ZETA-style direct override for ATM (unlike LJ).
+NU_FLUID = 0.073
+NU_WALL = 0.04
+
+# ATM cutoff: all three pairwise distances in a triplet must be within this value.
+# Shorter than typical LJ cutoff because of the AND condition in the functor.
+CUTOFF = 2.5
 
 DROPLET_CENTER_Z = {
     "smooth": 24,
@@ -36,21 +47,20 @@ DROPLET_CENTER_Z = {
 
 if len(sys.argv) != 2:
     print("Usage:")
-    print("  python3 surface_generator.py smooth")
-    print("  python3 surface_generator.py boss")
-    print("  python3 surface_generator.py pit")
-    print("  python3 surface_generator.py grid")
-    print("  python3 surface_generator.py dual_boss")
+    print("  python3 surface_generator_atm.py smooth")
+    print("  python3 surface_generator_atm.py boss")
+    print("  python3 surface_generator_atm.py pit")
+    print("  python3 surface_generator_atm.py grid")
+    print("  python3 surface_generator_atm.py dual_boss")
     sys.exit(1)
 
 surface = sys.argv[1]
 RUN_NAME = (
-    f"{surface}"
+    f"atm_{surface}"
     f"_r{RADIUS}"
-    f"_zeta{ZETA}"
-    f"_eps{EPSILON_FF}"
+    f"_nu{NU_FLUID}"
     f"_temp{int(TEMPERATURE*10):02d}"
-    f"_g1e4{GRAVITY_Z}"
+    f"_g{GRAVITY_Z}"
 )
 
 if surface not in VALID_SURFACES:
@@ -58,7 +68,7 @@ if surface not in VALID_SURFACES:
     print(f"Valid options: {VALID_SURFACES}")
     sys.exit(1)
 
-output_filename = f"sessileDrop_{surface}_zeta{ZETA}_eps{EPSILON_FF}_temp{int(TEMPERATURE*10):02d}_g{GRAVITY_Z}.yaml"
+output_filename = f"sessileDrop_atm_{surface}_nuF{NU_FLUID}_nuW{NU_WALL}_temp{int(TEMPERATURE*10):02d}_g{GRAVITY_Z}.yaml"
 
 
 def block(block_id, x, y, z, sx, sy, sz, type_id):
@@ -83,7 +93,7 @@ def generate_surface_blocks(surface_type):
 
     period = 6
     feature_size = 3
-    feature_height = 8 
+    feature_height = 8
 
     base_z = 1
     base_height = 4
@@ -166,22 +176,24 @@ surface_blocks = generate_surface_blocks(surface)
 
 yaml_content = f"""# This yaml file is generated automatically.
 # Surface type: {surface}
+# Potential: Axilrod-Teller-Muto (3-body only, no pairwise LJ)
+# Wall particles (type 1-5) are frozen by the integrator — no forces applied.
 
-container                        :  [LinkedCells, VerletLists, VerletListsCells, VerletClusterLists]
+container                        :  [LinkedCells]
 verlet-rebuild-frequency         :  10
-verlet-skin-radius               :  1.0
+verlet-skin-radius               :  0.5
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
-data-layout                      :  [AoS]
-traversal                        :  [lc_c01]
 tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
 
-functor                          :  Lennard-Jones
-newton3                          :  [disabled]
-cutoff                           :  3
+functor-3b                       :  axilrod-teller-muto
+traversal-3b                     :  [lc_c01]
+newton3-3b                       :  [disabled]
+data-layout-3b                   :  [AoS]
+cutoff                           :  {CUTOFF}
 
 box-min                          :  [0, 0, 0]
 box-max                          :  [{BOX_SIZE_X}, {BOX_SIZE_Y}, 70]
@@ -194,43 +206,46 @@ energy-sensor                    :  rapl
 boundary-type                    :  [reflective, reflective, reflective]
 globalForce                      :  [0, 0, {GRAVITY_Z}]
 
-zeta                             :  {ZETA}
-
 Sites:
   # Type 0: fluid particles.
+  # epsilon is unused by ATM functor; wetting controlled by NU_FLUID / NU_WALL.
   0:
     epsilon                      :  {EPSILON_FF}
     sigma                        :  1.
     mass                         :  1.
+    nu                           :  {NU_FLUID}
 
-  # Types 1-5: wall particles.  Their epsilon (EPSILON_WW) does NOT control
-  # fluid-wall attraction.  Fluid-wall epsilon is overridden in C++ as:
-  #   effective_epsilon_fw = ZETA * EPSILON_FF = {ZETA} * {EPSILON_FF} = {ZETA * EPSILON_FF}
-  # (via FLUID_WALL_EPSILON_SCALE in SimulationParticleTypes.h)
+  # Types 1-5: wall particles (frozen by integrator).
+  # epsilon unused by ATM. nu_mixed for fluid-fluid-wall = cbrt(NU_FLUID^2 * NU_WALL).
   1:
     epsilon                      :  {EPSILON_WW}
     sigma                        :  1.
     mass                         :  1.
+    nu                           :  {NU_WALL}
 
   2:
     epsilon                      :  {EPSILON_WW}
     sigma                        :  1.
     mass                         :  1.
+    nu                           :  {NU_WALL}
 
   3:
     epsilon                      :  {EPSILON_WW}
     sigma                        :  1.
     mass                         :  1.
+    nu                           :  {NU_WALL}
 
   4:
     epsilon                      :  {EPSILON_WW}
     sigma                        :  1.
     mass                         :  1.
+    nu                           :  {NU_WALL}
 
   5:
     epsilon                      :  {EPSILON_WW}
     sigma                        :  1.
     mass                         :  1.
+    nu                           :  {NU_WALL}
 
 Objects:
   CubeClosestPacked:

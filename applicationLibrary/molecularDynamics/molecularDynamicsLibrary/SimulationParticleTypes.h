@@ -10,7 +10,9 @@ constexpr unsigned long WALL_PIT = 3;
 constexpr unsigned long WALL_GRID = 4;
 constexpr unsigned long WALL_DUAL_BOSS = 5;
 
-constexpr double FLUID_WALL_EPSILON_SCALE = 0.6;
+// Wettability parameter zeta (paper model: effective_epsilon_fw = zeta * epsilon_ff).
+// Also set ZETA in surface_generator.py to the same value for consistent documentation.
+constexpr double ZETA = 0.6;
 
 template <class TypeId>
 constexpr bool isWall(TypeId typeId) {

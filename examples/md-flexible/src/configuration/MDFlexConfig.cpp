@@ -612,7 +612,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   }
 #endif
 
-  _particlePropertiesLibrary->calculateMixingCoefficients();
+  _particlePropertiesLibrary->calculateMixingCoefficients(zeta.value);
 }
 
 void MDFlexConfig::initializeObjects() {
