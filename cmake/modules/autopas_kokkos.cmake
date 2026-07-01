@@ -1,6 +1,6 @@
 option(AUTOPAS_ENABLE_KOKKOS "Enables the Kokkos containers and traversals" OFF)
 
-if (NOT ${AUTOPAS_ENABLE_KOKKOS})
+if (NOT AUTOPAS_ENABLE_KOKKOS)
     return()
 endif ()
 

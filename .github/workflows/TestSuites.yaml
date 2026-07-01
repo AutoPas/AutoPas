@@ -68,15 +68,17 @@ jobs:
           # Define the FULL Matrix, which includes configurations for:
           # 1:   Debug Mode  => Test for subtleties between Debug and Release
           # 2/3: Clang with Address/Thread sanitizer. 
-          # 4:   GCC
-          # 5:   MPI
-          # 6:   Multisite (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
-          # 7:   Multisite + MPI (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
+          # 4:   Clang with Kokkos enabled
+          # 5:   GCC
+          # 6:   MPI
+          # 7:   Multisite (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
+          # 8:   Multisite + MPI (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
           read -r -d '' full_matrix << EOM || true
           [
             { "name": "Clang-Debug-CompileOnly", "container": "autopas-build-clang", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Debug", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite" },
             { "name": "Clang-Release-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "OFF", "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite" },
             { "name": "Clang-Release-OMP-TSan", "container": "autopas-build-archer", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "OFF",  "avx": "ON", "hwy": "ON",  "site": "singlesite" },
+            { "name": "Clang-Release-OMP-KOKKOS", "container": "autopas-build-clang", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite" },
             { "name": "GCC-Release-OMP", "container": "autopas-build-gcc",    "cc": "gcc",   "cxx": "g++",     "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite" },
             { "name": "MPI-Release-OMP-ASan", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite" },
             { "name": "Clang-OMP-TSan-MultiSite", "container": "autopas-build-archer", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "ON",  "avx": "OFF", "hwy": "OFF", "site": "multisite" },
@@ -85,10 +87,11 @@ jobs:
           EOM
 
           # Define the LIGHT Matrix
-          # Basic configuration without sanitizers or AVX
+          # Basic configuration without sanitizers or AVX but with Kokkos
           read -r -d '' light_matrix << EOM || true
           [
-            { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite" }
+            { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite" },
+            { "name": "Clang-Release-OMP-KOKKOS", "container": "autopas-build-clang", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite" },
           ]
           EOM
           
@@ -170,6 +173,7 @@ jobs:
             -DAUTOPAS_LOG_ALL=ON \
             -DAUTOPAS_MIN_LOG_LVL:STRING=TRACE \
             -DAUTOPAS_OPENMP=${{ matrix.config.omp }} \
+            -DAUTOPAS_ENABLE_KOKOS={{ matrix.config.kokkos }} \
             -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config.asan }} \
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config.tsan }} \
             -DAUTOPAS_INTERNODE_TUNING=${UseMPI} \
