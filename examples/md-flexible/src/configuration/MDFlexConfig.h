@@ -839,9 +839,9 @@ class MDFlexConfig {
    * computationalLoadMeasurementPeriod
    */
   MDFlexOption<size_t, __LINE__> computationalLoadMeasurementPeriod{
-      100, "computational-load-measurement-period", true, "Defines "
+      100, "computational-load-measurement-period", true,
+      "Defines "
       "from how many iterations before load balancing is applied is the computation load metric measured."};
-
 
   /**
    * Whether to use the tuning logger or not.

@@ -5,8 +5,8 @@
  */
 #pragma once
 
-#include <vector>
 #include <optional>
+#include <vector>
 
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
@@ -16,10 +16,10 @@
  */
 class ParticleCommunicator {
  public:
- /**
-  * Enum for left/right send/recv direction.
-  */
- enum Direction { left, right };
+  /**
+   * Enum for left/right send/recv direction.
+   */
+  enum Direction { left, right };
 
   /**
    * Constructor
@@ -39,7 +39,8 @@ class ParticleCommunicator {
    * @param direction The direction which the particles are sent to. If provided, a reusable buffer for that direction
    * will be used to avoid memory reallocations. If not, a non-reusable buffer will be used.
    */
-  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver, std::optional<Direction> direction = std::nullopt);
+  void sendParticles(const std::vector<ParticleType> &particles, const int &receiver,
+                     std::optional<Direction> direction = std::nullopt);
 
   /**
    * Receives particles sent by a sender.
@@ -48,7 +49,8 @@ class ParticleCommunicator {
    * @param direction The direction from which the particles are sent. If provided, a reusable buffer for that direction
    * will be used to avoid memory reallocations. If not, a non-reusable buffer will be used.
    */
-  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source, std::optional<Direction> direction = std::nullopt);
+  void receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source,
+                        std::optional<Direction> direction = std::nullopt);
 
   /**
    * Waits for all send requests to be finished.

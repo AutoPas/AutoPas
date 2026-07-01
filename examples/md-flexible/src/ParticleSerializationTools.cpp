@@ -58,7 +58,6 @@ constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
     mdLib::MoleculeLJ::AttributeNames::ownershipState};
 #endif
 
-
 /**
  * Serializes the attribute of a molecule defined by I.
  * @param particle: The particle who's attribute needs to be serialized.
@@ -66,7 +65,9 @@ constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
  * @param startIndex: The startindex in the container where to store the serialized attribute.
  */
 template <size_t I>
-void serializeAttribute(const ParticleType &particle, std::array<char, ParticleSerializationTools::AttributesSize> &attributeVector, size_t &startIndex) {
+void serializeAttribute(const ParticleType &particle,
+                        std::array<char, ParticleSerializationTools::AttributesSize> &attributeVector,
+                        size_t &startIndex) {
   const auto attribute = particle.get<Attributes[I]>();
   const auto sizeOfValue = sizeof(attribute);
   std::memcpy(&attributeVector[startIndex], &attribute, sizeOfValue);
