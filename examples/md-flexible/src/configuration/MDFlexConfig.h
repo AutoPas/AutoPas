@@ -831,7 +831,7 @@ class MDFlexConfig {
    * computationalLoadMetric
    */
   MDFlexOption<ComputationLoadOption, __LINE__> computationalLoadMetric{
-      ComputationLoadOption::completeCycle, "computational-load-metric", true,
+      ComputationLoadOption::forceUpdate, "computational-load-metric", true,
       "Defines which computational load metric will be tracked during the simulation. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(ComputationLoadOption::getAllOptions(), " ", {"(", ")"})};
 
