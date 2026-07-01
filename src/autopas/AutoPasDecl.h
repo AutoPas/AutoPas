@@ -1017,7 +1017,7 @@ class AutoPas {
    * computing skinPerStep for static container
    * @return Value of the mean rebuild frequency as double
    */
-  double getMeanRebuildFrequency() { return _logicHandler->getMeanRebuildFrequency(); }
+  double getMeanRebuildFrequency(bool considerOnlyLastNonTuningPhase = false) { return _logicHandler->getMeanRebuildFrequency(considerOnlyLastNonTuningPhase); }
 
   /**
    * Set if the tuning information should be logged to a file. It can then be replayed to test other tuning strategies.

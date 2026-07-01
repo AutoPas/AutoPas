@@ -15,18 +15,8 @@
 namespace autopas {
 
 template <class Functor, class Particle_T>
-struct FlatTraversalFunctor {
+struct FlatTraversalReductionFunctor {
   using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
-
-  /*
-  FlatTraversalFunctor(utilsKokkos::KokkosStorage<Particle_T>& storA, utilsKokkos::KokkosStorage<Particle_T>& storB,
-  Functor* f, FloatPrecision cutoffSquared, size_t m) : _storageA(storA), _storageB(storB),
-  _func(f), _cutoffSquared(cutoffSquared), M(m) {
-    Kokkos::printf("Test");
-  }
-
-  FlatTraversalFunctor() {}
-  */
 
   utilsKokkos::KokkosStorage<Particle_T> _storageA;
   utilsKokkos::KokkosStorage<Particle_T> _storageB;
@@ -77,6 +67,17 @@ struct FlatTraversalFunctor {
     localResult.virialSum += virialSum;
     localResult.uPotSum += uPotSum;
   }
+};
+
+template <class Functor, class Particle_T>
+struct FlatTraversalFunctor {
+  using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
+
+  utilsKokkos::KokkosStorage<Particle_T> _storageA;
+  utilsKokkos::KokkosStorage<Particle_T> _storageB;
+  Functor* _func;
+  FloatPrecision _cutoffSquared;
+  size_t M;
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const int i) const {
@@ -151,16 +152,13 @@ protected:
     auto func = _functor;
     typename DSKokkosTraversalInterface<Particle_T>::FloatPrecision cutoffSquared = func->getCutoff() * func->getCutoff();
 
-    FlatTraversalFunctor<Functor, Particle_T> functor {storageA, storageB, func, cutoffSquared, M};
-
     auto rangePolicy = Kokkos::RangePolicy<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space>(0, N);
 
     constexpr bool calculateGlobals = Functor::globalCalculationRequested();
-
     if constexpr (calculateGlobals) {
-      typename FlatTraversalFunctor<Functor, Particle_T>::value_type globalResult {};
-
-      Kokkos::parallel_reduce("autopas::KokkosDsFlatTraversal_Globals", rangePolicy, functor, globalResult);
+      typename FlatTraversalReductionFunctor<Functor, Particle_T>::value_type globalResult {};
+      FlatTraversalReductionFunctor<Functor, Particle_T> reductionFunctor {storageA, storageB, func, cutoffSquared, M};
+      Kokkos::parallel_reduce("autopas::KokkosDsFlatTraversal_Globals", rangePolicy, reductionFunctor, globalResult);
 
       AutoPasLog(INFO, "Final potential energy {}", static_cast<double>(globalResult.uPotSum) / 12.);
       AutoPasLog(INFO, "Final virial           {}", static_cast<double>(globalResult.virialSum) * 0.5);
@@ -171,6 +169,7 @@ protected:
       kokkosFunc->setVirial(static_cast<double>(globalResult.virialSum) * 0.5);
 
     } else {
+      FlatTraversalFunctor<Functor, Particle_T> functor {storageA, storageB, func, cutoffSquared, M};
       Kokkos::parallel_for("autopas::KokkosDsFlatTraversal_NoGlobals", rangePolicy, functor);
     }
   }

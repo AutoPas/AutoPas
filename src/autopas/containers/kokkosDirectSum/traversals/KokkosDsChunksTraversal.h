@@ -17,7 +17,7 @@
 namespace autopas {
 
 template <class Functor, class Particle_T, class DeviceSpace>
-struct ChunksTraversalFunctor {
+struct ChunksTraversalReductionFunctor {
   using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
   using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
 
@@ -83,6 +83,20 @@ struct ChunksTraversalFunctor {
         localResult.uPotSum += uPotSum;
     });
   }
+};
+
+template <class Functor, class Particle_T, class DeviceSpace>
+struct ChunksTraversalFunctor {
+  using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
+  using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
+
+  utilsKokkos::KokkosStorage<Particle_T> _storageA;
+  utilsKokkos::KokkosStorage<Particle_T> _storageB;
+  Functor* _func;
+  FloatPrecision _cutoffSquared;
+  size_t _M;
+  size_t _N;
+  size_t _chunkSize;
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const MemberType& teamHandle) const {
@@ -175,14 +189,13 @@ protected:
     const size_t chunkSize = _chunkSize;
     const size_t numChunks = N / chunkSize;
 
-    ChunksTraversalFunctor<Functor, Particle_T, typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace> functor {storageA, storageB, func, cutoffSquared, M, N, chunkSize};
-
     auto teamPolicy = Kokkos::TeamPolicy<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space>(numChunks+1, _teamSize, Kokkos::AUTO);
 
     constexpr bool calculateGlobals = Functor::globalCalculationRequested();
     if constexpr (calculateGlobals) {
-      typename ChunksTraversalFunctor<Functor, Particle_T, typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace>::ReductionResult globalResult {};
-      Kokkos::parallel_reduce("autopas::KokkosDsChunksTraversal_Globals", teamPolicy, functor, globalResult);
+      typename ChunksTraversalReductionFunctor<Functor, Particle_T, typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace>::ReductionResult globalResult {};
+      ChunksTraversalReductionFunctor<Functor, Particle_T, typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace> reductionFunctor {storageA, storageB, func, cutoffSquared, M, N, chunkSize};
+      Kokkos::parallel_reduce("autopas::KokkosDsChunksTraversal_Globals", teamPolicy, reductionFunctor, globalResult);
 
       AutoPasLog(INFO, "Final potential energy {}", static_cast<double>(globalResult.uPotSum) / 12.);
       AutoPasLog(INFO, "Final virial           {}", static_cast<double>(globalResult.virialSum) * 0.5);
@@ -192,6 +205,7 @@ protected:
       kokkosFunc->setPotentialEnergy(static_cast<double>(globalResult.uPotSum));
       kokkosFunc->setVirial(static_cast<double>(globalResult.virialSum));
     } else {
+      ChunksTraversalFunctor<Functor, Particle_T, typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace> functor {storageA, storageB, func, cutoffSquared, M, N, chunkSize};
       Kokkos::parallel_for("autopas::KokkosDsChunksTraversal_NoGlobals", teamPolicy, functor);
     }
   }
