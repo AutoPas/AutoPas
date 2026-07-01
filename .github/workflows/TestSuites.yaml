@@ -188,6 +188,7 @@ jobs:
             -DAUTOPAS_ENABLE_KOKKOS=${{ matrix.config.kokkos }} \
             -DKokkos_ENABLE_OPENMP=ON \
             -DKokkos_ENABLE_CUDA=ON \
+            -DKokkos_ARCH_AMPERE80=ON \
             -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config.asan }} \
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config.tsan }} \
             -DAUTOPAS_INTERNODE_TUNING=${UseMPI} \
