@@ -7,16 +7,22 @@
 
 #include "autopas/options/TuningMetricOption.h"
 
-const std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node node,
-                                                                            const std::string &errMsg) {
+std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node &node, const std::string &errMsg,
+                                                                      bool allThrowsError) {
+  std::string value;
   if (node.IsSequence()) {
     if (node.size() != 1) {
       throw std::runtime_error(errMsg);
     }
-    return autopas::utils::ArrayUtils::to_string(node, "", {"", ""});
+    value = autopas::utils::ArrayUtils::to_string(node, "", {"", ""});
   } else {
-    return node.as<std::string>();
+    value = node.as<std::string>();
   }
+  // "all" gets expanded into multiple options by ParseOption, so not single element.
+  if (allThrowsError and value == "all") {
+    throw std::runtime_error(errMsg + " - 'all' gets expanded into all possible options.");
+  }
+  return value;
 }
 
 const std::string MDFlexParser::YamlParser::makeErrorMsg(const YAML::Mark &mark, const std::string &key,
@@ -849,9 +855,19 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "YAML-sequence of possible values.";
         description = config.loadBalancer.description;
 
-        const auto parsedOptions = LoadBalancerOption::parseOptions(
-            parseSequenceOneElementExpected(node[key], "Pass Exactly one load balancer option!"));
+        // A common mistake is that users parse "all" to mean A Load-balancing Library (ALL). If this is received, make
+        // it upper case, resulting in A Load-balancing Library being correctly parsed. To do so, we use
+        // parseSequenceOneElementExpected with allThrowsError=false to avoid the error.
+        auto loadBalancerString =
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one load balancer option!", false);
+        if (loadBalancerString == "all") {
+          loadBalancerString = "ALL";
+        }
 
+        const auto parsedOptions = LoadBalancerOption::parseOptions(loadBalancerString);
+        if (parsedOptions.empty()) {
+          throw std::runtime_error("No valid load balancer option found!");
+        }
         config.loadBalancer.value = *parsedOptions.begin();
 
 #ifndef MD_FLEXIBLE_ENABLE_ALLLBL
