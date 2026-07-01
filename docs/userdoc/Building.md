@@ -38,6 +38,20 @@ Here is an example of a parallel compilation of the md-flexible example:
 cmake --build . --target md-flexible --parallel 12
 ```
 
+### Enabling Kokkos Support
+
+AutoPas supports several Containers and Algorithms as Kokkos version.
+It can be enabled via the CMake option:
+```bash
+cmake -DAUTOPAS_ENABLE_KOKKOS=ON
+```
+
+If CMake cannot find a local Kokkos installation on your device, it fetches version 5.1.1 from GitHub.
+You might need to point to the local Kokkos installation directory explicitly with:
+```bash
+cmake -DKokkos_DIR={/path/to/your/kokkos/installation}/lib/cmake/Kokkos
+```
+
 ### Enabling Rules-Based Tuning and Fuzzy Tuning
 <a id="rules-based-tuning-fuzzy-tuning"></a>
 
