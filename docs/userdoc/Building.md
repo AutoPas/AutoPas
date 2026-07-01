@@ -38,6 +38,16 @@ Here is an example of a parallel compilation of the md-flexible example:
 cmake --build . --target md-flexible --parallel 12
 ```
 
+### The ccmake menu
+
+`ccmake` is recommended for configuring the build. This provides a menu with the various AutoPas compile-time options.
+
+```bash
+ccmake ..
+```
+
+It can otherwise be used similarly to `cmake`.
+
 ### Enabling Rules-Based Tuning and Fuzzy Tuning
 <a id="rules-based-tuning-fuzzy-tuning"></a>
 
@@ -50,6 +60,19 @@ Both tuning strategies can be enabled via the CMake option:
 ```bash
 cmake -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON .. 
 ```
+
+### Enabling Python-Based Tuning e.g. Decision Tree Tuning
+
+Decision Tree Tuning requires the dependencies pybind 11 and json.
+These are bundled with AutoPas, but can take some time to compile.
+As such, this is disabled by default.
+
+This tuning strategy can be enabled via the CMake option:
+```bash
+cmake -DAUTOPAS_ENABLE_PYTHON_BASED_TUNING=ON .. 
+```
+
+The python version you wish to use should be findable before enabling this option. This is particularly relevant on HPC systems where the default python version is unsuitable, and a modern version should be loaded.
 
 ### Energy Measurements and Tuning
 
