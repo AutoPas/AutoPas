@@ -45,8 +45,8 @@ Objects:
       particle-mass              :  1.
   Sphere:
     0:  
-      center                     :  [18, 15, 30]
-      radius                     :  6
+      center                     :  [15, 10, 30]
+      radius                     :  5
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
@@ -58,8 +58,8 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  fallingDrop_AutoPas
-vtk-write-frequency              :  1000
+vtk-write-frequency              :  200
 vtk-output-folder                :  vtkOutputFolder
 no-end-config                    :  true
 log-level                        :  info
-log-file                         :  global_test_autopas.txt
+log-file                         :  global_test_autopas_float.txt

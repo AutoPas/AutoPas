@@ -1,6 +1,5 @@
-container                        : [KokkosDirectSum]
-traversal                        :  [ ds_kokkos_teams ]
-functor                          : Lennard-Jones (12-6) Kokkos
+container                        : [LinkedCells, VerletLists, VerletListsCells, VerletClusterLists]
+functor                          : Lennard-Jones (12-6)
 newton3                          : [disabled]
 data-layout                      : [SoA]
 container-layout                 : [SoA]
@@ -33,7 +32,7 @@ Objects:
       particle-mass              : 1.
 vtk-filename                     : benchmarkCubeKokkos
 vtk-write-frequency              : 200
-kokkos-team-size                 : [64]
-kokkos-chunk-size                : [64]
+kokkos-team-size                 : [20]
+kokkos-chunk-size                : [20]
 no-end-config                    : true
 log-level                        : error
