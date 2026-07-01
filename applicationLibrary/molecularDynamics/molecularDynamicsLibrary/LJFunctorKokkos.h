@@ -90,12 +90,9 @@ class LJFunctorKokkos
   void ForceKernelKokkos(const FloatPrecision &x1, const FloatPrecision &y1, const FloatPrecision &z1,
                        const autopas::utilsKokkos::KokkosStorage<Particle_T>& storage2, FloatPrecision &fxAcc, FloatPrecision &fyAcc,
                        FloatPrecision &fzAcc, FloatPrecision &virialSum, FloatPrecision& uPotSum, FloatPrecision cutoffSquared, int i, int j) final {
-    // const auto owned2 =
-    //     soa2.template operator()<
-    //         Particle_T::AttributeNames::ownershipState,
-    //         true, false>(j);
+    const auto owned2 = storage2.template operator()<Particle_T::AttributeNames::ownershipState, false>(j);
 
-    // if (owned2 != autopas::OwnershipState::dummy) {
+    if (owned2 != autopas::OwnershipState::dummy) {
 
     const auto x2 = storage2.template operator()<Particle_T::AttributeNames::posX, false>(j);
     const auto y2 = storage2.template operator()<Particle_T::AttributeNames::posY, false>(j);
@@ -108,7 +105,6 @@ class LJFunctorKokkos
     const FloatPrecision dr2 = drX * drX + drY * drY + drZ * drZ;
 
     if (dr2 <= cutoffSquared && dr2 > 0.) {
-
       FloatPrecision fac = 0.;
       FloatPrecision uPot = 0.;
       ljPair(dr2, fac, uPot);
@@ -126,7 +122,7 @@ class LJFunctorKokkos
       }
     }
 
-    // } // owned2 != dummy
+    } // owned2 != dummy
   }
 
   constexpr static auto getNeededAttr() {
