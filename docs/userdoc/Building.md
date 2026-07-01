@@ -46,10 +46,20 @@ It can be enabled via the CMake option:
 cmake -DAUTOPAS_ENABLE_KOKKOS=ON
 ```
 
-If CMake cannot find a local Kokkos installation on your device, it fetches version 5.1.1 from GitHub.
-You might need to point to the local Kokkos installation directory explicitly with:
+If you have a local Kokkos installation, you might need to point to the local Kokkos installation directory explicitly with:
 ```bash
 cmake -DKokkos_DIR={/path/to/your/kokkos/installation}/lib/cmake/Kokkos
+```
+
+If CMake cannot find a local Kokkos installation on your device, it fetches version 5.1.1 from GitHub. In this case, you will have to configure the Kokkos backends manually:
+
+```bash
+cmake -DKokkos_ENABLE_OPENMP=ON/OFF -DKokkos_ENABLE_CUDA=ON/OFF
+```
+
+Please note that to the best of our knowledge, md-flexible only compiles and links with Clang and with the following additional CMake settings:
+```bash
+cmake -DAUTOPAS_USE_AUTOVEC=OFF #more requirements to come eventually
 ```
 
 ### Enabling Rules-Based Tuning and Fuzzy Tuning

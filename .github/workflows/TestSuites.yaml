@@ -91,7 +91,7 @@ jobs:
           read -r -d '' light_matrix << EOM || true
           [
             { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF" },
-            { "name": "Clang-Release-OMP-KOKKOS", "container": "autopas-build-clang", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON" },
+            { "name": "Clang-Release-OMP-KOKKOS", "container": "autopas-build-clang", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON" }
           ]
           EOM
           
