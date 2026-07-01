@@ -154,6 +154,11 @@ jobs:
           key: ccache-${{ matrix.config.name }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.config.name }}-
 
+      - name: Integrate cuda-toolkit
+        uses: Jimver/cuda-toolkit@v0.2.35
+        with:
+          cuda: '13.2.0'
+
       - name: Build Everything
         run: |
           # derive whether or not to compile with MPI options ON.
@@ -174,6 +179,8 @@ jobs:
             -DAUTOPAS_MIN_LOG_LVL:STRING=TRACE \
             -DAUTOPAS_OPENMP=${{ matrix.config.omp }} \
             -DAUTOPAS_ENABLE_KOKKOS=${{ matrix.config.kokkos }} \
+            -DKokkos_ENABLE_OPENMP=ON \
+            -DKokkos_ENABLE_CUDA=ON \
             -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config.asan }} \
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config.tsan }} \
             -DAUTOPAS_INTERNODE_TUNING=${UseMPI} \
