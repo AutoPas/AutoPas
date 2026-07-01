@@ -61,11 +61,13 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    * @param boxMax
    * @param cutoff
    * @param skin
-   * @param sortingThreshold
+   * @param aosSortingThreshold Sum of the number of particles in two cells from which AoS sorting should be enabled.
+   * @param soaSortingThreshold Sum of the SoA buffer sizes of two cells from which SoA sorting should be enabled.
    */
   DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double skin,
-            const size_t sortingThreshold)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold),
+            const size_t aosSortingThreshold, const size_t soaSortingThreshold = 8)
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThreshold,
+                                                     soaSortingThreshold),
         _cellBorderFlagManager() {
     using namespace autopas::utils::ArrayMath::literals;
     // 1 owned and 6 halo cells
@@ -502,7 +504,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     auto *dsTraversal = dynamic_cast<DSTraversalInterface *>(traversal);
     auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCellType> *>(traversal);
     if (dsTraversal && cellTraversal) {
-      cellTraversal->setSortingThreshold(this->_sortingThreshold);
+      cellTraversal->setAoSSortingThreshold(this->_aosSortingThreshold);
+      cellTraversal->setSoASortingThreshold(this->_soaSortingThreshold);
       cellTraversal->setCellsToTraverse(this->_cells);
     } else {
       utils::ExceptionHandler::exception(

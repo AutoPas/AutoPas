@@ -65,7 +65,8 @@ class LogicHandler {
         _remainderPairwiseInteractionHandler(_spatialLocks),
         _remainderTriwiseInteractionHandler(_spatialLocks),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
-        _sortingThreshold(logicHandlerInfo.sortingThreshold),
+        _aosSortingThreshold(logicHandlerInfo.aosSortingThreshold),
+        _soaSortingThreshold(logicHandlerInfo.soaSortingThreshold),
         _iterationLogger(outputSuffix,
                          std::any_of(tunerManager->getAutoTuners().begin(), tunerManager->getAutoTuners().end(),
                                      [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
@@ -78,14 +79,10 @@ class LogicHandler {
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
-      _currentContainerSelectorInfo = ContainerSelectorInfo{_logicHandlerInfo.boxMin,
-                                                            _logicHandlerInfo.boxMax,
-                                                            _logicHandlerInfo.cutoff,
-                                                            configuration.cellSizeFactor,
-                                                            _logicHandlerInfo.verletSkin,
-                                                            _verletClusterSize,
-                                                            _sortingThreshold,
-                                                            configuration.loadEstimator};
+      _currentContainerSelectorInfo = ContainerSelectorInfo{
+          _logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,     _logicHandlerInfo.cutoff,
+          configuration.cellSizeFactor, _logicHandlerInfo.verletSkin, _verletClusterSize,
+          _aosSortingThreshold,         _soaSortingThreshold,         configuration.loadEstimator};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
@@ -836,7 +833,12 @@ class LogicHandler {
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
-  size_t _sortingThreshold;
+  size_t _aosSortingThreshold;
+
+  /**
+   * Number of particles in two SoA buffers from which SoA sorting should be performed.
+   */
+  size_t _soaSortingThreshold;
 
   std::shared_ptr<TuningManager> _tuningManager;
 
@@ -1350,7 +1352,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _sortingThreshold, config.loadEstimator);
+                            _verletClusterSize, _aosSortingThreshold, _soaSortingThreshold, config.loadEstimator);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.

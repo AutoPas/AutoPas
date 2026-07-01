@@ -69,11 +69,14 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @param cutoff The cutoff radius
    * @param skin The skin radius
    * @param cellSizeFactor The cell size factor
-   * @param sortingThreshold The threshold for sorting
+   * @param aosSortingThreshold The threshold for AoS sorting.
+   * @param soaSortingThreshold Sum of the SoA buffer sizes of two cells from which SoA sorting should be enabled.
    */
   Octree(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-         const double skin, const double cellSizeFactor, const size_t sortingThreshold)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, sortingThreshold) {
+         const double skin, const double cellSizeFactor, const size_t aosSortingThreshold,
+         const size_t soaSortingThreshold = 8)
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThreshold,
+                                                     soaSortingThreshold) {
     using namespace autopas::utils::ArrayMath::literals;
 
     // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624

@@ -573,16 +573,26 @@ class MDFlexConfig {
   MDFlexOption<bool, __LINE__> pauseSimulationDuringTuning{false, "pause-simulation-during-tuning", false,
                                                            "Pauses the update of the simulation during tuning phases."};
   /**
-   * sortingThreshold
+   * aosSortingThreshold
    * This value is used in traversal that use the CellFunctor. If the sum of the number of particles in two cells is
    * greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid unnecessary
    * distance checks.
    */
-  MDFlexOption<size_t, __LINE__> sortingThreshold{
-      8, "sorting-threshold", true,
+  MDFlexOption<size_t, __LINE__> aosSortingThreshold{
+      8, "aos-sorting-threshold", true,
       "Threshold for traversals that use the CellFunctor to start sorting. If the sum of the number of particles in "
       "two cells is greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid "
       "unnecessary distance checks."};
+  /**
+   * soaSortingThreshold
+   * If the sum of the SoA buffer sizes of two cells is greater or equal to this value, the SoA functor pair path
+   * sorts particles by their projection onto the cell-pair direction vector before computing interactions.
+   */
+  MDFlexOption<size_t, __LINE__> soaSortingThreshold{
+      25, "soa-sorting-threshold", true,
+      "Threshold for the SoA functor pair path to start sorting. If the sum of the SoA buffer sizes of two cells is "
+      "greater or equal to that value, particles are sorted by their projection onto the cell-pair direction vector "
+      "before computing interactions."};
 
   // Options for additional Object Generation on command line
   /**

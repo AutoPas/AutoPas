@@ -132,9 +132,17 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
   }
 
   /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
    */
-  void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
+  void setAoSSortingThreshold(size_t aosSortingThreshold) override {
+    _cellFunctor.setAoSSortingThreshold(aosSortingThreshold);
+  }
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold) override {
+    _cellFunctor.setSoASortingThreshold(soaSortingThreshold);
+  }
 
  private:
   // CellOffsets needs to store interaction pairs or triplets depending on the Functor type.

@@ -35,7 +35,8 @@ class Newton3OnOffTest
   static double getCellSizeFactor() { return 1.0; }
   static double getVerletSkin() { return 0.0; }
   static int getClusterSize() { return 4; }
-  static int getSortingThreshold() { return 8; }
+  static int getAoSSortingThreshold() { return 8; }
+  static int getSoASortingThreshold() { return 8; }
 
   template <typename FunctorType>
   void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,

@@ -50,23 +50,25 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
   const auto &verletClusterSize = containerInfo.verletClusterSize;
   const auto &cellSizeFactor = containerInfo.cellSizeFactor;
   const auto &loadEstimator = containerInfo.loadEstimator;
-  const auto &sortingThreshold = containerInfo.sortingThreshold;
+  const auto &aosSortingThreshold = containerInfo.aosSortingThreshold;
+  const auto &soaSortingThreshold = containerInfo.soaSortingThreshold;
 
   std::unique_ptr<ParticleContainerInterface<Particle_T>> container;
   switch (containerChoice) {
     case ContainerOption::directSum: {
-      container = std::make_unique<DirectSum<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, sortingThreshold);
+      container = std::make_unique<DirectSum<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, aosSortingThreshold,
+                                                          soaSortingThreshold);
       break;
     }
 
     case ContainerOption::linkedCells: {
       container = std::make_unique<LinkedCells<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor,
-                                                            sortingThreshold, loadEstimator);
+                                                            aosSortingThreshold, soaSortingThreshold, loadEstimator);
       break;
     }
     case ContainerOption::linkedCellsReferences: {
-      container = std::make_unique<LinkedCellsReferences<Particle_T>>(boxMin, boxMax, cutoff, verletSkin,
-                                                                      cellSizeFactor, sortingThreshold);
+      container = std::make_unique<LinkedCellsReferences<Particle_T>>(
+          boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, aosSortingThreshold, soaSortingThreshold);
       break;
     }
     case ContainerOption::verletLists: {
@@ -98,8 +100,8 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
       break;
     }
     case ContainerOption::octree: {
-      container =
-          std::make_unique<Octree<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, sortingThreshold);
+      container = std::make_unique<Octree<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor,
+                                                       aosSortingThreshold, soaSortingThreshold);
       break;
     }
     default: {
