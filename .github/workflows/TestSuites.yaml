@@ -173,8 +173,8 @@ jobs:
           mkdir build && cd build
           
           # -march=x86-64-v3 covers Haswell (2013) and newer. Safe for all GHA runners.
-          export CFLAGS="-march=x86-64-v3"
-          export CXXFLAGS="-march=x86-64-v3"
+          export CFLAGS="-march=native"
+          export CXXFLAGS="-march=native"
           
           CC=${{ matrix.config.cc }} CXX=${{ matrix.config.cxx }} cmake \
             -G "${{ matrix.config.builder }}" \
