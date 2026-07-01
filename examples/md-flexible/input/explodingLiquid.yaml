@@ -44,3 +44,7 @@ no-end-config                    :  true
 no-progress-bar                  :  false
 vtk-filename                     :  explodingLiquid
 vtk-write-frequency              :  100
+load-balancer                    :  InvertedPressue
+load-balancing-interval          :  1000
+computational-load-measurement-period :  100
+computational-load-metric        : ParticleCount

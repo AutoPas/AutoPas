@@ -16,7 +16,7 @@ autopas::utils::Timer::~Timer() = default;
 
 void autopas::utils::Timer::start() {
   if (_currentlyRunning) {
-    autopas::utils::ExceptionHandler::exception("Trying to start a timer that is already started!");
+    ExceptionHandler::exception("Trying to start a timer that is already started!");
   }
   _currentlyRunning = true;
   _startTime = bestSteadyClock::now();
@@ -33,10 +33,19 @@ long autopas::utils::Timer::stop() {
   const auto diff = duration_cast<nanoseconds>(time - _startTime).count();
 
   _totalTime += diff;
+  _lapTime += diff;
 
   return diff;
 }
 
-void autopas::utils::Timer::reset() { _totalTime = 0; }
+void autopas::utils::Timer::reset() {
+  _totalTime = 0;
+  _lapTime = 0;
+}
 
-void autopas::utils::Timer::addTime(long nanoseconds) { _totalTime += nanoseconds; }
+void autopas::utils::Timer::resetLap() { _lapTime = 0; }
+
+void autopas::utils::Timer::addTime(long nanoseconds) {
+  _totalTime += nanoseconds;
+  _lapTime += nanoseconds;
+}
