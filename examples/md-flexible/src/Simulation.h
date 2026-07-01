@@ -19,6 +19,7 @@
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
+#include "tools/RDF.h"
 
 /**
  * Handles minimal initialization requirements for MD-Flexible simulations.
@@ -264,6 +265,11 @@ class Simulation {
    * Parallel VTK file writer. Optional.
    */
   std::optional<ParallelVtkWriter> _vtkWriter;
+
+  /**
+   * Stores a radial distribution function
+   */
+  std::shared_ptr<RDF> _rdf;
 
  private:
   /**
