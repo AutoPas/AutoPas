@@ -154,6 +154,12 @@ jobs:
           key: ccache-${{ matrix.config.name }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.config.name }}-
 
+      # Claude's suggestion...
+      - name: Install sudo (needed by cuda-toolkit action)
+        run: |
+          apt-get update
+          apt-get install -y sudo
+
       # https://github.com/marketplace/actions/cuda-toolkit
       - name: Integrate cuda-toolkit
         uses: Jimver/cuda-toolkit@v0.2.35
