@@ -28,12 +28,8 @@ namespace autopas {
  *   1 → Edge   (two non-zero components)
  *   2 → Face   (one non-zero component)
  *
- * The search performed in runSearch() is deliberately biased towards a conservative (higher) threshold.
- * Since AutoPas applies sorting whenever particleCount >= threshold, a threshold discovered too high only
- * costs a missed optimization, whereas a threshold discovered too low makes AutoPas apply sorting to
- * cases where it is actually a net loss -- a real runtime regression. Ambiguous or noisy measurements are
- * therefore never treated as evidence that sorting has won; see _sortedWinMarginFraction and
- * _requiredSortedWinRatio for the mechanism.
+ * The search performed in runSearch() is deliberately biased towards a conservative (higher) threshold, to avoid noisy
+ * measurements to influence the threshold to low, causing slow downs.
  */
 class SortingThresholdBenchmark {
  public:
@@ -144,27 +140,6 @@ class SortingThresholdBenchmark {
   }
 
   /**
-   * Aggregated outcome of one executeRun() call.
-   */
-  struct RunOutcome {
-    /**
-     * Pooled mean runtime of the sorted path in nanoseconds, kept for logging only.
-     */
-    long meanSorted;
-
-    /**
-     * Pooled mean runtime of the unsorted path in nanoseconds, kept for logging only.
-     */
-    long meanUnsorted;
-
-    /**
-     * Number of repetitions (out of _repetitions) in which the sorted path beat the unsorted path by at
-     * least _sortedWinMarginFraction. Used by runSearch() to decide whether sorting has clearly won.
-     */
-    size_t sortedWins;
-  };
-
-  /**
    * Measures the mean per-repetition time for the sorted and unsorted SoA pair interaction paths
    * at a given particle count for one direction type.
    *
@@ -179,7 +154,7 @@ class SortingThresholdBenchmark {
    * @return Pooled mean sorted/unsorted runtimes and the per-repetition sorted-win count.
    */
   template <class Functor_T, class Particle_T>
-  RunOutcome executeRun(Functor_T &functor, size_t layout, size_t numParticles) {
+  size_t executeRun(Functor_T &functor, size_t layout, size_t numParticles) {
     using BenchCell = FullParticleCell<Particle_T>;
     using BenchCF = internal::CellFunctor<BenchCell, Functor_T, false>;
 
@@ -263,7 +238,7 @@ class SortingThresholdBenchmark {
       AutoPasLog(DEBUG, "SortingThresholdBenchmark rep {}/{} layout={} n={}: unsorted={}ns sorted={}ns", i + 1,
                  _repetitions, _layoutNames[layout], numParticles, unsortedDelta, sortedDelta);
 
-      // A repetition only counts as a "sorted win" if it clears the margin; see _sortedWinMarginFraction.
+      // A repetition only counts as a "sorted win" if it clears the margin: see _sortedWinMarginFraction.
       if (static_cast<double>(sortedDelta) < static_cast<double>(unsortedDelta) * (1. - _sortedWinMarginFraction)) {
         ++sortedWins;
       }
@@ -273,7 +248,7 @@ class SortingThresholdBenchmark {
     const long meanUnsorted = unsortedTimer.getTotalTime() / static_cast<long>(_repetitions);
     AutoPasLog(INFO, "SortingThresholdBenchmark layout={} n={}: mean unsorted={}ns mean sorted={}ns sortedWins={}/{}",
                _layoutNames[layout], numParticles, meanUnsorted, meanSorted, sortedWins, _repetitions);
-    return RunOutcome{meanSorted, meanUnsorted, sortedWins};
+    return sortedWins;
   }
 
   /**
@@ -294,24 +269,18 @@ class SortingThresholdBenchmark {
       size_t mid = lowCount + (highCount - lowCount) / 2;
 
       const auto outcome = executeRun<Functor_T, Particle_T>(functor, layout, mid);
-      const double winRatio = static_cast<double>(outcome.sortedWins) / static_cast<double>(_repetitions);
+      const double winRatio = static_cast<double>(outcome) / static_cast<double>(_repetitions);
 
       // Conservative decision rule: only accept "sorted wins" once a clear majority of repetitions
       // agree by a clear margin (see _sortedWinMarginFraction and _requiredSortedWinRatio).
       if (winRatio >= _requiredSortedWinRatio) {
         highCount = mid;
-        AutoPasLog(DEBUG,
-                   "SortingThresholdBenchmark search layout={} n={}: sorted won {}/{} reps (mean sorted={}ns "
-                   "mean unsorted={}ns) → high={}",
-                   _layoutNames[layout], mid, outcome.sortedWins, _repetitions, outcome.meanSorted,
-                   outcome.meanUnsorted, highCount);
+        AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted won {}/{} reps → high={}",
+                   _layoutNames[layout], mid, outcome.sortedWins, _repetitions, highCount);
       } else {
         lowCount = mid + 1;
-        AutoPasLog(DEBUG,
-                   "SortingThresholdBenchmark search layout={} n={}: sorted won only {}/{} reps (mean "
-                   "sorted={}ns mean unsorted={}ns) → low={}",
-                   _layoutNames[layout], mid, outcome.sortedWins, _repetitions, outcome.meanSorted,
-                   outcome.meanUnsorted, lowCount);
+        AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted won only {}/{} reps → low={}",
+                   _layoutNames[layout], mid, outcome, _repetitions, o, lowCount);
       }
     }
     AutoPasLog(INFO, "SortingThresholdBenchmark layout={} threshold={}", _layoutNames[layout], lowCount);
