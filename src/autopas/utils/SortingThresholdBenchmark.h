@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <cmath>
 #include <random>
 #include <string_view>
 #include <utility>
@@ -30,11 +31,6 @@ namespace autopas {
  */
 class SortingThresholdBenchmark {
  public:
-  /**
-   * Initializes all thresholds to the compile-time default.
-   */
-  SortingThresholdBenchmark() { _thresholds.fill(25); }
-
   /**
    * Return all three per-direction-type thresholds.
    * Index 0 = Corner (zero zeros), 1 = Edge (one zero), 2 = Face (two zeros).
@@ -69,26 +65,31 @@ class SortingThresholdBenchmark {
   bool _hasRun{false};
 
   /**
-   * Per-direction-type threshold values.
+   * Per-direction-type threshold values, initialized to the compile-time default.
    * Index = number of zero components in sortingDirection (0=Corner, 1=Edge, 2=Face).
    */
-  std::array<size_t, 3> _thresholds{};
+  std::array<size_t, 3> _thresholds{25, 25, 25};
+
+  /**
+   * Human-readable names for the direction-type index (0=Corner, 1=Edge, 2=Face), used only for log messages.
+   */
+  static constexpr std::array<std::string_view, 3> _layoutNames{"Corner", "Edge", "Face"};
 
   /**
    * Number of timed calls per repetition; amortizes timer overhead within a single rep.
    * @todo: Adjust this based on input size.
    */
-  size_t _iterations = 100;
+  const size_t _iterations = 100;
 
   /**
    * Number of independent measurement repetitions per particle count; the mean is taken over these.
    * @todo: Try out different numbers of repetitions.
    */
-  size_t _repetitions = 25;
+  const size_t _repetitions = 25;
   /**
    * Upper bound on the particle count searched by the binary search.
    */
-  size_t _maxParticles = 500;
+  const size_t _maxParticles = 500;
 
   /**
    * Fills a cell with numParticles copies of defaultParticle at independently uniform-random positions within
@@ -144,7 +145,7 @@ class SortingThresholdBenchmark {
     const double cutoff = functor.getCutoff();
     const double invSqrt3 = 1. / sqrt(3.);
     const double invSqrt2 = 1. / sqrt(2.);
-    BenchCF cellFunctor{functor, functor.getCutoff(), DataLayoutOption::soa, false};
+    BenchCF cellFunctor{functor, cutoff, DataLayoutOption::soa, false};
     // Set to 0 so whether sorting happens is controlled entirely through the sorting direction.
     cellFunctor.setSoASortingThreshold(0);
     BenchCell cell1, cell2;
@@ -174,7 +175,6 @@ class SortingThresholdBenchmark {
         sortingDirection = {1, 0., 0.};
         break;
     }
-    constexpr std::array<std::string_view, 3> layoutNames = {"Corner", "Edge", "Face"};
     utils::Timer sortedTimer, unsortedTimer;
     for (size_t i = 0; i < _repetitions; i++) {
       cell1.clear();
@@ -185,30 +185,27 @@ class SortingThresholdBenchmark {
       functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
       functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
 
-      long beforeUnsorted = unsortedTimer.getTotalTime();
       unsortedTimer.start();
       for (size_t j = 0; j < _iterations; j++) {
         // A sorting direction of (0, 0, 0) disables sorting.
         cellFunctor.processCellPair(cell1, cell2, {0., 0., 0.});
       }
-      unsortedTimer.stop();
+      const long unsortedDelta = unsortedTimer.stop();
 
-      long beforeSorted = sortedTimer.getTotalTime();
       sortedTimer.start();
       for (size_t j = 0; j < _iterations; j++) {
         cellFunctor.processCellPair(cell1, cell2, sortingDirection);
       }
-      sortedTimer.stop();
+      const long sortedDelta = sortedTimer.stop();
 
       AutoPasLog(DEBUG, "SortingThresholdBenchmark rep {}/{} layout={} n={}: unsorted={}ns sorted={}ns", i + 1,
-                 _repetitions, layoutNames[layout], numParticles, unsortedTimer.getTotalTime() - beforeUnsorted,
-                 sortedTimer.getTotalTime() - beforeSorted);
+                 _repetitions, _layoutNames[layout], numParticles, unsortedDelta, sortedDelta);
     }
 
     const long meanSorted = sortedTimer.getTotalTime() / static_cast<long>(_repetitions);
     const long meanUnsorted = unsortedTimer.getTotalTime() / static_cast<long>(_repetitions);
     AutoPasLog(INFO, "SortingThresholdBenchmark layout={} n={}: mean unsorted={}ns mean sorted={}ns",
-               layoutNames[layout], numParticles, meanUnsorted, meanSorted);
+               _layoutNames[layout], numParticles, meanUnsorted, meanSorted);
     return {static_cast<size_t>(meanSorted), static_cast<size_t>(meanUnsorted)};
   }
 
@@ -223,7 +220,6 @@ class SortingThresholdBenchmark {
    */
   template <class Functor_T, class Particle_T>
   size_t runSearch(Functor_T &functor, size_t layout) {
-    constexpr std::array<std::string_view, 3> layoutNames = {"Corner", "Edge", "Face"};
     size_t lowCount = 0;
     size_t highCount = _maxParticles;
 
@@ -234,14 +230,14 @@ class SortingThresholdBenchmark {
       if (sortedT < unsortedT) {
         highCount = mid;
         AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted({}ns) < unsorted({}ns) → high={}",
-                   layoutNames[layout], mid, sortedT, unsortedT, highCount);
+                   _layoutNames[layout], mid, sortedT, unsortedT, highCount);
       } else {
         lowCount = mid + 1;
         AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted({}ns) >= unsorted({}ns) → low={}",
-                   layoutNames[layout], mid, sortedT, unsortedT, lowCount);
+                   _layoutNames[layout], mid, sortedT, unsortedT, lowCount);
       }
     }
-    AutoPasLog(INFO, "SortingThresholdBenchmark layout={} threshold={}", layoutNames[layout], lowCount);
+    AutoPasLog(INFO, "SortingThresholdBenchmark layout={} threshold={}", _layoutNames[layout], lowCount);
     return lowCount;
   }
 };
