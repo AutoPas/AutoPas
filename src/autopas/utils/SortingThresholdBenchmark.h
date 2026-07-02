@@ -84,7 +84,9 @@ class SortingThresholdBenchmark {
    * @todo: Try out different numbers of iterations
    */
   size_t repetitions = 25;
-  /** Upper bound on the particle count searched by the binary search. */
+  /**
+   * Upper bound on the particle count searched by the binary search.
+   */
   size_t max_particles = 500;
 
   /**
@@ -155,6 +157,7 @@ class SortingThresholdBenchmark {
       long beforeUnsorted = unsortedTimer.getTotalTime();
       unsortedTimer.start();
       for (size_t j = 0; j < iterations; j++) {
+        // sorting Direction of (0,0,0) disables sorting.
         cellFunctor.processCellPairSoAImpl(cell1, cell2, {0., 0., 0.});
       }
       unsortedTimer.stop();
