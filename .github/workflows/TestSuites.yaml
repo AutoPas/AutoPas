@@ -75,14 +75,15 @@ jobs:
           # 8:   Multisite + MPI (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
           read -r -d '' full_matrix << EOM || true
           [
-            { "name": "Clang-Debug-CompileOnly", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Debug", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite", "kokkos": "OFF"},
-            { "name": "Clang-Release-ASan", "container": "autopas-build-clang",  "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "OFF", "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF"},
-            { "name": "Clang-Release-OMP-TSan", "container": "autopas-build-archer", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "OFF",  "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF"},
-            { "name": "Clang-Release-OMP-KOKKOS", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON"},
-            { "name": "GCC-Release-OMP", "container": "autopas-build-gcc",    "cc": "gcc",   "cxx": "g++",     "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF"},
-            { "name": "MPI-Release-OMP-ASan", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite", "kokkos": "OFF" },
-            { "name": "Clang-OMP-TSan-MultiSite", "container": "autopas-build-archer", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "ON",  "avx": "OFF", "hwy": "OFF", "site": "multisite", "kokkos": "OFF" },
-            { "name": "MPI-MultiSite", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "ON", "avx": "OFF", "hwy": "OFF", "site": "multisite", "kokkos": "OFF" }
+            { "name": "Clang-Debug-CompileOnly", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Debug", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite", "kokkos": "OFF", "cuda": "OFF"},
+            { "name": "Clang-Release-ASan", "container": "autopas-build-clang",  "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "OFF", "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF", "cuda": "OFF"},
+            { "name": "Clang-Release-OMP-TSan", "container": "autopas-build-archer", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "OFF",  "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF", "cuda": "OFF"},
+            { "name": "Clang-Release-Kokkos-CUDA", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON", "cuda": "ON"},
+            { "name": "Clang-Release-Kokkos-OMP", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON", "cuda": "OFF"},
+            { "name": "GCC-Release-OMP", "container": "autopas-build-gcc",    "cc": "gcc",   "cxx": "g++",     "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF", "cuda": "OFF"},
+            { "name": "MPI-Release-OMP-ASan", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite", "kokkos": "OFF", "cuda": "OFF"},
+            { "name": "Clang-OMP-TSan-MultiSite", "container": "autopas-build-archer", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "ON",  "avx": "OFF", "hwy": "OFF", "site": "multisite", "kokkos": "OFF", "cuda": "OFF"},
+            { "name": "MPI-MultiSite", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "ON", "avx": "OFF", "hwy": "OFF", "site": "multisite", "kokkos": "OFF", "cuda": "OFF"}
           ]
           EOM
 
@@ -90,8 +91,9 @@ jobs:
           # Basic configuration without sanitizers or AVX but with Kokkos
           read -r -d '' light_matrix << EOM || true
           [
-            { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF" },
-            { "name": "Clang-Release-OMP-KOKKOS", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "OFF", "site": "singlesite", "kokkos": "ON" }
+            { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF", "cuda":"OFF" },
+            { "name": "Clang-Release-Kokkos-CUDA", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "OFF", "site": "singlesite", "kokkos": "ON", "cuda":"ON" },
+            { "name": "Clang-Release-Kokkos-OMP", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "OFF", "site": "singlesite", "kokkos": "ON", "cuda":"OFF" }
           ]
           EOM
           
@@ -196,7 +198,7 @@ jobs:
             -DAUTOPAS_OPENMP=${{ matrix.config.omp }} \
             -DAUTOPAS_ENABLE_KOKKOS=${{ matrix.config.kokkos }} \
             -DKokkos_ENABLE_OPENMP=ON \
-            -DKokkos_ENABLE_CUDA=ON \
+            -DKokkos_ENABLE_CUDA=${{ matrix.config.cuda }} \
             -DKokkos_ARCH_AMPERE80=ON \
             -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config.asan }} \
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config.tsan }} \
@@ -252,6 +254,7 @@ jobs:
             part: 3
           - config: { cc: "mpicc" }
             part: 4
+          - config: { cuda: "ON" }
 
     name: Run tests ${{ matrix.config.name }} (${{ matrix.part }}/4)
     container:
@@ -269,6 +272,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install Clang 22 OpenMP runtime
+        run: |
+            apt-get update
+            apt-get install -y wget gnupg lsb-release software-properties-common
+            wget https://apt.llvm.org/llvm.sh
+            chmod +x llvm.sh
+            ./llvm.sh 22
+            apt-get install -y libomp-22-dev
 
       - name: Fetch Build Folder
         uses: actions/download-artifact@v4
