@@ -1,0 +1,371 @@
+stages:
+    - test_projects
+    - build_mpich_gcc8
+    - build_openmpi_gcc8
+    - build_openmpi_gcc10_vtk9
+    - build_mpich_gcc9
+    - build_openmpi_gcc9
+    - build_mpich_gcc10
+    - build_openmpi_gcc10
+    - release
+ 
+before_script:
+#    - hostname
+#    - whoami
+#    - pwd
+#    - ls
+#    - ls -l ci
+    - mkdir -p badges/
+
+build-mpich-nofortran-gcc8:
+    stage: build_mpich_gcc8
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc8-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi.sh
+    allow_failure: false
+
+build-mpich-nofortran-gcc9:
+    stage: build_mpich_gcc9
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc9-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi.sh
+    allow_failure: false
+
+build-mpich-nofortran-gcc10:
+    stage: build_mpich_gcc10
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc10-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi.sh
+    allow_failure: false
+
+build-mpich-fortran-gcc8:
+    stage: build_mpich_gcc8
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc8-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_fortran.sh
+    allow_failure: false
+
+build-mpich-fortran-gcc9:
+    stage: build_mpich_gcc9
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc9-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_fortran.sh
+    allow_failure: false
+
+build-mpich-fortran-gcc10:
+    stage: build_mpich_gcc10
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc10-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_fortran.sh
+    allow_failure: false
+
+#build-mpich-fortran-f08-gcc8:
+#    stage: build_mpich_gcc8
+#    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc8-full
+#    tags:
+#        - public-docker
+#    when: always
+#    script:
+#        - ./ci/build_mpi_fortran_f08.sh
+#    allow_failure: true
+
+build-mpich-fortran-f08-gcc9:
+    stage: build_mpich_gcc9
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc9-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_fortran_f08.sh
+    allow_failure: false
+
+build-mpich-fortran-f08-gcc10:
+    stage: build_mpich_gcc10
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc10-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_fortran_f08.sh
+    allow_failure: false
+    
+build-mpich-voronoi-gcc8:
+    stage: build_mpich_gcc8
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc8-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_voronoi.sh
+    allow_failure: false
+
+build-mpich-voronoi-gcc9:
+    stage: build_mpich_gcc9
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc9-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_voronoi.sh
+    allow_failure: false
+
+build-mpich-voronoi-gcc10:
+    stage: build_mpich_gcc10
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc10-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_voronoi.sh
+    allow_failure: false
+
+build-openmpi-nofortran-gcc8:
+    stage: build_openmpi_gcc8
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc8-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi.sh
+    allow_failure: false
+
+build-openmpi-nofortran-gcc9:
+    stage: build_openmpi_gcc9
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc9-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi.sh
+    allow_failure: false
+
+build-openmpi-nofortran-gcc10:
+    stage: build_openmpi_gcc10
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc10-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi.sh
+    allow_failure: false
+
+build-openmpi-fortran-gcc8:
+    stage: build_openmpi_gcc8
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc8-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_fortran.sh
+    allow_failure: false
+
+build-openmpi-fortran-gcc9:
+    stage: build_openmpi_gcc9
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc9-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_fortran.sh
+    allow_failure: false
+
+build-openmpi-fortran-gcc10:
+    stage: build_openmpi_gcc10
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc10-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_fortran.sh
+    allow_failure: false
+
+build-openmpi-fortran-f08-gcc8:
+    stage: build_openmpi_gcc8
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc8-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_fortran_f08.sh
+    allow_failure: true
+
+build-openmpi-fortran-f08-gcc9:
+    stage: build_openmpi_gcc9
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc9-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_fortran_f08.sh
+    allow_failure: true
+
+build-openmpi-fortran-f08-gcc10:
+    stage: build_openmpi_gcc10
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc10-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_fortran_f08.sh
+    allow_failure: true
+    
+build-openmpi-voronoi-gcc8:
+    stage: build_openmpi_gcc8
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc8-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_voronoi.sh
+    allow_failure: true
+
+build-openmpi-voronoi-gcc9:
+    stage: build_openmpi_gcc9
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc9-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_voronoi.sh
+    allow_failure: true
+
+build-openmpi-voronoi-gcc10:
+    stage: build_openmpi_gcc10
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc10-full
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_voronoi.sh
+    allow_failure: true
+
+build-mpich-complete-gcc8:
+    stage: build_mpich_gcc8
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc8-full:latest
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_complete_gcc8.sh
+    allow_failure: true
+
+build-mpich-complete-gcc9:
+    stage: build_mpich_gcc9
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc9-full:latest
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_complete.sh
+    allow_failure: false
+
+build-mpich-complete-gcc10:
+    stage: build_mpich_gcc10
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/mpich-gcc10-full:latest
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_complete.sh
+    allow_failure: false
+
+build-openmpi-complete-gcc8:
+    stage: build_openmpi_gcc8
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc8-full:latest
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_complete.sh
+    allow_failure: false
+
+build-openmpi-complete-gcc9:
+    stage: build_openmpi_gcc9
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc9-full:latest
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_complete.sh
+    allow_failure: false
+
+build-openmpi-complete-gcc10:
+    stage: build_openmpi_gcc10
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc10-full:latest
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_complete.sh
+    allow_failure: false
+
+build-openmpi-complete-gcc10-vtk9:
+    stage: build_openmpi_gcc10_vtk9
+    image:
+        name: registry.jsc.fz-juelich.de/slms/loadbalancing/vtk9-v1:latest
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/build_mpi_complete_vtk9.sh
+    allow_failure: false
+
+test-project-cmake:
+    stage: test_projects
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc10-full:latest
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/test_project_cmake.sh
+    allow_failure: false
+
+test-project-cmake-subdir:
+    stage: test_projects
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc10-full:latest
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/test_project_cmake_subdir.sh
+    allow_failure: false
+
+test-project-makefile:
+    stage: test_projects
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc10-full:latest
+    tags:
+        - public-docker
+    when: always
+    script:
+        - ./ci/test_project_makefile.sh
+    allow_failure: false
+
+release:
+    stage: release
+    only:
+        - /^releases/.*$/
+    image: registry.jsc.fz-juelich.de/slms/loadbalancing/openmpi-gcc8-full:latest
+    tags:
+        - public-docker
+    script:
+        - ./make_release.sh upload
+
+# vim: et ts=4 sw=4

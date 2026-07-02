@@ -1,0 +1,6 @@
+*.swp
+*.swo
+example/CMakeProject/all_build/*
+example/CMakeProject/all_package/*
+example/CMakeProject/ALL_test.cpp
+example/CMakeProject/build/*
