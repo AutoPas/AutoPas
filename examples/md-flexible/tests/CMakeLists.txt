@@ -30,7 +30,7 @@ include(autopas_all)
 
 target_include_directories(
     mdFlexTests
-    PUBLIC ${PROJECT_SOURCE_DIR}/tests/testAutopas ${PROJECT_SOURCE_DIR}/examples/md-flexible
+    PUBLIC ${PROJECT_SOURCE_DIR}/tests ${PROJECT_SOURCE_DIR}/examples/md-flexible
 )
 
 target_link_libraries(
