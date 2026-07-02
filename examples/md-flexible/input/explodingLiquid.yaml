@@ -31,7 +31,7 @@ Sites:
 #    site-types                   :  [ 0 ]
 #    relative-site-positions      :  [ [0, 0, 0 ] ]
 #    moment-of-inertia            :  [ 1., 1., 1. ]
-Objects:                         
+Objects:
   CubeClosestPacked:
     0:
       particle-type-id           :  0

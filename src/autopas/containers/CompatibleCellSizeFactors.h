@@ -18,8 +18,9 @@ namespace autopas::compatibleCSFs {
  */
 [[maybe_unused]] static const std::set<ContainerOption> &allContainersSupportingSuper1CSF() {
   static const std::set<ContainerOption> s{
-      ContainerOption::linkedCells, ContainerOption::linkedCellsReferences, ContainerOption::varVerletListsAsBuild,
-      ContainerOption::verletLists, ContainerOption::verletListsCells,      ContainerOption::pairwiseVerletLists};
+      ContainerOption::linkedCells,      ContainerOption::linkedCellsReferences, ContainerOption::varVerletListsAsBuild,
+      ContainerOption::verletLists,      ContainerOption::verletListsCells,      ContainerOption::pairwiseVerletLists,
+      ContainerOption::pseudoVerletLists};
   return s;
 }
 

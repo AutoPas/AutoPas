@@ -36,14 +36,14 @@ Sites:
 Objects:
   # "water"
   CubeClosestPacked:
-    0:  
+    0:
       particle-spacing           :  1.122462048
       bottomLeftCorner           :  [1, 1, 1]
       box-length                 :  [48, 28, 10]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
   Sphere:
-    0:  
+    0:
       center                     :  [18, 15, 30]
       radius                     :  6
       particle-spacing           :  1.122462048

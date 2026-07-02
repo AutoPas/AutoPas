@@ -1,10 +1,10 @@
 /**
- * @file LCC08CellHandlerUtility.cpp
+ * @file C08CellHandlerUtility.cpp
  * @author J. Schuhmacher
  * @date 11.07.2024
  */
 
-#include "LCC08CellHandlerUtility.h"
+#include "C08CellHandlerUtility.h"
 
 #include <algorithm>
 
@@ -14,7 +14,7 @@
 #include "autopas/utils/Math.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
-namespace autopas::LCC08CellHandlerUtility {
+namespace autopas::C08CellHandlerUtility {
 
 namespace internal {
 
@@ -284,4 +284,4 @@ template std::vector<OffsetTripletVector> computeTriwiseCellOffsetsC08<C08Offset
     double interactionLength);
 //! @endcond
 
-}  // namespace autopas::LCC08CellHandlerUtility
+}  // namespace autopas::C08CellHandlerUtility

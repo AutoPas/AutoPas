@@ -26,6 +26,7 @@ TEST_F(DifferentParticlesTest, testNonConstructibleParticle) {
   // We also check if computeInteractions can be instantiated.
   MockPairwiseFunctor<NonConstructibleParticle> functor;
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
   autoPas.computeInteractions(&functor);
 }
