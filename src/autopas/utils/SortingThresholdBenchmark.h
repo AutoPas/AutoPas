@@ -276,7 +276,7 @@ class SortingThresholdBenchmark {
       if (winRatio >= _requiredSortedWinRatio) {
         highCount = mid;
         AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted won {}/{} reps → high={}",
-                   _layoutNames[layout], mid, outcome.sortedWins, _repetitions, highCount);
+                   _layoutNames[layout], mid, outcome, _repetitions, highCount);
       } else {
         lowCount = mid + 1;
         AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted won only {}/{} reps → low={}",
