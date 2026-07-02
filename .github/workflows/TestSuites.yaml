@@ -92,8 +92,8 @@ jobs:
           read -r -d '' light_matrix << EOM || true
           [
             { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF", "cuda":"OFF" },
-            { "name": "Clang-Release-Kokkos-CUDA", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "OFF", "site": "singlesite", "kokkos": "ON", "cuda":"ON" },
-            { "name": "Clang-Release-Kokkos-OMP", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "OFF", "site": "singlesite", "kokkos": "ON", "cuda":"OFF" }
+            { "name": "Clang-Release-Kokkos-CUDA", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON", "cuda":"ON" },
+            { "name": "Clang-Release-Kokkos-OMP", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON", "cuda":"OFF" }
           ]
           EOM
           
