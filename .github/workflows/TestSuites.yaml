@@ -182,8 +182,8 @@ jobs:
           mkdir build && cd build
           
           # -march=x86-64-v3 covers Haswell (2013) and newer. Safe for all GHA runners.
-          # export CFLAGS="-march=x86-64-v3"
-          export CXXFLAGS="-I/usr/local/cuda-13.2/include/cccl"
+          export CFLAGS="-march=x86-64-v3"
+          export CXXFLAGS="-I/usr/local/cuda-13.2/include/cccl -march=x86-64-v3"
           
           CC=${{ matrix.config.cc }} CXX=${{ matrix.config.cxx }} cmake \
             -G "${{ matrix.config.builder }}" \
