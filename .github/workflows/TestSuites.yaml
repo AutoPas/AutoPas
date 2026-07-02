@@ -207,8 +207,8 @@ jobs:
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=${{ matrix.config.autovec }} \
             -DMD_FLEXIBLE_FUNCTOR_AVX=${{ matrix.config.avx }} \
             -DMD_FLEXIBLE_FUNCTOR_HWY=${{ matrix.config.hwy }} \
-            -DHWY_DISABLED_TARGETS=HWY_ALL_TARGETS
-            -DHWY_ENABLE_TARGETS=HWY_AVX2"
+            -DHWY_DISABLED_TARGETS=HWY_ALL_TARGETS \
+            -DHWY_ENABLE_TARGETS=HWY_AVX2 \
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DMD_FLEXIBLE_ENABLE_ALLLBL=${UseMPI} \
             -DAUTOPAS_ENABLE_HARMONY=ON \
