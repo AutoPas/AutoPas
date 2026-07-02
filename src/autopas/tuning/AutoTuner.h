@@ -278,13 +278,28 @@ class AutoTuner {
   const std::set<Configuration> &getSearchSpace() const;
 
   /**
-   * Stores the results of the SoA sorting threshold benchmark.
-   * LogicHandler runs it lazily on the first call and copies the resulting per-direction-type thresholds into the
-   * active container.
+   * Returns the per-direction-type SoA sorting thresholds determined by the SoA sorting threshold benchmark,
+   * running the benchmark first (lazily, once) if it has not run yet.
+   * @tparam Functor_T Pairwise functor type.
+   * @tparam Particle_T Particle type.
+   * @param functor Functor instance used to drive the benchmark if it still needs to run.
+   * @return Per-direction-type thresholds; see SortingThresholdBenchmark for the indexing convention.
    */
-  SortingThresholdBenchmark sortingThresholdBenchmark{};
+  template <class Functor_T, class Particle_T>
+  std::array<size_t, 3> getSoASortingThresholds(Functor_T &functor) {
+    if (not _sortingThresholdBenchmark.hasRun()) {
+      _sortingThresholdBenchmark.runBenchmark<Functor_T, Particle_T>(functor);
+    }
+    return _sortingThresholdBenchmark.getThresholds();
+  }
 
  private:
+  /**
+   * Stores the results of the SoA sorting threshold benchmark.
+   * Lazily run via getSoASortingThresholds() on the first call.
+   */
+  SortingThresholdBenchmark _sortingThresholdBenchmark{};
+
   /**
    * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
    * used until the next tuning phase, as well as setting other relevant class members (_endOfTuningPhase, _isTuning,
