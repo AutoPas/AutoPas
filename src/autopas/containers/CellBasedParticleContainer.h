@@ -156,7 +156,6 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setSoASortingThresholds()
-   * @param thresholds Array of three per-direction thresholds.
    */
   void setSoASortingThresholds(std::array<size_t, 3> thresholds) override { _soaSortingThresholds = thresholds; }
 
