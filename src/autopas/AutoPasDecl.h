@@ -1163,6 +1163,16 @@ class AutoPas {
    */
   size_t getSoASortingThreshold() const { return _soaSortingThreshold; }
 
+  /**
+   * Enable or disable benchmark-based SoA sorting threshold selection.
+   * When enabled, on the first iterate() call AutoPas runs a micro-benchmark to determine per-direction-type
+   * thresholds and uses them instead of the fixed soaSortingThreshold.
+   * @param useSortingThresholdBenchmark
+   */
+  void setUseSortingThresholdBenchmark(bool useSortingThresholdBenchmark) {
+    _logicHandlerInfo.useSortingThresholdBenchmark = useSortingThresholdBenchmark;
+  }
+
  private:
   autopas::ParticleContainerInterface<Particle_T> &getContainer();
 

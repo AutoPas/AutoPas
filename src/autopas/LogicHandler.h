@@ -1261,6 +1261,14 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   tuningTimer.stop();
   _tuningManager->logTuningResult(tuningTimer.getTotalTime(), _iteration, interactionType);
 
+  // Run SortingThresholdBenchmark lazily on the first iteration and inject into the active container.
+  if constexpr (Functor::supportsSoASorting) {
+    if (_logicHandlerInfo.useSortingThresholdBenchmark) {
+      auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
+      _currentContainer->setSoASortingThresholds(autoTuner.getSoASortingThresholds<Functor, Particle_T>(*functor));
+    }
+  }
+
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
   const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
 

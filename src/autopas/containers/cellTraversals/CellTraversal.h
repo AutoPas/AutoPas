@@ -55,6 +55,14 @@ class CellTraversal {
    */
   virtual void setSoASortingThreshold(size_t soaSortingThreshold) = 0;
 
+  /**
+   * Set per-direction SoA sorting thresholds for traversals that use CellFunctor.
+   * Traversals that hold a CellFunctor (or LCC08CellHandler) should forward to it; others should explicitly
+   * override with an empty body.
+   * @param thresholds Array indexed by zero-count in sortingDirection (0=Corner, 1=Edge, 2=Face).
+   */
+  virtual void setSoASortingThresholds(std::array<size_t, 3> thresholds) = 0;
+
  protected:
   /**
    * The dimensions of the cellblock.

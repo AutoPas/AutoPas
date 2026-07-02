@@ -79,6 +79,10 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
    * @copydoc autopas::CellTraversal::setSoASortingThreshold()
    */
   void setSoASortingThreshold(size_t soaSortingThreshold) override {}
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override {}
 
  private:
   PairwiseFunctor &_functor;

@@ -89,6 +89,10 @@ class LCC08CellHandler {
    * @copydoc autopas::CellTraversal::setSoASortingThreshold()
    */
   void setSoASortingThreshold(size_t soaSortingThreshold) { _cellFunctor.setSoASortingThreshold(soaSortingThreshold); }
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(std::array<size_t, 3> thresholds) { _cellFunctor.setSoASortingThresholds(thresholds); }
 
  protected:
   /**

@@ -252,6 +252,14 @@ class ParticleContainerInterface {
   virtual void computeInteractions(TraversalInterface *traversal) = 0;
 
   /**
+   * Set per-direction SoA sorting thresholds.
+   * Cell-based containers store these and forward to traversals in prepareTraversal(). Containers without a
+   * CellFunctor should explicitly override with an empty body.
+   * @param thresholds Array of three per-direction thresholds.
+   */
+  virtual void setSoASortingThresholds(std::array<size_t, 3> thresholds) = 0;
+
+  /**
    * Get the upper corner of the container without halo.
    * @return Upper corner of the container.
    */

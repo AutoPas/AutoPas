@@ -73,6 +73,12 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
   void setSoASortingThreshold(size_t soaSortingThreshold) override {
     _cellHandler.setSoASortingThreshold(soaSortingThreshold);
   }
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override {
+    _cellHandler.setSoASortingThresholds(thresholds);
+  }
 
  private:
   void traverseSingleColor(std::vector<ParticleCell> &cells, int color);

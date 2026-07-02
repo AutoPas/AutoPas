@@ -593,6 +593,15 @@ class MDFlexConfig {
       "Threshold for the SoA functor pair path to start sorting. If the sum of the SoA buffer sizes of two cells is "
       "greater or equal to that value, particles are sorted by their projection onto the cell-pair direction vector "
       "before computing interactions."};
+  /**
+   * useSortingThresholdBenchmark
+   * If true, AutoPas runs a micro-benchmark on the first iterate() call to determine per-direction-type
+   * SoA sorting thresholds instead of using the fixed soa-sorting-threshold.
+   */
+  MDFlexOption<bool, __LINE__> useSortingThresholdBenchmark{
+      false, "use-sorting-threshold-benchmark", true,
+      "If true, AutoPas runs a micro-benchmark to determine the optimal SoA sorting threshold per direction type "
+      "instead of using the fixed soa-sorting-threshold."};
 
   // Options for additional Object Generation on command line
   /**

@@ -17,6 +17,7 @@
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/utils/EnergySensor.h"
+#include "autopas/utils/SortingThresholdBenchmark.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
@@ -276,7 +277,29 @@ class AutoTuner {
    */
   const std::set<Configuration> &getSearchSpace() const;
 
+  /**
+   * Returns the per-direction-type SoA sorting thresholds determined by the SoA sorting threshold benchmark,
+   * running the benchmark first (lazily, once) if it has not run yet.
+   * @tparam Functor_T Pairwise functor type.
+   * @tparam Particle_T Particle type.
+   * @param functor Functor instance used to drive the benchmark if it still needs to run.
+   * @return Per-direction-type thresholds; see SortingThresholdBenchmark for the indexing convention.
+   */
+  template <class Functor_T, class Particle_T>
+  std::array<size_t, 3> getSoASortingThresholds(Functor_T &functor) {
+    if (not _sortingThresholdBenchmark.hasRun()) {
+      _sortingThresholdBenchmark.runBenchmark<Functor_T, Particle_T>(functor);
+    }
+    return _sortingThresholdBenchmark.getThresholds();
+  }
+
  private:
+  /**
+   * Stores the results of the SoA sorting threshold benchmark.
+   * Lazily run via getSoASortingThresholds() on the first call.
+   */
+  SortingThresholdBenchmark _sortingThresholdBenchmark{};
+
   /**
    * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
    * used until the next tuning phase, as well as setting other relevant class members (_endOfTuningPhase, _isTuning,

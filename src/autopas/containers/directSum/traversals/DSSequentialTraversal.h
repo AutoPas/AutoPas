@@ -80,6 +80,12 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
   void setSoASortingThreshold(size_t soaSortingThreshold) override {
     _cellFunctor.setSoASortingThreshold(soaSortingThreshold);
   }
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override {
+    _cellFunctor.setSoASortingThresholds(thresholds);
+  }
 
  private:
   // CellFunctor type for either Pairwise or Triwise Functors.

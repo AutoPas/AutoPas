@@ -583,7 +583,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
     }
     if (traversalInterface && cellTraversal) {
       cellTraversal->setAoSSortingThreshold(this->_aosSortingThreshold);
-      cellTraversal->setSoASortingThreshold(this->_soaSortingThreshold);
+      cellTraversal->setSoASortingThresholds(this->_soaSortingThresholds);
       cellTraversal->setCellsToTraverse(this->_cells);
     } else {
       utils::ExceptionHandler::exception(

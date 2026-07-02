@@ -94,6 +94,14 @@ class CellFunctor {
   void setSoASortingThreshold(size_t soaSortingThreshold);
 
   /**
+   * Set the per-direction-type SoA sorting thresholds.
+   * Indexed by the number of zero components in sortingDirection (0=Corner, 1=Edge, 2=Face); overrides the
+   * value set by setSoASortingThreshold() for all three direction types.
+   * @param thresholds Array of three per-direction-type thresholds.
+   */
+  void setSoASortingThresholds(std::array<size_t, 3> thresholds);
+
+  /**
    * Computes conservative per-particle index bounds into projIdxJ based on a 1-D projection cutoff check.
    *
    * Particles are projected onto the sorting axis. A pair can only interact if their 1-D projection distance
@@ -143,8 +151,11 @@ class CellFunctor {
    * @return Whether the SoA path should use SoAFunctorPairSorted.
    */
   [[nodiscard]] bool shouldUseSoASorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
-    return particleCount >= _soaSortingThreshold and
-           (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
+    if (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0) {
+      const auto zeroCount = std::count(std::begin(sortingDirection), std::end(sortingDirection), 0.0);
+      return particleCount >= _soaSortingThresholds[static_cast<size_t>(zeroCount)];
+    }
+    return false;
   }
 
   /**
@@ -190,7 +201,7 @@ class CellFunctor {
   /**
    * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
    */
-  size_t _soaSortingThreshold{25};
+  std::array<size_t, 3> _soaSortingThresholds{25, 25, 25};
 
   const DataLayoutOption::Value _dataLayout;
 
@@ -218,7 +229,12 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortin
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
-  _soaSortingThreshold = soaSortingThreshold;
+  _soaSortingThresholds.fill(soaSortingThreshold);
+}
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThresholds(
+    std::array<size_t, 3> thresholds) {
+  _soaSortingThresholds = thresholds;
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>

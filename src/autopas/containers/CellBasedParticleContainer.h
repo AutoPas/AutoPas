@@ -45,8 +45,9 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
         _boxMax(boxMax),
         _cutoff(cutoff),
         _skin(skin),
-        _aosSortingThreshold(aosSortingThreshold),
-        _soaSortingThreshold(soaSortingThreshold) {}
+        _aosSortingThreshold(aosSortingThreshold) {
+    _soaSortingThresholds.fill(soaSortingThreshold);
+  }
 
   /**
    * Destructor of CellBasedParticleContainer.
@@ -153,6 +154,11 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   [[nodiscard]] const std::vector<ParticleCellType> &getCells() const { return _cells; }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override { _soaSortingThresholds = thresholds; }
+
  protected:
   /**
    * Vector of particle cells.
@@ -166,9 +172,10 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   size_t _aosSortingThreshold;
   /**
-   * If the sum of the SoA buffer sizes of two cells exceeds this threshold, SoAFunctorPairSorted is used.
+   * Per-direction SoA sorting thresholds, indexed by zero-count in sortingDirection.
+   * Initialized from the scalar soaSortingThreshold; overridden per-direction by setSoASortingThresholds().
    */
-  size_t _soaSortingThreshold;
+  std::array<size_t, 3> _soaSortingThresholds{};
 
  private:
   std::array<double, 3> _boxMin;
