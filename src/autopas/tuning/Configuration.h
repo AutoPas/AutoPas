@@ -82,6 +82,7 @@ class Configuration {
     if (forParameterizedTestName) {
       std::ranges::replace(result, '.', '_');
       std::ranges::replace(result, '-', '_');
+      std::ranges::replace(result, '/', '_');
     }
 
     return result;

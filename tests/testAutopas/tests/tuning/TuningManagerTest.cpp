@@ -399,84 +399,79 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   // Configurations considered valid by cartesian product but are typically invalid due to
   // Traversal::isApplicableToDomain are still included in this count.
   //
-  // Direct Sum:            ds_sequential               (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
+  // Direct Sum:            ds_sequential               (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
   //   Subtotal:                                                                                              =   4
   // Direct Sum only supports CSF 1 => Multiply by 1
-  // Direct Sum supports all 4 vectorization patterns => Multiply by 4
 
-  configsPerContainer[autopas::ContainerOption::directSum] = 16;
-  // LinkedCells:           lc_c08                      (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        lc_sliced                   (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        lc_sliced_balanced          (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics)    =   8
-  //                        lc_sliced_c02               (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        lc_c18                      (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        lc_c01                      (AoS <=> SoA, noNewton3)                              =   2
-  //                        lc_c01_combined_SoA         (SoA, noNewton3)                                      =   1
-  //                        lc_c04                      (AoS <=> SoA, newton3 <=> noNewton3) *                =   4
-  //                        lc_c04_combined_SoA         (SoA, newton3 <=> noNewton3)         *                =   2
-  //                        lc_c04_HCP                  (AoS <=> SoA, newton3 <=> noNewton3) *                =   4
-  //   Subtotal:                                                                                              =  37
+  configsPerContainer[autopas::ContainerOption::directSum] = 4;
+  // LinkedCells:           lc_c08                      (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        lc_sliced                   (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        lc_sliced_balanced          (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3,
+  //                                                     2 LB heuristics)                                     =  20
+  //                        lc_sliced_c02               (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        lc_c18                      (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        lc_c01                      (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
+  //                        lc_c01_combined_SoA         (SoA x 4 vecPat, noNewton3)                           =   4
+  //                        lc_c04                      (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3) *     =  10
+  //                        lc_c04_combined_SoA         (SoA x 4 vecPat, newton3 <=> noNewton3)         *     =   8
+  //                        lc_c04_HCP                  (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3) *     =  10
+  //   Subtotal:                                                                                              =  97
   // Linked Cells supports all CSFs (i.e. 0.5, 1.0, 1.5) => Multiply by 3
   // * C04 traversals will almost always not support CSF 0.5, but these will be excluded later.
-  // Linked Cells supports all 4 vectorization patterns => Multiply by 4
-  configsPerContainer[autopas::ContainerOption::linkedCells] = 444;
+  configsPerContainer[autopas::ContainerOption::linkedCells] = 291;
 
   // Linked Cells References:
-  // same as linked Cells but without the squaredParticlesPerCell load estimator for sliced_balanced (-4 * 3 * 4 = -48)
+  // same as linked Cells but without the squaredParticlesPerCell load estimator for sliced_balanced (-10 * 3  = -30)
   configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
-      configsPerContainer[autopas::ContainerOption::linkedCells] - 48;
+      configsPerContainer[autopas::ContainerOption::linkedCells] - 30;
 
-  // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                              =   2
+  // VerletLists:           vl_list_iteration           (AoS <=> SoA x 1 vecPat, noNewton3)                   =   2
   //   Subtotal:                                                                                              =   2
   // Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
-  // Verlet Lists only supports 1xVec pattern => Multiply by 1
   configsPerContainer[autopas::ContainerOption::verletLists] = 4;
 
-  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 LB heuristics) =  12
-  //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        vlc_c01                     (AoS <=> SoA, noNewton3)                              =   2
-  //                        vlc_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
+  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlc_sliced_balanced         (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3,
+  //                                                     3 LB heuristics)                                     =  12
+  //                        vlc_sliced_colored          (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlc_c18                     (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlc_c01                     (AoS <=> SoA x 1 vecPat, noNewton3)                   =   2
+  //                        vlc_c08                     (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
   //   Subtotal:                                                                                              =  30
   // Verlet Lists Cells only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
-  // Verlet Lists Cells only supports 1xVec pattern => Multiply by 1
   configsPerContainer[autopas::ContainerOption::verletListsCells] = 60;
 
-  // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                              =   2
-  //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3)                              =   2
-  //                        vcl_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        vcl_sliced_c02              (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        vcl_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 2 LB heuristics) =   8
-  //   Subtotal:                                                                                              =  24
+  // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
+  //                        vcl_c06                     (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        vcl_c01_balanced            (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
+  //                        vcl_sliced                  (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        vcl_sliced_c02              (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        vcl_sliced_balanced         (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3,
+  //                                                     2 LB heuristics)                                     =  20
+  //   Subtotal:                                                                                              =  60
   // Verlet Cluster Lists only support CSF 1 => Multiply by 1
-  // Verlet Cluster Lists supports all 4 vectorization patterns => Multiply by 4
-  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 96;
+  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 60;
 
-  // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
+  // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
   //   Subtotal:                                                                                              =   4
   // Var Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
-  // Var Verlet Lists only supports 1xVec pattern => Multiply by 1
   configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 8;
 
-  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //                        vlp_c01                     (AoS <=> SoA, noNewton3)                              =   2
-  //                        vlp_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
+  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlp_sliced_balanced         (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlp_sliced_colored          (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlp_c18                     (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlp_c01                     (AoS <=> SoA x 1 vecPat, noNewton3)                   =   2
+  //                        vlp_c08                     (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
   //   Subtotal:                                                                                              =  22
   // Pairwise Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
-  // Pairwise Verlet Lists only supports 1xVec pattern => Multiply by 1
   configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 44;
 
-  // Octree:                ot_c01                      (AoS <=> SoA, noNewton3)                              =   2
-  //                        ot_c18                      (AoS <=> SoA, newton3)                                =   2
-  //   Subtotal:                                                                                              =   4
+  // Octree:                ot_c01                      (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
+  //                        ot_c18                      (AoS <=> SoA x 4 vecPat, newton3)                     =   5
+  //   Subtotal:                                                                                              =  10
   // Octree only supports CSF 1 => Multiply by 1
-  // Octree supports all 4 vectorization patterns => Multiply by 4
-  configsPerContainer[autopas::ContainerOption::octree] = 16;
+  configsPerContainer[autopas::ContainerOption::octree] = 10;
 
   // --------------- Check that the manually determined values above match that automatically generated ---------------
 
@@ -526,10 +521,10 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   // CSF < 1.0, but where the container in general could support this.
 
   // All LC C04 traversals with CSF 0.5 are expected to not be applicable
-  // => lc_c04 (4), lc_c04_combined_SoA (2), lc_c04_HCP (4) x4 vecPatterns => 40 configurations
-  // Similarly for Linked Cells References => 40 more
+  // => lc_c04 (10), lc_c04_combined_SoA (8), lc_c04_HCP (10) => 28 configurations
+  // Similarly for Linked Cells References => 28 more
 
-  constexpr size_t numConfigsExpectedNotApplicable{80};
+  constexpr size_t numConfigsExpectedNotApplicable{56};
 
   const size_t expectedNumberOfIterations =
       (numberOfConfigs - numConfigsExpectedNotApplicable) * autoTunerInfo.maxSamples + 1;
