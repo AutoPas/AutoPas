@@ -61,7 +61,7 @@ class CellTraversal {
    * Others may rely on this default no-op.
    * @param thresholds Array indexed by zero-count in sortingDirection (0=Corner, 1=Edge, 2=Face).
    */
-  virtual void setSoASortingThresholds(std::array<size_t, 3> thresholds) { (void)thresholds; }
+  virtual void setSoASortingThresholds(std::array<size_t, 3> /*thresholds*/) {}
 
  protected:
   /**

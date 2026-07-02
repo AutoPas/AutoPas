@@ -75,21 +75,19 @@ class SortingThresholdBenchmark {
 
   /**
    * Number of timed calls per repetition; amortizes timer overhead within a single rep.
-   * @todo: Find System to adjust this based on input size. Could do something like:
-   * iterations = max(baseIter/numParticles, 10) -> i.e. scale iterations inversely to input size, with a minimum number
-   * of iterations
+   * @todo: Adjust this based on input size.
    */
-  size_t iterations = 10;
+  size_t _iterations = 100;
 
   /**
    * Number of independent measurement repetitions per particle count; the mean is taken over these.
-   * @todo: Try out different numbers of iterations
+   * @todo: Try out different numbers of repetitions.
    */
-  size_t repetitions = 25;
+  size_t _repetitions = 25;
   /**
    * Upper bound on the particle count searched by the binary search.
    */
-  size_t max_particles = 500;
+  size_t _maxParticles = 500;
 
   /**
    * Measures the mean per-repetition time for the sorted and unsorted SoA pair interaction paths
@@ -103,7 +101,7 @@ class SortingThresholdBenchmark {
    * @param functor Functor instance used to drive the benchmark.
    * @param layout Direction-type index (0=Corner, 1=Edge, 2=Face).
    * @param numParticles Number of particles placed in each of the two cells.
-   * @return {sorted_time_ns, unsorted_time_ns}, each averaged over repetitions.
+   * @return {sorted_time_ns, unsorted_time_ns}, each averaged over the configured number of repetitions.
    */
   template <class Functor_T, class Particle_T>
   std::pair<size_t, size_t> executeRun(Functor_T &functor, size_t layout, size_t numParticles) {
@@ -112,10 +110,10 @@ class SortingThresholdBenchmark {
 
     const Particle_T defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
     const double cutoff = functor.getCutoff();
-    const double inv_sqrt3 = 1. / sqrt(3.);
-    const double inv_sqrt2 = 1. / sqrt(2.);
+    const double invSqrt3 = 1. / sqrt(3.);
+    const double invSqrt2 = 1. / sqrt(2.);
     BenchCF cellFunctor{functor, functor.getCutoff(), DataLayoutOption::soa, false};
-    // Set to 0 so if sorting happens or not can be entirely controlled through sorting direction
+    // Set to 0 so whether sorting happens is controlled entirely through the sorting direction.
     cellFunctor.setSoASortingThreshold(0);
     BenchCell cell1, cell2;
 
@@ -131,12 +129,12 @@ class SortingThresholdBenchmark {
       case 0:
         cell2Low = {cutoff, cutoff, cutoff};
         cell2High = {2. * cutoff, 2. * cutoff, 2. * cutoff};
-        sortingDirection = {inv_sqrt3, inv_sqrt3, inv_sqrt3};
+        sortingDirection = {invSqrt3, invSqrt3, invSqrt3};
         break;
       case 1:
         cell2Low = {cutoff, cutoff, 0.};
         cell2High = {2. * cutoff, 2. * cutoff, cutoff};
-        sortingDirection = {inv_sqrt2, inv_sqrt2, 0.};
+        sortingDirection = {invSqrt2, invSqrt2, 0.};
         break;
       case 2:
         cell2Low = {cutoff, 0., 0.};
@@ -146,7 +144,7 @@ class SortingThresholdBenchmark {
     }
     constexpr std::array<std::string_view, 3> layoutNames = {"Corner", "Edge", "Face"};
     utils::Timer sortedTimer, unsortedTimer;
-    for (size_t i = 0; i < repetitions; i++) {
+    for (size_t i = 0; i < _repetitions; i++) {
       cell1.clear();
       cell2.clear();
 
@@ -159,7 +157,7 @@ class SortingThresholdBenchmark {
 
       long beforeUnsorted = unsortedTimer.getTotalTime();
       unsortedTimer.start();
-      for (size_t j = 0; j < iterations; j++) {
+      for (size_t j = 0; j < _iterations; j++) {
         // A sorting direction of (0, 0, 0) disables sorting.
         cellFunctor.processCellPair(cell1, cell2, {0., 0., 0.});
       }
@@ -167,18 +165,18 @@ class SortingThresholdBenchmark {
 
       long beforeSorted = sortedTimer.getTotalTime();
       sortedTimer.start();
-      for (size_t j = 0; j < iterations; j++) {
+      for (size_t j = 0; j < _iterations; j++) {
         cellFunctor.processCellPair(cell1, cell2, sortingDirection);
       }
       sortedTimer.stop();
 
       AutoPasLog(DEBUG, "SortingThresholdBenchmark rep {}/{} layout={} n={}: unsorted={}ns sorted={}ns", i + 1,
-                 repetitions, layoutNames[layout], numParticles, unsortedTimer.getTotalTime() - beforeUnsorted,
+                 _repetitions, layoutNames[layout], numParticles, unsortedTimer.getTotalTime() - beforeUnsorted,
                  sortedTimer.getTotalTime() - beforeSorted);
     }
 
-    const long meanSorted = sortedTimer.getTotalTime() / static_cast<long>(repetitions);
-    const long meanUnsorted = unsortedTimer.getTotalTime() / static_cast<long>(repetitions);
+    const long meanSorted = sortedTimer.getTotalTime() / static_cast<long>(_repetitions);
+    const long meanUnsorted = unsortedTimer.getTotalTime() / static_cast<long>(_repetitions);
     AutoPasLog(INFO, "SortingThresholdBenchmark layout={} n={}: mean unsorted={}ns mean sorted={}ns",
                layoutNames[layout], numParticles, meanUnsorted, meanSorted);
     return {static_cast<size_t>(meanSorted), static_cast<size_t>(meanUnsorted)};
@@ -191,30 +189,30 @@ class SortingThresholdBenchmark {
    * @tparam Particle_T Particle type.
    * @param functor Functor instance used to drive the benchmark.
    * @param layout Direction-type index (0=Corner, 1=Edge, 2=Face).
-   * @return Smallest particle count at which sorted beats unsorted, or max_particles if never.
+   * @return Smallest particle count at which sorted beats unsorted, or the upper search bound if never.
    */
   template <class Functor_T, class Particle_T>
   size_t runSearch(Functor_T &functor, size_t layout) {
     constexpr std::array<std::string_view, 3> layoutNames = {"Corner", "Edge", "Face"};
-    size_t low_count = 0;
-    size_t high_count = max_particles;
+    size_t lowCount = 0;
+    size_t highCount = _maxParticles;
 
-    while (low_count < high_count) {
-      size_t mid = low_count + (high_count - low_count) / 2;
+    while (lowCount < highCount) {
+      size_t mid = lowCount + (highCount - lowCount) / 2;
 
-      auto [sorted_t, unsorted_t] = executeRun<Functor_T, Particle_T>(functor, layout, mid);
-      if (sorted_t < unsorted_t) {
-        high_count = mid;
+      auto [sortedT, unsortedT] = executeRun<Functor_T, Particle_T>(functor, layout, mid);
+      if (sortedT < unsortedT) {
+        highCount = mid;
         AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted({}ns) < unsorted({}ns) → high={}",
-                   layoutNames[layout], mid, sorted_t, unsorted_t, high_count);
+                   layoutNames[layout], mid, sortedT, unsortedT, highCount);
       } else {
-        low_count = mid + 1;
+        lowCount = mid + 1;
         AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted({}ns) >= unsorted({}ns) → low={}",
-                   layoutNames[layout], mid, sorted_t, unsorted_t, low_count);
+                   layoutNames[layout], mid, sortedT, unsortedT, lowCount);
       }
     }
-    AutoPasLog(INFO, "SortingThresholdBenchmark layout={} threshold={}", layoutNames[layout], low_count);
-    return low_count;
+    AutoPasLog(INFO, "SortingThresholdBenchmark layout={} threshold={}", layoutNames[layout], lowCount);
+    return lowCount;
   }
 };
 

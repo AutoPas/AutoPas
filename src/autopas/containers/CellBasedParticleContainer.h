@@ -154,6 +154,11 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   [[nodiscard]] const std::vector<ParticleCellType> &getCells() const { return _cells; }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override { _soaSortingThresholds = thresholds; }
+
  protected:
   /**
    * Vector of particle cells.
@@ -171,8 +176,6 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * Initialized from the scalar soaSortingThreshold; overridden per-direction by setSoASortingThresholds().
    */
   std::array<size_t, 3> _soaSortingThresholds{};
-
-  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override { _soaSortingThresholds = thresholds; }
 
  private:
   std::array<double, 3> _boxMin;

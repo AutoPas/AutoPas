@@ -93,6 +93,12 @@ class CellFunctor {
    */
   void setSoASortingThreshold(size_t soaSortingThreshold);
 
+  /**
+   * Set the per-direction-type SoA sorting thresholds.
+   * Indexed by the number of zero components in sortingDirection (0=Corner, 1=Edge, 2=Face); overrides the
+   * value set by setSoASortingThreshold() for all three direction types.
+   * @param thresholds Array of three per-direction-type thresholds.
+   */
   void setSoASortingThresholds(std::array<size_t, 3> thresholds);
 
   /**

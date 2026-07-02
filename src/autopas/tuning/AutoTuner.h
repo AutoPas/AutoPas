@@ -277,6 +277,13 @@ class AutoTuner {
    */
   const std::set<Configuration> &getSearchSpace() const;
 
+  /**
+   * Stores the results of the SoA sorting threshold benchmark.
+   * LogicHandler runs it lazily on the first call and copies the resulting per-direction-type thresholds into the
+   * active container.
+   */
+  SortingThresholdBenchmark sortingThresholdBenchmark{};
+
  private:
   /**
    * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
@@ -441,12 +448,5 @@ class AutoTuner {
    * significantly slower than the fastest configuration by more than _earlyStoppingFactor.
    */
   bool _earlyStoppingOfResampling{false};
-
- public:
-  /**
-   * Stores the results of the SoA sorting threshold benchmark.
-   * LogicHandler runs it lazily on the first call and injects the pointer into the active container.
-   */
-  SortingThresholdBenchmark sortingThresholdBenchmark{};
 };
 }  // namespace autopas
