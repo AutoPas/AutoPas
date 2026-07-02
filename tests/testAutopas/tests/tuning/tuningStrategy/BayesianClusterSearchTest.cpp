@@ -13,6 +13,7 @@
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
 
 TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
   const size_t maxEvidence = 3;
@@ -24,8 +25,8 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
   const std::set<autopas::DataLayoutOption> dataLayoutOptions{autopas::DataLayoutOption::aos,
                                                               autopas::DataLayoutOption::soa};
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
-  const autopas::NumberSetFinite<double> cellSizeFactors{1};
-  const std::set<autopas::VectorizationPatternOption> vecPatternOptions{autopas::VectorizationPatternOption::p1xVec};
+  const autopas::NumberSetFinite<double> cellSizeFactors{1, 1.5};
+  const std::set<autopas::VectorizationPatternOption> vecPatternOptions{autopas::VectorizationPatternOption::p1xVec, autopas::VectorizationPatternOption::NA};
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
@@ -253,7 +254,8 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled,
                                                         autopas::Newton3Option::enabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
-  const std::set<autopas::VectorizationPatternOption> vecPatternOptions{autopas::VectorizationPatternOption::p1xVec};
+  const std::set<autopas::VectorizationPatternOption> vecPatternOptions{autopas::VectorizationPatternOption::p1xVec,
+  autopas::VectorizationPatternOption::NA};
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
@@ -282,7 +284,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
   const autopas::FeatureVector best2(autopas::ContainerOption::linkedCells, 2., autopas::TraversalOption::lc_c01,
                                      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                                      autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
-                                     autopas::VectorizationPatternOption::p1xVec);
+                                     autopas::VectorizationPatternOption::NA);
 
   auto dummyTimeFun2 = [&best2](autopas::FeatureVector target) -> long {
     const Eigen::VectorXd diff = best2 - target;

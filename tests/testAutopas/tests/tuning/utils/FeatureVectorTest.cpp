@@ -72,10 +72,10 @@ TEST_F(FeatureVectorTest, lhsSampleFeatureCluster) {
 TEST_F(FeatureVectorTest, distanceTest) {
   autopas::FeatureVector f1(ContainerOption::linkedCells, 1., TraversalOption::lc_c01, LoadEstimatorOption::none,
                             DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise,
-                            VectorizationPatternOption::p1xVec);
+                            VectorizationPatternOption::NA);
   autopas::FeatureVector f2(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
                             DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise,
-                            VectorizationPatternOption::p1xVec);
+                            VectorizationPatternOption::NA);
   autopas::FeatureVector f3(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
                             DataLayoutOption::soa, Newton3Option::enabled, InteractionTypeOption::pairwise,
                             VectorizationPatternOption::p1xVec);

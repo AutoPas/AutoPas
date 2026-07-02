@@ -6,6 +6,9 @@
 
 #include "AutoPasConfigurationCommunicatorTest.h"
 
+#include "testingHelpers/ArbitraryConfigurations.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
+
 using namespace autopas::utils::AutoPasConfigurationCommunicator;
 using namespace autopas;
 
@@ -20,20 +23,8 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
 
 // Test if serializing and deserializing a vector of configurations works as expected.
 TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserializeVector) {
-  const std::vector<autopas::Configuration> configurations = {
-      autopas::Configuration{autopas::ContainerOption::octree, 1., autopas::TraversalOption::ot_c18,
-                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                             autopas::Newton3Option::disabled, InteractionTypeOption::pairwise,
-                             VectorizationPatternOption::p1xVec},
-      autopas::Configuration{autopas::ContainerOption::verletClusterLists, 1., autopas::TraversalOption::vcl_c06,
-                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled, InteractionTypeOption::pairwise,
-                             VectorizationPatternOption::pVecDiv2x2},
-      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced_balanced,
-                             autopas::LoadEstimatorOption::squaredParticlesPerCell, autopas::DataLayoutOption::aos,
-                             autopas::Newton3Option::enabled, InteractionTypeOption::pairwise,
-                             VectorizationPatternOption::pVecx1},
-  };
+  const auto validConfigs = generateAllValidConfigurations(autopas::InteractionTypeOption::all);
+  const std::vector<autopas::Configuration> configurations(validConfigs.begin(), validConfigs.end());
   const auto serializedConfigs = serializeConfigurations(configurations);
   const auto passedConfig = deserializeConfigurations(serializedConfigs);
   EXPECT_EQ(passedConfig, configurations);
@@ -44,10 +35,9 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  Configuration config =
-      Configuration(ContainerOption::directSum, 1 + rank, TraversalOption::lc_sliced,
-                    LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled,
-                    InteractionTypeOption::pairwise, VectorizationPatternOption::p1xVec);
+  Configuration config = Configuration(
+      ContainerOption::directSum, 1 + rank, TraversalOption::lc_sliced, LoadEstimatorOption::neighborListLength,
+      DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise, VectorizationPatternOption::NA);
   // provide rank as the time for the config.
   Configuration optimized = findGloballyBestConfiguration(MPI_COMM_WORLD, config, rank);
 
@@ -55,7 +45,7 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
   EXPECT_EQ(optimized,
             Configuration(ContainerOption::directSum, 1, TraversalOption::lc_sliced,
                           LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled,
-                          InteractionTypeOption::pairwise, VectorizationPatternOption::p1xVec));
+                          InteractionTypeOption::pairwise, VectorizationPatternOption::NA));
 }
 
 // Test if the search space does get reduced.
@@ -291,18 +281,9 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testGatherConfigs) {
   ASSERT_EQ(numRanks, numRanksExpected) << "This test expects there to be three communicating MPI ranks!";
 
   const std::vector<Configuration> expectedConfigurations{
-      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
-                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                             autopas::Newton3Option::disabled, InteractionTypeOption::pairwise,
-                             VectorizationPatternOption::p1xVec},
-      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c04,
-                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                             autopas::Newton3Option::disabled, InteractionTypeOption::pairwise,
-                             VectorizationPatternOption::p1xVec},
-      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
-                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                             autopas::Newton3Option::disabled, InteractionTypeOption::pairwise,
-                             VectorizationPatternOption::p1xVec},
+      arbitraryConfigurations::_arbitrary_config_2B_0,
+      arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_2,
   };
 
   const auto localConf = [&]() -> std::vector<Configuration> {

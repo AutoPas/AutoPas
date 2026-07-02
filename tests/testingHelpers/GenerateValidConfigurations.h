@@ -168,7 +168,8 @@ inline std::set<ContainerConfiguration> generateAllValidContainerConfigurations(
                                                  loadEstimatorOption,
                                                  autopas::DataLayoutOption::aos,
                                                  autopas::Newton3Option::enabled,
-                                                 interactionType};
+                                                 interactionType,
+                                                 autopas::VectorizationPatternOption::NA};
       if (configuration.hasCompatibleValues()) {
         containerConfigs.insert({containerOption, csf});
       }
