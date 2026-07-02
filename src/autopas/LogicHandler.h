@@ -22,12 +22,14 @@
 #include "autopas/remainder/RemainderTriwiseInteractionHandler.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/TraceTimer.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/logging/FLOPLogger.h"
 #include "autopas/utils/logging/IterationLogger.h"
@@ -48,14 +50,14 @@ class LogicHandler {
  public:
   /**
    * Constructor of the LogicHandler.
-   * @param autotuners Unordered map with interaction types and respective autotuner instances.
+   * @param tunerManager Shared pointer to the tuner manager instance holding the AutoTuner(s)
    * @param logicHandlerInfo
    * @param rebuildFrequency
    * @param outputSuffix
    */
-  LogicHandler(std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &autotuners,
-               const LogicHandlerInfo &logicHandlerInfo, unsigned int rebuildFrequency, const std::string &outputSuffix)
-      : _autoTunerRefs(autotuners),
+  LogicHandler(const std::shared_ptr<TuningManager> &tunerManager, const LogicHandlerInfo &logicHandlerInfo,
+               unsigned int rebuildFrequency, const std::string &outputSuffix)
+      : _tuningManager(tunerManager),
         _logicHandlerInfo(logicHandlerInfo),
         _neighborListRebuildFrequency{rebuildFrequency},
         _particleBuffer(autopas_get_max_threads()),
@@ -64,13 +66,14 @@ class LogicHandler {
         _remainderTriwiseInteractionHandler(_spatialLocks),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
-        _iterationLogger(outputSuffix, std::any_of(autotuners.begin(), autotuners.end(),
-                                                   [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
+        _iterationLogger(outputSuffix,
+                         std::any_of(tunerManager->getAutoTuners().begin(), tunerManager->getAutoTuners().end(),
+                                     [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
         _flopLogger(outputSuffix),
         _liveInfoLogger(outputSuffix) {
     using namespace autopas::utils::ArrayMath::literals;
     // Initialize AutoPas with tuners for given interaction types
-    for (const auto &[interactionType, tuner] : autotuners) {
+    for (const auto &[interactionType, tuner] : tunerManager->getAutoTuners()) {
       _interactionTypes.insert(interactionType);
 
       const auto configuration = tuner->getCurrentConfig();
@@ -159,31 +162,45 @@ class LogicHandler {
   /**
    * @copydoc AutoPas::updateContainer()
    */
-  [[nodiscard]] std::vector<Particle_T> updateContainer() {
+  std::vector<Particle_T> updateContainer() {
+    ++_iteration;
+
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     this->checkNeighborListsInvalidDoDynamicRebuild();
+
+    if (_tuningManager->isStartOfTuningPhase(_iteration)) {
+      _numRebuildsInNonTuningPhase = 0;
+    }
+
+    // Rebuild frequency estimation should be triggered early in the tuning phase.
+    // This is necessary because runtime prediction for each trial configuration
+    // depends on the rebuild frequency.
+    // To avoid the influence of poorly initialized velocities at the start of the simulation,
+    // the rebuild frequency is estimated at iteration corresponding to the last sample of the first configuration.
+    // The rebuild frequency estimated here is then reused for the remainder of the tuning phase.
+    if (_tuningManager->inFirstConfigurationLastSample(_iteration)) {
+      // Fetch the needed information for estimating the rebuild frequency from _logicHandlerInfo
+      // and estimate the current rebuild frequency using the velocity method.
+      double rebuildFrequencyEstimate =
+          getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
+      double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
+      // The user defined rebuild frequency is considered as the upper bound.
+      // If velocity method estimate exceeds upper bound, set the rebuild frequency to the user defined value.
+      // This is done because we currently use the user defined rebuild frequency as the upper bound to avoid expensive
+      // buffer interactions.
+      _tuningManager->setRebuildFrequency(std::min(userProvidedRF, rebuildFrequencyEstimate));
+    }
 #endif
     bool doDataStructureUpdate = not neighborListsAreValid();
 
-    if (_functorCalls > 0) {
-      // Bump iteration counters for all autotuners
-      for (const auto &[interactionType, autoTuner] : _autoTunerRefs) {
-        const bool needsToWait = checkTuningStates(interactionType);
-        // Called before bumpIterationCounters as it would return false after that.
-        if (autoTuner->inLastTuningIteration()) {
-          _iterationAtEndOfLastTuningPhase = _iteration;
-        }
-        autoTuner->bumpIterationCounters(needsToWait);
-      }
-
-      // We will do a rebuild in this timestep
-      if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
-        _stepsSinceLastListRebuild = 0;
-      }
-      ++_stepsSinceLastListRebuild;
-      _currentContainer->setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
-      ++_iteration;
+    if (_tuningManager->tuningPhaseJustFinished()) {
+      _iterationAfterLastTuningPhase = _iteration;
     }
+    // We will do a rebuild in this timestep
+    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+      _stepsSinceLastListRebuild = 0;
+    }
+    ++_stepsSinceLastListRebuild;
 
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
@@ -192,7 +209,7 @@ class LogicHandler {
     auto leavingParticles = _currentContainer->updateContainer(not doDataStructureUpdate);
     leavingParticles.insert(leavingParticles.end(), leavingBufferParticles.begin(), leavingBufferParticles.end());
 
-    // Substract the amount of leaving particles from the number of owned particles.
+    // Subtract the amount of leaving particles from the number of owned particles.
     _numParticlesOwned.fetch_sub(leavingParticles.size(), std::memory_order_relaxed);
     // updateContainer deletes all halo particles.
     std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
@@ -553,22 +570,20 @@ class LogicHandler {
   [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
 
   /**
-   * Check if other autotuners for any other interaction types are still in a tuning phase.
-   * @param interactionType
-   * @return bool whether other tuners are still tuning.
-   */
-  bool checkTuningStates(const InteractionTypeOption &interactionType) {
-    // Goes over all pairs in _autoTunerRefs and returns true as soon as one is `inTuningPhase()`.
-    // The tuner associated with the given interaction type is ignored.
-    return std::any_of(std::begin(_autoTunerRefs), std::end(_autoTunerRefs), [&](const auto &entry) {
-      return not(entry.first == interactionType) and entry.second->inTuningPhase();
-    });
-  }
-
-  /**
    * Checks if the given configuration can be used with the given functor and the current state of the simulation.
    * For this, the container and traversal need to be instantiated, hence if the configuration is applicable, it sets
    * the current container and returns the traversal.
+   *
+   * This function uses
+   * - Configuration::hasCompatibleValues for checking configuration is compatible independent of the functor and
+   * domain.
+   * - TraversalInterface::isApplicableToDomain (via TraversalSelector::generateTraversalFromConfig) for checking
+   * configuration (specifically traversal) is compatible with the domain.
+   *
+   * In addition, this function checks that the configuration is applicable to the functor.
+   *
+   * @note for developers: this function should not directly check configuration compatibility where it could be done
+   * indirectly through Configuration::hasCompatibleValues or TraversalInterface::isApplicableToDomain.
    *
    * @tparam Functor
    * @param config
@@ -620,7 +635,7 @@ class LogicHandler {
     const auto numRebuilds = considerOnlyLastNonTuningPhase ? _numRebuildsInNonTuningPhase : _numRebuilds;
     // The total number of iterations is iteration + 1
     const auto iterationCount =
-        considerOnlyLastNonTuningPhase ? _iteration - _iterationAtEndOfLastTuningPhase : _iteration + 1;
+        considerOnlyLastNonTuningPhase ? _iteration - _iterationAfterLastTuningPhase : _iteration + 1;
     if (numRebuilds == 0) {
       return static_cast<double>(_neighborListRebuildFrequency);
     } else {
@@ -834,10 +849,7 @@ class LogicHandler {
    */
   size_t _sortingThreshold;
 
-  /**
-   * Reference to the map of AutoTuners which are managed by the AutoPas main interface.
-   */
-  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &_autoTunerRefs;
+  std::shared_ptr<TuningManager> _tuningManager;
 
   /**
    * The current container holding the particles.
@@ -872,22 +884,18 @@ class LogicHandler {
   /**
    * Steps since last rebuild
    */
-  unsigned int _stepsSinceLastListRebuild{0};
-
-  /**
-   * Total number of functor calls of all interaction types.
-   */
-  unsigned int _functorCalls{0};
+  size_t _stepsSinceLastListRebuild{0};
 
   /**
    * The current iteration number.
+   * Initialized as max such that ++_iteration == 0 for the first iteration.
    */
-  unsigned int _iteration{0};
+  size_t _iteration{std::numeric_limits<size_t>::max()};
 
   /**
-   * The iteration number at the end of last tuning phase.
+   * The iteration number after the last tuning phase has ended.
    */
-  unsigned int _iterationAtEndOfLastTuningPhase{0};
+  size_t _iterationAfterLastTuningPhase{0};
 
   /**
    * Atomic tracker of the number of owned particles.
@@ -977,17 +985,11 @@ bool LogicHandler<Particle_T>::getNeighborListsInvalidDoDynamicRebuild() {
 
 template <typename Particle_T>
 bool LogicHandler<Particle_T>::neighborListsAreValid() {
-  // Implement rebuild indicator as function, so it is only evaluated when needed.
-  const auto needRebuild = [&](const InteractionTypeOption &interactionOption) {
-    return _interactionTypes.count(interactionOption) != 0 and
-           _autoTunerRefs[interactionOption]->willRebuildNeighborLists();
-  };
-
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
       or getNeighborListsInvalidDoDynamicRebuild()
 #endif
-      or needRebuild(InteractionTypeOption::pairwise) or needRebuild(InteractionTypeOption::triwise)) {
+      or _tuningManager->requiresRebuilding(_iteration)) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 
@@ -1077,35 +1079,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     }
   }();
 
-  auto &autoTuner = *_autoTunerRefs[interactionType];
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  if (autoTuner.inFirstTuningIteration()) {
-    _numRebuildsInNonTuningPhase = 0;
-  }
-
-  // Rebuild frequency estimation should be triggered early in the tuning phase.
-  // This is necessary because runtime prediction for each trial configuration
-  // depends on the rebuild frequency.
-  // To avoid the influence of poorly initialized velocities at the start of the simulation,
-  // the rebuild frequency is estimated at iteration corresponding to the last sample of the first configuration.
-  // The rebuild frequency estimated here is then reused for the remainder of the tuning phase.
-  if (autoTuner.inFirstConfigurationLastSample()) {
-    // Fetch the needed information for estimating the rebuild frequency from _logicHandlerInfo
-    // and estimate the current rebuild frequency using the velocity method.
-    double rebuildFrequencyEstimate =
-        getVelocityMethodRFEstimate(_logicHandlerInfo.verletSkin, _logicHandlerInfo.deltaT);
-    double userProvidedRF = static_cast<double>(_neighborListRebuildFrequency);
-    // The user defined rebuild frequency is considered as the upper bound.
-    // If velocity method estimate exceeds upper bound, set the rebuild frequency to the user defined value.
-    // This is done because we currently use the user defined rebuild frequency as the upper bound to avoid expensive
-    // buffer interactions.
-    if (rebuildFrequencyEstimate > userProvidedRF) {
-      autoTuner.setRebuildFrequency(userProvidedRF);
-    } else {
-      autoTuner.setRebuildFrequency(rebuildFrequencyEstimate);
-    }
-  }
-#endif
+  auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
   utils::Timer timerTotal;
   utils::Timer timerRebuild;
   utils::Timer timerComputeInteractions;
@@ -1194,8 +1168,6 @@ template <typename Particle_T>
 template <class Functor>
 std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::selectConfiguration(
     Functor &functor, const InteractionTypeOption &interactionType) {
-  auto &autoTuner = *_autoTunerRefs[interactionType];
-
   // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
   // https://github.com/AutoPas/AutoPas/issues/916
   LiveInfo info{};
@@ -1208,7 +1180,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
   // if this iteration is not relevant, take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
-    auto configuration = autoTuner.getCurrentConfig();
+    auto configuration = _tuningManager->getCurrentConfig(interactionType);
     auto [traversalPtr, _] = isConfigurationApplicable(configuration, functor);
 
     if (not traversalPtr) {
@@ -1217,41 +1189,41 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           "LogicHandler: Functor {} is not relevant for tuning but the given configuration is not applicable!",
           functor.getName());
     }
+    functor.setVecPattern(configuration.vecPattern);
     return {configuration, std::move(traversalPtr), false};
   }
 
-  if (autoTuner.needsLiveInfo()) {
+  if (_tuningManager->needsLiveInfo(_iteration)) {
     // If live info has not been gathered yet, gather it now and send it to the tuner.
     if (info.get().empty()) {
       auto particleIter = this->begin(IteratorBehavior::ownedOrHalo);
       info.gather(particleIter, _neighborListRebuildFrequency, getNumberOfParticlesOwned(), _logicHandlerInfo.boxMin,
                   _logicHandlerInfo.boxMax, _logicHandlerInfo.cutoff, _logicHandlerInfo.verletSkin);
     }
-    autoTuner.receiveLiveInfo(info);
   }
 
   size_t numRejectedConfigs = 0;
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-  utils::Timer selectConfigurationTimer;
+  utils::TraceTimer selectConfigurationTimer;
   selectConfigurationTimer.start();
-#endif
-  auto [configuration, stillTuning] = autoTuner.getNextConfig();
+
+  auto stillTuning = _tuningManager->tune(_iteration, info);
+
+  auto configuration = _tuningManager->getCurrentConfig(interactionType);
 
   // loop as long as we don't get a valid configuration
   do {
     // applicability check also sets the container
     auto [traversalPtr, rejectIndefinitely] = isConfigurationApplicable(configuration, functor);
     if (traversalPtr) {
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+      functor.setVecPattern(configuration.vecPattern);
       selectConfigurationTimer.stop();
       AutoPasLog(TRACE, "Select Configuration took {} ms. A total of {} configurations were rejected.",
                  selectConfigurationTimer.getTotalTime(), numRejectedConfigs);
-#endif
       return {configuration, std::move(traversalPtr), stillTuning};
     }
-    // if no config is left after rejecting this one, an exception is thrown here.
     numRejectedConfigs++;
-    std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
+    // if no config is left after rejecting this one, an exception is thrown here.
+    configuration = _tuningManager->rejectConfiguration(configuration, rejectIndefinitely, interactionType);
   } while (true);
 }
 
@@ -1285,7 +1257,7 @@ template <typename Particle_T>
 template <class Functor>
 bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
                                                            const InteractionTypeOption &interactionType) {
-  if (not _interactionTypes.count(interactionType)) {
+  if (not _interactionTypes.contains(interactionType)) {
     utils::ExceptionHandler::exception(
         "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions type: "
         "{}.",
@@ -1296,8 +1268,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   tuningTimer.start();
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor, interactionType);
   tuningTimer.stop();
-  auto &autoTuner = *_autoTunerRefs[interactionType];
-  autoTuner.logTuningResult(stillTuning, tuningTimer.getTotalTime());
+  _tuningManager->logTuningResult(tuningTimer.getTotalTime(), _iteration, interactionType);
 
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
   const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
@@ -1339,7 +1310,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
     if (stillTuning) {
       // choose the metric of interest
       const auto measurement = [&]() {
-        switch (autoTuner.getTuningMetric()) {
+        switch (_tuningManager->getTuningMetric(interactionType)) {
           case TuningMetricOption::time:
             return std::make_pair(measurements.timeRebuild,
                                   measurements.timeComputeInteractions + measurements.timeRemainderTraversal);
@@ -1350,12 +1321,12 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
             return std::make_pair(0l, 0l);
         }
       }();
-      autoTuner.addMeasurement(measurement.first, measurement.second, rebuildIteration);
+      _tuningManager->addMeasurement(measurement.first, measurement.second, rebuildIteration, _iteration,
+                                     interactionType);
     }
   } else {
     AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
   }
-  ++_functorCalls;
   return stillTuning;
 }
 
@@ -1363,12 +1334,15 @@ template <typename Particle_T>
 template <class Functor>
 std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::isConfigurationApplicable(
     const Configuration &config, Functor &functor) {
-  // Check if the container supports the traversal
-  const auto allContainerTraversals =
-      compatibleTraversals::allCompatibleTraversals(config.container, config.interactionType);
-  if (allContainerTraversals.find(config.traversal) == allContainerTraversals.end()) {
-    AutoPasLog(WARN, "Configuration rejected: Container {} does not support the traversal {}.", config.container,
-               config.traversal);
+  // Check if the configuration is compatible, independent of domain or functor
+  if (not config.hasCompatibleValues()) {
+    AutoPasLog(
+        WARN,
+        "A configuration was rejected by LogicHandler::isConfigurationApplicable, as it was incompatible"
+        " independently of domain or functor. This should not occur and implies illegal configurations are being added"
+        " to the configuration queue during simulation (potentially by a tuning strategy).");
+    AutoPasLog(WARN, "Configuration rejected: {}", config.toString());
+    // Such illegal configurations should be filtered out in the generation of the search space.
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
@@ -1376,6 +1350,13 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   if ((config.newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
       (config.newton3 == Newton3Option::disabled and not functor.allowsNonNewton3())) {
     AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!", config.newton3);
+    return {nullptr, /*rejectIndefinitely*/ true};
+  }
+
+  // Check if the VectorizationPattern is supported by the functor
+  if (not functor.isVecPatternAllowed(config.vecPattern)) {
+    AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support the Vectorization Pattern {}!",
+               config.vecPattern);
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
@@ -1400,7 +1381,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   const auto traversalInfo =
       generateNewContainer ? containerPtr->getTraversalSelectorInfo() : _currentContainer->getTraversalSelectorInfo();
 
-  // Generates a traversal if applicable, otherwise returns a nullptr
+  // Generates a traversal if applicable to domain, otherwise returns a nullptr
   auto traversalPtr =
       TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(config, functor, traversalInfo);
 

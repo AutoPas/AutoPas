@@ -158,7 +158,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
           TraversalOption::vlc_c01,
           TraversalOption::vlp_c01,
           TraversalOption::psvl_c01};
-};
+}
 /**
  * Provides a set of all traversals that only support Newton3 mode enabled.
  * @return
@@ -170,6 +170,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 };
 /**
  * Provides a set of all traversals that only support DataLayout AoS.
+ * @note The PsVL traversals support only AoS due to lack of implementation, but there is no fundamental issue.
  * @return
  */
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {

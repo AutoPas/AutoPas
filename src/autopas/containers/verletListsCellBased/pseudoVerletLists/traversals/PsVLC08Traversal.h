@@ -37,7 +37,7 @@ class PsVLC08Traversal : public C08BasedTraversal<ParticleCell_T, PairwiseFuncto
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit PsVLC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor_T *pairwiseFunctor,
+  explicit PsVLC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor_T &pairwiseFunctor,
                             double interactionLength, const std::array<double, 3> &cellLength,
                             DataLayoutOption dataLayout, bool useNewton3)
       : C08BasedTraversal<ParticleCell_T, PairwiseFunctor_T>(dims, pairwiseFunctor, interactionLength, cellLength,
@@ -51,16 +51,10 @@ class PsVLC08Traversal : public C08BasedTraversal<ParticleCell_T, PairwiseFuncto
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c08; }
 
   /**
-   * PsVL C08 traversals only support AoS and cell size factors >= 1.
+   * PsVL C08 is always applicable to the domain.
    * @return
    */
-  [[nodiscard]] bool isApplicable() const override {
-    if (this->_dataLayout == DataLayoutOption::aos and this->_overlap[0] == 1 and this->_overlap[1] == 1 and
-        this->_overlap[2] == 1) {
-      return true;
-    }
-    return false;
-  }
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()

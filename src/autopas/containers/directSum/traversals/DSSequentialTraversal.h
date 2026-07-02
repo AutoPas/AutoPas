@@ -37,7 +37,7 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit DSSequentialTraversal(Functor *functor, double cutoff, DataLayoutOption dataLayout, bool useNewton3)
+  explicit DSSequentialTraversal(Functor &functor, double cutoff, DataLayoutOption dataLayout, bool useNewton3)
       : CellTraversal<ParticleCell>({2, 1, 1}),
         TraversalInterface(dataLayout, useNewton3),
         _cellFunctor(functor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
@@ -46,7 +46,7 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ds_sequential; }
 
-  [[nodiscard]] bool isApplicable() const override { return true; }
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     auto &cells = *(this->_cells);

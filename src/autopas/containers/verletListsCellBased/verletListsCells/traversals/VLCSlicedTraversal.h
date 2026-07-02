@@ -48,7 +48,7 @@ class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
    * @param useNewton3
    * @param typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
    */
-  explicit VLCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit VLCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                               double interactionLength, const std::array<double, 3> &cellLength,
                               DataLayoutOption dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
       : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
@@ -72,9 +72,11 @@ class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
     return TraversalOption();
   }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (this->_dataLayout == DataLayoutOption::aos or this->_dataLayout == DataLayoutOption::soa);
-  }
+  /**
+   * VLC Sliced is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()
@@ -83,7 +85,7 @@ class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
   void setSortingThreshold(size_t sortingThreshold) override {}
 
  private:
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, class NeighborList>

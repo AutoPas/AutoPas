@@ -40,7 +40,7 @@ class LCC04SoACellHandler {
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit LCC04SoACellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
+  explicit LCC04SoACellHandler(PairwiseFunctor &pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                                double interactionLength, const std::array<double, 3> &cellLength,
                                DataLayoutOption dataLayout, bool useNewton3,
                                const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
@@ -126,7 +126,7 @@ class LCC04SoACellHandler {
   /**
    * The functor that defines the interaction.
    */
-  PairwiseFunctor *_pairwiseFunctor;
+  PairwiseFunctor &_pairwiseFunctor;
 
   /**
    * The datalayout used by this traversal.
@@ -218,13 +218,13 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(
         auto stripeView = cell1->_particleSoABuffer.constructView(0, numParticlesBaseCell);
         if (slice == currentSlice) {
           // Process stripe with itself
-          _pairwiseFunctor->SoAFunctorSingle(stripeView, _useNewton3);
+          _pairwiseFunctor.SoAFunctorSingle(stripeView, _useNewton3);
 
           auto restView =
               cell1->_particleSoABuffer.constructView(numParticlesBaseCell, cell1->_particleSoABuffer.size());
-          _pairwiseFunctor->SoAFunctorPair(stripeView, restView, _useNewton3);
+          _pairwiseFunctor.SoAFunctorPair(stripeView, restView, _useNewton3);
           if (not _useNewton3) {
-            _pairwiseFunctor->SoAFunctorPair(restView, stripeView, _useNewton3);
+            _pairwiseFunctor.SoAFunctorPair(restView, stripeView, _useNewton3);
           }
           cell1ViewEnd = cell1->_particleSoABuffer.size();
           continue;
@@ -256,9 +256,9 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(
 
       auto cell1View = cell1->_particleSoABuffer.constructView(cell1ViewStart, cell1ViewEnd);
       auto currentCSView = currentCS._particleSoABuffer.constructView(currentCSViewStart, currentCSViewEnd);
-      _pairwiseFunctor->SoAFunctorPair(cell1View, currentCSView, _useNewton3);
+      _pairwiseFunctor.SoAFunctorPair(cell1View, currentCSView, _useNewton3);
       if (not _useNewton3) {
-        _pairwiseFunctor->SoAFunctorPair(currentCSView, cell1View, _useNewton3);
+        _pairwiseFunctor.SoAFunctorPair(currentCSView, cell1View, _useNewton3);
       }
     }
   }
@@ -337,7 +337,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::setupIntervals(
   }
 
   std::vector<C08CellHandlerUtility::OffsetPairVector> cellPairOffsets =
-      C08CellHandlerUtility::computePairwiseCellOffsetsC08<C08CellHandlerUtility::C08OffsetMode::c04CellPairs>(
+      C08CellHandlerUtility::computePairwiseCellOffsetsC08<C08CellHandlerUtility::C08OffsetMode::c04NoSorting>(
           cellsPerDimension, this->_cellLength, this->_interactionLength);
 
   // Create intervals

@@ -24,6 +24,9 @@ namespace mdLib {
  * A functor to handle lennard-jones interactions between two particles (molecules).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
+ *
+ * This functor is applicable with the 1xVectorLength pattern only.
+ *
  * @tparam Particle_T The type of particle.
  * @tparam applyShift Switch for the lj potential to be truncated shifted.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.

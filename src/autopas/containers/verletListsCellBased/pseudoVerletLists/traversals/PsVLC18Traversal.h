@@ -39,7 +39,7 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell_T, PairwiseFuncto
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit PsVLC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor_T *pairwiseFunctor,
+  explicit PsVLC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor_T &pairwiseFunctor,
                             const double interactionLength, const std::array<double, 3> &cellLength,
                             DataLayoutOption dataLayout, bool useNewton3)
       : C18BasedTraversal<ParticleCell_T, PairwiseFunctor_T>(dims, pairwiseFunctor, interactionLength, cellLength,
@@ -61,16 +61,10 @@ class PsVLC18Traversal : public C18BasedTraversal<ParticleCell_T, PairwiseFuncto
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::psvl_c18; }
 
   /**
-   * PsVL C18 traversals only support AoS and cell size factors >= 1.
+   * PsVL C18 is always applicable to the domain.
    * @return
    */
-  [[nodiscard]] bool isApplicable() const override {
-    if (this->_dataLayout == DataLayoutOption::aos and this->_overlap[0] == 1 and this->_overlap[1] == 1 and
-        this->_overlap[2] == 1) {
-      return true;
-    }
-    return false;
-  }
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   /**
    * Sets the orientationList.

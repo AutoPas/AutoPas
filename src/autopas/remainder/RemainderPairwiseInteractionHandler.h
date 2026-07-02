@@ -15,7 +15,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "autopas/utils/Timer.h"
+#include "autopas/utils/TraceTimer.h"
 #include "autopas/utils/checkFunctorType.h"
 #include "autopas/utils/logging/Logger.h"
 
@@ -73,11 +73,13 @@ class RemainderPairwiseInteractionHandler {
     // The following part performs the main remainder traversal. The actual calculation is done in 4 steps carried out
     // in three helper functions.
 
-    // only activate time measurements if it will actually be logged
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
-    autopas::utils::Timer timerBufferContainer, timerPBufferPBuffer, timerPBufferHBuffer, timerBufferSoAConversion;
+    // TraceTimers only run with log level TRACE
+    utils::TraceTimer timerBufferContainer;
+    utils::TraceTimer timerPBufferPBuffer;
+    utils::TraceTimer timerPBufferHBuffer;
+    utils::TraceTimer timerBufferSoAConversion;
     timerBufferContainer.start();
-#endif
+
     // steps 1 & 2.
     // particleBuffer with all particles close in container
     // and haloParticleBuffer with owned, close particles in container.
@@ -85,10 +87,8 @@ class RemainderPairwiseInteractionHandler {
     // which don't have an SoA interface.
     remainderHelperBufferContainerAoS<newton3>(f, container, particleBuffers, haloParticleBuffers);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     timerBufferContainer.stop();
     timerBufferSoAConversion.start();
-#endif
 
     if (useSoA) {
       // All (halo-)buffer interactions shall happen vectorized, hence, load all buffer data into SoAs
@@ -99,35 +99,28 @@ class RemainderPairwiseInteractionHandler {
         f->SoALoader(buffer, buffer._particleSoABuffer, 0, false);
       }
     }
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+
     timerBufferSoAConversion.stop();
     timerPBufferPBuffer.start();
-#endif
 
     // step 3. particleBuffer with itself and all other buffers
     remainderHelperBufferBuffer<newton3>(f, particleBuffers, useSoA);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     timerPBufferPBuffer.stop();
     timerPBufferHBuffer.start();
-#endif
 
     // step 4. particleBuffer with haloParticleBuffer
     remainderHelperBufferHaloBuffer(f, particleBuffers, haloParticleBuffers, useSoA);
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     timerPBufferHBuffer.stop();
     timerBufferSoAConversion.start();
-#endif
 
     // unpack particle SoAs. Halo data is not interesting
     if (useSoA) {
       for (auto &buffer : particleBuffers) f->SoAExtractor(buffer, buffer._particleSoABuffer, 0);
     }
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     timerBufferSoAConversion.stop();
-#endif
 
     AutoPasLog(TRACE, "Timer Buffers <-> Container  (1+2): {}", timerBufferContainer.getTotalTime());
     AutoPasLog(TRACE, "Timer PBuffers<-> PBuffer    (  3): {}", timerPBufferPBuffer.getTotalTime());

@@ -91,7 +91,7 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
-  explicit LCC01Traversal(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
+  explicit LCC01Traversal(const std::array<unsigned long, 3> &dims, Functor &functor, const double interactionLength,
                           const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
       : C01BasedTraversal<ParticleCell, Functor, (combineSoA ? 2 : 3)>(dims, functor, interactionLength, cellLength,
                                                                        dataLayout, useNewton3),
@@ -105,20 +105,10 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
   void traverseParticles() override;
 
   /**
-   * C01 traversals are only usable if useNewton3 is disabled and combined SoA buffers are only applicable if SoA is set
-   * as DataLayout.
-   *
-   * This is because the cell functor in the c01 traversal is hardcoded to not allow newton 3 even if only one thread is
-   * used.
-   *
-   * Also, combined SoA buffers are only implemented for pairwise interactions.
-   *
-   * @return
+   * LC C01 is always applicable to the domain.
+   * @return true
    */
-  [[nodiscard]] bool isApplicable() const override {
-    return not this->_useNewton3 and not(combineSoA and this->_dataLayout != DataLayoutOption::soa) and
-           not(combineSoA and not utils::isPairwiseFunctor<Functor>());
-  }
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
     return (combineSoA) ? TraversalOption::lc_c01_combined_SoA : TraversalOption::lc_c01;
@@ -185,7 +175,7 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
   /**
    * Functor defining pairwise or triwise particle interactions.
    */
-  Functor *_functor;
+  Functor &_functor;
 
   /**
    * Cells containing combined SoA buffers.
@@ -214,7 +204,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCell(s
   } else {
     utils::ExceptionHandler::exception(
         "LCC01Traversal::processBaseCell(): Functor {} is not of type PairwiseFunctor or TriwiseFunctor.",
-        _functor->getName());
+        _functor.getName());
   }
 }
 
@@ -288,8 +278,8 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
         // pairwise functor directly.
         auto startIndex = baseCell.size();
         auto endIndex = combinationSlice[slice]._particleSoABuffer.size();
-        _functor->SoAFunctorPair(baseCell._particleSoABuffer,
-                                 {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
+        _functor.SoAFunctorPair(baseCell._particleSoABuffer,
+                                {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
         // compute base cell
         this->_cellFunctor.processCell(baseCell);
       } else {
@@ -354,7 +344,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, combineSoA>::resizeBuf
 template <class ParticleCell, class Functor, bool combineSoA>
 inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::traverseParticles() {
   auto &cells = *(this->_cells);
-  if (not this->isApplicable()) {
+  if (not this->isApplicableToDomain()) {
     if constexpr (combineSoA) {
       utils::ExceptionHandler::exception(
           "The C01 traversal with combined SoA buffers cannot work with data layout AoS and enabled newton3 (unless "

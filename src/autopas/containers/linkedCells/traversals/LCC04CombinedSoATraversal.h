@@ -36,7 +36,7 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit LCC04CombinedSoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit LCC04CombinedSoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                                      const double interactionLength, const std::array<double, 3> &cellLength,
                                      DataLayoutOption dataLayout, bool useNewton3)
       : C04BasedTraversal<ParticleCell, PairwiseFunctor, 2>(dims, pairwiseFunctor, interactionLength, cellLength,
@@ -49,15 +49,14 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04_combined_SoA; }
 
   /**
-   * lc_c04_combined_SoA traversals are only usable with dataLayout SoA.
-   * @todo Currently there is a bug when cellsize factor is smaller than 1:
+   * lc_c04_combined_SoA in theory have no domain-related applicability requirements.
+   * @todo Currently there is a bug when there is an overlap of more than one cell (typically due to CSF<1.0):
    * https://github.com/AutoPas/AutoPas/issues/354
    * once this bug is fixed, reenable this traversal again for arbitrary `_overlap`s.
    * @return
    */
-  [[nodiscard]] bool isApplicable() const override {
-    return this->_dataLayout == DataLayoutOption::soa and
-           (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1);
+  [[nodiscard]] bool isApplicableToDomain() const override {
+    return this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1;
   }
 
   /**

@@ -6,6 +6,14 @@
 
 #include "C08CellHandlerUtility.h"
 
+#include <algorithm>
+
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/Math.h"
+#include "autopas/utils/ThreeDimensionalMapping.h"
+
 namespace autopas::C08CellHandlerUtility {
 
 namespace internal {
@@ -45,7 +53,7 @@ std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offse
   using namespace autopas::utils::ArrayMath::literals;
   // In case the sorting direction is 0, 0, 0 ==> fix to 1, 1, 1
   std::array<double, 3> sortDir = offset1Vector - offset2Vector;
-  if (std::all_of(sortDir.begin(), sortDir.end(), [](const auto &val) { return val == 0; })) {
+  if (std::ranges::all_of(sortDir, [](const auto &val) { return val == 0; })) {
     sortDir = {1., 1., 1.};
   }
 
@@ -57,7 +65,8 @@ std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offse
 
 template <C08OffsetMode Mode>
 OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
-                                                   const std::array<double, 3> &cellLength, double interactionLength) {
+                                                   const std::array<double, 3> &cellLength,
+                                                   const double interactionLength) {
   using namespace autopas::utils::ArrayMath::literals;
   using namespace internal;
   using utils::ArrayMath::ceilAndCast;
@@ -72,20 +81,20 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
   const std::array<int, 3> &cellsPerDimIntegral = static_cast_copy_array<int>(cellsPerDimension);
 
   // Small constants used multiple times in the code below
-  // Note, Legacy: With ov1 --> No support for assymetric overlaps!
+  // Note, Legacy: With ov1 --> No support for asymmetric overlaps!
   const int ov1 = overlap[0] + 1;
   const double interactionLengthSquare{interactionLength * interactionLength};
 
   // Due to 2D output, we need to first resize the outer vector to the x dimension
-  if constexpr (Mode == C08OffsetMode::c04CellPairs) {
+  if constexpr (Mode == C08OffsetMode::c04NoSorting) {
     resultOffsetsC08.resize(ov1);
   }
 
-  // Iteration to build the cell pairs required for the C08 base step, x, y, z reprent the spatial dimension
+  // Iteration to build the cell pairs required for the C08 base step, x, y, z represent the spatial dimension
   for (int x = 0; x <= overlap[0]; ++x) {
     for (int y = 0; y <= overlap[1]; ++y) {
       // Calculate the first partaking cell's offset relative to base cell. The first offset never has a z component
-      // These vertical interactions (along the z-axis) are all incoperated by the second cell's index
+      // These vertical interactions (along the z-axis) are all incorporated by the second cell's index
       const int offset1 = threeToOneD(x, y, 0, cellsPerDimIntegral);
       for (int z = 0; z <= overlap[2]; ++z) {
         // The z component is always calculated in the same way and does not depend on the direction
@@ -114,9 +123,9 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
             //      if the distance between cell centers is actually in interactionLength
             if (utils::ArrayMath::dot(distVec, distVec) <= interactionLengthSquare) {
               // Calculate the sorting direction if sorting is enabled
-              if constexpr (Mode == C08OffsetMode::c08CellPairsSorting) {
-                // These are respectivley the 3D coordinates of the offsets of cell1 and cell2, as double elements
-                // The cellLength is utuilized to modfiy the direction of the sortingVector in case the cells
+              if constexpr (Mode == C08OffsetMode::sorting) {
+                // These are respectively the 3D coordinates of the offsets of cell1 and cell2, as double elements
+                // The cellLength is utilized to modify the direction of the sortingVector in case the cells
                 // are less squarish, but more lengthy
                 const auto sortDir = computeSortingDirection(
                     {
@@ -132,8 +141,8 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
                     cellLength);
                 // Append the cell pairs & their sorting direction
                 resultOffsetsC08.emplace_back(offset2, offset1, sortDir);
-              } else if constexpr (Mode == C08OffsetMode::c04CellPairs) {
-                // The c04CellPairs requires a vector of vector of pairs where the first vector is resolved in x-axis
+              } else if constexpr (Mode == C08OffsetMode::c04NoSorting) {
+                // The c04NoSorting requires a vector of vectors of pairs where the first vector is resolved in x-axis
                 resultOffsetsC08[x].emplace_back(offset2, offset1);
               } else {
                 // Like c08CellPairsSorting, but without sorting
@@ -148,24 +157,129 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
   return resultOffsetsC08;
 }
 
+template <C08OffsetMode Mode>
+OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
+                                                     const std::array<double, 3> &cellLength,
+                                                     const double interactionLength) {
+  using namespace utils::ArrayMath::literals;
+  using namespace internal;
+  using utils::ArrayMath::ceilAndCast;
+
+  const auto cellsPerDimIntegral = utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension);
+  const double interactionLengthSquared = interactionLength * interactionLength;
+
+  // Output of the function: Vector of triwise cell indices & projection axis
+  OffsetTripletType<Mode> resultOffsetsC08{};
+  const std::array<int, 3> overlap{ceilAndCast(interactionLength / cellLength)};
+
+  // Precompute all valid cells in the overlap bounds
+  struct CellData {
+    long x, y, z;
+    long offset;
+    bool operator==(const CellData &other) const {
+      return this->x == other.x and this->y == other.y and this->z == other.z and this->offset == other.offset;
+    }
+  };
+  std::vector<CellData> cells;
+  cells.reserve((overlap[0] + 1) * (overlap[1] + 1) * (overlap[2] + 1));
+
+  for (long x = 0; x <= static_cast<long>(overlap[0]); ++x) {
+    for (long y = 0; y <= static_cast<long>(overlap[1]); ++y) {
+      for (long z = 0; z <= static_cast<long>(overlap[2]); ++z) {
+        cells.push_back({x, y, z, utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimIntegral)});
+      }
+    }
+  }
+
+  // Sort by offset to easily enforce offset1 <= offset2 < offset3 via loop bounds
+  std::sort(cells.begin(), cells.end(), [](const CellData &a, const CellData &b) { return a.offset < b.offset; });
+
+  // Helper function to determine if two cells are more than interactionLength apart
+  auto cellDistIsGreaterThanCutoff = [&](const CellData &c1, const CellData &c2) {
+    const std::array cellDistance = {std::max(0L, std::abs(c1.x - c2.x) - 1) * cellLength[0],
+                                     std::max(0L, std::abs(c1.y - c2.y) - 1) * cellLength[1],
+                                     std::max(0L, std::abs(c1.z - c2.z) - 1) * cellLength[2]};
+    // Using >= because if cellLength == interactionLength, interacting particles are in neighboring cells only
+    return utils::ArrayMath::dot(cellDistance, cellDistance) >= interactionLengthSquared;
+  };
+
+  // Initialize the result structure properly based on Mode
+  if constexpr (Mode == C08OffsetMode::sorting) {
+    resultOffsetsC08.emplace_back(0, 0, 0, std::array<double, 3>{1., 1., 1.});
+  }  // Due to 2D output, we need to first resize the outer vector to the x dimension
+  else if constexpr (Mode == C08OffsetMode::c04NoSorting) {
+    resultOffsetsC08.resize(overlap[0] + 1);
+  } else {
+    resultOffsetsC08.emplace_back(0, 0, 0);
+  }
+
+  // offsets for the first cell
+  const size_t numCells = cells.size();
+  for (size_t i = 0; i < numCells; ++i) {
+    // j starts at i + 1 because offset1 < offset2 (strict inequality)
+    for (size_t j = i + 1; j < numCells; ++j) {
+      if (cellDistIsGreaterThanCutoff(cells[i], cells[j])) continue;
+      for (size_t k = j; k < numCells; ++k) {
+        // check distance to cell 1 and cell 2
+        if (cellDistIsGreaterThanCutoff(cells[i], cells[k])) continue;
+        if (cellDistIsGreaterThanCutoff(cells[j], cells[k])) continue;
+
+        const auto &c1 = cells[i];
+        const auto &c2 = cells[j];
+        const auto &c3 = cells[k];
+
+        // C08 logic: At least one cell per dimension has to be zero
+        if ((c1.x == 0 or c2.x == 0 or c3.x == 0) and (c1.y == 0 or c2.y == 0 or c3.y == 0) and
+            (c1.z == 0 or c2.z == 0 or c3.z == 0)) {
+          if constexpr (Mode == C08OffsetMode::sorting) {
+            const auto sortDirection = computeSortingDirection(
+                {static_cast<double>(c2.x), static_cast<double>(c2.y), static_cast<double>(c2.z)},
+                {static_cast<double>(c1.x), static_cast<double>(c1.y), static_cast<double>(c1.z)}, cellLength);
+            resultOffsetsC08.emplace_back(c1.offset, c2.offset, c3.offset, sortDirection);
+          } else if constexpr (Mode == C08OffsetMode::c04NoSorting) {
+            resultOffsetsC08[c1.x].emplace_back(c1.offset, c2.offset, c3.offset);
+          } else {
+            resultOffsetsC08.emplace_back(c1.offset, c2.offset, c3.offset);
+          }
+        }
+      }
+    }
+  }
+  return resultOffsetsC08;
+}
+
 /*
- * Explicit Template Instantation - Required since the definition of computePairwiseCellOffsetsC08(..)
+ * Explicit Template Instantiation - Required since the definition of computePairwiseCellOffsetsC08(..)
  * is not in header file. However, the Mode variable is finite, and all instances can be created before
  * being used by explicit template instantiation
  */
 
 //! @cond Doxygen_Suppress
-template std::vector<OffsetPairSorting> computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairsSorting>(
+template std::vector<OffsetPairSorting> computePairwiseCellOffsetsC08<C08OffsetMode::sorting>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
 
-/** Template Sepcialization to return C08 cell paris without sorting */
-template std::vector<OffsetPair> computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairs>(
+/** Template Specialization to return C08 cell pairs without sorting */
+template std::vector<OffsetPair> computePairwiseCellOffsetsC08<C08OffsetMode::noSorting>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
 
-/** Template Sepcialization to return C04 cell paris, i.e. C08 resolved on x axis */
-template std::vector<OffsetPairVector> computePairwiseCellOffsetsC08<C08OffsetMode::c04CellPairs>(
+/** Template Specialization to return C04 cell pairs, i.e. C08 resolved on x-axis */
+template std::vector<OffsetPairVector> computePairwiseCellOffsetsC08<C08OffsetMode::c04NoSorting>(
+    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
+    double interactionLength);
+
+template std::vector<OffsetTripletSorting> computeTriwiseCellOffsetsC08<C08OffsetMode::sorting>(
+    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
+    double interactionLength);
+
+/** Template Specialization to return C08 cell triplets without sorting */
+template std::vector<OffsetTriplet> computeTriwiseCellOffsetsC08<C08OffsetMode::noSorting>(
+    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
+    double interactionLength);
+
+/** Template Specialization to return C04 cell triplets, i.e. C08 resolved on x-axis */
+template std::vector<OffsetTripletVector> computeTriwiseCellOffsetsC08<C08OffsetMode::c04NoSorting>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
 //! @endcond

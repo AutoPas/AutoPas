@@ -33,7 +33,7 @@ class PsVLC01Traversal : public C01BasedTraversal<ParticleCell_T, PairwiseFuncto
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    * in that case the interactionLength is needed!
    */
-  explicit PsVLC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor_T *pairwiseFunctor,
+  explicit PsVLC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor_T &pairwiseFunctor,
                             const double interactionLength, const std::array<double, 3> &cellLength,
                             DataLayoutOption dataLayout, bool useNewton3)
       : C01BasedTraversal<ParticleCell_T, PairwiseFunctor_T, 3>(dims, pairwiseFunctor, interactionLength, cellLength,
@@ -45,16 +45,10 @@ class PsVLC01Traversal : public C01BasedTraversal<ParticleCell_T, PairwiseFuncto
   void traverseParticles() override;
 
   /**
-   * PsVL C01 traversals only support AoS, cell size factors >= 1 and useNewton3 disabled.
+   * PsVL C01 is always applicable to the domain.
    * @return
    */
-  [[nodiscard]] bool isApplicable() const override {
-    if (this->_useNewton3 == false and this->_dataLayout == DataLayoutOption::aos and this->_overlap[0] == 1 and
-        this->_overlap[1] == 1 and this->_overlap[2] == 1) {
-      return true;
-    }
-    return false;
-  }
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
   /**
    * Getter.
    * @return
