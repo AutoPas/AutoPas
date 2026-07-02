@@ -68,27 +68,33 @@ jobs:
           # Define the FULL Matrix, which includes configurations for:
           # 1:   Debug Mode  => Test for subtleties between Debug and Release
           # 2/3: Clang with Address/Thread sanitizer. 
-          # 4:   GCC
-          # 5:   MPI
-          # 6:   Multisite (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
-          # 7:   Multisite + MPI (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
+          # 4:   Clang with Kokkos enabled and CUDA and OMP backend
+          # 5:   Clang with Kokkos enabled and OMP backend
+          # 6:   GCC
+          # 7:   MPI
+          # 8:   Multisite (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
+          # 9:   Multisite + MPI (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
           read -r -d '' full_matrix << EOM || true
           [
-            { "name": "Clang-Debug-CompileOnly", "container": "autopas-build-clang", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Debug", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite" },
-            { "name": "Clang-Release-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "OFF", "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite" },
-            { "name": "Clang-Release-OMP-TSan", "container": "autopas-build-archer", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "OFF",  "avx": "ON", "hwy": "ON",  "site": "singlesite" },
-            { "name": "GCC-Release-OMP", "container": "autopas-build-gcc",    "cc": "gcc",   "cxx": "g++",     "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite" },
-            { "name": "MPI-Release-OMP-ASan", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite" },
-            { "name": "Clang-OMP-TSan-MultiSite", "container": "autopas-build-archer", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "ON",  "avx": "OFF", "hwy": "OFF", "site": "multisite" },
-            { "name": "MPI-MultiSite", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "ON", "avx": "OFF", "hwy": "OFF", "site": "multisite" }
+            { "name": "Clang-Debug-CompileOnly", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Debug", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite", "kokkos": "OFF", "cuda": "OFF"},
+            { "name": "Clang-Release-ASan", "container": "autopas-build-clang",  "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "OFF", "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF", "cuda": "OFF"},
+            { "name": "Clang-Release-OMP-TSan", "container": "autopas-build-archer", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "OFF",  "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF", "cuda": "OFF"},
+            { "name": "Clang-Release-Kokkos-CUDA", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON", "cuda": "ON"},
+            { "name": "Clang-Release-Kokkos-OMP", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON", "cuda": "OFF"},
+            { "name": "GCC-Release-OMP", "container": "autopas-build-gcc",    "cc": "gcc",   "cxx": "g++",     "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF", "cuda": "OFF"},
+            { "name": "MPI-Release-OMP-ASan", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite", "kokkos": "OFF", "cuda": "OFF"},
+            { "name": "Clang-OMP-TSan-MultiSite", "container": "autopas-build-archer", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "ON",  "avx": "OFF", "hwy": "OFF", "site": "multisite", "kokkos": "OFF", "cuda": "OFF"},
+            { "name": "MPI-MultiSite", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "ON", "avx": "OFF", "hwy": "OFF", "site": "multisite", "kokkos": "OFF", "cuda": "OFF"}
           ]
           EOM
 
           # Define the LIGHT Matrix
-          # Basic configuration without sanitizers or AVX
+          # Basic configuration without sanitizers or AVX but with Kokkos (OMP only & OMP+CUDA backends)
           read -r -d '' light_matrix << EOM || true
           [
-            { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite" }
+            { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF", "cuda":"OFF" },
+            { "name": "Clang-Release-Kokkos-CUDA", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON", "cuda":"ON" },
+            { "name": "Clang-Release-Kokkos-OMP", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON", "cuda":"OFF" }
           ]
           EOM
           
@@ -151,6 +157,27 @@ jobs:
           key: ccache-${{ matrix.config.name }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.config.name }}-
 
+      # Claude's suggestion...
+      - name: Install sudo (needed by cuda-toolkit action)
+        run: |
+          apt-get update
+          apt-get install -y sudo
+
+      # https://github.com/marketplace/actions/cuda-toolkit
+      - name: Integrate cuda-toolkit
+        uses: Jimver/cuda-toolkit@v0.2.35
+        with:
+          cuda: '13.2.0'
+
+      - name: Install Clang 22
+        run: |
+          apt-get update
+          apt-get install -y wget gnupg lsb-release software-properties-common
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          ./llvm.sh 22
+          apt-get install -y libomp-22-dev
+
       - name: Build Everything
         run: |
           # derive whether or not to compile with MPI options ON.
@@ -159,7 +186,7 @@ jobs:
           
           # -march=x86-64-v3 covers Haswell (2013) and newer. Safe for all GHA runners.
           export CFLAGS="-march=x86-64-v3"
-          export CXXFLAGS="-march=x86-64-v3"
+          export CXXFLAGS="-I/usr/local/cuda-13.2/include/cccl -march=x86-64-v3 -Wno-ignored-attributes -Wno-deprecated-attributes -DHWY_COMPILE_ONLY_STATIC"
           
           CC=${{ matrix.config.cc }} CXX=${{ matrix.config.cxx }} cmake \
             -G "${{ matrix.config.builder }}" \
@@ -170,6 +197,10 @@ jobs:
             -DAUTOPAS_LOG_ALL=ON \
             -DAUTOPAS_MIN_LOG_LVL:STRING=TRACE \
             -DAUTOPAS_OPENMP=${{ matrix.config.omp }} \
+            -DAUTOPAS_ENABLE_KOKKOS=${{ matrix.config.kokkos }} \
+            -DKokkos_ENABLE_OPENMP=ON \
+            -DKokkos_ENABLE_CUDA=${{ matrix.config.cuda }} \
+            -DKokkos_ARCH_AMPERE80=ON \
             -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config.asan }} \
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config.tsan }} \
             -DAUTOPAS_INTERNODE_TUNING=${UseMPI} \
@@ -224,6 +255,7 @@ jobs:
             part: 3
           - config: { cc: "mpicc" }
             part: 4
+          - config: { cuda: "ON" }
 
     name: Run tests ${{ matrix.config.name }} (${{ matrix.part }}/4)
     container:
@@ -241,6 +273,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install Clang 22 OpenMP runtime
+        run: |
+            apt-get update
+            apt-get install -y wget gnupg lsb-release software-properties-common
+            wget https://apt.llvm.org/llvm.sh
+            chmod +x llvm.sh
+            ./llvm.sh 22
+            apt-get install -y libomp-22-dev
 
       - name: Fetch Build Folder
         uses: actions/download-artifact@v4
