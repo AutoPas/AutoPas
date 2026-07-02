@@ -11,6 +11,7 @@
 #include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/tuningStrategy/PredictiveTuning.h"
+#include "testingHelpers/ArbitraryConfigurations.h"
 
 void PredictiveTuningTest::checkPredictions(autopas::ExtrapolationMethodOption extrapolationMethodOption,
                                             const std::vector<std::map<autopas::Configuration, long>> &evidencePerPhase,
@@ -76,23 +77,39 @@ TEST_P(PredictiveTuningTest, testPredictions) {
     case autopas::ExtrapolationMethodOption::linePrediction: {
       checkPredictions(extrapolationOption,
                        {
-                           {{_configurationLC_C01, 94}, {_configurationLC_C08, 109}, {_configurationLC_Sliced, 101}},
-                           {{_configurationLC_C01, 97}, {_configurationLC_C08, 103}, {_configurationLC_Sliced, 101}},
+                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 94},
+                            {arbitraryConfigurations::_arbitrary_config_2B_1, 109},
+                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
+                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 97},
+                            {arbitraryConfigurations::_arbitrary_config_2B_1, 103},
+                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
                        },
                        // all predictions are evaluated for the seventh iteration (iteration==6)
-                       0, {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
+                       0,
+                       {{arbitraryConfigurations::_arbitrary_config_2B_0, 100},
+                        {arbitraryConfigurations::_arbitrary_config_2B_1, 99},
+                        {arbitraryConfigurations::_arbitrary_config_2B_2, 101}});
       break;
     }
     case autopas::ExtrapolationMethodOption::newton: {
       checkPredictions(extrapolationOption,
                        {
-                           {{_configurationLC_C01, 79}, {_configurationLC_C08, 115}, {_configurationLC_Sliced, 101}},
-                           {{_configurationLC_C01, 90}, {_configurationLC_C08, 109}, {_configurationLC_Sliced, 101}},
-                           {{_configurationLC_C01, 97}, {_configurationLC_C08, 103}, {_configurationLC_Sliced, 101}},
+                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 79},
+                            {arbitraryConfigurations::_arbitrary_config_2B_1, 115},
+                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
+                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 90},
+                            {arbitraryConfigurations::_arbitrary_config_2B_1, 109},
+                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
+                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 97},
+                            {arbitraryConfigurations::_arbitrary_config_2B_1, 103},
+                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
                        },
                        // all predictions are evaluated for the tenth iteration (iteration==9)
-                       // for _configurationLC_C08 we actually expect 99.33
-                       0, {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
+                       // for arbitraryConfigurations::_arbitrary_config_2B_1 we actually expect 99.33
+                       0,
+                       {{arbitraryConfigurations::_arbitrary_config_2B_0, 100},
+                        {arbitraryConfigurations::_arbitrary_config_2B_1, 99},
+                        {arbitraryConfigurations::_arbitrary_config_2B_2, 101}});
       break;
     }
     case autopas::ExtrapolationMethodOption::linearRegression: {
@@ -100,22 +117,38 @@ TEST_P(PredictiveTuningTest, testPredictions) {
           extrapolationOption,
           {
               // values along the desired line offset so that the regression should still return the same line
-              {{_configurationLC_C01, 91 + 1}, {_configurationLC_C08, 115 - 1}, {_configurationLC_Sliced, 101 - 2}},
-              {{_configurationLC_C01, 94 - 2}, {_configurationLC_C08, 109 + 2}, {_configurationLC_Sliced, 101 + 4}},
-              {{_configurationLC_C01, 97 + 1}, {_configurationLC_C08, 103 - 1}, {_configurationLC_Sliced, 101 - 2}},
+              {{arbitraryConfigurations::_arbitrary_config_2B_0, 91 + 1},
+               {arbitraryConfigurations::_arbitrary_config_2B_1, 115 - 1},
+               {arbitraryConfigurations::_arbitrary_config_2B_2, 101 - 2}},
+              {{arbitraryConfigurations::_arbitrary_config_2B_0, 94 - 2},
+               {arbitraryConfigurations::_arbitrary_config_2B_1, 109 + 2},
+               {arbitraryConfigurations::_arbitrary_config_2B_2, 101 + 4}},
+              {{arbitraryConfigurations::_arbitrary_config_2B_0, 97 + 1},
+               {arbitraryConfigurations::_arbitrary_config_2B_1, 103 - 1},
+               {arbitraryConfigurations::_arbitrary_config_2B_2, 101 - 2}},
           },
           // all predictions are evaluated for the tenth iteration (iteration==9)
-          0, {{_configurationLC_C01, 100}, {_configurationLC_C08, 99}, {_configurationLC_Sliced, 101}});
+          0,
+          {{arbitraryConfigurations::_arbitrary_config_2B_0, 100},
+           {arbitraryConfigurations::_arbitrary_config_2B_1, 99},
+           {arbitraryConfigurations::_arbitrary_config_2B_2, 101}});
       break;
     }
     case autopas::ExtrapolationMethodOption::lastResult: {
       checkPredictions(extrapolationOption,
                        {
-                           {{_configurationLC_C01, 94}, {_configurationLC_C08, 109}, {_configurationLC_Sliced, 101}},
-                           {{_configurationLC_C01, 97}, {_configurationLC_C08, 103}, {_configurationLC_Sliced, 101}},
+                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 94},
+                            {arbitraryConfigurations::_arbitrary_config_2B_1, 109},
+                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
+                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 97},
+                            {arbitraryConfigurations::_arbitrary_config_2B_1, 103},
+                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
                        },
                        // all predictions are evaluated for the seventh iteration (iteration==6)
-                       0, {{_configurationLC_C01, 97}, {_configurationLC_C08, 103}, {_configurationLC_Sliced, 101}});
+                       0,
+                       {{arbitraryConfigurations::_arbitrary_config_2B_0, 97},
+                        {arbitraryConfigurations::_arbitrary_config_2B_1, 103},
+                        {arbitraryConfigurations::_arbitrary_config_2B_2, 101}});
       break;
     }
     default:
@@ -137,21 +170,26 @@ TEST_P(PredictiveTuningTest, testUnderAndOverflow) {
   const std::map<autopas::Configuration, long> expected = [&]() {
     // since lastResult is not actually an exprapolation, we expect the last values as prediction
     if (extrapolationOption == autopas::ExtrapolationMethodOption::lastResult) {
-      return std::map<autopas::Configuration, long>{
-          {_configurationLC_C01, 10}, {_configurationLC_C08, maxLong - 100}, {_configurationLC_Sliced, 101}};
+      return std::map<autopas::Configuration, long>{{arbitraryConfigurations::_arbitrary_config_2B_0, 10},
+                                                    {arbitraryConfigurations::_arbitrary_config_2B_1, maxLong - 100},
+                                                    {arbitraryConfigurations::_arbitrary_config_2B_2, 101}};
     } else {
-      return std::map<autopas::Configuration, long>{
-          {_configurationLC_C01, 1}, {_configurationLC_C08, maxLong - 1}, {_configurationLC_Sliced, 101}};
+      return std::map<autopas::Configuration, long>{{arbitraryConfigurations::_arbitrary_config_2B_0, 1},
+                                                    {arbitraryConfigurations::_arbitrary_config_2B_1, maxLong - 1},
+                                                    {arbitraryConfigurations::_arbitrary_config_2B_2, 101}};
     }
   }();
-  checkPredictions(
-      extrapolationOption,
-      {
-          {{_configurationLC_C01, 100}, {_configurationLC_C08, 1}, {_configurationLC_Sliced, 101}},
-          {{_configurationLC_C01, 10}, {_configurationLC_C08, maxLong - 100}, {_configurationLC_Sliced, 101}},
-      },
-      // all predictions are evaluated for the seventh iteration (iteration==6)
-      100, expected);
+  checkPredictions(extrapolationOption,
+                   {
+                       {{arbitraryConfigurations::_arbitrary_config_2B_0, 100},
+                        {arbitraryConfigurations::_arbitrary_config_2B_1, 1},
+                        {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
+                       {{arbitraryConfigurations::_arbitrary_config_2B_0, 10},
+                        {arbitraryConfigurations::_arbitrary_config_2B_1, maxLong - 100},
+                        {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
+                   },
+                   // all predictions are evaluated for the seventh iteration (iteration==6)
+                   100, expected);
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, PredictiveTuningTest,
@@ -171,17 +209,19 @@ INSTANTIATE_TEST_SUITE_P(Generated, PredictiveTuningTest,
 TEST_F(PredictiveTuningTest, testLinearPredictionTooLongNotTested) {
   size_t iteration = 0;
   size_t tuningPhase = 0;
-  const std::set<autopas::Configuration> searchSpace{_configurationLC_C08, _configurationLC_Sliced};
+  const std::set<autopas::Configuration> searchSpace{arbitraryConfigurations::_arbitrary_config_2B_1,
+                                                     arbitraryConfigurations::_arbitrary_config_2B_2};
   autopas::EvidenceCollection evidenceCollection{};
 
   auto predictiveTuning =
       autopas::PredictiveTuning(_relativeOptimumRange, _maxTuningIterationsWithoutTest, _evidenceFirstPrediction,
                                 autopas::ExtrapolationMethodOption::linePrediction);
 
-  std::map<autopas::Configuration, long> evidenceBest{{_configurationLC_C08, 10}};
+  std::map<autopas::Configuration, long> evidenceBest{{arbitraryConfigurations::_arbitrary_config_2B_1, 10}};
   // Not a hard requirement but if this is violated the merge into evidenceAll needs to be done differently.
   ASSERT_EQ(evidenceBest.size(), 1);
-  std::map<autopas::Configuration, long> evidenceAll{{_configurationLC_C01, 20}, *evidenceBest.begin()};
+  std::map<autopas::Configuration, long> evidenceAll{{arbitraryConfigurations::_arbitrary_config_2B_0, 20},
+                                                     *evidenceBest.begin()};
 
   std::vector<std::pair<autopas::Configuration, long>> evidenceSorted(evidenceAll.begin(), evidenceAll.end());
   std::sort(evidenceSorted.begin(), evidenceSorted.end(),

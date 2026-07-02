@@ -16,6 +16,7 @@
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/FuzzyTuning.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
+#include "testingHelpers/ArbitraryConfigurations.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -38,9 +39,9 @@ TEST_F(TuningManagerTest, testTuningIntervalIsFixed) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_noN3,
-      _confDs_seq_N3,
-      _confLc_c08_noN3,
+      arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_0,
+      arbitraryConfigurations::_arbitrary_config_2B_3,
   };
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -91,8 +92,11 @@ TEST_F(TuningManagerTest, testMultipleTuners) {
       .boxMax{10., 10., 10.},
   };
 
-  const auto pairwiseSearchSpace = {_confDs_seq_N3, _confLc_c18_N3, _confLc_c08_N3};
-  const auto triwiseSearchSpace = {_confDs_3b_N3, _confLc_c01_3b_noN3};
+  const auto pairwiseSearchSpace = {arbitraryConfigurations::_arbitrary_config_2B_0,
+                                    arbitraryConfigurations::_arbitrary_config_2B_5,
+                                    arbitraryConfigurations::_arbitrary_config_2B_2};
+  const auto triwiseSearchSpace = {arbitraryConfigurations::_arbitrary_config_3B_1,
+                                   arbitraryConfigurations::_arbitrary_config_3B_0};
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(std::make_unique<autopas::AutoTuner>(tuningStrategies, pairwiseSearchSpace, autoTunerInfo,
@@ -175,8 +179,8 @@ TEST_F(TuningManagerTest, testTuningPhaseLongerThanTuningInterval) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confLc_c18_noN3,
-      _confLc_c08_N3,
+      arbitraryConfigurations::_arbitrary_config_2B_4,
+      arbitraryConfigurations::_arbitrary_config_2B_2,
   };
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -232,7 +236,9 @@ TEST_F(TuningManagerTest, testForceRetuneBetweenPhases) {
       .maxSamples = 3,
   };
 
-  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c01_noN3, _confLc_c18_noN3, _confLc_c08_noN3};
+  autopas::AutoTuner::SearchSpaceType searchSpace{arbitraryConfigurations::_arbitrary_config_2B_6,
+                                                  arbitraryConfigurations::_arbitrary_config_2B_4,
+                                                  arbitraryConfigurations::_arbitrary_config_2B_3};
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -306,7 +312,9 @@ TEST_F(TuningManagerTest, testForceRetuneInPhase) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  const auto searchSpace = {_confLc_c01_noN3, _confLc_c18_noN3, _confLc_c08_noN3};
+  const auto searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_6,
+                            arbitraryConfigurations::_arbitrary_config_2B_4,
+                            arbitraryConfigurations::_arbitrary_config_2B_3};
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
@@ -588,8 +596,8 @@ TEST_F(TuningManagerTest, testWillRebuildDL) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_noN3,
-      _confLc_c08_noN3,
+      arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_3,
   };
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -658,9 +666,9 @@ TEST_F(TuningManagerTest, testWillRebuildDDL) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_noN3,
-      _confDs_seq_N3,
-      _confLc_c08_noN3,
+      arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_0,
+      arbitraryConfigurations::_arbitrary_config_2B_3,
   };
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -744,9 +752,9 @@ TEST_F(TuningManagerTest, testWillRebuildDDLOneConfigKicked) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_noN3,
-      _confDs_seq_N3,
-      _confLc_c08_N3,
+      arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_0,
+      arbitraryConfigurations::_arbitrary_config_2B_2,
   };
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -811,7 +819,7 @@ TEST_F(TuningManagerTest, testOneConfig) {
       .maxSamples = 3,
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const auto searchSpace = {_confLc_c08_noN3};
+  const auto searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_3};
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
@@ -819,7 +827,8 @@ TEST_F(TuningManagerTest, testOneConfig) {
 
   autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
 
-  EXPECT_EQ(_confLc_c08_noN3, tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
+  EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_3,
+            tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -834,7 +843,8 @@ TEST_F(TuningManagerTest, testOneConfig) {
     }
     logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
     ++numSamples;
-    EXPECT_EQ(_confLc_c08_noN3, tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
+    EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_3,
+              tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
   }
 }
 
@@ -852,7 +862,8 @@ TEST_F(TuningManagerTest, testConfigSecondInvalid) {
       .maxSamples = 3,
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const auto searchSpace = {_confLc_c08_noN3, _confLc_c08_N3};
+  const auto searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_3,
+                            arbitraryConfigurations::_arbitrary_config_2B_2};
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
@@ -869,13 +880,16 @@ TEST_F(TuningManagerTest, testConfigSecondInvalid) {
 
   logicHandler.updateContainer();
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-  EXPECT_EQ(_confLc_c08_N3, tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
+  EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_2,
+            tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
   logicHandler.updateContainer();
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-  EXPECT_EQ(_confLc_c08_N3, tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
+  EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_2,
+            tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
   logicHandler.updateContainer();
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-  EXPECT_EQ(_confLc_c08_N3, tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
+  EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_2,
+            tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
 }
 
 /**
@@ -893,7 +907,8 @@ TEST_F(TuningManagerTest, testLastConfigThrownOut) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  const auto searchSpace = {_confLc_c08_noN3, _confLc_c18_noN3};
+  const auto searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_3,
+                            arbitraryConfigurations::_arbitrary_config_2B_4};
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
@@ -924,9 +939,11 @@ TEST_F(TuningManagerTest, testSetOptimalConfigurationsCommonContainer) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies2{};
 
   // Pairwise Search Space
-  const autopas::AutoTuner::SearchSpaceType pairwiseSpace{_confLc_c08_noN3, _confDs_seq_noN3};
+  const autopas::AutoTuner::SearchSpaceType pairwiseSpace{arbitraryConfigurations::_arbitrary_config_2B_3,
+                                                          arbitraryConfigurations::_arbitrary_config_2B_1};
   // Triwise Search Space
-  const autopas::AutoTuner::SearchSpaceType triwiseSpace{_confLc_c01_3b_noN3, _confDs_3b_N3};
+  const autopas::AutoTuner::SearchSpaceType triwiseSpace{arbitraryConfigurations::_arbitrary_config_3B_0,
+                                                         arbitraryConfigurations::_arbitrary_config_3B_1};
 
   auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
@@ -959,8 +976,10 @@ TEST_F(TuningManagerTest, testSetOptimalConfigurationsCommonContainer) {
   tunerManager->tune(iteration, info);
 
   // Assert both tuners were forcefully locked into the LC container
-  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise), _confLc_c08_noN3);
-  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::triwise), _confLc_c01_3b_noN3);
+  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise),
+            arbitraryConfigurations::_arbitrary_config_2B_3);
+  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::triwise),
+            arbitraryConfigurations::_arbitrary_config_3B_0);
 
   // Assert both tuners correctly exited the tuning phase
   EXPECT_FALSE(tunerManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise)->inTuningPhase());
@@ -981,9 +1000,11 @@ TEST_F(TuningManagerTest, testSetOptimalConfigurationsDifferentContainers) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies2{};
 
   // Pairwise Search Space
-  const autopas::AutoTuner::SearchSpaceType pairwiseSpace{_confLc_c08_noN3, _confDs_seq_noN3};
+  const autopas::AutoTuner::SearchSpaceType pairwiseSpace{arbitraryConfigurations::_arbitrary_config_2B_3,
+                                                          arbitraryConfigurations::_arbitrary_config_2B_1};
   // Triwise Search Space
-  const autopas::AutoTuner::SearchSpaceType triwiseSpace{_confLc_c01_3b_noN3, _confDs_3b_N3};
+  const autopas::AutoTuner::SearchSpaceType triwiseSpace{arbitraryConfigurations::_arbitrary_config_3B_0,
+                                                         arbitraryConfigurations::_arbitrary_config_3B_1};
 
   const auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
@@ -1015,8 +1036,10 @@ TEST_F(TuningManagerTest, testSetOptimalConfigurationsDifferentContainers) {
   // triwise functor call is still better, even if we have to rebuild every time.
   tunerManager->tune(iteration, info);
 
-  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise), _confDs_seq_noN3);
-  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::triwise), _confLc_c01_3b_noN3);
+  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise),
+            arbitraryConfigurations::_arbitrary_config_2B_1);
+  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::triwise),
+            arbitraryConfigurations::_arbitrary_config_3B_0);
 
   // Assert both tuners correctly exited the tuning phase
   EXPECT_FALSE(tunerManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise)->inTuningPhase());
@@ -1034,7 +1057,7 @@ TEST_F(TuningManagerTest, testLiveInfoRouting) {
   };
 
   // We need a tuner that actually requests LiveInfo to test the gatekeeper
-  const autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3};
+  const autopas::AutoTuner::SearchSpaceType searchSpace{arbitraryConfigurations::_arbitrary_config_2B_3};
 
   // Dummy strategy 1: Only needs standard LiveInfo (at the start of a phase)
   class DummyStrategyLiveInfo : public autopas::TuningStrategyInterface {
