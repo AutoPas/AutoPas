@@ -7,6 +7,8 @@
 #pragma once
 
 #include <array>
+#include <string_view>
+#include <utility>
 
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/utils/Timer.h"
@@ -111,7 +113,8 @@ class SortingThresholdBenchmark {
     const Particle_T defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
     const double cutoff = functor.getCutoff();
     const double inv_sqrt3 = 1. / sqrt(3.);
-    BenchCF cellFunctor = {functor, functor.getCutoff(), DataLayoutOption::soa, false};
+    const double inv_sqrt2 = 1. / sqrt(2.);
+    BenchCF cellFunctor{functor, functor.getCutoff(), DataLayoutOption::soa, false};
     // Set to 0 so if sorting happens or not can be entirely controlled through sorting direction
     cellFunctor.setSoASortingThreshold(0);
     BenchCell cell1, cell2;
@@ -133,7 +136,7 @@ class SortingThresholdBenchmark {
       case 1:
         cell2Low = {cutoff, cutoff, 0.};
         cell2High = {2. * cutoff, 2. * cutoff, cutoff};
-        sortingDirection = {0.5, 0.5, 0.};
+        sortingDirection = {inv_sqrt2, inv_sqrt2, 0.};
         break;
       case 2:
         cell2Low = {cutoff, 0., 0.};
@@ -157,15 +160,15 @@ class SortingThresholdBenchmark {
       long beforeUnsorted = unsortedTimer.getTotalTime();
       unsortedTimer.start();
       for (size_t j = 0; j < iterations; j++) {
-        // sorting Direction of (0,0,0) disables sorting.
-        cellFunctor.processCellPairSoAImpl(cell1, cell2, {0., 0., 0.});
+        // A sorting direction of (0, 0, 0) disables sorting.
+        cellFunctor.processCellPair(cell1, cell2, {0., 0., 0.});
       }
       unsortedTimer.stop();
 
       long beforeSorted = sortedTimer.getTotalTime();
       sortedTimer.start();
       for (size_t j = 0; j < iterations; j++) {
-        cellFunctor.processCellPairSoAImpl(cell1, cell2, sortingDirection);
+        cellFunctor.processCellPair(cell1, cell2, sortingDirection);
       }
       sortedTimer.stop();
 
@@ -192,7 +195,6 @@ class SortingThresholdBenchmark {
    */
   template <class Functor_T, class Particle_T>
   size_t runSearch(Functor_T &functor, size_t layout) {
-    // TODO: Maybe run benchmarks +-5 particles around low_count to find stable point
     constexpr std::array<std::string_view, 3> layoutNames = {"Corner", "Edge", "Face"};
     size_t low_count = 0;
     size_t high_count = max_particles;

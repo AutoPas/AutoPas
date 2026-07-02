@@ -249,8 +249,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.useSortingThresholdBenchmark)::getoptChar: {
         try {
-          config.useSortingThresholdBenchmark.value =
-              autopas::utils::StringUtils::parseBoolOption(strArg, config.useSortingThresholdBenchmark.name);
+          config.useSortingThresholdBenchmark.value = autopas::utils::StringUtils::parseBoolOption(strArg);
         } catch (const exception &) {
           cerr << "Error parsing 'use-sorting-threshold-benchmark': " << optarg << endl;
           displayHelp = true;

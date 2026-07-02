@@ -1266,7 +1266,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
     if (_logicHandlerInfo.useSortingThresholdBenchmark) {
       auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
       if (not autoTuner.sortingThresholdBenchmark.hasRun()) {
-        autoTuner.sortingThresholdBenchmark.runBenchmark<Functor, Particle_T>(*functor, _logicHandlerInfo.cutoff);
+        autoTuner.sortingThresholdBenchmark.runBenchmark<Functor, Particle_T>(*functor);
       }
       _currentContainer->setSoASortingThresholds(autoTuner.sortingThresholdBenchmark.getThresholds());
     }

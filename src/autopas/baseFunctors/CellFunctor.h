@@ -195,7 +195,7 @@ class CellFunctor {
   /**
    * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
    */
-  std::array<size_t, 3> _soaSortingThresholds{25};
+  std::array<size_t, 3> _soaSortingThresholds{25, 25, 25};
 
   const DataLayoutOption::Value _dataLayout;
 
