@@ -75,13 +75,13 @@ jobs:
           # 8:   Multisite + MPI (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
           read -r -d '' full_matrix << EOM || true
           [
-            { "name": "Clang-Debug-CompileOnly", "container": "autopas-build-clang", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Debug", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite", "kokkos": "OFF"},
-            { "name": "Clang-Release-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "OFF", "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF"},
-            { "name": "Clang-Release-OMP-TSan", "container": "autopas-build-archer", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "OFF",  "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF"},
+            { "name": "Clang-Debug-CompileOnly", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Debug", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite", "kokkos": "OFF"},
+            { "name": "Clang-Release-ASan", "container": "autopas-build-clang",  "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "OFF", "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF"},
+            { "name": "Clang-Release-OMP-TSan", "container": "autopas-build-archer", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "OFF",  "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF"},
             { "name": "Clang-Release-OMP-KOKKOS", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON"},
             { "name": "GCC-Release-OMP", "container": "autopas-build-gcc",    "cc": "gcc",   "cxx": "g++",     "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF"},
             { "name": "MPI-Release-OMP-ASan", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite", "kokkos": "OFF" },
-            { "name": "Clang-OMP-TSan-MultiSite", "container": "autopas-build-archer", "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "ON",  "avx": "OFF", "hwy": "OFF", "site": "multisite", "kokkos": "OFF" },
+            { "name": "Clang-OMP-TSan-MultiSite", "container": "autopas-build-archer", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON",  "asan": "OFF", "tsan": "ON", "autovec": "ON",  "avx": "OFF", "hwy": "OFF", "site": "multisite", "kokkos": "OFF" },
             { "name": "MPI-MultiSite", "container": "autopas-build-gcc", "cc": "mpicc", "cxx": "mpic++",  "builder": "Unix Makefiles", "mode": "Release", "omp": "ON",  "asan": "ON",  "tsan": "OFF", "autovec": "ON", "avx": "OFF", "hwy": "OFF", "site": "multisite", "kokkos": "OFF" }
           ]
           EOM
@@ -90,7 +90,7 @@ jobs:
           # Basic configuration without sanitizers or AVX but with Kokkos
           read -r -d '' light_matrix << EOM || true
           [
-            { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang", "cxx": "clang++", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF" },
+            { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF" },
             { "name": "Clang-Release-OMP-KOKKOS", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON" }
           ]
           EOM
@@ -183,7 +183,7 @@ jobs:
           
           # -march=x86-64-v3 covers Haswell (2013) and newer. Safe for all GHA runners.
           # export CFLAGS="-march=x86-64-v3"
-          # export CXXFLAGS="-march=x86-64-v3"
+          export CXXFLAGS="-I/usr/local/cuda-13.2/include/cccl"
           
           CC=${{ matrix.config.cc }} CXX=${{ matrix.config.cxx }} cmake \
             -G "${{ matrix.config.builder }}" \
