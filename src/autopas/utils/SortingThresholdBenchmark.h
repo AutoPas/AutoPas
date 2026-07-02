@@ -280,7 +280,7 @@ class SortingThresholdBenchmark {
       } else {
         lowCount = mid + 1;
         AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted won only {}/{} reps → low={}",
-                   _layoutNames[layout], mid, outcome, _repetitions, o, lowCount);
+                   _layoutNames[layout], mid, outcome, _repetitions, lowCount);
       }
     }
     AutoPasLog(INFO, "SortingThresholdBenchmark layout={} threshold={}", _layoutNames[layout], lowCount);
