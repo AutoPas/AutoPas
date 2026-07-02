@@ -68,11 +68,12 @@ jobs:
           # Define the FULL Matrix, which includes configurations for:
           # 1:   Debug Mode  => Test for subtleties between Debug and Release
           # 2/3: Clang with Address/Thread sanitizer. 
-          # 4:   Clang with Kokkos enabled
-          # 5:   GCC
-          # 6:   MPI
-          # 7:   Multisite (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
-          # 8:   Multisite + MPI (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
+          # 4:   Clang with Kokkos enabled and CUDA and OMP backend
+          # 5:   Clang with Kokkos enabled and OMP backend
+          # 6:   GCC
+          # 7:   MPI
+          # 8:   Multisite (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
+          # 9:   Multisite + MPI (as AVX + HWY functors not yet supported, compile md-flexible with AutoVec)
           read -r -d '' full_matrix << EOM || true
           [
             { "name": "Clang-Debug-CompileOnly", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Debug", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "ON", "hwy": "ON", "site": "singlesite", "kokkos": "OFF", "cuda": "OFF"},
@@ -88,7 +89,7 @@ jobs:
           EOM
 
           # Define the LIGHT Matrix
-          # Basic configuration without sanitizers or AVX but with Kokkos
+          # Basic configuration without sanitizers or AVX but with Kokkos (OMP only & OMP+CUDA backends)
           read -r -d '' light_matrix << EOM || true
           [
             { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF", "cuda":"OFF" },
