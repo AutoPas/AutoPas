@@ -76,6 +76,10 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
    * @copydoc autopas::CellTraversal::setSoASortingThreshold()
    */
   void setSoASortingThreshold(size_t soaSortingThreshold) override {}
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override {}
 
  private:
   PairwiseFunctor &_functor;

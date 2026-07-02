@@ -69,6 +69,10 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
    * @copydoc autopas::CellTraversal::setSoASortingThreshold()
    */
   void setSoASortingThreshold(size_t soaSortingThreshold) override {}
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override {}
 
  private:
   LCC04SoACellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
