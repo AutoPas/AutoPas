@@ -91,7 +91,7 @@ jobs:
           read -r -d '' light_matrix << EOM || true
           [
             { "name": "Clang-Release-OMP-ASan", "container": "autopas-build-clang",  "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF",  "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON",  "site": "singlesite", "kokkos": "OFF" },
-            { "name": "Clang-Release-OMP-KOKKOS", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "ON", "site": "singlesite", "kokkos": "ON" }
+            { "name": "Clang-Release-OMP-KOKKOS", "container": "autopas-build-clang", "cc": "clang-22", "cxx": "clang++-22", "builder": "Ninja", "mode": "Release", "omp": "ON", "asan": "OFF", "tsan": "OFF", "autovec": "OFF", "avx": "OFF", "hwy": "OFF", "site": "singlesite", "kokkos": "ON" }
           ]
           EOM
           
@@ -183,7 +183,7 @@ jobs:
           
           # -march=x86-64-v3 covers Haswell (2013) and newer. Safe for all GHA runners.
           export CFLAGS="-march=x86-64-v3"
-          export CXXFLAGS="-I/usr/local/cuda-13.2/include/cccl -march=x86-64-v3"
+          export CXXFLAGS="-I/usr/local/cuda-13.2/include/cccl -march=x86-64-v3 -Wno-ignored-attributes"
           
           CC=${{ matrix.config.cc }} CXX=${{ matrix.config.cxx }} cmake \
             -G "${{ matrix.config.builder }}" \
@@ -207,8 +207,6 @@ jobs:
             -DMD_FLEXIBLE_FUNCTOR_AUTOVEC=${{ matrix.config.autovec }} \
             -DMD_FLEXIBLE_FUNCTOR_AVX=${{ matrix.config.avx }} \
             -DMD_FLEXIBLE_FUNCTOR_HWY=${{ matrix.config.hwy }} \
-            -DHWY_DISABLED_TARGETS=HWY_ALL_TARGETS \
-            -DHWY_ENABLE_TARGETS=HWY_AVX2 \
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DMD_FLEXIBLE_ENABLE_ALLLBL=${UseMPI} \
             -DAUTOPAS_ENABLE_HARMONY=ON \
