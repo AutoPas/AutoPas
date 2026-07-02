@@ -100,6 +100,15 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
+ * Lists all triwise traversal options applicable for the Verlet Lists container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allVLCompatibleTraversals3B() {
+  static const auto s = filterAllOptions("vl_", InteractionTypeOption::triwise);
+  return s;
+}
+
+/**
  * Lists all traversal options applicable for the Verlet Lists Cells container.
  * @return set of all applicable traversal options.
  */
@@ -146,6 +155,8 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
           TraversalOption::vcl_c01_balanced,
           TraversalOption::vcl_cluster_iteration,
           TraversalOption::vl_list_iteration,
+          TraversalOption::vl_list_intersection,
+          TraversalOption::vl_pair_list_iteration,
           TraversalOption::vlc_c01,
           TraversalOption::vlp_c01};
 }
@@ -162,7 +173,12 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  * Provides a set of all traversals that only support DataLayout AoS.
  * @return
  */
-[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() { return {}; };
+[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
+  return {
+      TraversalOption::vl_pair_list_iteration,
+      TraversalOption::vl_list_intersection,
+  };
+};
 /**
  * Provides a set of all traversals that only support DataLayout SoA.
  * @return
@@ -223,6 +239,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
         case ContainerOption::linkedCells: {
           return allLCCompatibleTraversals3B();
+        }
+        case ContainerOption::verletLists: {
+          return allVLCompatibleTraversals3B();
         }
         default: {
           static const std::set<TraversalOption> s{};

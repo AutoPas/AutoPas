@@ -35,19 +35,22 @@ class LCC08CellHandler {
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
+   * @param checkBounds Boolean parameter whether to check cell indices and call the cell functor with halo cells
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
   explicit LCC08CellHandler(Functor_T &functor, const std::array<unsigned long, 3> &cellsPerDimension,
                             double interactionLength, const std::array<double, 3> &cellLength,
-                            const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
+                            const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3,
+                            bool checkBounds = false)
       : _overlap(overlap),
         _dataLayout(dataLayout),
         _useNewton3(useNewton3),
         _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3),
         _interactionLength(interactionLength),
-        _cellLength(cellLength) {
+        _cellLength(cellLength),
+        _checkBounds(checkBounds) {
     if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
       _cellOffsets =
           LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<LCC08CellHandlerUtility::C08OffsetMode::sorting>(
@@ -136,6 +139,11 @@ class LCC08CellHandler {
    * Cell length in CellBlock3D.
    */
   const std::array<double, 3> _cellLength;
+
+  /*
+   * Set to true if an extra safety check is required that cell offset indices are in range.
+   */
+  const bool _checkBounds;
 };
 
 template <class ParticleCell_T, class Functor_T>
@@ -161,10 +169,22 @@ inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCellPairwise
     ParticleCell_T &cell1 = cells[cellIndex1];
     ParticleCell_T &cell2 = cells[cellIndex2];
 
-    if (cellIndex1 == cellIndex2) {
-      this->_cellFunctor.processCell(cell1);
+    if (_checkBounds) {
+      if (cellIndex1 >= cells.size() or cellIndex2 >= cells.size()) {
+        // check that index is not outOfBounds because we call processBaseCell on outer-most Halo-Cells as well
+        continue;
+      }
+      if (cellIndex1 == cellIndex2) {
+        _cellFunctor.template processCell<true>(cell1);
+      } else {
+        _cellFunctor.template processCellPair<true>(cell1, cell2, r);
+      }
     } else {
-      this->_cellFunctor.processCellPair(cell1, cell2, r);
+      if (cellIndex1 == cellIndex2) {
+        _cellFunctor.template processCell<false>(cell1);
+      } else {
+        _cellFunctor.template processCellPair<false>(cell1, cell2, r);
+      }
     }
   }
 }

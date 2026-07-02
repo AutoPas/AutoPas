@@ -7,24 +7,20 @@
 #pragma once
 
 #include "VerletListHelpers.h"
-#include "autopas/containers/CellBasedParticleContainer.h"
-#include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticBoolSelector.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
 
 /**
  * Verlet Lists container.
- * The VerletLists class uses neighborhood lists to calculate pairwise
- * interactions of particles.
- * It is optimized for a constant, i.e. particle independent, cutoff radius of
- * the interaction.
+ * The VerletLists class uses neighborhood lists to calculate pairwise or triwise interactions of particles.
+ * It is optimized for a constant, i.e. particle independent, cutoff radius of the interaction.
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @tparam Particle_T
  */
@@ -41,7 +37,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
 
  public:
   /**
-   * Enum that specifies how the verlet lists should be build
+   * Enum that specifies how the verlet lists should be built
    */
   enum BuildVerletListType {
     /**
@@ -61,8 +57,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
    * @param skin The skin radius per timestep.
-   * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
-   * @param cellSizeFactor cell size factor ralative to cutoff
+   * @param buildVerletListType Specifies how the verlet list should be built, see BuildVerletListType
+   * @param cellSizeFactor cell size factor relative to cutoff
    */
   VerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
               const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
@@ -80,9 +76,10 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<ParticleCellType> *>(traversal);
     if (verletTraversalInterface) {
       verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
-                                                         _soaNeighborLists);
+                                                         _soaNeighborLists, _aosNeighborPairsLists);
     } else {
-      utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");
+      utils::ExceptionHandler::exception(
+          "VerletLists::computeInteractions(): Trying to use a traversal of wrong type.");
     }
 
     traversal->initTraversal();
@@ -97,17 +94,64 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   typename VerletListHelpers<Particle_T>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
+   * Build the pair neighbor list if necessary without fully rebuilding the other neighbor lists.
+   * @param traversal
+   */
+  void prepareForTraversal(TraversalInterface *traversal) override {
+    if (traversal->getTraversalType() == TraversalOption::vl_pair_list_iteration) {
+      if (not _pairListIsValid) {
+        this->updatePairVerletListsAoS3B(this->_verletBuiltNewton3);
+      }
+    }
+  }
+
+  /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in computeInteractions()!
+   * @note This function will be called in computeInteractions()
    * @param traversal
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    this->_verletBuiltNewton3 = traversal->getUseNewton3();
-    this->updateVerletListsAoS(traversal->getUseNewton3());
+    _pairListIsValid = false;
+    _soaListIsValid = false;
+    const bool buildWithN3 = traversal->getUseNewton3();
+    this->_verletBuiltNewton3 = buildWithN3;
+
+    // Check for triwise traversals
+    switch (traversal->getTraversalType()) {
+      // Standard pairwise traversal
+      case TraversalOption::vl_list_iteration: {
+        this->updateVerletListsAoS(buildWithN3, InteractionTypeOption::pairwise);
+        break;
+      }
+      case TraversalOption::vl_list_intersection: {
+        this->updateVerletListsAoS(buildWithN3, InteractionTypeOption::triwise);
+
+        // sort neighbor lists for efficient intersecting
+        const size_t buckets = _aosNeighborLists.bucket_count();
+        AUTOPAS_OPENMP(parallel for schedule(dynamic))
+        for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
+          for (auto bucketIter = _aosNeighborLists.begin(bucketId); bucketIter != _aosNeighborLists.end(bucketId);
+               ++bucketIter) {
+            std::ranges::sort(bucketIter->second);
+          }
+        }
+        break;
+      }
+      case TraversalOption::vl_pair_list_iteration: {
+        // build 3Body Verlet lists through VLIteration traversal
+        this->updatePairVerletListsAoS3B(buildWithN3);
+        break;
+      }
+      // Default builds normal neighbor lists including halo particles.
+      default: {
+        this->updateVerletListsAoS(buildWithN3, InteractionTypeOption::triwise);
+      }
+    }
+
     // the neighbor list is now valid
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
 
-    if (not _soaListIsValid and traversal->getDataLayout() == DataLayoutOption::soa) {
+    if (traversal->getDataLayout() == DataLayoutOption::soa) {
       // only do this if we need it, i.e., if we are using soa!
       generateSoAListFromAoSVerletLists();
     }
@@ -117,29 +161,62 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Update the verlet lists for AoS usage
    * @param useNewton3
+   * @param interactionType
    */
-  virtual void updateVerletListsAoS(bool useNewton3) {
+  void updateVerletListsAoS(bool useNewton3, InteractionTypeOption::Value interactionType) {
     generateAoSNeighborLists();
-    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(_aosNeighborLists,
-                                                                         this->getCutoff() + this->getVerletSkin());
+    const double interactionLength = this->getInteractionLength();
+    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(_aosNeighborLists, interactionLength);
 
-    /// @todo autotune traversal
+    DataLayoutOption dataLayout;
+    switch (_buildVerletListType) {
+      case BuildVerletListType::VerletAoS:
+        dataLayout = DataLayoutOption::aos;
+        break;
+      case BuildVerletListType::VerletSoA:
+        dataLayout = DataLayoutOption::soa;
+        break;
+      default:
+        utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
+                                           static_cast<int>(_buildVerletListType));
+    }
+
+    bool traverseHaloCells = (interactionType == InteractionTypeOption::triwise);
+    auto traversal =
+        LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
+            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f, interactionLength,
+            this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3, traverseHaloCells);
+    this->_linkedCells.computeInteractions(&traversal);
+  }
+
+  /**
+   * Update the pair verlet lists for AoS usage
+   * @param useNewton3
+   */
+  void updatePairVerletListsAoS3B(bool useNewton3) {
+    updateVerletListsAoS(false, InteractionTypeOption::triwise);
+    generateAoSNeighborPairsLists();
+    const double interactionLength = this->getInteractionLength();
+    typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor f(_aosNeighborPairsLists, interactionLength);
+
     DataLayoutOption dataLayout;
     if (_buildVerletListType == BuildVerletListType::VerletAoS) {
       dataLayout = DataLayoutOption::aos;
     } else if (_buildVerletListType == BuildVerletListType::VerletSoA) {
-      dataLayout = DataLayoutOption::soa;
+      // there are no SoA 3-body traversals, so we print out a warning and use AoS Layout instead
+      AutoPasLog(WARN, "Pair Verlet Lists can currently only be built with AoS DataLayout, using that instead!");
+      _buildVerletListType = BuildVerletListType::VerletAoS;
+      dataLayout = DataLayoutOption::aos;
     } else {
-      utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
+      utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS3B(): unsupported BuildVerletListType: {}",
                                          static_cast<int>(_buildVerletListType));
     }
-    auto traversal =
-        LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
-            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f, this->getInteractionLength(),
-            this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
-    this->_linkedCells.computeInteractions(&traversal);
 
-    _soaListIsValid = false;
+    auto traversal = VLListIterationTraversal<ParticleCellType,
+                                              typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor>(
+        f, dataLayout, useNewton3);
+    this->computeInteractions(&traversal);
+    _pairListIsValid = true;
   }
 
   /**
@@ -161,10 +238,21 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
   /**
+   * Clears and then generates the AoS neighbor pairs lists.
+   */
+  void generateAoSNeighborPairsLists() {
+    _aosNeighborPairsLists.clear();
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
+      // create the pair verlet list entries for all particles
+      _aosNeighborPairsLists[&(*iter)];
+    }
+  }
+
+  /**
    * Fills SoA neighbor list with particle indices.
    */
   void generateSoAListFromAoSVerletLists() {
-    // resize the list to the size of the aos neighborlist
+    // resize the list to the size of the aos neighbor list
     _soaNeighborLists.resize(_aosNeighborLists.size());
     // clear the aos 2 soa map
     _particlePtr2indexMap.clear();
@@ -181,7 +269,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     size_t accumulatedListSize = 0;
     for (const auto &[particlePtr, neighborPtrVector] : _aosNeighborLists) {
       accumulatedListSize += neighborPtrVector.size();
-      size_t i_id = _particlePtr2indexMap[particlePtr];
+      const size_t i_id = _particlePtr2indexMap[particlePtr];
       // each soa neighbor list should be of the same size as for aos
       _soaNeighborLists[i_id].resize(neighborPtrVector.size());
       size_t j = 0;
@@ -205,6 +293,11 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   typename VerletListHelpers<Particle_T>::NeighborListAoSType _aosNeighborLists;
 
   /**
+   * Neighbor Pairs Lists: Map of particle pointers to vector of pairs of particle pointers. (To find triplets.)
+   */
+  typename VerletListHelpers<Particle_T>::NeighborPairsListAoSType _aosNeighborPairsLists;
+
+  /**
    * Mapping of every particle, represented by its pointer, to an index.
    * The index indexes all particles in the container.
    */
@@ -220,6 +313,11 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * Shows if the SoA neighbor list is currently valid.
    */
   bool _soaListIsValid{false};
+
+  /**
+   * Shows if the pair list for triwise interactions is currently valid.
+   */
+  bool _pairListIsValid{false};
 
   /**
    * Specifies for what data layout the verlet lists are build.

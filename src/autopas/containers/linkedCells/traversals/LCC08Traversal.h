@@ -9,7 +9,6 @@
 #include "LCC08CellHandler.h"
 #include "LCTraversalInterface.h"
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
-#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -22,7 +21,7 @@ namespace autopas {
  * \image html C08_domain.png "C08 domain coloring in 2D. 4 colors are required."
  *
  * @tparam ParticleCell_T the type of cells
- * @tparam Functor_T The functor that defines the interaction of two particles.
+ * @tparam Functor_T The functor that defines the interaction of two or three particles.
  */
 template <class ParticleCell_T, class Functor_T>
 class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, public LCTraversalInterface {
@@ -36,21 +35,24 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, publ
    * @param cellLength cell length.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
+   * @param traverseHaloCells boolean whether to traverse the halo cells (e.g. for triwise neighbor list generation)
    */
   explicit LCC08Traversal(const std::array<unsigned long, 3> &dims, Functor_T &functor, double interactionLength,
-                          const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
+                          const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3,
+                          bool traverseHaloCells = false)
       : C08BasedTraversal<ParticleCell_T, Functor_T>(dims, functor, interactionLength, cellLength, dataLayout,
-                                                     useNewton3),
+                                                     useNewton3, traverseHaloCells),
+
         _cellHandler(functor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap, dataLayout,
-                     useNewton3) {}
+                     useNewton3, traverseHaloCells) {}
 
   /**
-   * @copydoc autopas::TraversalInterface::traverseParticles()
+   * @copydoc autopas::TraversalInterface::traverseParticles
    */
   void traverseParticles() override;
 
   /**
-   * @copydoc autopas::TraversalInterface::getTraversalType()
+   * @copydoc autopas::TraversalInterface::getTraversalType
    */
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08; }
 

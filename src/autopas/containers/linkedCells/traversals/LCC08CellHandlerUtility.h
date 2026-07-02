@@ -203,4 +203,16 @@ template <C08OffsetMode Mode>
 OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
                                                      const std::array<double, 3> &cellLength, double interactionLength);
 
+/**
+ * Computes offsets for the 3-Body neighbor list traversal.
+ * @param cellsPerDimension Number of cells per dimension.
+ * @param cellLength Length of the cells.
+ * @param overlap Number of overlapping cells.
+ * @param interactionLength Interaction length (cutoff + skin).
+ * @return Vector of pairs containing offset1, offset2, and the sorting direction.
+ */
+std::vector<OffsetPairSorting> computePairwiseCellOffsets3BNeighborList(
+    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
+    const std::array<unsigned long, 3> &overlap, double interactionLength);
+
 }  // namespace autopas::LCC08CellHandlerUtility
