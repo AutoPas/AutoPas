@@ -57,10 +57,9 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
   }
 
   /**
-   * Checks if the traversal is applicable to the current state of the domain.
-   * @return true iff the traversal can be applied.
+   * @copydoc TraversalInterface::isApplicableToDomain
    */
-  [[nodiscard]] bool isApplicable() const override {
+  [[nodiscard]] bool isApplicableToDomain() const override {
     auto minSliceThickness = _overlapLongestAxis + 1;
     auto maxNumSlices = this->_cellsPerDimension[_dimsSortedByLength[0]] / minSliceThickness;
     return maxNumSlices > 0;

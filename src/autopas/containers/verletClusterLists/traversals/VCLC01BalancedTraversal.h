@@ -37,9 +37,11 @@ class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalIn
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c01_balanced; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (_dataLayout == DataLayoutOption::aos or _dataLayout == DataLayoutOption::soa) and not _useNewton3;
-  }
+  /**
+   * VCL C01 Balanced is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     if (_dataLayout != DataLayoutOption::soa) return;

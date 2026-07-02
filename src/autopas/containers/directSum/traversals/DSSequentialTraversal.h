@@ -46,7 +46,7 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ds_sequential; }
 
-  [[nodiscard]] bool isApplicable() const override { return true; }
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     auto &cells = *(this->_cells);

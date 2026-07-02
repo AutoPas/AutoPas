@@ -30,7 +30,7 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
   autopas::LCSlicedTraversal<FMCell, decltype(ljFunctor)> slicedTraversal(edgeLength, ljFunctor, 1., {1., 1., 1.},
                                                                           autopas::DataLayoutOption::aos, true);
 
-  EXPECT_TRUE(slicedTraversal.isApplicable());
+  EXPECT_TRUE(slicedTraversal.isApplicableToDomain());
   slicedTraversal.setCellsToTraverse(cells);
   slicedTraversal.initTraversal();
   slicedTraversal.traverseParticles();
@@ -110,7 +110,7 @@ TEST_F(SlicedTraversalTest, testIsApplicableTooSmall) {
   autopas::LCSlicedTraversal<FPCell, MPairwiseFunctor> slicedTraversal({1, 1, 1}, mockFunctor, 1., {1., 1., 1.},
                                                                        autopas::DataLayoutOption::aos, true);
 
-  EXPECT_FALSE(slicedTraversal.isApplicable());
+  EXPECT_FALSE(slicedTraversal.isApplicableToDomain());
 }
 
 TEST_F(SlicedTraversalTest, testIsApplicableShrinkable) {
@@ -120,7 +120,7 @@ TEST_F(SlicedTraversalTest, testIsApplicableShrinkable) {
   autopas::LCSlicedTraversal<FPCell, MPairwiseFunctor> slicedTraversal({5, 5, 5}, mockFunctor, 1., {1., 1., 1.},
                                                                        autopas::DataLayoutOption::aos, true);
 
-  EXPECT_TRUE(slicedTraversal.isApplicable());
+  EXPECT_TRUE(slicedTraversal.isApplicableToDomain());
 }
 
 TEST_F(SlicedTraversalTest, testIsApplicableOk) {
@@ -130,7 +130,7 @@ TEST_F(SlicedTraversalTest, testIsApplicableOk) {
   autopas::LCSlicedTraversal<FPCell, MPairwiseFunctor> slicedTraversal({11, 11, 11}, mockFunctor, 1., {1., 1., 1.},
                                                                        autopas::DataLayoutOption::aos, true);
 
-  EXPECT_TRUE(slicedTraversal.isApplicable());
+  EXPECT_TRUE(slicedTraversal.isApplicableToDomain());
 }
 
 TEST_F(SlicedTraversalTest, testIsApplicableOkOnlyOneDim) {
@@ -140,5 +140,5 @@ TEST_F(SlicedTraversalTest, testIsApplicableOkOnlyOneDim) {
   autopas::LCSlicedTraversal<FPCell, MPairwiseFunctor> slicedTraversal({1, 1, 11}, mockFunctor, 1., {1., 1., 1.},
                                                                        autopas::DataLayoutOption::aos, true);
 
-  EXPECT_TRUE(slicedTraversal.isApplicable());
+  EXPECT_TRUE(slicedTraversal.isApplicableToDomain());
 }
