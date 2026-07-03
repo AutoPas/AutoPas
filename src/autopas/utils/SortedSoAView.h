@@ -45,7 +45,7 @@ class SortedSoAView {
    */
   SortedSoAView(SoAView<SoAArraysType> source, const std::array<double, 3> &sortingDirection,
                 SoA<SoAArraysType> &cachedSoa, std::vector<std::pair<double, size_t>> &cachedProjIdx)
-      : _source(source), _sortedSoa(cachedSoa), projIdx(cachedProjIdx) {
+      : _source(source), _sortedSoa(cachedSoa), _projIdx(cachedProjIdx) {
     const size_t n = source.size();
     if (n == 0) {
       _sortedSoa.resizeArrays(0);
@@ -53,14 +53,14 @@ class SortedSoAView {
     }
 
     // Step 1: project each particle onto sortingDirection and sort indices ascending.
-    projIdx.resize(n);
+    _projIdx.resize(n);
     const auto *xPtr = source.template begin<Particle_T::AttributeNames::posX>();
     const auto *yPtr = source.template begin<Particle_T::AttributeNames::posY>();
     const auto *zPtr = source.template begin<Particle_T::AttributeNames::posZ>();
     for (size_t i = 0; i < n; ++i) {
-      projIdx[i] = {xPtr[i] * sortingDirection[0] + yPtr[i] * sortingDirection[1] + zPtr[i] * sortingDirection[2], i};
+      _projIdx[i] = {xPtr[i] * sortingDirection[0] + yPtr[i] * sortingDirection[1] + zPtr[i] * sortingDirection[2], i};
     }
-    std::sort(projIdx.begin(), projIdx.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+    std::sort(_projIdx.begin(), _projIdx.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
 
     // Step 2: resize all arrays (value-initializes to 0, covering the computed attributes).
     _sortedSoa.resizeArrays(n);
@@ -83,15 +83,10 @@ class SortedSoAView {
    * via +=. Must be called after the functor to commit writes.
    */
   void scatterBack() {
-    scatterBackImpl(std::make_index_sequence<Functor_T::getComputedAttr().size()>{}, projIdx.size());
+    scatterBackImpl(std::make_index_sequence<Functor_T::getComputedAttr().size()>{}, _projIdx.size());
   }
 
-  /**
-   * Sorted (projection value, original index) pairs, ascending by projection.
-   */
-  std::vector<std::pair<double, size_t>> &projIdx;
-
- private:
+private:
   /**
    * Copies the attribute at compile-time index AttrIdx from _source into _sortedSoa in sorted order.
    * @tparam AttrIdx Index into Functor_T::getNeededAttr().
@@ -103,7 +98,7 @@ class SortedSoAView {
     auto *dst = _sortedSoa.template begin<attr>();
     const auto *src = _source.template begin<attr>();
     for (size_t i = 0; i < n; ++i) {
-      dst[i] = src[projIdx[i].second];
+      dst[i] = src[_projIdx[i].second];
     }
   }
 
@@ -151,7 +146,7 @@ class SortedSoAView {
     auto *orig = _source.template begin<attr>();
     const auto *sorted = _sortedSoa.template begin<attr>();
     for (size_t i = 0; i < n; ++i) {
-      orig[projIdx[i].second] += sorted[i];
+      orig[_projIdx[i].second] += sorted[i];
     }
   }
 
@@ -167,6 +162,10 @@ class SortedSoAView {
 
   SoAView<SoAArraysType> _source;
   SoA<SoAArraysType> &_sortedSoa;
+  /**
+   * Sorted (projection value, original index) pairs, ascending by projection.
+   */
+  std::vector<std::pair<double, size_t>> &_projIdx;
 };
 
 }  // namespace autopas

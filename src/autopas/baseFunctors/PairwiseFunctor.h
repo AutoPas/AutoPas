@@ -23,6 +23,9 @@ class VerletListHelpers;
 /**
  * Precomputed index bounds for iterating a pre-sorted SoA pair. Produced by CellFunctor and
  * consumed by SoAFunctorPairSorted overrides.
+ *
+ * @note Importantly SoASortingData does not hold its own storage but rather references. meaning the storage must
+ * outlive the struct.
  */
 struct SoASortingData {
   size_t startI;                        ///< First index in soa1 whose projection range overlaps soa2.
@@ -50,7 +53,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * Constructor
    * @param cutoff
    */
-  explicit PairwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff){};
+  explicit PairwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff) {};
 
   virtual ~PairwiseFunctor() = default;
 

@@ -409,18 +409,20 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 
       _functor.SoAFunctorPairSorted(
           view1.getView(), view2.getView(),
-          computeSortingData(view1.projIdx, view2.projIdx, threadData.maxIndex, threadData.minIndex), _useNewton3);
+          computeSortingData(threadData.projIdx1, threadData.projIdx2, threadData.maxIndex, threadData.minIndex),
+          _useNewton3);
 
       if constexpr (bidirectional) {
         if (not _useNewton3) {
           _functor.SoAFunctorPairSorted(
               view2.getView(), view1.getView(),
-              computeSortingData(view2.projIdx, view1.projIdx, threadData.maxIndex, threadData.minIndex), false);
+              computeSortingData(threadData.projIdx1, threadData.projIdx2, threadData.maxIndex, threadData.minIndex),
+              false);
         }
       }
 
       view1.scatterBack();
-      // if we are not bidirectional and dont use newton3 we don't need to scatter back the second view
+      // if we are not bidirectional and don't use newton3 we don't need to scatter back the second view
       if constexpr (bidirectional) {
         view2.scatterBack();
       } else if (_useNewton3) {

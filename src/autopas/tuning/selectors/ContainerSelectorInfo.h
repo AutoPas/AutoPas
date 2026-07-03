@@ -79,7 +79,7 @@ class ContainerSelectorInfo {
   /**
    * Comparison operator for ContainerSelectorInfo objects.
    * Configurations are compared member wise in the order: cellSizeFactor, verletSkin, verletClusterSize,
-   * aosSortingThreshold, loadEstimator
+   * aosSortingThreshold, soaSortingThreshold, loadEstimator
    *
    * @param other
    * @return
