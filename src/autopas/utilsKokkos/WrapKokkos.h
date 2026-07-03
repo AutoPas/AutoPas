@@ -17,7 +17,7 @@ namespace autopas {
  * @param argc: reference to number of arguments
  * @param argv: argument vector
  */
-inline void AutoPas_Kokkos_Init(int &argc, char **argv) {
+inline void AutoPas_Kokkos_Init([[maybe_unused]] int &argc, [[maybe_unused]] char **argv) {
 #ifdef AUTOPAS_ENABLE_KOKKOS
   Kokkos::initialize(argc, argv);
 #endif
