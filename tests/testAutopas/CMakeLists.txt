@@ -20,7 +20,7 @@ target_link_libraries(
         Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony> # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
         PRIVATE
-        $<$<CXX_COMPILER_ID:Clang>:stdc++ m>
+        $<$<CXX_COMPILER_ID:Clang>:stdc++;m>
 )
 
 include(GoogleTest)

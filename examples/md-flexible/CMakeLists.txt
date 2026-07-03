@@ -23,7 +23,7 @@ target_link_libraries(md-flexible
         ${ALL_LIB}
         $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>
         PRIVATE
-        $<$<CXX_COMPILER_ID:Clang>:stdc++ m>
+        $<$<CXX_COMPILER_ID:Clang>:stdc++;m>
 )
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
