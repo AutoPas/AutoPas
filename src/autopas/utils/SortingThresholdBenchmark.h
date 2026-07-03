@@ -109,6 +109,11 @@ class SortingThresholdBenchmark {
   const double _requiredSortedWinRatio = 0.7;
 
   /**
+   * Factor of Particles that get randomly split between the two cells to not always have clean 50/50 splits.
+   */
+  const double _scatterFactor = 0.2;
+
+  /**
    * Fills a cell with numParticles copies of defaultParticle at independently uniform-random positions within
    * [boxLow, boxHigh]. A minimal stand-in for autopasTools::generators::UniformGenerator::fillWithParticles() so
    * that this core-library header does not need to depend on the autopasTools target.
@@ -143,6 +148,7 @@ class SortingThresholdBenchmark {
    * Measures the mean per-repetition time for the sorted and unsorted SoA pair interaction paths
    * at a given particle count for one direction type.
    *
+   * @todo This currently hardcodes the CellFunctor to bidirectional = false. Fix this if needed.
    * Particles are regenerated each repetition so the sort always operates on fresh random data.
    * The sorted path is controlled by passing the layout-specific sortingDirection; the unsorted
    * path is forced by passing a zero direction (CellFunctor skips sorting when direction is zero).
@@ -162,6 +168,19 @@ class SortingThresholdBenchmark {
     const double cutoff = functor.getCutoff();
     const double invSqrt3 = 1. / sqrt(3.);
     const double invSqrt2 = 1. / sqrt(2.);
+
+    size_t numParticlesEqDistr = static_cast<size_t>(std::ceil(numParticles * (1. - _scatterFactor)));
+
+    size_t numParticlesScatter = numParticles - numParticlesEqDistr;
+
+    size_t numParticlesCell1 = numParticlesEqDistr / 2;
+    size_t numParticlesCell2 = numParticlesEqDistr / 2 + numParticlesEqDistr % 2;
+
+    // Prepare for random scattering
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<size_t> distrib(0, numParticlesScatter);
+
     BenchCF cellFunctor{functor, cutoff, DataLayoutOption::soa, false};
     // Set to 0 so whether sorting happens is controlled entirely through the sorting direction.
     cellFunctor.setSoASortingThreshold(0);
@@ -191,6 +210,8 @@ class SortingThresholdBenchmark {
         cell2High = {2 * cutoff, cutoff, cutoff};
         sortingDirection = {1, 0., 0.};
         break;
+      default:
+        utils::ExceptionHandler::exception("Layout {} is not a valid/supported layout!", layout);
     }
     utils::Timer sortedTimer, unsortedTimer;
     size_t sortedWins = 0;
@@ -198,18 +219,24 @@ class SortingThresholdBenchmark {
       cell1.clear();
       cell2.clear();
 
+      // Generate the number of scattered particles for cell1 and cell2
+      size_t toAddCell1 = distrib(gen);
+      numParticlesCell1 += toAddCell1;
+      numParticlesCell2 += numParticlesScatter - toAddCell1;
+
       // Vary the seed per repetition per cell so each repetition samples a fresh particle
       // layout instead of repeatedly timing the exact same configuration.
-      fillWithRandomParticles(cell1, defaultParticle, cell1Low, cell1High, numParticles,
+      fillWithRandomParticles(cell1, defaultParticle, cell1Low, cell1High, numParticlesCell1,
                               static_cast<unsigned int>(2 * i));
-      fillWithRandomParticles(cell2, defaultParticle, cell2Low, cell2High, numParticles,
+      fillWithRandomParticles(cell2, defaultParticle, cell2Low, cell2High, numParticlesCell2,
                               static_cast<unsigned int>(2 * i + 1));
-      functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
-      functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
 
+      // Reload SoAs each iteration so forces don't pile up.
       auto measureUnsorted = [&]() {
         unsortedTimer.start();
         for (size_t j = 0; j < _iterations; j++) {
+          functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
+          functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
           // A sorting direction of (0, 0, 0) disables sorting.
           cellFunctor.processCellPair(cell1, cell2, {0., 0., 0.});
         }
@@ -218,6 +245,8 @@ class SortingThresholdBenchmark {
       auto measureSorted = [&]() {
         sortedTimer.start();
         for (size_t j = 0; j < _iterations; j++) {
+          functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
+          functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
           cellFunctor.processCellPair(cell1, cell2, sortingDirection);
         }
         return sortedTimer.stop();
