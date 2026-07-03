@@ -9,6 +9,7 @@
 
 #include <algorithm>
 
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/SortedSoAView.h"
@@ -411,7 +412,12 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
       }
 
       view1.scatterBack();
-      view2.scatterBack();
+      // if we are not bidirectional and dont use newton3 we don't need to scatter back the second view
+      if constexpr (bidirectional) {
+        view2.scatterBack();
+      } else if (_useNewton3) {
+        view2.scatterBack();
+      }
       return;
     }
   }

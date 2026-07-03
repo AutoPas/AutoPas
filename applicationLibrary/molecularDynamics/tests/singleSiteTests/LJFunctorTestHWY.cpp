@@ -242,9 +242,9 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsUseUnalignedViews(bool
 
   FMCell cell1Ref, cell2Ref;
   autopasTools::generators::UniformGenerator::fillWithParticles(cell1Ref, defaultParticle, cell1Low, cell1High,
-                                                                 numParticles);
+                                                                numParticles);
   autopasTools::generators::UniformGenerator::fillWithParticles(cell2Ref, defaultParticle, cell2Low, cell2High,
-                                                                 numParticles);
+                                                                numParticles);
 
   for (auto &particle : cell1Ref) {
     if (doDeleteSomeParticles) {
@@ -277,7 +277,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsUseUnalignedViews(bool
   auto ljFunctorHWY = [&]() {
     if constexpr (mixing)
       return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff,
-                                                                                                 std::ref(_PPL));
+                                                                                                std::ref(_PPL));
     else
       return mdLib::LJFunctorHWY<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
   }();

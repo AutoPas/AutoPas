@@ -19,7 +19,6 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/SortedSoAView.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/optRef.h"
 

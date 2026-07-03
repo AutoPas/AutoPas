@@ -43,7 +43,6 @@ class ContainerSelectorInfo {
    * @param aosSortingThreshold Number of particles in two cells from which sorting should be performed
    * @param loadEstimator load estimation algorithm for balanced traversals.
    * @param soaSortingThreshold Number of particles in two SoA buffers from which SoA sorting should be performed.
-   * Defaults to 25.
    */
   explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                  double cutoff, double cellSizeFactor, double verletSkin,

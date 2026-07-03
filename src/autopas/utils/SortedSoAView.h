@@ -12,19 +12,9 @@
 #include <utility>
 #include <vector>
 
-#include "SoAView.h"
+#include "autopas/utils/SoAView.h"
 
 namespace autopas {
-
-/**
- * Precomputed index bounds for iterating a pre-sorted SoA pair. Produced by CellFunctor and
- * consumed by SoAFunctorPairSorted overrides.
- */
-struct SoASortingData {
-  size_t startI;                        ///< First index in soa1 whose projection range overlaps soa2.
-  const std::vector<size_t> &maxIndex;  ///< Per-particle upper bound index into soa2 (exclusive).
-  const std::vector<size_t> &minIndex;  ///< Per-particle lower bound index into soa2 (inclusive).
-};
 
 /**
  * A sorted view on a SoA buffer. Particles are projected onto a normalized direction vector, sorted
@@ -58,6 +48,7 @@ class SortedSoAView {
       : _source(source), _sortedSoa(cachedSoa), projIdx(cachedProjIdx) {
     const size_t n = source.size();
     if (n == 0) {
+      _sortedSoa.resizeArrays(0);
       return;
     }
 
