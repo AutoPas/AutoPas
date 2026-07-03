@@ -354,11 +354,12 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
   const size_t nJ = projIdxJ.size();
 
   // Compute startI: the first i-particle that can interact with any j-particle.
-  // Any i with `projI[i] <= projJ[0] - cutoff` is further than cutoff from every j along the sorting axis,
-  // so it cannot contribute an interaction and is skipped.
+  // Any i with `projI[i] < projJ[0] - cutoff` is strictly farther than cutoff from every j along the
+  // sorting axis, so it cannot contribute an interaction and is skipped. Particles exactly at the cutoff
+  // distance are kept, consistent with the inclusive cutoff test used below for minIndex/maxIndex.
   const double threshold = projIdxJ[0].first - _sortingCutoff;
-  auto startIter = std::upper_bound(projIdxI.begin(), projIdxI.end(), threshold,
-                                    [](double val, const auto &elem) { return val < elem.first; });
+  auto startIter = std::lower_bound(projIdxI.begin(), projIdxI.end(), threshold,
+                                    [](const auto &elem, double val) { return elem.first < val; });
   const size_t startI = static_cast<size_t>(startIter - projIdxI.begin());
 
   // Compute maxIndexCache and minIndexCache in a single O(nI + nJ) sweep.

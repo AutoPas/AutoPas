@@ -39,6 +39,22 @@ TEST_F(CellFunctorSortingDataTest, testStartI) {
 }
 
 /**
+ * startI must keep an i particle whose projection is exactly cutoff away from projJ[0], consistent with
+ * the inclusive cutoff test used by minIndex/maxIndex.
+ * With projI = {2, 4}, projJ = {5}, cutoff = 3:
+ *   threshold = 5 - 3 = 2 → first i where projI >= 2 is index 0 (projI[0] = 2, exactly at the cutoff).
+ */
+TEST_F(CellFunctorSortingDataTest, testStartIBoundaryInclusive) {
+  auto projI = makeProjIdx({2.0, 4.0});
+  auto projJ = makeProjIdx({5.0});
+  std::vector<size_t> maxIdx, minIdx;
+
+  const auto data = _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
+
+  EXPECT_EQ(data.startI, 0u);
+}
+
+/**
  * maxIndex[i] is the first j where projJ[j] > projI[i] + cutoff.
  * With projI = {0, 5, 10}, projJ = {6, 7, 11}, cutoff = 3:
  *   i=1 (proj=5): first j > 8 → j=2 (proj=11),  maxIndex[1] = 2
@@ -57,6 +73,23 @@ TEST_F(CellFunctorSortingDataTest, testMaxIndex) {
 }
 
 /**
+ * maxIndex must include a j particle exactly at cutoff distance above projI[i], consistent with the
+ * inclusive test `projJ[j] <= projI[i] + cutoff` used by the two-pointer sweep.
+ * With projI = {0}, projJ = {3, 3.5}, cutoff = 3:
+ *   j=0 (proj=3) is exactly at the cutoff (0 + 3 = 3) -> included, maxIndex[0] = 1.
+ *   j=1 (proj=3.5) is beyond the cutoff -> excluded.
+ */
+TEST_F(CellFunctorSortingDataTest, testMaxIndexBoundaryInclusive) {
+  auto projI = makeProjIdx({0.0});
+  auto projJ = makeProjIdx({3.0, 3.5});
+  std::vector<size_t> maxIdx, minIdx;
+
+  _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
+
+  EXPECT_EQ(maxIdx[0], 1u);
+}
+
+/**
  * minIndex[i] is the first j where projJ[j] >= projI[i] - cutoff (left-side pruning).
  * With projI = {0, 5, 10}, projJ = {6, 7, 11}, cutoff = 3:
  *   i=1 (proj=5): first j >= 2 → j=0 (proj=6),  minIndex[1] = 0
@@ -71,6 +104,23 @@ TEST_F(CellFunctorSortingDataTest, testMinIndex) {
 
   EXPECT_EQ(minIdx[1], 0u);
   EXPECT_EQ(minIdx[2], 1u);
+}
+
+/**
+ * minIndex must include a j particle exactly at cutoff distance below projI[i], consistent with the
+ * inclusive test `projJ[j] >= projI[i] - cutoff` used by the two-pointer sweep.
+ * With projI = {5}, projJ = {1.5, 2}, cutoff = 3:
+ *   j=0 (proj=1.5) is beyond the cutoff (5 - 3 = 2) -> excluded.
+ *   j=1 (proj=2) is exactly at the cutoff -> included, minIndex[0] = 1.
+ */
+TEST_F(CellFunctorSortingDataTest, testMinIndexBoundaryInclusive) {
+  auto projI = makeProjIdx({5.0});
+  auto projJ = makeProjIdx({1.5, 2.0});
+  std::vector<size_t> maxIdx, minIdx;
+
+  _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
+
+  EXPECT_EQ(minIdx[0], 1u);
 }
 
 /**
