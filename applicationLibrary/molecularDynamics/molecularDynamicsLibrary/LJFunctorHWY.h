@@ -694,7 +694,7 @@ class LJFunctorHWY
           uPotSum, restI, 0);
     }
 
-    const int restJ = static_cast<int>(jVecEnd & (jStepSize<vecPattern>() - 1));
+    const size_t restJ = jVecEnd & (jStepSize<vecPattern>() - 1);
     if (restJ > 0) {
       SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
@@ -792,7 +792,7 @@ class LJFunctorHWY
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       // Rest I can't occur in 1xVec case
-      const int restI = static_cast<int>(n1) - static_cast<int>(i);
+      const size_t restI = n1 - i;
       if (restI > 0) {
         // Remainder block covers [i, i + restI - 1]. Same monotonicity argument as above.
         size_t jVecEnd = n2;
