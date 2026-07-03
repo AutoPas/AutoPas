@@ -86,7 +86,7 @@ class SortedSoAView {
     scatterBackImpl(std::make_index_sequence<Functor_T::getComputedAttr().size()>{}, _projIdx.size());
   }
 
-private:
+ private:
   /**
    * Copies the attribute at compile-time index AttrIdx from _source into _sortedSoa in sorted order.
    * @tparam AttrIdx Index into Functor_T::getNeededAttr().
