@@ -145,13 +145,13 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   const auto containerInfo = autopas::ContainerSelectorInfo{_boxMin,
                                                             boxMax,
                                                             _cutoff,
-                                                            cellSizeFactor,
+                                                            config.cellSizeFactor,
                                                             skin,
                                                             32,
                                                             aosSortingThreshold,
                                                             soaSortingThreshold,
                                                             autopas::LoadEstimatorOption::none};
-  auto container = autopas::ContainerSelector<Molecule>::generateContainer(containerOption, containerInfo);
+  auto container = autopas::ContainerSelector<Molecule>::generateContainer(config.container, containerInfo);
 
   autopasTools::generators::UniformGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
                                                                 container->getBoxMin(), container->getBoxMax(),

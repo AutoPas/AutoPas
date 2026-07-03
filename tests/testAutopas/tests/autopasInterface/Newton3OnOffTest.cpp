@@ -62,7 +62,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::Configuration config) {
   if (config.container == autopas::ContainerOption::directSum and config.dataLayout == autopas::DataLayoutOption::soa) {
     return;
   }
-  const autopas::ContainerSelectorInfo containerInfo(getBoxMin(), getBoxMax(), getCutoff(), getCellSizeFactor(),
+  const autopas::ContainerSelectorInfo containerInfo(getBoxMin(), getBoxMax(), getCutoff(), config.cellSizeFactor,
                                                      getVerletSkin(), getClusterSize(), getAoSSortingThreshold(),
                                                      getSoASortingThreshold(), config.loadEstimator);
   auto container = autopas::ContainerSelector<ParticleFP64>::generateContainer(config.container, containerInfo);
