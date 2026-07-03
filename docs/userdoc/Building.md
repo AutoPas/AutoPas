@@ -39,9 +39,10 @@ cmake --build . --target md-flexible --parallel 12
 ```
 
 ### Enabling Kokkos Support
+AutoPas provides Kokkos-based GPU support for selected containers and traversals.
+At the moment, no container is merged into the master yet.
 
-AutoPas supports several Containers and Algorithms as Kokkos version.
-It can be enabled via the CMake option:
+The Kokkos support can be enabled via the CMake option:
 ```bash
 cmake -DAUTOPAS_ENABLE_KOKKOS=ON
 ```
