@@ -54,7 +54,11 @@ class OTC18Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c18; }
 
-  [[nodiscard]] bool isApplicable() const override { return this->_useNewton3; }
+  /**
+   * OT C18 is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   /**
    * Assign an integer ID to every leaf

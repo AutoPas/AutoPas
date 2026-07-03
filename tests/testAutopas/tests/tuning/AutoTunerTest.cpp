@@ -6,6 +6,7 @@
 
 #include "AutoTunerTest.h"
 
+#include <ranges>
 #include <vector>
 
 #include "autopas/LogicHandler.h"
@@ -16,6 +17,7 @@
 #include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**
