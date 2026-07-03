@@ -354,6 +354,14 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
   const size_t nI = projIdxI.size();
   const size_t nJ = projIdxJ.size();
 
+  // No j-particles to interact with: skip all i-particles. Guards the projIdxJ[0] access below, which would
+  // otherwise be an out-of-bounds read if projIdxJ were empty.
+  if (nJ == 0) {
+    maxIndexCache.assign(nI, 0);
+    minIndexCache.assign(nI, 0);
+    return {nI, maxIndexCache, minIndexCache};
+  }
+
   // Compute startI: the first i-particle that can interact with any j-particle.
   // Any i with `projI[i] < projJ[0] - cutoff` is strictly farther than cutoff from every j along the
   // sorting axis, so it cannot contribute an interaction and is skipped. Particles exactly at the cutoff

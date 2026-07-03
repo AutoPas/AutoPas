@@ -137,3 +137,19 @@ TEST_F(CellFunctorSortingDataTest, testAllPruned) {
 
   EXPECT_EQ(data.startI, 2u);
 }
+
+/**
+ * projIdxJ empty must not read projIdxJ[0] out of bounds; startI should equal nI (skip all i), and
+ * maxIndex/minIndex should be sized to nI.
+ */
+TEST_F(CellFunctorSortingDataTest, testEmptyProjIdxJ) {
+  auto projI = makeProjIdx({0.0, 1.0, 2.0});
+  std::vector<std::pair<double, size_t>> projJ;
+  std::vector<size_t> maxIdx, minIdx;
+
+  const auto data = _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
+
+  EXPECT_EQ(data.startI, 3u);
+  EXPECT_EQ(maxIdx.size(), 3u);
+  EXPECT_EQ(minIdx.size(), 3u);
+}
