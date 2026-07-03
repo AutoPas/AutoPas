@@ -165,6 +165,7 @@ jobs:
 
       # https://github.com/marketplace/actions/cuda-toolkit
       - name: Integrate cuda-toolkit
+        if: ${{ matrix.config.cuda == 'ON' }}
         uses: Jimver/cuda-toolkit@v0.2.35
         with:
           cuda: '13.2.0'
