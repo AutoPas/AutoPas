@@ -29,7 +29,7 @@ namespace autopas {
  *   2 → Face   (one non-zero component)
  *
  * The search performed in runSearch() is deliberately biased towards a conservative (higher) threshold, to avoid noisy
- * measurements to influence the threshold to low, causing slow downs.
+ * measurements influencing the threshold to be too low, causing slowdowns.
  */
 class SortingThresholdBenchmark {
  public:
@@ -78,13 +78,13 @@ class SortingThresholdBenchmark {
   static constexpr std::array<std::string_view, 3> _layoutNames{"Corner", "Edge", "Face"};
 
   /**
-   * Number of timed calls per repetition; amortizes timer overhead within a single rep.
+   * Number of timed calls per repetition to get stable measurement.
    * @todo: Adjust this based on input size.
    */
   const size_t _iterations = 100;
 
   /**
-   * Number of independent measurement repetitions per particle count; the mean is taken over these.
+   * Number of independent measurement repetitions per particle count.
    * @todo: Try out different numbers of repetitions.
    */
   const size_t _repetitions = 25;
@@ -184,6 +184,8 @@ class SortingThresholdBenchmark {
     BenchCF cellFunctor{functor, cutoff, DataLayoutOption::soa, false};
     // Set to 0 so whether sorting happens is controlled entirely through the sorting direction.
     cellFunctor.setSoASortingThreshold(0);
+
+    // Setup Cell Layout
     BenchCell cell1, cell2;
 
     std::array cell1Low = {0., 0., 0.};
@@ -213,6 +215,7 @@ class SortingThresholdBenchmark {
       default:
         utils::ExceptionHandler::exception("Layout {} is not a valid/supported layout!", layout);
     }
+
     utils::Timer sortedTimer, unsortedTimer;
     size_t sortedWins = 0;
     for (size_t i = 0; i < _repetitions; i++) {
