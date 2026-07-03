@@ -68,6 +68,24 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
                                            CellLayout layout);
 
   /**
+   * Verifies that the HWY functor matches the autovec SoAFunctorPair reference for a face-adjacent cell pair
+   * when both cells are passed as sub-views starting at a non-zero, non-vector-aligned offset (index 1), instead
+   * of the full, zero-based buffer every other TwoCells test uses. Mirrors
+   * testLJFunctorVSLJFunctorHWYOneCellUseUnalignedViews for the pair-cell SoAFunctorPair kernel, and matches how
+   * LCC04SoACellHandler passes offset SoA sub-views directly into SoAFunctorPair/Single in production.
+   * @note: Could be extended to the Sorting Variant, however currently there is no way of passing offset SoAViews into
+   * sorting logic in the CellFunctor
+   *
+   * @tparam mixing
+   * @param newton3
+   * @param doDeleteSomeParticles
+   * @param pattern
+   */
+  template <bool mixing>
+  void testLJFunctorvsLJFunctorHWYTwoCellsUseUnalignedViews(bool newton3, bool doDeleteSomeParticles,
+                                                            VectorizationPattern pattern);
+
+  /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
    * Expects that particles are loaded and extracted in the same order.
    * In all comparisons first is HWY, second Autovec
