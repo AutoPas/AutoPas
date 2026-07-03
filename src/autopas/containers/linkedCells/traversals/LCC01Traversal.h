@@ -112,20 +112,10 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
   void traverseParticles() override;
 
   /**
-   * C01 traversals are only usable if useNewton3 is disabled and combined SoA buffers are only applicable if SoA is set
-   * as DataLayout.
-   *
-   * This is because the cell functor in the c01 traversal is hardcoded to not allow newton 3 even if only one thread is
-   * used.
-   *
-   * Also, combined SoA buffers are only implemented for pairwise interactions.
-   *
-   * @return
+   * LC C01 is always applicable to the domain.
+   * @return true
    */
-  [[nodiscard]] bool isApplicable() const override {
-    return not this->_useNewton3 and not(combineSoA and this->_dataLayout != DataLayoutOption::soa) and
-           not(combineSoA and not utils::isPairwiseFunctor<Functor>());
-  }
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
     return (combineSoA) ? TraversalOption::lc_c01_combined_SoA : TraversalOption::lc_c01;
@@ -517,7 +507,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, combineSoA>::resizeBuf
 template <class ParticleCell, class Functor, bool combineSoA>
 inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::traverseParticles() {
   auto &cells = *(this->_cells);
-  if (not this->isApplicable()) {
+  if (not this->isApplicableToDomain()) {
     if constexpr (combineSoA) {
       utils::ExceptionHandler::exception(
           "The C01 traversal with combined SoA buffers cannot work with data layout AoS and enabled newton3 (unless "
