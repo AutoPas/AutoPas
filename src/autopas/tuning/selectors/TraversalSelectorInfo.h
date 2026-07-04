@@ -41,7 +41,7 @@ class TraversalSelectorInfo {
   /**
    * Interaction length
    */
-  const double interactionLength;
+  double interactionLength;
 
   /**
    * cell length

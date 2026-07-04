@@ -1395,8 +1395,10 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     containerPtr = ContainerSelector<Particle_T>::generateContainer(config.container, containerInfo);
   }
 
-  const auto traversalInfo =
+  auto traversalInfo =
       generateNewContainer ? containerPtr->getTraversalSelectorInfo() : _currentContainer->getTraversalSelectorInfo();
+  traversalInfo.interactionLength =
+      functor.getCutoff() + (generateNewContainer ? containerPtr->getVerletSkin() : _currentContainer->getVerletSkin());
 
   // Generates a traversal if applicable, otherwise returns a nullptr
   auto traversalPtr =
