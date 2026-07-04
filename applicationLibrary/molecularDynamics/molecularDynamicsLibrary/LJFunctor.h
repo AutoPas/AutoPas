@@ -61,11 +61,11 @@ class LJFunctor
    * @param cutoff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctor(double cutoff, double slow_cutoff, void * /*dummy*/)
+  explicit LJFunctor(double cutoff, double cutoffBorder, void * /*dummy*/)
       : autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
                                                        countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
-        _slow_cutoffSquared{slow_cutoff * slow_cutoff},
+        _cutoffBorderSquared{cutoffBorder * cutoffBorder},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _postProcessed{false} {
@@ -86,7 +86,7 @@ class LJFunctor
    *
    * @param cutoff
    */
-  explicit LJFunctor(double cutoff, double slow_cutoff) : LJFunctor(cutoff, slow_cutoff, nullptr) {
+  explicit LJFunctor(double cutoff, double cutoffBorder) : LJFunctor(cutoff, cutoffBorder, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -98,9 +98,9 @@ class LJFunctor
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctor(double cutoff, double slow_cutoff,
+  explicit LJFunctor(double cutoff, double cutoffBorder,
                      ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJFunctor(cutoff, slow_cutoff, nullptr) {
+      : LJFunctor(cutoff, cutoffBorder, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -146,14 +146,8 @@ class LJFunctor
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     // Particle distance not in calculation range
-    if constexpr (updateSlowForces) {
-      if (dr2 > _slow_cutoffSquared) {
-        return;
-      }
-    } else {
-      if (dr2 > _cutoffSquared) {
-        return;
-      }
+    if (dr2 > _cutoffSquared) {
+      return;
     }
 
     double invdr2 = 1. / dr2;
@@ -165,7 +159,7 @@ class LJFunctor
     auto f = dr * fac;
 
     if constexpr (updateSlowForces) {
-      if (dr2 >= _cutoffSquared) {
+      if (dr2 >= _cutoffBorderSquared) {
         i.addSlowF(f);
         // only if we use newton 3 here, we want to
         if (newton3) {
@@ -245,7 +239,7 @@ class LJFunctor
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle_T::AttributeNames::typeId>();
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
-    const SoAFloatPrecision slow_cutoffSquared = _slow_cutoffSquared;
+    const SoAFloatPrecision cutoffBorderSquared = _cutoffBorderSquared;
 
     SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
     SoAFloatPrecision virialSumX = 0.;
@@ -331,12 +325,7 @@ class LJFunctor
 
         // Mask away if distance is too large or any particle is a dummy.
         // Particle ownedStateI was already checked previously.
-        bool mask;
-        if constexpr (updateSlowForces) {
-          mask = dr2 <= slow_cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
-        } else {
-          mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
-        }
+        const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
@@ -350,7 +339,7 @@ class LJFunctor
         const SoAFloatPrecision fz = drz * fac;
 
         if constexpr (updateSlowForces) {
-          if (dr2 >= cutoffSquared) {
+          if (dr2 >= cutoffBorderSquared) {
             slow_fxacc += fx;
             slow_fyacc += fy;
             slow_fzacc += fz;
@@ -496,7 +485,7 @@ class LJFunctor
     size_t numGlobalCalcsNoN3Sum = 0;
 
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
-    const SoAFloatPrecision slow_cutoffSquared = _slow_cutoffSquared;
+    const SoAFloatPrecision cutoffBorderSquared = _cutoffBorderSquared;
     SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmaSquared = _sigmaSquared;
     SoAFloatPrecision epsilon24 = _epsilon24;
@@ -567,13 +556,7 @@ class LJFunctor
 
         // Mask away if distance is too large or any particle is a dummy.
         // Particle ownedStateI was already checked previously.
-        bool mask;
-        if constexpr (updateSlowForces) {
-          mask = dr2 <= slow_cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
-
-        } else {
-          mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
-        }
+        const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
@@ -587,7 +570,7 @@ class LJFunctor
         const SoAFloatPrecision fz = drz * fac;
 
         if constexpr (updateSlowForces) {
-          if (dr2 >= slow_cutoffSquared) {
+          if (dr2 >= cutoffBorderSquared) {
             slow_fxacc += fx;
             slow_fyacc += fy;
             slow_fzacc += fz;
@@ -718,15 +701,13 @@ class LJFunctor
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
-                                                              Particle_T::AttributeNames::posX,
-                                                              Particle_T::AttributeNames::posY,
-                                                              Particle_T::AttributeNames::posZ,
-                                                              Particle_T::AttributeNames::forceX,
-                                                              Particle_T::AttributeNames::forceY,
-                                                              Particle_T::AttributeNames::forceZ,
-                                                              Particle_T::AttributeNames::typeId,
-                                                              Particle_T::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 12>{
+        Particle_T::AttributeNames::id,         Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,       Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::forceX,     Particle_T::AttributeNames::forceY,
+        Particle_T::AttributeNames::forceZ,     Particle_T::AttributeNames::slowForceX,
+        Particle_T::AttributeNames::slowForceY, Particle_T::AttributeNames::slowForceZ,
+        Particle_T::AttributeNames::typeId,     Particle_T::AttributeNames::ownershipState};
   }
 
   /**
@@ -743,8 +724,10 @@ class LJFunctor
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static auto getComputedAttr() {
-    return std::array<typename Particle_T::AttributeNames, 3>{
-        Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY, Particle_T::AttributeNames::forceZ};
+    return std::array<typename Particle_T::AttributeNames, 6>{
+        Particle_T::AttributeNames::forceX,     Particle_T::AttributeNames::forceY,
+        Particle_T::AttributeNames::forceZ,     Particle_T::AttributeNames::slowForceX,
+        Particle_T::AttributeNames::slowForceY, Particle_T::AttributeNames::slowForceZ};
   }
 
   /**
@@ -1323,7 +1306,7 @@ class LJFunctor
   static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
   const double _cutoffSquared;
-  const double _slow_cutoffSquared;
+  const double _cutoffBorderSquared;
 
   // not const because they might be reset through PPL
   double _epsilon24, _sigmaSquared, _shift6 = 0;

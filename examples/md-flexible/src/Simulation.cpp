@@ -844,9 +844,9 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
       if (_is_respa_iteration) {
-        return f(LJFunctorTypeAutovecRespa{fast_cutoff, slow_cutoff, particlePropertiesLibrary});
+        return f(LJFunctorTypeAutovecRespa{slow_cutoff, fast_cutoff, particlePropertiesLibrary});
       } else {
-        return f(LJFunctorTypeAutovec{fast_cutoff, slow_cutoff, particlePropertiesLibrary});
+        return f(LJFunctorTypeAutovec{fast_cutoff, 0.0, particlePropertiesLibrary});
       }
 #else
       throw std::runtime_error(
