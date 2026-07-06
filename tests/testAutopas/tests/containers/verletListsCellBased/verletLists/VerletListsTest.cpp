@@ -42,12 +42,12 @@ TEST_P(VerletListsTest, testVerletListBuildAndIterate) {
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.computeInteractions(&verletTraversal);
 
-  auto &list = verletLists.getVerletListsAoS();
+  auto &list = verletLists.getNeighborList();
 
   EXPECT_EQ(list.size(), 2);
-  int partners = 0;
-  for (const auto &i : list) {
-    partners += i.second.size();
+  size_t partners = 0;
+  for (size_t i = 0; i < list.size(); ++i) {
+    partners += list.count(i);
   }
   EXPECT_EQ(partners, 1);
 }
@@ -76,12 +76,12 @@ TEST_P(VerletListsTest, testVerletListInSkin) {
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.computeInteractions(&verletTraversal);
 
-  auto &list = verletLists.getVerletListsAoS();
+  auto &list = verletLists.getNeighborList();
 
   EXPECT_EQ(list.size(), 2);
-  int partners = 0;
-  for (const auto &i : list) {
-    partners += i.second.size();
+  size_t partners = 0;
+  for (size_t i = 0; i < list.size(); ++i) {
+    partners += list.count(i);
   }
   EXPECT_EQ(partners, 1);
 }
@@ -111,12 +111,12 @@ TEST_P(VerletListsTest, testVerletListBuildTwice) {
   verletLists.computeInteractions(&verletTraversal);
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.computeInteractions(&verletTraversal);
-  auto &list = verletLists.getVerletListsAoS();
+  auto &list = verletLists.getNeighborList();
 
   EXPECT_EQ(list.size(), 2);
-  int partners = 0;
-  for (const auto &i : list) {
-    partners += i.second.size();
+  size_t partners = 0;
+  for (size_t i = 0; i < list.size(); ++i) {
+    partners += list.count(i);
   }
   EXPECT_EQ(partners, 1);
 }
@@ -150,12 +150,12 @@ TEST_P(VerletListsTest, testVerletListBuildFarAway) {
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.computeInteractions(&verletTraversal);
 
-  auto &list = verletLists.getVerletListsAoS();
+  auto &list = verletLists.getNeighborList();
 
   ASSERT_EQ(list.size(), 3);
-  int partners = 0;
-  for (const auto &i : list) {
-    partners += i.second.size();
+  size_t partners = 0;
+  for (size_t i = 0; i < list.size(); ++i) {
+    partners += list.count(i);
   }
   ASSERT_EQ(partners, 1);
 }
@@ -186,12 +186,12 @@ TEST_P(VerletListsTest, testVerletListBuildHalo) {
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.computeInteractions(&verletTraversal);
 
-  auto &list = verletLists.getVerletListsAoS();
+  auto &list = verletLists.getNeighborList();
 
   ASSERT_EQ(list.size(), 2);
-  int partners = 0;
-  for (const auto &i : list) {
-    partners += i.second.size();
+  size_t partners = 0;
+  for (size_t i = 0; i < list.size(); ++i) {
+    partners += list.count(i);
   }
   ASSERT_EQ(partners, 1);
 }

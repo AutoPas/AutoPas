@@ -44,9 +44,22 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
+
+    // Build a flat index→pointer array so the AoS path can resolve CRS indices
+    // back to particle references without a hash-map lookup per neighbor.
+    // The iteration order must match buildParticleIndex() in VerletLists exactly:
+    // iterate over all cells in order, all particles within each cell in order.
+    _particlePtrs.clear();
+    _particlePtrs.reserve(this->_neighborList->size());
+    for (auto &cell : cells) {
+      for (auto &p : cell) {
+        _particlePtrs.push_back(&p);
+      }
+    }
+
     if (_dataLayout == DataLayoutOption::soa) {
-      // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
-      // SoALoader.
+      // Pre-compute per-cell offsets so each SoALoader call can be parallelized
+      // independently without knowing the preceding cells' sizes.
       std::vector<size_t> offsets(cells.size() + 1);
       std::inclusive_scan(
           cells.begin(), cells.end(), offsets.begin() + 1,
@@ -73,31 +86,30 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   }
 
   void traverseParticles() override {
-    auto &aosNeighborLists = *(this->_aosNeighborLists);
-    auto &soaNeighborLists = *(this->_soaNeighborLists);
+    auto &neighborList = *(this->_neighborList);
+    const size_t numParticles = neighborList.size();
+
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
-        // If we use parallelization,
         if (not _useNewton3) {
-          size_t buckets = aosNeighborLists.bucket_count();
-          /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic))
-          for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
-            auto endIter = aosNeighborLists.end(bucketId);
-            for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
-              ParticleType &particle = *(bucketIter->first);
-              for (auto neighborPtr : bucketIter->second) {
-                ParticleType &neighbor = *neighborPtr;
-                _functor.AoSFunctor(particle, neighbor, false);
-              }
+          // Each particle i owns its own list slice — no write conflict between iterations.
+          AUTOPAS_OPENMP(parallel for schedule(static))
+          for (size_t i = 0; i < numParticles; ++i) {
+            ParticleType &particleI = *_particlePtrs[i];
+            const size_t numNeighbors = neighborList.count(i);
+            const size_t *neighborsIPtr = neighborList.begin(i);
+            for (size_t j = 0; j < numNeighbors; ++j) {
+              _functor.AoSFunctor(particleI, *_particlePtrs[neighborsIPtr[j]], false);
             }
           }
         } else {
-          for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
-            ParticleType &particle = *particlePtr;
-            for (auto neighborPtr : neighborPtrList) {
-              ParticleType &neighbor = *neighborPtr;
-              _functor.AoSFunctor(particle, neighbor, _useNewton3);
+          // @todo: VL parallelization with N3 should be implemented. Requires a coloring scheme or similar.
+          for (size_t i = 0; i < numParticles; ++i) {
+            ParticleType &particleI = *_particlePtrs[i];
+            const size_t numNeighbors = neighborList.count(i);
+            const size_t *neighborsIPtr = neighborList.begin(i);
+            for (size_t j = 0; j < numNeighbors; ++j) {
+              _functor.AoSFunctor(particleI, *_particlePtrs[neighborsIPtr[j]], true);
             }
           }
         }
@@ -105,16 +117,21 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       }
 
       case DataLayoutOption::soa: {
+        // SoAFunctorVerlet currently requires a const std::vector<size_t, AlignedAllocator>&.
+        // Build a per-particle view from the contiguous CRS slice.
+        // @todo: add a raw-pointer+count overload to SoAFunctorVerlet to eliminate this copy.
         if (not _useNewton3) {
-          /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
-          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-            _functor.SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(neighborList.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
+          for (size_t i = 0; i < numParticles; ++i) {
+            const std::vector<size_t, AlignedAllocator<size_t>> neighborSlice(
+                neighborList.begin(i), neighborList.begin(i) + neighborList.count(i));
+            _functor.SoAFunctorVerlet(_soa, i, neighborSlice, false);
           }
         } else {
-          // iterate over SoA
-          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-            _functor.SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
+          for (size_t i = 0; i < numParticles; ++i) {
+            const std::vector<size_t, AlignedAllocator<size_t>> neighborSlice(
+                neighborList.begin(i), neighborList.begin(i) + neighborList.count(i));
+            _functor.SoAFunctorVerlet(_soa, i, neighborSlice, true);
           }
         }
         return;
@@ -135,6 +152,13 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * SoA buffer of verlet lists.
    */
   SoA<typename ParticleType::SoAArraysType> _soa;
+
+  /**
+   * Flat array mapping SoA index i -> pointer to particle i.
+   * Built in initTraversal() in the same cell/particle iteration order as VerletLists::buildParticleIndex().
+   * Used during AoS force computations to resolve CRS neighbor indices to particles.
+   */
+  std::vector<ParticleType *> _particlePtrs;
 };
 
 }  // namespace autopas

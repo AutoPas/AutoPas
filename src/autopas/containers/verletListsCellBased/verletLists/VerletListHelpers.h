@@ -21,9 +21,25 @@ template <class Particle_T>
 class VerletListHelpers {
  public:
   /**
-   * Neighbor list AoS style.
+   * Flat Compressed-Row-Storage (CRS) neighbor list.
+   *
+   * For particle i:
+   *   - neighbor count : offsets[i+1] - offsets[i]
+   *   - neighbor slice : indices.data() + offsets[i]
    */
-  using NeighborListAoSType = std::unordered_map<Particle_T *, std::vector<Particle_T *>>;
+  struct NeighborListCRS {
+    std::vector<size_t> offsets;                            ///< size N+1
+    std::vector<size_t, AlignedAllocator<size_t>> indices;  ///< flat neighbor indices
+
+    /// Number of particles tracked by this list.
+    [[nodiscard]] size_t size() const { return offsets.empty() ? 0u : offsets.size() - 1u; }
+    /// Number of neighbors of particle i.
+    [[nodiscard]] size_t count(size_t i) const { return offsets[i + 1] - offsets[i]; }
+    /// Pointer to the first neighbor index of particle i (const).
+    [[nodiscard]] const size_t *begin(size_t i) const { return indices.data() + offsets[i]; }
+    /// Pointer to the first neighbor index of particle i (mutable).
+    [[nodiscard]] size_t *begin(size_t i) { return indices.data() + offsets[i]; }
+  };
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
@@ -37,12 +53,19 @@ class VerletListHelpers {
 
     /**
      * Constructor
-     * @param verletListsAoS
-     * @param interactionLength
+     * @param neighborLists Temporary ragged list: one inner vector per particle index.
+     *                      Populated during the linked-cells traversal; used by
+     *                      VerletLists::buildCRS() to assemble the final flat CRS.
+     * @param particleToIndex Map from particle pointers to their dense SoA index.
+     *                      Built once by VerletLists::buildParticleIndex().
+     * @param interactionLength cutoff + skin radius.
      */
-    VerletListGeneratorFunctor(NeighborListAoSType &verletListsAoS, double interactionLength)
+    VerletListGeneratorFunctor(std::vector<std::vector<size_t>> &neighborLists,
+                               const std::unordered_map<const Particle_T *, size_t> &particleToIndex,
+                               double interactionLength)
         : PairwiseFunctor<Particle_T, VerletListGeneratorFunctor>(interactionLength),
-          _verletListsAoS(verletListsAoS),
+          _neighborLists(neighborLists),
+          _particleToIndex(particleToIndex),
           _interactionLengthSquared(interactionLength * interactionLength) {}
 
     std::string getName() override { return "VerletListGeneratorFunctor"; }
@@ -69,16 +92,13 @@ class VerletListHelpers {
       }
       auto dist = i.getR() - j.getR();
 
-      double distsquare = utils::ArrayMath::dot(dist, dist);
-      if (distsquare < _interactionLengthSquared) {
-        // this is thread safe, only if particle i is accessed by only one
-        // thread at a time. which is ensured, as particle i resides in a
-        // specific cell and each cell is only accessed by one thread at a time
-        // (ensured by traversals)
-        // also the list is not allowed to be resized!
-
-        _verletListsAoS.at(&i).push_back(&j);
-        // no newton3 here, as AoSFunctor(j,i) will also be called if newton3 is disabled.
+      double distSquared = utils::ArrayMath::dot(dist, dist);
+      if (distSquared < _interactionLengthSquared) {
+        // Thread-safe: particle i lives in a specific cell, and each cell is
+        // accessed by exactly one thread at a time (guaranteed by the traversal).
+        // _neighborLists[iIdx] is therefore never accessed concurrently.
+        _neighborLists[_particleToIndex.at(&i)].push_back(_particleToIndex.at(&j));
+        // No newton3 here: AoSFunctor(j, i) is also called when newton3=false.
       }
     }
 
@@ -97,7 +117,8 @@ class VerletListHelpers {
 
       size_t numPart = soa.size();
       for (unsigned int i = 0; i < numPart; ++i) {
-        auto &currentList = _verletListsAoS.at(ptrptr[i]);
+        const size_t iIdx = _particleToIndex.at(ptrptr[i]);
+        auto &currentList = _neighborLists[iIdx];
 
         for (unsigned int j = i + 1; j < numPart; ++j) {
           const double drx = xptr[i] - xptr[j];
@@ -108,13 +129,15 @@ class VerletListHelpers {
           const double dry2 = dry * dry;
           const double drz2 = drz * drz;
 
-          const double dr2 = drx2 + dry2 + drz2;
+          const double distSquared = drx2 + dry2 + drz2;
 
-          if (dr2 < _interactionLengthSquared) {
-            currentList.push_back(ptrptr[j]);
+          if (distSquared < _interactionLengthSquared) {
+            const size_t jIdx = _particleToIndex.at(ptrptr[j]);
+            currentList.push_back(jIdx);
             if (not newton3) {
-              // we need this here, as SoAFunctorSingle will only be called once for both newton3=true and false.
-              _verletListsAoS.at(ptrptr[j]).push_back(ptrptr[i]);
+              // SoAFunctorSingle is called once for both newton3=true and newton3=false,
+              // so we must explicitly record the reverse direction here.
+              _neighborLists[jIdx].push_back(iIdx);
             }
           }
         }
@@ -140,9 +163,11 @@ class VerletListHelpers {
       const double *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
       const double *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
 
+      // newton3 is ignored: for newton3=false, SoAFunctorPair(soa2, soa1) is also called by the traversal.
       size_t numPart1 = soa1.size();
       for (unsigned int i = 0; i < numPart1; ++i) {
-        auto &currentList = _verletListsAoS.at(ptr1ptr[i]);
+        const size_t iIdx = _particleToIndex.at(ptr1ptr[i]);
+        auto &currentList = _neighborLists[iIdx];
 
         size_t numPart2 = soa2.size();
 
@@ -155,10 +180,10 @@ class VerletListHelpers {
           const double dry2 = dry * dry;
           const double drz2 = drz * drz;
 
-          const double dr2 = drx2 + dry2 + drz2;
+          const double distSquared = drx2 + dry2 + drz2;
 
-          if (dr2 < _interactionLengthSquared) {
-            currentList.push_back(ptr2ptr[j]);
+          if (distSquared < _interactionLengthSquared) {
+            currentList.push_back(_particleToIndex.at(ptr2ptr[j]));
           }
         }
       }
@@ -181,17 +206,17 @@ class VerletListHelpers {
     }
 
    private:
-    NeighborListAoSType &_verletListsAoS;
+    std::vector<std::vector<size_t>> &_neighborLists;
+    const std::unordered_map<const Particle_T *, size_t> &_particleToIndex;
     double _interactionLengthSquared;
   };
 
   /**
    * This functor checks the validity of neighborhood lists.
    * If a pair of particles has a distance of less than the cutoff radius it
-   * checks whether the pair is represented in the verlet list.
-   * If the pair is not present in the list the neigborhood lists are invalid
-   * and neighborlistsAreValid()  will return false.
-   * @todo: SoA?
+   * checks whether the pair is represented in the CRS neighbor list.
+   * If the pair is not present in the list the neighborhood lists are invalid
+   * and neighborlistsAreValid() will return false.
    */
   class VerletListValidityCheckerFunctor : public PairwiseFunctor<Particle_T, VerletListValidityCheckerFunctor> {
    public:
@@ -202,12 +227,15 @@ class VerletListHelpers {
 
     /**
      * Constructor
-     * @param verletListsAoS
-     * @param cutoff
+     * @param neighborList  The CRS neighbor list to validate.
+     * @param particleIndex Map from particle pointer to its dense SoA index.
+     * @param cutoff        The cutoff radius (pairs within this are expected to be listed).
      */
-    VerletListValidityCheckerFunctor(NeighborListAoSType &verletListsAoS, double cutoff)
+    VerletListValidityCheckerFunctor(const NeighborListCRS &neighborList,
+                                     const std::unordered_map<const Particle_T *, size_t> &particleIndex, double cutoff)
         : PairwiseFunctor<Particle_T, VerletListValidityCheckerFunctor>(cutoff),
-          _verletListsAoS(verletListsAoS),
+          _neighborList(neighborList),
+          _particleIndex(particleIndex),
           _cutoffsquared(cutoff * cutoff),
           _valid(true) {}
 
@@ -227,15 +255,18 @@ class VerletListHelpers {
       return true;
     }
 
-    void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
+    void AoSFunctor(Particle_T &i, Particle_T &j, bool /*newton3*/) override {
       using namespace autopas::utils::ArrayMath::literals;
 
       auto dist = i.getR() - j.getR();
-      double distsquare = utils::ArrayMath::dot(dist, dist);
-      if (distsquare < _cutoffsquared) {
-        // this is thread safe, we have variables on the stack
-        auto found = std::find(_verletListsAoS[&i].begin(), _verletListsAoS[&i].end(), &j);
-        if (found == _verletListsAoS[&i].end()) {
+      double distSquared = utils::ArrayMath::dot(dist, dist);
+      if (distSquared < _cutoffsquared) {
+        // Thread-safe: reads only from the immutable CRS structure and stack variables.
+        const size_t iIdx = _particleIndex.at(&i);
+        const size_t jIdx = _particleIndex.at(&j);
+        const size_t *beg = _neighborList.begin(iIdx);
+        const size_t *end = beg + _neighborList.count(iIdx);
+        if (std::find(beg, end, jIdx) == end) {
           // this is thread safe, as _valid is atomic
           _valid = false;
         }
@@ -250,7 +281,8 @@ class VerletListHelpers {
     bool neighborlistsAreValid() { return _valid; }
 
    private:
-    NeighborListAoSType &_verletListsAoS;
+    const NeighborListCRS &_neighborList;
+    const std::unordered_map<const Particle_T *, size_t> &_particleIndex;
     double _cutoffsquared;
 
     // needs to be thread safe
