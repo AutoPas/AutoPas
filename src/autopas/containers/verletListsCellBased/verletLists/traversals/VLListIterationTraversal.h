@@ -96,6 +96,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
             auto endIter = aosNeighborLists.end(bucketId);
             for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
               ParticleType &particle = *(bucketIter->first);
+              if (not particle.isOwned() or particle.isWall()) {
+              continue;
+              }
               for (auto neighborPtr : bucketIter->second) {
                 ParticleType &neighbor = *neighborPtr;
                 _functor.AoSFunctor(particle, neighbor, false);
@@ -149,7 +152,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
             auto endIter = aosNeighborLists.end(bucketId);
             for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
               ParticleType &particle = *(bucketIter->first);
-              if (not particle.isOwned()) {
+              if (not particle.isOwned() or particle.isWall()) {
                 // skip Halo particles, as N3 is disabled
                 continue;
               }
