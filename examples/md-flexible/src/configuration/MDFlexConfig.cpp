@@ -339,6 +339,10 @@ std::string MDFlexConfig::to_string() const {
         os << "Lennard-Jones (12-6) Kokkos" << endl;
         break;
       }
+      case FunctorOption::lj12_6_HWY: {
+        os << "Lennard-Jones (12-6) Highway Wrapper" << endl;
+        break;
+      }
     }
     os << indent;
     printOption(traversalOptions, -indentWidth);
@@ -347,6 +351,8 @@ std::string MDFlexConfig::to_string() const {
     os << indent;
     printOption(newton3Options, -indentWidth);
   }
+
+  printOption(vecPatternOptions);
 
   // TODO c++20: use contains instead of count
   if (getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {

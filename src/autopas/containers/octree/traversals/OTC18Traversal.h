@@ -42,7 +42,7 @@ class OTC18Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit OTC18Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
+  explicit OTC18Traversal(PairwiseFunctor &pairwiseFunctor, double cutoff, double interactionLength,
                           DataLayoutOption dataLayout, bool useNewton3)
       // {2, 1, 1} says that there are only two cells in the container (owned and halo), no other cell. Both are along
       // the (imaginary) x-axis. This results in the cuboid specified by {2, 1, 1}.
@@ -54,7 +54,11 @@ class OTC18Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c18; }
 
-  [[nodiscard]] bool isApplicable() const override { return this->_useNewton3; }
+  /**
+   * OT C18 is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   /**
    * Assign an integer ID to every leaf

@@ -487,6 +487,14 @@ constexpr std::array<T, SIZE> &operator+=(std::array<T, SIZE> &a, const std::arr
   return a;
 }
 
+template <class T, class V, std::size_t SIZE>
+constexpr std::array<T, SIZE> &operator+=(std::array<T, SIZE> &a, const std::array<V, SIZE> &b) {
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    a[d] += static_cast<T>(b[d]);
+  }
+  return a;
+}
+
 /**
  * Subtracts array b from array a and returns the result as array of type a
  * @tparam T floating point type of a

@@ -63,13 +63,14 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
 
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
-        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3,
-        autopas::InteractionTypeOption::triwise}});
-  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::triwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
-  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3, autopas::InteractionTypeOption::triwise,
+        autopas::VectorizationPatternOption::p1xVec}});
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tunerManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::triwise);
+
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 
   // Add particles. Calling add(Halo)Particle on a fresh logicHandler should place the particles directly in the
   // container.
@@ -452,12 +453,13 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-        autopas::InteractionTypeOption::triwise}});
-  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::triwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
-  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+        autopas::InteractionTypeOption::triwise, autopas::VectorizationPatternOption::p1xVec}});
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tunerManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::triwise);
+
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 
   // fill the container with the given particles
   for (const auto &p : particles) {

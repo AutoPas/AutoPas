@@ -45,6 +45,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
+   * @param allowedVecPatternOptions
    * @param mpiDivideAndConquer
    * @param comm
    */
@@ -53,7 +54,9 @@ class ActiveHarmony : public TuningStrategyInterface {
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                const std::set<Newton3Option> &allowedNewton3Options, bool mpiDivideAndConquer, AutoPas_MPI_Comm comm);
+                const std::set<Newton3Option> &allowedNewton3Options,
+                const std::set<VectorizationPatternOption> &allowedVecPatternOptions, bool mpiDivideAndConquer,
+                AutoPas_MPI_Comm comm);
 
   ~ActiveHarmony() override;
 
@@ -103,6 +106,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   std::set<LoadEstimatorOption> _allowedLoadEstimatorOptions;
   std::set<DataLayoutOption> _allowedDataLayoutOptions;
   std::set<Newton3Option> _allowedNewton3Options;
+  std::set<VectorizationPatternOption> _allowedVecPatterns;
 
   size_t _tuningPhase{0};
   bool _mpiDivideAndConquer;
@@ -155,6 +159,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   static constexpr const char *dataLayoutOptionName = "dataLayoutOption";
   static constexpr const char *cellSizeFactorsName = "cellSizeFactor";
   static constexpr const char *newton3OptionName = "newton3Option";
+  static constexpr const char *vecPatternOptionName = "vectorPattern";
 };
 
 }  // namespace autopas

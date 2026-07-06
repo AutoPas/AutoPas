@@ -56,7 +56,7 @@ void DSSequentialTraversalTest::testTraversalPairwise(bool useSoA) {
   MPairwiseFunctor functor;
 
   if (useSoA) {
-    autopas::DSSequentialTraversal<FPCell, MPairwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
+    autopas::DSSequentialTraversal<FPCell, MPairwiseFunctor> traversal(functor, std::numeric_limits<double>::max(),
                                                                        autopas::DataLayoutOption::soa, true);
     // domain SoA with itself
     EXPECT_CALL(functor, SoAFunctorSingle(_, true)).Times(1);
@@ -66,7 +66,7 @@ void DSSequentialTraversalTest::testTraversalPairwise(bool useSoA) {
     traversal.setCellsToTraverse(cells);
     traversal.traverseParticles();
   } else {
-    autopas::DSSequentialTraversal<FPCell, MPairwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
+    autopas::DSSequentialTraversal<FPCell, MPairwiseFunctor> traversal(functor, std::numeric_limits<double>::max(),
                                                                        autopas::DataLayoutOption::aos, true);
     // interactions in main cell + interactions with halo cells.
     size_t expectedFunctorCalls = numParticles * (numParticles - 1) / 2 + numParticles * numHaloParticles;
@@ -86,7 +86,7 @@ void DSSequentialTraversalTest::testTraversalTriwise(bool useSoA) {
   MTriwiseFunctor functor;
 
   if (useSoA) {
-    autopas::DSSequentialTraversal<FPCell, MTriwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
+    autopas::DSSequentialTraversal<FPCell, MTriwiseFunctor> traversal(functor, std::numeric_limits<double>::max(),
                                                                       autopas::DataLayoutOption::soa, true);
     // domain SoA with itself
     EXPECT_CALL(functor, SoAFunctorSingle(_, true)).Times(1);
@@ -98,7 +98,7 @@ void DSSequentialTraversalTest::testTraversalTriwise(bool useSoA) {
     traversal.setCellsToTraverse(cells);
     traversal.traverseParticles();
   } else {
-    autopas::DSSequentialTraversal<FPCell, MTriwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
+    autopas::DSSequentialTraversal<FPCell, MTriwiseFunctor> traversal(functor, std::numeric_limits<double>::max(),
                                                                       autopas::DataLayoutOption::aos, true);
     // interactions in main cell + interactions with halo cells.
     size_t expectedFunctorCalls = numParticles * (numParticles - 1) * (numParticles - 2) / 6 +

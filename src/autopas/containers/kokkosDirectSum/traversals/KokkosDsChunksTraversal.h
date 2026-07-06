@@ -157,7 +157,7 @@ explicit KokkosDsChunksTraversal(Functor *functor, DataLayoutOption dataLayout, 
 
     [[nodiscard]] TraversalOption getTraversalType() const final { return TraversalOption::ds_kokkos_chunks; }
 
-    [[nodiscard]] bool isApplicable() const final { 
+    [[nodiscard]] bool isApplicableToDomain() const final {
         // TODO
         return true;
     }

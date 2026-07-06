@@ -137,7 +137,7 @@ explicit KokkosDsTeamsTraversal(Functor *functor, DataLayoutOption dataLayout, b
 
     [[nodiscard]] TraversalOption getTraversalType() const final { return TraversalOption::ds_kokkos_teams; }
 
-    [[nodiscard]] bool isApplicable() const final { 
+    [[nodiscard]] bool isApplicableToDomain() const final {
         // TODO
         return true;
     }

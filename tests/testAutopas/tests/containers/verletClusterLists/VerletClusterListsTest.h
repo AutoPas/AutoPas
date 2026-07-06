@@ -93,7 +93,7 @@ class CollectParticlesPerThreadFunctor
 class ColoringTraversalWithColorChangeNotify
     : public autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor> {
  public:
-  ColoringTraversalWithColorChangeNotify(CollectParticlesPerThreadFunctor *functor, size_t clusterSize,
+  ColoringTraversalWithColorChangeNotify(CollectParticlesPerThreadFunctor &functor, size_t clusterSize,
                                          std::function<void(int)> whenColorChanges)
       : autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor>(functor, clusterSize,
                                                                            autopas::DataLayoutOption::aos, true) {

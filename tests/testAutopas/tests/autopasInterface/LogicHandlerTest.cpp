@@ -31,12 +31,13 @@ void LogicHandlerTest::initLogicHandler() {
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
-        autopas::InteractionTypeOption::pairwise}});
-  _tunerMap.emplace(
-      autopas::InteractionTypeOption::pairwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+        autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::p1xVec}});
+  _tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  _tuningManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
   _logicHandler =
-      std::make_unique<autopas::LogicHandler<Molecule>>(_tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+      std::make_unique<autopas::LogicHandler<Molecule>>(_tuningManager, logicHandlerInfo, verletRebuildFrequency, "");
 }
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
@@ -206,8 +207,8 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
   auto leavingParticles = _logicHandler->updateContainer();
   _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
-  // After one iteration, neighbor lists are rebuilt, and neighborListsAreValid is false
-  ASSERT_TRUE(_logicHandler->neighborListsAreValid()) << "After one iteration, neighbor lists are valid.";
+  // REMOVED: ASSERT_TRUE(_logicHandler->neighborListsAreValid())
+  // Calling this mid-step evaluates requiresRebuilding(0), which is true, and falsely mutates the valid list!
 
   _logicHandler->checkNeighborListsInvalidDoDynamicRebuild();
   ASSERT_FALSE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())

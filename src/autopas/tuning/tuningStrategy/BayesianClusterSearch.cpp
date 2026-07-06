@@ -15,10 +15,12 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(
     const NumberSet<double> &allowedCellSizeFactors, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
-    size_t maxEvidence, AcquisitionFunctionOption predAcqFunction, const std::string &outputSuffix,
-    size_t predNumLHSamples, unsigned long seed)
+    const std::set<VectorizationPatternOption> &allowedVecPatternOptions, size_t maxEvidence,
+    AcquisitionFunctionOption predAcqFunction, const std::string &outputSuffix, size_t predNumLHSamples,
+    unsigned long seed)
     : _interactionType(interactionType),
       _containerOptionsSet(allowedContainerOptions),
+      _vecPatternOptions(allowedVecPatternOptions.begin(), allowedVecPatternOptions.end()),
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
       _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
       _cellSizeFactors(allowedCellSizeFactors.clone()),
@@ -77,8 +79,8 @@ autopas::BayesianClusterSearch::~BayesianClusterSearch() = default;
 
 void autopas::BayesianClusterSearch::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   // store optimal evidence
-  if (evidence.value < _currentOptimalTime) {
-    _currentOptimalTime = evidence.value;
+  if (evidence.effectiveValue < _currentOptimalTime) {
+    _currentOptimalTime = evidence.effectiveValue;
     _currentOptimalConfig = configuration;
   }
 
@@ -86,7 +88,7 @@ void autopas::BayesianClusterSearch::addEvidence(const Configuration &configurat
   const auto vec = _encoder.convertToCluster(configuration, evidence.iteration * _iterationScale);
   // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
   // represent a maximization problem
-  _gaussianCluster.addEvidence(vec, -evidence.value * secondsPerMicroseconds);
+  _gaussianCluster.addEvidence(vec, -evidence.effectiveValue * secondsPerMicroseconds);
 
   _currentIteration = evidence.iteration;
   ++_currentNumEvidence;
@@ -129,7 +131,7 @@ bool autopas::BayesianClusterSearch::searchSpaceIsEmpty() const {
 
 void autopas::BayesianClusterSearch::updateOptions() {
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                             *_cellSizeFactors);
+                             *_cellSizeFactors, _vecPatternOptions);
 
   auto newRestrictions = _encoder.getDiscreteRestrictions();
   _gaussianCluster.setDimensions(std::vector<int>(newRestrictions.begin(), newRestrictions.end()));

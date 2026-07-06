@@ -123,7 +123,7 @@ explicit KokkosDsFlatTraversal(Functor *functor, DataLayoutOption dataLayout, bo
 
     [[nodiscard]] TraversalOption getTraversalType() const final { return TraversalOption::ds_kokkos_flat; }
 
-    [[nodiscard]] bool isApplicable() const final { 
+    [[nodiscard]] bool isApplicableToDomain() const final {
         // TODO
         return true;
     }

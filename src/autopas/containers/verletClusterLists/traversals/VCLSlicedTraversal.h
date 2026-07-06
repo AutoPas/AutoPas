@@ -28,7 +28,7 @@ class VCLSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
  private:
   using ParticleType = typename ParticleCell::ParticleType;
 
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
   internal::VCLClusterFunctor<ParticleType, PairwiseFunctor> _clusterFunctor;
 
   void processBaseStep(unsigned long x, unsigned long y) {
@@ -56,7 +56,7 @@ class VCLSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VCLSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit VCLSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                               double interactionLength, const std::array<double, 3> &cellLength, size_t clusterSize,
                               DataLayoutOption dataLayout, bool useNewton3)
       : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,

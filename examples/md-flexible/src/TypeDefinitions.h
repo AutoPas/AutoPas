@@ -28,6 +28,10 @@
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+#include "molecularDynamicsLibrary/LJFunctorHWY.h"
+#endif
+
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE)
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
@@ -122,6 +126,23 @@ using LJFunctorTypeKokkos = mdLib::LJFunctorKokkos<ParticleType, true, true, aut
 #error "Multi-Site Lennard-Jones Functor does not have AVX support!"
 #else
 using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                             mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+#endif
+
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+/**
+ * Type of LJFunctorHWY used in md-flexible
+ * Switches between mdLib::LJFunctorHWY and mdLib::LJMultisiteFunctorHWY as determined by CMake flag
+ * MD_FLEXIBLE_MODE.
+ * @note mdLib::LJMultisiteFunctorHWY is yet to be written, so a compiler pre-processing error is thrown.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "Multi-Site Lennard-Jones Functor does not have HWY support!"
+#else
+
+using LJFunctorTypeHWY = mdLib::LJFunctorHWY<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 

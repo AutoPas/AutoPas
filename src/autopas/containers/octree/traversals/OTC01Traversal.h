@@ -42,7 +42,7 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
+  explicit OTC01Traversal(PairwiseFunctor &pairwiseFunctor, double cutoff, double interactionLength,
                           DataLayoutOption dataLayout, bool useNewton3)
       : CellTraversal<ParticleCell>({2, 1, 1}),
         OTTraversalInterface<OctreeNodeWrapper<Particle_T>>(interactionLength, dataLayout, useNewton3),
@@ -52,7 +52,11 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c01; }
 
-  [[nodiscard]] bool isApplicable() const override { return not this->_useNewton3; }
+  /**
+   * OT C01 is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     // Preprocess all leaves

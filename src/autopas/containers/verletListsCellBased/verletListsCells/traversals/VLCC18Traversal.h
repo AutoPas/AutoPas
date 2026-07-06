@@ -39,7 +39,7 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
    * @param useNewton3
    * @param typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
    */
-  explicit VLCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit VLCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                            const double interactionLength, const std::array<double, 3> &cellLength,
                            DataLayoutOption dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
@@ -63,9 +63,11 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
     return TraversalOption();
   }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (this->_dataLayout == DataLayoutOption::aos or this->_dataLayout == DataLayoutOption::soa);
-  }
+  /**
+   * VLC C18 is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   /**
    * @copydoc autopas::CellTraversal::setSortingThreshold()
@@ -74,7 +76,7 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
   void setSortingThreshold(size_t sortingThreshold) override {}
 
  private:
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, class NeighborList>

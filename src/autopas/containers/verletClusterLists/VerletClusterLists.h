@@ -912,7 +912,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @param functor The functor to use for loading the particles into the SoA.
    */
   template <class Functor>
-  void loadParticlesIntoSoAs(Functor *functor) {
+  void loadParticlesIntoSoAs(Functor &functor) {
     const auto numTowers = _towerBlock.size();
     /// @todo: find sensible chunksize
     AUTOPAS_OPENMP(parallel for schedule(dynamic))
@@ -927,7 +927,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @param functor The functor to use for extracting the SoAs into the particles..
    */
   template <class Functor>
-  void extractParticlesFromSoAs(Functor *functor) {
+  void extractParticlesFromSoAs(Functor &functor) {
     const auto numTowers = _towerBlock.size();
     /// @todo: find sensible chunksize
     AUTOPAS_OPENMP(parallel for schedule(dynamic))

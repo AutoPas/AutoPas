@@ -33,7 +33,7 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
    * Constructor of the balanced sliced traversal.
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
-  explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
+  explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor,
                                         const double interactionLength, const std::array<double, 3> &cellLength,
                                         DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
       : SlicedLockBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,

@@ -335,6 +335,7 @@ int main() {
   Initialize(sphSystem);
 
   // 0.1 ---- GET INITIAL FORCES OF SYSTEM ----
+  sphSystem.updateContainer();
   densityPressureHydroForce(sphSystem);
 
   std::cout << "\n----------------------------" << std::endl;

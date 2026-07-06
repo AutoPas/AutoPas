@@ -38,6 +38,12 @@ struct OptionSpace {
    * Available traversal options.
    */
   std::set<TraversalOption> traversalOptions;
+
+  /**
+   * Available Vectorization Pattern options
+   */
+  std::set<VectorizationPatternOption> vecPatternOptions;
+
   /**
    * Available loadEstimator options.
    */
@@ -66,11 +72,13 @@ struct OptionSpace {
  * @param allowedTraversalOptions
  * @param allowedLoadEstimatorOptions
  * @param allowedDataLayoutOptions
+ * @param allowedContainerLayoutOptions
  * @param allowedNewton3Options
  * @param allowedCellSizeFactors
  * @param interactionType
  * @param kokkosChunkSize
  * @param kokkosTeamSize
+ * @param allowedVecPatternOptions
  * @return A set containing all valid configurations.
  */
 std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowedContainerOptions,
@@ -82,7 +90,8 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const NumberSet<double> *allowedCellSizeFactors,
                                          const InteractionTypeOption &interactionType,
                                          const std::set<size_t>& kokkosChunkSize,
-                                         const std::set<size_t>& kokkosTeamSize);
+                                         const std::set<size_t>& kokkosTeamSize,
+                                         const std::set<VectorizationPatternOption> &allowedVecPatternOptions);
 
 /**
  * Crudely trying to reconstruct the dimensions of the search space from a given set of options.

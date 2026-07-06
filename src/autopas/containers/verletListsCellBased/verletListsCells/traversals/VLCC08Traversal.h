@@ -38,7 +38,7 @@ class VLCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLCC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit VLCC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                            double interactionLength, const std::array<double, 3> &cellLength,
                            DataLayoutOption dataLayout, bool useNewton3)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
@@ -50,8 +50,9 @@ class VLCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlc_c08; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    // This traversal is only safe to use for CSF>=1
+  [[nodiscard]] bool isApplicableToDomain() const override {
+    // This traversal is only safe to use with cell lengths at least as large as _interactionLength (typically holds for
+    // CSF>=1)
     const double minCellLength = *std::min_element(this->_cellLength.cbegin(), this->_cellLength.cend());
     const bool maxOneCellInCutoff = minCellLength >= this->_interactionLength;
 
@@ -65,7 +66,7 @@ class VLCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
   void setSortingThreshold(size_t sortingThreshold) override {}
 
  private:
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, class NeighborList>

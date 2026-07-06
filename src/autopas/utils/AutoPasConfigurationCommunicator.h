@@ -25,9 +25,10 @@
 namespace autopas::utils::AutoPasConfigurationCommunicator {
 
 /**
- * type definition for the serialization of configurations. A serialized config is an array of 14 bytes.
+ * type definition for the serialization of configurations. A serialized config is an array of 15 bytes.
+ * TODO: consider aligning to 16 Byte
  * */
-using SerializedConfiguration = std::array<std::byte, 14>;
+using SerializedConfiguration = std::array<std::byte, 15>;
 
 /**
  * Simply a shorter way of static_casting from Option to std::byte.
@@ -50,6 +51,7 @@ inline std::byte castToByte(TOption option) {
  * @param dataLayoutOptions
  * @param newton3Options
  * @param interactionTypeOption
+ * @param vecPatternOptions
  * @return
  */
 size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, const NumberSet<double> &cellSizeFactors,
@@ -57,7 +59,8 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
                           const std::set<Newton3Option> &newton3Options,
-                          const InteractionTypeOption &interactionTypeOption);
+                          const InteractionTypeOption &interactionTypeOption,
+                          const std::set<VectorizationPatternOption> &vecPatternOptions);
 
 /**
  * Distributes the provided configurations globally for equal work loads.
@@ -70,6 +73,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
  * @param dataLayoutOptions
  * @param newton3Options
  * @param interactionTypeOption
+ * @param vecPatternOptions
  * @param rank
  * @param commSize
  */
@@ -77,7 +81,8 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              InteractionTypeOption interactionTypeOption, int rank, int commSize);
+                              InteractionTypeOption interactionTypeOption,
+                              std::set<VectorizationPatternOption> &vecPatternOptions, int rank, int commSize);
 
 /**
  * Distribute ranks in buckets, which contain only ranks with similar scenarios.

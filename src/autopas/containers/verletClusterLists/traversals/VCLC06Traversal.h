@@ -57,7 +57,7 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit VCLC06Traversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize, DataLayoutOption dataLayout,
+  explicit VCLC06Traversal(PairwiseFunctor &pairwiseFunctor, size_t clusterSize, DataLayoutOption dataLayout,
                            bool useNewton3)
       : ColorBasedTraversal<ParticleCell, PairwiseFunctor>({0, 0, 0}, pairwiseFunctor, 0, {}, dataLayout, useNewton3),
         _functor(pairwiseFunctor),
@@ -65,9 +65,11 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c06; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (this->_dataLayout == DataLayoutOption::aos || this->_dataLayout == DataLayoutOption::soa);
-  }
+  /**
+   * VCL C06 is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     if (this->_dataLayout == DataLayoutOption::soa) {
@@ -108,7 +110,7 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
   void setSortingThreshold(size_t sortingThreshold) override {}
 
  private:
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
   internal::VCLClusterFunctor<ParticleType, PairwiseFunctor> _clusterFunctor;
 };
 

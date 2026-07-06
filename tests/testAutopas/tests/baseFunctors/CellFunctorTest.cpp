@@ -9,42 +9,42 @@
 // Type aliases via inheritance for more readable test names (using declarations do not work for this)
 struct CellFunctor_AoS_NoN3_NoBi
     : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, false> {
-  CellFunctor_AoS_NoN3_NoBi(LJFunctorType<> *f, const double sortingCutoff)
+  CellFunctor_AoS_NoN3_NoBi(LJFunctorType<> &f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::aos, false) {}
 };
 struct CellFunctor_AoS_NoN3_Bi
     : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, true> {
-  CellFunctor_AoS_NoN3_Bi(LJFunctorType<> *f, const double sortingCutoff)
+  CellFunctor_AoS_NoN3_Bi(LJFunctorType<> &f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::aos, false) {}
 };
 struct CellFunctor_AoS_N3_NoBi
     : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, false> {
-  CellFunctor_AoS_N3_NoBi(LJFunctorType<> *f, const double sortingCutoff)
+  CellFunctor_AoS_N3_NoBi(LJFunctorType<> &f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::aos, true) {}
 };
 struct CellFunctor_AoS_N3_Bi
     : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, true> {
-  CellFunctor_AoS_N3_Bi(LJFunctorType<> *f, const double sortingCutoff)
+  CellFunctor_AoS_N3_Bi(LJFunctorType<> &f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::aos, true) {}
 };
 struct CellFunctor_SoA_NoN3_NoBi
     : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, false> {
-  CellFunctor_SoA_NoN3_NoBi(LJFunctorType<> *f, const double sortingCutoff)
+  CellFunctor_SoA_NoN3_NoBi(LJFunctorType<> &f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::soa, false) {}
 };
 struct CellFunctor_SoA_NoN3_Bi
     : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, true> {
-  CellFunctor_SoA_NoN3_Bi(LJFunctorType<> *f, const double sortingCutoff)
+  CellFunctor_SoA_NoN3_Bi(LJFunctorType<> &f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::soa, false) {}
 };
 struct CellFunctor_SoA_N3_NoBi
     : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, false> {
-  CellFunctor_SoA_N3_NoBi(LJFunctorType<> *f, const double sortingCutoff)
+  CellFunctor_SoA_N3_NoBi(LJFunctorType<> &f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::soa, true) {}
 };
 struct CellFunctor_SoA_N3_Bi
     : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, true> {
-  CellFunctor_SoA_N3_Bi(LJFunctorType<> *f, const double sortingCutoff)
+  CellFunctor_SoA_N3_Bi(LJFunctorType<> &f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::soa, true) {}
 };
 
@@ -183,7 +183,7 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionPair) {
 
             ljFunctor.initTraversal();
 
-            CellFunctorType cellFunctor(&ljFunctor, cutoff);
+            CellFunctorType cellFunctor(ljFunctor, cutoff);
             cellFunctor.setSortingThreshold(sortingThreshold);
 
             const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
@@ -273,7 +273,7 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionSingle) {
 
           ljFunctor.initTraversal();
 
-          CellFunctorType cellFunctor(&ljFunctor, cutoff);
+          CellFunctorType cellFunctor(ljFunctor, cutoff);
           cellFunctor.setSortingThreshold(sortingThreshold);
 
           const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(

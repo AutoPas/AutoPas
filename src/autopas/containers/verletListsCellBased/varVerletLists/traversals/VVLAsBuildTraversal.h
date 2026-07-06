@@ -43,7 +43,7 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
    * @param dataLayout The data layout to use.
    * @param useNewton3 Whether or not this traversal uses newton 3.
    */
-  explicit VVLAsBuildTraversal(PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit VVLAsBuildTraversal(PairwiseFunctor &pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor), _soa{nullptr} {}
 
   void initTraversal() override {
@@ -75,9 +75,11 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
     }
   }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return _dataLayout == DataLayoutOption::soa || _dataLayout == DataLayoutOption::aos;
-  }
+  /**
+   * VVL As Build is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vvl_as_built; }
 
@@ -85,7 +87,7 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
   /**
    * The functor to use for the iteration.
    */
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
   /**
    * A pointer to the SoA to iterate over if DataLayout is soa.
    */
@@ -105,7 +107,7 @@ void VVLAsBuildTraversal<ParticleCell, Particle_T, PairwiseFunctor>::iterateAoS(
         const auto &particleToNeighborMap = list[color][thread];
         for (const auto &[particlePtr, neighborPtrList] : particleToNeighborMap) {
           for (auto neighborPtr : neighborPtrList) {
-            _functor->AoSFunctor(*particlePtr, *neighborPtr, _useNewton3);
+            _functor.AoSFunctor(*particlePtr, *neighborPtr, _useNewton3);
           }
         }
       }
@@ -125,7 +127,7 @@ void VVLAsBuildTraversal<ParticleCell, Particle_T, PairwiseFunctor>::iterateSoA(
       for (unsigned int thread = 0; thread < soaNeighborList[color].size(); thread++) {
         const auto &threadNeighborList = soaNeighborList[color][thread];
         for (const auto &[indexFirst, neighbors] : threadNeighborList) {
-          _functor->SoAFunctorVerlet(*_soa, indexFirst, neighbors, _useNewton3);
+          _functor.SoAFunctorVerlet(*_soa, indexFirst, neighbors, _useNewton3);
         }
       }
     }
