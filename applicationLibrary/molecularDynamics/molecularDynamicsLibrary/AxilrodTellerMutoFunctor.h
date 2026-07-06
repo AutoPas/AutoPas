@@ -16,6 +16,7 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "SimulationParticleTypes.h"
 
 namespace mdLib {
 
@@ -183,10 +184,32 @@ class AxilrodTellerMutoFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
+  /**
+   * Wall particles (frozen boundary particles) are "restricted": ATM triplets with 2 or more wall particles are
+   * skipped (see AoSFunctor). Exposing this via the CellFunctor3B hooks lets whole cell combinations that cannot
+   * contain a valid triplet (e.g. deep inside a thick wall, far from any fluid particle) be skipped before any
+   * triplet is even formed, instead of only discarding them one AoSFunctor call at a time.
+   */
+  bool isRestrictedForTriwise(const Particle_T &p) const final { return ParticleTypes::isWall(p.getTypeId()); }
+
+  /**
+   * @copydoc isRestrictedForTriwise
+   */
+  size_t maxRestrictedParticlesPerTriplet() const final { return 1; }
+
   void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
+      return;
+    }
+
+    const bool iIsWall = ParticleTypes::isWall(i.getTypeId());
+    const bool jIsWall = ParticleTypes::isWall(j.getTypeId());
+    const bool kIsWall = ParticleTypes::isWall(k.getTypeId());
+    // Skip interactions where two or more particles are wall particles.
+    // Fluid-fluid-wall is allowed; wall-wall-anything is not.
+    if ((iIsWall ? 1 : 0) + (jIsWall ? 1 : 0) + (kIsWall ? 1 : 0) >= 2) {
       return;
     }
 
@@ -233,7 +256,7 @@ class AxilrodTellerMutoFunctor
         displacementKI * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK - 5.0 * allDotProducts / distSquaredKI);
 
     const auto forceI = (forceIDirectionJK + forceIDirectionIJ + forceIDirectionKI) * factor;
-    i.addF(forceI);
+    if (not iIsWall) i.addF(forceI);
 
     auto forceJ = forceI;
     auto forceK = forceI;
@@ -245,10 +268,10 @@ class AxilrodTellerMutoFunctor
           displacementJK * (IJDotKI * JKDotKI - distSquaredIJ * distSquaredKI + 5.0 * allDotProducts / distSquaredJK);
 
       forceJ = (forceJDirectionKI + forceJDirectionIJ + forceJDirectionJK) * factor;
-      j.addF(forceJ);
+      if (not jIsWall) j.addF(forceJ);
 
       forceK = (forceI + forceJ) * (-1.0);
-      k.addF(forceK);
+      if (not kIsWall) k.addF(forceK);
     }
 
     if constexpr (countFLOPs) {

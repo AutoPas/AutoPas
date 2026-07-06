@@ -3,8 +3,8 @@
  * @author N. Fottner
  * @date 13/05/19
  */
+#include "/Users/melisaaslan/IDP/AutoPas/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/SimulationParticleTypes.h"
 #include "TimeDiscretization.h"
-
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -33,6 +33,12 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   AUTOPAS_OPENMP(parallel reduction(|| : throwException))
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    if (ParticleTypes::isWall(iter->getTypeId())) {
+      iter->setV({0., 0., 0.});
+      iter->setF({0., 0., 0.});
+      iter->setOldF({0., 0., 0.});
+      continue;
+    }
     const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     auto v = iter->getV();
     auto f = iter->getF();
@@ -91,6 +97,9 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 
   AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    if (ParticleTypes::isWall(iter->getTypeId())) {
+      continue;
+    }
     // Calculate Quaternions
     const auto q = iter->getQuaternion();
     const auto angVelW = iter->getAngularVel();  // angular velocity in world frame
@@ -156,6 +165,12 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
 
   AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    if (ParticleTypes::isWall(iter->getTypeId())) {
+      iter->setV({0., 0., 0.});
+      iter->setF({0., 0., 0.});
+      iter->setOldF({0., 0., 0.});
+      continue;
+    }
     const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     const auto force = iter->getF();
     const auto oldForce = iter->getOldF();
@@ -174,6 +189,9 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 
   AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    if (ParticleTypes::isWall(iter->getTypeId())) {
+      continue;
+    }
     const auto torqueW = iter->getTorque();
     const auto q = iter->getQuaternion();
     const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId());  // moment of inertia

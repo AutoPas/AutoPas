@@ -28,3 +28,38 @@ venv/
 *.csv
 *.out
 *.log
+
+# Claude Code
+.claude/
+.claude-code/
+CLAUDE.md
+claude.log
+.claude.json
+.claude.json.backup
+
+# Claude session/cache
+*.claude
+*.claude.tmp
+
+# Claude generated temp outputs
+codex_autopas_smoke_output/
+vtkOutputFolder_*/
+.claude/
+.claude-code/
+codex_autopas_smoke_output/
+vtkOutputFolder_*/
+.claude/
+.claude-code/
+
+# Build files
+CMakeCache.txt
+CMakeFiles/
+
+# Visualization output
+*.vtu
+*.pvtu
+
+# Automatically generated input files
+sessileDrop_*.yaml
+CMakeCache.txt
+CMakeFiles/

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <limits>
 #include <type_traits>
 
 #include "Functor.h"
@@ -129,6 +130,26 @@ class TriwiseFunctor : public Functor<Particle_T, CRTP_T> {
   bool isVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) override {
     return vecPattern == VectorizationPatternOption::p1xVec;
   }
+
+  /**
+   * Optional classification hook for CellFunctor3B: marks a particle as "restricted" for triwise interactions
+   * (e.g. a frozen/boundary particle that this functor's physics only allows in a limited number per triplet).
+   * Used together with maxRestrictedParticlesPerTriplet() to let CellFunctor3B skip, ahead of time, cell
+   * combinations that cannot possibly contain a valid triplet - without ever generating those triplets or
+   * calling AoSFunctor for them.
+   *
+   * Default: no particle is restricted, i.e. this optimization is a no-op for functors that don't override it.
+   * @param p the particle to classify
+   * @return whether p counts towards the "restricted" quota of a triplet
+   */
+  virtual bool isRestrictedForTriwise(const Particle_T &p) const { return false; }
+
+  /**
+   * Maximum number of "restricted" particles (see isRestrictedForTriwise()) allowed within a single valid triplet.
+   * Default: unlimited, i.e. no filtering happens (matches the behaviour before this hook existed).
+   * @return the max number of restricted particles per triplet
+   */
+  virtual size_t maxRestrictedParticlesPerTriplet() const { return std::numeric_limits<size_t>::max(); }
 };
 
 }  // namespace autopas

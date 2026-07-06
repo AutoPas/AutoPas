@@ -7,6 +7,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPasDecl.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/SimulationParticleTypes.h"
 #include "src/TypeDefinitions.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -18,16 +19,18 @@ class ThermostatTest : public AutoPasTestBase,
   using AutoPasType = autopas::AutoPas<ParticleType>;
 
   ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>(1.)) {
-    _particlePropertiesLibrary.addSiteType(0, 1.);
-    _particlePropertiesLibrary.addLJParametersToSite(0, 1., 1.);
-    _particlePropertiesLibrary.addSiteType(1, 2.);
-    _particlePropertiesLibrary.addLJParametersToSite(1, 1., 1.);
+    constexpr size_t secondFluidType = ParticleTypes::WALL_DUAL_BOSS + 1;
+    for (size_t siteType = 0; siteType <= secondFluidType; ++siteType) {
+      _particlePropertiesLibrary.addSiteType(siteType, siteType == secondFluidType ? 2. : 1.);
+      _particlePropertiesLibrary.addLJParametersToSite(siteType, 1., 1.);
+    }
 
 #if MD_FLEXIBLE_MODE == MULTISITE
     _particlePropertiesLibrary.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
-    _particlePropertiesLibrary.addMolType(1, {0, 0, 1}, {{0., -0.05, 0.}, {0.5, 0., 0.}, {0., 0.25, 0.25}},
-                                          {1., 1., 1.});
-    _particlePropertiesLibrary.addMolType(2, {1}, {{0., 0., 0.}}, {1., 1., 1.});
+    for (size_t molType = 1; molType < secondFluidType; ++molType) {
+      _particlePropertiesLibrary.addMolType(molType, {0}, {{0., 0., 0.}}, {1., 1., 1.});
+    }
+    _particlePropertiesLibrary.addMolType(secondFluidType, {secondFluidType}, {{0., 0., 0.}}, {1., 1., 1.});
 #endif
     _particlePropertiesLibrary.calculateMixingCoefficients();
   }

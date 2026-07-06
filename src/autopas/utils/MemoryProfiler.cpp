@@ -6,6 +6,15 @@
 
 #include "MemoryProfiler.h"
 
+#ifdef __APPLE__
+// macOS 26 SDK uses _Static_assert (C11) in mach/message.h, which is not valid in C++.
+// Map it to static_assert before the include so the xnu_static_assert_struct_size macros compile.
+#ifndef _Static_assert
+#define _Static_assert static_assert
+#endif
+#include <mach/mach.h>
+#endif
+
 size_t autopas::memoryProfiler::currentMemoryUsage() {
 #ifdef __linux__
   std::ifstream statusFile(statusFileName);

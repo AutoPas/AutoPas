@@ -12,6 +12,7 @@
 #include <set>
 #include <vector>
 
+#include "SimulationParticleTypes.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -96,7 +97,7 @@ class ParticlePropertiesLibrary {
   /**
    * Calculates the actual mixing coefficients.
    */
-  void calculateMixingCoefficients();
+  void calculateMixingCoefficients(double zeta = ParticleTypes::ZETA);
 
   ~ParticlePropertiesLibrary() = default;
 
@@ -441,7 +442,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
 }
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
+void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(double zeta) {
   if (_numRegisteredSiteTypes == 0) {
     autopas::utils::ExceptionHandler::AutoPasException(
         "ParticlePropertiesLibrary::calculateMixingCoefficients was called without any site types being registered!");
@@ -452,12 +453,27 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
     const auto cutoffSquared = _cutoff * _cutoff;
     _computedLJMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
 
+    // Print wetting parameters once at startup (paper model: epsilon_fw = zeta * epsilon_ff).
+    {
+      const floatType eps_ff = _epsilons[ParticleTypes::FLUID];
+      std::cout << "[WETTING] epsilon_ff=" << eps_ff
+                << "  zeta=" << zeta
+                << "  effective_epsilon_fw=" << static_cast<floatType>(zeta) * eps_ff << "\n";
+    }
+
     for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
       for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
         auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
 
-        // epsilon
-        const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+        // Geometric mixing for all pairs; fluid-wall overridden by paper model:
+        // effective_epsilon_fw = zeta * epsilon_ff  (Becker et al. 2014, eq. 2)
+        floatType mixedEpsilon = sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+        if (ParticleTypes::isFluidWallPair(firstIndex, secondIndex)) {
+          mixedEpsilon = static_cast<floatType>(zeta) *
+                         _epsilons[ParticleTypes::FLUID];
+        }
+
+        const floatType epsilon24 = 24 * mixedEpsilon;
         _computedLJMixingData[globalIndex].epsilon24 = epsilon24;
 
         // sigma

@@ -1,0 +1,3242 @@
+# This yaml file is generated automatically.
+# Surface type: dual_boss
+
+container                        :  [LinkedCells, VerletLists, VerletListsCells, VerletClusterLists]
+verlet-rebuild-frequency         :  10
+verlet-skin-radius               :  1.0
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Absolute-Value
+data-layout                      :  [AoS]
+traversal                        :  [lc_c01]
+tuning-strategies                :  []
+tuning-interval                  :  2500
+tuning-samples                   :  3
+tuning-max-evidence              :  10
+
+functor                          :  Lennard-Jones
+newton3                          :  [disabled]
+cutoff                           :  3
+
+box-min                          :  [0, 0, 0]
+box-max                          :  [160, 160, 70]
+cell-size                        :  [1]
+
+deltaT                           :  0.0005
+iterations                       :  300000
+
+energy-sensor                    :  rapl
+boundary-type                    :  [reflective, reflective, reflective]
+globalForce                      :  [0, 0, -0.0001]
+
+Sites:
+  0:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+
+  1:
+    epsilon                      :  0.03
+    sigma                        :  1.
+    mass                         :  1.
+
+  2:
+    epsilon                      :  0.03
+    sigma                        :  1.
+    mass                         :  1.
+
+  3:
+    epsilon                      :  0.03
+    sigma                        :  1.
+    mass                         :  1.
+
+  4:
+    epsilon                      :  0.03
+    sigma                        :  1.
+    mass                         :  1.
+
+  5:
+    epsilon                      : 0.03
+    sigma                        :  1.
+    mass                         :  1.
+
+Objects:
+  CubeClosestPacked:
+    0:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 10, 1]
+      box-length                 :  [140, 140, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  1
+
+    1:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    2:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    3:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    4:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    5:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    6:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    7:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    8:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    9:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    10:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    11:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    12:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    13:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    14:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    15:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    16:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    17:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    18:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    19:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    20:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    21:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    22:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    23:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    24:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    25:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    26:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    27:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    28:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    29:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [10, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    30:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [11, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    31:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    32:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    33:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    34:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    35:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    36:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    37:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    38:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    39:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    40:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    41:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    42:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    43:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    44:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    45:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    46:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    47:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    48:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    49:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    50:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    51:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    52:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    53:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    54:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    55:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    56:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    57:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    58:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    59:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [20, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    60:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [21, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    61:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    62:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    63:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    64:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    65:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    66:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    67:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    68:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    69:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    70:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    71:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    72:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    73:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    74:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    75:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    76:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    77:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    78:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    79:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    80:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    81:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    82:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    83:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    84:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    85:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    86:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    87:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    88:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    89:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [30, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    90:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [31, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    91:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    92:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    93:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    94:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    95:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    96:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    97:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    98:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    99:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    100:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    101:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    102:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    103:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    104:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    105:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    106:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    107:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    108:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    109:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    110:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    111:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    112:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    113:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    114:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    115:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    116:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    117:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    118:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    119:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [40, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    120:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [41, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    121:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    122:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    123:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    124:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    125:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    126:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    127:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    128:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    129:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    130:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    131:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    132:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    133:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    134:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    135:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    136:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    137:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    138:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    139:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    140:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    141:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    142:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    143:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    144:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    145:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    146:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    147:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    148:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    149:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [50, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    150:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [51, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    151:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    152:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    153:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    154:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    155:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    156:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    157:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    158:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    159:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    160:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    161:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    162:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    163:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    164:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    165:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    166:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    167:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    168:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    169:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    170:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    171:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    172:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    173:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    174:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    175:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    176:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    177:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    178:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    179:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [60, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    180:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [61, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    181:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    182:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    183:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    184:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    185:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    186:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    187:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    188:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    189:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    190:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    191:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    192:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    193:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    194:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    195:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    196:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    197:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    198:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    199:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    200:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    201:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    202:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    203:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    204:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    205:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    206:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    207:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    208:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    209:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [70, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    210:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [71, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    211:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    212:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    213:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    214:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    215:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    216:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    217:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    218:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    219:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    220:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    221:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    222:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    223:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    224:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    225:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    226:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    227:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    228:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    229:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    230:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    231:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    232:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    233:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    234:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    235:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    236:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    237:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    238:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    239:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [80, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    240:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [81, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    241:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    242:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    243:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    244:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    245:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    246:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    247:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    248:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    249:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    250:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    251:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    252:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    253:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    254:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    255:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    256:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    257:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    258:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    259:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    260:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    261:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    262:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    263:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    264:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    265:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    266:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    267:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    268:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    269:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [90, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    270:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [91, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    271:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    272:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    273:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    274:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    275:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    276:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    277:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    278:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    279:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    280:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    281:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    282:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    283:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    284:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    285:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    286:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    287:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    288:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    289:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    290:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    291:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    292:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    293:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    294:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    295:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    296:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    297:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    298:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    299:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [100, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    300:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [101, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    301:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    302:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    303:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    304:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    305:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    306:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    307:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    308:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    309:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    310:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    311:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    312:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    313:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    314:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    315:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    316:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    317:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    318:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    319:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    320:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    321:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    322:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    323:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    324:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    325:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    326:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    327:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    328:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    329:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [110, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    330:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [111, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    331:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    332:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    333:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    334:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    335:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    336:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    337:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    338:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    339:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    340:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    341:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    342:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    343:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    344:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    345:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    346:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    347:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    348:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    349:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    350:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    351:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    352:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    353:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    354:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    355:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    356:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    357:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    358:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    359:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [120, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    360:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [121, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    361:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    362:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    363:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    364:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    365:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    366:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    367:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    368:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    369:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    370:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    371:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    372:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    373:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    374:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    375:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    376:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    377:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    378:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    379:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    380:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    381:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    382:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    383:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    384:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    385:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    386:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    387:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    388:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    389:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [130, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    390:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [131, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    391:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    392:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    393:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    394:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    395:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    396:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    397:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    398:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    399:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    400:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    401:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    402:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    403:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    404:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    405:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    406:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    407:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    408:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    409:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    410:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    411:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    412:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    413:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    414:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    415:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    416:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    417:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    418:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    419:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [140, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    420:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [141, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    421:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 10, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    422:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 11, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    423:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 20, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    424:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 21, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    425:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 30, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    426:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 31, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    427:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 40, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    428:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 41, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    429:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 50, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    430:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 51, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    431:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 60, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    432:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 61, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    433:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 70, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    434:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 71, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    435:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 80, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    436:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 81, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    437:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 90, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    438:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 91, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    439:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 100, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    440:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 101, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    441:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 110, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    442:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 111, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    443:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 120, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    444:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 121, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    445:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 130, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    446:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 131, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    447:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 140, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    448:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 141, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    449:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [146, 146, 5]
+      box-length                 :  [4, 4, 6]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+    450:
+      particle-spacing           :  1.0
+      bottomLeftCorner           :  [147, 147, 11]
+      box-length                 :  [2, 2, 4]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  5
+
+
+
+  Sphere:
+    0:
+      center                     :  [80, 80, 38]
+      radius                     :  17
+      particle-spacing           :  1.122462048
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  0
+
+thermostat:
+   initialTemperature            :  0.3
+   targetTemperature             :  0.3
+   deltaTemperature              :  0.1
+   thermostatInterval            :  10
+   addBrownianMotion             :  false
+
+vtk-filename                     :  dual_boss_r17_eps030_temp03_g1e4
+vtk-write-frequency              :  1000
+vtk-output-folder                :  dual_boss_r17_eps030_temp03_g1e4
+no-end-config                    :  true
+log-level                        :  info
