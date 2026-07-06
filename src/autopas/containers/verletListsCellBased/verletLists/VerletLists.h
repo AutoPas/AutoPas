@@ -16,6 +16,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/StaticBoolSelector.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -136,58 +137,16 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
   /**
-   * Converts the temporary per-particle ragged lists produced by the generator
-   * functor into the flat CRS representation stored in _neighborList.
-   *
-   * Two passes:
-   *  1. Prefix-sum over list sizes -> fills _neighborList.offsets.
-   *  2. Copy each inner vector into the matching slice of _neighborList.indices.
-   *
-   * @param tempLists  Ragged list: tempLists[i] holds SoA indices of particle i's neighbors.
-   */
-  void buildCRS(const std::vector<std::vector<size_t>> &tempLists) {
-    const size_t numParticles = tempLists.size();
-    // Step 1: compute offsets via prefix sum
-    _neighborList.offsets.resize(numParticles + 1);
-    _neighborList.offsets[0] = 0;
-    for (size_t i = 0; i < numParticles; ++i) {
-      _neighborList.offsets[i + 1] = _neighborList.offsets[i] + tempLists[i].size();
-    }
-
-    // Step 2: copy neighbor indices into the flat array
-    const size_t totalNeighbors = _neighborList.offsets[numParticles];
-    _neighborList.indices.resize(totalNeighbors);
-    for (size_t i = 0; i < numParticles; ++i) {
-      std::copy(tempLists[i].begin(), tempLists[i].end(),
-                _neighborList.indices.begin() + static_cast<std::ptrdiff_t>(_neighborList.offsets[i]));
-    }
-
-    AutoPasLog(DEBUG, "VerletLists::buildCRS: {} particles, {} total neighbors, avg list size {:.2f}", numParticles,
-               totalNeighbors,
-               numParticles > 0 ? static_cast<double>(totalNeighbors) / static_cast<double>(numParticles) : 0.0);
-  }
-
-  /**
    * Rebuilds _particleToIndex and _neighborList from scratch.
    *
-   * Sequence:
-   *  1. buildParticleIndex()         — assign a stable index to every particle.
-   *  2. Allocate temporary ragged lists (one per particle).
-   *  3. Run LCC08Traversal with VerletListGeneratorFunctor — populates tempLists.
-   *  4. buildCRS()                   — prefix-sum + copy into flat CRS.
+   * Dispatches to the single-pass path when only one thread is available (lower overhead, no atomics) and to the two-pass lock-free path when multiple threads are active (eliminates false sharing and malloc contention).
    *
    * @param useNewton3  Whether the force traversal will use Newton's third law.
    */
   virtual void updateNeighborLists(bool useNewton3) {
     const size_t N = buildParticleIndex();
+    const double interactionLength = this->getCutoff() + this->getVerletSkin();
 
-    // Temporary ragged lists written by the generator functor.
-    std::vector<std::vector<size_t>> tempLists(N);
-
-    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(tempLists, _particleToIndex,
-                                                                         this->getCutoff() + this->getVerletSkin());
-
-    /// @todo autotune build traversal
     DataLayoutOption dataLayout;
     if (_buildVerletListType == BuildVerletListType::VerletAoS) {
       dataLayout = DataLayoutOption::aos;
@@ -197,13 +156,109 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       utils::ExceptionHandler::exception("VerletLists::updateNeighborLists(): unsupported BuildVerletListType: {}",
                                          static_cast<int>(_buildVerletListType));
     }
+
+    if (autopas_get_max_threads() == 1) {
+      updateNeighborListsSingleThread(N, interactionLength, dataLayout, useNewton3);
+    } else {
+      updateNeighborListsMultiThread(N, interactionLength, dataLayout, useNewton3);
+    }
+  }
+
+  /**
+   * Single-threaded rebuild: One traversal with VerletListGeneratorFunctor writing into per-particle std::vector<size_t>, followed by a serial prefix-sum + copy into the flat CRS.
+   */
+  void updateNeighborListsSingleThread(size_t N, double interactionLength,
+                                        DataLayoutOption dataLayout, bool useNewton3) {
+    std::vector<std::vector<size_t>> tempLists(N);
+    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(
+        tempLists, _particleToIndex, interactionLength);
     auto traversal =
-        LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
-            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f, this->getInteractionLength(),
-            this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+        LCC08Traversal<ParticleCellType,
+                       typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
+            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f,
+            this->getInteractionLength(), this->_linkedCells.getCellBlock().getCellLength(),
+            dataLayout, useNewton3);
     this->_linkedCells.computeInteractions(&traversal);
 
-    buildCRS(tempLists);
+    // Prefix-sum + copy:
+    _neighborList.offsets.resize(N + 1);
+    _neighborList.offsets[0] = 0;
+    for (size_t i = 0; i < N; ++i) {
+      _neighborList.offsets[i + 1] = _neighborList.offsets[i] + tempLists[i].size();
+    }
+    const size_t totalNeighbors = _neighborList.offsets[N];
+    _neighborList.indices.resize(totalNeighbors);
+    for (size_t i = 0; i < N; ++i) {
+      std::copy(tempLists[i].begin(), tempLists[i].end(),
+                _neighborList.indices.begin() + static_cast<std::ptrdiff_t>(_neighborList.offsets[i]));
+    }
+
+    AutoPasLog(DEBUG, "VerletLists::updateNeighborLists (1T): {} particles, {} neighbors, avg {:.2f}",
+               N, totalNeighbors, N > 0 ? static_cast<double>(totalNeighbors) / static_cast<double>(N) : 0.0);
+  }
+
+  /**
+   * Multi-threaded rebuild:
+   *
+   * Pass 1 (parallel, VerletListCounterFunctor):
+   *   Count neighbors per particle into cache-line-padded atomics.
+   *   No heap allocation, no false sharing between adjacent particles.
+   *
+   * Prefix sum (serial, O(N)):
+   *   Compute CRS offsets; allocate the flat indices array.
+   *
+   * Pass 2 (parallel, VerletListFillerFunctor):
+   *   Write neighbor indices directly into the pre-allocated CRS slice
+   *   via per-particle atomic fetch-add fill cursors (also padded).
+   *
+   * Optimal when autopas_get_max_threads() > 1.
+   */
+  void updateNeighborListsMultiThread(size_t N, double interactionLength,
+                                       DataLayoutOption dataLayout, bool useNewton3) {
+    using PaddedAtomic = typename VerletListHelpers<Particle_T>::VerletListCounterFunctor::PaddedAtomic;
+
+    // Pass 1: Count neighbors per particle
+    std::vector<PaddedAtomic> counts(N);
+    {
+      typename VerletListHelpers<Particle_T>::VerletListCounterFunctor counter(
+          counts, _particleToIndex, interactionLength);
+      auto traversal =
+          LCC08Traversal<ParticleCellType,
+                         typename VerletListHelpers<Particle_T>::VerletListCounterFunctor>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), counter,
+              this->getInteractionLength(), this->_linkedCells.getCellBlock().getCellLength(),
+              dataLayout, useNewton3);
+      this->_linkedCells.computeInteractions(&traversal);
+    }
+
+    // Prefix sum: counts -> CRS offsets, allocate flat indices
+    _neighborList.offsets.resize(N + 1);
+    _neighborList.offsets[0] = 0;
+    for (size_t i = 0; i < N; ++i) {
+      _neighborList.offsets[i + 1] = _neighborList.offsets[i] + counts[i].value.load(std::memory_order_relaxed);
+    }
+    const size_t totalNeighbors = _neighborList.offsets[N];
+    _neighborList.indices.resize(totalNeighbors);
+
+    AutoPasLog(DEBUG, "VerletLists::updateNeighborLists (MT): {} particles, {} neighbors, avg {:.2f}",
+               N, totalNeighbors, N > 0 ? static_cast<double>(totalNeighbors) / static_cast<double>(N) : 0.0);
+
+    // Pass 2: Fill CRS indices directly
+    // Reuse the PaddedAtomic array as fill cursors, seeding each with offsets[i].
+    for (size_t i = 0; i < N; ++i) {
+      counts[i].value.store(_neighborList.offsets[i], std::memory_order_relaxed);
+    }
+    {
+      typename VerletListHelpers<Particle_T>::VerletListFillerFunctor filler(
+          _neighborList, counts, _particleToIndex, interactionLength);
+      auto traversal =
+          LCC08Traversal<ParticleCellType,
+                         typename VerletListHelpers<Particle_T>::VerletListFillerFunctor>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), filler,
+              this->getInteractionLength(), this->_linkedCells.getCellBlock().getCellLength(),
+              dataLayout, useNewton3);
+      this->_linkedCells.computeInteractions(&traversal);
+    }
   }
 
   /**
