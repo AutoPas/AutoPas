@@ -92,6 +92,36 @@ class CellFunctor3B {
 
  private:
   /**
+   * Cheap, conservative pre-check used by processCell/processCellPair/processCellTriple: returns true only if it
+   * is certain that no valid triplet can be formed from the given cells, given the functor's optional
+   * "restricted particle" quota (see TriwiseFunctor::isRestrictedForTriwise / maxRestrictedParticlesPerTriplet).
+   * This lets whole cell combinations (e.g. deep inside a frozen boundary region, far from any unrestricted
+   * particle) be skipped before any triplet is generated or AoSFunctor is called, instead of relying solely on
+   * the functor to discard them one triplet at a time.
+   * For functors that don't override the hooks (default: unlimited), this always returns false, i.e. it is a
+   * no-op and behaviour is unchanged.
+   * @param cells the cells that would be combined into triplets
+   * @return true if no valid triplet can possibly be formed from these cells
+   */
+  template <class... Cells>
+  [[nodiscard]] bool cannotFormValidTriplet(Cells &...cells) const {
+    const size_t maxRestricted = _functor->maxRestrictedParticlesPerTriplet();
+    if (maxRestricted >= 3) {
+      return false;
+    }
+    const size_t needed = 3 - maxRestricted;
+    size_t unrestrictedCount = 0;
+    for (ParticleCell *cell : {&cells...}) {
+      for (auto &p : *cell) {
+        if (not _functor->isRestrictedForTriwise(p)) {
+          ++unrestrictedCount;
+        }
+      }
+    }
+    return unrestrictedCount < needed;
+  }
+
+  /**
    * Applies the functor to all particle triplets exploiting newtons third law of motion.
    * There is only one version of this function as newton3 is always allowed to be applied inside of a cell.
    * The value of _useNewton3 defines whether or whether not to apply the aos version functor in a newton3 fashion or
@@ -195,6 +225,12 @@ void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::processCell(Pa
     return;
   }
 
+  // avoid force calculations if this cell alone cannot contain a valid triplet (e.g. a functor-defined quota on
+  // "restricted" particles, such as frozen boundary particles, cannot be satisfied)
+  if (cannotFormValidTriplet(cell)) {
+    return;
+  }
+
   // (Explicit) static cast required for Apple Clang (last tested version: 17.0.0)
   switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
@@ -227,6 +263,11 @@ void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::processCellPai
 
   if (((not cell1HasOwnedParticles) and (not _useNewton3) and (not bidirectional)) or
       ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles))) {
+    return;
+  }
+
+  // avoid force calculations if these two cells together cannot contain a valid triplet
+  if (cannotFormValidTriplet(cell1, cell2)) {
     return;
   }
 
@@ -268,6 +309,11 @@ void CellFunctor3B<ParticleCell, ParticleFunctor, bidirectional>::processCellTri
 
   if (((not cell1HasOwnedParticles) and (not _useNewton3) and (not bidirectional)) or
       ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles) and (not cell3HasOwnedParticles))) {
+    return;
+  }
+
+  // avoid force calculations if these three cells together cannot contain a valid triplet
+  if (cannotFormValidTriplet(cell1, cell2, cell3)) {
     return;
   }
 

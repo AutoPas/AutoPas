@@ -11,6 +11,7 @@ import warnings
 from pathlib import Path
 from typing import Optional
 
+import contourpy
 import matplotlib
 matplotlib.use("Agg")  # headless rendering – no display required
 import matplotlib.patches as mpatches
@@ -130,8 +131,52 @@ def filter_droplet_particles(
     return positions[mask]
 
 def find_droplet_center(positions: np.ndarray) -> tuple[float, float]:
-   
+
     return float(np.mean(positions[:, 0])), float(np.mean(positions[:, 1]))
+
+
+def detect_surface_z(
+    positions: np.ndarray,
+    type_ids: Optional[np.ndarray],
+    droplet_type: int,
+    percentile: float = 0.5,
+) -> Optional[float]:
+    """
+    Auto-detect the effective substrate height (z) as the height where the
+    droplet itself actually bottoms out, rather than assuming anything about
+    the wall geometry.
+
+    This is what makes the detection correct regardless of the wetting
+    state: a droplet perched on top of surface features (Cassie state - e.g.
+    many hydrophobic textured surfaces, where the liquid bridges over
+    posts/bumps and never reaches the base) bottoms out at the feature tops,
+    while one that penetrates into the texture (Wenzel state) bottoms out
+    lower, near the flat base. Both are captured automatically, purely from
+    where the liquid actually is - no per-surface-type assumption needed, and
+    it degrades gracefully to "the top of the flat base" for a smooth
+    surface (there the two states coincide).
+
+    An earlier version of this function used the highest *wall* particle
+    instead. That works for a flat surface, but for a Cassie-state droplet on
+    a bumpy surface it can still be right (as it was here), while for a
+    Wenzel-state droplet it would be wrong in the other direction (too high,
+    missing where the liquid actually touches down) - i.e. the wall alone
+    cannot tell you the wetting state, only the fluid can.
+
+    A low percentile (not the strict minimum) is used to ignore the rare
+    stray/evaporated droplet particle sitting far below the bulk liquid.
+
+    Returns None if it cannot be determined (e.g. no typeIds array, or no
+    droplet particles present), in which case callers should fall back to a
+    fixed --surface-z value.
+    """
+    if type_ids is None:
+        return None
+    droplet_mask = type_ids == droplet_type
+    if not droplet_mask.any():
+        return None
+    z = positions[droplet_mask, 2]
+    return float(np.percentile(z, percentile))
 
 
 def extract_central_slice(
@@ -180,6 +225,66 @@ def build_2d_density(
     density = gaussian_filter(density, sigma=smooth_sigma)
     return density, x_bins, z_bins
 
+
+def build_radial_density(
+    droplet_positions: np.ndarray,
+    cx0: float,
+    cy0: float,
+    surface_z: float,
+    bin_size: float = 0.5,
+    smooth_sigma: float = 1.0,
+    extent_percentile: float = 97.5,
+    extent_margin: float = 1.3,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Build an azimuthally-averaged radial density profile rho(R, z) around the
+    droplet's own vertical symmetry axis (cx0, cy0), using ALL droplet
+    particles (full 3D data), not just a thin central slice.
+
+    For an (on-average) axisymmetric sessile droplet this is the standard way
+    density profiles are shown in the wetting/contact-angle literature: every
+    particle contributes regardless of its azimuthal angle around the axis,
+    so the profile is far less noisy than a single central-slab slice, and
+    the resulting droplet cross-section becomes visually and statistically
+    the average over all azimuthal directions at once.
+
+    Bins are true annuli (rings), so density = counts / ring_volume, where
+    ring_volume = pi * (r_outer^2 - r_inner^2) * bin_size accounts for the
+    increasing volume of rings at larger radius.
+
+    Since "droplet particles" also includes the (much lower density) vapour
+    phase that coexists with the liquid throughout the rest of the box, a
+    handful of these particles can sit far from the droplet and blow up the
+    naive r.max()/z.max() extent, squeezing the actual droplet into a corner
+    of the plot. extent_percentile + extent_margin caps the histogrammed
+    range to comfortably cover the liquid bulk without the long vapour tail;
+    it only affects binning/plot extent, never which particles are used for
+    interface detection or the circle fit.
+    """
+    dx = droplet_positions[:, 0] - cx0
+    dy = droplet_positions[:, 1] - cy0
+    r = np.sqrt(dx ** 2 + dy ** 2)
+    z = droplet_positions[:, 2] - surface_z  # shift so surface = 0
+
+    above = z > 0.0
+    r, z = r[above], z[above]
+    if len(r) == 0:
+        raise ValueError("No droplet particles found above the substrate (z > 0).")
+
+    r_max = float(np.percentile(r, extent_percentile)) * extent_margin + bin_size
+    z_max = float(np.percentile(z, extent_percentile)) * extent_margin + bin_size
+
+    r_bins = np.arange(0.0, r_max + bin_size, bin_size)
+    z_bins = np.arange(0.0, z_max + bin_size, bin_size)
+
+    counts, _, _ = np.histogram2d(r, z, bins=[r_bins, z_bins])
+
+    ring_area = np.pi * (r_bins[1:] ** 2 - r_bins[:-1] ** 2)
+    ring_volume = (ring_area * bin_size)[:, None]
+    density = counts / ring_volume
+
+    density = gaussian_filter(density, sigma=smooth_sigma)
+    return density, r_bins, z_bins
 
 
 def _remove_outliers_iqr(
@@ -277,6 +382,51 @@ def detect_interface(
     right_x, right_z = _remove_outliers_iqr(right_x, right_z, outlier_iqr_factor)
 
     return left_x, left_z, right_x, right_z
+
+
+def detect_radial_interface(
+    density: np.ndarray,
+    r_bins: np.ndarray,
+    z_bins: np.ndarray,
+    rho_interface: float,
+    z_fit_min: float = 2.0,
+    outlier_iqr_factor: float = 1.5,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Extract the liquid-vapour interface directly from the 2D density grid
+    using marching squares (via contourpy - the same engine matplotlib's own
+    contour() uses under the hood), i.e. treating the density field as an
+    image and tracing the rho == rho_interface level line pixel-by-pixel.
+
+    An earlier version of this function instead scanned one z-row at a time
+    and assumed density decreases monotonically with R at every height. That
+    assumption can break down near the contact line, where the meniscus can
+    curve back on itself - marching squares makes no such assumption, it
+    finds the true level-set of the sampled field directly.
+
+    A noisy density field can produce several disconnected contour pieces
+    (small islands from thermal fluctuations); we keep only the longest one,
+    which is the actual droplet interface, and drop points within z_fit_min
+    of the wall same as before.
+    """
+    r_mid = 0.5 * (r_bins[:-1] + r_bins[1:])
+    z_mid = 0.5 * (z_bins[:-1] + z_bins[1:])
+
+    gen = contourpy.contour_generator(x=r_mid, y=z_mid, z=density.T)
+    lines = gen.lines(rho_interface)
+    if not lines:
+        return np.array([], dtype=np.float64), np.array([], dtype=np.float64)
+
+    longest = max(lines, key=len)
+    r_arr = longest[:, 0].astype(np.float64)
+    z_arr = longest[:, 1].astype(np.float64)
+
+    keep = z_arr >= z_fit_min
+    r_arr, z_arr = r_arr[keep], z_arr[keep]
+
+    r_arr, z_arr = _remove_outliers_iqr(r_arr, z_arr, outlier_iqr_factor)
+
+    return r_arr, z_arr
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -549,6 +699,76 @@ def create_diagnostic_plot(
     plt.close(fig)
 
 
+def create_radial_diagnostic_plot(
+    density: np.ndarray,
+    r_bins: np.ndarray,
+    z_bins: np.ndarray,
+    r_iface: np.ndarray,
+    z_iface: np.ndarray,
+    cz: float,
+    R: float,
+    theta: float,
+    z_fit_min: float,
+    title: str,
+    out_path: str,
+    dpi: int = 300,
+) -> None:
+    """
+    Clean, publication-style radial density profile: rho(R, z) as a heatmap
+    with the fitted circle (the droplet's meniscus) overlaid as a single
+    contour line - no scatter clutter, no per-side annotations. Matches the
+    convention used for azimuthally-averaged droplet density profiles in the
+    wetting/contact-angle literature.
+    """
+    fig, ax = plt.subplots(figsize=(8, 7))
+    fig.patch.set_facecolor("white")
+
+    Rg, Zg = np.meshgrid(r_bins, z_bins)
+    D = density.T
+    pos_vals = density[density > 0]
+    vmax = float(np.percentile(pos_vals, 99)) if len(pos_vals) > 0 else 1.0
+    im = ax.pcolormesh(
+        Rg, Zg, D,
+        cmap="jet", vmin=0.0, vmax=vmax,
+        shading="flat", rasterized=True, zorder=1,
+    )
+    cbar = plt.colorbar(im, ax=ax, label=r"$\rho\ /\ \sigma^{-3}$", shrink=0.85)
+
+    # wall-exclusion zone
+    if z_fit_min > 0:
+        ax.axhspan(0.0, z_fit_min, color="white", alpha=0.35, zorder=2)
+
+    # interface points actually used for the fit
+    ax.scatter(r_iface, z_iface, s=8, c="white", edgecolors="none", zorder=3)
+
+    # fitted circle (R >= 0 half only), centred on the symmetry axis
+    phi = np.linspace(-np.pi / 2.0, np.pi / 2.0, 900)
+    r_arc = R * np.cos(phi)
+    z_arc = cz + R * np.sin(phi)
+    valid = z_arc >= 0.0
+    ax.plot(
+        np.where(valid, r_arc, np.nan), np.where(valid, z_arc, np.nan),
+        color="white", lw=2.2, zorder=4,
+    )
+
+    ax.set_xlabel(r"$R\ /\ \sigma$", fontsize=14)
+    ax.set_ylabel(r"$z\ /\ \sigma$", fontsize=14)
+    ax.set_title(f"{title}\n" + rf"$\theta$ = {theta:.1f}°   (R = {R:.2f} σ, cz = {cz:.2f} σ)",
+                fontsize=12)
+    # Crop tightly around the fitted droplet (with a margin) rather than the
+    # full histogram extent, so a sparse coexisting vapour phase elsewhere in
+    # the box doesn't squeeze the droplet into a corner of the plot.
+    margin = 1.25
+    ax.set_xlim(0.0, min(r_bins[-1], R * margin))
+    ax.set_ylim(0.0, min(z_bins[-1], max(cz, 0.0) + R * margin))
+    ax.set_aspect("equal")
+    ax.tick_params(labelsize=11)
+
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+
+
 def save_results(results: list[dict], out_dir: str) -> None:
     
     os.makedirs(out_dir, exist_ok=True)
@@ -558,7 +778,8 @@ def save_results(results: list[dict], out_dir: str) -> None:
     fieldnames = [
         "filename", "timestep",
         "left_angle", "right_angle", "average_angle",
-        "radius", "center_x", "center_z", "fit_rms",
+        "radius", "center_x", "center_z", "fit_rms", "surface_z",
+        "radial_angle", "radial_radius", "radial_rms",
     ]
 
     with open(csv_path, "w", newline="") as fh:
@@ -600,9 +821,14 @@ def save_results(results: list[dict], out_dir: str) -> None:
 
 
 def process_file(vtu_path: str, args: argparse.Namespace, out_dir: str,
-                 file_index: int) -> Optional[dict]:
+                 file_index: int, surface_z_override: Optional[float] = None) -> Optional[dict]:
     """
     Run the full contact-angle measurement pipeline for a single snapshot.
+
+    surface_z_override, if given, takes precedence over args.surface_z. Callers
+    use this to pass a value auto-detected once per simulation (see
+    detect_surface_z()), so mixed surface types in one --input directory each
+    get their own correct substrate height instead of one fixed guess.
 
     Returns a dict of results, or None if the file cannot be processed.
     """
@@ -620,6 +846,11 @@ def process_file(vtu_path: str, args: argparse.Namespace, out_dir: str,
     rho_interface = get_interface_density(T)
     print(f"  T = {T:.2f}   rho_interface = {rho_interface:.5f} σ⁻³")
 
+    # ── resolve surface_z: auto-detected (per simulation) beats the fixed default ──
+    surface_z = surface_z_override if surface_z_override is not None else args.surface_z
+    z_source = "auto-detected" if surface_z_override is not None else "fixed default"
+    print(f"  surface_z = {surface_z:.2f} σ   ({z_source})")
+
     # ── extract integer timestep from filename ───────────────────────────────
     ts_match = re.search(r"_(\d+)\.p?vtu$", fname)
     timestep = int(ts_match.group(1)) if ts_match else file_index
@@ -636,7 +867,7 @@ def process_file(vtu_path: str, args: argparse.Namespace, out_dir: str,
     try:
         droplet = filter_droplet_particles(
             positions, type_ids,
-            args.droplet_type, args.surface_z,
+            args.droplet_type, surface_z,
         )
     except ValueError as exc:
         print(f"  [SKIP] Particle filter failed: {exc}")
@@ -659,7 +890,7 @@ def process_file(vtu_path: str, args: argparse.Namespace, out_dir: str,
     # ── step 5: 2-D density histogram ────────────────────────────────────────
     try:
         density, x_bins, z_bins = build_2d_density(
-            sliced, args.surface_z,
+            sliced, surface_z,
             bin_size=args.bin_size,
             smooth_sigma=args.smooth_sigma,
             slice_half_width=args.slice_half_width,
@@ -756,7 +987,7 @@ def process_file(vtu_path: str, args: argparse.Namespace, out_dir: str,
             theta_avg=theta_avg,
             x_left_cp=x_left_cp,
             x_right_cp=x_right_cp,
-            surface_z=args.surface_z,
+            surface_z=surface_z,
             z_fit_min=args.z_fit_min,
             title=title,
             out_path=out_path,
@@ -765,6 +996,54 @@ def process_file(vtu_path: str, args: argparse.Namespace, out_dir: str,
         print(f"  Figure → {out_path}")
     except Exception as exc:
         warnings.warn(f"Figure generation failed: {exc}", stacklevel=2)
+
+    # ── step 10: radial (azimuthally-averaged) density profile ──────────────
+    # Uses ALL droplet particles (full 3D, not just the central slice), binned
+    # around the droplet's own symmetry axis. This averages over every
+    # azimuthal direction at once, giving a much smoother profile than a
+    # single slice - the standard way of showing droplet density profiles in
+    # the wetting/contact-angle literature.
+    theta_radial = R_radial = cz_radial = rms_radial = None
+    try:
+        density_r, r_bins, z_bins_r = build_radial_density(
+            droplet, cx0, cy0, surface_z,
+            bin_size=args.bin_size, smooth_sigma=args.smooth_sigma,
+        )
+        r_iface, z_iface = detect_radial_interface(
+            density_r, r_bins, z_bins_r,
+            rho_interface=rho_interface, z_fit_min=args.z_fit_min,
+        )
+        if len(r_iface) >= args.min_interface_pts:
+            # Mirror to +-R so the existing generic circle fit finds the
+            # r-centre at (by symmetry) ~0 without needing a constrained fit.
+            r_mirrored = np.concatenate([r_iface, -r_iface])
+            z_mirrored = np.concatenate([z_iface, z_iface])
+            _, cz_radial, R_radial, rms_radial = fit_circle(r_mirrored, z_mirrored)
+            theta_radial, _, _, _, _ = compute_contact_angles(0.0, cz_radial, R_radial)
+            print(f"  Radial fit: cz={cz_radial:.3f}  R={R_radial:.3f}  "
+                  f"θ={theta_radial:.2f}°  RMS={rms_radial:.4f}")
+
+            radial_png = f"density_profile_{file_index:04d}.png"
+            radial_out_path = os.path.join(out_dir, radial_png)
+            create_radial_diagnostic_plot(
+                density=density_r,
+                r_bins=r_bins,
+                z_bins=z_bins_r,
+                r_iface=r_iface,
+                z_iface=z_iface,
+                cz=cz_radial,
+                R=R_radial,
+                theta=theta_radial,
+                z_fit_min=args.z_fit_min,
+                title=f"{fname}  |  timestep {timestep}",
+                out_path=radial_out_path,
+                dpi=args.dpi,
+            )
+            print(f"  Radial profile → {radial_out_path}")
+        else:
+            print(f"  [SKIP radial] Too few interface points ({len(r_iface)}).")
+    except Exception as exc:
+        warnings.warn(f"Radial density profile failed: {exc}", stacklevel=2)
 
     return {
         "filename":      fname,
@@ -776,6 +1055,10 @@ def process_file(vtu_path: str, args: argparse.Namespace, out_dir: str,
         "center_x":      round(cx_g,        4),
         "center_z":      round(cz_g,        4),
         "fit_rms":       round(rms_g,       6),
+        "surface_z":     round(surface_z,   4),
+        "radial_angle":  round(theta_radial, 4) if theta_radial is not None else "",
+        "radial_radius": round(R_radial,     4) if R_radial     is not None else "",
+        "radial_rms":    round(rms_radial,   6) if rms_radial   is not None else "",
     }
 
 def build_parser() -> argparse.ArgumentParser:
@@ -787,7 +1070,7 @@ def build_parser() -> argparse.ArgumentParser:
     # ── input ─────────────────────────────────────────────────────────────────
     p.add_argument(
         "--input", "-i",
-        default="/Users/melisaaslan/Desktop",
+        default="/Users/melisaaslan/Desktop/result",
         metavar="DIR",
         help="Root directory to search for VTU/PVTU files.",
     )
@@ -802,7 +1085,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--last-n",
         type=int,
-        default=10,
+        default=20,
         metavar="N",
         help="Average the contact angle over the last N timesteps per simulation run. "
              "Use 1 to analyse only the final snapshot.",
@@ -950,10 +1233,44 @@ def main() -> None:
     print(f"Output directory: {output_dir}\n")
 
     # ── process each file ─────────────────────────────────────────────────────
+    # surface_z is auto-detected once per simulation (the substrate is frozen,
+    # so any snapshot gives the same answer) and then reused for the rest of
+    # that simulation's snapshots. This means simulations with different
+    # surface geometries (smooth/boss/pit/grid/dual_boss/...) mixed in the
+    # same --input directory each get their own correct value automatically,
+    # instead of relying on one fixed --surface-z for everything.
     all_results: list[dict] = []
     skipped: list[tuple[str, str]] = []  # (filename, reason)
-    for idx, vtu_path in enumerate(files, start=1):
-        result = process_file(vtu_path, args, output_dir, idx)
+    idx = 0
+
+    for key, paths in _sim_files.items():
+        detected_z: Optional[float] = None
+        for vtu_path in paths:
+            idx += 1
+            if detected_z is None:
+                try:
+                    probe_positions, probe_type_ids = load_data(vtu_path)
+                    detected_z = detect_surface_z(probe_positions, probe_type_ids, args.droplet_type)
+                    if detected_z is not None:
+                        print(f"\n[AUTO] surface_z for '{os.path.basename(key).rstrip('_')}': "
+                              f"{detected_z:.2f} σ (detected from {os.path.basename(vtu_path)})")
+                except (FileNotFoundError, ValueError):
+                    pass  # fall back to args.surface_z inside process_file
+            result = process_file(vtu_path, args, output_dir, idx, surface_z_override=detected_z)
+            if result is not None:
+                all_results.append(result)
+            else:
+                skipped.append((os.path.basename(vtu_path), "see output above"))
+
+    for vtu_path in sorted(_ungrouped):
+        idx += 1
+        detected_z = None
+        try:
+            probe_positions, probe_type_ids = load_data(vtu_path)
+            detected_z = detect_surface_z(probe_positions, probe_type_ids, args.droplet_type)
+        except (FileNotFoundError, ValueError):
+            pass
+        result = process_file(vtu_path, args, output_dir, idx, surface_z_override=detected_z)
         if result is not None:
             all_results.append(result)
         else:

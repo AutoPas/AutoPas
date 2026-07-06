@@ -180,6 +180,19 @@ class AxilrodTellerMutoFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
+  /**
+   * Wall particles (frozen boundary particles) are "restricted": ATM triplets with 2 or more wall particles are
+   * skipped (see AoSFunctor). Exposing this via the CellFunctor3B hooks lets whole cell combinations that cannot
+   * contain a valid triplet (e.g. deep inside a thick wall, far from any fluid particle) be skipped before any
+   * triplet is even formed, instead of only discarding them one AoSFunctor call at a time.
+   */
+  bool isRestrictedForTriwise(const Particle_T &p) const final { return ParticleTypes::isWall(p.getTypeId()); }
+
+  /**
+   * @copydoc isRestrictedForTriwise
+   */
+  size_t maxRestrictedParticlesPerTriplet() const final { return 1; }
+
   void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
