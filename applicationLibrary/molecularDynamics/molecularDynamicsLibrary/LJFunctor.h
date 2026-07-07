@@ -561,19 +561,28 @@ class LJFunctor
  public:
   // clang-format off
   /**
-   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
-   * @note If you want to parallelize this by openmp, please ensure that there
-   * are no dependencies, i.e. introduce colors!
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet(soa, indexFirst, neighborList, newton3)
+   * @note Vector overload — kept for backward compatibility with call sites that
+   *       hold a std::vector reference (e.g. VLCTraversalInterface).
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
-    if (soa.size() == 0 or neighborList.empty()) return;
+    SoAFunctorVerlet(soa, indexFirst, neighborList.data(), neighborList.size(), newton3);
+  }
+
+  /**
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet(soa, indexFirst, neighborList, neighborCount, newton3)
+   * @note Raw-pointer overload — zero allocation, passes CRS slice directly.
+   */
+  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                        const size_t *neighborList, size_t neighborCount, bool newton3) final {
+    if (soa.size() == 0 or neighborCount == 0) return;
     if (newton3) {
-      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
+      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList, neighborCount);
     } else {
-      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
+      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList, neighborCount);
     }
   }
 
@@ -811,7 +820,7 @@ class LJFunctor
  private:
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+                            const size_t *const __restrict neighborListPtr, const size_t neighborListSize) {
     const auto *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
     const auto *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
@@ -844,8 +853,7 @@ class LJFunctor
     SoAFloatPrecision fxacc = 0;
     SoAFloatPrecision fyacc = 0;
     SoAFloatPrecision fzacc = 0;
-    const size_t neighborListSize = neighborList.size();
-    const size_t *const __restrict neighborListPtr = neighborList.data();
+
 
     // checks whether particle i is owned.
     const auto ownedStateI = ownedStatePtr[indexFirst];
@@ -1006,7 +1014,7 @@ class LJFunctor
     }
     // this loop goes over the remainder and uses no optimizations
     for (size_t jNeighIndex = joff; jNeighIndex < neighborListSize; ++jNeighIndex) {
-      size_t j = neighborList[jNeighIndex];
+      size_t j = neighborListPtr[jNeighIndex];
       if (indexFirst == j) continue;
       if constexpr (useMixing) {
         sigmaSquared = _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[j]);

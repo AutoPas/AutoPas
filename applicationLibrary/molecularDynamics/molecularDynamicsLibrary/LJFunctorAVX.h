@@ -604,25 +604,33 @@ class LJFunctorAVX
   // clang-format off
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
-   * @note If you want to parallelize this by openmp, please ensure that there
-   * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
+   * @note Vector overload - kept for backward compatibility.
    */
   // clang-format on
   inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                                bool newton3) final {
-    if (soa.size() == 0 or neighborList.empty()) return;
+    SoAFunctorVerlet(soa, indexFirst, neighborList.data(), neighborList.size(), newton3);
+  }
+
+  /**
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
+   * @note Raw-pointer overload - zero allocation.
+   */
+  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                               const size_t *neighborList, size_t neighborCount, bool newton3) final {
+    if (soa.size() == 0 or neighborCount == 0) return;
     if (newton3) {
-      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
+      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList, neighborCount);
     } else {
-      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
+      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList, neighborCount);
     }
   }
 
  private:
   template <bool newton3>
   inline void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                   const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+                                   const size_t *const __restrict neighborList, const size_t neighborListSize) {
 #ifdef __AVX__
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
     if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
@@ -668,11 +676,11 @@ class LJFunctorAVX
     // load 4 neighbors
     size_t j = 0;
     // Loop over all neighbors as long as we can fill full vectors
-    // (until `neighborList.size() - neighborList.size() % vecLength`)
+    // (until `neighborListSize - neighborListSize % vecLength`)
     //
     // If b is a power of 2 the following holds:
     // a & ~(b - 1) == a - (a mod b)
-    for (; j < (neighborList.size() & ~(vecLength - 1)); j += vecLength) {
+    for (; j < (neighborListSize & ~(vecLength - 1)); j += vecLength) {
       // AVX2 variant:
       // create buffer for 4 interaction particles
       // and fill buffers via gathering
@@ -713,7 +721,7 @@ class LJFunctorAVX
     // Remainder loop
     // If b is a power of 2 the following holds:
     // a & (b - 1) == a mod b
-    const auto rest = static_cast<int>(neighborList.size() & (vecLength - 1));
+    const auto rest = static_cast<int>(neighborListSize & (vecLength - 1));
     if (rest > 0) {
       // AVX2 variant:
       // create buffer for 4 interaction particles

@@ -117,21 +117,19 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       }
 
       case DataLayoutOption::soa: {
-        // SoAFunctorVerlet currently requires a const std::vector<size_t, AlignedAllocator>&.
-        // Build a per-particle view from the contiguous CRS slice.
-        // @todo: add a raw-pointer+count overload to SoAFunctorVerlet to eliminate this copy.
+        // Pass the CRS slice directly as a raw pointer + count.
+        // LJFunctor (and any functor overriding the pointer overload) receives
+        // nl.begin(i) directly — zero allocation, zero copy per particle.
+        // Functors that only override the vector overload fall back to the default
+        // shim in PairwiseFunctor which builds a temporary vector.
         if (not _useNewton3) {
-          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(neighborList.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
+          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(numParticles / (autopas::autopas_get_max_threads() * 10), 1ul)))
           for (size_t i = 0; i < numParticles; ++i) {
-            const std::vector<size_t, AlignedAllocator<size_t>> neighborSlice(
-                neighborList.begin(i), neighborList.begin(i) + neighborList.count(i));
-            _functor.SoAFunctorVerlet(_soa, i, neighborSlice, false);
+            _functor.SoAFunctorVerlet(_soa, i, neighborList.begin(i), neighborList.count(i), false);
           }
         } else {
           for (size_t i = 0; i < numParticles; ++i) {
-            const std::vector<size_t, AlignedAllocator<size_t>> neighborSlice(
-                neighborList.begin(i), neighborList.begin(i) + neighborList.count(i));
-            _functor.SoAFunctorVerlet(_soa, i, neighborSlice, true);
+            _functor.SoAFunctorVerlet(_soa, i, neighborList.begin(i), neighborList.count(i), true);
           }
         }
         return;
