@@ -34,7 +34,7 @@
 #include "src/configuration/objects/Sphere.h"
 #include "src/domainDecomposition/LoadBalancerOption.h"
 #include "src/options/BoundaryTypeOption.h"
-#include "/Users/melisaaslan/IDP/AutoPas/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/SimulationParticleTypes.h"
+#include "molecularDynamicsLibrary/SimulationParticleTypes.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.

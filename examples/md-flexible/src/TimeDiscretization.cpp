@@ -3,7 +3,7 @@
  * @author N. Fottner
  * @date 13/05/19
  */
-#include "/Users/melisaaslan/IDP/AutoPas/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/SimulationParticleTypes.h"
+#include "molecularDynamicsLibrary/SimulationParticleTypes.h"
 #include "TimeDiscretization.h"
 #include <cmath>
 #include <iostream>

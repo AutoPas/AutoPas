@@ -7,7 +7,7 @@
 #pragma once
 #include <cstdlib>
 
-#include "/Users/melisaaslan/IDP/AutoPas/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/SimulationParticleTypes.h"
+#include "molecularDynamicsLibrary/SimulationParticleTypes.h"
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayMath.h"
