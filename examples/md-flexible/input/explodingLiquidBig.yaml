@@ -4,7 +4,7 @@
 # It would also be suitable for a 1 node, no MPI simulation.
 
 container                        :  [LinkedCells, VarVerletListsAsBuild, VerletLists, VerletListsCells, PairwiseVerletLists]
-traversal                            :  [lc_sliced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vl_list_iteration, vlc_c01, vlc_c08, vlc_c18, vlc_sliced, vlc_sliced_c02, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_c02]
+traversal                        :  [lc_sliced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vl_list_iteration, vlc_c01, vlc_c08, vlc_c18, vlc_sliced, vlc_sliced_c02, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_c02]
 data-layout                      :  [AoS, SoA]
 newton3                          :  [enabled, disabled]
 vectorization-pattern            :  [1xVectorLength, 2xVectorLengthDiv2, VectorLengthDiv2x2, VectorLengthx1]
@@ -38,17 +38,17 @@ Objects:
       particle-type-id           :  0
   CubeUniform:
     0:
-      numberOfParticles              :  100
-      box-length                     :  [120, 230, 120]
-      bottomLeftCorner               :  [0, 0, 0]
-      velocity                       :  [0, 0, 0]
-      particle-type-id               :  0
+      numberOfParticles          :  100
+      box-length                 :  [120, 230, 120]
+      bottomLeftCorner           :  [0, 0, 0]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  0
     1:
-      numberOfParticles              :  100
-      box-length                     :  [120, 230, 120]
-      bottomLeftCorner               :  [0, 250, 0]
-      velocity                       :  [0, 0, 0]
-      particle-type-id               :  0
+      numberOfParticles          :  100
+      box-length                 :  [120, 230, 120]
+      bottomLeftCorner           :  [0, 250, 0]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  0
 no-end-config                    :  true
 no-progress-bar                  :  true
 # vtk-filename                     :  explodingLiquid
