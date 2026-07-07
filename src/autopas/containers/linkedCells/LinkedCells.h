@@ -22,6 +22,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleCellHelpers.h"
+#include "autopas/utils/SortingThreshold.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -62,8 +63,9 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    * By default all applicable traversals are allowed.
    */
   LinkedCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-              const double skin, const double cellSizeFactor = 1.0, const size_t aosSortingThreshold = 8,
-              const size_t soaSortingThreshold = 25,
+              const double skin, const double cellSizeFactor = 1.0,
+              const size_t aosSortingThreshold = defaultAoSSortingThreshold,
+              const size_t soaSortingThreshold = defaultSoASortingThreshold,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThreshold,
                                                      soaSortingThreshold),

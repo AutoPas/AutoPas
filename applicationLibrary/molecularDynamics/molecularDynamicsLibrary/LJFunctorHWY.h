@@ -762,15 +762,15 @@ class LJFunctorHWY
       size_t jVecEnd{};
       size_t jVecStart = 0;
       if constexpr (sorted) {
-        // This is always save here since SoAFunctorPairSorted() will never call this with no sortingData.
-        const auto &sd = sortingData->get();
+        // This get is always save here since SoAFunctorPairSorted() will never call this with no sortingData.
+        const auto &[unusedStartI, maxIndex, minIndex] = sortingData->get();
         // maxIndex is monotonically non-decreasing, so the tightest valid bound for [i, i + iStep - 1] (the i values
         // handled in one iteration) is maxIndex of the last particle in the block. For p1xVec
         // (iStep=1) this collapses to maxIndex[i].
-        jVecEnd = sd.maxIndex[i + iStep - 1];
+        jVecEnd = maxIndex[i + iStep - 1];
         // minIndex is monotonically non-decreasing, so the tightest valid lower bound [i, i + iStep - 1] (the i values
         // handled in one iteration) is always minIndex[i], the minimum across the block.
-        jVecStart = sd.minIndex[i];
+        jVecStart = minIndex[i];
         // If this check is true it means there are no particles in soa2 that can interact with particles in soa1
         // I.e. the hitrate in this case is 0%.
         if (jVecStart >= jVecEnd) {
@@ -798,10 +798,10 @@ class LJFunctorHWY
         size_t jVecEnd = n2;
         size_t jVecStart = 0;
         if constexpr (sorted) {
-          // This is always save here since SoAFunctorPairSorted() will never call this with no sortingData.
-          const auto &sd = sortingData->get();
-          jVecEnd = sd.maxIndex[i + restI - 1];
-          jVecStart = sd.minIndex[i];
+          // This get is always save here since SoAFunctorPairSorted() will never call this with no sortingData.
+          const auto &[unusedStartI, maxIndex, minIndex] = sortingData->get();
+          jVecEnd = maxIndex[i + restI - 1];
+          jVecStart = minIndex[i];
           if (jVecStart < jVecEnd) {
             // Round down to nearest full SIMD lane boundary.
             jVecStart = jVecStart - (jVecStart % jStep);

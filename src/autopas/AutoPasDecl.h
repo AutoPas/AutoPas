@@ -28,6 +28,7 @@
 #include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/SortingThreshold.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
 
@@ -1262,11 +1263,11 @@ class AutoPas {
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
-  size_t _aosSortingThreshold{8};
+  size_t _aosSortingThreshold{defaultAoSSortingThreshold};
   /**
    * Number of particles in two SoA buffers from which SoA sorting should be performed.
    */
-  size_t _soaSortingThreshold{25};
+  size_t _soaSortingThreshold{defaultSoASortingThreshold};
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
    * Triggers reserve() and provides a parallel loop with deliberate scheduling.
