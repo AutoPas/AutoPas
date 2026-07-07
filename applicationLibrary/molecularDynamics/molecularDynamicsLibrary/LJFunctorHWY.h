@@ -1205,7 +1205,9 @@ class LJFunctorHWY
           fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
           fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
         }
-        typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
+        if constexpr (useMixing) {
+          typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
+        }
         const auto ownedState = ownedStatePtr[neighborList[j + vecIndex]];
         ownedStates2Tmp[vecIndex] = static_cast<int64_t>(ownedState);
       }
