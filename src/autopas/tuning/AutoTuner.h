@@ -278,15 +278,16 @@ class AutoTuner {
   const std::set<Configuration> &getSearchSpace() const;
 
   /**
-   * Returns the per-direction-type SoA sorting thresholds determined by the SoA sorting threshold benchmark,
-   * running the benchmark first (lazily, once) if it has not run yet.
+   * Returns the per-Newton3-state, per-direction-type SoA sorting thresholds determined by the SoA sorting
+   * threshold benchmark, running the benchmark first (lazily, once) if it has not run yet.
    * @tparam Functor_T Pairwise functor type.
    * @tparam Particle_T Particle type.
    * @param functor Functor instance used to drive the benchmark if it still needs to run.
-   * @return Per-direction-type thresholds; see SortingThresholdBenchmark for the indexing convention.
+   * @return Per-Newton3-state, per-direction-type thresholds, indexed as [newton3][direction] (see
+   * SortingThresholdBenchmark for the indexing convention).
    */
   template <class Functor_T, class Particle_T>
-  std::array<size_t, 3> getSoASortingThresholds(Functor_T &functor) {
+  std::array<std::array<size_t, 3>, 2> getSoASortingThresholds(Functor_T &functor) {
     if (not _sortingThresholdBenchmark.hasRun()) {
       _sortingThresholdBenchmark.runBenchmark<Functor_T, Particle_T>(functor);
     }

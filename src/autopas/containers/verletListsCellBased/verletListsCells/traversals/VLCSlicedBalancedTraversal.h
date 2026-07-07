@@ -84,7 +84,7 @@ class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
   /**
    * @copydoc autopas::CellTraversal::setSoASortingThresholds()
    */
-  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override {}
+  void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {}
 
  private:
   PairwiseFunctor &_functor;

@@ -46,7 +46,9 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
         _cutoff(cutoff),
         _skin(skin),
         _aosSortingThreshold(aosSortingThreshold) {
-    _soaSortingThresholds.fill(soaSortingThreshold);
+    for (auto &row : _soaSortingThresholds) {
+      row.fill(soaSortingThreshold);
+    }
   }
 
   /**
@@ -157,7 +159,9 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   /**
    * @copydoc autopas::ParticleContainerInterface::setSoASortingThresholds()
    */
-  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override { _soaSortingThresholds = thresholds; }
+  void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {
+    _soaSortingThresholds = thresholds;
+  }
 
  protected:
   /**
@@ -172,10 +176,11 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   size_t _aosSortingThreshold;
   /**
-   * Per-direction SoA sorting thresholds, indexed by zero-count in sortingDirection.
-   * Initialized from the scalar soaSortingThreshold; overridden per-direction by setSoASortingThresholds().
+   * Per-Newton3-state, per-direction SoA sorting thresholds, indexed as [newton3][direction] (direction = number
+   * of zero components in sortingDirection: 0=Corner, 1=Edge, 2=Face).
+   * Initialized from the scalar soaSortingThreshold; overridden by setSoASortingThresholds().
    */
-  std::array<size_t, 3> _soaSortingThresholds{};
+  std::array<std::array<size_t, 3>, 2> _soaSortingThresholds{};
 
  private:
   std::array<double, 3> _boxMin;

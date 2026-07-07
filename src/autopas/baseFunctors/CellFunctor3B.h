@@ -101,7 +101,7 @@ class CellFunctor3B {
    * Provided for interface parity with CellFunctor so that traversals using a conditional CellFunctorType
    * (e.g. DSSequentialTraversal) compile for both pairwise and triwise cases.
    */
-  void setSoASortingThresholds(std::array<size_t, 3> /*thresholds*/) {}
+  void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> /*thresholds*/) {}
 
  private:
   /**

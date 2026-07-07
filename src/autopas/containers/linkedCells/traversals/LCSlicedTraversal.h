@@ -65,7 +65,7 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell_T, Functo
   /**
    * @copydoc autopas::CellTraversal::setSoASortingThresholds()
    */
-  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override {
+  void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {
     _cellHandler.setSoASortingThresholds(thresholds);
   }
 

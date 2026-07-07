@@ -173,7 +173,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @copydoc autopas::ParticleContainerInterface::setSoASortingThresholds()
    * This container does not use a CellFunctor, so the function has no effect here.
    */
-  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override {}
+  void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {}
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     const auto particlesPerTower = (numParticles + numParticlesHaloEstimate) / _towerBlock.size();

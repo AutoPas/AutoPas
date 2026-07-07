@@ -118,7 +118,7 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
   /**
    * @copydoc autopas::CellTraversal::setSoASortingThresholds()
    */
-  void setSoASortingThresholds(std::array<size_t, 3> thresholds) override {
+  void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {
     _cellFunctor.setSoASortingThresholds(thresholds);
   }
 

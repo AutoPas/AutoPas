@@ -94,12 +94,13 @@ class CellFunctor {
   void setSoASortingThreshold(size_t soaSortingThreshold);
 
   /**
-   * Set the per-direction-type SoA sorting thresholds.
-   * Indexed by the number of zero components in sortingDirection (0=Corner, 1=Edge, 2=Face); overrides the
-   * value set by setSoASortingThreshold() for all three direction types.
-   * @param thresholds Array of three per-direction-type thresholds.
+   * Set the per-Newton3-state, per-direction-type SoA sorting thresholds.
+   * First index: 0 = Newton3 disabled, 1 = Newton3 enabled. Second index: number of zero components in
+   * sortingDirection (0=Corner, 1=Edge, 2=Face). Overrides the value set by setSoASortingThreshold() for all
+   * Newton3 states and direction types.
+   * @param thresholds Per-Newton3-state, per-direction-type thresholds.
    */
-  void setSoASortingThresholds(std::array<size_t, 3> thresholds);
+  void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds);
 
   /**
    * Computes conservative per-particle index bounds into projIdxJ based on a 1-D projection cutoff check.
@@ -153,7 +154,7 @@ class CellFunctor {
   [[nodiscard]] bool shouldUseSoASorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
     if (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0) {
       const auto zeroCount = std::count(std::begin(sortingDirection), std::end(sortingDirection), 0.0);
-      return particleCount >= _soaSortingThresholds[static_cast<size_t>(zeroCount)];
+      return particleCount >= _soaSortingThresholds[static_cast<size_t>(_useNewton3)][static_cast<size_t>(zeroCount)];
     }
     return false;
   }
@@ -200,8 +201,10 @@ class CellFunctor {
 
   /**
    * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
+   * First index: 0 = Newton3 disabled, 1 = Newton3 enabled. Second index: direction-type (see
+   * setSoASortingThresholds()).
    */
-  std::array<size_t, 3> _soaSortingThresholds{25, 25, 25};
+  std::array<std::array<size_t, 3>, 2> _soaSortingThresholds{{{25, 25, 25}, {25, 25, 25}}};
 
   const DataLayoutOption::Value _dataLayout;
 
@@ -229,11 +232,13 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortin
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
-  _soaSortingThresholds.fill(soaSortingThreshold);
+  for (auto &row : _soaSortingThresholds) {
+    row.fill(soaSortingThreshold);
+  }
 }
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThresholds(
-    std::array<size_t, 3> thresholds) {
+    std::array<std::array<size_t, 3>, 2> thresholds) {
   _soaSortingThresholds = thresholds;
 }
 
