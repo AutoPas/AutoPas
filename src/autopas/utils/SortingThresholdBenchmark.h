@@ -158,7 +158,6 @@ class SortingThresholdBenchmark {
    * Measures the mean per-repetition time for the sorted and unsorted SoA pair interaction paths
    * at a given particle count for one direction type and Newton3 state.
    *
-   * @todo This currently hardcodes the CellFunctor to bidirectional = false. Fix this if needed.
    * Particles are regenerated each repetition so the sort always operates on fresh random data.
    * The sorted path is controlled by passing the layout-specific sortingDirection; the unsorted
    * path is forced by passing a zero direction (CellFunctor skips sorting when direction is zero).
