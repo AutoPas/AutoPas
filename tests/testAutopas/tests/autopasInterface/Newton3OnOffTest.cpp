@@ -9,7 +9,7 @@
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/logging/Logger.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "generators/src/UniformGenerator.h"
 
 using ::testing::_;
 using ::testing::Combine;

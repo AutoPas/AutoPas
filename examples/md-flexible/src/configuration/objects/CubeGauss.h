@@ -5,10 +5,10 @@
  */
 #pragma once
 
+#include "../../../../../tools/generators/src/PseudoContainer.h"
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopasTools/PseudoContainer.h"
-#include "autopasTools/generators/GaussianGenerator.h"
+#include "generators/src/GaussianGenerator.h"
 
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.

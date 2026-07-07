@@ -94,7 +94,7 @@ if (AUTOPAS_BUILD_TESTS)
     target_link_libraries(
             ${TEST_EXE_NAME}
             PUBLIC
-            autopas autopasTools molecularDynamicsLibrary gmock
+            autopas generators molecularDynamicsLibrary gmock
     )
 
     # this cmake module was only introduced in 3.10
@@ -127,7 +127,7 @@ if (AUTOPAS_BUILD_TESTS)
 
     target_link_libraries(
             sphLibTests PUBLIC
-            autopas autopasTools SPHLibrary gmock
+            autopas generators SPHLibrary gmock
     )
 
     # this cmake module was only introduced in 3.10

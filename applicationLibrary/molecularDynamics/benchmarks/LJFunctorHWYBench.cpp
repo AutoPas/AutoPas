@@ -32,8 +32,8 @@
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopasTools/generators/TwoCellsInteractionHitrateGenerator.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "generators/src/TwoCellsInteractionHitrateGenerator.h"
+#include "generators/src/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
