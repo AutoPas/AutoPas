@@ -12,8 +12,8 @@
 #include <set>
 #include <vector>
 
-#include "../src/PseudoContainer.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "generators/src/PseudoContainer.h"
 #include "generators/src/TwoCellsInteractionHitrateGenerator.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 /**

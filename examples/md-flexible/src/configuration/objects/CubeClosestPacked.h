@@ -8,10 +8,10 @@
 
 #include <cmath>
 
-#include "../../../../../tools/generators/src/PseudoContainer.h"
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
 #include "generators/src/ClosestPackingGenerator.h"
+#include "generators/src/PseudoContainer.h"
 
 /**
  * Class describing a cube of hexagonally closest packed particles.

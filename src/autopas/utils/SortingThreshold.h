@@ -17,6 +17,7 @@ constexpr size_t defaultAoSSortingThreshold = 8;
 
 /**
  * Default sum of the SoA buffer sizes of two cells from which point on SoA sorting should be performed.
+ * Default comes from the LJFunctorHWYBench benchmarks.
  */
-constexpr size_t defaultSoASortingThreshold = 25;
+constexpr size_t defaultSoASortingThreshold = 50;
 }  // namespace autopas
