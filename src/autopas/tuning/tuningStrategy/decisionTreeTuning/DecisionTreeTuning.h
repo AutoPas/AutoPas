@@ -11,6 +11,7 @@
 #endif
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -88,6 +89,19 @@ class DecisionTreeTuning : public TuningStrategyInterface {
   InteractionTypeOption _interactionType;
 
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
+  /**
+   * Keeps the embedded CPython interpreter alive while any DecisionTreeTuning exists.
+   * Shared across instances (e.g. separate pairwise/triwise tuners), since pybind11 permits only one interpreter per
+   * process.
+   *
+   * Keep this declaration before all `pybind11::object`s to ensure the interpreter is created first and destroyed last.
+   */
+  std::shared_ptr<pybind11::scoped_interpreter> _pythonInterpreter;
+
+  /**
+   * The actual python DecisionTreeTuning object which we call .predict() on. Must be created and destroyed whilst
+   * there is a live python interpreter.
+   */
   pybind11::object _decisionTreeTuningPyObj;
 #endif
 };

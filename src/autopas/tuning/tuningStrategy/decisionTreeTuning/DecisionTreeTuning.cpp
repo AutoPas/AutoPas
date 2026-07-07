@@ -11,6 +11,8 @@
 #include <pybind11/stl.h>
 
 #include <json.hpp>
+#include <memory>
+#include <mutex>
 #endif
 
 #include "autopas/utils/ExceptionHandler.h"
@@ -29,8 +31,36 @@ DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpac
       _interactionType(interactionType) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   try {
-    // Initialize the Python interpreter using scoped_interpreter
-    static py::scoped_interpreter guard{};
+    // The code within the try attempts to create an embedded python interpreter, or attach to an already existing one
+    // (there cannot be two!). This requires a relatively complicated juggling of ownership, to ensure multiple
+    // instances of DecisionTreeTuning (notable pairwise/triwise but future-proofed for other possibilities) have access
+    // to the same pointer to the interpreter without the pointer itself being static (which leads to problems with
+    // finalizing/destructing the python interpreter - particularly in combination with some implementations of MPI).
+
+    // We use a combination of the object owned shared pointer to the interpreter with a static weak_ptr to ensure each
+    // object points to the same interpreter, if one exists. As weak_ptrs do not own that which they point to, we need
+    // not worry about the static weak_ptr keeping the interpreter alive after this object's destruction, the same way
+    // a static shared_ptr would.
+
+    // We use a locked mutex to avoid multiple threads attempting this at once (not currently possible but provides us
+    // with some future-proofing). This is static so all threads have the same mutex.
+    {
+      static std::mutex interpreterMutex;
+      static std::weak_ptr<py::scoped_interpreter> interpreterWeak;
+      // Lock the mutex to make this thread-safe.
+      const std::scoped_lock lock(interpreterMutex);
+      // Set the object owned shared_ptr to that pointed to by the static weak_ptr
+      // weak_ptr::lock() returns a shared_ptr that is null if no interpreter has yet been created or non-null if it has
+      // been created (set below).
+      _pythonInterpreter = interpreterWeak.lock();
+      if (not _pythonInterpreter) {
+        // weak_ptr returned a null pointer => create a shared scoped_interpreter
+        _pythonInterpreter = std::make_shared<py::scoped_interpreter>();
+        // Point the static weak reference at the new interpreter so the next instance's .lock()
+        // finds and shares it.
+        interpreterWeak = _pythonInterpreter;
+      }
+    }
 
     // Add the script directory to Python's path
     py::module::import("sys").attr("path").attr("append")(std::string(AUTOPAS_SOURCE_DIR) +
