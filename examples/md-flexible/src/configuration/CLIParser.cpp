@@ -671,7 +671,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.kokkosChunkSize)::getoptChar: {
         try {
           auto intermediate = autopas::utils::StringUtils::parseNumberSet(strArg)->getAll();
-          for (auto& item : intermediate) {
+          for (auto &item : intermediate) {
             config.kokkosChunkSize.value.emplace(static_cast<size_t>(item));
           }
         } catch (const exception &) {
@@ -683,7 +683,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.kokkosTeamSize)::getoptChar: {
         try {
           auto intermediate = autopas::utils::StringUtils::parseNumberSet(strArg)->getAll();
-          for (auto& item : intermediate) {
+          for (auto &item : intermediate) {
             config.kokkosTeamSize.value.emplace(static_cast<size_t>(item));
           }
         } catch (const exception &) {

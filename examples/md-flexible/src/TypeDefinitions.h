@@ -17,8 +17,8 @@
 
 #else
 
-#include "molecularDynamicsLibrary/MoleculeLJ.h"
 #include "molecularDynamicsLibrary/KokkosMoleculeLJ.h"
+#include "molecularDynamicsLibrary/MoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 #include "molecularDynamicsLibrary/LJFunctor.h"
@@ -47,7 +47,8 @@
 /**
  * Precision used for particle representations. If you want to test other precisions change it here.
  */
-using FloatPrecision = float; // TODO: why not just use the precision defined in the particle class? Is there a case where this can differ?
+using FloatPrecision = float;  // TODO: why not just use the precision defined in the particle class? Is there a case
+                               // where this can differ?
 
 /**
  * Type of the Particles used in md-flexible.
@@ -112,7 +113,8 @@ using MemSpace = Kokkos::HostSpace;
 /**
  * Type of LJFunctorTypeKokkos used in md-flexible
  */
-using LJFunctorTypeKokkos = mdLib::LJFunctorKokkos<ParticleType, true, true, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+using LJFunctorTypeKokkos = mdLib::LJFunctorKokkos<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                                   mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
@@ -172,7 +174,7 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
 #error "The Axilrod Teller functor does not have support for multisite molecules!"
 #else
 using ATMFunctor = mdLib::AxilrodTellerMutoFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
-                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
+                                                   mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif

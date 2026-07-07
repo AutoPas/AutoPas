@@ -28,7 +28,7 @@ class ContainerSelectorInfo {
         verletClusterSize(64),
         sortingThreshold(0),
         loadEstimator(LoadEstimatorOption::none),
-        dataLayout(DataLayoutOption::aos){}
+        dataLayout(DataLayoutOption::aos) {}
 
   /**
    * Constructor.
@@ -56,7 +56,7 @@ class ContainerSelectorInfo {
         verletClusterSize(verletClusterSize),
         sortingThreshold(sortingThreshold),
         loadEstimator(loadEstimator),
-        dataLayout(layout){}
+        dataLayout(layout) {}
 
   /**
    * Equality between ContainerSelectorInfo

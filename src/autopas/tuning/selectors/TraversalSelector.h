@@ -13,9 +13,9 @@
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
 #ifdef AUTOPAS_ENABLE_KOKKOS
+#include "autopas/containers/kokkosDirectSum/traversals/KokkosDsChunksTraversal.h"
 #include "autopas/containers/kokkosDirectSum/traversals/KokkosDsFlatTraversal.h"
 #include "autopas/containers/kokkosDirectSum/traversals/KokkosDsTeamsTraversal.h"
-#include "autopas/containers/kokkosDirectSum/traversals/KokkosDsChunksTraversal.h"
 #endif
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
@@ -143,17 +143,17 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
 #ifdef AUTOPAS_ENABLE_KOKKOS
     case TraversalOption::ds_kokkos_flat: {
       traversal = std::make_unique<KokkosDsFlatTraversal<PairwiseFunctor_T, typename ParticleCell_T::ParticleType>>(
-        &pairwiseFunctor, dataLayout, useNewton3);
+          &pairwiseFunctor, dataLayout, useNewton3);
       break;
     }
     case TraversalOption::ds_kokkos_teams: {
       traversal = std::make_unique<KokkosDsTeamsTraversal<PairwiseFunctor_T, typename ParticleCell_T::ParticleType>>(
-        &pairwiseFunctor, dataLayout, useNewton3, kokkosTeamSize);
+          &pairwiseFunctor, dataLayout, useNewton3, kokkosTeamSize);
       break;
     }
     case TraversalOption::ds_kokkos_chunks: {
       traversal = std::make_unique<KokkosDsChunksTraversal<PairwiseFunctor_T, typename ParticleCell_T::ParticleType>>(
-        &pairwiseFunctor, dataLayout, useNewton3, kokkosChunkSize, kokkosChunkSize);
+          &pairwiseFunctor, dataLayout, useNewton3, kokkosChunkSize, kokkosChunkSize);
       break;
     }
 #endif
@@ -443,11 +443,9 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
 }
 
 template <class ParticleCell_T, class Functor_T>
-std::unique_ptr<TraversalInterface> TraversalSelector::generateTraversal(TraversalOption traversalType,
-                                                                         Functor_T &functor,
-                                                                         const TraversalSelectorInfo &traversalInfo,
-                                                                         DataLayoutOption dataLayout, bool useNewton3,
-                                                                         size_t kokkosChunkSize, size_t kokkosTeamSize) {
+std::unique_ptr<TraversalInterface> TraversalSelector::generateTraversal(
+    TraversalOption traversalType, Functor_T &functor, const TraversalSelectorInfo &traversalInfo,
+    DataLayoutOption dataLayout, bool useNewton3, size_t kokkosChunkSize, size_t kokkosTeamSize) {
   if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
     return generatePairwiseTraversal<ParticleCell_T, Functor_T>(traversalType, functor, traversalInfo, dataLayout,
                                                                 useNewton3, kokkosChunkSize, kokkosTeamSize);
@@ -466,10 +464,12 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTraversalFromConf
   switch (config.container) {
     case ContainerOption::Value::linkedCellsReferences:
       return TraversalSelector::generateTraversal<ReferenceParticleCell<Particle_T>, Functor_T>(
-          config.traversal, functor, traversalInfo, config.dataLayout, config.newton3, config.kokkosChunkSize, config.kokkosTeamSize);
+          config.traversal, functor, traversalInfo, config.dataLayout, config.newton3, config.kokkosChunkSize,
+          config.kokkosTeamSize);
     default:
       return TraversalSelector::generateTraversal<FullParticleCell<Particle_T>, Functor_T>(
-          config.traversal, functor, traversalInfo, config.dataLayout, config.newton3, config.kokkosChunkSize, config.kokkosTeamSize);
+          config.traversal, functor, traversalInfo, config.dataLayout, config.newton3, config.kokkosChunkSize,
+          config.kokkosTeamSize);
   }
 }
 }  // namespace autopas

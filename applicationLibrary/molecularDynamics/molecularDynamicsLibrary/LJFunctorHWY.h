@@ -103,9 +103,7 @@ class LJFunctorHWY
     }
   }
 
-  constexpr static bool globalCalculationRequested() {
-    return calculateGlobals;
-  }
+  constexpr static bool globalCalculationRequested() { return calculateGlobals; }
 
   std::string getName() final { return "LJFunctorHWY"; }
 

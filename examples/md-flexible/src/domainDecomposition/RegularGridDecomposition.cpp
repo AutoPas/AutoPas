@@ -24,7 +24,7 @@
 #ifdef AUTOPAS_ENABLE_KOKKOS
 // TODO: it might make sense to outsource this to a common location to avoid duplication
 #ifdef KOKKOS_ENABLE_CUDA
-  using DeviceSpace = Kokkos::CudaSpace;
+using DeviceSpace = Kokkos::CudaSpace;
 constexpr bool ForEachHostFlag = false;
 #else
 using DeviceSpace = Kokkos::HostSpace;
@@ -42,7 +42,8 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
       _globalBoxMax(configuration.boxMax.value),
       _boundaryType(configuration.boundaryOption.value),
 #ifdef AUTOPAS_ENABLE_KOKKOS
-      _boundaryTypeKokkos({configuration.boundaryOption.value.at(0), configuration.boundaryOption.value.at(1), configuration.boundaryOption.value.at(2)}),
+      _boundaryTypeKokkos({configuration.boundaryOption.value.at(0), configuration.boundaryOption.value.at(1),
+                           configuration.boundaryOption.value.at(2)}),
 #endif
       _mpiCommunicationNeeded(
 #if defined(AUTOPAS_INCLUDE_MPI)
@@ -163,7 +164,8 @@ void RegularGridDecomposition::initializeNeighborIndices() {
   }
 }
 
-bool RegularGridDecomposition::isInsideLocalDomain(const std::array<ParticleType::ParticleSoAFloatPrecision, 3> &coordinates) const {
+bool RegularGridDecomposition::isInsideLocalDomain(
+    const std::array<ParticleType::ParticleSoAFloatPrecision, 3> &coordinates) const {
   return DomainTools::isInsideDomain(coordinates, _localBoxMin, _localBoxMax);
 }
 
@@ -317,7 +319,6 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
                                                             ParticlePropertiesLibraryType &particlePropertiesLib) {
-
   const bool containerAllowsKokkos = autoPasContainer.containerAllowsKokkos();
 
   if (containerAllowsKokkos) {
@@ -331,66 +332,65 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     Kokkos::Array<double, 3> globalBoxMin = {_globalBoxMin.at(0), _globalBoxMin.at(1), _globalBoxMin.at(2)};
     Kokkos::Array<double, 3> globalBoxMax = {_globalBoxMax.at(0), _globalBoxMax.at(1), _globalBoxMax.at(2)};
 
-    autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(KOKKOS_LAMBDA(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage) {
+    autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(
+        KOKKOS_LAMBDA(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType> &storage) {
+          const auto posX = storage.template operator()<ParticleType::AttributeNames::posX, ForEachHostFlag>(i);
+          const auto posY = storage.template operator()<ParticleType::AttributeNames::posY, ForEachHostFlag>(i);
+          const auto posZ = storage.template operator()<ParticleType::AttributeNames::posZ, ForEachHostFlag>(i);
 
-      const auto posX = storage.template operator()<ParticleType::AttributeNames::posX, ForEachHostFlag>(i);
-      const auto posY = storage.template operator()<ParticleType::AttributeNames::posY, ForEachHostFlag>(i);
-      const auto posZ = storage.template operator()<ParticleType::AttributeNames::posZ, ForEachHostFlag>(i);
+          Kokkos::Array pos{posX, posY, posZ};
+          Kokkos::Array<FloatPrecision, 3> force{0, 0, 0};
 
-      Kokkos::Array pos {posX, posY, posZ};
-      Kokkos::Array<FloatPrecision, 3> force {0, 0, 0};
+          for (int dim = 0; dim < dimCount; ++dim) {
+            if (boundaries[dim] != options::BoundaryTypeOption::reflective) continue;
 
-      for (int dim = 0; dim < dimCount; ++dim) {
-        if (boundaries[dim] != options::BoundaryTypeOption::reflective) continue;
+            auto reflectKokkos = [&](bool isUpper, FloatPrecision distanceToBoundary) {
+              constexpr auto sigma = 1.;  // TODO: extract from particle
 
-        auto reflectKokkos = [&](bool isUpper, FloatPrecision distanceToBoundary) {
+              if (distanceToBoundary < sixthRootOfTwo * 0.5 * sigma) {
+                const auto LJKernel = [](const FloatPrecision particlePos, const FloatPrecision mirrorPos,
+                                         const FloatPrecision sigmaSquared, const FloatPrecision epsilon24) {
+                  const auto displacement = particlePos - mirrorPos;
+                  const auto distanceSquared = displacement * displacement;
 
-          constexpr auto sigma = 1.; // TODO: extract from particle
+                  const auto inverseDistanceSquared = 1. / distanceSquared;
 
-          if (distanceToBoundary < sixthRootOfTwo * 0.5 * sigma) {
+                  const auto lj2 = sigmaSquared * inverseDistanceSquared;
+                  const auto lj6 = lj2 * lj2 * lj2;
+                  const auto lj12 = lj6 * lj6;
+                  const auto lj12m6 = lj12 - lj6;
 
-            const auto LJKernel = [](const FloatPrecision particlePos, const FloatPrecision mirrorPos, const FloatPrecision sigmaSquared, const FloatPrecision epsilon24) {
-              const auto displacement = particlePos - mirrorPos;
-              const auto distanceSquared = displacement * displacement;
+                  const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * inverseDistanceSquared;
 
-              const auto inverseDistanceSquared = 1./distanceSquared;
+                  return displacement * scalarMultiple;
+                };
 
-              const auto lj2 = sigmaSquared * inverseDistanceSquared;
-              const auto lj6 = lj2 * lj2 * lj2;
-              const auto lj12 = lj6 * lj6;
-              const auto lj12m6 = lj12 - lj6;
+                const auto sigmaSquared = sigma * sigma;
+                const auto epsilon24 = 24.;  // TODO: extract from particle
+                const auto mirrorPosition = pos[dim] + (isUpper ? 2 * distanceToBoundary : -2 * distanceToBoundary);
+                const auto f = LJKernel(pos[dim], mirrorPosition, sigmaSquared, epsilon24);
 
-              const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * inverseDistanceSquared;
-
-              return displacement * scalarMultiple;
+                force[dim] += f;
+              }
             };
 
-            const auto sigmaSquared = sigma * sigma;
-            const auto epsilon24 = 24.; // TODO: extract from particle
-            const auto mirrorPosition = pos[dim] + (isUpper? 2* distanceToBoundary : -2*distanceToBoundary);
-            const auto f = LJKernel(pos[dim], mirrorPosition, sigmaSquared, epsilon24);
-
-            force[dim] += f;
+            if (autopas::utils::Math::isNearRelKokkos(localBoxMin[dim], globalBoxMin[dim])) {
+              const auto boundaryPosition = globalBoxMin[dim];
+              const auto distanceToBoundary = Kokkos::abs(pos[dim] - boundaryPosition);
+              reflectKokkos(false, distanceToBoundary);
+            }
+            if (autopas::utils::Math::isNearRelKokkos(localBoxMax[dim], globalBoxMax[dim])) {
+              const auto boundaryPosition = globalBoxMax[dim];
+              const auto distanceToBoundary = Kokkos::abs(pos[dim] - boundaryPosition);
+              reflectKokkos(true, distanceToBoundary);
+            }
           }
-        };
 
-        if (autopas::utils::Math::isNearRelKokkos(localBoxMin[dim], globalBoxMin[dim])) {
-          const auto boundaryPosition = globalBoxMin[dim];
-          const auto distanceToBoundary = Kokkos::abs(pos[dim] - boundaryPosition);
-          reflectKokkos(false, distanceToBoundary);
-        }
-        if (autopas::utils::Math::isNearRelKokkos(localBoxMax[dim], globalBoxMax[dim])) {
-          const auto boundaryPosition = globalBoxMax[dim];
-          const auto distanceToBoundary = Kokkos::abs(pos[dim] - boundaryPosition);
-          reflectKokkos(true, distanceToBoundary);
-        }
-      }
-
-      storage.template operator()<ParticleType::AttributeNames::forceX, ForEachHostFlag>(i) += force[0];
-      storage.template operator()<ParticleType::AttributeNames::forceY, ForEachHostFlag>(i) += force[1];
-      storage.template operator()<ParticleType::AttributeNames::forceZ, ForEachHostFlag>(i) += force[2];
-
-    }, autopas::IteratorBehavior::owned, "mdFlexible::RegularGridDecomposition::refectParticlesAtBoundaries");
+          storage.template operator()<ParticleType::AttributeNames::forceX, ForEachHostFlag>(i) += force[0];
+          storage.template operator()<ParticleType::AttributeNames::forceY, ForEachHostFlag>(i) += force[1];
+          storage.template operator()<ParticleType::AttributeNames::forceZ, ForEachHostFlag>(i) += force[2];
+        },
+        autopas::IteratorBehavior::owned, "mdFlexible::RegularGridDecomposition::refectParticlesAtBoundaries");
 #endif
     // TODO: throw exception
   } else {
@@ -398,7 +398,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
     std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
 
     for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
-    // skip if boundary is not reflective
+      // skip if boundary is not reflective
       if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::reflective) continue;
 
       auto reflect = [&](bool isUpper) {
@@ -407,37 +407,37 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
              p.isValid(); ++p) {
           // Check that particle is within 6th root of 2 * sigma
           const auto pos = p->getR();
-          const std::array position {
-            static_cast<double>(pos.at(0)),
-            static_cast<double>(pos.at(1)),
-            static_cast<double>(pos.at(2)),
+          const std::array position{
+              static_cast<double>(pos.at(0)),
+              static_cast<double>(pos.at(1)),
+              static_cast<double>(pos.at(2)),
           };
           const auto distanceToBoundary = std::abs(position[dimensionIndex] - boundaryPosition);
 
           // For single-site molecules, we discard molecules further than sixthRootOfTwo * sigma, and are left only with
           // molecules who will experience repulsion from the boundary.
 
-          // For multi-site molecules, we discard molecules with center-of-mass further than sixthRootOfTwo * the largest
-          // sigma of any site of that molecule. Some molecules may still experience attraction in which case their force
-          // is reset to before the force interaction.
+          // For multi-site molecules, we discard molecules with center-of-mass further than sixthRootOfTwo * the
+          // largest sigma of any site of that molecule. Some molecules may still experience attraction in which case
+          // their force is reset to before the force interaction.
           //
-          // Note, there is a scenario where a molecule has center-of-mass further than sixthRootOfTwo * sigma, but has a
-          // site closer than this distance, with a large enough epsilon, that repulsion would occur. For computational
-          // cost reasons, this scenario is neglected - no repulsion occurs. This *should*, in theory, with an appropriate
-          // step-size and molecular model, not cause any problems.
+          // Note, there is a scenario where a molecule has center-of-mass further than sixthRootOfTwo * sigma, but has
+          // a site closer than this distance, with a large enough epsilon, that repulsion would occur. For
+          // computational cost reasons, this scenario is neglected - no repulsion occurs. This *should*, in theory,
+          // with an appropriate step-size and molecular model, not cause any problems.
 
-          // To produce a "mirrored" multi-site molecule that could be used with the multi-site molecule functor requires
-          // adding 3 additional molecule types for every molecule type, as we would require relative site positions
-          // mirrored in all 3-dimensions. Then the reflected relative site positions can be rotated using the mirrored
-          // quaternion produced by quaternion::qMirror.
+          // To produce a "mirrored" multi-site molecule that could be used with the multi-site molecule functor
+          // requires adding 3 additional molecule types for every molecule type, as we would require relative site
+          // positions mirrored in all 3-dimensions. Then the reflected relative site positions can be rotated using the
+          // mirrored quaternion produced by quaternion::qMirror.
           //
           // As this is nasty, we reimplement the kernel of the lennard-jones force here. We also use this for
           // single-site molecules, primarily for consistency but it is also suspected to be cheaper than creating a
           // mirror particle for use with the actual functor.
 
           // Calculates force acting on site from another site
-          const auto LJKernel = [](const std::array<double, 3>& sitePosition,
-                                   const std::array<double, 3>& mirrorSitePosition, const double sigmaSquared,
+          const auto LJKernel = [](const std::array<double, 3> &sitePosition,
+                                   const std::array<double, 3> &mirrorSitePosition, const double sigmaSquared,
                                    const double epsilon24) {
             const auto displacement = autopas::utils::ArrayMath::sub(sitePosition, mirrorSitePosition);
             const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
@@ -516,9 +516,9 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
             const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
             const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
             p->addF({
-              static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(0)),
-              static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(1)),
-              static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(2)),
+                static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(0)),
+                static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(1)),
+                static_cast<ParticleType::ParticleSoAFloatPrecision>(force.at(2)),
             });
 #endif
 
@@ -597,42 +597,43 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
   haloParticlesBuffer.reserve(
       static_cast<size_t>(boxVolume / localBoxVolume * autoPasContainer.getNumberOfParticles() * 1.1));
   // if (!autoPasContainer.containerAllowsKokkos()) {
-    // Collect the halo particles for the neighbor
-    for (auto particleIter = autoPasContainer.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
-     particleIter.isValid(); ++particleIter) {
-      haloParticlesBuffer.push_back(*particleIter);
+  // Collect the halo particles for the neighbor
+  for (auto particleIter = autoPasContainer.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
+       particleIter.isValid(); ++particleIter) {
+    haloParticlesBuffer.push_back(*particleIter);
 
-      // if the particle is outside the global box move it to the other side (periodic boundary)
-      if (atGlobalBoundary) {
-        auto position = particleIter->getR();
-        position[direction] = position[direction] + wrapAroundDistance;
-        haloParticlesBuffer.back().setR(position);
-      }
-     }
-/*
-} else {
+    // if the particle is outside the global box move it to the other side (periodic boundary)
+    if (atGlobalBoundary) {
+      auto position = particleIter->getR();
+      position[direction] = position[direction] + wrapAroundDistance;
+      haloParticlesBuffer.back().setR(position);
+    }
+  }
+  /*
+  } else {
 
-    auto lambda = KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
-      // TODO: somehow push to halo buffer (Problem: so far, halo buffer is std::vector which required push_backs)
-      // TODO: although, as it is guaranteed that this will so far only happen serial on the CPU, it could also work with a std::vector
-      if (atGlobalBoundary) {
+      auto lambda = KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
+        // TODO: somehow push to halo buffer (Problem: so far, halo buffer is std::vector which required push_backs)
+        // TODO: although, as it is guaranteed that this will so far only happen serial on the CPU, it could also work
+  with a std::vector if (atGlobalBoundary) {
 
-        // TODO: change position in halo buffer
-        if (direction == 0) {
+          // TODO: change position in halo buffer
+          if (direction == 0) {
 
-        } else if (direction == 1) {
+          } else if (direction == 1) {
 
-        } else if (direction == 2) {
+          } else if (direction == 2) {
 
-        } else {
-          // TODO: throw exception as this should never happen
+          } else {
+            // TODO: throw exception as this should never happen
+          }
         }
-      }
 
-    };
+      };
 
-    autoPasContainer.template forEachInRegionKokkos<Kokkos::Serial>(lambda, boxMin, boxMax, autopas::IteratorBehavior::owned);
-  }*/
+      autoPasContainer.template forEachInRegionKokkos<Kokkos::Serial>(lambda, boxMin, boxMax,
+  autopas::IteratorBehavior::owned);
+    }*/
 }
 
 void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(

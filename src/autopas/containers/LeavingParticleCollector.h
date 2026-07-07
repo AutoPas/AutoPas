@@ -93,7 +93,8 @@ std::vector<typename ContainerType::ParticleType> collectParticlesAndMarkNonOwne
   const auto &boxMin = container.getBoxMin();
   const auto &boxMax = container.getBoxMax();
 
-  // TODO: figure out if this can run with Kokkos parallel (this will require something like a KokkosVector that can be extended dynamically and merged as part of a reduction)
+  // TODO: figure out if this can run with Kokkos parallel (this will require something like a KokkosVector that can be
+  // extended dynamically and merged as part of a reduction)
 
   // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
   AUTOPAS_OPENMP(declare reduction(vecMergeParticle :                                                 \

@@ -7,7 +7,8 @@
 #include "MoleculeLJ.h"
 
 namespace mdLib {
-MoleculeLJ::MoleculeLJ(const std::array<ParticleSoAFloatPrecision, 3> &pos, const std::array<ParticleSoAFloatPrecision, 3> &v, unsigned long moleculeId,
+MoleculeLJ::MoleculeLJ(const std::array<ParticleSoAFloatPrecision, 3> &pos,
+                       const std::array<ParticleSoAFloatPrecision, 3> &v, unsigned long moleculeId,
                        unsigned long typeId)
     : autopas::ParticleBaseFP32(pos, v, moleculeId), _typeId(typeId) {}
 

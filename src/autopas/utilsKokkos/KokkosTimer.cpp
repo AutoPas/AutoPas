@@ -6,8 +6,9 @@
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
 
-#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utilsKokkos/KokkosTimer.h"
+
+#include "autopas/utils/ExceptionHandler.h"
 
 autopas::utilsKokkos::KokkosTimer::KokkosTimer() {}
 
@@ -23,7 +24,6 @@ void autopas::utilsKokkos::KokkosTimer::start() {
 }
 
 long autopas::utilsKokkos::KokkosTimer::stop() {
-
   if (not _currentlyRunning) {
     utils::ExceptionHandler::exception("Trying to stop a timer that was not started!");
   }

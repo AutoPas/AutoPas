@@ -245,8 +245,9 @@ class MDFlexConfig {
    * containerLayoutOptions
    */
   MDFlexOption<std::set<autopas::DataLayoutOption>, __LINE__> containerLayoutOptions{
-    autopas::DataLayoutOption::getMostOptions(), "container-layout", true, "List of data layout options to use for the storage in the container. Possible Values: " +
-      autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
+      autopas::DataLayoutOption::getMostOptions(), "container-layout", true,
+      "List of data layout options to use for the storage in the container. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
    * dataLayoutOptions3B
@@ -470,12 +471,14 @@ class MDFlexConfig {
   /**
    * kokkosTeamSize
    */
-  MDFlexOption<std::set<size_t>, __LINE__> kokkosTeamSize{{128}, "kokkos-team-size", true, "Kokkos team size for hierarchical parallelism"};
+  MDFlexOption<std::set<size_t>, __LINE__> kokkosTeamSize{
+      {128}, "kokkos-team-size", true, "Kokkos team size for hierarchical parallelism"};
 
   /**
    * kokkosChunkSize
    */
-  MDFlexOption<std::set<size_t>, __LINE__> kokkosChunkSize{{32}, "kokkos-chunk-size", true, "Kokkos chunk size for outer traversal loop"};
+  MDFlexOption<std::set<size_t>, __LINE__> kokkosChunkSize{
+      {32}, "kokkos-chunk-size", true, "Kokkos chunk size for outer traversal loop"};
 
   /**
    * verletRebuildFrequency
@@ -537,10 +540,11 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
-                                                      FunctorOption::none, "functor", true,
-                                                      "Pairwise force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX lennard-jones-kokkos lennard-jones-SVE lennard-jones-highway)"};
+  MDFlexOption<FunctorOption, __LINE__> functorOption{
+      // Default is a dummy option
+      FunctorOption::none, "functor", true,
+      "Pairwise force functor to use. Possible Values: (lennard-jones "
+      "lennard-jones-AVX lennard-jones-kokkos lennard-jones-SVE lennard-jones-highway)"};
   /**
    * functorOption3B
    */

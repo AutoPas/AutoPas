@@ -41,8 +41,9 @@ class Configuration {
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, DataLayoutOption _containerLayout, Newton3Option _newton3,
-                          InteractionTypeOption _interactionType,  size_t chunkSize, size_t teamSize,
+                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout,
+                          DataLayoutOption _containerLayout, Newton3Option _newton3,
+                          InteractionTypeOption _interactionType, size_t chunkSize, size_t teamSize,
                           VectorizationPatternOption _vecPattern = VectorizationPatternOption::p1xVec)
       : container(_container),
         traversal(_traversal),
@@ -243,8 +244,7 @@ struct ConfigHash {
                            static_cast<std::size_t>(configuration.loadEstimator) * 1000 +
                            static_cast<std::size_t>(configuration.traversal) * 10000 +
                            static_cast<std::size_t>(configuration.container) * 100000 +
-                           configuration.kokkosChunkSize * 1000000 +
-                           configuration.kokkosTeamSize * 10000000;
+                           configuration.kokkosChunkSize * 1000000 + configuration.kokkosTeamSize * 10000000;
     std::size_t doubleHash = std::hash<double>{}(configuration.cellSizeFactor);
 
     return enumHash ^ doubleHash;

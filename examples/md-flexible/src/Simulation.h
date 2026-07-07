@@ -14,12 +14,12 @@
 #include "GlobalVariableLogger.h"
 #include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
+#include "autopas/utilsKokkos/KokkosTimer.h"
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
-#include "autopas/utilsKokkos/KokkosTimer.h"
 
 /**
  * Handles minimal initialization requirements for MD-Flexible simulations.
@@ -358,8 +358,8 @@ class Simulation {
   };
 
   /**
- * The timers used during the simulation.
- */
+   * The timers used during the simulation.
+   */
   struct Timers _timers;
 #endif
 

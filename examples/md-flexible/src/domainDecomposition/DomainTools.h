@@ -21,8 +21,8 @@ namespace DomainTools {
  * @param boxMax the maximum boundaries of the box domain.
  * @return true if the coordinates lie within the provided box.
  */
-bool isInsideDomain(const std::array<ParticleType::ParticleSoAFloatPrecision, 3> &coordinates, const std::array<double, 3> &boxMin,
-                    const std::array<double, 3> &boxMax);
+bool isInsideDomain(const std::array<ParticleType::ParticleSoAFloatPrecision, 3> &coordinates,
+                    const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
 
 /**
  * Generates a decomposition with a specific number of subdomains.

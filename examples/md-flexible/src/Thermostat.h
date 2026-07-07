@@ -36,7 +36,7 @@ constexpr bool ForEachHostFlag = true;
 template <class ParticleType>
 struct CalcTemperatureFunctor {
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage, double& localKinetic) const {
+  void operator()(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType> &storage, double &localKinetic) const {
     const auto velX = storage.template operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i);
     const auto velY = storage.template operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i);
     const auto velZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i);
@@ -49,14 +49,16 @@ struct CalcTemperatureFunctor {
 
 template <class ParticleType>
 struct CalcTemperatureComponentFunctor {
-  using KineticEnergyDualViewType = Kokkos::DualView<double*, DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>>;
-  using NumParticleDualViewType = Kokkos::DualView<size_t*, DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>>;
+  using KineticEnergyDualViewType =
+      Kokkos::DualView<double *, DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>>;
+  using NumParticleDualViewType =
+      Kokkos::DualView<size_t *, DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>>;
 
   KineticEnergyDualViewType _kineticEnergyMul2Map;
   NumParticleDualViewType _numParticleMap;
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage) const {
+  void operator()(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType> &storage) const {
     const auto velX = storage.template operator()<ParticleType::AttributeNames::velocityX, ForEachHostFlag>(i);
     const auto velY = storage.template operator()<ParticleType::AttributeNames::velocityY, ForEachHostFlag>(i);
     const auto velZ = storage.template operator()<ParticleType::AttributeNames::velocityZ, ForEachHostFlag>(i);
@@ -78,7 +80,7 @@ struct BrownianMotionFunctor {
   double _targetTemperature;
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage) const {
+  void operator()(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType> &storage) const {
     auto generator = _randomEngine.get_state();
 
     const auto mass = storage.template operator()<ParticleType::AttributeNames::mass, ForEachHostFlag>(i);
@@ -98,10 +100,10 @@ struct BrownianMotionFunctor {
 
 template <class ParticleType>
 struct ApplyFunctor {
-  Kokkos::DualView<double*, DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>> _scalingMap;
+  Kokkos::DualView<double *, DeviceSpace::device_type, Kokkos::MemoryTraits<Kokkos::Atomic>> _scalingMap;
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType>& storage) const {
+  void operator()(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType> &storage) const {
     const auto typeId = storage.template operator()<ParticleType::AttributeNames::typeId, ForEachHostFlag>(i);
     const auto scaling = _scalingMap.view_device()(typeId);
 
@@ -131,20 +133,23 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
     AUTOPAS_OPENMP(parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary))
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       const auto vel = iter->getV();
-    #if MD_FLEXIBLE_MODE == MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE
       const auto angVel = iter->getAngularVel();
-    #endif
+#endif
       kineticEnergyMul2 +=
           particlePropertiesLibrary.getMolMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
-    #if MD_FLEXIBLE_MODE == MULTISITE
-      kineticEnergyMul2 += autopas::utils::ArrayMath::dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()),
-                                                          autopas::utils::ArrayMath::mul(angVel, angVel));
-    #endif
+#if MD_FLEXIBLE_MODE == MULTISITE
+      kineticEnergyMul2 +=
+          autopas::utils::ArrayMath::dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()),
+                                         autopas::utils::ArrayMath::mul(angVel, angVel));
+#endif
     }
   } else {
 #ifdef AUTOPAS_ENABLE_KOKKOS
-    CalcTemperatureFunctor<ParticleType> functor {};
-    autopas.template reduceKokkos<DeviceSpace::execution_space, double, Kokkos::Sum<double>>(functor, kineticEnergyMul2, autopas::IteratorBehavior::ownedOrHalo,  "mdFlexible::Thermostat::calcTemperature"); // TODO: check iterator behavior
+    CalcTemperatureFunctor<ParticleType> functor{};
+    autopas.template reduceKokkos<DeviceSpace::execution_space, double, Kokkos::Sum<double>>(
+        functor, kineticEnergyMul2, autopas::IteratorBehavior::ownedOrHalo,
+        "mdFlexible::Thermostat::calcTemperature");  // TODO: check iterator behavior
 #endif
     // TODO: throw exception
   }
@@ -177,8 +182,7 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
  * @return map of: particle typeID -> temperature for this type
  */
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-auto calcTemperatureComponent(AutoPasTemplate &autopas,
-                              ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
+auto calcTemperatureComponent(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
   using autopas::utils::ArrayMath::dot;
   using namespace autopas::utils::ArrayMath::literals;
 
@@ -231,10 +235,11 @@ auto calcTemperatureComponent(AutoPasTemplate &autopas,
   } else {
 #ifdef AUTOPAS_ENABLE_KOKKOS
     // TODO: Kokkos version of kinetic energy maps
-    //CalcTemperatureComponentFunctor<ParticleType> functor {kineticEnergyMul2Map, numParticleMap};
-    //autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::owned, "mdFlexible::Thermostat::calcTemperatureComponent"); // TODO: check which iterator behavior to use
-    //kineticEnergyMul2Map.modify<DeviceSpace::execution_space>();
-    //numParticleMap.modify<DeviceSpace::execution_space>();
+    // CalcTemperatureComponentFunctor<ParticleType> functor {kineticEnergyMul2Map, numParticleMap};
+    // autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::owned,
+    // "mdFlexible::Thermostat::calcTemperatureComponent"); // TODO: check which iterator behavior to use
+    // kineticEnergyMul2Map.modify<DeviceSpace::execution_space>();
+    // numParticleMap.modify<DeviceSpace::execution_space>();
 #endif
     // TODO: throw exception
   }
@@ -245,21 +250,20 @@ auto calcTemperatureComponent(AutoPasTemplate &autopas,
   constexpr unsigned int degreesOfFreedom{3};
 #endif
 
-    for (int typeID = 0; typeID < numberComponents; typeID++) {
-      // workaround for MPICH: send and receive buffer must not be the same.
-      autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergyMul2Map.at(typeID), 1, AUTOPAS_MPI_DOUBLE,
-                                     AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+  for (int typeID = 0; typeID < numberComponents; typeID++) {
+    // workaround for MPICH: send and receive buffer must not be the same.
+    autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergyMul2Map.at(typeID), 1, AUTOPAS_MPI_DOUBLE,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
 
-      autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numParticleMap.at(typeID), 1, AUTOPAS_MPI_UNSIGNED_LONG,
-                                     AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
-    }
+    autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numParticleMap.at(typeID), 1, AUTOPAS_MPI_UNSIGNED_LONG,
+                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+  }
 
-    for (int typeID = 0; typeID < numberComponents; typeID++) {
-      kineticEnergyMul2Map.at(typeID) /= static_cast<double>(numParticleMap.at(typeID)) * degreesOfFreedom;
-    }
+  for (int typeID = 0; typeID < numberComponents; typeID++) {
+    kineticEnergyMul2Map.at(typeID) /= static_cast<double>(numParticleMap.at(typeID)) * degreesOfFreedom;
+  }
 
-    return kineticEnergyMul2Map;
-
+  return kineticEnergyMul2Map;
 }
 
 /**
@@ -320,25 +324,25 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
       std::normal_distribution<double> normalDistribution{0, 1};
       for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
         const std::array<double, 3> normal3DVecTranslational = {
-          normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
+            normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
         auto velIncrement = normal3DVecTranslational * translationalVelocityScale[iter->getTypeId()];
-        iter->addV({
-          static_cast<ParticleType::ParticleSoAFloatPrecision>(velIncrement.at(0)),
-          static_cast<ParticleType::ParticleSoAFloatPrecision>(velIncrement.at(1)),
-          static_cast<ParticleType::ParticleSoAFloatPrecision>(velIncrement.at(2))
-        });
+        iter->addV({static_cast<ParticleType::ParticleSoAFloatPrecision>(velIncrement.at(0)),
+                    static_cast<ParticleType::ParticleSoAFloatPrecision>(velIncrement.at(1)),
+                    static_cast<ParticleType::ParticleSoAFloatPrecision>(velIncrement.at(2))});
 #if MD_FLEXIBLE_MODE == MULTISITE
         const std::array<double, 3> normal3DVecRotational = {
-          normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
+            normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
         iter->addAngularVel(normal3DVecRotational * rotationalVelocityScale[iter->getTypeId()]);
 #endif
       }
     }
   } else {
 #ifdef AUTOPAS_ENABLE_KOKKOS
-    Kokkos::Random_XorShift64_Pool<> random_engine (42);
+    Kokkos::Random_XorShift64_Pool<> random_engine(42);
     BrownianMotionFunctor<ParticleType> functor(random_engine, targetTemperature);
-    autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::ownedOrHalo, "mdFlexible::Thermostat::addBrownianMotion"); // TODO: check iterator behavior
+    autopas.template forEachKokkos<DeviceSpace::execution_space>(
+        functor, autopas::IteratorBehavior::ownedOrHalo,
+        "mdFlexible::Thermostat::addBrownianMotion");  // TODO: check iterator behavior
 #endif
     // TODO: throw exception
   }
@@ -404,7 +408,8 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     // TODO: Kokkos version of scalingMap
     // scalingMap.template sync<DeviceSpace::execution_space>();
     // ApplyFunctor<ParticleType> functor {scalingMap};
-    // autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::owned, "mdFlexible::Thermostat::apply"); // TODO: decide iterator behavior, figure out how to handle scalingMap
+    // autopas.template forEachKokkos<DeviceSpace::execution_space>(functor, autopas::IteratorBehavior::owned,
+    // "mdFlexible::Thermostat::apply"); // TODO: decide iterator behavior, figure out how to handle scalingMap
 #endif
     // TODO: throw exception
   }

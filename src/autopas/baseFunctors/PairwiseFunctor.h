@@ -12,8 +12,8 @@
 #include "Functor.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
-#include "autopas/utilsKokkos/KokkosStorage.h"
 #include "autopas/utils/SoAView.h"
+#include "autopas/utilsKokkos/KokkosStorage.h"
 
 namespace autopas {
 
@@ -77,9 +77,11 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
 #ifdef AUTOPAS_ENABLE_KOKKOS
   KOKKOS_INLINE_FUNCTION
   virtual void ForceKernelKokkos(const FloatPrecision &x1, const FloatPrecision &y1, const FloatPrecision &z1,
-                       const autopas::utilsKokkos::KokkosStorage<Particle_T>& storage2, FloatPrecision &fxAcc, FloatPrecision &fyAcc,
-                       FloatPrecision &fzAcc, FloatPrecision &virialSum,  FloatPrecision& uPotSum, FloatPrecision cutoffSquared, int i, int j) {
-    //TODO: Kokkos-compatible exception utils::ExceptionHandler::exception("{}::SoAKernelKokkos: not implemented", this->getName());
+                                 const autopas::utilsKokkos::KokkosStorage<Particle_T> &storage2, FloatPrecision &fxAcc,
+                                 FloatPrecision &fyAcc, FloatPrecision &fzAcc, FloatPrecision &virialSum,
+                                 FloatPrecision &uPotSum, FloatPrecision cutoffSquared, int i, int j) {
+    // TODO: Kokkos-compatible exception utils::ExceptionHandler::exception("{}::SoAKernelKokkos: not implemented",
+    // this->getName());
   }
 #endif
 

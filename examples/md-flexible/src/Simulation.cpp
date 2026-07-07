@@ -147,7 +147,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value,
                                            autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedContainerLayouts(_configuration.containerLayoutOptions.value,
-                                              autopas::InteractionTypeOption::pairwise);
+                                                autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value,
                                               autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
@@ -376,9 +376,10 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                 : autopas::SearchSpaceGenerators::cartesianProduct(
                       _configuration.containerOptions.value, _configuration.traversalOptions.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
-                      _configuration.containerLayoutOptions.value,
-                      _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
-                      autopas::InteractionTypeOption::pairwise, _configuration.kokkosChunkSize.value, _configuration.kokkosTeamSize.value, _configuration.vecPatternOptions.value)
+                      _configuration.containerLayoutOptions.value, _configuration.newton3Options.value,
+                      _configuration.cellSizeFactors.value.get(), autopas::InteractionTypeOption::pairwise,
+                      _configuration.kokkosChunkSize.value, _configuration.kokkosTeamSize.value,
+                      _configuration.vecPatternOptions.value)
                       .size();
 
         const size_t searchSpaceSizeTriwise =
@@ -387,10 +388,10 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                 : autopas::SearchSpaceGenerators::cartesianProduct(
                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
-                      _configuration.containerLayoutOptions.value,
-                      _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                      autopas::InteractionTypeOption::triwise,
-                      _configuration.kokkosChunkSize.value, _configuration.kokkosTeamSize.value, _configuration.vecPatternOptions.value)
+                      _configuration.containerLayoutOptions.value, _configuration.newton3Options3B.value,
+                      _configuration.cellSizeFactors.value.get(), autopas::InteractionTypeOption::triwise,
+                      _configuration.kokkosChunkSize.value, _configuration.kokkosTeamSize.value,
+                      _configuration.vecPatternOptions.value)
                       .size();
 
         return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
@@ -473,15 +474,14 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 
 void Simulation::updatePositionsAndResetForces() {
   _timers.positionUpdate.start();
-  const std::array globalForce {
-    static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(0)),
-    static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(1)),
-    static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(2))
-  };
+  const std::array globalForce{
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(0)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(1)),
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(2))};
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-      static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.deltaT.value),
-      globalForce, _configuration.fastParticlesThrow.value);
+      static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.deltaT.value), globalForce,
+      _configuration.fastParticlesThrow.value);
   _timers.positionUpdate.stop();
 }
 
@@ -534,8 +534,9 @@ void Simulation::updateVelocities() {
 
   if (deltaT != 0) {
     _timers.velocityUpdate.start();
-    TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                            static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.deltaT.value));
+    TimeDiscretization::calculateVelocities(
+        *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+        static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.deltaT.value));
     _timers.velocityUpdate.stop();
   }
 }
@@ -633,9 +634,9 @@ void Simulation::updateSimulationPauseState() {
     // reset the forces which accumulated during the tuning phase
     for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
       particle->setF({
-        static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(0)),
-        static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(1)),
-        static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(2)),
+          static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(0)),
+          static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(1)),
+          static_cast<ParticleType::ParticleSoAFloatPrecision>(_configuration.globalForce.value.at(2)),
       });
     }
 
@@ -872,10 +873,11 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_KOKKOS: {
 #ifdef AUTOPAS_ENABLE_KOKKOS
-      return  f(LJFunctorTypeKokkos{cutoff});
+      return f(LJFunctorTypeKokkos{cutoff});
 #endif
       throw std::runtime_error(
-        "AutoPas was not compiled with support for Kokkos and the respecitve Functors. Activate it via`cmake -DAUTOPAS_ENABLE_KOKKOS=ON`.");
+          "AutoPas was not compiled with support for Kokkos and the respecitve Functors. Activate it via`cmake "
+          "-DAUTOPAS_ENABLE_KOKKOS=ON`.");
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)

@@ -195,7 +195,7 @@ class OctreeNodeInterface {
    * @param bMax The maximum coordinate of box b
    * @return The enclosed volume or zero if the boxes do not overlap
    */
-  template <typename T, typename P> // TODO: static assert for check if float
+  template <typename T, typename P>  // TODO: static assert for check if float
   static double getEnclosedVolumeWith(const std::array<T, 3> &aMin, const std::array<T, 3> &aMax,
                                       const std::array<P, 3> &bMin, const std::array<P, 3> &bMax) {
     auto product = 1.0;

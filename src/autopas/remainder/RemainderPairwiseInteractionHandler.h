@@ -25,56 +25,56 @@ namespace autopas {
 
 template <class Functor, class Particle_T, class ExecSpace>
 struct SoABufferTraversalFunctor {
-    using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
-    using DualViewType = Kokkos::DualView<FloatPrecision*, typename ExecSpace::device_type>;
+  using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
+  using DualViewType = Kokkos::DualView<FloatPrecision *, typename ExecSpace::device_type>;
 
-    utilsKokkos::KokkosStorage<Particle_T> _ownedBuffer;
-    utilsKokkos::KokkosStorage<Particle_T> _haloBuffer;
-    Functor* _f;
-    FloatPrecision _cutoffSquared;
-    size_t _ownedSize;
-    size_t _haloSize;
-    DualViewType _fx2;
-    DualViewType _fy2;
-    DualViewType _fz2;
+  utilsKokkos::KokkosStorage<Particle_T> _ownedBuffer;
+  utilsKokkos::KokkosStorage<Particle_T> _haloBuffer;
+  Functor *_f;
+  FloatPrecision _cutoffSquared;
+  size_t _ownedSize;
+  size_t _haloSize;
+  DualViewType _fx2;
+  DualViewType _fy2;
+  DualViewType _fz2;
 
-    KOKKOS_INLINE_FUNCTION
-    void operator()(int i, const utilsKokkos::KokkosStorage<Particle_T>& storage) const {
-        const auto x1 = storage.template operator()<Particle_T::AttributeNames::posX, false>(i);
-        const auto y1 = storage.template operator()<Particle_T::AttributeNames::posY, false>(i);
-        const auto z1 = storage.template operator()<Particle_T::AttributeNames::posZ, false>(i);
+  KOKKOS_INLINE_FUNCTION
+  void operator()(int i, const utilsKokkos::KokkosStorage<Particle_T> &storage) const {
+    const auto x1 = storage.template operator()<Particle_T::AttributeNames::posX, false>(i);
+    const auto y1 = storage.template operator()<Particle_T::AttributeNames::posY, false>(i);
+    const auto z1 = storage.template operator()<Particle_T::AttributeNames::posZ, false>(i);
 
-        FloatPrecision fxAcc = 0.;
-        FloatPrecision fyAcc = 0.;
-        FloatPrecision fzAcc = 0.;
+    FloatPrecision fxAcc = 0.;
+    FloatPrecision fyAcc = 0.;
+    FloatPrecision fzAcc = 0.;
 
-        FloatPrecision virialSum = 0.;
-        FloatPrecision uPotSum = 0.;
+    FloatPrecision virialSum = 0.;
+    FloatPrecision uPotSum = 0.;
 
-        for (int j = 0; j < _ownedSize; ++j) {
-            FloatPrecision fx = -fxAcc;
-            FloatPrecision fy = -fyAcc;
-            FloatPrecision fz = -fzAcc;
+    for (int j = 0; j < _ownedSize; ++j) {
+      FloatPrecision fx = -fxAcc;
+      FloatPrecision fy = -fyAcc;
+      FloatPrecision fz = -fzAcc;
 
-            _f->ForceKernelKokkos(x1, y1, z1, _ownedBuffer, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, _cutoffSquared, i, j);
+      _f->ForceKernelKokkos(x1, y1, z1, _ownedBuffer, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, _cutoffSquared, i, j);
 
-            fx += fxAcc;
-            fy += fyAcc;
-            fz += fzAcc;
+      fx += fxAcc;
+      fy += fyAcc;
+      fz += fzAcc;
 
-            Kokkos::atomic_add(&_fx2.view_device()(j), fx);
-            Kokkos::atomic_add(&_fy2.view_device()(j), fy);
-            Kokkos::atomic_add(&_fz2.view_device()(j), fz);
-        }
-
-        for (int j = 0; j < _haloSize; ++j) {
-            _f->ForceKernelKokkos(x1, y1, z1, _haloBuffer, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, _cutoffSquared, i, j);
-        }
-
-        storage.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
-        storage.template operator()<Particle_T::AttributeNames::forceY, false>(i) += fyAcc;
-        storage.template operator()<Particle_T::AttributeNames::forceZ, false>(i) += fzAcc;
+      Kokkos::atomic_add(&_fx2.view_device()(j), fx);
+      Kokkos::atomic_add(&_fy2.view_device()(j), fy);
+      Kokkos::atomic_add(&_fz2.view_device()(j), fz);
     }
+
+    for (int j = 0; j < _haloSize; ++j) {
+      _f->ForceKernelKokkos(x1, y1, z1, _haloBuffer, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, _cutoffSquared, i, j);
+    }
+
+    storage.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
+    storage.template operator()<Particle_T::AttributeNames::forceY, false>(i) += fyAcc;
+    storage.template operator()<Particle_T::AttributeNames::forceZ, false>(i) += fzAcc;
+  }
 };
 
 #endif
@@ -87,9 +87,10 @@ struct SoABufferTraversalFunctor {
  */
 template <typename Particle_T
 #ifdef AUTOPAS_ENABLE_KOKKOS
-,typename ExecSpace
+          ,
+          typename ExecSpace
 #endif
->
+          >
 class RemainderPairwiseInteractionHandler {
  public:
   /**
@@ -232,8 +233,8 @@ class RemainderPairwiseInteractionHandler {
       }
 
       // 2. Fill particles in KokkosStorage buffers
-      utilsKokkos::KokkosStorage<Particle_T> ownedBuffer {DataLayoutOption::soa, ownedSize};
-      utilsKokkos::KokkosStorage<Particle_T> haloBuffer {DataLayoutOption::soa, haloSize};
+      utilsKokkos::KokkosStorage<Particle_T> ownedBuffer{DataLayoutOption::soa, ownedSize};
+      utilsKokkos::KokkosStorage<Particle_T> haloBuffer{DataLayoutOption::soa, haloSize};
 
       // This guarantees the order [bufferA, bufferB, bufferC, ...] which will be important later on
       for (int i = 0; i < particleBuffers.size(); ++i) {
@@ -259,9 +260,9 @@ class RemainderPairwiseInteractionHandler {
 
       typename Particle_T::ParticleSoAFloatPrecision cutoffSquared = f->getCutoff() * f->getCutoff();
 
-      Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fx2 {};
-      Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fy2 {};
-      Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fz2 {};
+      Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fx2{};
+      Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fy2{};
+      Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fz2{};
 
       fx2.realloc(ownedSize);
       fy2.realloc(ownedSize);
@@ -270,8 +271,10 @@ class RemainderPairwiseInteractionHandler {
       auto min = container.getBoxMin();
       auto max = container.getBoxMax();
 
-      SoABufferTraversalFunctor<PairwiseFunctor, Particle_T, ExecSpace> functor {ownedBuffer, haloBuffer, f, cutoffSquared, ownedSize, haloSize, fx2, fy2, fz2};
-      container.template forEachInRegionKokkos<ExecSpace, true>(functor, IteratorBehavior::ownedOrHalo, min, max, "autopas::bufferTraversalSoA");
+      SoABufferTraversalFunctor<PairwiseFunctor, Particle_T, ExecSpace> functor{
+          ownedBuffer, haloBuffer, f, cutoffSquared, ownedSize, haloSize, fx2, fy2, fz2};
+      container.template forEachInRegionKokkos<ExecSpace, true>(functor, IteratorBehavior::ownedOrHalo, min, max,
+                                                                "autopas::bufferTraversalSoA");
 
       // 4. extract the content of the force views to the buffers
       fx2.modify_device();
@@ -286,7 +289,7 @@ class RemainderPairwiseInteractionHandler {
       for (int i = 0; i < particleBuffers.size(); ++i) {
         auto &particleBuffer = particleBuffers.at(i);
 
-        for (auto& p : particleBuffer) {
+        for (auto &p : particleBuffer) {
           p.addF({fx2.view_host()(offset), fy2.view_host()(offset), fz2.view_host()(offset++)});
         }
       }
@@ -303,7 +306,8 @@ class RemainderPairwiseInteractionHandler {
 
       // Helper function to obtain the lock responsible for a given position.
       // Implemented as lambda because it can reuse a lot of information that is known in this context.
-      const auto getSpacialLock = [&](const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &pos) -> std::mutex & {
+      const auto getSpacialLock =
+          [&](const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &pos) -> std::mutex & {
         const auto posDistFromLowerCorner = pos - haloBoxMin;
         const auto relativePos = posDistFromLowerCorner * totalBoxLengthInv;
         // Lock coordinates are the position scaled by the number of locks
@@ -323,24 +327,24 @@ class RemainderPairwiseInteractionHandler {
           const auto min = p1.getR() - cutoff;
           const auto max = p1.getR() + cutoff;
 
-        // TODO: forEachInRegionKokkos
+          // TODO: forEachInRegionKokkos
 
-        container.forEachInRegion(
-            [&](auto &p2) {
-              if constexpr (newton3) {
-                const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
-                f->AoSFunctor(p1, p2, true);
-              } else {
-                f->AoSFunctor(p1, p2, false);
-                // no need to calculate force enacted on a halo
-                if (not p2.isHalo()) {
+          container.forEachInRegion(
+              [&](auto &p2) {
+                if constexpr (newton3) {
                   const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
-                  f->AoSFunctor(p2, p1, false);
+                  f->AoSFunctor(p1, p2, true);
+                } else {
+                  f->AoSFunctor(p1, p2, false);
+                  // no need to calculate force enacted on a halo
+                  if (not p2.isHalo()) {
+                    const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
+                    f->AoSFunctor(p2, p1, false);
+                  }
                 }
-              }
-            },
-            min, max, IteratorBehavior::ownedOrHalo);
-      }
+              },
+              min, max, IteratorBehavior::ownedOrHalo);
+        }
 
         // 2. haloParticleBuffer with owned, close particles in container
         for (auto &&p1halo : haloParticleBuffer) {

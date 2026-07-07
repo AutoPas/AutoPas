@@ -32,7 +32,6 @@ namespace autopas {
 template <typename floatType, typename idType>
 class ParticleBase {
  public:
-
   ParticleBase()
       : _r({0.0, 0.0, 0.0}),
         _v({0., 0., 0.}),
@@ -102,7 +101,7 @@ class ParticleBase {
 
   /*
    * Particle mass.
-  */
+   */
   floatType _mass;
 
   /**
@@ -122,9 +121,7 @@ class ParticleBase {
    * get the force acting on the particle
    * @return force
    */
-  [[nodiscard]] const std::array<floatType, 3> &getF() const {
-    return _f;
-  }
+  [[nodiscard]] const std::array<floatType, 3> &getF() const { return _f; }
 
   /**
    * Set the force acting on the particle
@@ -183,9 +180,7 @@ class ParticleBase {
    * Get the position of the particle
    * @return current position
    */
-  [[nodiscard]] const std::array<floatType, 3> &getR() const {
-    return _r;
-  }
+  [[nodiscard]] const std::array<floatType, 3> &getR() const { return _r; }
 
   /**
    * Set the position of the particle
@@ -286,9 +281,7 @@ class ParticleBase {
    * Get the velocity of the particle
    * @return current velocity
    */
-  [[nodiscard]] const std::array<floatType, 3> &getV() const {
-    return _v;
-  }
+  [[nodiscard]] const std::array<floatType, 3> &getV() const { return _v; }
 
   /**
    * Set the velocity of the particle
@@ -303,9 +296,7 @@ class ParticleBase {
     */
   }
 
-  void setMass(floatType mass) {
-    _mass = mass;
-  }
+  void setMass(floatType mass) { _mass = mass; }
 
   /**
    * Add a vector to the current velocity of the particle
@@ -375,7 +366,20 @@ class ParticleBase {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { ptr, id, posX, posY, posZ, rebuildX, rebuildY, rebuildZ, forceX, forceY, forceZ, ownershipState };
+  enum AttributeNames : int {
+    ptr,
+    id,
+    posX,
+    posY,
+    posZ,
+    rebuildX,
+    rebuildY,
+    rebuildZ,
+    forceX,
+    forceY,
+    forceZ,
+    ownershipState
+  };
 
   /**
    * Floating Point Type used for this particle

@@ -258,15 +258,15 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
       if constexpr (regionIter) {
         // We extend the search box for cells here since particles might have moved
         return {_cellBlock.get1DIndexOfPosition({
-          static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMinWithSafetyMargin.at(0)),
-          static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMinWithSafetyMargin.at(1)),
-          static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMinWithSafetyMargin.at(2)),
-        }),
-          _cellBlock.get1DIndexOfPosition({
-          static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMaxWithSafetyMargin.at(0)),
-          static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMaxWithSafetyMargin.at(1)),
-          static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMaxWithSafetyMargin.at(2)),
-        })};
+                    static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMinWithSafetyMargin.at(0)),
+                    static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMinWithSafetyMargin.at(1)),
+                    static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMinWithSafetyMargin.at(2)),
+                }),
+                _cellBlock.get1DIndexOfPosition({
+                    static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMaxWithSafetyMargin.at(0)),
+                    static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMaxWithSafetyMargin.at(1)),
+                    static_cast<Particle_T::ParticleSoAFloatPrecision>(boxMaxWithSafetyMargin.at(2)),
+                })};
       } else {
         if (not(iteratorBehavior & IteratorBehavior::halo)) {
           // only potentially owned region
@@ -352,17 +352,18 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
   }
 
   template <class ExecSpace, typename Lambda>
-  void forEachKokkos(Lambda, IteratorBehavior, const std::string& = "") {
+  void forEachKokkos(Lambda, IteratorBehavior, const std::string & = "") {
     // TODO: throw not implemented exception
   }
 
   template <class, bool, typename Lambda>
-  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3>&, const std::array<double, 3>&, const std::string& = "") {
+  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3> &, const std::array<double, 3> &,
+                             const std::string & = "") {
     // TODO: throw not implemented exception
   }
 
-  template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
-  void reduceKokkos(Lambda, Result&, IteratorBehavior, const std::string& = "") {
+  template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda, Result &, IteratorBehavior, const std::string & = "") {
     // TODO: throw not implemented exception
   }
 
@@ -439,8 +440,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    * @param behavior @see IteratorBehavior
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
-                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner, IteratorBehavior behavior) {
+  void forEachInRegion(Lambda forEachLambda,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner,
+                       IteratorBehavior behavior) {
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());

@@ -42,23 +42,14 @@ constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
 #else
 // TODO: why do we not use the Particle_T definition!?
 constexpr std::array<typename ParticleType::AttributeNames, 16> Attributes = {
-    ParticleType::AttributeNames::id,
-    ParticleType::AttributeNames::posX,
-    ParticleType::AttributeNames::posY,
-    ParticleType::AttributeNames::posZ,
-    ParticleType::AttributeNames::velocityX,
-    ParticleType::AttributeNames::velocityY,
-    ParticleType::AttributeNames::velocityZ,
-    ParticleType::AttributeNames::forceX,
-    ParticleType::AttributeNames::forceY,
-    ParticleType::AttributeNames::forceZ,
-    ParticleType::AttributeNames::oldForceX,
-    ParticleType::AttributeNames::oldForceY,
-    ParticleType::AttributeNames::oldForceZ,
-    ParticleType::AttributeNames::mass,
-    ParticleType::AttributeNames::typeId,
-    ParticleType::AttributeNames::ownershipState
-};
+    ParticleType::AttributeNames::id,        ParticleType::AttributeNames::posX,
+    ParticleType::AttributeNames::posY,      ParticleType::AttributeNames::posZ,
+    ParticleType::AttributeNames::velocityX, ParticleType::AttributeNames::velocityY,
+    ParticleType::AttributeNames::velocityZ, ParticleType::AttributeNames::forceX,
+    ParticleType::AttributeNames::forceY,    ParticleType::AttributeNames::forceZ,
+    ParticleType::AttributeNames::oldForceX, ParticleType::AttributeNames::oldForceY,
+    ParticleType::AttributeNames::oldForceZ, ParticleType::AttributeNames::mass,
+    ParticleType::AttributeNames::typeId,    ParticleType::AttributeNames::ownershipState};
 #endif
 
 /**

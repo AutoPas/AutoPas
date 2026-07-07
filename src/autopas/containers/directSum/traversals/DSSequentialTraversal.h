@@ -24,8 +24,7 @@ namespace autopas {
  * @tparam Functor The functor that defines the interaction of particles.
  */
 template <class ParticleCell, class Functor>
-class DSSequentialTraversal : public CellTraversal<ParticleCell>,
-                              public TraversalInterface {
+class DSSequentialTraversal : public CellTraversal<ParticleCell>, public TraversalInterface {
  public:
   /**
    * Constructor for the DirectSum traversal.

@@ -15,7 +15,7 @@
 
 namespace autopas {
 
-inline int AutoPas_Kokkos_Init(int& argc, char** argv) {
+inline int AutoPas_Kokkos_Init(int &argc, char **argv) {
 #ifdef AUTOPAS_ENABLE_KOKKOS
   Kokkos::initialize(argc, argv);
 #endif
@@ -29,4 +29,4 @@ inline int AutoPas_Kokkos_Finalize() {
   return 0;
 }
 
-}
+}  // namespace autopas

@@ -37,7 +37,6 @@
 #include "autopas/utils/logging/LiveInfoLogger.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
-
 #include "autopas/utilsKokkos/KokkosStorage.h"
 
 namespace autopas {
@@ -46,18 +45,17 @@ namespace autopas {
 
 // TODO: it might make sense to outsource this to a common location to avoid duplication
 #ifdef KOKKOS_ENABLE_CUDA
-  using DeviceSpace = Kokkos::CudaSpace;
-  constexpr bool ForEachHostFlag = false;
+using DeviceSpace = Kokkos::CudaSpace;
+constexpr bool ForEachHostFlag = false;
 #else
-  using DeviceSpace = Kokkos::HostSpace;
-  constexpr bool ForEachHostFlag = true;
+using DeviceSpace = Kokkos::HostSpace;
+constexpr bool ForEachHostFlag = true;
 #endif
 
 template <typename Particle_T>
 struct UpdateRebuildPositionsFunctor {
-
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i, const utilsKokkos::KokkosStorage<Particle_T>& storage) const {
+  void operator()(int i, const utilsKokkos::KokkosStorage<Particle_T> &storage) const {
     const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, ForEachHostFlag>(i);
     const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, ForEachHostFlag>(i);
     const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, ForEachHostFlag>(i);
@@ -698,18 +696,23 @@ class LogicHandler {
       }
     } else {
 #ifdef AUTOPAS_ENABLE_KOKKOS
-      auto lambda = KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T>& storage, typename Particle_T::ParticleSoAFloatPrecision &localMaxVelocity) {
+      auto lambda = KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T> &storage,
+                                  typename Particle_T::ParticleSoAFloatPrecision &localMaxVelocity) {
         const auto velX = storage.template operator()<Particle_T::AttributeNames::velocityX, ForEachHostFlag>(i);
         const auto velY = storage.template operator()<Particle_T::AttributeNames::velocityY, ForEachHostFlag>(i);
         const auto velZ = storage.template operator()<Particle_T::AttributeNames::velocityZ, ForEachHostFlag>(i);
 
-        const auto tempVelAbs = Kokkos::sqrt(velX*velX + velY*velY + velZ*velZ);
+        const auto tempVelAbs = Kokkos::sqrt(velX * velX + velY * velY + velZ * velZ);
 
         localMaxVelocity = Kokkos::max(tempVelAbs, localMaxVelocity);
       };
 
-      withStaticContainerType(getContainer(), [&lambda, &maxVelocity](auto& actualContainer) {
-        actualContainer.template reduceKokkos<DeviceSpace::execution_space, typename Particle_T::ParticleSoAFloatPrecision, Kokkos::Max<typename Particle_T::ParticleSoAFloatPrecision>>(lambda, maxVelocity, IteratorBehavior::owned | IteratorBehavior::containerOnly, "autopas::LogicHandler::getVelocityRFEstimate");
+      withStaticContainerType(getContainer(), [&lambda, &maxVelocity](auto &actualContainer) {
+        actualContainer
+            .template reduceKokkos<DeviceSpace::execution_space, typename Particle_T::ParticleSoAFloatPrecision,
+                                   Kokkos::Max<typename Particle_T::ParticleSoAFloatPrecision>>(
+                lambda, maxVelocity, IteratorBehavior::owned | IteratorBehavior::containerOnly,
+                "autopas::LogicHandler::getVelocityRFEstimate");
       });
 #endif
       // TODO: throw exception
@@ -916,9 +919,11 @@ class LogicHandler {
    */
   RemainderPairwiseInteractionHandler<Particle_T
 #ifdef AUTOPAS_ENABLE_KOKKOS
-  , DeviceSpace::execution_space
+                                      ,
+                                      DeviceSpace::execution_space
 #endif
-  > _remainderPairwiseInteractionHandler;
+                                      >
+      _remainderPairwiseInteractionHandler;
 
   /**
    * Handles triwise interactions of buffer particles (the remainder).
@@ -1010,19 +1015,20 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   if (!getContainer().allowsKokkos()) {
     // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
-    // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
-    // require a rebuild of neighbor lists.
+    // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer
+    // doesn't require a rebuild of neighbor lists.
     AUTOPAS_OPENMP(parallel)
     for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
       iter->resetRAtRebuild();
     }
-  }
-  else {
+  } else {
 #ifdef AUTOPAS_ENABLE_KOKKOS
     UpdateRebuildPositionsFunctor<Particle_T> functor{};
 
-    withStaticContainerType(getContainer(), [&functor] (auto& actualContainer) {
-      actualContainer.template forEachKokkos<DeviceSpace::execution_space>(functor, IteratorBehavior::owned | IteratorBehavior::containerOnly, "autopas::LogicHandler::updateRebuildPositions");
+    withStaticContainerType(getContainer(), [&functor](auto &actualContainer) {
+      actualContainer.template forEachKokkos<DeviceSpace::execution_space>(
+          functor, IteratorBehavior::owned | IteratorBehavior::containerOnly,
+          "autopas::LogicHandler::updateRebuildPositions");
     });
 #endif
     // TODO: throw exception
@@ -1066,7 +1072,6 @@ template <typename Particle_T>
 void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
 
-
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const typename Particle_T::ParticleSoAFloatPrecision halfSkinSquare = skin * skin * 0.25;
@@ -1082,33 +1087,38 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 
       _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
     }
-  }
-  else {
-
+  } else {
 #ifdef AUTOPAS_ENABLE_KOKKOS
     bool test = _neighborListInvalidDoDynamicRebuild;
 
-    auto lambda = KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T>& storage, bool& local) {
+    auto lambda = KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T> &storage, bool &local) {
+      const typename Particle_T::ParticleSoAFloatPrecision pX =
+          storage.template operator()<Particle_T::AttributeNames::posX, ForEachHostFlag>(i);
+      const typename Particle_T::ParticleSoAFloatPrecision pY =
+          storage.template operator()<Particle_T::AttributeNames::posY, ForEachHostFlag>(i);
+      const typename Particle_T::ParticleSoAFloatPrecision pZ =
+          storage.template operator()<Particle_T::AttributeNames::posZ, ForEachHostFlag>(i);
 
-        const typename Particle_T::ParticleSoAFloatPrecision pX = storage.template operator()<Particle_T::AttributeNames::posX, ForEachHostFlag>(i);
-        const typename Particle_T::ParticleSoAFloatPrecision pY = storage.template operator()<Particle_T::AttributeNames::posY, ForEachHostFlag>(i);
-        const typename Particle_T::ParticleSoAFloatPrecision pZ = storage.template operator()<Particle_T::AttributeNames::posZ, ForEachHostFlag>(i);
+      const typename Particle_T::ParticleSoAFloatPrecision rebuildX =
+          storage.template operator()<Particle_T::AttributeNames::rebuildX, ForEachHostFlag>(i);
+      const typename Particle_T::ParticleSoAFloatPrecision rebuildY =
+          storage.template operator()<Particle_T::AttributeNames::rebuildY, ForEachHostFlag>(i);
+      const typename Particle_T::ParticleSoAFloatPrecision rebuildZ =
+          storage.template operator()<Particle_T::AttributeNames::rebuildZ, ForEachHostFlag>(i);
 
-        const typename Particle_T::ParticleSoAFloatPrecision rebuildX = storage.template operator()<Particle_T::AttributeNames::rebuildX, ForEachHostFlag>(i);
-        const typename Particle_T::ParticleSoAFloatPrecision rebuildY = storage.template operator()<Particle_T::AttributeNames::rebuildY, ForEachHostFlag>(i);
-        const typename Particle_T::ParticleSoAFloatPrecision rebuildZ = storage.template operator()<Particle_T::AttributeNames::rebuildZ, ForEachHostFlag>(i);
+      const typename Particle_T::ParticleSoAFloatPrecision dX = rebuildX - pX;
+      const typename Particle_T::ParticleSoAFloatPrecision dY = rebuildY - pY;
+      const typename Particle_T::ParticleSoAFloatPrecision dZ = rebuildZ - pZ;
 
-        const typename Particle_T::ParticleSoAFloatPrecision dX = rebuildX - pX;
-        const typename Particle_T::ParticleSoAFloatPrecision dY = rebuildY - pY;
-        const typename Particle_T::ParticleSoAFloatPrecision dZ = rebuildZ - pZ;
+      const typename Particle_T::ParticleSoAFloatPrecision dSquared = dX * dX + dY * dY + dZ * dZ;
 
-        const typename Particle_T::ParticleSoAFloatPrecision dSquared = dX * dX + dY * dY + dZ * dZ;
+      local |= dSquared >= halfSkinSquare;
+    };
 
-        local |= dSquared >= halfSkinSquare;
-      };
-
-    withStaticContainerType(getContainer(), [&lambda, &test](auto& actualContainer) {
-      actualContainer.template reduceKokkos<DeviceSpace::execution_space, bool, Kokkos::LOr<bool>>(lambda, test, IteratorBehavior::owned | IteratorBehavior::containerOnly, "autopas::LogicHandler::checkNeighborListsInvalid");
+    withStaticContainerType(getContainer(), [&lambda, &test](auto &actualContainer) {
+      actualContainer.template reduceKokkos<DeviceSpace::execution_space, bool, Kokkos::LOr<bool>>(
+          lambda, test, IteratorBehavior::owned | IteratorBehavior::containerOnly,
+          "autopas::LogicHandler::checkNeighborListsInvalid");
     });
     _neighborListInvalidDoDynamicRebuild = test;
 #endif
@@ -1197,7 +1207,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   // if lists are not valid -> rebuild;
   if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-     this->updateRebuildPositions();
+    this->updateRebuildPositions();
 #endif
     _currentContainer->rebuildNeighborLists(&traversal);
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
@@ -1450,7 +1460,8 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   // Check if the functor supports the required Newton 3 mode
   if ((config.newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
       (config.newton3 == Newton3Option::disabled and not functor.allowsNonNewton3())) {
-    AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!", Newton3Option::getOptionNames().at(config.newton3));
+    AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!",
+               Newton3Option::getOptionNames().at(config.newton3));
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 

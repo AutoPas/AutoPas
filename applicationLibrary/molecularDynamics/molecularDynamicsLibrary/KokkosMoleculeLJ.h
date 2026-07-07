@@ -21,32 +21,44 @@ namespace mdLib {
  */
 class KokkosMoleculeLJ {
  public:
-
   using ParticleSoAFloatPrecision = float;
 
-  KOKKOS_INLINE_FUNCTION KokkosMoleculeLJ() : KokkosMoleculeLJ(Kokkos::Array<ParticleSoAFloatPrecision, 3>{0., 0., 0.}, Kokkos::Array<ParticleSoAFloatPrecision, 3>{0., 0., 0.}, 0, 0) {}
+  KOKKOS_INLINE_FUNCTION KokkosMoleculeLJ()
+      : KokkosMoleculeLJ(Kokkos::Array<ParticleSoAFloatPrecision, 3>{0., 0., 0.},
+                         Kokkos::Array<ParticleSoAFloatPrecision, 3>{0., 0., 0.}, 0, 0) {}
 
-  KOKKOS_INLINE_FUNCTION KokkosMoleculeLJ(const Kokkos::Array<ParticleSoAFloatPrecision, 3> &pos, const Kokkos::Array<ParticleSoAFloatPrecision, 3> &v, unsigned long moleculeId,
-                         unsigned long typeId) :
-                            _r{pos}, _v{v}, _id{moleculeId}, _typeId {typeId}, _mass{0}, _ownershipState{autopas::OwnershipState::owned}
-                            , _f{0., 0., 0.}
-                          #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-                            , _rAtRebuild{0., 0., 0.}
-                          #endif
-                            {}
-
-  KokkosMoleculeLJ(const std::array<ParticleSoAFloatPrecision, 3> &pos, const std::array<ParticleSoAFloatPrecision, 3> &v, unsigned long moleculeId,
-                         unsigned long typeId)
-    : _r{pos.at(0), pos.at(1), pos.at(2)}
-  , _v{v.at(0), v.at(1), v.at(2)}
-  , _f{0., 0., 0.}
+  KOKKOS_INLINE_FUNCTION KokkosMoleculeLJ(const Kokkos::Array<ParticleSoAFloatPrecision, 3> &pos,
+                                          const Kokkos::Array<ParticleSoAFloatPrecision, 3> &v,
+                                          unsigned long moleculeId, unsigned long typeId)
+      : _r{pos},
+        _v{v},
+        _id{moleculeId},
+        _typeId{typeId},
+        _mass{0},
+        _ownershipState{autopas::OwnershipState::owned},
+        _f{0., 0., 0.}
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  , _rAtRebuild{0., 0., 0.}
+        ,
+        _rAtRebuild{0., 0., 0.}
 #endif
-  , _id(moleculeId)
-  , _mass(0)
-  , _ownershipState{autopas::OwnershipState::owned}
-  , _typeId(typeId) {}
+  {
+  }
+
+  KokkosMoleculeLJ(const std::array<ParticleSoAFloatPrecision, 3> &pos,
+                   const std::array<ParticleSoAFloatPrecision, 3> &v, unsigned long moleculeId, unsigned long typeId)
+      : _r{pos.at(0), pos.at(1), pos.at(2)},
+        _v{v.at(0), v.at(1), v.at(2)},
+        _f{0., 0., 0.}
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+        ,
+        _rAtRebuild{0., 0., 0.}
+#endif
+        ,
+        _id(moleculeId),
+        _mass(0),
+        _ownershipState{autopas::OwnershipState::owned},
+        _typeId(typeId) {
+  }
 
   ~KokkosMoleculeLJ() = default;
 
@@ -97,19 +109,18 @@ class KokkosMoleculeLJ {
       ParticleSoAFloatPrecision /*oldFx*/, ParticleSoAFloatPrecision /*oldFy*/, ParticleSoAFloatPrecision /*oldFz*/,
       ParticleSoAFloatPrecision /*mass*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
-  using KokkosSoAArraysType =
-      autopas::utilsKokkos::KokkosSoA<size_t * /*id*/, ParticleSoAFloatPrecision * /*x*/, ParticleSoAFloatPrecision * /*y*/,
-                                ParticleSoAFloatPrecision * /*z*/,
+  using KokkosSoAArraysType = autopas::utilsKokkos::KokkosSoA<
+      size_t * /*id*/, ParticleSoAFloatPrecision * /*x*/, ParticleSoAFloatPrecision * /*y*/,
+      ParticleSoAFloatPrecision * /*z*/,
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-                                ParticleSoAFloatPrecision * /*rebuildX*/, ParticleSoAFloatPrecision * /*rebuildY*/,
-                                ParticleSoAFloatPrecision * /*rebuildZ*/,
+      ParticleSoAFloatPrecision * /*rebuildX*/, ParticleSoAFloatPrecision * /*rebuildY*/,
+      ParticleSoAFloatPrecision * /*rebuildZ*/,
 #endif
-                                ParticleSoAFloatPrecision * /*vx*/, ParticleSoAFloatPrecision * /*vy*/,
-                                ParticleSoAFloatPrecision * /*vz*/, ParticleSoAFloatPrecision * /*fx*/,
-                                ParticleSoAFloatPrecision * /*fy*/, ParticleSoAFloatPrecision * /*fz*/,
-                                ParticleSoAFloatPrecision * /*oldFx*/, ParticleSoAFloatPrecision * /*oldFy*/,
-                                ParticleSoAFloatPrecision * /*oldFz*/, ParticleSoAFloatPrecision * /*mass*/,
-                                size_t * /*typeid*/, autopas::OwnershipState * /*ownershipState*/>;
+      ParticleSoAFloatPrecision * /*vx*/, ParticleSoAFloatPrecision * /*vy*/, ParticleSoAFloatPrecision * /*vz*/,
+      ParticleSoAFloatPrecision * /*fx*/, ParticleSoAFloatPrecision * /*fy*/, ParticleSoAFloatPrecision * /*fz*/,
+      ParticleSoAFloatPrecision * /*oldFx*/, ParticleSoAFloatPrecision * /*oldFy*/,
+      ParticleSoAFloatPrecision * /*oldFz*/, ParticleSoAFloatPrecision * /*mass*/, size_t * /*typeid*/,
+      autopas::OwnershipState * /*ownershipState*/>;
 
   template <AttributeNames attribute>
   constexpr decltype(auto) operator()() {
@@ -330,68 +341,56 @@ class KokkosMoleculeLJ {
     }
   }
 
-  void setID(unsigned long id) {
-    _id = id;
-  };
+  void setID(unsigned long id) { _id = id; };
 
-  void setOwnershipState(autopas::OwnershipState value) {
-    _ownershipState = value;
-  }
+  void setOwnershipState(autopas::OwnershipState value) { _ownershipState = value; }
 
-  void setV(const std::array<ParticleSoAFloatPrecision, 3>& v) {
-    const Kokkos::Array temp {v.at(0), v.at(1), v.at(2)};
+  void setV(const std::array<ParticleSoAFloatPrecision, 3> &v) {
+    const Kokkos::Array temp{v.at(0), v.at(1), v.at(2)};
     _v = temp;
   }
 
-  void setMass(ParticleSoAFloatPrecision mass) {
-    _mass = mass;
-  }
+  void setMass(ParticleSoAFloatPrecision mass) { _mass = mass; }
 
-  void setF(const std::array<ParticleSoAFloatPrecision, 3>& f) {
-    const Kokkos::Array temp {f.at(0), f.at(1), f.at(2)};
+  void setF(const std::array<ParticleSoAFloatPrecision, 3> &f) {
+    const Kokkos::Array temp{f.at(0), f.at(1), f.at(2)};
     _f = temp;
   }
 
-  void setR(const std::array<ParticleSoAFloatPrecision, 3>& r) {
-    const Kokkos::Array temp {r.at(0), r.at(1), r.at(2)};
+  void setR(const std::array<ParticleSoAFloatPrecision, 3> &r) {
+    const Kokkos::Array temp{r.at(0), r.at(1), r.at(2)};
     _r = temp;
   }
 
-  void setOldF(const std::array<ParticleSoAFloatPrecision, 3>& oldForce) {
-    const Kokkos::Array temp {oldForce.at(0), oldForce.at(1), oldForce.at(2)};
+  void setOldF(const std::array<ParticleSoAFloatPrecision, 3> &oldForce) {
+    const Kokkos::Array temp{oldForce.at(0), oldForce.at(1), oldForce.at(2)};
     _oldF = temp;
   }
 
-  void markAsDeleted () {
-    setOwnershipState(autopas::OwnershipState::dummy);
-  }
+  void markAsDeleted() { setOwnershipState(autopas::OwnershipState::dummy); }
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-  void resetRAtRebuild() {
-    setRAtRebuild(getR());
-  }
+  void resetRAtRebuild() { setRAtRebuild(getR()); }
 
   std::array<ParticleSoAFloatPrecision, 3> getRAtRebuild() const {
     return {_rAtRebuild[0], _rAtRebuild[1], _rAtRebuild[2]};
   }
 
-  void setRAtRebuild(const std::array<ParticleSoAFloatPrecision, 3>& r) {
+  void setRAtRebuild(const std::array<ParticleSoAFloatPrecision, 3> &r) {
     _rAtRebuild[0] = r[0];
     _rAtRebuild[1] = r[1];
     _rAtRebuild[2] = r[2];
   }
 
-  std::array<ParticleSoAFloatPrecision, 3> calculateDisplacementSinceRebuild () const {
-      return {
-        _rAtRebuild[0] - _r[0], _rAtRebuild[1] - _r[1], _rAtRebuild[2] - _r[2]
-      };
-   }
+  std::array<ParticleSoAFloatPrecision, 3> calculateDisplacementSinceRebuild() const {
+    return {_rAtRebuild[0] - _r[0], _rAtRebuild[1] - _r[1], _rAtRebuild[2] - _r[2]};
+  }
 #endif
 
   /**
- * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
- * @return true if the particle is owned by the current AutoPas object, false otherwise
- */
+   * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
+   * @return true if the particle is owned by the current AutoPas object, false otherwise
+   */
   [[nodiscard]] bool isOwned() const { return _ownershipState == autopas::OwnershipState::owned; }
 
   /**
@@ -409,35 +408,35 @@ class KokkosMoleculeLJ {
 
   unsigned long getID() const { return _id; }
 
-  std::array<ParticleSoAFloatPrecision, 3> getV() const { return {_v[0], _v[1], _v[2] }; }
+  std::array<ParticleSoAFloatPrecision, 3> getV() const { return {_v[0], _v[1], _v[2]}; }
 
-  std::array<ParticleSoAFloatPrecision, 3> getR() const { return {_r[0], _r[1], _r[2]} ; }
+  std::array<ParticleSoAFloatPrecision, 3> getR() const { return {_r[0], _r[1], _r[2]}; }
 
-  std::array<ParticleSoAFloatPrecision, 3> getF() const { return {_f[0], _f[1], _f[2] }; }
+  std::array<ParticleSoAFloatPrecision, 3> getF() const { return {_f[0], _f[1], _f[2]}; }
 
-  std::array<ParticleSoAFloatPrecision, 3> getOldF() const { return {_oldF[0], _oldF[1], _oldF[2] }; }
+  std::array<ParticleSoAFloatPrecision, 3> getOldF() const { return {_oldF[0], _oldF[1], _oldF[2]}; }
 
   autopas::OwnershipState getOwnershipState() const { return _ownershipState; }
 
-  void addV(const std::array<ParticleSoAFloatPrecision, 3>& increment) {
+  void addV(const std::array<ParticleSoAFloatPrecision, 3> &increment) {
     _v[0] += increment[0];
     _v[1] += increment[1];
     _v[2] += increment[2];
   }
 
-  void addF(const std::array<ParticleSoAFloatPrecision, 3>& increment) {
+  void addF(const std::array<ParticleSoAFloatPrecision, 3> &increment) {
     _f[0] += increment[0];
     _f[1] += increment[1];
     _f[2] += increment[2];
   }
 
-  void subF(const std::array<ParticleSoAFloatPrecision, 3>& decrement) {
+  void subF(const std::array<ParticleSoAFloatPrecision, 3> &decrement) {
     _f[0] -= decrement[0];
     _f[1] -= decrement[1];
     _f[2] -= decrement[2];
   }
 
-  void addR(const std::array<ParticleSoAFloatPrecision, 3>& increment) {
+  void addR(const std::array<ParticleSoAFloatPrecision, 3> &increment) {
     _r[0] += increment[0];
     _r[1] += increment[1];
     _r[2] += increment[2];

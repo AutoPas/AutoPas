@@ -49,9 +49,7 @@ class ParticleContainerInterface {
    * @param boxMax TODO
    */
   ParticleContainerInterface(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double skin)
-    : _skin(skin),
-      _boxMin(boxMin),
-      _boxMax(boxMax) {}
+      : _skin(skin), _boxMin(boxMin), _boxMax(boxMax) {}
 
   /**
    * Destructor of ParticleContainerInterface.
@@ -286,7 +284,7 @@ class ParticleContainerInterface {
    * Return the verletSkin of the container verletSkin
    * @return verletSkin
    */
-  [[nodiscard]] virtual double getVerletSkin() const {return _skin; };
+  [[nodiscard]] virtual double getVerletSkin() const { return _skin; };
 
   /**
    * Return the interaction length (cutoff+skin) of the container.

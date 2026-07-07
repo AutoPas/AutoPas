@@ -197,10 +197,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto &haloPos = haloParticle.getR();
-    const std::array haloP {
-      static_cast<double>(haloPos.at(0)),
-      static_cast<double>(haloPos.at(1)),
-      static_cast<double>(haloPos.at(2)),
+    const std::array haloP{
+        static_cast<double>(haloPos.at(0)),
+        static_cast<double>(haloPos.at(1)),
+        static_cast<double>(haloPos.at(2)),
     };
     // this might be called from a parallel region so force this iterator to be sequential
     for (auto it = getRegionIterator(haloP - (this->getVerletSkin() / 2.), haloP + (this->getVerletSkin() / 2.),
@@ -473,17 +473,18 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   }
 
   template <class ExecSpace, typename Lambda>
-  void forEachKokkos(Lambda, IteratorBehavior, const std::string& = "") {
+  void forEachKokkos(Lambda, IteratorBehavior, const std::string & = "") {
     // TODO: throw not implemented exception
   }
 
   template <class, bool, typename Lambda>
-  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3>&, const std::array<double, 3>&, const std::string& = "") {
+  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3> &, const std::array<double, 3> &,
+                             const std::string & = "") {
     // TODO: throw not implemented exception
   }
 
-  template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
-  void reduceKokkos(Lambda, Result&, IteratorBehavior, const std::string& = "") {
+  template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda, Result &, IteratorBehavior, const std::string & = "") {
     // TODO: throw not implemented exception
   }
 
@@ -649,7 +650,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @copydoc autopas::LinkedCells::forEachInRegion()
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+  void forEachInRegion(Lambda forEachLambda,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
                        const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner,
                        IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
     for (size_t i = 0; i < _towerBlock.size(); ++i) {
@@ -1265,7 +1267,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * Outer vector is for Thread buffer to allow parallel particle insertion.
    * This has to be a mutable so we can call appendBuffersHelper() from const and non-const functions.
    */
-  mutable std::vector<std::vector<Particle_T>> _particlesToAdd; // TODO: what is the difference to LogicHandler buffer particles here?
+  mutable std::vector<std::vector<Particle_T>>
+      _particlesToAdd;  // TODO: what is the difference to LogicHandler buffer particles here?
 
   /**
    * Checks if there are particles in the buffers of _particlesToAdd.

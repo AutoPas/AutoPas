@@ -306,8 +306,11 @@ class AutoPas {
    * @param label identifier of the function to be performed - useful for profiling with NVTX Kokkos Tools
    */
   template <class ExecSpace, typename Lambda>
-  void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, const std::string &label = "forEachKokkos") {
-    withStaticContainerType(getContainer(), [&](auto &container) { container.template forEachKokkos<ExecSpace>(forEachLambda, behavior, label); });
+  void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+                     const std::string &label = "forEachKokkos") {
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.template forEachKokkos<ExecSpace>(forEachLambda, behavior, label);
+    });
     // TODO: also consider buffer particles -> begin() does
   }
 
@@ -323,8 +326,11 @@ class AutoPas {
   }
 
   template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
-  void reduceKokkos(Lambda forEachLambda, Result& result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, const std::string &label = "reduceKokkos") {
-    withStaticContainerType(getContainer(), [&](auto &container) { container.template reduceKokkos<ExecSpace, Result, Reduction>(forEachLambda, result, behavior, label); });
+  void reduceKokkos(Lambda forEachLambda, Result &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+                    const std::string &label = "reduceKokkos") {
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.template reduceKokkos<ExecSpace, Result, Reduction>(forEachLambda, result, behavior, label);
+    });
     // TODO: also consider buffer particles -> begin() does
   }
 
@@ -407,15 +413,21 @@ class AutoPas {
   }
 
   /**
- * Execute code on all particles as defined bz a lambda function with Kokkos in the requested execution space
- * @tparam ExecSpace Kokkos execution space
- * @tparam Lambda (i, KokkosStorage<Particle_T>) -> void
- * @param forEachLambda code to be executed on all particles
- * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
- */
+   * Execute code on all particles as defined bz a lambda function with Kokkos in the requested execution space
+   * @tparam ExecSpace Kokkos execution space
+   * @tparam Lambda (i, KokkosStorage<Particle_T>) -> void
+   * @param forEachLambda code to be executed on all particles
+   * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
+   */
   template <class ExecSpace, typename Lambda>
-  void forEachInRegionKokkos(Lambda forEachLambda, const std::array<double, 3>& lowerCorner, const std::array<double, 3>& higherCorner, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo, const std::string &label = "forEachInRegionKokkos") {
-    withStaticContainerType(getContainer(), [&](auto &container) { container.template forEachInRegionKokkos<ExecSpace, true>(forEachLambda, behavior, lowerCorner, higherCorner, label); });
+  void forEachInRegionKokkos(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                             const std::array<double, 3> &higherCorner,
+                             IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+                             const std::string &label = "forEachInRegionKokkos") {
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.template forEachInRegionKokkos<ExecSpace, true>(forEachLambda, behavior, lowerCorner, higherCorner,
+                                                                label);
+    });
     // TODO: also consider buffer particles -> begin() does
   }
 
@@ -514,9 +526,9 @@ class AutoPas {
    */
   void setBoxMax(const std::array<double, 3> &boxMax) { _logicHandlerInfo.boxMax = boxMax; }
 
-  void setKokkosChunkSize(const std::set<size_t>& kokkosChunkSize) { _allowedKokkosChunkSize = kokkosChunkSize; }
+  void setKokkosChunkSize(const std::set<size_t> &kokkosChunkSize) { _allowedKokkosChunkSize = kokkosChunkSize; }
 
-  void setKokkosTeamSize(const std::set<size_t>& kokkosTeamSize) { _allowedKokkosTeamSize = kokkosTeamSize; }
+  void setKokkosTeamSize(const std::set<size_t> &kokkosTeamSize) { _allowedKokkosTeamSize = kokkosTeamSize; }
 
   /**
    * Get cutoff radius.
@@ -840,7 +852,7 @@ class AutoPas {
   }
 
   const std::set<DataLayoutOption> &getAllowedContainerLayouts(
-    const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
     return _allowedContainerLayouts.at(interactionType);
   }
 
@@ -863,7 +875,7 @@ class AutoPas {
   }
 
   void setAllowedContainerLayouts(const std::set<DataLayoutOption> &allowedDataLayouts,
-                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+                                  const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
     if (interactionType == InteractionTypeOption::all) {
       for (auto iType : InteractionTypeOption::getMostOptions()) {
         _allowedContainerLayouts[iType] = allowedDataLayouts;
@@ -1048,7 +1060,9 @@ class AutoPas {
    * computing skinPerStep for static container
    * @return Value of the mean rebuild frequency as double
    */
-  double getMeanRebuildFrequency(bool considerOnlyLastNonTuningPhase = false) { return _logicHandler->getMeanRebuildFrequency(considerOnlyLastNonTuningPhase); }
+  double getMeanRebuildFrequency(bool considerOnlyLastNonTuningPhase = false) {
+    return _logicHandler->getMeanRebuildFrequency(considerOnlyLastNonTuningPhase);
+  }
 
   /**
    * Set if the tuning information should be logged to a file. It can then be replayed to test other tuning strategies.
@@ -1141,8 +1155,8 @@ class AutoPas {
       {InteractionTypeOption::triwise, DataLayoutOption::getMostOptions()}};
 
   std::unordered_map<InteractionTypeOption::Value, std::set<DataLayoutOption>> _allowedContainerLayouts{
-        {InteractionTypeOption::pairwise, DataLayoutOption::getMostOptions()},
-        {InteractionTypeOption::triwise, DataLayoutOption::getMostOptions()}};
+      {InteractionTypeOption::pairwise, DataLayoutOption::getMostOptions()},
+      {InteractionTypeOption::triwise, DataLayoutOption::getMostOptions()}};
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion for pairwise traversals.
    */

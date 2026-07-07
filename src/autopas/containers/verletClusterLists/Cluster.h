@@ -133,7 +133,8 @@ class Cluster {
    * @return tuple<lowerCorner, upperCorner>
    */
   [[nodiscard]] std::tuple<std::array<typename Particle_T::ParticleSoAFloatPrecision, 3>,
-      std::array<typename Particle_T::ParticleSoAFloatPrecision, 3>> getBoundingBox() const {
+                           std::array<typename Particle_T::ParticleSoAFloatPrecision, 3>>
+  getBoundingBox() const {
     auto lowerCorner = _firstParticle->getR();
     auto upperCorner = _firstParticle[_clusterSize - 1].getR();
 

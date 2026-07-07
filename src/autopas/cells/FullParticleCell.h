@@ -129,7 +129,8 @@ class FullParticleCell : public ParticleCell<Particle_T> {
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
-               const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner, IteratorBehavior behavior) {
+               const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner,
+               IteratorBehavior behavior) {
     forEachImpl<true, true>(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 
@@ -282,7 +283,8 @@ class FullParticleCell : public ParticleCell<Particle_T> {
   std::array<double, 3> _cellLength;
 
   template <bool ownershipCheck, bool regionCheck, typename Lambda>
-  void forEachImpl(Lambda forEachLambda, const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+  void forEachImpl(Lambda forEachLambda,
+                   const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
                    const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner,
                    IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     for (Particle_T &p : _particles) {

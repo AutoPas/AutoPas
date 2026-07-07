@@ -51,7 +51,6 @@ class KokkosTimer {
   [[nodiscard]] long getTotalTime() const { return _totalTime; }
 
  private:
-
   /**
    * Accumulated total time.
    */
@@ -62,8 +61,8 @@ class KokkosTimer {
    */
   bool _currentlyRunning = false;
 
-  Kokkos::Timer _timer {};
+  Kokkos::Timer _timer{};
 };
-}  // namespace autopas::utils
+}  // namespace autopas::utilsKokkos
 
 #endif

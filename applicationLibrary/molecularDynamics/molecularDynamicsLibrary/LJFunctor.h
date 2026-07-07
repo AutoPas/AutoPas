@@ -53,13 +53,13 @@ class LJFunctor
    */
   using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
-public:
+ public:
   /**
    * Deleted default constructor
    */
   LJFunctor() = delete;
 
-private:
+ private:
   /**
    * Internal, actual constructor.
    * @param cutoff
@@ -80,7 +80,7 @@ private:
     }
   }
 
-public:
+ public:
   /**
    * Constructor for Functor with mixing disabled. When using this functor it is necessary to call
    * setParticleProperties() to set internal constants because it does not use a particle properties library.
@@ -181,12 +181,12 @@ public:
 
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += static_cast<double>(potentialEnergy6);
-        _aosThreadDataGlobals[threadnum].virialSum += std::array<double, 3> {virial.at(0), virial.at(1), virial.at(2)};
+        _aosThreadDataGlobals[threadnum].virialSum += std::array<double, 3>{virial.at(0), virial.at(1), virial.at(2)};
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += static_cast<double>(potentialEnergy6);
-        _aosThreadDataGlobals[threadnum].virialSum += std::array<double, 3> {virial.at(0), virial.at(1), virial.at(2)};
+        _aosThreadDataGlobals[threadnum].virialSum += std::array<double, 3>{virial.at(0), virial.at(1), virial.at(2)};
       }
       if constexpr (countFLOPs) {
         if (newton3) {
@@ -333,7 +333,7 @@ public:
 
           // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
           FloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-                                           (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
+                                        (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
           potentialEnergySum += potentialEnergy6 * energyFactor;
 
           virialSumX += virialx * energyFactor;
@@ -685,9 +685,7 @@ public:
     }
   }
 
-  constexpr static bool globalCalculationRequested() {
-    return calculateGlobals;
-  }
+  constexpr static bool globalCalculationRequested() { return calculateGlobals; }
 
   /**
    * Get the potential Energy.
@@ -1079,9 +1077,8 @@ public:
         FloatPrecision potentialEnergy6 = (epsilon24 * lj12m6 + shift6);
 
         // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
-        const FloatPrecision energyFactor =
-            (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-            (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
+        const FloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
+                                            (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
         potentialEnergySum += potentialEnergy6 * energyFactor;
         virialSumX += virialx * energyFactor;
         virialSumY += virialy * energyFactor;

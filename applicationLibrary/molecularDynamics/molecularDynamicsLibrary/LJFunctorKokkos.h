@@ -9,8 +9,8 @@
 #ifdef AUTOPAS_ENABLE_KOKKOS
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/baseFunctors/KokkosFunctor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/SoAView.h"
 
@@ -32,7 +32,8 @@ template <class Particle_T, bool applyShift = false, bool useMixing = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctorKokkos
     : public autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos<Particle_T, applyShift, useMixing, useNewton3,
-                                                                  calculateGlobals, countFLOPs, relevantForTuning>>, public autopas::KokkosFunctor {
+                                                                  calculateGlobals, countFLOPs, relevantForTuning>>,
+      public autopas::KokkosFunctor {
  public:
   /**
    * Structure of the SoAs defined by the particle
@@ -45,7 +46,8 @@ class LJFunctorKokkos
   using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
   explicit LJFunctorKokkos(double cutoff)
-      : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos>(cutoff), KokkosFunctor(),
+      : autopas::PairwiseFunctor<Particle_T, LJFunctorKokkos>(cutoff),
+        KokkosFunctor(),
         _cutoffSquared{static_cast<FloatPrecision>(cutoff * cutoff)} {}
 
   void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
@@ -54,17 +56,11 @@ class LJFunctorKokkos
     std::cout << "Trying to call non-existing function" << std::endl;
   }
 
-  constexpr static bool globalCalculationRequested() {
-    return calculateGlobals;
-  }
+  constexpr static bool globalCalculationRequested() { return calculateGlobals; }
 
-  double getPotentialEnergy() const {
-    return _potentialEnergy;
-  }
+  double getPotentialEnergy() const { return _potentialEnergy; }
 
-  double getVirial() const {
-    return _virial;
-  }
+  double getVirial() const { return _virial; }
 
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     // No Op, TODO: make sure this is never used (also not in remainder traversal)
@@ -88,41 +84,40 @@ class LJFunctorKokkos
 
   KOKKOS_INLINE_FUNCTION
   void ForceKernelKokkos(const FloatPrecision &x1, const FloatPrecision &y1, const FloatPrecision &z1,
-                       const autopas::utilsKokkos::KokkosStorage<Particle_T>& storage2, FloatPrecision &fxAcc, FloatPrecision &fyAcc,
-                       FloatPrecision &fzAcc, FloatPrecision &virialSum, FloatPrecision& uPotSum, FloatPrecision cutoffSquared, int i, int j) final {
+                         const autopas::utilsKokkos::KokkosStorage<Particle_T> &storage2, FloatPrecision &fxAcc,
+                         FloatPrecision &fyAcc, FloatPrecision &fzAcc, FloatPrecision &virialSum,
+                         FloatPrecision &uPotSum, FloatPrecision cutoffSquared, int i, int j) final {
     const auto owned2 = storage2.template operator()<Particle_T::AttributeNames::ownershipState, false>(j);
 
     if (owned2 != autopas::OwnershipState::dummy) {
+      const auto x2 = storage2.template operator()<Particle_T::AttributeNames::posX, false>(j);
+      const auto y2 = storage2.template operator()<Particle_T::AttributeNames::posY, false>(j);
+      const auto z2 = storage2.template operator()<Particle_T::AttributeNames::posZ, false>(j);
 
-    const auto x2 = storage2.template operator()<Particle_T::AttributeNames::posX, false>(j);
-    const auto y2 = storage2.template operator()<Particle_T::AttributeNames::posY, false>(j);
-    const auto z2 = storage2.template operator()<Particle_T::AttributeNames::posZ, false>(j);
+      const FloatPrecision drX = x1 - x2;
+      const FloatPrecision drY = y1 - y2;
+      const FloatPrecision drZ = z1 - z2;
 
-    const FloatPrecision drX = x1 - x2;
-    const FloatPrecision drY = y1 - y2;
-    const FloatPrecision drZ = z1 - z2;
+      const FloatPrecision dr2 = drX * drX + drY * drY + drZ * drZ;
 
-    const FloatPrecision dr2 = drX * drX + drY * drY + drZ * drZ;
+      if (dr2 <= cutoffSquared && dr2 > 0.) {
+        FloatPrecision fac = 0.;
+        FloatPrecision uPot = 0.;
+        ljPair(dr2, fac, uPot);
 
-    if (dr2 <= cutoffSquared && dr2 > 0.) {
-      FloatPrecision fac = 0.;
-      FloatPrecision uPot = 0.;
-      ljPair(dr2, fac, uPot);
+        fxAcc += fac * drX;
+        fyAcc += fac * drY;
+        fzAcc += fac * drZ;
 
-      fxAcc += fac * drX;
-      fyAcc += fac * drY;
-      fzAcc += fac * drZ;
+        if constexpr (calculateGlobals) {
+          virialSum += fac * drX * drX + fac * drY * drY + fac * drZ * drZ;
+          uPotSum += uPot;
 
-      if constexpr (calculateGlobals) {
-
-        virialSum += fac * drX * drX + fac * drY * drY + fac * drZ * drZ;
-        uPotSum += uPot;
-
-        // TODO: maybe we have to consider newton3 as well
+          // TODO: maybe we have to consider newton3 as well
+        }
       }
-    }
 
-    } // owned2 != dummy
+    }  // owned2 != dummy
   }
 
   constexpr static auto getNeededAttr() {
@@ -168,10 +163,9 @@ class LJFunctorKokkos
 
  private:
   KOKKOS_INLINE_FUNCTION
-  void ljPair(FloatPrecision dr2, FloatPrecision& fac, FloatPrecision& uPot) {
-
-    const FloatPrecision sigmaSquared = 1.; // TODO: extract that somehow somewhere else
-    const FloatPrecision epsilon24 = 24.; // TODO: extract that somehow somewhere else
+  void ljPair(FloatPrecision dr2, FloatPrecision &fac, FloatPrecision &uPot) {
+    const FloatPrecision sigmaSquared = 1.;  // TODO: extract that somehow somewhere else
+    const FloatPrecision epsilon24 = 24.;    // TODO: extract that somehow somewhere else
 
     const FloatPrecision invDr2 = 1. / dr2;
 

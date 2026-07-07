@@ -424,17 +424,18 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   }
 
   template <class ExecSpace, typename Lambda>
-  void forEachKokkos(Lambda, IteratorBehavior, const std::string&) {
+  void forEachKokkos(Lambda, IteratorBehavior, const std::string &) {
     // TODO: throw not implemented exception
   }
 
   template <class, bool, typename Lambda>
-  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3>&, const std::array<double, 3>&, const std::string& = "") {
+  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3> &, const std::array<double, 3> &,
+                             const std::string & = "") {
     // TODO: throw not implemented exception
   }
 
-  template<class ExecSpace, typename Result, typename Reduction, typename Lambda>
-  void reduceKokkos(Lambda, Result&, IteratorBehavior, const std::string& = "") {
+  template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda, Result &, IteratorBehavior, const std::string & = "") {
     // TODO: throw not implemented exception
   }
 
@@ -472,8 +473,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @copydoc LinkedCells::forEachInRegion()
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
-                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner, IteratorBehavior behavior) {
+  void forEachInRegion(Lambda forEachLambda,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner,
+                       IteratorBehavior behavior) {
     if (behavior & IteratorBehavior::owned)
       this->_cells[OWNED].forEachInRegion(forEachLambda, lowerCorner, higherCorner);
     if (behavior & IteratorBehavior::halo) this->_cells[HALO].forEachInRegion(forEachLambda, lowerCorner, higherCorner);

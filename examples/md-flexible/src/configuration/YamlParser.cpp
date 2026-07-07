@@ -117,7 +117,8 @@ const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const M
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
-  const CubeClosestPacked cubeClosestPacked(velocity, particleType, particleMass, particleSpacing, boxLength, bottomLeftCorner);
+  const CubeClosestPacked cubeClosestPacked(velocity, particleType, particleMass, particleSpacing, boxLength,
+                                            bottomLeftCorner);
 
   return cubeClosestPacked;
 }
@@ -875,8 +876,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         try {
           config.kokkosTeamSize.value.clear();
           auto intermediate = autopas::utils::StringUtils::parseNumberSet(
-            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))->getAll();
-          for (auto& item : intermediate) {
+                                  autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))
+                                  ->getAll();
+          for (auto &item : intermediate) {
             config.kokkosTeamSize.value.emplace(static_cast<size_t>(item));
           }
         } catch (const std::exception &e) {
@@ -888,8 +890,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         try {
           config.kokkosChunkSize.value.clear();
           auto intermediate = autopas::utils::StringUtils::parseNumberSet(
-            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))->getAll();
-          for (auto& item : intermediate) {
+                                  autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))
+                                  ->getAll();
+          for (auto &item : intermediate) {
             config.kokkosChunkSize.value.emplace(static_cast<size_t>(item));
           }
         } catch (const std::exception &e) {
