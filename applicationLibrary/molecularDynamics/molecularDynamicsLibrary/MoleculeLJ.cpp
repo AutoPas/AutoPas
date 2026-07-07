@@ -6,16 +6,23 @@
 
 #include "MoleculeLJ.h"
 
+#include "SimulationParticleTypes.h"
+
 namespace mdLib {
 MoleculeLJ::MoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
                        unsigned long typeId)
-    : autopas::ParticleBaseFP64(pos, v, moleculeId), _typeId(typeId) {}
+    : autopas::ParticleBaseFP64(pos, v, moleculeId), _typeId(typeId) {
+  _isWall = ParticleTypes::isWall(_typeId);
+}
 
 const std::array<double, 3> &MoleculeLJ::getOldF() const { return _oldF; }
 void MoleculeLJ::setOldF(const std::array<double, 3> &oldForce) { _oldF = oldForce; }
 
 size_t MoleculeLJ::getTypeId() const { return _typeId; }
-void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }
+void MoleculeLJ::setTypeId(size_t typeId) {
+  _typeId = typeId;
+  _isWall = ParticleTypes::isWall(_typeId);
+}
 
 std::string MoleculeLJ::toString() const {
   using autopas::utils::ArrayUtils::operator<<;

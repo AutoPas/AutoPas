@@ -104,6 +104,11 @@ class ParticleBase {
    */
   OwnershipState _ownershipState;
 
+  /**
+   * Defines whether the particle acts as a (static) wall particle.
+   */
+  bool _isWall = false;
+
  public:
   /**
    * Stream operator for instances of ParticleBase class.
@@ -301,6 +306,18 @@ class ParticleBase {
    * @return true if the particle is a dummy.
    */
   [[nodiscard]] bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
+
+  /**
+   * Returns whether the particle is a wall particle.
+   * @return true if the particle is a wall particle.
+   */
+  [[nodiscard]] bool isWall() const { return _isWall; }
+
+  /**
+   * Set whether the particle is a wall particle.
+   * @param isWall true if this particle should be treated as a wall particle.
+   */
+  void setWall(bool isWall) { _isWall = isWall; }
 
   /**
    * Returns the particle's ownership state.

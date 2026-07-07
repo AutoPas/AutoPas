@@ -103,7 +103,7 @@ class VerletListHelpers {
 
       size_t numPart = soa.size();
       for (unsigned int i = 0; i < numPart; ++i) {
-        if (ParticleTypes::isWall(ptrptr[i]->getTypeId())) continue;
+        if (ptrptr[i]->isWall()) continue;
         auto &currentList = _verletListsAoS.at(ptrptr[i]);
 
         for (unsigned int j = i + 1; j < numPart; ++j) {
@@ -149,7 +149,7 @@ class VerletListHelpers {
 
       size_t numPart1 = soa1.size();
       for (unsigned int i = 0; i < numPart1; ++i) {
-        if (ParticleTypes::isWall(ptr1ptr[i]->getTypeId())) continue;
+        if (ptr1ptr[i]->isWall()) continue;
         auto &currentList = _verletListsAoS.at(ptr1ptr[i]);
 
         size_t numPart2 = soa2.size();
