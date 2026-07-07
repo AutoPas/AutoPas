@@ -301,32 +301,34 @@ class SortingThresholdBenchmark {
    * @tparam Particle_T Particle type.
    * @param functor Functor instance used to drive the benchmark.
    * @param layout Direction-type index (0=Corner, 1=Edge, 2=Face).
+   * @param useNewton3 Whether the benchmarked CellFunctor should apply Newton3.
    * @return Smallest particle count at which sorted beats unsorted, or the upper search bound if never.
    */
   template <class Functor_T, class Particle_T>
-  size_t runSearch(Functor_T &functor, size_t layout) {
+  size_t runSearch(Functor_T &functor, size_t layout, bool useNewton3) {
     size_t lowCount = 0;
     size_t highCount = _maxParticles;
 
     while (lowCount < highCount) {
       size_t mid = lowCount + (highCount - lowCount) / 2;
 
-      const auto outcome = executeRun<Functor_T, Particle_T>(functor, layout, mid);
+      const auto outcome = executeRun<Functor_T, Particle_T>(functor, layout, mid, useNewton3);
       const double winRatio = static_cast<double>(outcome) / static_cast<double>(_repetitions);
 
       // Conservative decision rule: only accept "sorted wins" once a clear majority of repetitions
       // agree by a clear margin (see _sortedWinMarginFraction and _requiredSortedWinRatio).
       if (winRatio >= _requiredSortedWinRatio) {
         highCount = mid;
-        AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted won {}/{} reps → high={}",
-                   _layoutNames[layout], mid, outcome, _repetitions, highCount);
+        AutoPasLog(DEBUG, "SortingThresholdBenchmark search {} layout={} n={}: sorted won {}/{} reps → high={}",
+                   _newton3Names[useNewton3], _layoutNames[layout], mid, outcome, _repetitions, highCount);
       } else {
         lowCount = mid + 1;
-        AutoPasLog(DEBUG, "SortingThresholdBenchmark search layout={} n={}: sorted won only {}/{} reps → low={}",
-                   _layoutNames[layout], mid, outcome, _repetitions, lowCount);
+        AutoPasLog(DEBUG, "SortingThresholdBenchmark search {} layout={} n={}: sorted won only {}/{} reps → low={}",
+                   _newton3Names[useNewton3], _layoutNames[layout], mid, outcome, _repetitions, lowCount);
       }
     }
-    AutoPasLog(INFO, "SortingThresholdBenchmark layout={} threshold={}", _layoutNames[layout], lowCount);
+    AutoPasLog(INFO, "SortingThresholdBenchmark {} layout={} threshold={}", _newton3Names[useNewton3],
+               _layoutNames[layout], lowCount);
     return lowCount;
   }
 };
