@@ -6,10 +6,10 @@
 # This is a large experiment: on 5 compute nodes, with 8 MPI ranks per node and 9 OMP threads per rank, this took 10
 # hours. It could be scaled down to run on less hardware and faster. It is designed primarily as a stress-test for
 # algorithm selection in which cell size factor becomes an important consideration - with ranks with mostly small
-# particles per prefering CSF 0.5 and those with mostly large particles preferring CSF 1.0, with this switching per-rank
+# particles preferring CSF 0.5 and those with mostly large particles preferring CSF 1.0, with this switching per-rank
 # as the particles switch. To show this, you will need at least a domain decomposition in the vertical direction.
 
-functor                          :  Lennard-Jones (12-6) HWY
+functor                          :  Lennard-Jones-HWY
 cutoff                           :  3
 verlet-skin-radius               :  0.3
 verlet-rebuild-frequency         :  30

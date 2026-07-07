@@ -15,7 +15,7 @@ vectorization-pattern            :  [1xVectorLength, 2xVectorLengthDiv2, VectorL
 tuning-strategies                :  []
 tuning-interval                  :  10000
 tuning-samples                   :  10
-functor                          :  Lennard-Jones HWY
+functor                          :  Lennard-Jones-HWY
 newton3                          :  [disabled, enabled]
 cutoff                           :  3
 box-min                          :  [0, 0, 0]
