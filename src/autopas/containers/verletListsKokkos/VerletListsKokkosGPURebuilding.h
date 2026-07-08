@@ -477,6 +477,111 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
 
             return true;
         }
+
+        bool buildNeighborListsTeams(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, Kokkos::DualView<size_t*>& offsetsDual, Kokkos::DualView<size_t*>& entriesDual, bool skipSelf){
+            if(_neighborListsValid==true){return;}
+            const auto N = soa1.size();
+            const auto M = soa2.size();
+            if(N== 0 || M == 0){
+                spdlog::info("soa1.size()={} and soa2.size()={}, not rebuilding neighborlists.",N,M);
+            }
+            const float interactionLength = this->_cutoff + this->getVerletSkin();
+            const float interactionLengthSqr = interactionLength * interactionLength;
+
+            const auto soa1Device = soa1.deviceView();
+            const auto soa2Device = soa2.deviceView();
+
+            Kokkos::realloc(offsetsDual, N + 1);
+            auto offsets = offsetsDual.d_view;
+
+            using ExecSpace = typename DeviceSpace::execution_space;
+            using MemberType = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
+            using CounterView = Kokkos::View<size_t*, typename ExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
+            const size_t scratchBytes = CounterView::shmem_size(1);
+
+            spdlog::info("Launching team kernel with N={} and M={}", N, M);
+            auto teamPolicy = Kokkos::TeamPolicy<ExecSpace>(N, Kokkos::AUTO)
+                                  .set_scratch_size(0, Kokkos::PerTeam(scratchBytes));
+            Kokkos::parallel_for("vl_kokkos_rebuild_teams_countNeighbors", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
+                const int i = teamHandle.league_rank();
+
+                const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+                const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+                const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+
+                // running neighbor count for this team, stored in shared memory
+                CounterView count(teamHandle.team_scratch(0), 1);
+                Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() { count(0) = 0; });
+                teamHandle.team_barrier();
+
+
+                Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, M), [&](const size_t k) {
+                    const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
+                    const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
+                    const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
+                    const auto dx = x1 - x2;
+                    const auto dy = y1 - y2;
+                    const auto dz = z1 - z2;
+                    const auto distSquared = dx * dx + dy * dy + dz * dz;
+
+                    if (distSquared < interactionLengthSqr) {
+                        Kokkos::atomic_fetch_add(&count(0), size_t(1));
+                    }
+                });
+
+                teamHandle.team_barrier();
+
+                Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
+                    offsets(i) = count(0);
+                });
+            });
+            auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+            size_t totalNeighbors = 0;
+            Kokkos::parallel_scan("vl_gpu_rebuilding_exclusivePrefixSum", rangePolicy, KOKKOS_LAMBDA (const int i, size_t& update, const bool final) {
+                const size_t neighborCount = offsets(i);
+                if (final) {
+                    offsets(i) = update;
+                }
+                update += neighborCount;
+            }, totalNeighbors);
+
+            Kokkos::deep_copy(Kokkos::subview(offsets, N), totalNeighbors);
+            Kokkos::realloc(entriesDual, totalNeighbors);
+            auto entries = entriesDual.d_view;
+            spdlog::info("Number of neighbors found: {}", totalNeighbors);
+
+
+            Kokkos::parallel_for("vl_kokkos_rebuild_teams_countNeighbors", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
+                const int i = teamHandle.league_rank();
+
+                const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+                const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+                const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+
+                // running neighbor count for this team, stored in shared memory
+                CounterView count(teamHandle.team_scratch(0), 1);
+                Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() { count(0) = 0; });
+                teamHandle.team_barrier();
+
+
+                Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, M), [&](const size_t k) {
+                    const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
+                    const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
+                    const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
+                    const auto dx = x1 - x2;
+                    const auto dy = y1 - y2;
+                    const auto dz = z1 - z2;
+                    const auto distSquared = dx * dx + dy * dy + dz * dz;
+
+                    if (distSquared < interactionLengthSqr) {
+                        const size_t slot = Kokkos::atomic_fetch_add(&count(0), size_t(1));
+                        entries(offset(i)+slot) = k;
+                    }
+                });
+            });
+
+            return true;
+        }
         
         template <typename Traversal>
         void prepareTraversal(Traversal &traversal) {
