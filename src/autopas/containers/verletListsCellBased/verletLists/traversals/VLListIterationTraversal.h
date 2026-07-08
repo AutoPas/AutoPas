@@ -69,23 +69,33 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     }
 
     // Initialize/clear color cells lists
-    for (auto &colorGroup : _colorCells) {
+    for (auto &colorGroup : _colorColumns) {
       colorGroup.clear();
     }
 
     const bool hasCellsPerDim = (_cellsPerDim[0] > 0 && _cellsPerDim[1] > 0 && _cellsPerDim[2] > 0);
     if (hasCellsPerDim) {
+ // Temporary storage to gather all columns
+      std::vector<std::vector<size_t>> allColumns(_cellsPerDim[0] * _cellsPerDim[1]);
+
       for (size_t c = 0; c < cells.size(); ++c) {
-        if (offsets[c + 1] > offsets[c]) {
-          auto c3D = utils::ThreeDimensionalMapping::oneToThreeD(c, _cellsPerDim);
-          size_t color = (c3D[0] % 2) + 2 * (c3D[1] % 2) + 4 * (c3D[2] % 2);
-          
-          std::vector<size_t> cellParticles;
-          cellParticles.reserve(offsets[c + 1] - offsets[c]);
-          for (size_t pIdx = offsets[c]; pIdx < offsets[c + 1]; ++pIdx) {
-            cellParticles.push_back(pIdx);
-          }
-          _colorCells[color].push_back(std::move(cellParticles));
+        auto c3D = utils::ThreeDimensionalMapping::oneToThreeD(c, _cellsPerDim);
+        size_t colIdx = c3D[0] + c3D[1] * _cellsPerDim[0]; // 2D Column index
+
+        for (size_t pIdx = offsets[c]; pIdx < offsets[c + 1]; ++pIdx) {
+          allColumns[colIdx].push_back(pIdx);
+        }
+      }
+
+      // Distribute columns into the 4 colors
+      for(size_t x = 0; x < _cellsPerDim[0]; ++x) {
+        for(size_t y = 0; y < _cellsPerDim[1]; ++y) {
+           size_t color = (x % 2) + 2 * (y % 2); // Only depends on X and Y (4 colors)
+           size_t colIdx = x + y * _cellsPerDim[0];
+
+           if (!allColumns[colIdx].empty()) {
+             _colorColumns[color].push_back(std::move(allColumns[colIdx]));
+           }
         }
       }
     }
@@ -132,11 +142,11 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
           // Parallelized AoS with Newton3 using C08 coloring
           const bool hasCellsPerDim = (_cellsPerDim[0] > 0 && _cellsPerDim[1] > 0 && _cellsPerDim[2] > 0);
           if (hasCellsPerDim) {
-            for (int color = 0; color < 8; ++color) {
-              const auto &cellsOfColor = _colorCells[color];
+            for (int color = 0; color < 4; ++color) {
+              const auto &columns = _colorColumns[color];
               AUTOPAS_OPENMP(parallel for schedule(dynamic))
-              for (size_t c = 0; c < cellsOfColor.size(); ++c) {
-                const auto &indices = cellsOfColor[c];
+              for (size_t c = 0; c < columns.size(); ++c) {
+                const auto &indices = columns[c];
                 for (size_t k = 0; k < indices.size(); ++k) {
                   const size_t i = indices[k];
                   ParticleType &particleI = *_particlePtrs[i];
@@ -173,11 +183,11 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
           // Parallelized SoA with Newton3 using C08 coloring
           const bool hasCellsPerDim = (_cellsPerDim[0] > 0 && _cellsPerDim[1] > 0 && _cellsPerDim[2] > 0);
           if (hasCellsPerDim) {
-            for (int color = 0; color < 8; ++color) {
-              const auto &cellsOfColor = _colorCells[color];
+            for (int color = 0; color < 4; ++color) {
+              const auto &columns = _colorColumns[color];
               AUTOPAS_OPENMP(parallel for schedule(dynamic))
-              for (size_t c = 0; c < cellsOfColor.size(); ++c) {
-                const auto &indices = cellsOfColor[c];
+              for (size_t c = 0; c < columns.size(); ++c) {
+                const auto &indices = columns[c];
                 for (size_t k = 0; k < indices.size(); ++k) {
                   const size_t i = indices[k];
                   _functor.SoAFunctorVerlet(_soa, i, neighborList.begin(i), neighborList.count(i), true);
@@ -225,7 +235,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   /**
    * Particle indices grouped by their cell and then by the cell's C08 color.
    */
-  std::array<std::vector<std::vector<size_t>>, 8> _colorCells;
+    std::array<std::vector<std::vector<size_t>>, 4> _colorColumns;
 };
 
 }  // namespace autopas
