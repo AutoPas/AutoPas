@@ -8,13 +8,11 @@
 
 #include <vector>
 
-#include "DSTraversalInterface.h"
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/baseFunctors/CellFunctor3B.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/checkFunctorType.h"
 
 namespace autopas {
@@ -26,9 +24,7 @@ namespace autopas {
  * @tparam Functor The functor that defines the interaction of particles.
  */
 template <class ParticleCell, class Functor>
-class DSSequentialTraversal : public CellTraversal<ParticleCell>,
-                              public TraversalInterface,
-                              public DSTraversalInterface {
+class DSSequentialTraversal : public CellTraversal<ParticleCell>, public TraversalInterface {
  public:
   /**
    * Constructor for the DirectSum traversal.

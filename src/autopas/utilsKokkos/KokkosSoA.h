@@ -1,0 +1,140 @@
+/**
+ * @file KokkosSoA.h
+ * @author Luis Gall
+ * @date 13.11.2025
+ */
+
+#pragma once
+
+#ifdef AUTOPAS_ENABLE_KOKKOS
+#include <Kokkos_Core.hpp>
+#include <Kokkos_DualView.hpp>
+#include <tuple>
+
+namespace autopas::utilsKokkos {
+
+template <typename... Types>
+class KokkosSoA {
+ public:
+  explicit KokkosSoA() : KokkosSoA(0, "Default") {}
+
+  KokkosSoA(const KokkosSoA<Types...> &other) { views = other.views; }
+
+  KOKKOS_FUNCTION
+  KokkosSoA(size_t N, const std::string &label) {
+    constexpr auto tupleSize = std::tuple_size<decltype(views)>::value;
+    constexpr auto I = std::make_index_sequence<tupleSize>{};
+
+    createViewsImpl(N, label, I);
+  }
+
+  /* Get/Set/Allocation */
+
+  void realloc(size_t numParticles) {
+    constexpr auto tupleSize = std::tuple_size<decltype(views)>::value;
+    constexpr auto I = std::make_index_sequence<tupleSize>{};
+
+    reallocImpl(numParticles, I);
+  }
+
+  void resize(size_t numParticles) {
+    if (numParticles == 0) {
+      return;
+    }
+    constexpr auto tupleSize = std::tuple_size<decltype(views)>::value;
+    constexpr auto I = std::make_index_sequence<tupleSize>{};
+
+    resizeImpl(numParticles, I);
+  }
+
+  template <size_t attribute, bool useHostView = false>
+  KOKKOS_INLINE_FUNCTION constexpr auto &operator()(int i) const {
+    if constexpr (useHostView) {
+      return std::get<attribute>(views).view_host()(i);
+    } else {
+      return std::get<attribute>(views).view_device()(i);
+    }
+  }
+
+  template <class Particle_T, bool useHostView>
+  void addParticle(size_t position, const Particle_T &p) {
+    constexpr auto tupleSize = std::tuple_size<decltype(views)>::value;
+    constexpr auto I = std::make_index_sequence<tupleSize>{};
+
+    addParticleImpl<Particle_T, useHostView>(position, p, I);
+  }
+
+  template <size_t attribute, bool useHostView = false>
+  KOKKOS_INLINE_FUNCTION constexpr auto &getView() const {
+    if constexpr (useHostView) {
+      return std::get<attribute>(views).view_host();
+    } else {
+      return std::get<attribute>(views).view_device();
+    }
+  }
+
+  /* Meta Data */
+  KOKKOS_INLINE_FUNCTION
+  size_t size() const { return std::get<0>(views).extent(0); }
+
+  constexpr static size_t tupleSize() { return std::tuple_size<decltype(views)>::value; }
+
+  template <typename Target, std::size_t... I>
+  void modifyAll(std::index_sequence<I...>) {
+    (modify<Target, I>(), ...);
+  }
+
+  template <typename Target, std::size_t I>
+  void modify() {
+    std::get<I>(views).template modify<Target>();
+  }
+
+  template <typename Target, std::size_t... I>
+  void syncAll(std::index_sequence<I...>) {
+    (sync<Target, I>(), ...);
+  }
+
+  template <typename Target, std::size_t I>
+  void sync() {
+    std::get<I>(views).template sync<Target>();
+  }
+
+  void operator=(KokkosSoA<Types...> &other) { views = other.views; }
+
+  void operator=(const KokkosSoA<Types...> &other) { views = other.views; }
+
+ private:
+  template <std::size_t... I>
+  void createViewsImpl(size_t numParticles, const std::string &label, std::index_sequence<I...>) {
+    if (numParticles == 0) { return; }
+    views = std::make_tuple(Kokkos::DualView<Types, DeviceSpace::device_type>(
+        Kokkos::ViewAllocateWithoutInitializing(label + std::to_string(I)), numParticles)...);
+  }
+
+  template <std::size_t... I>
+  void resizeImpl(size_t numParticles, std::index_sequence<I...>) {
+    (std::get<I>(views).resize(Kokkos::WithoutInitializing, numParticles), ...);
+  }
+
+  template <std::size_t... I>
+  void reallocImpl(size_t numParticles, std::index_sequence<I...>) {
+    (std::get<I>(views).realloc(Kokkos::WithoutInitializing, numParticles), ...);
+  }
+
+  template <class Particle_T, bool useHostView, std::size_t... I>
+  void addParticleImpl(size_t position, const Particle_T &p, std::index_sequence<I...>) {
+    ((operator()<I, useHostView>(position) = p.template get<static_cast<Particle_T::AttributeNames>(I + 1)>()), ...);
+  }
+
+#ifdef KOKKOS_ENABLE_CUDA
+  using DeviceSpace = Kokkos::CudaSpace;
+#else
+  using DeviceSpace = Kokkos::HostSpace;
+#endif
+
+  std::tuple<Kokkos::DualView<Types, DeviceSpace::device_type>...> views{};
+};
+
+}  // namespace autopas::utilsKokkos
+
+#endif

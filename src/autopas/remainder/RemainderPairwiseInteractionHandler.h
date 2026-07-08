@@ -21,13 +21,76 @@
 
 namespace autopas {
 
+#ifdef AUTOPAS_ENABLE_KOKKOS
+
+template <class Functor, class Particle_T, class ExecSpace>
+struct SoABufferTraversalFunctor {
+  using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
+  using DualViewType = Kokkos::DualView<FloatPrecision *, typename ExecSpace::device_type>;
+
+  utilsKokkos::KokkosStorage<Particle_T> _ownedBuffer;
+  utilsKokkos::KokkosStorage<Particle_T> _haloBuffer;
+  Functor *_f;
+  FloatPrecision _cutoffSquared;
+  size_t _ownedSize;
+  size_t _haloSize;
+  DualViewType _fx2;
+  DualViewType _fy2;
+  DualViewType _fz2;
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(int i, const utilsKokkos::KokkosStorage<Particle_T> &storage) const {
+    const auto x1 = storage.template operator()<Particle_T::AttributeNames::posX, false>(i);
+    const auto y1 = storage.template operator()<Particle_T::AttributeNames::posY, false>(i);
+    const auto z1 = storage.template operator()<Particle_T::AttributeNames::posZ, false>(i);
+
+    FloatPrecision fxAcc = 0.;
+    FloatPrecision fyAcc = 0.;
+    FloatPrecision fzAcc = 0.;
+
+    FloatPrecision virialSum = 0.;
+    FloatPrecision uPotSum = 0.;
+
+    for (int j = 0; j < _ownedSize; ++j) {
+      FloatPrecision fx = -fxAcc;
+      FloatPrecision fy = -fyAcc;
+      FloatPrecision fz = -fzAcc;
+
+      _f->ForceKernelKokkos(x1, y1, z1, _ownedBuffer, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, _cutoffSquared, i, j);
+
+      fx += fxAcc;
+      fy += fyAcc;
+      fz += fzAcc;
+
+      Kokkos::atomic_add(&_fx2.view_device()(j), fx);
+      Kokkos::atomic_add(&_fy2.view_device()(j), fy);
+      Kokkos::atomic_add(&_fz2.view_device()(j), fz);
+    }
+
+    for (int j = 0; j < _haloSize; ++j) {
+      _f->ForceKernelKokkos(x1, y1, z1, _haloBuffer, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, _cutoffSquared, i, j);
+    }
+
+    storage.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
+    storage.template operator()<Particle_T::AttributeNames::forceY, false>(i) += fyAcc;
+    storage.template operator()<Particle_T::AttributeNames::forceZ, false>(i) += fzAcc;
+  }
+};
+
+#endif
+
 /**
  * Handles pairwise interactions involving particle buffers (particles not yet inserted into the main container).
  * This includes Buffer <-> Container and Buffer <-> Buffer interactions.
  *
  * @tparam Particle_T
  */
-template <typename Particle_T>
+template <typename Particle_T
+#ifdef AUTOPAS_ENABLE_KOKKOS
+          ,
+          typename ExecSpace
+#endif
+          >
 class RemainderPairwiseInteractionHandler {
  public:
   /**
@@ -84,7 +147,7 @@ class RemainderPairwiseInteractionHandler {
     // particleBuffer with all particles close in container
     // and haloParticleBuffer with owned, close particles in container.
     // This is always AoS-based because the container particles are found with region iterators,
-    // which don't have an SoA interface.
+    // which don't have an SoA interface. // TODO: this is actually not completely true any longer -> rethink that
     remainderHelperBufferContainerAoS<newton3>(f, container, particleBuffers, haloParticleBuffers);
 
     timerBufferContainer.stop();
@@ -156,65 +219,161 @@ class RemainderPairwiseInteractionHandler {
     using utils::ArrayUtils::static_cast_copy_array;
     using namespace autopas::utils::ArrayMath::literals;
 
-    // Bunch of shorthands
-    const auto cutoff = container.getCutoff();
-    const auto interactionLength = container.getInteractionLength();
-    const auto haloBoxMin = container.getBoxMin() - interactionLength;
-    const auto totalBoxLengthInv = 1. / (container.getBoxMax() + interactionLength - haloBoxMin);
-    const std::array<size_t, 3> spacialLocksPerDim{_spatialLocks.size(), _spatialLocks[0].size(),
-                                                   _spatialLocks[0][0].size()};
+    bool requiresKokkos = container.allowsKokkos();
 
-    // Helper function to obtain the lock responsible for a given position.
-    // Implemented as lambda because it can reuse a lot of information that is known in this context.
-    const auto getSpacialLock = [&](const std::array<double, 3> &pos) -> std::mutex & {
-      const auto posDistFromLowerCorner = pos - haloBoxMin;
-      const auto relativePos = posDistFromLowerCorner * totalBoxLengthInv;
-      // Lock coordinates are the position scaled by the number of locks
-      const auto lockCoords =
-          static_cast_copy_array<size_t>(static_cast_copy_array<double>(spacialLocksPerDim) * relativePos);
-      return *_spatialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]];
-    };
+    if (requiresKokkos) {
+#ifdef AUTOPAS_ENABLE_KOKKOS
 
-    // one halo and particle buffer pair per thread
-    AUTOPAS_OPENMP(parallel for schedule(static, 1) default(shared))
-    for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
-      auto &particleBuffer = particleBuffers[bufferId];
-      auto &haloParticleBuffer = haloParticleBuffers[bufferId];
+      Kokkos::Profiling::pushRegion("remainder buffer container");
 
-      // 1. particleBuffer with all close particles in container
-      for (auto &&p1 : particleBuffer) {
-        const auto min = p1.getR() - cutoff;
-        const auto max = p1.getR() + cutoff;
-        container.forEachInRegion(
-            [&](auto &p2) {
-              if constexpr (newton3) {
-                const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
-                f->AoSFunctor(p1, p2, true);
-              } else {
-                f->AoSFunctor(p1, p2, false);
-                // no need to calculate force enacted on a halo
-                if (not p2.isHalo()) {
-                  const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
-                  f->AoSFunctor(p2, p1, false);
-                }
-              }
-            },
-            min, max, IteratorBehavior::ownedOrHalo);
+      Kokkos::Profiling::pushRegion("count owned and halos in buffer");
+      // 1. Loop over all buffers and determine the size of the KokkosStorage objects
+      size_t haloSize = 0;
+      size_t ownedSize = 0;
+
+      for (int i = 0; i < particleBuffers.size(); ++i) {
+        haloSize += haloParticleBuffers.at(i).size();
+        ownedSize += particleBuffers.at(i).size();
+      }
+      Kokkos::Profiling::popRegion(); // count owned and halos in buffer
+
+      Kokkos::Profiling::pushRegion("convert buffer to KokkosStorage");
+      utilsKokkos::KokkosStorage<Particle_T> ownedBuffer{DataLayoutOption::soa, 0};
+      utilsKokkos::KokkosStorage<Particle_T> haloBuffer{DataLayoutOption::soa, 0};
+
+      const auto convertBufferToKokkos = [](auto& kokkosBuffer, const auto& buffer, size_t size) {
+        if (size > 0) {
+          kokkosBuffer.realloc(size);
+          for (int i = 0; i < buffer.size(); ++i) {
+            auto &particleBuffer = buffer.at(i);
+            for (auto &p : particleBuffer) {
+              kokkosBuffer.addParticle(p);
+            }
+          }
+          kokkosBuffer.template modifyAll<Kokkos::HostSpace>();
+          kokkosBuffer.template syncAll<ExecSpace>();
+        }
+      };
+
+      convertBufferToKokkos(ownedBuffer, particleBuffers, ownedSize);
+      convertBufferToKokkos(haloBuffer, haloParticleBuffers, haloSize);
+
+      Kokkos::Profiling::popRegion(); // convert buffer to KokkosStorage
+
+      if (ownedSize + haloSize > 0) {
+        typename Particle_T::ParticleSoAFloatPrecision cutoffSquared = f->getCutoff() * f->getCutoff();
+
+        Kokkos::Profiling::pushRegion("initialize force buffers");
+        Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fx2{};
+        Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fy2{};
+        Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fz2{};
+
+        if (ownedSize > 0) {
+          fx2.realloc(ownedSize);
+          fy2.realloc(ownedSize);
+          fz2.realloc(ownedSize);
+        }
+
+        Kokkos::Profiling::popRegion(); // initialize force buffers
+
+        auto min = container.getBoxMin();
+        auto max = container.getBoxMax();
+
+        Kokkos::Profiling::pushRegion("perform traversal");
+        SoABufferTraversalFunctor<PairwiseFunctor, Particle_T, ExecSpace> functor{
+          ownedBuffer, haloBuffer, f, cutoffSquared, ownedSize, haloSize, fx2, fy2, fz2};
+        container.template forEachInRegionKokkos<ExecSpace, true>(functor, IteratorBehavior::ownedOrHalo, min, max,
+                                                                  "autopas::RemainderPairwiseInteractionHandler::bufferContainerTraversal");
+
+        Kokkos::Profiling::popRegion(); // perform traversal
+
+        // 4. extract the content of the force views to the buffers
+        Kokkos::Profiling::pushRegion("merge force views with particles");
+        fx2.modify_device();
+        fy2.modify_device();
+        fx2.modify_device();
+
+        fx2.sync_host();
+        fy2.sync_host();
+        fz2.sync_host();
+
+        int offset = 0;
+        for (int i = 0; i < particleBuffers.size(); ++i) {
+          auto &particleBuffer = particleBuffers.at(i);
+
+          for (auto &p : particleBuffer) {
+            p.addF({fx2.view_host()(offset), fy2.view_host()(offset), fz2.view_host()(offset++)});
+          }
+        }
+        Kokkos::Profiling::popRegion(); // merge force views with particles
       }
 
-      // 2. haloParticleBuffer with owned, close particles in container
-      for (auto &&p1halo : haloParticleBuffer) {
-        const auto min = p1halo.getR() - cutoff;
-        const auto max = p1halo.getR() + cutoff;
-        container.forEachInRegion(
-            [&](auto &p2) {
-              // No need to apply anything to p1halo
-              //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
-              //   -> newton3 argument needed for correct globals
-              const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
-              f->AoSFunctor(p2, p1halo, newton3);
-            },
-            min, max, IteratorBehavior::owned);
+      Kokkos::Profiling::popRegion(); // remainder buffer container
+#endif
+      // TODO: throw exception
+    } else {
+      // Bunch of shorthands
+      const auto cutoff = container.getCutoff();
+      const auto interactionLength = container.getInteractionLength();
+      const auto haloBoxMin = container.getBoxMin() - interactionLength;
+      const auto totalBoxLengthInv = 1. / (container.getBoxMax() + interactionLength - haloBoxMin);
+      const std::array<size_t, 3> spacialLocksPerDim{_spatialLocks.size(), _spatialLocks[0].size(),
+                                                     _spatialLocks[0][0].size()};
+
+      // Helper function to obtain the lock responsible for a given position.
+      // Implemented as lambda because it can reuse a lot of information that is known in this context.
+      const auto getSpacialLock =
+          [&](const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &pos) -> std::mutex & {
+        const auto posDistFromLowerCorner = pos - haloBoxMin;
+        const auto relativePos = posDistFromLowerCorner * totalBoxLengthInv;
+        // Lock coordinates are the position scaled by the number of locks
+        const auto lockCoords =
+            static_cast_copy_array<size_t>(static_cast_copy_array<double>(spacialLocksPerDim) * relativePos);
+        return *_spatialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]];
+      };
+
+      // one halo and particle buffer pair per thread
+      AUTOPAS_OPENMP(parallel for schedule(static, 1) default(shared))
+      for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
+        auto &particleBuffer = particleBuffers[bufferId];
+        auto &haloParticleBuffer = haloParticleBuffers[bufferId];
+
+        // 1. particleBuffer with all close particles in container
+        for (auto &&p1 : particleBuffer) {
+          const auto min = p1.getR() - cutoff;
+          const auto max = p1.getR() + cutoff;
+
+          container.forEachInRegion(
+              [&](auto &p2) {
+                if constexpr (newton3) {
+                  const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
+                  f->AoSFunctor(p1, p2, true);
+                } else {
+                  f->AoSFunctor(p1, p2, false);
+                  // no need to calculate force enacted on a halo
+                  if (not p2.isHalo()) {
+                    const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
+                    f->AoSFunctor(p2, p1, false);
+                  }
+                }
+              },
+              min, max, IteratorBehavior::ownedOrHalo);
+        }
+
+        // 2. haloParticleBuffer with owned, close particles in container
+        for (auto &&p1halo : haloParticleBuffer) {
+          const auto min = p1halo.getR() - cutoff;
+          const auto max = p1halo.getR() + cutoff;
+          container.forEachInRegion(
+              [&](auto &p2) {
+                // No need to apply anything to p1halo
+                //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
+                //   -> newton3 argument needed for correct globals
+                const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
+                f->AoSFunctor(p2, p1halo, newton3);
+              },
+              min, max, IteratorBehavior::owned);
+        }
       }
     }
   }

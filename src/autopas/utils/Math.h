@@ -9,6 +9,9 @@
 #include <Eigen/Core>
 #include <cmath>
 #include <vector>
+#ifdef AUTOPAS_ENABLE_KOKKOS
+#include "Kokkos_Core.hpp"
+#endif
 
 namespace autopas::utils::Math {
 /**
@@ -283,8 +286,8 @@ bool isInUlp(FloatType lhs, FloatType rhs, unsigned int ulpDistance = MAX_ULP_DI
   }
 
   // In case the signs mismatch, return false
-  if (lhs < static_cast<FloatType>(0.0) && rhs > static_cast<FloatType>(0.0) ||
-      lhs > static_cast<FloatType>(0.0) && rhs < static_cast<FloatType>(0.0)) {
+  if ((lhs < static_cast<FloatType>(0.0) && rhs > static_cast<FloatType>(0.0)) ||
+      (lhs > static_cast<FloatType>(0.0) && rhs < static_cast<FloatType>(0.0))) {
     return false;
   }
 
@@ -307,6 +310,17 @@ bool isNearRel(FloatType a, FloatType b, double maxRelativeDifference = EPSILON_
   const auto diff = std::abs(a - b);
   return diff <= absoluteDifference;
 }
+
+#ifdef AUTOPAS_ENABLE_KOKKOS
+template <std::floating_point FloatType>
+KOKKOS_INLINE_FUNCTION bool isNearRelKokkos(FloatType a, FloatType b,
+                                            double maxRelativeDifference = EPSILON_RELATIVE_EQUALITY) {
+  const auto greaterNumber = Kokkos::max(Kokkos::abs(a), Kokkos::abs(b));
+  const auto absoluteDifference = maxRelativeDifference * greaterNumber;
+  const auto diff = Kokkos::abs(a - b);
+  return diff <= absoluteDifference;
+}
+#endif
 
 /**
  * Determines if two doubles are near each other. This function should be preferred to comparing with ==.

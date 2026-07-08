@@ -162,6 +162,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::octree; }
 
+  bool allowsKokkos() const override { return false; }
+
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     // TODO create a balanced tree and reserve space in the leaves.
   }
@@ -421,6 +423,22 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
     return i == CellTypes::OWNED;
   }
 
+  template <class ExecSpace, typename Lambda>
+  void forEachKokkos(Lambda, IteratorBehavior, const std::string &) {
+    // TODO: throw not implemented exception
+  }
+
+  template <class, bool, typename Lambda>
+  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3> &, const std::array<double, 3> &,
+                             const std::string & = "") {
+    // TODO: throw not implemented exception
+  }
+
+  template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda, Result &, IteratorBehavior, const std::string & = "") {
+    // TODO: throw not implemented exception
+  }
+
   /**
    * Execute code on all particles in this container as defined by a lambda function.
    * @tparam Lambda (Particle_T &p) -> void
@@ -455,8 +473,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @copydoc LinkedCells::forEachInRegion()
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+  void forEachInRegion(Lambda forEachLambda,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner,
+                       IteratorBehavior behavior) {
     if (behavior & IteratorBehavior::owned)
       this->_cells[OWNED].forEachInRegion(forEachLambda, lowerCorner, higherCorner);
     if (behavior & IteratorBehavior::halo) this->_cells[HALO].forEachInRegion(forEachLambda, lowerCorner, higherCorner);
@@ -501,7 +521,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
       const std::array<double, 3> &boxMax, const std::array<double, 3> &boxMinWithSafetyMargin,
       const std::array<double, 3> &boxMaxWithSafetyMargin) const {
     // TODO: parallelize at the higher tree levels. Choose tree level to parallelize via log_8(numThreads)
-    const size_t minLevel = 0;
+    // const size_t minLevel = 0;
     //        (iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_num_threads() == 1
     //            ? 0
     //            : static_cast<size_t>(std::ceil(std::log(static_cast<double>(autopas_get_num_threads())) /
@@ -535,7 +555,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
           currentCellInterfacePtr = currentCellInterfacePtr->getParent();
           currentCellIndex.pop_back();
           // If there are no more cells in the branch that we are responsible for set invalid parameters and return.
-          if (currentCellIndex.size() < minLevel or currentCellIndex.empty()) {
+          if (currentCellIndex.empty()) {
             currentCellIndex.clear();
             return {nullptr, std::numeric_limits<decltype(particleIndex)>::max()};
           }

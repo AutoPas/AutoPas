@@ -63,7 +63,8 @@ class ParticleBinStructure {
    * increments the corresponding bin counter to reflect one more particle in that bin.
    * @param particlePosition
    */
-  void countParticle(const std::array<double, 3> &particlePosition);
+  template <class T>
+  void countParticle(const std::array<T, 3> &particlePosition);
 
   /**
    * Calculates the following statistics:

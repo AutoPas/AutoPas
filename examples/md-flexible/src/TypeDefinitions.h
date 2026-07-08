@@ -5,6 +5,7 @@
  */
 
 #pragma once
+#include "molecularDynamicsLibrary/LJFunctorKokkos.h"
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
@@ -16,6 +17,7 @@
 
 #else
 
+#include "molecularDynamicsLibrary/KokkosMoleculeLJ.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
@@ -45,7 +47,8 @@
 /**
  * Precision used for particle representations. If you want to test other precisions change it here.
  */
-using FloatPrecision = double;
+using FloatPrecision = float;  // TODO: why not just use the precision defined in the particle class? Is there a case
+                               // where this can differ?
 
 /**
  * Type of the Particles used in md-flexible.
@@ -55,7 +58,11 @@ using FloatPrecision = double;
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
+#ifdef AUTOPAS_ENABLE_KOKKOS
+using ParticleType = mdLib::KokkosMoleculeLJ;
+#else
 using ParticleType = mdLib::MoleculeLJ;
+#endif
 #endif
 
 namespace mdFlexibleTypeDefs {
@@ -94,6 +101,20 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas:
                                               mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
+#endif
+
+#ifdef AUTOPAS_ENABLE_KOKKOS
+#ifdef KOKKOS_ENABLE_CUDA
+using MemSpace = Kokkos::CudaSpace;
+#else
+using MemSpace = Kokkos::HostSpace;
+#endif
+
+/**
+ * Type of LJFunctorTypeKokkos used in md-flexible
+ */
+using LJFunctorTypeKokkos = mdLib::LJFunctorKokkos<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                                   mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
@@ -162,4 +183,4 @@ using ATMFunctor = mdLib::AxilrodTellerMutoFunctor<ParticleType, true, autopas::
  * Type of the Particle Properties Library.
  * Set to the same precision as ParticleType.
  */
-using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
+using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;

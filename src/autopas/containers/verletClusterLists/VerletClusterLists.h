@@ -96,7 +96,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    */
   VerletClusterLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
                      double skin, size_t clusterSize, LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
-      : ParticleContainerInterface<Particle_T>(skin),
+      : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin),
         _towerBlock{boxMin, boxMax, cutoff + skin},
         _clusterSize{clusterSize},
         _particlesToAdd(autopas_get_max_threads()),
@@ -107,6 +107,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
   }
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletClusterLists; }
+
+  bool allowsKokkos() const override { return false; }
 
   /**
    * Generates the load estimation function depending on _loadEstimator.
@@ -195,8 +197,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto &haloPos = haloParticle.getR();
+    const std::array haloP{
+        static_cast<double>(haloPos.at(0)),
+        static_cast<double>(haloPos.at(1)),
+        static_cast<double>(haloPos.at(2)),
+    };
     // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it = getRegionIterator(haloPos - (this->getVerletSkin() / 2.), haloPos + (this->getVerletSkin() / 2.),
+    for (auto it = getRegionIterator(haloP - (this->getVerletSkin() / 2.), haloP + (this->getVerletSkin() / 2.),
                                      IteratorBehavior::halo | IteratorBehavior::forceSequential, std::nullopt);
          it.isValid(); ++it) {
       if (haloParticle.getID() == it->getID()) {
@@ -465,6 +472,22 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     }
   }
 
+  template <class ExecSpace, typename Lambda>
+  void forEachKokkos(Lambda, IteratorBehavior, const std::string & = "") {
+    // TODO: throw not implemented exception
+  }
+
+  template <class, bool, typename Lambda>
+  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3> &, const std::array<double, 3> &,
+                             const std::string & = "") {
+    // TODO: throw not implemented exception
+  }
+
+  template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda, Result &, IteratorBehavior, const std::string & = "") {
+    // TODO: throw not implemented exception
+  }
+
   /**
    * @copydoc autopas::LinkedCells::forEach()
    */
@@ -627,8 +650,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @copydoc autopas::LinkedCells::forEachInRegion()
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner,
+  void forEachInRegion(Lambda forEachLambda,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner,
                        IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
     for (size_t i = 0; i < _towerBlock.size(); ++i) {
       if (_towerBlock.ignoreCellForIteration(i, behavior)) {
@@ -1243,7 +1267,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * Outer vector is for Thread buffer to allow parallel particle insertion.
    * This has to be a mutable so we can call appendBuffersHelper() from const and non-const functions.
    */
-  mutable std::vector<std::vector<Particle_T>> _particlesToAdd;
+  mutable std::vector<std::vector<Particle_T>>
+      _particlesToAdd;  // TODO: what is the difference to LogicHandler buffer particles here?
 
   /**
    * Checks if there are particles in the buffers of _particlesToAdd.

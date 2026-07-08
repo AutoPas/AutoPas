@@ -31,7 +31,8 @@ ParticleBinStructure::ParticleBinStructure(std::array<size_t, 3> numBinsPerDim, 
   _cutoff = cutoff;
 }
 
-void ParticleBinStructure::countParticle(const std::array<double, 3> &particlePosition) {
+template <typename T>
+void ParticleBinStructure::countParticle(const std::array<T, 3> &particlePosition) {
   using namespace ArrayMath::literals;
 
   _statisticsCalculated = false;

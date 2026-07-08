@@ -97,7 +97,10 @@ void GridGenerator::fillWithParticles(
     for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
       for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
         auto p = defaultParticle;
-        p.setR({x * spacing[0] + offset[0], y * spacing[1] + offset[1], z * spacing[2] + offset[2]});
+        auto posX = static_cast<ParticleType::ParticleSoAFloatPrecision>(x * spacing[0] + offset[0]);
+        auto posY = static_cast<ParticleType::ParticleSoAFloatPrecision>(y * spacing[1] + offset[1]);
+        auto posZ = static_cast<ParticleType::ParticleSoAFloatPrecision>(x * spacing[2] + offset[2]);
+        p.setR({posX, posY, posZ});
         p.setID(id++);
         container.addParticle(p);
       }

@@ -20,6 +20,7 @@ extern template class autopas::AutoPas<ParticleType>;
  */
 int main(int argc, char **argv) {
   autopas::AutoPas_MPI_Init(&argc, &argv);
+  autopas::AutoPas_Kokkos_Init(argc, argv);
   {
     MDFlexConfig configuration(argc, argv);
 
@@ -64,5 +65,6 @@ int main(int argc, char **argv) {
     }
   }
   autopas::AutoPas_MPI_Finalize();
+  autopas::AutoPas_Kokkos_Finalize();
   return EXIT_SUCCESS;
 }

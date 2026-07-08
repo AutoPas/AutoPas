@@ -93,7 +93,7 @@ class SoA {
    * @tparam attributes Attributes to append.
    * @param other Other buffer.
    */
-  template <int... attributes>
+  template <std::size_t... attributes>
   void append(const SoA<SoAArraysType> &other) {
     if (other.size() > 0) {
       const auto newSize = size() + other.size();

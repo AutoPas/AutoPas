@@ -46,7 +46,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    */
   VerletListsLinkedBase(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                         const double skin, const double cellSizeFactor)
-      : ParticleContainerInterface<Particle_T>(skin),
+      : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin),
         _linkedCells(boxMin, boxMax, cutoff, skin, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       // Throw exception - this config should have been caught by LogicHandler. Note: This is not a fundamental issue
@@ -214,6 +214,22 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
     return _linkedCells.begin(behavior, additionalVectors);
   }
 
+  template <class ExecSpace, typename Lambda>
+  void forEachKokkos(Lambda, IteratorBehavior, const std::string & = "") {
+    // TODO: throw not implemented exception
+  }
+
+  template <class, bool, typename Lambda>
+  void forEachInRegionKokkos(Lambda, IteratorBehavior, const std::array<double, 3> &, const std::array<double, 3> &,
+                             const std::string & = "") {
+    // TODO: throw not implemented exception
+  }
+
+  template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda, Result &, IteratorBehavior, const std::string & = "") {
+    // TODO: throw not implemented exception
+  }
+
   /**
    * @copydoc autopas::LinkedCells::forEach()
    */
@@ -254,8 +270,10 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    * @copydoc autopas::LinkedCells::forEachInRegion()
    */
   template <typename Lambda>
-  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
-                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+  void forEachInRegion(Lambda forEachLambda,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &lowerCorner,
+                       const std::array<typename Particle_T::ParticleSoAFloatPrecision, 3> &higherCorner,
+                       IteratorBehavior behavior) {
     _linkedCells.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
   }
 

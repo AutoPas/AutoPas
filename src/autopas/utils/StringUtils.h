@@ -37,16 +37,16 @@ inline int needlemanWunschScore(std::string s1, std::string s2) {
   std::vector<std::vector<int>> scoreMatrix(s1.length() + 1, std::vector<int>(s2.length() + 1, 0));
 
   // initialize top and right border with cumulative gap penalties
-  for (size_t i = 0; i < scoreMatrix.size(); ++i) {
+  for (int i = 0; static_cast<size_t>(i) < scoreMatrix.size(); ++i) {
     scoreMatrix[i][0] = i * scoreGap;
   }
-  for (size_t j = 0; j < scoreMatrix[0].size(); ++j) {
+  for (int j = 0; static_cast<size_t>(j) < scoreMatrix[0].size(); ++j) {
     scoreMatrix[0][j] = j * scoreGap;
   }
 
   // fill rest of matrix
-  for (size_t i = 1; i < scoreMatrix.size(); ++i) {
-    for (size_t j = 1; j < scoreMatrix[0].size(); ++j) {
+  for (int i = 1; static_cast<size_t>(i) < scoreMatrix.size(); ++i) {
+    for (int j = 1; static_cast<size_t>(j) < scoreMatrix[0].size(); ++j) {
       auto matchValue = s1[i - 1] == s2[j - 1] ? scoreMatch : scoreMismatch;
       auto scoreDiagonal = scoreMatrix[i - 1][j - 1] + matchValue;
       auto scoreLeft = scoreMatrix[i - 1][j] + scoreGap;

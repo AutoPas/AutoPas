@@ -10,7 +10,6 @@
 #include <algorithm>
 
 #include "SlicedBasedTraversal.h"
-#include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 

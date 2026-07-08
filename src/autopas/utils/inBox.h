@@ -22,14 +22,15 @@ namespace autopas::utils {
  * @param high the upper corner of the box (exclusive)
  * @return true if position is inside the box, false otherwise
  */
-template <typename T>
-bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const std::array<T, 3> &high) {
+template <typename T, typename P>
+bool inBox(const std::array<T, 3> &position, const std::array<P, 3> &low, const std::array<P, 3> &high) {
   static_assert(std::is_floating_point<T>::value, "inBox assumes floating point types");
+  static_assert(std::is_floating_point<P>::value, "inBox assumes floating point types");
 
   bool inBox = true;
   for (int d = 0; d < 3; ++d) {
-    const bool isLargerThanLower = position[d] >= low[d];
-    const bool isSmallerThanHigher = position[d] < high[d];
+    const bool isLargerThanLower = position[d] >= static_cast<T>(low[d]);
+    const bool isSmallerThanHigher = position[d] < static_cast<T>(high[d]);
     inBox = inBox and isLargerThanLower and isSmallerThanHigher;
   }
   return inBox;
@@ -46,8 +47,8 @@ bool inBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const 
  * @param high the upper corner of the box (exclusive)
  * @return true if position is not inside the box, false otherwise
  */
-template <typename T>
-bool notInBox(const std::array<T, 3> &position, const std::array<T, 3> &low, const std::array<T, 3> &high) {
+template <typename T, typename P>
+bool notInBox(const std::array<T, 3> &position, const std::array<P, 3> &low, const std::array<P, 3> &high) {
   return not(inBox(position, low, high));
 }
 
@@ -57,16 +58,18 @@ bool notInBox(const std::array<T, 3> &position, const std::array<T, 3> &low, con
  * If the boxes touch (= exact same floating point values), they are not considered to have overlap.
  *
  * @tparam T
+ * @tparam P
  * @param boxALow
  * @param boxAHigh
  * @param boxBLow
  * @param boxBHigh
  * @return
  */
-template <typename T>
-bool boxesOverlap(const std::array<T, 3> &boxALow, const std::array<T, 3> &boxAHigh, const std::array<T, 3> &boxBLow,
+template <typename T, typename P>
+bool boxesOverlap(const std::array<P, 3> &boxALow, const std::array<P, 3> &boxAHigh, const std::array<T, 3> &boxBLow,
                   const std::array<T, 3> &boxBHigh) {
-  static_assert(std::is_floating_point_v<T>, "boxesOverlap assumes floating point types");
+  static_assert(std::is_floating_point_v<T>, "boxesOverlap assumes floating point types for third and fourth argument");
+  static_assert(std::is_floating_point_v<P>, "boxesOverlap assumes floating point types for first and second argument");
 
   auto overlap1D = [&](size_t dim) { return boxAHigh[dim] > boxBLow[dim] and boxBHigh[dim] > boxALow[dim]; };
 

@@ -205,7 +205,7 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_HWY };
+  enum class FunctorOption { none, lj12_6, lj12_6_KOKKOS, lj12_6_AVX, lj12_6_SVE, lj12_6_HWY };
 
   /**
    * Choice of the Triwise functor
@@ -240,6 +240,15 @@ class MDFlexConfig {
       autopas::DataLayoutOption::getMostOptions(), "data-layout", true,
       "List of data layout options to use for the pairwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
+   * containerLayoutOptions
+   */
+  MDFlexOption<std::set<autopas::DataLayoutOption>, __LINE__> containerLayoutOptions{
+      autopas::DataLayoutOption::getMostOptions(), "container-layout", true,
+      "List of data layout options to use for the storage in the container. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
+
   /**
    * dataLayoutOptions3B
    */
@@ -460,6 +469,18 @@ class MDFlexConfig {
   MDFlexOption<unsigned int, __LINE__> verletClusterSize{4, "verlet-cluster-size", true,
                                                          "Number of particles in Verlet clusters."};
   /**
+   * kokkosTeamSize
+   */
+  MDFlexOption<std::set<size_t>, __LINE__> kokkosTeamSize{
+      {128}, "kokkos-team-size", true, "Kokkos team size for hierarchical parallelism"};
+
+  /**
+   * kokkosChunkSize
+   */
+  MDFlexOption<std::set<size_t>, __LINE__> kokkosChunkSize{
+      {32}, "kokkos-chunk-size", true, "Kokkos chunk size for outer traversal loop"};
+
+  /**
    * verletRebuildFrequency
    */
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
@@ -519,10 +540,11 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
-                                                      FunctorOption::none, "functor", true,
-                                                      "Pairwise force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-highway)"};
+  MDFlexOption<FunctorOption, __LINE__> functorOption{
+      // Default is a dummy option
+      FunctorOption::none, "functor", true,
+      "Pairwise force functor to use. Possible Values: (lennard-jones "
+      "lennard-jones-AVX lennard-jones-kokkos lennard-jones-SVE lennard-jones-highway)"};
   /**
    * functorOption3B
    */
@@ -691,6 +713,8 @@ class MDFlexConfig {
    * site-type-id in a single-site simulation and molecule-type-id in a multi-site simulation.
    */
   static inline const char *const particleTypeStr{"particle-type-id"};
+
+  static inline const char *const particleMassStr{"particle-mass"};
   /**
    * bottomLeftBackCornerStr
    */

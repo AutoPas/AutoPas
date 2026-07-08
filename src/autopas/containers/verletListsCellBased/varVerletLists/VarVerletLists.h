@@ -42,6 +42,8 @@ class VarVerletLists : public VerletListsLinkedBase<Particle_T> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
+  bool allowsKokkos() const override { return false; }
+
   void computeInteractions(TraversalInterface *traversal) override {
     auto *traversalInterface = dynamic_cast<VVLTraversalInterface<NeighborList> *>(traversal);
     if (traversalInterface) {

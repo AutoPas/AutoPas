@@ -20,7 +20,7 @@ namespace {
 /**
  * Sixth Root of Two precomputed here, as it is used a lot in reflecting boundaries.
  */
-const double sixthRootOfTwo = std::pow(2., 1. / 6.);
+const double _sixthRootOfTwo = std::pow(2., 1. / 6.);
 }  // namespace
 
 /**
@@ -103,7 +103,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param coordinates: The coordinates in question.
    * @return true if the coordinates lie inside the local domain, false otherwise.
    */
-  [[nodiscard]] bool isInsideLocalDomain(const std::array<double, 3> &coordinates) const override;
+  [[nodiscard]] bool isInsideLocalDomain(
+      const std::array<ParticleType::ParticleSoAFloatPrecision, 3> &coordinates) const override;
 
   /**
    * Calculates and returns the extent of the subdomain with inde subdomainIndex.
@@ -191,6 +192,14 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Boundary condition types of all dimensions.
    */
   std::array<options::BoundaryTypeOption, _dimensionCount> _boundaryType;
+
+#ifdef AUTOPAS_ENABLE_KOKKOS
+  /**
+   * Boundary condition types of all dimensions as Kokkos Array
+   */
+  Kokkos::Array<options::BoundaryTypeOption, _dimensionCount> _boundaryTypeKokkos;
+
+#endif
 
   /**
    * Indicates if MPI is enabled and if it will be used.

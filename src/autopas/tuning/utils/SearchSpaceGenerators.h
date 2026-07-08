@@ -52,6 +52,9 @@ struct OptionSpace {
    * Available dataLayout options.
    */
   std::set<DataLayoutOption> dataLayoutOptions;
+
+  std::set<DataLayoutOption> containerLayoutOptions;
+
   /**
    * Available newton3 options.
    */
@@ -69,20 +72,23 @@ struct OptionSpace {
  * @param allowedTraversalOptions
  * @param allowedLoadEstimatorOptions
  * @param allowedDataLayoutOptions
+ * @param allowedContainerLayoutOptions
  * @param allowedNewton3Options
  * @param allowedCellSizeFactors
  * @param interactionType
+ * @param kokkosChunkSize
+ * @param kokkosTeamSize
  * @param allowedVecPatternOptions
  * @return A set containing all valid configurations.
  */
-std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowedContainerOptions,
-                                         const std::set<TraversalOption> &allowedTraversalOptions,
-                                         const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
-                                         const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                         const std::set<Newton3Option> &allowedNewton3Options,
-                                         const NumberSet<double> *allowedCellSizeFactors,
-                                         const std::set<VectorizationPatternOption> &allowedVecPatternOptions,
-                                         const InteractionTypeOption &interactionType);
+std::set<Configuration> cartesianProduct(
+    const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
+    const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+    const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+    const std::set<DataLayoutOption> &allowedContainerLayoutOptions,
+    const std::set<Newton3Option> &allowedNewton3Options, const NumberSet<double> *allowedCellSizeFactors,
+    const InteractionTypeOption &interactionType, const std::set<size_t> &kokkosChunkSize,
+    const std::set<size_t> &kokkosTeamSize, const std::set<VectorizationPatternOption> &allowedVecPatternOptions);
 
 /**
  * Crudely trying to reconstruct the dimensions of the search space from a given set of options.

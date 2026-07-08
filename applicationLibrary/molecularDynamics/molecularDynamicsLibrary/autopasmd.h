@@ -9,6 +9,7 @@
 #pragma once
 
 #include "LJFunctor.h"
+#include "LJFunctorKokkos.h"
 #ifdef __AVX__
 #include "LJFunctorAVX.h"
 #endif

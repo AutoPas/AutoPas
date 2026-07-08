@@ -194,11 +194,12 @@ SerializedConfiguration serializeConfiguration(Configuration configuration) {
   config[1] = castToByte(configuration.traversal);
   config[2] = castToByte(configuration.loadEstimator);
   config[3] = castToByte(configuration.dataLayout);
-  config[4] = castToByte(configuration.newton3);
-  config[5] = castToByte(configuration.interactionType);
-  config[6] = castToByte(configuration.vecPattern);
+  config[4] = castToByte(configuration.containerDataLayout);
+  config[5] = castToByte(configuration.newton3);
+  config[6] = castToByte(configuration.interactionType);
+  config[7] = castToByte(configuration.vecPattern);
   // Doubles can't be easily truncated, so store all 8 bytes via memcpy
-  std::memcpy(&config[7], &configuration.cellSizeFactor, sizeof(double));
+  std::memcpy(&config[8], &configuration.cellSizeFactor, sizeof(double));
   return config;
 }
 
@@ -217,12 +218,20 @@ std::vector<std::byte> serializeConfigurations(const std::vector<Configuration> 
 
 Configuration deserializeConfiguration(SerializedConfiguration config) {
   double cellSizeFactor{0.};
-  std::memcpy(&cellSizeFactor, &config[7], sizeof(double));
-  return {
-      static_cast<ContainerOption::Value>(config[0]),       cellSizeFactor,
-      static_cast<TraversalOption::Value>(config[1]),       static_cast<LoadEstimatorOption::Value>(config[2]),
-      static_cast<DataLayoutOption::Value>(config[3]),      static_cast<Newton3Option::Value>(config[4]),
-      static_cast<InteractionTypeOption::Value>(config[5]), static_cast<VectorizationPatternOption::Value>(config[6])};
+  std::memcpy(&cellSizeFactor, &config[8], sizeof(double));
+  return Configuration{
+      static_cast<ContainerOption::Value>(config[0]),
+      cellSizeFactor,
+      static_cast<TraversalOption::Value>(config[1]),
+      static_cast<LoadEstimatorOption::Value>(config[2]),
+      static_cast<DataLayoutOption::Value>(config[3]),
+      static_cast<DataLayoutOption::Value>(config[4]),
+      static_cast<Newton3Option::Value>(config[5]),
+      static_cast<InteractionTypeOption::Value>(config[6]),
+      0,
+      0,
+      static_cast<VectorizationPatternOption::Value>(config[7]),
+  };
 }
 
 std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte> &configurationsSerialized) {

@@ -13,6 +13,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
+#include "autopas/utilsKokkos/KokkosStorage.h"
 
 namespace autopas {
 
@@ -34,6 +35,8 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * Structure of the SoAs defined by the particle.
    */
   using SoAArraysType = typename Particle_T::SoAArraysType;
+
+  using FloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
   /**
    * Constructor
@@ -70,6 +73,17 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   virtual void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorSingle: not implemented", this->getName());
   }
+
+#ifdef AUTOPAS_ENABLE_KOKKOS
+  KOKKOS_INLINE_FUNCTION
+  virtual void ForceKernelKokkos(const FloatPrecision &x1, const FloatPrecision &y1, const FloatPrecision &z1,
+                                 const autopas::utilsKokkos::KokkosStorage<Particle_T> &storage2, FloatPrecision &fxAcc,
+                                 FloatPrecision &fyAcc, FloatPrecision &fzAcc, FloatPrecision &virialSum,
+                                 FloatPrecision &uPotSum, FloatPrecision cutoffSquared, int i, int j) {
+    // TODO: Kokkos-compatible exception utils::ExceptionHandler::exception("{}::SoAKernelKokkos: not implemented",
+    // this->getName());
+  }
+#endif
 
   /**
    * PairwiseFunctor for structure of arrays (SoA) for neighbor lists
