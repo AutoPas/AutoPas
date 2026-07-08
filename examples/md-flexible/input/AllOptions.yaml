@@ -42,7 +42,7 @@ iterations                            :  10
 boundary-type                         :  [periodic, periodic, periodic]
 subdivide-dimension                   :  [true, true, true]
 load-balancing-interval               :  100
-computation-load-metric               :  ForceUpdate # alternatively: CompleteCycle, NonBoundaryCalculations, ForceUpdate, MPICommunication, ParticleCount
+computational-load-metric             :  ForceUpdate # alternatively: CompleteCycle, NonBoundaryCalculations, ForceUpdate, MPICommunication, ParticleCount
 computational-load-measurement-period :  100
 relative-optimum-range                :  1.2
 max-tuning-phases-without-test        :  5
