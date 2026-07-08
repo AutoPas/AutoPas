@@ -9,6 +9,7 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -44,6 +45,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
+#include "options/ComputationLoadOption.h"
 
 namespace {
 /**
@@ -215,6 +217,14 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                       _configuration.initTemperature.value, std::numeric_limits<double>::max());
   }
 
+  if (_configuration.loadBalancingInterval.value < _configuration.computationalLoadMeasurementPeriod.value) {
+    std::cout << "Computational Load Measurement Period "
+              << std::to_string(_configuration.computationalLoadMeasurementPeriod.value)
+              << " is larger than the load balancing interval "
+              << std::to_string(_configuration.loadBalancingInterval.value)
+              << "! It will be reset to equal the load balancing interval." << std::endl;
+  }
+
   _timers.initialization.stop();
 }
 
@@ -236,50 +246,64 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    _timers.computationalLoad.start();
+    // If we are within loadBalancingTrackingIterations of load balancing, reset the lap-timers of everything relevant
+    // for load balancing
+    if (_configuration.loadBalancer.value != LoadBalancerOption::none and
+        _iteration % _configuration.loadBalancingInterval.value ==
+            _configuration.loadBalancingInterval.value - _configuration.computationalLoadMeasurementPeriod.value) {
+      _timers.nonBoundaryCalculations.resetLap();
+      _timers.haloParticleExchange.resetLap();
+      _timers.migratingParticleExchange.resetLap();
+      _timers.reflectParticlesAtBoundaries.resetLap();
+      _timers.forceUpdateTotal.resetLap();
+      _timers.updateContainer.resetLap();
+    }
+
+    _timers.nonBoundaryCalculations.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
-    }
 
-    // We update the container, even if dt=0, to bump the iteration counter, which is needed to ensure containers can
-    // still be rebuilt in frozen scenarios e.g. for algorithm performance data gathering purposes. Also, it bumps the
-    // iteration counter which can be used to uniquely identify functor calls.
-    _timers.updateContainer.start();
-    auto emigrants = _autoPasContainer->updateContainer();
-    _timers.updateContainer.stop();
+      // We update the container, even if dt=0, to bump the iteration counter, which is needed to ensure containers can
+      // still be rebuilt in frozen scenarios e.g. for algorithm performance data gathering purposes. Also, it bumps the
+      // iteration counter which can be used to uniquely identify functor calls.
+      _timers.updateContainer.start();
+      auto emigrants = _autoPasContainer->updateContainer();
+      _timers.updateContainer.stop();
+      _timers.nonBoundaryCalculations.stop();
 
-    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
+      if (_configuration.loadBalancer.value != LoadBalancerOption::none) {
+        // periodically resize box for MPI load balancing
+        if (_iteration % _configuration.loadBalancingInterval.value == 0) {
+          // Get the computation load based on selected option.
+          const auto computationalLoad = getComputationalLoad();
+          _timers.loadBalancing.start();
+          _domainDecomposition->update(computationalLoad);
+          auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
+                                                                  _domainDecomposition->getLocalBoxMax());
+          // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in
+          // the container again. Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
+          // so that remove_if can erase them after.
+          const auto &boxMin = _autoPasContainer->getBoxMin();
+          const auto &boxMax = _autoPasContainer->getBoxMax();
+          _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
+            if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
+              // This only changes the ownership state in the emigrants vector, not in AutoPas
+              p.setOwnershipState(autopas::OwnershipState::dummy);
+              return true;
+            }
+            return false;
+          });
 
-      // periodically resize box for MPI load balancing
-      if (_iteration % _configuration.loadBalancingInterval.value == 0) {
-        _timers.loadBalancing.start();
-        _domainDecomposition->update(computationalLoad);
-        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
-                                                                _domainDecomposition->getLocalBoxMax());
-        // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the
-        // container again.
-        // Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
-        // so that remove_if can erase them after.
-        const auto &boxMin = _autoPasContainer->getBoxMin();
-        const auto &boxMax = _autoPasContainer->getBoxMax();
-        _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
-          if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
-            // This only changes the ownership state in the emigrants vector, not in AutoPas
-            p.setOwnershipState(autopas::OwnershipState::dummy);
-            return true;
-          }
-          return false;
-        });
+          emigrants.erase(
+              std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
+              emigrants.end());
 
-        emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
-                        emigrants.end());
-
-        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-        _timers.loadBalancing.stop();
+          emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+          _timers.loadBalancing.stop();
+        }
       }
 
       _timers.migratingParticleExchange.start();
@@ -295,7 +319,7 @@ void Simulation::run() {
       _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
       _timers.haloParticleExchange.stop();
 
-      _timers.computationalLoad.start();
+      _timers.nonBoundaryCalculations.start();
     }
 
     updateInteractionForces();
@@ -312,7 +336,7 @@ void Simulation::run() {
 #endif
       updateThermostat();
     }
-    _timers.computationalLoad.stop();
+    _timers.nonBoundaryCalculations.stop();
 #ifdef MD_FLEXIBLE_CALC_GLOBALS
     // Summing the potential energy over all MPI ranks
     double potentialEnergyOverMPIRanks{}, virialSumOverMPIRanks{};
@@ -326,6 +350,7 @@ void Simulation::run() {
     _totalPotentialEnergy = 0.;
     _totalVirialSum = 0.;
 #endif
+
     if (not _simulationIsPaused) {
       ++_iteration;
     }
@@ -543,6 +568,67 @@ void Simulation::updateThermostat() {
                       _configuration.targetTemperature.value, _configuration.deltaTemp.value);
     _timers.thermostat.stop();
   }
+}
+
+double Simulation::getComputationalLoad() const {
+  double computationalLoad;
+  // Default to particle count if zeroth iteration (where timer-based metrics do not have values yet)
+  if (_iteration == 0 or _configuration.computationalLoadMetric.value == ComputationLoadOption::particleCount) {
+    // For particle count, use the raw count directly. If the count is zero, then we use a particleCount of 1 to
+    // prevent division by zero errors.
+    computationalLoad =
+        std::max(static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned)), 1.0);
+  } else {
+    switch (_configuration.computationalLoadMetric.value) {
+      case ComputationLoadOption::completeCycle:
+        computationalLoad = static_cast<double>(
+            _timers.nonBoundaryCalculations.getLapTime() + _timers.haloParticleExchange.getLapTime() +
+            _timers.migratingParticleExchange.getLapTime() + _timers.reflectParticlesAtBoundaries.getLapTime());
+        break;
+      case ComputationLoadOption::nonBoundaryCalculations:
+        computationalLoad = static_cast<double>(_timers.nonBoundaryCalculations.getLapTime());
+        break;
+      case ComputationLoadOption::forceUpdate:
+        computationalLoad =
+            static_cast<double>(_timers.forceUpdateTotal.getLapTime() + _timers.updateContainer.getLapTime());
+        break;
+      case ComputationLoadOption::MPICommunication:
+        computationalLoad = static_cast<double>(_timers.haloParticleExchange.getLapTime() +
+                                                _timers.migratingParticleExchange.getLapTime());
+        break;
+      default:
+        // Default to complete cycle if unknown option
+        std::cout << "WARNING: Unknown computation load option, defaulting to particle count." << std::endl;
+        computationalLoad = std::max(
+            static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned)), 1.0);
+        break;
+    }
+  }
+
+  if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
+    std::cout << "Computational load on rank " << _domainDecomposition->getDomainIndex() << ": " << computationalLoad
+              << std::endl;
+  }
+
+  if (computationalLoad == 0.) {
+    // This should only ever happen with particle count -> we simply assume one particle in this case
+    if (_iteration == 0 or _configuration.computationalLoadMetric.value == ComputationLoadOption::particleCount) {
+      std::cout << "Computational load on rank " << _domainDecomposition->getDomainIndex() << " is zero. It is replaced"
+                << " by a computational load of 1" << std::endl;
+      computationalLoad = 1.;
+    } else {
+      // If other metrics result in zero, this implies that something is actually wrong -> throw error
+      autopas::utils::ExceptionHandler::exception(
+          "Computational load on rank {} with computational load metric {} is zero!",
+          _domainDecomposition->getDomainIndex(), _configuration.computationalLoadMetric.value.to_string());
+    }
+
+    std::cout
+        << "WARNING: Computational load is zero. To avoid divide-by-zero, it is replaced by a computational load of"
+        << std::endl;
+  }
+
+  return computationalLoad;
 }
 
 long Simulation::accumulateTime(const long &time) {
@@ -774,7 +860,7 @@ void Simulation::loadParticles() {
   // TODO: This is not optimal but since this only happens once upon initialization it is not too bad.
   //       Nevertheless it could be improved by determining which particle has to go to which rank.
   const auto rank = _domainDecomposition->getDomainIndex();
-  ParticleCommunicator particleCommunicator(_domainDecomposition->getCommunicator());
+  ParticleCommunicator particleCommunicator(_domainDecomposition->getMPICommunicator());
   for (int receiverRank = 0; receiverRank < _domainDecomposition->getNumberOfSubdomains(); ++receiverRank) {
     // don't send to ourselves
     if (receiverRank == rank) {
@@ -816,7 +902,7 @@ void Simulation::loadParticles() {
   // Let rank 0 also report the global number of particles
   if (rank == 0) {
     autopas::AutoPas_MPI_Reduce(AUTOPAS_MPI_IN_PLACE, &dataPackage, 2, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
-                                _domainDecomposition->getCommunicator());
+                                _domainDecomposition->getMPICommunicator());
     std::cout << "Number of particles at initialization globally"
               // align ":" with the messages above
               << std::setw(std::to_string(_domainDecomposition->getNumberOfSubdomains()).length()) << ""
@@ -835,7 +921,7 @@ void Simulation::loadParticles() {
   } else {
     // In-place reduce needs different calls on root vs rest...
     autopas::AutoPas_MPI_Reduce(&dataPackage, nullptr, 2, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
-                                _domainDecomposition->getCommunicator());
+                                _domainDecomposition->getMPICommunicator());
   }
 }
 

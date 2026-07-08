@@ -12,6 +12,7 @@
 
 #include "DomainDecomposition.h"
 #include "autopas/utils/WrapMPI.h"
+#include "src/ParticleCommunicator.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
 #include "src/options/BoundaryTypeOption.h"
@@ -39,6 +40,16 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Destructor.
    */
   ~RegularGridDecomposition() override;
+
+  /**
+   * Delete copy constructor. Not a fundamental issue to implement, but must be done carefully (not default).
+   */
+  RegularGridDecomposition(const RegularGridDecomposition &) = delete;
+
+  /**
+   * Delete copy assigment constructor. Not a fundamental issue to implement, but must be done carefully (not default).
+   */
+  RegularGridDecomposition &operator=(const RegularGridDecomposition &) = delete;
 
   /**
    * Used to update the domain to the current topology.
@@ -138,10 +149,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
   void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer, ParticlePropertiesLibraryType &PPL);
 
   /**
-   * Getter for the communicator that encompasses the whole decomposition.
+   * Getter for the MPI communicator that encompasses the whole decomposition.
    * @return
    */
-  autopas::AutoPas_MPI_Comm getCommunicator() const;
+  [[nodiscard]] autopas::AutoPas_MPI_Comm getMPICommunicator() const;
 
  private:
   /**
@@ -218,7 +229,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
   /**
    * The MPI communicator containing all processes which own a subdomain in this decomposition.
    */
-  autopas::AutoPas_MPI_Comm _communicator{};
+  autopas::AutoPas_MPI_Comm _mpiComm{};
+
+  /**
+   * ParticleCommunicator to communicate particles. Kept persistent in memory to avoid re-allocations.
+   */
+  ParticleCommunicator _particleCommunicator{_mpiComm};
 
   /**
    * The index of the current processor's domain in _communicator.

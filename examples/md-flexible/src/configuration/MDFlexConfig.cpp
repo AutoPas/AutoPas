@@ -456,6 +456,8 @@ std::string MDFlexConfig::to_string() const {
   printOption(dontShowProgressBar);
   printOption(loadBalancer);
   printOption(loadBalancingInterval);
+  printOption(computationalLoadMetric);
+  printOption(computationalLoadMeasurementPeriod);
   printOption(subdivideDimension);
   printOption(energySensorOption);
   return os.str();

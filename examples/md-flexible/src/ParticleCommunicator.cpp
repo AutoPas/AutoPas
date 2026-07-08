@@ -9,11 +9,17 @@
 
 #include "ParticleSerializationTools.h"
 
-ParticleCommunicator::ParticleCommunicator(const autopas::AutoPas_MPI_Comm &communicator)
-    : _communicator(communicator) {}
+ParticleCommunicator::ParticleCommunicator(const autopas::AutoPas_MPI_Comm &communicator) : _MPIComm(communicator) {}
 
-void ParticleCommunicator::sendParticles(const std::vector<ParticleType> &particles, const int &receiver) {
-  std::vector<char> buffer;
+void ParticleCommunicator::sendParticles(const std::vector<ParticleType> &particles, const int &receiver,
+                                         const std::optional<Direction> direction) {
+  // Use direction to select a reusable buffer. If no direction, use the "left" buffer arbitrarily.
+  const bool useLeftBuffer = direction.has_value() ? (direction.value() == left) : true;
+  auto &buffer = useLeftBuffer ? _reusableLeftSendBuffer : _reusableRightSendBuffer;
+
+  // Reserve extra space in reusable buffer if needed.
+  buffer.clear();
+  buffer.reserve(particles.size() * ParticleSerializationTools::AttributesSize);
 
   for (const auto &particle : particles) {
     ParticleSerializationTools::serializeParticle(particle, buffer);
@@ -22,13 +28,16 @@ void ParticleCommunicator::sendParticles(const std::vector<ParticleType> &partic
   sendDataToNeighbor(buffer, receiver);
 }
 
-void ParticleCommunicator::receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source) {
-  std::vector<char> receiveBuffer;
+void ParticleCommunicator::receiveParticles(std::vector<ParticleType> &receivedParticles, const int &source,
+                                            const std::optional<Direction> direction) {
+  // Use direction to select a reusable buffer. If no direction, use the "left" buffer arbitrarily.
+  const bool useLeftBuffer = direction.has_value() ? (direction.value() == left) : true;
+  auto &buffer = useLeftBuffer ? _reusableLeftRecvBuffer : _reusableRightRecvBuffer;
 
-  receiveDataFromNeighbor(source, receiveBuffer);
+  receiveDataFromNeighbor(source, buffer);
 
-  if (!receiveBuffer.empty()) {
-    ParticleSerializationTools::deserializeParticles(receiveBuffer, receivedParticles);
+  if (not buffer.empty()) {
+    ParticleSerializationTools::deserializeParticles(buffer, receivedParticles);
   }
 }
 
@@ -40,24 +49,22 @@ void ParticleCommunicator::waitForSendRequests() {
   _sendBuffers.clear();
 }
 
-void ParticleCommunicator::sendDataToNeighbor(const std::vector<char> &sendBuffer, const int &neighbour) {
-  _sendBuffers.push_back(sendBuffer);
-
+void ParticleCommunicator::sendDataToNeighbor(const std::vector<char> &sendBuffer, const int &neighbor) {
   autopas::AutoPas_MPI_Request sendRequest{};
   _sendRequests.push_back(sendRequest);
 
-  autopas::AutoPas_MPI_Isend(_sendBuffers.back().data(), _sendBuffers.back().size(), AUTOPAS_MPI_CHAR, neighbour, 0,
-                             _communicator, &_sendRequests.back());
+  autopas::AutoPas_MPI_Isend(_sendBuffers.back().data(), _sendBuffers.back().size(), AUTOPAS_MPI_CHAR, neighbor, 0,
+                             _MPIComm, &_sendRequests.back());
 }
 
-void ParticleCommunicator::receiveDataFromNeighbor(const int &neighbour, std::vector<char> &receiveBuffer) {
+void ParticleCommunicator::receiveDataFromNeighbor(const int &neighbor, std::vector<char> &receiveBuffer) const {
   autopas::AutoPas_MPI_Status status;
-  autopas::AutoPas_MPI_Probe(neighbour, 0, _communicator, &status);
+  autopas::AutoPas_MPI_Probe(neighbor, 0, _MPIComm, &status);
 
   int receiveBufferSize = 0;
   autopas::AutoPas_MPI_Get_count(&status, AUTOPAS_MPI_CHAR, &receiveBufferSize);
   receiveBuffer.resize(receiveBufferSize);
 
-  autopas::AutoPas_MPI_Recv(receiveBuffer.data(), receiveBufferSize, AUTOPAS_MPI_CHAR, neighbour, 0, _communicator,
+  autopas::AutoPas_MPI_Recv(receiveBuffer.data(), receiveBufferSize, AUTOPAS_MPI_CHAR, neighbor, 0, _MPIComm,
                             AUTOPAS_MPI_STATUS_IGNORE);
 }
