@@ -1116,6 +1116,131 @@ class LJFunctorHWY
     }
   }
 
+  template <bool newton3>
+  inline void SoAKernelVerlet(const size_t i, const size_t j, const MaskDouble &ownedMaskI,
+                              const VectorDouble &x1, const VectorDouble &y1,
+                              const VectorDouble &z1, const double *const __restrict xPtr,
+                              const double *const __restrict yPtr, const double *const __restrict zPtr,
+                              const int64_t *const __restrict ownedStatePtr, double *const __restrict fxPtr,
+                              double *const __restrict fyPtr, double *const __restrict fzPtr,
+                              const size_t *const typeID1Ptr, const size_t *const typeIDPtr,
+                              const size_t *const __restrict neighborList,
+                              VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
+                              VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &uPotSum) {
+    VectorDouble epsilon24s = highway::Undefined(tag_double);
+    VectorDouble sigmaSquareds = highway::Undefined(tag_double);
+    VectorDouble shift6s = highway::Undefined(tag_double);
+
+    const auto indices = highway::Load(tag_long, reinterpret_cast<const int64_t*>(neighborList + j));
+
+    if constexpr (useMixing) {
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
+      for (size_t k = 0; k < _vecLengthDouble; ++k) {
+        epsilons[k] = _PPLibrary->get().getMixing24Epsilon(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
+        sigmas[k] = _PPLibrary->get().getMixingSigmaSquared(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
+        if constexpr (applyShift) {
+          shifts[k] = _PPLibrary->get().getMixingShift6(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
+        }
+      }
+      epsilon24s = highway::Load(tag_double, epsilons.data());
+      sigmaSquareds = highway::Load(tag_double, sigmas.data());
+      if constexpr (applyShift) {
+        shift6s = highway::Load(tag_double, shifts.data());
+      }
+    } else {
+      epsilon24s = highway::Set(tag_double, _epsilon24AoS);
+      sigmaSquareds = highway::Set(tag_double, _sigmaSquareAoS);
+      if constexpr (applyShift) {
+        shift6s = highway::Set(tag_double, _shift6AoS);
+      } else {
+        shift6s = highway::Zero(tag_double);
+      }
+    }
+
+    const auto x2 = highway::GatherIndex(tag_double, xPtr, indices);
+    const auto y2 = highway::GatherIndex(tag_double, yPtr, indices);
+    const auto z2 = highway::GatherIndex(tag_double, zPtr, indices);
+    
+    const auto ownedState2 = highway::GatherIndex(tag_long, ownedStatePtr, indices);
+    const MaskLong ownedMaskJLong = highway::Ne(ownedState2, highway::Zero(tag_long));
+    const MaskDouble ownedMaskJ = highway::RebindMask(tag_double, ownedMaskJLong);
+
+    const auto drX = highway::Sub(x1, x2);
+    const auto drY = highway::Sub(y1, y2);
+    const auto drZ = highway::Sub(z1, z2);
+
+    const auto drX2 = highway::Mul(drX, drX);
+    const auto drY2 = highway::Mul(drY, drY);
+    const auto drZ2 = highway::Mul(drZ, drZ);
+
+    const auto dr2 = highway::Add(highway::Add(drX2, drY2), drZ2);
+
+    VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
+
+    const auto dummyMask = highway::And(ownedMaskI, ownedMaskJ);
+    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, cutoffSquared);
+
+    if (highway::AllFalse(tag_double, cutoffDummyMask)) {
+      return;
+    }
+
+    const auto invDr2 = highway::Div(highway::Set(tag_double, 1.0), dr2);
+    const auto lj2 = highway::Mul(sigmaSquareds, invDr2);
+    const auto lj4 = highway::Mul(lj2, lj2);
+    const auto lj6 = highway::Mul(lj2, lj4);
+    const auto lj12 = highway::Mul(lj6, lj6);
+    const auto lj12m6 = highway::Sub(lj12, lj6);
+    const auto lj12m6alj12 = highway::Add(lj12m6, lj12);
+    const auto lj12m6alj12e = highway::Mul(lj12m6alj12, epsilon24s);
+    const auto fac = highway::Mul(lj12m6alj12e, invDr2);
+
+    const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
+
+    const VectorDouble fx = highway::Mul(drX, facMasked);
+    const VectorDouble fy = highway::Mul(drY, facMasked);
+    const VectorDouble fz = highway::Mul(drZ, facMasked);
+
+    fxAcc = highway::Add(fxAcc, fx);
+    fyAcc = highway::Add(fyAcc, fy);
+    fzAcc = highway::Add(fzAcc, fz);
+
+    if constexpr (newton3) {
+      const auto fx2Old = highway::GatherIndex(tag_double, fxPtr, indices);
+      const auto fy2Old = highway::GatherIndex(tag_double, fyPtr, indices);
+      const auto fz2Old = highway::GatherIndex(tag_double, fzPtr, indices);
+      
+      const auto fx2New = highway::Sub(fx2Old, fx);
+      const auto fy2New = highway::Sub(fy2Old, fy);
+      const auto fz2New = highway::Sub(fz2Old, fz);
+
+      highway::ScatterIndex(fx2New, tag_double, fxPtr, indices);
+      highway::ScatterIndex(fy2New, tag_double, fyPtr, indices);
+      highway::ScatterIndex(fz2New, tag_double, fzPtr, indices);
+    }
+
+    if constexpr (calculateGlobals) {
+      auto virialX = highway::Mul(fx, drX);
+      auto virialY = highway::Mul(fy, drY);
+      auto virialZ = highway::Mul(fz, drZ);
+
+      auto uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
+      auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
+
+      auto energyFactor = highway::MaskedSet(tag_double, dummyMask, 1.0);
+
+      if constexpr (newton3) {
+        energyFactor = highway::Add(energyFactor, highway::MaskedSet(tag_double, dummyMask, 1.0));
+      }
+
+      uPotSum = highway::MulAdd(energyFactor, uPotMasked, uPotSum);
+      virialSumX = highway::MulAdd(energyFactor, virialX, virialSumX);
+      virialSumY = highway::MulAdd(energyFactor, virialY, virialSumY);
+      virialSumZ = highway::MulAdd(energyFactor, virialZ, virialSumZ);
+    }
+  }
+
  public:
   // clang-format off
   /**
@@ -1195,35 +1320,10 @@ class LJFunctorHWY
     const size_t vecEnd = (neighborListSize / _vecLengthDouble) * _vecLengthDouble;
 
     for (; j < vecEnd; j += _vecLengthDouble) {
-      // load neighbor particles in consecutive array
-      for (long vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
-        x2Tmp[vecIndex] = xPtr[neighborList[j + vecIndex]];
-        y2Tmp[vecIndex] = yPtr[neighborList[j + vecIndex]];
-        z2Tmp[vecIndex] = zPtr[neighborList[j + vecIndex]];
-        if constexpr (newton3) {
-          fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
-          fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
-          fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
-        }
-        if constexpr (useMixing) {
-          typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
-        }
-        const auto ownedState = ownedStatePtr[neighborList[j + vecIndex]];
-        ownedStates2Tmp[vecIndex] = static_cast<int64_t>(ownedState);
-      }
-
-      SoAKernel<newton3, false, false, false, VectorizationPattern::p1xVec>(
-          0, 0, ownedMaskI, ownedStates2Tmp.data(), x1, y1, z1, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(),
-          fy2Tmp.data(), fz2Tmp.data(), &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
-          virialSumY, virialSumZ, uPotSum, 0, 0);
-
-      if constexpr (newton3) {
-        for (size_t vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
-          fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];
-          fyPtr[neighborList[j + vecIndex]] = fy2Tmp[vecIndex];
-          fzPtr[neighborList[j + vecIndex]] = fz2Tmp[vecIndex];
-        }
-      }
+      SoAKernelVerlet<newton3>(
+          indexFirst, j, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr),
+          fxPtr, fyPtr, fzPtr, &typeIDPtr[indexFirst], typeIDPtr, neighborList,
+          fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum);
     }
 
     const int rest = static_cast<int>(neighborListSize & (_vecLengthDouble - 1));
