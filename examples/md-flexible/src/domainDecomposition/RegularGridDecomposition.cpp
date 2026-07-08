@@ -596,7 +596,6 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
   // estimate the number of halo particles by calculating the fraction of the search box and scale it up by 10%
   haloParticlesBuffer.reserve(
       static_cast<size_t>(boxVolume / localBoxVolume * autoPasContainer.getNumberOfParticles() * 1.1));
-  // if (!autoPasContainer.containerAllowsKokkos()) {
   // Collect the halo particles for the neighbor
   for (auto particleIter = autoPasContainer.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
        particleIter.isValid(); ++particleIter) {
@@ -609,31 +608,6 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
       haloParticlesBuffer.back().setR(position);
     }
   }
-  /*
-  } else {
-
-      auto lambda = KOKKOS_LAMBDA(int i, const autopas::utils::KokkosStorage<ParticleType>& storage) {
-        // TODO: somehow push to halo buffer (Problem: so far, halo buffer is std::vector which required push_backs)
-        // TODO: although, as it is guaranteed that this will so far only happen serial on the CPU, it could also work
-  with a std::vector if (atGlobalBoundary) {
-
-          // TODO: change position in halo buffer
-          if (direction == 0) {
-
-          } else if (direction == 1) {
-
-          } else if (direction == 2) {
-
-          } else {
-            // TODO: throw exception as this should never happen
-          }
-        }
-
-      };
-
-      autoPasContainer.template forEachInRegionKokkos<Kokkos::Serial>(lambda, boxMin, boxMax,
-  autopas::IteratorBehavior::owned);
-    }*/
 }
 
 void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(

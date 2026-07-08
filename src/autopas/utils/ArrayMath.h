@@ -700,6 +700,15 @@ constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, T s) {
   }
   return a;
 }
+
+template <class T, class V, std::size_t SIZE>
+constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, V s) {
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    a[d] *= static_cast<T>(s);
+  }
+  return a;
+}
+
 }  // namespace literals
 
 /**

@@ -90,8 +90,8 @@ class DSKokkosTraversalInterface : public TraversalInterface {
   virtual void performTraversal(const utilsKokkos::KokkosStorage<Particle_T> &storageA,
                                 const utilsKokkos::KokkosStorage<Particle_T> &storageB) = 0;
 
-  utilsKokkos::KokkosStorage<Particle_T> _ownedParticles;
-  utilsKokkos::KokkosStorage<Particle_T> _haloParticles;
+  utilsKokkos::KokkosStorage<Particle_T> _ownedParticles {};
+  utilsKokkos::KokkosStorage<Particle_T> _haloParticles {};
 };
 }  // namespace autopas
 

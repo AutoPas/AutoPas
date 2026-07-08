@@ -116,7 +116,6 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
     Kokkos::Profiling::pushRegion("prepare and init Traversal");
     prepareTraversal(traversal);
     traversal->initTraversal();
-    Kokkos::fence();
     Kokkos::Profiling::popRegion();
 
     Kokkos::Profiling::pushRegion("traverse particles");
@@ -127,7 +126,6 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
     Kokkos::Profiling::pushRegion("end and finish Traversal");
     traversal->endTraversal();
     finishTraversal(traversal);
-    Kokkos::fence();
     Kokkos::Profiling::popRegion();
 
     Kokkos::Profiling::popRegion();
@@ -142,7 +140,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
     /* Prepare data structures */
     Kokkos::Profiling::pushRegion("initialize Migrants");
     utilsKokkos::KokkosStorage<Particle_T> migrants{_ownedParticles.getIntendedLayout(), _ownedParticles.size()};
-    Kokkos::Profiling::popRegion();
+    Kokkos::Profiling::popRegion(); // initialize migrants
 
     auto &boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
     auto &boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
@@ -184,7 +182,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
 
       Kokkos::Profiling::pushRegion("initialize Survivors");
       utilsKokkos::KokkosStorage<Particle_T> survivors{_ownedParticles.getIntendedLayout(), _ownedParticles.size()};
-      Kokkos::Profiling::popRegion();
+      Kokkos::Profiling::popRegion(); // initialize survivors
       Kokkos::View<int *, DeviceSpace> survivorCounter{"survivorCounter", 1};
 
       Kokkos::parallel_for(
@@ -219,34 +217,35 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
       Kokkos::Profiling::pushRegion("resize Survivors");
       survivors.resize(numSurvivors);
       survivors.overrideSize(numSurvivors);
-      Kokkos::Profiling::popRegion();
+      Kokkos::Profiling::popRegion(); // resize survivors
 
       _ownedParticles = survivors;
     }
 
     auto migrantCounterMirror = Kokkos::create_mirror_view(migrantCounter);
     Kokkos::deep_copy(migrantCounterMirror, migrantCounter);
-
     int numMigrants = migrantCounterMirror(0);
-    Kokkos::Profiling::pushRegion("resize Migrants");
-    migrants.resize(numMigrants);
-    Kokkos::Profiling::popRegion();
 
     _ownedParticles.template modifyAll<DeviceSpace::execution_space>();
     _ownedParticles.markLayoutModified(owned.getActiveLayout());
 
-    Kokkos::Profiling::pushRegion("transfer migrants to std::vector"),
-        migrants.template convertTo<DeviceSpace::execution_space, useHostView>(DataLayoutOption::aos);
-    migrants.template syncAll<HostSpace::execution_space>();
     std::vector<Particle_T> migrantVector{};
-    migrantVector.reserve(numMigrants);
+    if (numMigrants > 0) {
+      Kokkos::Profiling::pushRegion("resize Migrants");
+      migrants.resize(numMigrants);
+      Kokkos::Profiling::popRegion(); // resize migrants
+      Kokkos::Profiling::pushRegion("transfer migrants to std::vector"),
+          migrants.template convertTo<DeviceSpace::execution_space, useHostView>(DataLayoutOption::aos);
+      migrants.template syncAll<HostSpace::execution_space>();
+      migrantVector.reserve(numMigrants);
 
-    for (int i = 0; i < numMigrants; ++i) {
-      Particle_T migrant =
-          migrants.getAoS().template getParticle<true>(i);  // TODO: make sure that host view is accessible
-      migrantVector.push_back(migrant);
+      for (int i = 0; i < numMigrants; ++i) {
+        Particle_T migrant =
+            migrants.getAoS().template getParticle<true>(i);  // TODO: make sure that host view is accessible
+        migrantVector.push_back(migrant);
+      }
+      Kokkos::Profiling::popRegion(); // transfer migrants to std::vector
     }
-    Kokkos::Profiling::popRegion();
     Kokkos::Profiling::popRegion();
     return migrantVector;
   }

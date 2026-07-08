@@ -183,4 +183,4 @@ using ATMFunctor = mdLib::AxilrodTellerMutoFunctor<ParticleType, true, autopas::
  * Type of the Particle Properties Library.
  * Set to the same precision as ParticleType.
  */
-using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
+using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;

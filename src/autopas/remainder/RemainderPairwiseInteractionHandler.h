@@ -223,6 +223,10 @@ class RemainderPairwiseInteractionHandler {
 
     if (requiresKokkos) {
 #ifdef AUTOPAS_ENABLE_KOKKOS
+
+      Kokkos::Profiling::pushRegion("remainder buffer container");
+
+      Kokkos::Profiling::pushRegion("count owned and halos in buffer");
       // 1. Loop over all buffers and determine the size of the KokkosStorage objects
       size_t haloSize = 0;
       size_t ownedSize = 0;
@@ -231,68 +235,80 @@ class RemainderPairwiseInteractionHandler {
         haloSize += haloParticleBuffers.at(i).size();
         ownedSize += particleBuffers.at(i).size();
       }
+      Kokkos::Profiling::popRegion(); // count owned and halos in buffer
 
-      // 2. Fill particles in KokkosStorage buffers
-      utilsKokkos::KokkosStorage<Particle_T> ownedBuffer{DataLayoutOption::soa, ownedSize};
-      utilsKokkos::KokkosStorage<Particle_T> haloBuffer{DataLayoutOption::soa, haloSize};
+      Kokkos::Profiling::pushRegion("convert buffer to KokkosStorage");
+      utilsKokkos::KokkosStorage<Particle_T> ownedBuffer{DataLayoutOption::soa, 0};
+      utilsKokkos::KokkosStorage<Particle_T> haloBuffer{DataLayoutOption::soa, 0};
 
-      // This guarantees the order [bufferA, bufferB, bufferC, ...] which will be important later on
-      for (int i = 0; i < particleBuffers.size(); ++i) {
-        auto &particleBuffer = particleBuffers.at(i);
-        auto &haloParticleBuffer = haloParticleBuffers.at(i);
-
-        for (auto &p : particleBuffer) {
-          ownedBuffer.addParticle(p);
+      const auto convertBufferToKokkos = [](auto& kokkosBuffer, const auto& buffer, size_t size) {
+        if (size > 0) {
+          kokkosBuffer.realloc(size);
+          for (int i = 0; i < buffer.size(); ++i) {
+            auto &particleBuffer = buffer.at(i);
+            for (auto &p : particleBuffer) {
+              kokkosBuffer.addParticle(p);
+            }
+          }
+          kokkosBuffer.template modifyAll<Kokkos::HostSpace>();
+          kokkosBuffer.template syncAll<ExecSpace>();
         }
-        for (auto &p : haloParticleBuffer) {
-          haloBuffer.addParticle(p);
+      };
+
+      convertBufferToKokkos(ownedBuffer, particleBuffers, ownedSize);
+      convertBufferToKokkos(haloBuffer, haloParticleBuffers, haloSize);
+
+      Kokkos::Profiling::popRegion(); // convert buffer to KokkosStorage
+
+      if (ownedSize + haloSize > 0) {
+        typename Particle_T::ParticleSoAFloatPrecision cutoffSquared = f->getCutoff() * f->getCutoff();
+
+        Kokkos::Profiling::pushRegion("initialize force buffers");
+        Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fx2{};
+        Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fy2{};
+        Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fz2{};
+
+        if (ownedSize > 0) {
+          fx2.realloc(ownedSize);
+          fy2.realloc(ownedSize);
+          fz2.realloc(ownedSize);
         }
-      }
 
-      ownedBuffer.template modifyAll<Kokkos::HostSpace>();
-      haloBuffer.template modifyAll<Kokkos::HostSpace>();
+        Kokkos::Profiling::popRegion(); // initialize force buffers
 
-      // 3. perform actual remainder computations
-      ownedBuffer.template syncAll<ExecSpace>();
-      haloBuffer.template syncAll<ExecSpace>();
+        auto min = container.getBoxMin();
+        auto max = container.getBoxMax();
 
-      constexpr bool host = false;
-
-      typename Particle_T::ParticleSoAFloatPrecision cutoffSquared = f->getCutoff() * f->getCutoff();
-
-      Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fx2{};
-      Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fy2{};
-      Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fz2{};
-
-      fx2.realloc(ownedSize);
-      fy2.realloc(ownedSize);
-      fz2.realloc(ownedSize);
-
-      auto min = container.getBoxMin();
-      auto max = container.getBoxMax();
-
-      SoABufferTraversalFunctor<PairwiseFunctor, Particle_T, ExecSpace> functor{
+        Kokkos::Profiling::pushRegion("perform traversal");
+        SoABufferTraversalFunctor<PairwiseFunctor, Particle_T, ExecSpace> functor{
           ownedBuffer, haloBuffer, f, cutoffSquared, ownedSize, haloSize, fx2, fy2, fz2};
-      container.template forEachInRegionKokkos<ExecSpace, true>(functor, IteratorBehavior::ownedOrHalo, min, max,
-                                                                "autopas::bufferTraversalSoA");
+        container.template forEachInRegionKokkos<ExecSpace, true>(functor, IteratorBehavior::ownedOrHalo, min, max,
+                                                                  "autopas::RemainderPairwiseInteractionHandler::bufferContainerTraversal");
 
-      // 4. extract the content of the force views to the buffers
-      fx2.modify_device();
-      fy2.modify_device();
-      fx2.modify_device();
+        Kokkos::Profiling::popRegion(); // perform traversal
 
-      fx2.sync_host();
-      fy2.sync_host();
-      fz2.sync_host();
+        // 4. extract the content of the force views to the buffers
+        Kokkos::Profiling::pushRegion("merge force views with particles");
+        fx2.modify_device();
+        fy2.modify_device();
+        fx2.modify_device();
 
-      int offset = 0;
-      for (int i = 0; i < particleBuffers.size(); ++i) {
-        auto &particleBuffer = particleBuffers.at(i);
+        fx2.sync_host();
+        fy2.sync_host();
+        fz2.sync_host();
 
-        for (auto &p : particleBuffer) {
-          p.addF({fx2.view_host()(offset), fy2.view_host()(offset), fz2.view_host()(offset++)});
+        int offset = 0;
+        for (int i = 0; i < particleBuffers.size(); ++i) {
+          auto &particleBuffer = particleBuffers.at(i);
+
+          for (auto &p : particleBuffer) {
+            p.addF({fx2.view_host()(offset), fy2.view_host()(offset), fz2.view_host()(offset++)});
+          }
         }
+        Kokkos::Profiling::popRegion(); // merge force views with particles
       }
+
+      Kokkos::Profiling::popRegion(); // remainder buffer container
 #endif
       // TODO: throw exception
     } else {
@@ -326,8 +342,6 @@ class RemainderPairwiseInteractionHandler {
         for (auto &&p1 : particleBuffer) {
           const auto min = p1.getR() - cutoff;
           const auto max = p1.getR() + cutoff;
-
-          // TODO: forEachInRegionKokkos
 
           container.forEachInRegion(
               [&](auto &p2) {

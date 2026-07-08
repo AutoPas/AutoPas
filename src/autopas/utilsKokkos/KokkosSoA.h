@@ -106,6 +106,7 @@ class KokkosSoA {
  private:
   template <std::size_t... I>
   void createViewsImpl(size_t numParticles, const std::string &label, std::index_sequence<I...>) {
+    if (numParticles == 0) { return; }
     views = std::make_tuple(Kokkos::DualView<Types, DeviceSpace::device_type>(
         Kokkos::ViewAllocateWithoutInitializing(label + std::to_string(I)), numParticles)...);
   }
