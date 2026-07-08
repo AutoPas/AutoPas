@@ -51,21 +51,10 @@ if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     endif()
 endif()
 
-# --- copy script files to build dir ---
-file(
-        GLOB_RECURSE SCRIPTS
-        RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "*.sh"
-        "*.gp"
-        "*.py"
-        "*.yaml"
-        "*.rule"
-        "*.frule"
-)
-
-foreach (script ${SCRIPTS})
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${script} ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
-endforeach (script)
+# --- copy input and script files to build dir ---
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/input/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+# Tidy scripts away in their own directory
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/scripts DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # -----------------test-----------------
 
@@ -181,7 +170,7 @@ add_test(
 
 add_test(
         NAME md-flexMeasurePerf
-        COMMAND measurePerf.sh md-flexible -silent
+        COMMAND scripts/measurePerf.sh md-flexible -silent
         CONFIGURATIONS checkExamples
 )
 # cmake-format: on
