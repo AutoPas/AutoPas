@@ -22,8 +22,8 @@ traversal                        :  [lc_sliced, lc_sliced_c02, lc_c01, lc_c01_co
 newton3                          : [enabled, disabled]
 cell-size                        : [0.5, 1]
 vectorization-pattern            :  [1xVectorLength, 2xVectorLengthDiv2, VectorLengthDiv2x2, VectorLengthx1]
-box-min                          :  [-0.5, -0.5, -0.5]
-box-max                          :  [60.5, 60.5, 80.5]
+box-min                          :  [-0.561, -0.561, -0.561]
+box-max                          :  [60.561, 60.561, 80.5]
 tuning-interval                  :  5000
 tuning-samples                   : 30
 selector-strategy                : fastest-mean-value
