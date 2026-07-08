@@ -139,6 +139,7 @@ class LogicHandler {
    * @return Leaving particles.
    */
   [[nodiscard]] std::vector<Particle_T> collectLeavingParticlesFromBuffer(bool insertOwnedParticlesToContainer) {
+    // TODO: this function will need a Kokkos version
     const auto &boxMin = _currentContainer->getBoxMin();
     const auto &boxMax = _currentContainer->getBoxMax();
     std::vector<Particle_T> leavingBufferParticles{};

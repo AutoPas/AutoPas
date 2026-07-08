@@ -21,7 +21,7 @@ class KokkosAoS {
   explicit KokkosAoS(size_t numParticles) { resize(numParticles); }
 
   /* Get/Set/Allocation */
-  void realloc(size_t numParticles) { Kokkos::realloc(view, numParticles); }
+  void realloc(size_t numParticles) { view.realloc(Kokkos::WithoutInitializing, numParticles); }
 
   void resize(size_t numParticles) {
     if (numParticles == 0) {
@@ -29,7 +29,7 @@ class KokkosAoS {
     } else if (view.extent(0) == 0) {
       realloc(numParticles);
     } else {
-      Kokkos::resize(view, numParticles);
+      view.resize(Kokkos::WithoutInitializing, numParticles);
     }
   }
 
@@ -83,7 +83,6 @@ class KokkosAoS {
   using DeviceSpace = Kokkos::HostSpace;
 #endif
 
-  // TODO: think about converting this to a Kokkos::DualView and allow to store AoS particles on the GPU
   Kokkos::DualView<Particle_T *, DeviceSpace::device_type> view{};
 };
 

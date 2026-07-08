@@ -159,7 +159,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
       // dummies
       // TODO: think about the validity of this approach because in theory, the particles should still exist for
       // neighbor lists being valid (but this is not the case for DirectSum as there are no neighbor lists)
-      _haloParticles.clear();
+      deleteHaloParticles();
 
       // TODO: make sure that owned is synced to the right memory space
       Kokkos::parallel_for(

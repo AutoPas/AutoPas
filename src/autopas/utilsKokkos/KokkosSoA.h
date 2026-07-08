@@ -112,12 +112,12 @@ class KokkosSoA {
 
   template <std::size_t... I>
   void resizeImpl(size_t numParticles, std::index_sequence<I...>) {
-    (std::get<I>(views).resize(numParticles), ...);
+    (std::get<I>(views).resize(Kokkos::WithoutInitializing, numParticles), ...);
   }
 
   template <std::size_t... I>
   void reallocImpl(size_t numParticles, std::index_sequence<I...>) {
-    (std::get<I>(views).realloc(numParticles), ...);
+    (std::get<I>(views).realloc(Kokkos::WithoutInitializing, numParticles), ...);
   }
 
   template <class Particle_T, bool useHostView, std::size_t... I>
