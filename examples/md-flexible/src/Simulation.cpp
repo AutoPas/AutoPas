@@ -837,7 +837,7 @@ void Simulation::loadParticles() {
   // TODO: This is not optimal but since this only happens once upon initialization it is not too bad.
   //       Nevertheless it could be improved by determining which particle has to go to which rank.
   const auto rank = _domainDecomposition->getDomainIndex();
-  ParticleCommunicator particleCommunicator(_domainDecomposition->getCommunicator());
+  ParticleCommunicator particleCommunicator(_domainDecomposition->getMPICommunicator());
   for (int receiverRank = 0; receiverRank < _domainDecomposition->getNumberOfSubdomains(); ++receiverRank) {
     // don't send to ourselves
     if (receiverRank == rank) {
@@ -879,7 +879,7 @@ void Simulation::loadParticles() {
   // Let rank 0 also report the global number of particles
   if (rank == 0) {
     autopas::AutoPas_MPI_Reduce(AUTOPAS_MPI_IN_PLACE, &dataPackage, 2, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
-                                _domainDecomposition->getCommunicator());
+                                _domainDecomposition->getMPICommunicator());
     std::cout << "Number of particles at initialization globally"
               // align ":" with the messages above
               << std::setw(std::to_string(_domainDecomposition->getNumberOfSubdomains()).length()) << ""
@@ -898,7 +898,7 @@ void Simulation::loadParticles() {
   } else {
     // In-place reduce needs different calls on root vs rest...
     autopas::AutoPas_MPI_Reduce(&dataPackage, nullptr, 2, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
-                                _domainDecomposition->getCommunicator());
+                                _domainDecomposition->getMPICommunicator());
   }
 }
 

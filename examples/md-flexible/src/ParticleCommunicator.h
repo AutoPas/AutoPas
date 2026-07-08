@@ -61,7 +61,7 @@ class ParticleCommunicator {
   /**
    * The MPI communicator used for the communications.
    */
-  autopas::AutoPas_MPI_Comm _communicator;
+  const autopas::AutoPas_MPI_Comm &_MPIComm;
 
   /**
    * A temporary buffer used for MPI send requests.

@@ -66,7 +66,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   if (_loadBalancerOption == LoadBalancerOption::all) {
     _allLoadBalancer = std::make_unique<ALL::ALL<double, double>>(ALL::TENSOR, _dimensionCount, 0);
-    _allLoadBalancer->setCommunicator(reinterpret_cast<MPI_Comm>(_communicator));
+    _allLoadBalancer->setCommunicator(reinterpret_cast<MPI_Comm>(_mpiComm));
 
     const double minDomainSize = 2 * (_cutoffWidth + _skinWidth);
     _allLoadBalancer->setMinDomainSize({minDomainSize, minDomainSize, minDomainSize});
@@ -104,21 +104,21 @@ void RegularGridDecomposition::update(const double &work) {
 void RegularGridDecomposition::initializeMPICommunicator() {
   // have to cast away const because MPI requires it
   autopas::AutoPas_MPI_Cart_create(AUTOPAS_MPI_COMM_WORLD, _dimensionCount, _decomposition.data(),
-                                   const_cast<int *>(_periods.data()), true, &_communicator);
-  autopas::AutoPas_MPI_Comm_rank(_communicator, &_domainIndex);
+                                   const_cast<int *>(_periods.data()), true, &_mpiComm);
+  autopas::AutoPas_MPI_Comm_rank(_mpiComm, &_domainIndex);
 }
 
 void RegularGridDecomposition::initializeLocalDomain() {
   // have to cast away const because MPI requires it
-  autopas::AutoPas_MPI_Cart_get(_communicator, _dimensionCount, _decomposition.data(),
-                                const_cast<int *>(_periods.data()), _domainId.data());
+  autopas::AutoPas_MPI_Cart_get(_mpiComm, _dimensionCount, _decomposition.data(), const_cast<int *>(_periods.data()),
+                                _domainId.data());
 
   // Create planar communicators used for diffuse load balancing.
   for (int i = 0; i < _dimensionCount; ++i) {
     if (_mpiCommunicationNeeded) {
       const int key = _decomposition[(i + 1) % _dimensionCount] * _domainId[(i + 2) % _dimensionCount] +
                       _domainId[(i + 1) % _dimensionCount];
-      autopas::AutoPas_MPI_Comm_split(_communicator, _domainId[i], key, &_planarCommunicators[i]);
+      autopas::AutoPas_MPI_Comm_split(_mpiComm, _domainId[i], key, &_planarCommunicators[i]);
     } else {
       _planarCommunicators[i] = AUTOPAS_MPI_COMM_WORLD;
     }
@@ -461,15 +461,13 @@ void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::ve
                                                                    int leftNeighbor, int rightNeighbor) {
   // only actually send / receive if we are not sending / receiving to ourselves
   if (_mpiCommunicationNeeded and leftNeighbor != _domainIndex) {
-    ParticleCommunicator particleCommunicator(_communicator);
+    _particleCommunicator.sendParticles(particlesToLeft, leftNeighbor, ParticleCommunicator::left);
+    _particleCommunicator.sendParticles(particlesToRight, rightNeighbor, ParticleCommunicator::right);
 
-    particleCommunicator.sendParticles(particlesToLeft, leftNeighbor, ParticleCommunicator::left);
-    particleCommunicator.sendParticles(particlesToRight, rightNeighbor, ParticleCommunicator::right);
+    _particleCommunicator.receiveParticles(receivedParticlesBuffer, leftNeighbor, ParticleCommunicator::left);
+    _particleCommunicator.receiveParticles(receivedParticlesBuffer, rightNeighbor, ParticleCommunicator::right);
 
-    particleCommunicator.receiveParticles(receivedParticlesBuffer, leftNeighbor, ParticleCommunicator::left);
-    particleCommunicator.receiveParticles(receivedParticlesBuffer, rightNeighbor, ParticleCommunicator::right);
-
-    particleCommunicator.waitForSendRequests();
+    _particleCommunicator.waitForSendRequests();
   } else {
     receivedParticlesBuffer.insert(receivedParticlesBuffer.end(), particlesToLeft.begin(), particlesToLeft.end());
     receivedParticlesBuffer.insert(receivedParticlesBuffer.end(), particlesToRight.begin(), particlesToRight.end());
@@ -620,17 +618,15 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
 
     // Send average work in plane to neighbours
     if (not isNearRel(_localBoxMin[i], _globalBoxMin[i])) {
-      autopas::AutoPas_MPI_Isend(&averageWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
+      autopas::AutoPas_MPI_Isend(&averageWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _mpiComm,
                                  &dummyRequest);
-      autopas::AutoPas_MPI_Isend(&oldLocalBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
-                                 &dummyRequest);
+      autopas::AutoPas_MPI_Isend(&oldLocalBoxMax[i], 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _mpiComm, &dummyRequest);
     }
 
     if (not isNearRel(_localBoxMax[i], _globalBoxMax[i])) {
-      autopas::AutoPas_MPI_Isend(&averageWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
+      autopas::AutoPas_MPI_Isend(&averageWorkInPlane[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _mpiComm,
                                  &dummyRequest);
-      autopas::AutoPas_MPI_Isend(&oldLocalBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
-                                 &dummyRequest);
+      autopas::AutoPas_MPI_Isend(&oldLocalBoxMin[i], 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _mpiComm, &dummyRequest);
     }
   }
 
@@ -642,9 +638,9 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
     double neighborPlaneWork{}, neighborBoundary{}, balancedPosition{};
     if (not isNearRel(_localBoxMin[i], _globalBoxMin[i])) {
       // Receive average work from neighbour planes.
-      autopas::AutoPas_MPI_Recv(&neighborPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
+      autopas::AutoPas_MPI_Recv(&neighborPlaneWork, 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _mpiComm,
                                 AUTOPAS_MPI_STATUS_IGNORE);
-      autopas::AutoPas_MPI_Recv(&neighborBoundary, 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _communicator,
+      autopas::AutoPas_MPI_Recv(&neighborBoundary, 1, AUTOPAS_MPI_DOUBLE, leftNeighbor, 0, _mpiComm,
                                 AUTOPAS_MPI_STATUS_IGNORE);
 
       // Calculate balanced positions and only shift by half the resulting distance to prevent localBox min to be larger
@@ -656,9 +652,9 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
 
     if (not isNearRel(_localBoxMax[i], _globalBoxMax[i])) {
       // Receive average work from neighbour planes.
-      autopas::AutoPas_MPI_Recv(&neighborPlaneWork, 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
+      autopas::AutoPas_MPI_Recv(&neighborPlaneWork, 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _mpiComm,
                                 AUTOPAS_MPI_STATUS_IGNORE);
-      autopas::AutoPas_MPI_Recv(&neighborBoundary, 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _communicator,
+      autopas::AutoPas_MPI_Recv(&neighborBoundary, 1, AUTOPAS_MPI_DOUBLE, rightNeighbor, 0, _mpiComm,
                                 AUTOPAS_MPI_STATUS_IGNORE);
 
       // Calculate balanced positions and only shift by half the resulting distance to prevent localBox min to be larger
@@ -671,7 +667,7 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
   }
 }
 
-autopas::AutoPas_MPI_Comm RegularGridDecomposition::getCommunicator() const { return _communicator; }
+autopas::AutoPas_MPI_Comm RegularGridDecomposition::getMPICommunicator() const { return _mpiComm; }
 
 void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)

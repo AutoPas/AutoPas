@@ -9,8 +9,7 @@
 
 #include "ParticleSerializationTools.h"
 
-ParticleCommunicator::ParticleCommunicator(const autopas::AutoPas_MPI_Comm &communicator)
-    : _communicator(communicator) {}
+ParticleCommunicator::ParticleCommunicator(const autopas::AutoPas_MPI_Comm &communicator) : _MPIComm(communicator) {}
 
 void ParticleCommunicator::sendParticles(const std::vector<ParticleType> &particles, const int &receiver,
                                          const std::optional<Direction> direction) {
@@ -57,17 +56,17 @@ void ParticleCommunicator::sendDataToNeighbor(const std::vector<char> &sendBuffe
   _sendRequests.push_back(sendRequest);
 
   autopas::AutoPas_MPI_Isend(_sendBuffers.back().data(), _sendBuffers.back().size(), AUTOPAS_MPI_CHAR, neighbor, 0,
-                             _communicator, &_sendRequests.back());
+                             _MPIComm, &_sendRequests.back());
 }
 
 void ParticleCommunicator::receiveDataFromNeighbor(const int &neighbour, std::vector<char> &receiveBuffer) const {
   autopas::AutoPas_MPI_Status status;
-  autopas::AutoPas_MPI_Probe(neighbour, 0, _communicator, &status);
+  autopas::AutoPas_MPI_Probe(neighbour, 0, _MPIComm, &status);
 
   int receiveBufferSize = 0;
   autopas::AutoPas_MPI_Get_count(&status, AUTOPAS_MPI_CHAR, &receiveBufferSize);
   receiveBuffer.resize(receiveBufferSize);
 
-  autopas::AutoPas_MPI_Recv(receiveBuffer.data(), receiveBufferSize, AUTOPAS_MPI_CHAR, neighbour, 0, _communicator,
+  autopas::AutoPas_MPI_Recv(receiveBuffer.data(), receiveBufferSize, AUTOPAS_MPI_CHAR, neighbour, 0, _MPIComm,
                             AUTOPAS_MPI_STATUS_IGNORE);
 }
