@@ -1131,7 +1131,7 @@ class LJFunctorHWY
     VectorDouble sigmaSquareds = highway::Undefined(tag_double);
     VectorDouble shift6s = highway::Undefined(tag_double);
 
-    const auto indices = highway::Load(tag_long, reinterpret_cast<const int64_t*>(neighborList + j));
+    const auto indices = highway::LoadU(tag_long, reinterpret_cast<const int64_t*>(neighborList + j));
 
     if constexpr (useMixing) {
       HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
