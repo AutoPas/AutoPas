@@ -878,7 +878,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         try {
           const auto parsedOptions = ComputationLoadOption::parseOptions(
-            parseSequenceOneElementExpected(node[key], "Pass Exactly one computation load option!"));
+              parseSequenceOneElementExpected(node[key], "Pass Exactly one computation load option!"));
           if (parsedOptions.empty()) {
             throw std::runtime_error("Unknown computation load option.");
           }

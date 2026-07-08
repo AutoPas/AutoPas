@@ -623,7 +623,9 @@ double Simulation::getComputationalLoad() const {
           _domainDecomposition->getDomainIndex(), _configuration.computationalLoadMetric.value.to_string());
     }
 
-    std::cout << "WARNING: Computational load is zero. To avoid divide-by-zero, it is replaced by a computational load of" << std::endl;
+    std::cout
+        << "WARNING: Computational load is zero. To avoid divide-by-zero, it is replaced by a computational load of"
+        << std::endl;
   }
 
   return computationalLoad;
