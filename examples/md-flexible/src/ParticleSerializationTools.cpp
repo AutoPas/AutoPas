@@ -99,11 +99,11 @@ void serializeParticleImpl(const ParticleType &particle, std::vector<char> &seri
                            std::index_sequence<I...>) {
   // Serialize particle attributes
   size_t startIndex = 0;
-  std::array<char, ParticleSerializationTools::AttributesSize> attributesVector{};
-  (serializeAttribute<I>(particle, attributesVector, startIndex), ...);
+  std::array<char, ParticleSerializationTools::AttributesSize> attributesArray{};
+  (serializeAttribute<I>(particle, attributesArray, startIndex), ...);
 
   // Add serialized attributes to serialized particle
-  serializedParticle.insert(serializedParticle.end(), attributesVector.begin(), attributesVector.end());
+  serializedParticle.insert(serializedParticle.end(), attributesArray.begin(), attributesArray.end());
 }
 
 /**

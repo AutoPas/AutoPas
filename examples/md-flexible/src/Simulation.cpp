@@ -9,6 +9,7 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -214,6 +215,14 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     // Set the simulation directly to the desired initial temperature.
     Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                       _configuration.initTemperature.value, std::numeric_limits<double>::max());
+  }
+
+  if (_configuration.loadBalancingInterval.value < _configuration.computationalLoadMeasurementPeriod.value) {
+    std::cout << "Computational Load Measurement Period "
+              << std::to_string(_configuration.computationalLoadMeasurementPeriod.value)
+              << " is larger than the load balancing interval "
+              << std::to_string(_configuration.loadBalancingInterval.value)
+              << "! It will be reset to equal the load balancing interval." << std::endl;
   }
 
   _timers.initialization.stop();
@@ -602,7 +611,19 @@ double Simulation::getComputationalLoad() const {
   }
 
   if (computationalLoad == 0.) {
-    std::cout << "WARNING: Computational load is zero. Load balancing may break" << std::endl;
+    // This should only ever happen with particle count -> we simply assume one particle in this case
+    if (_iteration == 0 or _configuration.computationalLoadMetric.value == ComputationLoadOption::particleCount) {
+      std::cout << "Computational load on rank " << _domainDecomposition->getDomainIndex() << " is zero. It is replaced"
+                << " by a computational load of 1" << std::endl;
+      computationalLoad = 1.;
+    } else {
+      // If other metrics result in zero, this implies that something is actually wrong -> throw error
+      autopas::utils::ExceptionHandler::exception(
+          "Computational load on rank {} with computational load metric {} is zero!",
+          _domainDecomposition->getDomainIndex(), _configuration.computationalLoadMetric.value.to_string());
+    }
+
+    std::cout << "WARNING: Computational load is zero. To avoid divide-by-zero, it is replaced by a computational load of" << std::endl;
   }
 
   return computationalLoad;

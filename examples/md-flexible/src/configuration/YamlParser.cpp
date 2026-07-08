@@ -876,10 +876,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "YAML-sequence of possible values.";
         description = config.computationalLoadMetric.description;
 
-        const auto parsedOptions = ComputationLoadOption::parseOptions(
+        try {
+          const auto parsedOptions = ComputationLoadOption::parseOptions(
             parseSequenceOneElementExpected(node[key], "Pass Exactly one computation load option!"));
-
-        config.computationalLoadMetric.value = *parsedOptions.begin();
+          if (parsedOptions.empty()) {
+            throw std::runtime_error("Unknown computation load option.");
+          }
+          config.computationalLoadMetric.value = *parsedOptions.begin();
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
 
       } else if (key == config.computationalLoadMeasurementPeriod.name) {
         expected = "Unsigned Integer > 0.";

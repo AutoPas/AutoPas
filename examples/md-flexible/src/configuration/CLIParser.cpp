@@ -755,6 +755,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.computationalLoadMeasurementPeriod)::getoptChar: {
         config.computationalLoadMeasurementPeriod.value = stoul(strArg);
+        break;
       }
 
       default: {
