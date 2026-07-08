@@ -17,6 +17,7 @@
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/utils/EnergySensor.h"
+#include "autopas/utils/PatternBenchmark.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
@@ -276,6 +277,12 @@ class AutoTuner {
    */
   const std::set<Configuration> &getSearchSpace() const;
 
+  /**
+   * Remove all configurations from the search space and config queue that do not match the given vecPattern.
+   * @param pattern The vecPattern to keep.
+   */
+  void restrictSearchSpaceToVecPattern(VectorizationPatternOption pattern);
+
  private:
   /**
    * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
@@ -440,5 +447,11 @@ class AutoTuner {
    * significantly slower than the fastest configuration by more than _earlyStoppingFactor.
    */
   bool _earlyStoppingOfResampling{false};
+
+ public:
+  /**
+   * This variable stores the results of the vectorization pattern benchmark
+   */
+  PatternBenchmark patternBenchmark{};
 };
 }  // namespace autopas

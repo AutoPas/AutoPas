@@ -100,6 +100,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.useLOESSSmoothening,
       config.useThermostat,
       config.useTuningLogger,
+      config.createPatternBenchmarkOutput,
+      config.useBenchmarkPatternSelection,
       config.verletClusterSize,
       config.verletRebuildFrequency,
       config.verletSkinRadius,
@@ -715,6 +717,30 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.useTuningLogger.value = false;
         } else {
           cerr << "Error parsing 'useTuningLogger': " << optarg << endl;
+          cerr << "Value should be true or false." << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.useBenchmarkPatternSelection)::getoptChar: {
+        if (strArg == "true") {
+          config.useBenchmarkPatternSelection.value = true;
+        } else if (strArg == "false") {
+          config.useBenchmarkPatternSelection.value = false;
+        } else {
+          cerr << "Error parsing 'useBenchmarkPatternSelection': " << optarg << endl;
+          cerr << "Value should be true or false." << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.createPatternBenchmarkOutput)::getoptChar: {
+        if (strArg == "true") {
+          config.createPatternBenchmarkOutput.value = true;
+        } else if (strArg == "false") {
+          config.createPatternBenchmarkOutput.value = false;
+        } else {
+          cerr << "Error parsing 'createPatternBenchmarkOutput': " << optarg << endl;
           cerr << "Value should be true or false." << endl;
           displayHelp = true;
         }

@@ -449,4 +449,15 @@ void AutoTuner::checkEarlyStoppingCondition(const size_t tuningPhase) {
 }
 
 const std::set<Configuration> &AutoTuner::getSearchSpace() const { return _searchSpace; }
+
+void AutoTuner::restrictSearchSpaceToVecPattern(VectorizationPatternOption pattern) {
+  std::erase_if(_searchSpace, [&](const Configuration &c) { return c.vecPattern != pattern; });
+  std::erase_if(_configQueue, [&](const Configuration &c) { return c.vecPattern != pattern; });
+  if (_searchSpace.empty()) {
+    utils::ExceptionHandler::exception(
+        "AutoTuner::restrictSearchSpaceToVecPattern(): Search space is empty after restricting to vecPattern {}.",
+        pattern);
+  }
+}
+
 }  // namespace autopas
