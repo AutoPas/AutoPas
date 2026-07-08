@@ -471,6 +471,14 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   // Pairwise Verlet Lists only supports 1xVec pattern => Multiply by 1
   configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 44;
 
+  // PseudoVerletLists:     psvl_c01                    (AoS only, noNewton3)                                 =   1
+  //                        psvl_c08                    (AoS only, newton3 <=> noNewton3)                     =   2
+  //                        psvl_c18                    (AoS only, newton3 <=> noNewton3)                     =   2
+  //   Subtotal:                                                                                              =   5
+  // Pseudo Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply 2
+  // Pseudo Verlet Lists only supports 1xVec pattern => Multiply by 1
+  configsPerContainer[autopas::ContainerOption::pseudoVerletLists] = 10;
+
   // Octree:                ot_c01                      (AoS <=> SoA, noNewton3)                              =   2
   //                        ot_c18                      (AoS <=> SoA, newton3)                                =   2
   //   Subtotal:                                                                                              =   4

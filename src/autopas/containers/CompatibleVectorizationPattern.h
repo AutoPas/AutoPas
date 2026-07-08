@@ -28,7 +28,8 @@ static std::set<autopas::VectorizationPatternOption> allCompatibleVectorizationP
     case ContainerOption::verletLists:
     case ContainerOption::verletListsCells:
     case ContainerOption::pairwiseVerletLists:
-    case ContainerOption::varVerletListsAsBuild: {
+    case ContainerOption::varVerletListsAsBuild: 
+    case ContainerOption::pseudoVerletLists:  {
       return std::set<autopas::VectorizationPatternOption>{VectorizationPatternOption::p1xVec};
     }
     default: {

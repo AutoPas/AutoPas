@@ -1,5 +1,5 @@
 /**
- * @file LCC08CellHandlerUtility.h
+ * @file C08CellHandlerUtility.h
  * @author J. Schuhmacher
  * @date 11.07.2024
  */
@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-namespace autopas::LCC08CellHandlerUtility {
+namespace autopas::C08CellHandlerUtility {
 
 /**
  * Type Alias for the C08 base step containing cell offsets. An offset is the distance from a base cell to another cell
@@ -66,10 +66,10 @@ using OffsetPairVector = std::vector<OffsetPair>;
 using OffsetTripletVector = std::vector<OffsetTriplet>;
 
 /**
- * Compile Time Modes for the function autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08
+ * Compile Time Modes for the function autopas::C08CellHandlerUtility::computePairwiseCellOffsetsC08
  *
  * @note In case of a new mode, this also requires the explicit instantiation of the new template
- * in LCC08CellHandlerUtility.cpp and a modification to @ref OffsetPairType
+ * in C08CellHandlerUtility.cpp and a modification to @ref OffsetPairType
  */
 enum class C08OffsetMode {
   /** Returns the C08 base step cell pairs without sorting */
@@ -129,7 +129,7 @@ constexpr inline char ENUM_EXTENSION_EXCEPTION[]{
     "Enum C08CellDirection was extended, but its associated switch-case statements was not!"};
 
 /**
- * Helper function for autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08.
+ * Helper function for autopas::C08CellHandlerUtility::computePairwiseCellOffsetsC08.
  * This function basically translates a direction, like backLeft to the corresponding vector pointing
  * towards this cell relatively starting from the base cell. We treat frontLeft as base cell
  * So, e.g. frontLeft --> (0, 0) since we are good
@@ -203,4 +203,4 @@ template <C08OffsetMode Mode>
 OffsetTripletType<Mode> computeTriwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
                                                      const std::array<double, 3> &cellLength, double interactionLength);
 
-}  // namespace autopas::LCC08CellHandlerUtility
+}  // namespace autopas::C08CellHandlerUtility

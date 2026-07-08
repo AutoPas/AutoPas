@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "LCC08CellHandler.h"
 #include "LCTraversalInterface.h"
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
+#include "autopas/containers/cellTraversals/C08CellHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -66,7 +66,7 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, publ
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  LCC08CellHandler<ParticleCell_T, Functor_T> _cellHandler;
+  C08CellHandler<ParticleCell_T, Functor_T> _cellHandler;
 };
 
 template <class ParticleCell_T, class Functor_T>

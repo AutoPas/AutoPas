@@ -68,6 +68,12 @@ class ContainerOption : public Option<ContainerOption> {
      * distributed since it is space adaptive
      */
     octree,
+
+    /**
+     *  pseudoVerletLists : Built on top of LinkedCells. Uses particles that are projected on the cell pair axis to
+     *  reduce spurious distance calculations.
+     */
+    pseudoVerletLists,
   };
 
   /**
@@ -110,6 +116,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
         {ContainerOption::octree, "Octree"},
+        {ContainerOption::pseudoVerletLists, "PseudoVerletLists"},
     };
   };
 
