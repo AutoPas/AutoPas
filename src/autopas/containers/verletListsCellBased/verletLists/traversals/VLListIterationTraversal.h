@@ -68,18 +68,24 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       offsets[c + 1] = offsets[c] + cells[c].size();
     }
 
-    // Initialize/clear color indices lists
-    for (auto &colorGroup : _colorIndices) {
+    // Initialize/clear color cells lists
+    for (auto &colorGroup : _colorCells) {
       colorGroup.clear();
     }
 
     const bool hasCellsPerDim = (_cellsPerDim[0] > 0 && _cellsPerDim[1] > 0 && _cellsPerDim[2] > 0);
     if (hasCellsPerDim) {
       for (size_t c = 0; c < cells.size(); ++c) {
-        auto c3D = utils::ThreeDimensionalMapping::oneToThreeD(c, _cellsPerDim);
-        size_t color = (c3D[0] % 2) + 2 * (c3D[1] % 2) + 4 * (c3D[2] % 2);
-        for (size_t pIdx = offsets[c]; pIdx < offsets[c + 1]; ++pIdx) {
-          _colorIndices[color].push_back(pIdx);
+        if (offsets[c + 1] > offsets[c]) {
+          auto c3D = utils::ThreeDimensionalMapping::oneToThreeD(c, _cellsPerDim);
+          size_t color = (c3D[0] % 2) + 2 * (c3D[1] % 2) + 4 * (c3D[2] % 2);
+          
+          std::vector<size_t> cellParticles;
+          cellParticles.reserve(offsets[c + 1] - offsets[c]);
+          for (size_t pIdx = offsets[c]; pIdx < offsets[c + 1]; ++pIdx) {
+            cellParticles.push_back(pIdx);
+          }
+          _colorCells[color].push_back(std::move(cellParticles));
         }
       }
     }
@@ -127,15 +133,18 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
           const bool hasCellsPerDim = (_cellsPerDim[0] > 0 && _cellsPerDim[1] > 0 && _cellsPerDim[2] > 0);
           if (hasCellsPerDim) {
             for (int color = 0; color < 8; ++color) {
-              const auto &indices = _colorIndices[color];
-              AUTOPAS_OPENMP(parallel for schedule(static))
-              for (size_t k = 0; k < indices.size(); ++k) {
-                const size_t i = indices[k];
-                ParticleType &particleI = *_particlePtrs[i];
-                const size_t numNeighbors = neighborList.count(i);
-                const size_t *neighborsIPtr = neighborList.begin(i);
-                for (size_t j = 0; j < numNeighbors; ++j) {
-                  _functor.AoSFunctor(particleI, *_particlePtrs[neighborsIPtr[j]], true);
+              const auto &cellsOfColor = _colorCells[color];
+              AUTOPAS_OPENMP(parallel for schedule(dynamic))
+              for (size_t c = 0; c < cellsOfColor.size(); ++c) {
+                const auto &indices = cellsOfColor[c];
+                for (size_t k = 0; k < indices.size(); ++k) {
+                  const size_t i = indices[k];
+                  ParticleType &particleI = *_particlePtrs[i];
+                  const size_t numNeighbors = neighborList.count(i);
+                  const size_t *neighborsIPtr = neighborList.begin(i);
+                  for (size_t j = 0; j < numNeighbors; ++j) {
+                    _functor.AoSFunctor(particleI, *_particlePtrs[neighborsIPtr[j]], true);
+                  }
                 }
               }
             }
@@ -165,11 +174,14 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
           const bool hasCellsPerDim = (_cellsPerDim[0] > 0 && _cellsPerDim[1] > 0 && _cellsPerDim[2] > 0);
           if (hasCellsPerDim) {
             for (int color = 0; color < 8; ++color) {
-              const auto &indices = _colorIndices[color];
-              AUTOPAS_OPENMP(parallel for schedule(static))
-              for (size_t k = 0; k < indices.size(); ++k) {
-                const size_t i = indices[k];
-                _functor.SoAFunctorVerlet(_soa, i, neighborList.begin(i), neighborList.count(i), true);
+              const auto &cellsOfColor = _colorCells[color];
+              AUTOPAS_OPENMP(parallel for schedule(dynamic))
+              for (size_t c = 0; c < cellsOfColor.size(); ++c) {
+                const auto &indices = cellsOfColor[c];
+                for (size_t k = 0; k < indices.size(); ++k) {
+                  const size_t i = indices[k];
+                  _functor.SoAFunctorVerlet(_soa, i, neighborList.begin(i), neighborList.count(i), true);
+                }
               }
             }
           } else {
@@ -211,9 +223,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   std::array<unsigned long, 3> _cellsPerDim;
 
   /**
-   * Particle indices grouped by their cell's C08 color.
+   * Particle indices grouped by their cell and then by the cell's C08 color.
    */
-  std::array<std::vector<size_t>, 8> _colorIndices;
+  std::array<std::vector<std::vector<size_t>>, 8> _colorCells;
 };
 
 }  // namespace autopas
