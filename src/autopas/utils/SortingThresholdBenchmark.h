@@ -234,14 +234,12 @@ class SortingThresholdBenchmark {
 
       // Generate the number of scattered particles for cell1 and cell2
       size_t toAddCell1 = distrib(gen);
-      numParticlesCell1 += toAddCell1;
-      numParticlesCell2 += numParticlesScatter - toAddCell1;
-
       // Vary the seed per repetition per cell so each repetition samples a fresh particle
       // layout instead of repeatedly timing the exact same configuration.
-      fillWithRandomParticles(cell1, defaultParticle, cell1Low, cell1High, numParticlesCell1,
+      fillWithRandomParticles(cell1, defaultParticle, cell1Low, cell1High, numParticlesCell1 + toAddCell1,
                               static_cast<unsigned int>(2 * i));
-      fillWithRandomParticles(cell2, defaultParticle, cell2Low, cell2High, numParticlesCell2,
+      fillWithRandomParticles(cell2, defaultParticle, cell2Low, cell2High,
+                              numParticlesCell2 + numParticlesScatter - toAddCell1,
                               static_cast<unsigned int>(2 * i + 1));
 
       // Reload SoAs each iteration so forces don't pile up.
