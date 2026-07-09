@@ -184,15 +184,14 @@ class CellFunctor {
 
   /**
    * Min. number of particles to start AoS sorting. This is the sum of the number of particles in two cells.
-   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
-  size_t _aosSortingThreshold{8};
+  size_t _aosSortingThreshold;
 
   /**
    * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
    * Default comes from the LJFunctorHWY Benchmarks.
    */
-  size_t _soaSortingThreshold{50};
+  size_t _soaSortingThreshold;
 
   const DataLayoutOption::Value _dataLayout;
 
