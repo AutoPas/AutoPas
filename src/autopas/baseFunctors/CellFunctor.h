@@ -416,7 +416,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
         if (not _useNewton3) {
           _functor.SoAFunctorPairSorted(
               view2.getView(), view1.getView(),
-              computeSortingData(threadData.projIdx1, threadData.projIdx2, threadData.maxIndex, threadData.minIndex),
+              computeSortingData(threadData.projIdx2, threadData.projIdx1, threadData.maxIndex, threadData.minIndex),
               false);
         }
       }
