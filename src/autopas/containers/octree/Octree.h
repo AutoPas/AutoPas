@@ -74,7 +74,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    */
   Octree(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
          const double skin, const double cellSizeFactor, const size_t aosSortingThreshold,
-         const size_t soaSortingThreshold)
+         const size_t soaSortingThreshold = 25)
       : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThreshold,
                                                      soaSortingThreshold) {
     using namespace autopas::utils::ArrayMath::literals;

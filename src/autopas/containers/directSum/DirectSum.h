@@ -65,7 +65,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    * @param soaSortingThreshold Sum of the SoA buffer sizes of two cells from which SoA sorting should be enabled.
    */
   DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double skin,
-            const size_t aosSortingThreshold, const size_t soaSortingThreshold)
+            const size_t aosSortingThreshold, const size_t soaSortingThreshold = 25)
       : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThreshold,
                                                      soaSortingThreshold),
         _cellBorderFlagManager() {

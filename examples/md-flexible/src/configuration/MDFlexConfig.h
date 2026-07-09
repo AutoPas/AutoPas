@@ -26,7 +26,6 @@
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
-#include "autopas/utils/SortingThreshold.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
 #include "src/configuration/objects/CubeGauss.h"
@@ -580,7 +579,7 @@ class MDFlexConfig {
    * distance checks.
    */
   MDFlexOption<size_t, __LINE__> aosSortingThreshold{
-      autopas::defaultAoSSortingThreshold, "aos-sorting-threshold", true,
+      8, "aos-sorting-threshold", true,
       "Threshold for traversals that use the CellFunctor to start sorting. If the sum of the number of particles in "
       "two cells is greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid "
       "unnecessary distance checks."};
@@ -590,7 +589,7 @@ class MDFlexConfig {
    * sorts particles by their projection onto the cell-pair direction vector before computing interactions.
    */
   MDFlexOption<size_t, __LINE__> soaSortingThreshold{
-      autopas::defaultSoASortingThreshold, "soa-sorting-threshold", true,
+      25, "soa-sorting-threshold", true,
       "Threshold for the SoA functor pair path to start sorting. If the sum of the SoA buffer sizes of two cells is "
       "greater or equal to that value, particles are sorted by their projection onto the cell-pair direction vector "
       "before computing interactions."};

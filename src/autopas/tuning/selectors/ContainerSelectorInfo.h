@@ -9,7 +9,6 @@
 #include <memory>
 
 #include "autopas/options/LoadEstimatorOption.h"
-#include "autopas/utils/SortingThreshold.h"
 
 namespace autopas {
 /**
@@ -27,8 +26,8 @@ class ContainerSelectorInfo {
         cellSizeFactor(1.),
         verletSkin(0.),
         verletClusterSize(64),
-        aosSortingThreshold(defaultAoSSortingThreshold),
-        soaSortingThreshold(defaultSoASortingThreshold),
+        aosSortingThreshold(0),
+        soaSortingThreshold(0),
         loadEstimator(LoadEstimatorOption::none) {}
 
   /**

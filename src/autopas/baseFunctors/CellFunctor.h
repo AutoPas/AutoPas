@@ -13,7 +13,6 @@
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/SortedSoAView.h"
-#include "autopas/utils/SortingThreshold.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas::internal {
@@ -187,12 +186,12 @@ class CellFunctor {
    * Min. number of particles to start AoS sorting. This is the sum of the number of particles in two cells.
    * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
-  size_t _aosSortingThreshold{defaultAoSSortingThreshold};
+  size_t _aosSortingThreshold{8};
 
   /**
    * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
    */
-  size_t _soaSortingThreshold{defaultSoASortingThreshold};
+  size_t _soaSortingThreshold{25};
 
   const DataLayoutOption::Value _dataLayout;
 

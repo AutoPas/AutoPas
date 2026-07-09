@@ -9,7 +9,6 @@
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/SortingThreshold.h"
 
 namespace autopas::internal {
 /**
@@ -168,13 +167,13 @@ class CellFunctor3B {
    * The default threshold is (blindly) taken from CellFunctor.h. For some more details see:
    * https://github.com/AutoPas/AutoPas/pull/619
    */
-  size_t _aosSortingThreshold{defaultAoSSortingThreshold};
+  size_t _aosSortingThreshold{8};
 
   /**
    * Min. number of particles in two SoA buffers to start SoA-level sorting.
    * Currently unused by CellFunctor3B (stored for interface consistency with CellFunctor).
    */
-  size_t _soaSortingThreshold{defaultSoASortingThreshold};
+  size_t _soaSortingThreshold{25};
 
   const DataLayoutOption::Value _dataLayout;
 
