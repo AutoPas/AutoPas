@@ -172,8 +172,9 @@ class CellFunctor3B {
   /**
    * Min. number of particles in two SoA buffers to start SoA-level sorting.
    * Currently unused by CellFunctor3B (stored for interface consistency with CellFunctor).
+   * Default comes from the LJFunctorHWY Benchmarks.
    */
-  size_t _soaSortingThreshold{25};
+  size_t _soaSortingThreshold{50};
 
   const DataLayoutOption::Value _dataLayout;
 

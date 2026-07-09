@@ -190,8 +190,9 @@ class CellFunctor {
 
   /**
    * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
+   * Default comes from the LJFunctorHWY Benchmarks.
    */
-  size_t _soaSortingThreshold{25};
+  size_t _soaSortingThreshold{50};
 
   const DataLayoutOption::Value _dataLayout;
 

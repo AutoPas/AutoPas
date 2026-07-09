@@ -36,13 +36,15 @@ class LogicHandlerInfo {
    */
   unsigned int verletClusterSize{4};
   /**
-   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
+   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor.
+   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
   size_t aosSortingThreshold{8};
   /**
    * Number of particles in two SoA buffers from which SoA sorting should be performed.
+   * Default comes from the LJFunctorHWY Benchmarks.
    */
-  size_t soaSortingThreshold{25};
+  size_t soaSortingThreshold{50};
   /**
    * Time step used in the simulation.
    * This is currently used in rebuild frequency estimation for dynamic containers.

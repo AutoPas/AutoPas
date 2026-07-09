@@ -1260,13 +1260,15 @@ class AutoPas {
    */
   std::string _outputSuffix{""};
   /**
-   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
+   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor.
+   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
   size_t _aosSortingThreshold{8};
   /**
    * Number of particles in two SoA buffers from which SoA sorting should be performed.
+   * Default comes from the LJFunctorHWY Benchmarks.
    */
-  size_t _soaSortingThreshold{25};
+  size_t _soaSortingThreshold{50};
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
    * Triggers reserve() and provides a parallel loop with deliberate scheduling.
