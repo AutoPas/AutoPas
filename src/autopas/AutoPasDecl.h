@@ -1142,26 +1142,30 @@ class AutoPas {
    * sorted view of the particles to avoid unnecessary distance checks.
    * @param aosSortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
-  void setAoSSortingThreshold(size_t aosSortingThreshold) { _aosSortingThreshold = aosSortingThreshold; }
+  void setAoSSortingThreshold(size_t aosSortingThreshold) {
+    _logicHandlerInfo.aosSortingThreshold = aosSortingThreshold;
+  }
 
   /**
    * Get the aos-sorting-threshold for traversals that use the CellFunctor.
    * @return aos-sorting-threshold
    */
-  size_t getAoSSortingThreshold() const { return _aosSortingThreshold; }
+  size_t getAoSSortingThreshold() const { return _logicHandlerInfo.aosSortingThreshold; }
 
   /**
    * Set the SoA sorting-threshold.
    * If the sum of the SoA buffer sizes of two cells exceeds this value, the SoA path uses SoAFunctorPairSorted.
    * @param soaSortingThreshold Sum of the SoA buffer sizes from which SoA sorting should be enabled.
    */
-  void setSoASortingThreshold(size_t soaSortingThreshold) { _soaSortingThreshold = soaSortingThreshold; }
+  void setSoASortingThreshold(size_t soaSortingThreshold) {
+    _logicHandlerInfo.soaSortingThreshold = soaSortingThreshold;
+  }
 
   /**
    * Get the SoA sorting-threshold.
    * @return SoA sorting-threshold
    */
-  size_t getSoASortingThreshold() const { return _soaSortingThreshold; }
+  size_t getSoASortingThreshold() const { return _logicHandlerInfo.soaSortingThreshold; }
 
   /**
    * Enable or disable benchmark-based SoA sorting threshold selection.
@@ -1269,14 +1273,6 @@ class AutoPas {
    * This is useful when multiple instances of AutoPas exist, especially in an MPI context.
    */
   std::string _outputSuffix{""};
-  /**
-   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
-   */
-  size_t _aosSortingThreshold{8};
-  /**
-   * Number of particles in two SoA buffers from which SoA sorting should be performed.
-   */
-  size_t _soaSortingThreshold{25};
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
    * Triggers reserve() and provides a parallel loop with deliberate scheduling.

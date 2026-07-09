@@ -19,7 +19,6 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/SortedSoAView.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/optRef.h"
 
@@ -695,7 +694,7 @@ class LJFunctorHWY
           uPotSum, restI, 0);
     }
 
-    const int restJ = static_cast<int>(jVecEnd & (jStepSize<vecPattern>() - 1));
+    const size_t restJ = jVecEnd & (jStepSize<vecPattern>() - 1);
     if (restJ > 0) {
       SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
@@ -763,6 +762,7 @@ class LJFunctorHWY
       size_t jVecEnd{};
       size_t jVecStart = 0;
       if constexpr (sorted) {
+        // This is always save here since SoAFunctorPairSorted() will never call this with no sortingData.
         const auto &sd = sortingData->get();
         // maxIndex is monotonically non-decreasing, so the tightest valid bound for [i, i + iStep - 1] (the i values
         // handled in one iteration) is maxIndex of the last particle in the block. For p1xVec
@@ -792,12 +792,13 @@ class LJFunctorHWY
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       // Rest I can't occur in 1xVec case
-      const int restI = static_cast<int>(n1) - static_cast<int>(i);
+      const size_t restI = n1 - i;
       if (restI > 0) {
         // Remainder block covers [i, i + restI - 1]. Same monotonicity argument as above.
         size_t jVecEnd = n2;
         size_t jVecStart = 0;
         if constexpr (sorted) {
+          // This is always save here since SoAFunctorPairSorted() will never call this with no sortingData.
           const auto &sd = sortingData->get();
           jVecEnd = sd.maxIndex[i + restI - 1];
           jVecStart = sd.minIndex[i];

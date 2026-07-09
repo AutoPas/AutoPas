@@ -74,10 +74,18 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    */
   Octree(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
          const double skin, const double cellSizeFactor, const size_t aosSortingThreshold,
-         const size_t soaSortingThreshold = 8)
+         const size_t soaSortingThreshold)
       : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThreshold,
                                                      soaSortingThreshold) {
     using namespace autopas::utils::ArrayMath::literals;
+
+    if (cellSizeFactor != 1.0) {
+      // Throw exception - this config should have been caught by LogicHandler. Note: This is not a fundamental issue
+      // with the algorithm but simply has not been implemented.
+      utils::ExceptionHandler::exception(
+          "Trying to construct an Octree with CSF != 1.0! This should never occur as the LogicHandler "
+          "should reject this (as Configuration::hasCompatibleValues should return false).");
+    }
 
     // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
     int unsigned treeSplitThreshold = 16;

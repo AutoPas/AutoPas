@@ -38,7 +38,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                              const double cutoff, const double skin, const size_t aosSortingThreshold,
-                             const size_t soaSortingThreshold = 25)
+                             const size_t soaSortingThreshold)
       : ParticleContainerInterface<ParticleType>(skin),
         _cells(),
         _boxMin(boxMin),

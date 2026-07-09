@@ -18,7 +18,7 @@ add_executable(runMPITests ${MY_SRC})
 target_link_libraries(
     runMPITests
     autopas
-    autopasTools
+    generators
     gmock
     MPI::MPI_CXX
 )

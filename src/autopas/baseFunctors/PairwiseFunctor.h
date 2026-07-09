@@ -14,12 +14,24 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
-#include "autopas/utils/SortedSoAView.h"
 
 namespace autopas {
 
 template <class Particle>
 class VerletListHelpers;
+
+/**
+ * Precomputed index bounds for iterating a pre-sorted SoA pair. Produced by CellFunctor and
+ * consumed by SoAFunctorPairSorted overrides.
+ *
+ * @note Importantly SoASortingData does not hold its own storage but rather references. meaning the storage must
+ * outlive the struct.
+ */
+struct SoASortingData {
+  size_t startI;                        ///< First index in soa1 whose projection range overlaps soa2.
+  const std::vector<size_t> &maxIndex;  ///< Per-particle upper bound index into soa2 (exclusive).
+  const std::vector<size_t> &minIndex;  ///< Per-particle lower bound index into soa2 (inclusive).
+};
 
 /**
  * PairwiseFunctor class. This class describes the pairwise interactions between

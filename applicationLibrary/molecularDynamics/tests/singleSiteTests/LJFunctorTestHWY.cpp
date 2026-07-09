@@ -9,7 +9,7 @@
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/ParticleDefinitions.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "generators/src/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 
 void LJFunctorTestHWY::SetUp() {
@@ -216,6 +216,95 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
   } else {
     ljFunctorHWY.SoAFunctorPair(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, newton3);
   }
+
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1Ref._particleSoABuffer))
+      << "cell1 mismatch after applying functor.";
+  EXPECT_TRUE(checkSoAParticlesAreEqual(cell2HWY._particleSoABuffer, cell2Ref._particleSoABuffer))
+      << "cell2 mismatch after applying functor.";
+
+  ljFunctor.endTraversal(newton3);
+  ljFunctorHWY.endTraversal(newton3);
+
+  EXPECT_NEAR(ljFunctor.getPotentialEnergy(), ljFunctorHWY.getPotentialEnergy(), _maxError) << "global uPot";
+  EXPECT_NEAR(ljFunctor.getVirial(), ljFunctorHWY.getVirial(), _maxError) << "global virial";
+}
+
+template <bool mixing>
+void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsUseUnalignedViews(bool newton3, bool doDeleteSomeParticles,
+                                                                            VectorizationPattern pattern) {
+  const std::array<double, 3> cell1Low = _lowCorner;
+  const std::array<double, 3> cell1High = _highCorner;
+  const std::array<double, 3> cell2Low = {_highCorner[0], _lowCorner[1], _lowCorner[2]};
+  const std::array<double, 3> cell2High = {2 * _highCorner[0], _highCorner[1], _highCorner[2]};
+
+  const size_t numParticles = 23;
+  const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+
+  FMCell cell1Ref, cell2Ref;
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell1Ref, defaultParticle, cell1Low, cell1High,
+                                                                numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell2Ref, defaultParticle, cell2Low, cell2High,
+                                                                numParticles);
+
+  for (auto &particle : cell1Ref) {
+    if (doDeleteSomeParticles) {
+      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+      if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
+      if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
+    }
+    if constexpr (mixing) particle.setTypeId(particle.getID() % 5);
+  }
+  for (auto &particle : cell2Ref) {
+    if (doDeleteSomeParticles) {
+      if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
+      if (particle.getID() == 20) autopas::internal::markParticleAsDeleted(particle);
+      if (particle.getID() == 17) autopas::internal::markParticleAsDeleted(particle);
+    }
+    if constexpr (mixing) particle.setTypeId(particle.getID() % 5);
+  }
+
+  FMCell cell1HWY(cell1Ref), cell2HWY(cell2Ref);
+
+  constexpr bool shifting = true;
+
+  auto ljFunctor = [&]() {
+    if constexpr (mixing)
+      return mdLib::LJFunctor<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff, _PPL);
+    else
+      return mdLib::LJFunctor<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+  }();
+
+  auto ljFunctorHWY = [&]() {
+    if constexpr (mixing)
+      return mdLib::LJFunctorHWY<Molecule, shifting, true, autopas::FunctorN3Modes::Both, true>(_cutoff,
+                                                                                                std::ref(_PPL));
+    else
+      return mdLib::LJFunctorHWY<Molecule, shifting, false, autopas::FunctorN3Modes::Both, true>(_cutoff);
+  }();
+  ljFunctorHWY.setVecPattern(pattern);
+
+  if constexpr (not mixing) {
+    ljFunctor.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+  }
+
+  ljFunctor.initTraversal();
+  ljFunctorHWY.initTraversal();
+
+  ljFunctor.SoALoader(cell1Ref, cell1Ref._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cell2Ref, cell2Ref._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorHWY.SoALoader(cell1HWY, cell1HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorHWY.SoALoader(cell2HWY, cell2HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+
+  // Both the reference and the HWY functor operate on sub-views starting at index 1 (dropping particle 0), so
+  // neither the pointers passed to the kernels nor the trip count are aligned to the SIMD vector width.
+  auto refView1 = cell1Ref._particleSoABuffer.constructView(1, cell1Ref.size());
+  auto refView2 = cell2Ref._particleSoABuffer.constructView(1, cell2Ref.size());
+  ljFunctor.SoAFunctorPair(refView1, refView2, newton3);
+
+  auto hwyView1 = cell1HWY._particleSoABuffer.constructView(1, cell1HWY.size());
+  auto hwyView2 = cell2HWY._particleSoABuffer.constructView(1, cell2HWY.size());
+  ljFunctorHWY.SoAFunctorPair(hwyView1, hwyView2, newton3);
 
   EXPECT_TRUE(checkSoAParticlesAreEqual(cell1HWY._particleSoABuffer, cell1Ref._particleSoABuffer))
       << "cell1 mismatch after applying functor.";
@@ -695,6 +784,19 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsSortedCornerReversed
   } else {
     testLJFunctorvsLJFunctorHWYTwoCells<false, true>(newton3, doDeleteSomeParticle, vecPattern,
                                                      CellLayout::cornerReversed);
+  }
+}
+
+/**
+ * Checks that the HWY SoAFunctorPair matches the autovec reference in the pair-cell (with unaligned views) case,
+ * i.e. both cells are passed as sub-views starting at a non-zero, non-vector-aligned offset.
+ */
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
+  auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = GetParam();
+  if (mixing) {
+    testLJFunctorvsLJFunctorHWYTwoCellsUseUnalignedViews<true>(newton3, doDeleteSomeParticle, vecPattern);
+  } else {
+    testLJFunctorvsLJFunctorHWYTwoCellsUseUnalignedViews<false>(newton3, doDeleteSomeParticle, vecPattern);
   }
 }
 

@@ -9,6 +9,7 @@
 
 #include <algorithm>
 
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/SortedSoAView.h"
@@ -195,9 +196,8 @@ class CellFunctor {
 
   /**
    * Min. number of particles to start AoS sorting. This is the sum of the number of particles in two cells.
-   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
-  size_t _aosSortingThreshold{8};
+  size_t _aosSortingThreshold;
 
   /**
    * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
@@ -374,12 +374,21 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
   const size_t nI = projIdxI.size();
   const size_t nJ = projIdxJ.size();
 
+  // No j-particles to interact with: skip all i-particles. Guards the projIdxJ[0] access below, which would
+  // otherwise be an out-of-bounds read if projIdxJ were empty.
+  if (nJ == 0) {
+    maxIndexCache.assign(nI, 0);
+    minIndexCache.assign(nI, 0);
+    return {nI, maxIndexCache, minIndexCache};
+  }
+
   // Compute startI: the first i-particle that can interact with any j-particle.
-  // Any i with `projI[i] <= projJ[0] - cutoff` is further than cutoff from every j along the sorting axis,
-  // so it cannot contribute an interaction and is skipped.
+  // Any i with `projI[i] < projJ[0] - cutoff` is strictly farther than cutoff from every j along the
+  // sorting axis, so it cannot contribute an interaction and is skipped. Particles exactly at the cutoff
+  // distance are kept, consistent with the inclusive cutoff test used below for minIndex/maxIndex.
   const double threshold = projIdxJ[0].first - _sortingCutoff;
-  auto startIter = std::upper_bound(projIdxI.begin(), projIdxI.end(), threshold,
-                                    [](double val, const auto &elem) { return val < elem.first; });
+  auto startIter = std::lower_bound(projIdxI.begin(), projIdxI.end(), threshold,
+                                    [](const auto &elem, double val) { return elem.first < val; });
   const size_t startI = static_cast<size_t>(startIter - projIdxI.begin());
 
   // Compute maxIndexCache and minIndexCache in a single O(nI + nJ) sweep.
@@ -420,18 +429,25 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 
       _functor.SoAFunctorPairSorted(
           view1.getView(), view2.getView(),
-          computeSortingData(view1.projIdx, view2.projIdx, threadData.maxIndex, threadData.minIndex), _useNewton3);
+          computeSortingData(threadData.projIdx1, threadData.projIdx2, threadData.maxIndex, threadData.minIndex),
+          _useNewton3);
 
       if constexpr (bidirectional) {
         if (not _useNewton3) {
           _functor.SoAFunctorPairSorted(
               view2.getView(), view1.getView(),
-              computeSortingData(view2.projIdx, view1.projIdx, threadData.maxIndex, threadData.minIndex), false);
+              computeSortingData(threadData.projIdx1, threadData.projIdx2, threadData.maxIndex, threadData.minIndex),
+              false);
         }
       }
 
       view1.scatterBack();
-      view2.scatterBack();
+      // if we are not bidirectional and don't use newton3 we don't need to scatter back the second view
+      if constexpr (bidirectional) {
+        view2.scatterBack();
+      } else if (_useNewton3) {
+        view2.scatterBack();
+      }
       return;
     }
   }

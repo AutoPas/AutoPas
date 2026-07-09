@@ -32,8 +32,8 @@
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopasTools/generators/TwoCellsInteractionHitrateGenerator.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "generators/src/TwoCellsInteractionHitrateGenerator.h"
+#include "generators/src/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
@@ -417,7 +417,7 @@ BENCHMARK(BM_SoAFunctorPairSortedHitrate)
     ->ArgsProduct({kNValues, {0, 1}, {kFixedVecPattern}, hitrates})
     ->ArgNames({"N", "n3", "vecPat", "hitrate%"})
     ->Repetitions(5)
-    ->Name("BM_SoA_PairSorte_Hitrate");
+    ->Name("BM_SoA_PairSorted_Hitrate");
 /**
  * Benchmarks the sorted SoAFunctorPair across all VecPatterns, sweeping kNValuesReduced, newton3, and hitrate.
  * @name BM_SoA_PairSorted_VecPatterns

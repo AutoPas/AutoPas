@@ -1,5 +1,5 @@
 /**
- * @file autopasToolsTests.cpp
+ * @file generatorsTests.cpp
  * @author hmeyran
  * @date 30.06.2026
  */
