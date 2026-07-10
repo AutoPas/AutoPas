@@ -493,6 +493,8 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
             const auto M = soa2.size();
             if(N== 0 || M == 0){
                 spdlog::info("soa1.size()={} and soa2.size()={}, not rebuilding neighborlists.",N,M);
+                return false;
+
             }
             const float interactionLength = this->_cutoff + this->getVerletSkin();
             const float interactionLengthSqr = interactionLength * interactionLength;
@@ -592,6 +594,10 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
                     }
                 });
             });
+
+            offsetsDual.modify_device();
+            entriesDual.modify_device();
+            Kokkos::fence();
 
             return true;
         }

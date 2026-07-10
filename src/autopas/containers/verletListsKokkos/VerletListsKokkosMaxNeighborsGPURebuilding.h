@@ -467,7 +467,6 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
             return overflow != 0;
-            spdlog::info("buildNeighborlistflat() complete, overflow flag is currently not checked (TODO)");
         }
 
         
@@ -544,6 +543,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
 
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
+            Kokkos::fence();
             return overflow != 0;
         }
         
