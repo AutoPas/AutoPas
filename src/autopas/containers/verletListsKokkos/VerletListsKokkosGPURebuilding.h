@@ -151,10 +151,19 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
         
         auto& ownedSoA = _ownedParticles.getSoA();
         auto& haloSoA = _haloParticles.getSoA();
-        // owned-owned: skip self (a particle is not its own neighbor)
-        buildNeighborListsFlat(ownedSoA,ownedSoA,_neighborListOffsets,_neighborListEntries, true);
-        // owned-halo: different arrays, no self-collision possible
-        buildNeighborListsFlat(ownedSoA,haloSoA,_haloNeighborListOffsets,_haloNeighborListEntries, false);
+
+        if(_useTeamsRebuild){
+            // owned-owned: skip self (a particle is not its own neighbor)
+            buildNeighborListsTeams(ownedSoA,ownedSoA,_neighborListOffsets,_neighborListEntries, true);
+            // owned-halo: different arrays, no self-collision possible
+            buildNeighborListsTeams(ownedSoA,haloSoA,_haloNeighborListOffsets,_haloNeighborListEntries, false);
+        }
+        else{
+            // owned-owned: skip self (a particle is not its own neighbor)
+            buildNeighborListsFlat(ownedSoA,ownedSoA,_neighborListOffsets,_neighborListEntries, true);
+            // owned-halo: different arrays, no self-collision possible
+            buildNeighborListsFlat(ownedSoA,haloSoA,_haloNeighborListOffsets,_haloNeighborListEntries, false);
+        }
             
         const double rebuildTime = rebuildTimer.seconds() - startRebuild;
         spdlog::info("Rebuilding Verlet Lists took {} s", rebuildTime);
@@ -479,7 +488,7 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
         }
 
         bool buildNeighborListsTeams(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, Kokkos::DualView<size_t*>& offsetsDual, Kokkos::DualView<size_t*>& entriesDual, bool skipSelf){
-            if(_neighborListsValid==true){return;}
+            spdlog::info("RebuildNeighborListsTeams()");
             const auto N = soa1.size();
             const auto M = soa2.size();
             if(N== 0 || M == 0){
@@ -516,16 +525,18 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
 
 
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, M), [&](const size_t k) {
-                    const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
-                    const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
-                    const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
-                    const auto dx = x1 - x2;
-                    const auto dy = y1 - y2;
-                    const auto dz = z1 - z2;
-                    const auto distSquared = dx * dx + dy * dy + dz * dz;
+                    if (!(skipSelf && k == static_cast<size_t>(i))) {
+                        const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
+                        const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
+                        const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
+                        const auto dx = x1 - x2;
+                        const auto dy = y1 - y2;
+                        const auto dz = z1 - z2;
+                        const auto distSquared = dx * dx + dy * dy + dz * dz;
 
-                    if (distSquared < interactionLengthSqr) {
-                        Kokkos::atomic_fetch_add(&count(0), size_t(1));
+                        if (distSquared < interactionLengthSqr) {
+                            Kokkos::atomic_fetch_add(&count(0), size_t(1));
+                        }
                     }
                 });
 
@@ -565,17 +576,19 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
 
 
                 Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, M), [&](const size_t k) {
-                    const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
-                    const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
-                    const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
-                    const auto dx = x1 - x2;
-                    const auto dy = y1 - y2;
-                    const auto dz = z1 - z2;
-                    const auto distSquared = dx * dx + dy * dy + dz * dz;
+                    if (!(skipSelf && k == static_cast<size_t>(i))) {
+                        const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
+                        const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
+                        const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
+                        const auto dx = x1 - x2;
+                        const auto dy = y1 - y2;
+                        const auto dz = z1 - z2;
+                        const auto distSquared = dx * dx + dy * dy + dz * dz;
 
-                    if (distSquared < interactionLengthSqr) {
-                        const size_t slot = Kokkos::atomic_fetch_add(&count(0), size_t(1));
-                        entries(offset(i)+slot) = k;
+                        if (distSquared < interactionLengthSqr) {
+                            const size_t slot = Kokkos::atomic_fetch_add(&count(0), size_t(1));
+                            entries(offsets(i)+slot) = k;
+                        }
                     }
                 });
             });
@@ -799,8 +812,7 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
     TimingStats _rebuildTimingStats {"VerletListsKokkos::rebuildNeighborLists"};
     TimingStats _traversalTimingStats {"VerletListsKokkos::computeInteractions"};
 
-
-
+    bool _useTeamsRebuild {true};  
 };
 
 } 
