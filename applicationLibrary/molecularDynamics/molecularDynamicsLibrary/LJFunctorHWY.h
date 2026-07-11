@@ -798,7 +798,7 @@ class LJFunctorHWY
         size_t jVecEnd = n2;
         size_t jVecStart = 0;
         if constexpr (sorted) {
-          // The get is always save here since SoAFunctorPairSorted() will never call this with no sortingData.
+          // The get is always safe here since SoAFunctorPairSorted() will never call this with no sortingData.
           const auto &sd = sortingData->get();
           jVecEnd = sd.maxIndex[i + restI - 1];
           jVecStart = sd.minIndex[i];
