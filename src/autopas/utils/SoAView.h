@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "autopas/utils/ExceptionHandler.h"
+
 namespace autopas {
 
 template <class SoAArraysType>
