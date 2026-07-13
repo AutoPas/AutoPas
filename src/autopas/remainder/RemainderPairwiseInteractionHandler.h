@@ -143,6 +143,10 @@ class RemainderPairwiseInteractionHandler {
     utils::TraceTimer timerBufferSoAConversion;
     timerBufferContainer.start();
 
+    if (container.allowsKokkos()) {
+      useSoA = false;
+    }
+
     // steps 1 & 2.
     // particleBuffer with all particles close in container
     // and haloParticleBuffer with owned, close particles in container.

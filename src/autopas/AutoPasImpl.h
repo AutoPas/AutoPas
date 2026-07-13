@@ -172,7 +172,7 @@ void AutoPas<Particle_T>::addParticlesAux(size_t numParticlesToAdd, size_t numHa
                                           F loopBody) {
   reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
           getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
-  AUTOPAS_OPENMP(parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads())))
+  // AUTOPAS_OPENMP(parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads()))) TODO: this can at the moment not happen in parallel because that might invoke the parallel_for of the KokkosDataLayoutConverter
   for (auto i = 0; i < collectionSize; ++i) {
     loopBody(i);
   }

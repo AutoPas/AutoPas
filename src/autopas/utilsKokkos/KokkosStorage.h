@@ -14,7 +14,7 @@
 #include "KokkosDataLayoutConverter.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/IteratorBehavior.h"
-#include "autopas/utils/inBox.h"
+#include "autopas/utilsKokkos/inBoxKokkos.h"
 
 namespace autopas::utilsKokkos {
 
@@ -151,38 +151,32 @@ class KokkosStorage {
     }
   }
 
-  template <bool host>
+  template <bool useHostView>
   KOKKOS_INLINE_FUNCTION void copyParticle(int targetIndex, const KokkosStorage<Particle_T> &otherStorage,
                                            int sourceIndex) const {
     constexpr auto tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
     constexpr auto I = std::make_index_sequence<tupleSize>();
 
-    this->template copyParticleImpl<host>(targetIndex, otherStorage, sourceIndex, I);
+    this->template copyParticleImpl<useHostView>(targetIndex, otherStorage, sourceIndex, I);
   }
 
-  template <bool regionIter, bool host, typename T>
+  template <bool regionIter, bool useHostView, typename T>
   KOKKOS_INLINE_FUNCTION bool fulfillsIteratorRequirements(int index, autopas::options::IteratorBehavior behavior,
                                                            const Kokkos::Array<T, 3> &lowerCorner,
                                                            const Kokkos::Array<T, 3> &upperCorner) const {
-    /*
     if constexpr (regionIter) {
       Kokkos::Array<T, 3> positions {
-        operator()<Particle_T::AttributeNames::posX, true, host>(index),
-        operator()<Particle_T::AttributeNames::posY, true, host>(index),
-        operator()<Particle_T::AttributeNames::posZ, true, host>(index),
+        operator()<Particle_T::AttributeNames::posX, useHostView>(index),
+        operator()<Particle_T::AttributeNames::posY, useHostView>(index),
+        operator()<Particle_T::AttributeNames::posZ, useHostView>(index),
       };
 
-      // TODO: write own version of inBox maybe in autopas::kokkosUtils namespace
-
-
-      if (not autopas::utils::inBox(positions, lowerCorner, upperCorner)) {
+      if (not inBoxKokkos(positions, lowerCorner, upperCorner)) {
         return false;
       }
-
     }
-    */
 
-    auto ownershipState = operator()<Particle_T::AttributeNames::ownershipState, host>(index);
+    auto ownershipState = operator()<Particle_T::AttributeNames::ownershipState, useHostView>(index);
 
     // TODO: this will require checks for edge cases and sync with the changes for dummy particles
     return static_cast<unsigned int>(ownershipState) & static_cast<unsigned int>(behavior);
@@ -289,7 +283,7 @@ class KokkosStorage {
     if (_aosDirty) {
       constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
-
+      syncAll<ExecSpace>();
       const auto size = storageAoS.size();
       storageSoA.resize(size);
       KokkosDataLayoutConverter::convertToSoA<ExecSpace, useHostView>(storageAoS, storageSoA, size, I);
@@ -303,7 +297,7 @@ class KokkosStorage {
     if (_soaDirty) {
       constexpr size_t tupleSize = Particle_T::KokkosSoAArraysType::tupleSize();
       constexpr auto I = std::make_index_sequence<tupleSize>();
-
+      syncAll<ExecSpace>();
       const auto size = storageSoA.size();
       storageAoS.resize(size);
       KokkosDataLayoutConverter::convertToAoS<ExecSpace, useHostView>(storageSoA, storageAoS, size, I);

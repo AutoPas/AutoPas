@@ -8,7 +8,7 @@
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
 
-#include "ParticlePropertiesLibrary.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/baseFunctors/KokkosFunctor.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
@@ -51,9 +51,32 @@ class LJFunctorKokkos
         _cutoffSquared{static_cast<FloatPrecision>(cutoff * cutoff)} {}
 
   void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
-    // No Op, TODO: make sure this is never uses (never!)
+    using namespace autopas::utils::ArrayMath::literals;
+    if (i.isDummy() or j.isDummy()) {
+      return;
+    }
+    const FloatPrecision sigmaSquared = 1.;  // TODO: extract that somehow somewhere else
+    const FloatPrecision epsilon24 = 24.;    // TODO: extract that somehow somewhere else
 
-    std::cout << "Trying to call non-existing function" << std::endl;
+    const auto dr = i.getR() - j.getR();
+    const double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+
+    if (dr2 > _cutoffSquared) {
+      return;
+    }
+
+    const double invdr2 = 1. / dr2;
+    double lj6 = sigmaSquared * invdr2;
+    lj6 = lj6 * lj6 * lj6;
+    const double lj12 = lj6 * lj6;
+    const double lj12m6 = lj12 - lj6;
+    const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    const auto f = dr * fac;
+    i.addF(f);
+    if (newton3) {
+      // only if we use newton 3 here, we want to
+      j.subF(f);
+    }
   }
 
   constexpr static bool globalCalculationRequested() { return calculateGlobals; }
@@ -69,7 +92,7 @@ class LJFunctorKokkos
       return;
     }
 
-    std::cout << "Trying to call non-existing function" << std::endl;
+    std::cout << "Trying to call non-existing function LJFunctorKokkos::SoAFunctorSingle" << std::endl;
   }
 
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) final {
@@ -79,7 +102,7 @@ class LJFunctorKokkos
       return;
     }
 
-    std::cout << "Trying to call non-existing function" << std::endl;
+    std::cout << "Trying to call non-existing function LJFunctorKokkos::SoAFunctorPair" << std::endl;
   }
 
   KOKKOS_INLINE_FUNCTION

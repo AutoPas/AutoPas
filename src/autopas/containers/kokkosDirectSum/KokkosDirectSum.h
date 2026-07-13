@@ -148,6 +148,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
     const auto &boxMinKokkos = Kokkos::Array<double, 3>{boxMin.at(0), boxMin.at(1), boxMin.at(2)};
     const auto &boxMaxKokkos = Kokkos::Array<double, 3>{boxMax.at(0), boxMax.at(1), boxMax.at(2)};
 
+    _ownedParticles.template syncAll<DeviceSpace::execution_space>();
     auto &owned = _ownedParticles;
 
     Kokkos::View<int *, DeviceSpace> migrantCounter{"migrantCounter", 1};
@@ -165,18 +166,20 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
           Kokkos::RangePolicy<DeviceSpace::execution_space>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
             // TODO: make sure this logic is working, i.e. the correct particles are found, i.e. the owned particles
             // outside of the box
-            if ((not owned.template fulfillsIteratorRequirements<true, useHostView>(
-                    i, IteratorBehavior::ownedOrHaloOrDummy, boxMinKokkos, boxMaxKokkos)) and
-                owned.template fulfillsIteratorRequirements<false, useHostView>(i, IteratorBehavior::owned,
-                                                                                boxMinKokkos, boxMaxKokkos)) {
+
+        /* particle is owned */
+        if (owned.template fulfillsIteratorRequirements<false, useHostView>(i, IteratorBehavior::owned,
+                                                                            boxMinKokkos, boxMaxKokkos)) {
+          /* is particle outside the box? */
+            if (not owned.template fulfillsIteratorRequirements<true, useHostView>(i, IteratorBehavior::ownedOrHaloOrDummy, boxMinKokkos, boxMaxKokkos)) {
               int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
-              auto id = owned.template operator()<Particle_T::AttributeNames::id, useHostView>(i);
               migrants.template copyParticle<useHostView>(migrantIndex, owned, i);
 
               owned.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i) =
                   OwnershipState::dummy;
             }
-          });
+        }
+      });
     } else {
       deleteHaloParticles();
 
@@ -188,26 +191,23 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
       Kokkos::parallel_for(
           "autopas::KokkosDirectSum::collectMigrantsAndReinsertOwned_parallel_for",
           Kokkos::RangePolicy<DeviceSpace::execution_space>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
-            if (owned.template fulfillsIteratorRequirements<false, useHostView>(i, IteratorBehavior::owned,
+        /* is particle owned? */
+        if (owned.template fulfillsIteratorRequirements<false, useHostView>(i, IteratorBehavior::owned,
                                                                                 boxMinKokkos, boxMaxKokkos)) {
-              /* Particle is owned */
-
-              if (owned.template fulfillsIteratorRequirements<true, useHostView>(i, IteratorBehavior::owned,
+          /* is particle inside the container */
+          if (owned.template fulfillsIteratorRequirements<true, useHostView>(i, IteratorBehavior::owned,
                                                                                  boxMinKokkos, boxMaxKokkos)) {
-                /* Particle is within the container */
 
                 // TODO: this can lead to heavy contention on the locks... -> maybe think of a better approach
                 int survivorIndex = Kokkos::atomic_fetch_inc(&survivorCounter(0));
                 survivors.template copyParticle<useHostView>(survivorIndex, owned, i);
               } else {
                 /* Particle is outside the container */
-
                 int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
                 migrants.template copyParticle<useHostView>(migrantIndex, owned, i);
               }
             }
           });
-      migrants.template modifyAll<DeviceSpace::execution_space>();
       survivors.template modifyAll<DeviceSpace::execution_space>();
 
       auto surviorCounterMirror = Kokkos::create_mirror_view(survivorCounter);
@@ -235,7 +235,8 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
       migrants.resize(numMigrants);
       Kokkos::Profiling::popRegion(); // resize migrants
       Kokkos::Profiling::pushRegion("transfer migrants to std::vector"),
-          migrants.template convertTo<DeviceSpace::execution_space, useHostView>(DataLayoutOption::aos);
+      migrants.template convertTo<DeviceSpace::execution_space, useHostView>(DataLayoutOption::aos);
+      migrants.template modifyAll<DeviceSpace::execution_space>();
       migrants.template syncAll<HostSpace::execution_space>();
       migrantVector.reserve(numMigrants);
 
@@ -492,7 +493,6 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
  protected:
   void addParticleImpl(const Particle_T &p) override {
     // TODO: check whether the target data layout is up to date
-
     std::lock_guard<AutoPasLock> guard(ownedLock);
     _ownedParticles.addParticle(p);
   }
@@ -511,10 +511,10 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
     if (kokkosDsTraversal) {
       auto targetLayout = traversal->getDataLayout();
 
-      if (targetLayout != _dataLayout) {
-        convertTo<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space,
-                  DSKokkosTraversalInterface<Particle_T>::useHostView>(targetLayout);
-      }
+
+      convertTo<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space,
+        DSKokkosTraversalInterface<Particle_T>::useHostView>(targetLayout);
+
 
       kokkosDsTraversal->setOwnedToTraverse(_ownedParticles, targetLayout);
       kokkosDsTraversal->setHaloToTraverse(_haloParticles, targetLayout);
