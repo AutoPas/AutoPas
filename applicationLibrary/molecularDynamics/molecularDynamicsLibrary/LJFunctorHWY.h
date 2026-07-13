@@ -762,7 +762,7 @@ class LJFunctorHWY
       size_t jVecEnd{};
       size_t jVecStart = 0;
       if constexpr (sorted) {
-        // This is always save here since SoAFunctorPairSorted() will never call this with no sortingData.
+        // The get is always safe here since SoAFunctorPairSorted() will never call this with no sortingData.
         const auto &sd = sortingData->get();
         // maxIndex is monotonically non-decreasing, so the tightest valid bound for [i, i + iStep - 1] (the i values
         // handled in one iteration) is maxIndex of the last particle in the block. For p1xVec
@@ -798,7 +798,7 @@ class LJFunctorHWY
         size_t jVecEnd = n2;
         size_t jVecStart = 0;
         if constexpr (sorted) {
-          // This is always save here since SoAFunctorPairSorted() will never call this with no sortingData.
+          // The get is always safe here since SoAFunctorPairSorted() will never call this with no sortingData.
           const auto &sd = sortingData->get();
           jVecEnd = sd.maxIndex[i + restI - 1];
           jVecStart = sd.minIndex[i];

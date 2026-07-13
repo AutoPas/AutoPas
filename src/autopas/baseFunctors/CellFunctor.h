@@ -196,8 +196,9 @@ class CellFunctor {
 
   /**
    * Min. number of particles to start AoS sorting. This is the sum of the number of particles in two cells.
+   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
-  size_t _aosSortingThreshold;
+  size_t _aosSortingThreshold{8};
 
   /**
    * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
@@ -436,7 +437,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
         if (not _useNewton3) {
           _functor.SoAFunctorPairSorted(
               view2.getView(), view1.getView(),
-              computeSortingData(threadData.projIdx1, threadData.projIdx2, threadData.maxIndex, threadData.minIndex),
+              computeSortingData(threadData.projIdx2, threadData.projIdx1, threadData.maxIndex, threadData.minIndex),
               false);
         }
       }
