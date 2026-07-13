@@ -46,8 +46,8 @@ class LogicHandlerInfo {
    */
   size_t soaSortingThreshold{50};
   /**
-   * If true, LogicHandler runs SortingThresholdBenchmark on the first iterate() call and uses
-   * the results to override the fixed soaSortingThreshold in CellFunctor.
+   * If true, LogicHandler runs SortingThresholdBenchmark on the first iterate() call and uses the results to
+   * override the fixed aosSortingThreshold and soaSortingThreshold in CellFunctor.
    */
   bool useSortingThresholdBenchmark{false};
   /**

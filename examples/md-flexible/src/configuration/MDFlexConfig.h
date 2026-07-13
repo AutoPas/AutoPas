@@ -597,13 +597,17 @@ class MDFlexConfig {
       "before computing interactions."};
   /**
    * useSortingThresholdBenchmark
-   * If true, AutoPas runs a micro-benchmark on the first iterate() call to determine per-direction-type
-   * SoA sorting thresholds instead of using the fixed soa-sorting-threshold.
+   * If true, AutoPas runs a micro-benchmark on the first iterate() call to determine per-direction-type AoS
+   * pair-sorting thresholds instead of using the fixed aos-sorting-threshold, and
+   * additionally per-direction-type SoA sorting thresholds instead of the fixed soa-sorting-threshold for
+   * functors that support SoA sorting.
    */
   MDFlexOption<bool, __LINE__> useSortingThresholdBenchmark{
       false, "use-sorting-threshold-benchmark", true,
-      "If true, AutoPas runs a micro-benchmark to determine the optimal SoA sorting threshold per direction type "
-      "instead of using the fixed soa-sorting-threshold."};
+      "If true, AutoPas runs a micro-benchmark to determine the optimal AoS pair-sorting threshold per direction "
+      "type instead of the fixed aos-sorting-threshold, and additionally the optimal SoA sorting threshold per "
+      "direction type instead of the fixed soa-sorting-threshold for functors that "
+      "support SoA sorting."};
 
   // Options for additional Object Generation on command line
   /**

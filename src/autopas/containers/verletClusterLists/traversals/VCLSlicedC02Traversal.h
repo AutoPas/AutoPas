@@ -99,5 +99,9 @@ class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
    * @copydoc autopas::CellTraversal::setSoASortingThresholds()
    */
   void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {}
+  /**
+   * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
+   */
+  void setAoSSortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {}
 };
 }  // namespace autopas

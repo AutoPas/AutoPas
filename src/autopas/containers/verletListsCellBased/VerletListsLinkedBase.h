@@ -63,6 +63,12 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
    */
   void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {}
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setAoSSortingThresholds()
+   * This container does not use a CellFunctor, so the function has no effect here.
+   */
+  void setAoSSortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {}
+
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _linkedCells.reserve(numParticles, numParticlesHaloEstimate);
   }

@@ -46,6 +46,9 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
         _cutoff(cutoff),
         _skin(skin),
         _aosSortingThreshold(aosSortingThreshold) {
+    for (auto &row : _aosSortingThresholds) {
+      row.fill(aosSortingThreshold);
+    }
     for (auto &row : _soaSortingThresholds) {
       row.fill(soaSortingThreshold);
     }
@@ -157,6 +160,13 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   [[nodiscard]] const std::vector<ParticleCellType> &getCells() const { return _cells; }
 
   /**
+   * @copydoc autopas::ParticleContainerInterface::setAoSSortingThresholds()
+   */
+  void setAoSSortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {
+    _aosSortingThresholds = thresholds;
+  }
+
+  /**
    * @copydoc autopas::ParticleContainerInterface::setSoASortingThresholds()
    */
   void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {
@@ -171,10 +181,16 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   std::vector<ParticleCellType> _cells;
   /**
-   * If the number of particles in a cell or cell pair exceeds this threshold, the particles will be sorted.
+   * If the number of particles in a cell exceeds this threshold, single-cell interactions will be sorted.
    * To be forwarded to cell traversals.
    */
   size_t _aosSortingThreshold;
+  /**
+   * Per-Newton3-state, per-direction AoS pair-sorting thresholds, indexed as [newton3][direction] (direction =
+   * number of zero components in sortingDirection: 0=Corner, 1=Edge, 2=Face).
+   * Initialized from the scalar aosSortingThreshold; overridden by setAoSSortingThresholds().
+   */
+  std::array<std::array<size_t, 3>, 2> _aosSortingThresholds{};
   /**
    * Per-Newton3-state, per-direction SoA sorting thresholds, indexed as [newton3][direction] (direction = number
    * of zero components in sortingDirection: 0=Corner, 1=Edge, 2=Face).

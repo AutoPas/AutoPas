@@ -68,6 +68,13 @@ class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCe
     _cellHandler.setSoASortingThreshold(soaSortingThreshold);
   }
   /**
+   * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
+   */
+  void setAoSSortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {
+    _cellHandler.setAoSSortingThresholds(thresholds);
+  }
+
+  /**
    * @copydoc autopas::CellTraversal::setSoASortingThresholds()
    */
   void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {

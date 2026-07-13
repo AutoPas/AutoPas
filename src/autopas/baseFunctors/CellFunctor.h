@@ -95,6 +95,15 @@ class CellFunctor {
   void setSoASortingThreshold(size_t soaSortingThreshold);
 
   /**
+   * Set the per-Newton3-state, per-direction-type AoS pair-sorting thresholds.
+   * First index: 0 = Newton3 disabled, 1 = Newton3 enabled. Second index: number of zero components in
+   * sortingDirection (0=Corner, 1=Edge, 2=Face). Overrides the value set by setAoSSortingThreshold() for all
+   * Newton3 states and direction types. Does not affect the single-cell sorting threshold used by processCell().
+   * @param thresholds Per-Newton3-state, per-direction-type thresholds.
+   */
+  void setAoSSortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds);
+
+  /**
    * Set the per-Newton3-state, per-direction-type SoA sorting thresholds.
    * First index: 0 = Newton3 disabled, 1 = Newton3 enabled. Second index: number of zero components in
    * sortingDirection (0=Corner, 1=Edge, 2=Face). Overrides the value set by setSoASortingThreshold() for all
@@ -136,14 +145,17 @@ class CellFunctor {
 
  private:
   /**
-   * Evaluate whether the AoSFunctor should use sorting, depending on the set sorting threshold.
+   * Evaluate whether the AoSFunctor should use sorting, depending on the set AoS pair-sorting thresholds.
    * @param particleCount Total number of involved particles.
    * @param sortingDirection No sorting when the sorting direction is {0., 0., 0.}.
    * @return whether the AoSFunctor should use the SortedCellView.
    */
   [[nodiscard]] bool shouldUseAoSSorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
-    return particleCount >= _aosSortingThreshold and
-           (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
+    if (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0) {
+      const auto zeroCount = std::count(std::begin(sortingDirection), std::end(sortingDirection), 0.0);
+      return particleCount >= _aosSortingThresholds[static_cast<size_t>(_useNewton3)][static_cast<size_t>(zeroCount)];
+    }
+    return false;
   }
 
   /**
@@ -195,10 +207,18 @@ class CellFunctor {
   const double _sortingCutoff;
 
   /**
-   * Min. number of particles to start AoS sorting. This is the sum of the number of particles in two cells.
+   * Min. number of particles to start AoS sorting for single-cell interactions (processCell()/
+   * processCellAoSImpl()). This is the number of particles in the cell.
    * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
   size_t _aosSortingThreshold{8};
+
+  /**
+   * Min. number of particles to start AoS sorting for cell-pair interactions. This is the sum of the number of
+   * particles in two cells. First index: 0 = Newton3 disabled, 1 = Newton3 enabled. Second index: direction-type
+   * (see setAoSSortingThresholds()).
+   */
+  std::array<std::array<size_t, 3>, 2> _aosSortingThresholds{{{8, 8, 8}, {8, 8, 8}}};
 
   /**
    * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
@@ -229,6 +249,15 @@ class CellFunctor {
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThreshold(size_t aosSortingThreshold) {
   _aosSortingThreshold = aosSortingThreshold;
+  for (auto &row : _aosSortingThresholds) {
+    row.fill(aosSortingThreshold);
+  }
+}
+
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThresholds(
+    std::array<std::array<size_t, 3>, 2> thresholds) {
+  _aosSortingThresholds = thresholds;
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>

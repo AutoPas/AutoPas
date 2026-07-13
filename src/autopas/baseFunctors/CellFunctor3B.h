@@ -103,6 +103,13 @@ class CellFunctor3B {
    */
   void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> /*thresholds*/) {}
 
+  /**
+   * No-op: SortingThresholdBenchmark currently only works with the simple CellFunctor.
+   * Provided for interface parity with CellFunctor so that traversals using a conditional CellFunctorType
+   * (e.g. DSSequentialTraversal) compile for both pairwise and triwise cases.
+   */
+  void setAoSSortingThresholds(std::array<std::array<size_t, 3>, 2> /*thresholds*/) {}
+
  private:
   /**
    * Evaluate whether the AoSFunctor should use sorting, depending on the set sorting threshold.

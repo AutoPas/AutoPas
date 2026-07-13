@@ -1273,10 +1273,15 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   _tuningManager->logTuningResult(tuningTimer.getTotalTime(), _iteration, interactionType);
 
   // Run SortingThresholdBenchmark lazily on the first iteration and inject into the active container.
-  if constexpr (Functor::supportsSoASorting) {
+  // SortingThresholdBenchmark is pairwise-only. Within pairwise functors, AoS benchmarking runs for any of them. SoA
+  // benchmarking additionally requires Functor::supportsSoASorting.
+  if constexpr (utils::isPairwiseFunctor<Functor>()) {
     if (_logicHandlerInfo.useSortingThresholdBenchmark) {
       auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
-      _currentContainer->setSoASortingThresholds(autoTuner.getSoASortingThresholds<Functor, Particle_T>(*functor));
+      _currentContainer->setAoSSortingThresholds(autoTuner.getAoSSortingThresholds<Functor, Particle_T>(*functor));
+      if constexpr (Functor::supportsSoASorting) {
+        _currentContainer->setSoASortingThresholds(autoTuner.getSoASortingThresholds<Functor, Particle_T>(*functor));
+      }
     }
   }
 

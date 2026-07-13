@@ -288,16 +288,33 @@ class AutoTuner {
    */
   template <class Functor_T, class Particle_T>
   std::array<std::array<size_t, 3>, 2> getSoASortingThresholds(Functor_T &functor) {
-    if (not _sortingThresholdBenchmark.hasRun()) {
-      _sortingThresholdBenchmark.runBenchmark<Functor_T, Particle_T>(functor);
+    if (not _sortingThresholdBenchmark.hasRunSoA()) {
+      _sortingThresholdBenchmark.runBenchmark<Functor_T, Particle_T, true>(functor);
     }
-    return _sortingThresholdBenchmark.getThresholds();
+    return _sortingThresholdBenchmark.getSoAThresholds();
+  }
+
+  /**
+   * Returns the per-Newton3-state, per-direction-type AoS sorting thresholds determined by the AoS sorting
+   * threshold benchmark, running the benchmark first (lazily, once) if it has not run yet.
+   * @tparam Functor_T Pairwise functor type.
+   * @tparam Particle_T Particle type.
+   * @param functor Functor instance used to drive the benchmark if it still needs to run.
+   * @return Per-Newton3-state, per-direction-type thresholds, indexed as [newton3][direction] (see
+   * SortingThresholdBenchmark for the indexing convention).
+   */
+  template <class Functor_T, class Particle_T>
+  std::array<std::array<size_t, 3>, 2> getAoSSortingThresholds(Functor_T &functor) {
+    if (not _sortingThresholdBenchmark.hasRunAoS()) {
+      _sortingThresholdBenchmark.runBenchmark<Functor_T, Particle_T, false>(functor);
+    }
+    return _sortingThresholdBenchmark.getAoSThresholds();
   }
 
  private:
   /**
-   * Stores the results of the SoA sorting threshold benchmark.
-   * Lazily run via getSoASortingThresholds() on the first call.
+   * Stores the results of the sorting threshold benchmark.
+   * Lazily run via getSoASortingThresholds()/getAoSSortingThresholds() on the first call to either.
    */
   SortingThresholdBenchmark _sortingThresholdBenchmark{};
 
