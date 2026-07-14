@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/kokkosDirectSum/KokkosDirectSum.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/TraceTimer.h"
@@ -88,7 +89,8 @@ struct SoABufferTraversalFunctor {
 template <typename Particle_T
 #ifdef AUTOPAS_ENABLE_KOKKOS
           ,
-          typename ExecSpace
+          typename ExecSpace,
+          bool useHostView
 #endif
           >
 class RemainderPairwiseInteractionHandler {
@@ -100,6 +102,20 @@ class RemainderPairwiseInteractionHandler {
   explicit RemainderPairwiseInteractionHandler(
       std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> &spatialLocks)
       : _spatialLocks(spatialLocks) {}
+
+  template <class ContainerType, class PairwiseFunctor>
+  void computeRemainderInteractionsKokkos(PairwiseFunctor* f, ContainerType &container, KokkosDirectSum<Particle_T>& buffer) {
+
+    // TODO: Kokkos Timers and Profiling refg
+    // 1. remainder buffer container
+    remainderHelperBufferContainerKokkos(f, container, buffer.getOwnedStorage(), buffer.getHaloStorage());
+
+    // 2. remainder buffer buffer
+    remainderHelperBufferBufferKokkos(f, buffer.getOwnedStorage());
+
+    // 3. remainder buffer halo buffer
+    remainderHelperBufferHaloKokkos(f, buffer.getOwnedStorage(), buffer.getHaloStorage());
+  }
 
   /**
    * Performs the interactions ParticleContainer::computeInteractions() did not cover.
@@ -142,10 +158,6 @@ class RemainderPairwiseInteractionHandler {
     utils::TraceTimer timerPBufferHBuffer;
     utils::TraceTimer timerBufferSoAConversion;
     timerBufferContainer.start();
-
-    if (container.allowsKokkos()) {
-      useSoA = false;
-    }
 
     // steps 1 & 2.
     // particleBuffer with all particles close in container
@@ -203,6 +215,187 @@ class RemainderPairwiseInteractionHandler {
    */
   std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> &_spatialLocks;
 
+  template <class ContainerType, class PairwiseFunctor>
+  void remainderHelperBufferContainerKokkos(PairwiseFunctor* f, ContainerType &container, utilsKokkos::KokkosStorage<Particle_T>& ownedBuffer, utilsKokkos::KokkosStorage<Particle_T>& haloBuffer) {
+    using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
+    ownedBuffer.template syncAll<ExecSpace>();
+    haloBuffer.template syncAll<ExecSpace>();
+
+    const size_t ownedSize = ownedBuffer.size();
+    Kokkos::View<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::memory_space> fx2{};
+    Kokkos::View<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::memory_space> fy2{};
+    Kokkos::View<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::memory_space> fz2{};
+
+    realloc(Kokkos::WithoutInitializing, fx2, ownedSize);
+    realloc(Kokkos::WithoutInitializing, fy2, ownedSize);
+    realloc(Kokkos::WithoutInitializing, fz2, ownedSize);
+
+    const size_t haloSize = haloBuffer.size();
+    const FloatPrecision cutoffSquared = f->getCutoff() * f->getCutoff();
+
+    auto min = container.getBoxMin();
+    auto max = container.getBoxMax();
+
+    container.template forEachInRegionKokkos<ExecSpace, true>(KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T> &storage) {
+      const auto x1 = storage.template operator()<Particle_T::AttributeNames::posX, useHostView>(i);
+      const auto y1 = storage.template operator()<Particle_T::AttributeNames::posY, useHostView>(i);
+      const auto z1 = storage.template operator()<Particle_T::AttributeNames::posZ, useHostView>(i);
+      const auto owned1 = storage.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i);
+
+      if (owned1 != OwnershipState::dummy) {
+        FloatPrecision fxAcc = 0.;
+        FloatPrecision fyAcc = 0.;
+        FloatPrecision fzAcc = 0.;
+
+        FloatPrecision virialSum = 0.;
+        FloatPrecision uPotSum = 0.;
+
+        for (int j = 0; j < ownedSize; ++j) {
+          FloatPrecision fx = -fxAcc;
+          FloatPrecision fy = -fyAcc;
+          FloatPrecision fz = -fzAcc;
+
+          f->ForceKernelKokkos(x1, y1, z1, ownedBuffer, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, cutoffSquared, i, j);
+
+          fx += fxAcc;
+          fy += fyAcc;
+          fz += fzAcc;
+
+          Kokkos::atomic_add(&fx2(j), fx); // TODO: scatter view instead of atomics for better portability
+          Kokkos::atomic_add(&fy2(j), fy); // TODO: scatter view instead of atomics for better portability
+          Kokkos::atomic_add(&fz2(j), fz); // TODO: scatter view instead of atomics for better portability
+        }
+
+        for (int j = 0; j < haloSize; ++j) {
+          f->ForceKernelKokkos(x1, y1, z1, haloBuffer, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, cutoffSquared, i, j);
+        }
+
+        storage.template operator()<Particle_T::AttributeNames::forceX, useHostView>(i) += fxAcc;
+        storage.template operator()<Particle_T::AttributeNames::forceY, useHostView>(i) += fyAcc;
+        storage.template operator()<Particle_T::AttributeNames::forceZ, useHostView>(i) += fzAcc;
+      }
+    }, IteratorBehavior::ownedOrHalo, min, max, "autopas::RemainderPairwiseInteractionHandler::bufferContainerInteractions");
+
+    Kokkos::parallel_for("autopas::RemainderPairwiseInteractionHandler::mergeContainerBufferForceContributions", Kokkos::RangePolicy<ExecSpace>(0, ownedSize), KOKKOS_LAMBDA(size_t i) {
+      ownedBuffer.template operator()<Particle_T::AttributeNames::forceX, useHostView>(i) += fx2(i);
+      ownedBuffer.template operator()<Particle_T::AttributeNames::forceY, useHostView>(i) += fy2(i);
+      ownedBuffer.template operator()<Particle_T::AttributeNames::forceZ, useHostView>(i) += fz2(i);
+    });
+
+    ownedBuffer.template modifyAll<ExecSpace>();
+  }
+
+  template <class PairwiseFunctor>
+  void remainderHelperBufferBufferKokkos(PairwiseFunctor* f, utilsKokkos::KokkosStorage<Particle_T>& ownedBuffer) {
+
+    using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
+
+    ownedBuffer.template syncAll<ExecSpace>();
+
+    const size_t ownedSize = ownedBuffer.size();
+    const FloatPrecision cutoffSquared = f->getCutoff() * f->getCutoff();
+
+    Kokkos::View<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::memory_space> fx2{};
+    Kokkos::View<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::memory_space> fy2{};
+    Kokkos::View<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::memory_space> fz2{};
+
+    realloc(Kokkos::WithoutInitializing, fx2, ownedSize);
+    realloc(Kokkos::WithoutInitializing, fy2, ownedSize);
+    realloc(Kokkos::WithoutInitializing, fz2, ownedSize);
+
+    Kokkos::parallel_for("autopas::RemainderPairwiseInteractionHandler::bufferBufferInteractions", Kokkos::RangePolicy<ExecSpace>(0, ownedSize), KOKKOS_LAMBDA(size_t i) {
+      const auto x1 = ownedBuffer.template operator()<Particle_T::AttributeNames::posX, useHostView>(i);
+      const auto y1 = ownedBuffer.template operator()<Particle_T::AttributeNames::posY, useHostView>(i);
+      const auto z1 = ownedBuffer.template operator()<Particle_T::AttributeNames::posZ, useHostView>(i);
+      const auto owned1 = ownedBuffer.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i);
+
+      if (owned1 != OwnershipState::dummy) {
+        FloatPrecision fxAcc = 0.;
+        FloatPrecision fyAcc = 0.;
+        FloatPrecision fzAcc = 0.;
+
+        FloatPrecision virialSum = 0.;
+        FloatPrecision uPotSum = 0.;
+
+        for (int j = 0; j < ownedSize; ++j) {
+          if (i != j) {
+            FloatPrecision fx = -fxAcc;
+            FloatPrecision fy = -fyAcc;
+            FloatPrecision fz = -fzAcc;
+
+            f->ForceKernelKokkos(x1, y1, z1, ownedBuffer, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, cutoffSquared, i, j);
+
+            fx += fxAcc;
+            fy += fyAcc;
+            fz += fzAcc;
+
+            Kokkos::atomic_add(&fx2(j), fx); // TODO: scatter view instead of atomics for better portability
+            Kokkos::atomic_add(&fy2(j), fy); // TODO: scatter view instead of atomics for better portability
+            Kokkos::atomic_add(&fz2(j), fz); // TODO: scatter view instead of atomics for better portability
+          }
+        }
+
+        ownedBuffer.template operator()<Particle_T::AttributeNames::forceX, useHostView>(i) += fxAcc;
+        ownedBuffer.template operator()<Particle_T::AttributeNames::forceY, useHostView>(i) += fyAcc;
+        ownedBuffer.template operator()<Particle_T::AttributeNames::forceZ, useHostView>(i) += fzAcc;
+      }
+    });
+
+    Kokkos::parallel_for("autopas::RemainderPairwiseInteractionHandler::mergeBufferBufferForceContributions", Kokkos::RangePolicy<ExecSpace>(0, ownedSize), KOKKOS_LAMBDA(size_t i) {
+      ownedBuffer.template operator()<Particle_T::AttributeNames::forceX, useHostView>(i) += fx2(i);
+      ownedBuffer.template operator()<Particle_T::AttributeNames::forceY, useHostView>(i) += fy2(i);
+      ownedBuffer.template operator()<Particle_T::AttributeNames::forceZ, useHostView>(i) += fz2(i);
+    });
+
+    ownedBuffer.template modifyAll<ExecSpace>();
+  }
+
+  template <class PairwiseFunctor>
+  void remainderHelperBufferHaloKokkos(PairwiseFunctor* f, utilsKokkos::KokkosStorage<Particle_T>& ownedBuffer, utilsKokkos::KokkosStorage<Particle_T>& haloBuffer) {
+
+    using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
+
+    ownedBuffer.template syncAll<ExecSpace>();
+
+    const size_t ownedSize = ownedBuffer.size();
+    const size_t haloSize = haloBuffer.size();
+    const FloatPrecision cutoffSquared = f->getCutoff() * f->getCutoff();
+
+    Kokkos::parallel_for("autopas::RemainderPairwiseInteractionHandler::bufferHaloInteractions", Kokkos::RangePolicy<ExecSpace>(0, ownedSize), KOKKOS_LAMBDA(size_t i) {
+      const auto x1 = ownedBuffer.template operator()<Particle_T::AttributeNames::posX, useHostView>(i);
+      const auto y1 = ownedBuffer.template operator()<Particle_T::AttributeNames::posY, useHostView>(i);
+      const auto z1 = ownedBuffer.template operator()<Particle_T::AttributeNames::posZ, useHostView>(i);
+      const auto owned1 = ownedBuffer.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i);
+
+      if (owned1 != OwnershipState::dummy) {
+        FloatPrecision fxAcc = 0.;
+        FloatPrecision fyAcc = 0.;
+        FloatPrecision fzAcc = 0.;
+
+        FloatPrecision virialSum = 0.;
+        FloatPrecision uPotSum = 0.;
+
+        for (int j = 0; j < haloSize; ++j) {
+          FloatPrecision fx = -fxAcc;
+          FloatPrecision fy = -fyAcc;
+          FloatPrecision fz = -fzAcc;
+
+          f->ForceKernelKokkos(x1, y1, z1, haloBuffer, fxAcc, fyAcc, fzAcc, virialSum, uPotSum, cutoffSquared, i, j);
+
+          fx += fxAcc;
+          fy += fyAcc;
+          fz += fzAcc;
+        }
+
+        ownedBuffer.template operator()<Particle_T::AttributeNames::forceX, useHostView>(i) += fxAcc;
+        ownedBuffer.template operator()<Particle_T::AttributeNames::forceY, useHostView>(i) += fyAcc;
+        ownedBuffer.template operator()<Particle_T::AttributeNames::forceZ, useHostView>(i) += fzAcc;
+      }
+    });
+
+    ownedBuffer.template modifyAll<ExecSpace>();
+  }
+
   /**
    * Helper Method for computeRemainderInteractions.
    * This method calculates all interactions between buffers and containers.
@@ -222,100 +415,6 @@ class RemainderPairwiseInteractionHandler {
                                          std::vector<FullParticleCell<Particle_T>> &haloParticleBuffers) {
     using utils::ArrayUtils::static_cast_copy_array;
     using namespace autopas::utils::ArrayMath::literals;
-
-    bool requiresKokkos = container.allowsKokkos();
-
-    if (requiresKokkos) {
-#ifdef AUTOPAS_ENABLE_KOKKOS
-
-      Kokkos::Profiling::pushRegion("remainder buffer container");
-
-      Kokkos::Profiling::pushRegion("count owned and halos in buffer");
-      // 1. Loop over all buffers and determine the size of the KokkosStorage objects
-      size_t haloSize = 0;
-      size_t ownedSize = 0;
-
-      for (int i = 0; i < particleBuffers.size(); ++i) {
-        haloSize += haloParticleBuffers.at(i).size();
-        ownedSize += particleBuffers.at(i).size();
-      }
-      Kokkos::Profiling::popRegion(); // count owned and halos in buffer
-
-      Kokkos::Profiling::pushRegion("convert buffer to KokkosStorage");
-      utilsKokkos::KokkosStorage<Particle_T> ownedBuffer{DataLayoutOption::soa, 0};
-      utilsKokkos::KokkosStorage<Particle_T> haloBuffer{DataLayoutOption::soa, 0};
-
-      const auto convertBufferToKokkos = [](auto& kokkosBuffer, const auto& buffer, size_t size) {
-        if (size > 0) {
-          kokkosBuffer.realloc(size);
-          for (int i = 0; i < buffer.size(); ++i) {
-            auto &particleBuffer = buffer.at(i);
-            for (auto &p : particleBuffer) {
-              kokkosBuffer.addParticle(p);
-            }
-          }
-          kokkosBuffer.template modifyAll<Kokkos::HostSpace>();
-          kokkosBuffer.template syncAll<ExecSpace>();
-        }
-      };
-
-      convertBufferToKokkos(ownedBuffer, particleBuffers, ownedSize);
-      convertBufferToKokkos(haloBuffer, haloParticleBuffers, haloSize);
-
-      Kokkos::Profiling::popRegion(); // convert buffer to KokkosStorage
-
-      if (ownedSize + haloSize > 0) {
-        typename Particle_T::ParticleSoAFloatPrecision cutoffSquared = f->getCutoff() * f->getCutoff();
-
-        Kokkos::Profiling::pushRegion("initialize force buffers");
-        Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fx2{};
-        Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fy2{};
-        Kokkos::DualView<typename Particle_T::ParticleSoAFloatPrecision *, typename ExecSpace::device_type> fz2{};
-
-        if (ownedSize > 0) {
-          fx2.realloc(ownedSize);
-          fy2.realloc(ownedSize);
-          fz2.realloc(ownedSize);
-        }
-
-        Kokkos::Profiling::popRegion(); // initialize force buffers
-
-        auto min = container.getBoxMin();
-        auto max = container.getBoxMax();
-
-        Kokkos::Profiling::pushRegion("perform traversal");
-        SoABufferTraversalFunctor<PairwiseFunctor, Particle_T, ExecSpace> functor{
-          ownedBuffer, haloBuffer, f, cutoffSquared, ownedSize, haloSize, fx2, fy2, fz2};
-        container.template forEachInRegionKokkos<ExecSpace, true>(functor, IteratorBehavior::ownedOrHalo, min, max,
-                                                                  "autopas::RemainderPairwiseInteractionHandler::bufferContainerTraversal");
-
-        Kokkos::Profiling::popRegion(); // perform traversal
-
-        // 4. extract the content of the force views to the buffers
-        Kokkos::Profiling::pushRegion("merge force views with particles");
-        fx2.modify_device();
-        fy2.modify_device();
-        fx2.modify_device();
-
-        fx2.sync_host();
-        fy2.sync_host();
-        fz2.sync_host();
-
-        int offset = 0;
-        for (int i = 0; i < particleBuffers.size(); ++i) {
-          auto &particleBuffer = particleBuffers.at(i);
-
-          for (auto &p : particleBuffer) {
-            p.addF({fx2.view_host()(offset), fy2.view_host()(offset), fz2.view_host()(offset++)});
-          }
-        }
-        Kokkos::Profiling::popRegion(); // merge force views with particles
-      }
-
-      Kokkos::Profiling::popRegion(); // remainder buffer container
-#endif
-      // TODO: throw exception
-    } else {
       // Bunch of shorthands
       const auto cutoff = container.getCutoff();
       const auto interactionLength = container.getInteractionLength();
@@ -379,7 +478,6 @@ class RemainderPairwiseInteractionHandler {
               min, max, IteratorBehavior::owned);
         }
       }
-    }
   }
 
   /**

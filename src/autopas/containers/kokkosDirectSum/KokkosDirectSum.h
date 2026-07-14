@@ -35,6 +35,7 @@ namespace autopas {
 template <class Particle_T>
 class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
  public:
+
   KokkosDirectSum(DataLayoutOption dataLayout, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                   double skin)
       : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin),
@@ -44,6 +45,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::kokkosDirectSum; }
 
+  // TODO: consider making this a constexpr such that compiler can optimize all the checks for "if (allowsKokkos()) { ... }"
   bool allowsKokkos() const override { return true; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
@@ -319,7 +321,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
     // TODO: decide if we really want to use this/if we can merge it with the Kokkos functions
   }
 
-  template <class ExecSpace, typename Lambda>
+  template <class ExecSpace, class Lambda>
   void forEachKokkos(Lambda &forEachLambda, IteratorBehavior behavior, const std::string &label = "forEachKokkos") {
     auto &boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
     auto &boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
@@ -327,10 +329,9 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
     forEachInRegionKokkos<ExecSpace, false>(forEachLambda, behavior, boxMin, boxMax, label);
   }
 
-  template <class ExecSpace, bool regionIter, typename Lambda>
+  template <class ExecSpace, bool regionIter, class Lambda>
   void forEachInRegionKokkos(Lambda forEachLambda, IteratorBehavior behavior, const std::array<double, 3> &lowerCorner,
-                             const std::array<double, 3> &higherCorner,
-                             const std::string &label = "forEachInRegionKokkos") {
+                             const std::array<double, 3> &higherCorner, const std::string &label = "forEachInRegionKokkos") {
     Kokkos::Profiling::pushRegion("autopas::KokkosDirectSum::forEachInRegion");
 
     const auto &lowerCornerKokkos = Kokkos::Array{lowerCorner.at(0), lowerCorner.at(1), lowerCorner.at(2)};
@@ -488,6 +489,14 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
     storage.template operator()<Particle_T::AttributeNames::ownershipState, true>(particleIndex) =
         OwnershipState::dummy;
     return true;
+  }
+
+  auto& getOwnedStorage() {
+    return _ownedParticles;
+  }
+
+  auto& getHaloStorage() {
+    return _haloParticles;
   }
 
  protected:

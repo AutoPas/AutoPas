@@ -46,23 +46,23 @@ namespace autopas {
 // TODO: it might make sense to outsource this to a common location to avoid duplication
 #ifdef KOKKOS_ENABLE_CUDA
 using DeviceSpace = Kokkos::CudaSpace;
-constexpr bool ForEachHostFlag = false;
+constexpr bool useHostView = false;
 #else
 using DeviceSpace = Kokkos::HostSpace;
-constexpr bool ForEachHostFlag = true;
+constexpr bool useHostView = true;
 #endif
 
 template <typename Particle_T>
 struct UpdateRebuildPositionsFunctor {
   KOKKOS_INLINE_FUNCTION
   void operator()(int i, const utilsKokkos::KokkosStorage<Particle_T> &storage) const {
-    const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, ForEachHostFlag>(i);
-    const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, ForEachHostFlag>(i);
-    const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, ForEachHostFlag>(i);
+    const auto pX = storage.template operator()<Particle_T::AttributeNames::posX, useHostView>(i);
+    const auto pY = storage.template operator()<Particle_T::AttributeNames::posY, useHostView>(i);
+    const auto pZ = storage.template operator()<Particle_T::AttributeNames::posZ, useHostView>(i);
 
-    storage.template operator()<Particle_T::AttributeNames::rebuildX, ForEachHostFlag>(i) = pX;
-    storage.template operator()<Particle_T::AttributeNames::rebuildY, ForEachHostFlag>(i) = pY;
-    storage.template operator()<Particle_T::AttributeNames::rebuildZ, ForEachHostFlag>(i) = pZ;
+    storage.template operator()<Particle_T::AttributeNames::rebuildX, useHostView>(i) = pX;
+    storage.template operator()<Particle_T::AttributeNames::rebuildY, useHostView>(i) = pY;
+    storage.template operator()<Particle_T::AttributeNames::rebuildZ, useHostView>(i) = pZ;
   }
 };
 
@@ -118,6 +118,8 @@ class LogicHandler {
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
+      _bufferKokkos.setBoxMin(_currentContainer->getBoxMin());
+      _bufferKokkos.setBoxMax(_currentContainer->getBoxMax());
     }
 
     // initialize locks needed for remainder traversal
@@ -139,49 +141,129 @@ class LogicHandler {
    * @return Leaving particles.
    */
   [[nodiscard]] std::vector<Particle_T> collectLeavingParticlesFromBuffer(bool insertOwnedParticlesToContainer) {
-    // TODO: this function will need a Kokkos version
     const auto &boxMin = _currentContainer->getBoxMin();
     const auto &boxMax = _currentContainer->getBoxMax();
     std::vector<Particle_T> leavingBufferParticles{};
-    for (auto &cell : _particleBuffer) {
-      auto &buffer = cell._particles;
-      if (insertOwnedParticlesToContainer) {
-        // Can't be const because we potentially modify ownership before re-adding
-        for (auto &p : buffer) {
-          if (p.isDummy()) {
-            continue;
-          }
-          if (utils::inBox(p.getR(), boxMin, boxMax)) {
-            p.setOwnershipState(OwnershipState::owned);
-            _currentContainer->addParticle(p);
-          } else {
-            leavingBufferParticles.push_back(p);
-          }
-        }
-        buffer.clear();
-      } else {
-        for (auto iter = buffer.begin(); iter < buffer.end();) {
-          auto &p = *iter;
+    if (_currentContainer->allowsKokkos()) {
+      // TODO: add profiling regions
 
-          auto fastRemoveP = [&]() {
-            // Fast remove of particle, i.e., swap with last entry && pop.
-            std::swap(p, buffer.back());
-            buffer.pop_back();
-            // Do not increment the iter afterward!
-          };
-          if (p.isDummy()) {
-            // We remove dummies!
-            fastRemoveP();
-            // In case we swapped a dummy here, don't increment the iterator and do another iteration to check again.
-            continue;
+      auto& owned = _bufferKokkos.getOwnedStorage();
+      const size_t ownedSize = owned.size();
+
+      const auto &boxMinKokkos = Kokkos::Array<double, 3>{boxMin.at(0), boxMin.at(1), boxMin.at(2)};
+      const auto &boxMaxKokkos = Kokkos::Array<double, 3>{boxMax.at(0), boxMax.at(1), boxMax.at(2)};
+
+      owned.template syncAll<DeviceSpace::execution_space>();
+
+      /* 0. Prepare data structures */
+      Kokkos::Profiling::pushRegion("initialize Migrants and container list");
+      utilsKokkos::KokkosStorage<Particle_T> migrants{owned.getIntendedLayout(), ownedSize};
+      utilsKokkos::KokkosStorage<Particle_T> containerList{owned.getIntendedLayout(), ownedSize};
+      Kokkos::Profiling::popRegion(); // initialize migrants
+
+      Kokkos::View<int *, DeviceSpace> migrantCounter{"migrantCounter", 1};
+      Kokkos::View<int *, DeviceSpace> containerCounter{"containerCounter", 1};
+
+      /* 1. Loop over all particles */
+      Kokkos::parallel_for("autopas::LogicHandler::collectLeavingParticlesFromBuffer_parallel_for", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, ownedSize), KOKKOS_LAMBDA(const size_t i) {
+        /* particle is owned */
+          if (owned.template fulfillsIteratorRequirements<false, useHostView>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
+
+            /* particle is outside the box? */
+            if (not owned.template fulfillsIteratorRequirements<true, useHostView>(i, IteratorBehavior::ownedOrHaloOrDummy, boxMinKokkos, boxMaxKokkos)) {
+              int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
+              migrants.template copyParticle<useHostView>(migrantIndex, owned, i);
+
+              owned.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i) = OwnershipState::dummy;
+            }
+            /* insert owned to container? */
+            else if (insertOwnedParticlesToContainer) {
+              int containerIndex = Kokkos::atomic_fetch_inc(&containerCounter(0));
+              containerList.template copyParticle<useHostView>(containerIndex, owned, i);
+            }
           }
-          // if p was a dummy a new particle might now be at the memory location of p so we need to check that.
-          // We also just might have deleted the last particle in the buffer in that case the inBox check is meaningless
-          if (not buffer.empty() and utils::notInBox(p.getR(), boxMin, boxMax)) {
-            leavingBufferParticles.push_back(p);
-            fastRemoveP();
-          } else {
-            ++iter;
+      });
+      owned.template modifyAll<DeviceSpace::execution_space>();
+
+      auto migrantCounterMirror = Kokkos::create_mirror_view(migrantCounter);
+      Kokkos::deep_copy(migrantCounterMirror, migrantCounter);
+
+      int numMigrants = migrantCounterMirror(0);
+
+      if (numMigrants > 0) {
+        migrants.resize(numMigrants);
+        migrants.template convertTo<DeviceSpace::execution_space, useHostView>(DataLayoutOption::aos);
+        migrants.template modifyAll<DeviceSpace::execution_space>();
+        migrants.template syncAll<Kokkos::HostSpace::execution_space>();
+        leavingBufferParticles.reserve(numMigrants);
+
+        for (int i = 0; i < numMigrants; ++i) {
+          Particle_T migrant =
+              migrants.getAoS().template getParticle<true>(i);
+          leavingBufferParticles.push_back(migrant);
+        }
+      }
+
+      auto containerCounterMirror = Kokkos::create_mirror_view(containerCounter);
+      Kokkos::deep_copy(containerCounterMirror, containerCounter);
+
+      int numContainerLists = containerCounterMirror(0);
+
+      if (numContainerLists > 0) {
+        containerList.template convertTo<DeviceSpace::execution_space, useHostView>(DataLayoutOption::aos);
+        containerList.template modifyAll<DeviceSpace::execution_space>();
+        containerList.template syncAll<Kokkos::HostSpace::execution_space>();
+        for (int i = 0; i < numContainerLists; ++i) {
+          Particle_T p = containerList.getAoS().template getParticle<true>(i);
+          p.setOwnershipState(OwnershipState::owned);
+          _currentContainer->addParticle(p);
+        }
+      }
+
+      if (insertOwnedParticlesToContainer) {
+        _bufferKokkos.deleteAllParticles();
+      }
+    } else {
+      for (auto &cell : _particleBuffer) {
+        auto &buffer = cell._particles;
+        if (insertOwnedParticlesToContainer) {
+          // Can't be const because we potentially modify ownership before re-adding
+          for (auto &p : buffer) {
+            if (p.isDummy()) {
+              continue;
+            }
+            if (utils::inBox(p.getR(), boxMin, boxMax)) {
+              p.setOwnershipState(OwnershipState::owned);
+              _currentContainer->addParticle(p);
+            } else {
+              leavingBufferParticles.push_back(p);
+            }
+          }
+          buffer.clear();
+        } else {
+          for (auto iter = buffer.begin(); iter < buffer.end();) {
+            auto &p = *iter;
+
+            auto fastRemoveP = [&]() {
+              // Fast remove of particle, i.e., swap with last entry && pop.
+              std::swap(p, buffer.back());
+              buffer.pop_back();
+              // Do not increment the iter afterward!
+            };
+            if (p.isDummy()) {
+              // We remove dummies!
+              fastRemoveP();
+              // In case we swapped a dummy here, don't increment the iterator and do another iteration to check again.
+              continue;
+            }
+            // if p was a dummy a new particle might now be at the memory location of p so we need to check that.
+            // We also just might have deleted the last particle in the buffer in that case the inBox check is meaningless
+            if (not buffer.empty() and utils::notInBox(p.getR(), boxMin, boxMax)) {
+              leavingBufferParticles.push_back(p);
+              fastRemoveP();
+            } else {
+              ++iter;
+            }
           }
         }
       }
@@ -242,6 +324,7 @@ class LogicHandler {
     // Subtract the amount of leaving particles from the number of owned particles.
     _numParticlesOwned.fetch_sub(leavingParticles.size(), std::memory_order_relaxed);
     // updateContainer deletes all halo particles.
+    _bufferKokkos.deleteHaloParticles();
     std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     _numParticlesHalo.store(0, std::memory_order_relaxed);
     return leavingParticles;
@@ -347,13 +430,17 @@ class LogicHandler {
    * @param numHaloParticles Total number of halo particles.
    */
   void reserve(size_t numParticles, size_t numHaloParticles) {
-    const auto numHaloParticlesPerBuffer = numHaloParticles / _haloParticleBuffer.size();
-    for (auto &buffer : _haloParticleBuffer) {
-      buffer.reserve(numHaloParticlesPerBuffer);
-    }
-    // there is currently no good heuristic for this buffer, so reuse the one for halos.
-    for (auto &buffer : _particleBuffer) {
-      buffer.reserve(numHaloParticlesPerBuffer);
+    if (_currentContainer->allowsKokkos()) {
+      _bufferKokkos.reserve(numParticles, numHaloParticles);
+    } else {
+      const auto numHaloParticlesPerBuffer = numHaloParticles / _haloParticleBuffer.size();
+      for (auto &buffer : _haloParticleBuffer) {
+        buffer.reserve(numHaloParticlesPerBuffer);
+      }
+      // there is currently no good heuristic for this buffer, so reuse the one for halos.
+      for (auto &buffer : _particleBuffer) {
+        buffer.reserve(numHaloParticlesPerBuffer);
+      }
     }
 
     // reserve is called for the container only in the rebuild iterations.
@@ -385,6 +472,9 @@ class LogicHandler {
       _currentContainer->template addParticle<false>(particleCopy);
     } else {
       // If the container is valid, we add it to the particle buffer.
+      if (_currentContainer->allowsKokkos()) {
+        _bufferKokkos.addParticle(particleCopy);
+      }
       _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
     }
     _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
@@ -413,6 +503,9 @@ class LogicHandler {
       // Check if we can update an existing halo(dummy) particle.
       bool updated = _currentContainer->updateHaloParticle(haloParticleCopy);
       if (not updated) {
+        if (_currentContainer->allowsKokkos()) {
+          _bufferKokkos.addHaloParticle(haloParticleCopy);
+        }
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticleCopy);
       }
@@ -426,6 +519,7 @@ class LogicHandler {
   void deleteAllParticles() {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
     _currentContainer->deleteAllParticles();
+    _bufferKokkos.deleteAllParticles();
     std::for_each(_particleBuffer.begin(), _particleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     // all particles are gone -> reset counters.
@@ -440,6 +534,8 @@ class LogicHandler {
    * @return Tuple: <True iff the particle was found and deleted, True iff the reference is valid>
    */
   std::tuple<bool, bool> deleteParticleFromBuffers(Particle_T &particle) {
+    // TODO: Kokkos version
+
     // find the buffer the particle belongs to
     auto &bufferCollection = particle.isOwned() ? _particleBuffer : _haloParticleBuffer;
     for (auto &cell : bufferCollection) {
@@ -531,6 +627,23 @@ class LogicHandler {
   ContainerIterator<Particle_T, true, false> begin(IteratorBehavior behavior) {
     auto additionalVectors = gatherAdditionalVectors<ContainerIterator<Particle_T, true, false>>(behavior);
     return _currentContainer->begin(behavior, std::ref(additionalVectors));
+  }
+
+  template <class ExecSpace, class Lambda>
+  void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior, const std::string& label) {
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.template forEachKokkos<ExecSpace>(forEachLambda, behavior, label);
+    });
+    // TODO: also delegate to buffer particles
+  }
+
+  template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
+  void reduceKokkos(Lambda forEachLambda, Result &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+                  const std::string &label = "reduceKokkos") {
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.template reduceKokkos<ExecSpace, Result, Reduction>(forEachLambda, result, behavior, label);
+    });
+    // TODO: also delegate to buffer particles
   }
 
   /**
@@ -649,6 +762,11 @@ class LogicHandler {
   std::tuple<const std::vector<FullParticleCell<Particle_T>> &, const std::vector<FullParticleCell<Particle_T>> &>
   getParticleBuffers() const;
 
+  std::tuple<utilsKokkos::KokkosStorage<Particle_T>&, utilsKokkos::KokkosStorage<Particle_T>&>
+  getParticleBuffersKokkos() {
+    return {_bufferKokkos.getOwnedStorage(), _bufferKokkos.getHaloStorage()};
+  }
+
   /**
    * Getter for the mean rebuild frequency.
    * Helpful for determining the frequency for the dynamic containers
@@ -699,9 +817,9 @@ class LogicHandler {
 #ifdef AUTOPAS_ENABLE_KOKKOS
       auto lambda = KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T> &storage,
                                   typename Particle_T::ParticleSoAFloatPrecision &localMaxVelocity) {
-        const auto velX = storage.template operator()<Particle_T::AttributeNames::velocityX, ForEachHostFlag>(i);
-        const auto velY = storage.template operator()<Particle_T::AttributeNames::velocityY, ForEachHostFlag>(i);
-        const auto velZ = storage.template operator()<Particle_T::AttributeNames::velocityZ, ForEachHostFlag>(i);
+        const auto velX = storage.template operator()<Particle_T::AttributeNames::velocityX, useHostView>(i);
+        const auto velY = storage.template operator()<Particle_T::AttributeNames::velocityY, useHostView>(i);
+        const auto velZ = storage.template operator()<Particle_T::AttributeNames::velocityZ, useHostView>(i);
 
         const auto tempVelAbs = Kokkos::sqrt(velX * velX + velY * velY + velZ * velZ);
 
@@ -921,7 +1039,8 @@ class LogicHandler {
   RemainderPairwiseInteractionHandler<Particle_T
 #ifdef AUTOPAS_ENABLE_KOKKOS
                                       ,
-                                      DeviceSpace::execution_space
+                                      DeviceSpace::execution_space,
+                                      useHostView
 #endif
                                       >
       _remainderPairwiseInteractionHandler;
@@ -976,6 +1095,8 @@ class LogicHandler {
    * Buffer to store halo particles that should not yet be added to the container. There is one buffer per thread.
    */
   std::vector<FullParticleCell<Particle_T>> _haloParticleBuffer;
+
+  KokkosDirectSum<Particle_T> _bufferKokkos {DataLayoutOption::aos, {0.,0.,0.}, {0.,0.,0.}, 0.};
 
   /**
    * Locks for regions in the domain. Used for buffer <-> container interaction.
@@ -1094,18 +1215,18 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 
     auto lambda = KOKKOS_LAMBDA(int i, const utilsKokkos::KokkosStorage<Particle_T> &storage, bool &local) {
       const typename Particle_T::ParticleSoAFloatPrecision pX =
-          storage.template operator()<Particle_T::AttributeNames::posX, ForEachHostFlag>(i);
+          storage.template operator()<Particle_T::AttributeNames::posX, useHostView>(i);
       const typename Particle_T::ParticleSoAFloatPrecision pY =
-          storage.template operator()<Particle_T::AttributeNames::posY, ForEachHostFlag>(i);
+          storage.template operator()<Particle_T::AttributeNames::posY, useHostView>(i);
       const typename Particle_T::ParticleSoAFloatPrecision pZ =
-          storage.template operator()<Particle_T::AttributeNames::posZ, ForEachHostFlag>(i);
+          storage.template operator()<Particle_T::AttributeNames::posZ, useHostView>(i);
 
       const typename Particle_T::ParticleSoAFloatPrecision rebuildX =
-          storage.template operator()<Particle_T::AttributeNames::rebuildX, ForEachHostFlag>(i);
+          storage.template operator()<Particle_T::AttributeNames::rebuildX, useHostView>(i);
       const typename Particle_T::ParticleSoAFloatPrecision rebuildY =
-          storage.template operator()<Particle_T::AttributeNames::rebuildY, ForEachHostFlag>(i);
+          storage.template operator()<Particle_T::AttributeNames::rebuildY, useHostView>(i);
       const typename Particle_T::ParticleSoAFloatPrecision rebuildZ =
-          storage.template operator()<Particle_T::AttributeNames::rebuildZ, ForEachHostFlag>(i);
+          storage.template operator()<Particle_T::AttributeNames::rebuildZ, useHostView>(i);
 
       const typename Particle_T::ParticleSoAFloatPrecision dX = rebuildX - pX;
       const typename Particle_T::ParticleSoAFloatPrecision dY = rebuildY - pY;
@@ -1165,6 +1286,7 @@ void LogicHandler<Particle_T>::setParticleBuffers(
     particleCounter.fetch_add(numParticlesInNewBuffers, std::memory_order_relaxed);
   };
 
+  // TODO: Kokkos version?
   exchangeBuffer(particleBuffers, _particleBuffer, _numParticlesOwned);
   exchangeBuffer(haloParticleBuffers, _haloParticleBuffer, _numParticlesHalo);
 }
@@ -1258,21 +1380,30 @@ template <typename Particle_T>
 template <class Functor>
 void LogicHandler<Particle_T>::computeRemainderInteractions(Functor &functor, bool newton3, bool useSoA) {
   withStaticContainerType(*_currentContainer, [&](auto &actualContainerType) {
-    if constexpr (utils::isPairwiseFunctor<Functor>()) {
-      if (newton3) {
-        _remainderPairwiseInteractionHandler.template computeRemainderInteractions<true>(
-            &functor, actualContainerType, _particleBuffer, _haloParticleBuffer, useSoA);
-      } else {
-        _remainderPairwiseInteractionHandler.template computeRemainderInteractions<false>(
-            &functor, actualContainerType, _particleBuffer, _haloParticleBuffer, useSoA);
+
+    if (actualContainerType.allowsKokkos()) {
+      if constexpr (utils::isPairwiseFunctor<Functor>()) {
+        _remainderPairwiseInteractionHandler.computeRemainderInteractionsKokkos(&functor, actualContainerType, _bufferKokkos);
+      } else if (utils::isTriwiseFunctor<Functor>()) {
+        // TODO: implement
       }
-    } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
-      if (newton3) {
-        _remainderTriwiseInteractionHandler.template computeRemainderInteractions<true>(
-            &functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
-      } else {
-        _remainderTriwiseInteractionHandler.template computeRemainderInteractions<false>(
-            &functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+    } else {
+      if constexpr (utils::isPairwiseFunctor<Functor>()) {
+        if (newton3) {
+          _remainderPairwiseInteractionHandler.template computeRemainderInteractions<true>(
+              &functor, actualContainerType, _particleBuffer, _haloParticleBuffer, useSoA);
+        } else {
+          _remainderPairwiseInteractionHandler.template computeRemainderInteractions<false>(
+              &functor, actualContainerType, _particleBuffer, _haloParticleBuffer, useSoA);
+        }
+      } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
+        if (newton3) {
+          _remainderTriwiseInteractionHandler.template computeRemainderInteractions<true>(
+              &functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+        } else {
+          _remainderTriwiseInteractionHandler.template computeRemainderInteractions<false>(
+              &functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+        }
       }
     }
   });

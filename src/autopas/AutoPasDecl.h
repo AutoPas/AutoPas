@@ -8,6 +8,7 @@
 #include <memory>
 #include <set>
 
+#include "autopas/LogicHandler.h"
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
@@ -305,13 +306,10 @@ class AutoPas {
    * @param behavior @see IteratorBehavior default: @see IteratorBehavior::ownedOrHalo
    * @param label identifier of the function to be performed - useful for profiling with NVTX Kokkos Tools
    */
-  template <class ExecSpace, typename Lambda>
+  template <class ExecSpace, class Lambda>
   void forEachKokkos(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                      const std::string &label = "forEachKokkos") {
-    withStaticContainerType(getContainer(), [&](auto &container) {
-      container.template forEachKokkos<ExecSpace>(forEachLambda, behavior, label);
-    });
-    // TODO: also consider buffer particles -> begin() does
+    _logicHandler->template forEachKokkos<ExecSpace>(forEachLambda, behavior, label);
   }
 
   bool containerAllowsKokkos() const { return getContainer().allowsKokkos(); }
@@ -328,10 +326,7 @@ class AutoPas {
   template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
   void reduceKokkos(Lambda forEachLambda, Result &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                     const std::string &label = "reduceKokkos") {
-    withStaticContainerType(getContainer(), [&](auto &container) {
-      container.template reduceKokkos<ExecSpace, Result, Reduction>(forEachLambda, result, behavior, label);
-    });
-    // TODO: also consider buffer particles -> begin() does
+    _logicHandler->template reduceKokkos<ExecSpace>(forEachLambda, result, behavior, label);
   }
 
   /**

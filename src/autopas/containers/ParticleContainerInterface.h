@@ -256,11 +256,15 @@ class ParticleContainerInterface {
    */
   virtual void computeInteractions(TraversalInterface *traversal) = 0;
 
+  virtual void setBoxMax(const std::array<double, 3>& boxMax) { _boxMax = boxMax; }
+
   /**
    * Get the upper corner of the container without halo.
    * @return Upper corner of the container.
    */
   [[nodiscard]] virtual const std::array<double, 3> &getBoxMax() const { return _boxMax; };
+
+  virtual void setBoxMin(const std::array<double, 3>& boxMin) { _boxMin = boxMin; }
 
   /**
    * Get the lower corner of the container without halo.

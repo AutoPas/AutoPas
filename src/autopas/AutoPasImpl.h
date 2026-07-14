@@ -13,9 +13,8 @@
 #include <vector>
 
 // The LogicHandler includes dependencies to wide parts of AutoPas, making it expensive to compile and thus is moved
-// here from AutoPasDecl.h.
+// here from AutoPasDecl.h. //TODO: so far, I could not find another solution as to move it back to AutoPasDecl.h as I must (!) use _logicHandler there...
 #include "autopas/AutoPasDecl.h"
-#include "autopas/LogicHandler.h"
 #include "autopas/Version.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/baseFunctors/TriwiseFunctor.h"

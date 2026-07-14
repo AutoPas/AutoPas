@@ -44,34 +44,37 @@ struct TeamTraversalReductionFunctor {
   void operator()(const MemberType &teamHandle, ReductionResult &localResult) const {
     const int i = teamHandle.league_rank();
 
-    FloatPrecision fxAcc = 0.;
-    FloatPrecision fyAcc = 0.;
-    FloatPrecision fzAcc = 0.;
-
     const auto x1 = _storageA.template operator()<Particle_T::AttributeNames::posX, false>(i);
     const auto y1 = _storageA.template operator()<Particle_T::AttributeNames::posY, false>(i);
     const auto z1 = _storageA.template operator()<Particle_T::AttributeNames::posZ, false>(i);
+    const auto owned1 = _storageA.template operator()<Particle_T::AttributeNames::ownershipState, false>(i);
 
-    FloatPrecision virialSum = 0.;
-    FloatPrecision uPotSum = 0;
+    if (owned1 != OwnershipState::dummy) {
+      FloatPrecision fxAcc = 0.;
+      FloatPrecision fyAcc = 0.;
+      FloatPrecision fzAcc = 0.;
 
-    Kokkos::parallel_reduce(
-        Kokkos::TeamThreadRange(teamHandle, M),
-        [&](int j, FloatPrecision &localFxAcc, FloatPrecision &localFyAcc, FloatPrecision &localFzAcc,
-            FloatPrecision &localVirialSum, FloatPrecision &localUPotSum) {
-          _func->ForceKernelKokkos(x1, y1, z1, _storageB, localFxAcc, localFyAcc, localFzAcc, localVirialSum,
-                                   localUPotSum, _cutoffSquared, i, j);
-        },
-        fxAcc, fyAcc, fzAcc, virialSum, uPotSum);
+      FloatPrecision virialSum = 0.;
+      FloatPrecision uPotSum = 0;
 
-    Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
-      localResult.virialSum += virialSum;
-      localResult.uPotSum += uPotSum;
+      Kokkos::parallel_reduce(
+          Kokkos::TeamThreadRange(teamHandle, M),
+          [&](int j, FloatPrecision &localFxAcc, FloatPrecision &localFyAcc, FloatPrecision &localFzAcc,
+              FloatPrecision &localVirialSum, FloatPrecision &localUPotSum) {
+            _func->ForceKernelKokkos(x1, y1, z1, _storageB, localFxAcc, localFyAcc, localFzAcc, localVirialSum,
+                                     localUPotSum, _cutoffSquared, i, j);
+          },
+          fxAcc, fyAcc, fzAcc, virialSum, uPotSum);
 
-      _storageA.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
-      _storageA.template operator()<Particle_T::AttributeNames::forceY, false>(i) += fyAcc;
-      _storageA.template operator()<Particle_T::AttributeNames::forceZ, false>(i) += fzAcc;
-    });
+      Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
+        localResult.virialSum += virialSum;
+        localResult.uPotSum += uPotSum;
+
+        _storageA.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
+        _storageA.template operator()<Particle_T::AttributeNames::forceY, false>(i) += fyAcc;
+        _storageA.template operator()<Particle_T::AttributeNames::forceZ, false>(i) += fzAcc;
+      });
+    }
   }
 };
 
@@ -90,29 +93,33 @@ struct TeamTraversalFunctor {
   void operator()(const MemberType &teamHandle) const {
     const int i = teamHandle.league_rank();
 
-    FloatPrecision fxAcc = 0.;
-    FloatPrecision fyAcc = 0.;
-    FloatPrecision fzAcc = 0.;
-
     const auto x1 = _storageA.template operator()<Particle_T::AttributeNames::posX, false>(i);
     const auto y1 = _storageA.template operator()<Particle_T::AttributeNames::posY, false>(i);
     const auto z1 = _storageA.template operator()<Particle_T::AttributeNames::posZ, false>(i);
 
-    Kokkos::parallel_reduce(
-        Kokkos::TeamThreadRange(teamHandle, M),
-        [&](int j, FloatPrecision &localFxAcc, FloatPrecision &localFyAcc, FloatPrecision &localFzAcc) {
-          FloatPrecision virialSum = 0.;
-          FloatPrecision uPotSum = 0;
-          _func->ForceKernelKokkos(x1, y1, z1, _storageB, localFxAcc, localFyAcc, localFzAcc, virialSum, uPotSum,
-                                   _cutoffSquared, i, j);
-        },
-        fxAcc, fyAcc, fzAcc);
+    const auto owned1 = _storageA.template operator()<Particle_T::AttributeNames::ownershipState, false>(i);
 
-    Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
-      _storageA.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
-      _storageA.template operator()<Particle_T::AttributeNames::forceY, false>(i) += fyAcc;
-      _storageA.template operator()<Particle_T::AttributeNames::forceZ, false>(i) += fzAcc;
-    });
+    if (owned1 != OwnershipState::dummy) {
+      FloatPrecision fxAcc = 0.;
+      FloatPrecision fyAcc = 0.;
+      FloatPrecision fzAcc = 0.;
+
+      Kokkos::parallel_reduce(
+          Kokkos::TeamThreadRange(teamHandle, M),
+          [&](int j, FloatPrecision &localFxAcc, FloatPrecision &localFyAcc, FloatPrecision &localFzAcc) {
+            FloatPrecision virialSum = 0.;
+            FloatPrecision uPotSum = 0;
+            _func->ForceKernelKokkos(x1, y1, z1, _storageB, localFxAcc, localFyAcc, localFzAcc, virialSum, uPotSum,
+                                     _cutoffSquared, i, j);
+          },
+          fxAcc, fyAcc, fzAcc);
+
+      Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
+        _storageA.template operator()<Particle_T::AttributeNames::forceX, false>(i) += fxAcc;
+        _storageA.template operator()<Particle_T::AttributeNames::forceY, false>(i) += fyAcc;
+        _storageA.template operator()<Particle_T::AttributeNames::forceZ, false>(i) += fzAcc;
+      });
+    }
   }
 };
 
