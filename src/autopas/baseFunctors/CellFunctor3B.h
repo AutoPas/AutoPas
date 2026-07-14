@@ -187,7 +187,7 @@ class CellFunctor3B {
    * Currently unused by CellFunctor3B (stored for interface consistency with CellFunctor).
    * Default comes from the LJFunctorHWY Benchmarks.
    */
-  size_t _soaSortingThreshold{50};
+  size_t _soaSortingThreshold{100};
 
   const DataLayoutOption::Value _dataLayout;
 

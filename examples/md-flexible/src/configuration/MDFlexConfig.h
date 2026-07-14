@@ -591,7 +591,7 @@ class MDFlexConfig {
    * Default comes from the LJFunctorHWY Benchmarks.
    */
   MDFlexOption<size_t, __LINE__> soaSortingThreshold{
-      50, "soa-sorting-threshold", true,
+      100, "soa-sorting-threshold", true,
       "Threshold for the SoA functor pair path to start sorting. If the sum of the SoA buffer sizes of two cells is "
       "greater or equal to that value, particles are sorted by their projection onto the cell-pair direction vector "
       "before computing interactions."};

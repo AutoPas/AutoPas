@@ -44,7 +44,7 @@ class LogicHandlerInfo {
    * Number of particles in two SoA buffers from which SoA sorting should be performed.
    * Default comes from the LJFunctorHWY Benchmarks.
    */
-  size_t soaSortingThreshold{50};
+  size_t soaSortingThreshold{100};
   /**
    * If true, LogicHandler runs SortingThresholdBenchmark on the first iterate() call and uses the results to
    * override the fixed aosSortingThreshold and soaSortingThreshold in CellFunctor.
