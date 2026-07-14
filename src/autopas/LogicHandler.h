@@ -1278,9 +1278,18 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
     if (_logicHandlerInfo.useSortingThresholdBenchmark) {
       auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
-      _currentContainer->setAoSSortingThresholds(autoTuner.getAoSSortingThresholds<Functor, Particle_T>(*functor));
+      auto &sortingThresholdBenchmark = autoTuner.getSortingThresholdBenchmark();
+
+      if (not sortingThresholdBenchmark.hasRunAoS()) {
+        sortingThresholdBenchmark.template runBenchmark<Functor, Particle_T, false>(*functor);
+      }
+      _currentContainer->setAoSSortingThresholds(sortingThresholdBenchmark.getAoSThresholds());
+
       if constexpr (Functor::supportsSoASorting) {
-        _currentContainer->setSoASortingThresholds(autoTuner.getSoASortingThresholds<Functor, Particle_T>(*functor));
+        if (not sortingThresholdBenchmark.hasRunSoA()) {
+          sortingThresholdBenchmark.template runBenchmark<Functor, Particle_T, true>(*functor);
+        }
+        _currentContainer->setSoASortingThresholds(sortingThresholdBenchmark.getSoAThresholds());
       }
     }
   }

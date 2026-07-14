@@ -98,8 +98,14 @@ class SortingThresholdBenchmark {
                 runSearch<Functor_T, Particle_T, false>(functor, layout, static_cast<bool>(n3));
           }
         }
-        _hasRunAoS = true;
+      } else {
+        AutoPasLog(WARN,
+                   "SortingThresholdBenchmark: Particle type is not constructible from (position, velocity, id), "
+                   "skipping the AoS sorting-threshold benchmark and using the default thresholds instead.");
       }
+      // Here so that this benchmark doesn't get executed every iteration if the particle doesn't support threshold
+      // benchmarking
+      _hasRunAoS = true;
     }
   }
 
@@ -245,8 +251,6 @@ class SortingThresholdBenchmark {
     size_t numParticlesCell2 = numParticlesEqDistr / 2 + numParticlesEqDistr % 2;
 
     // Prepare for random scattering.
-
-    // numParticles.
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<size_t> distrib(0, numParticlesScatter);
@@ -289,6 +293,8 @@ class SortingThresholdBenchmark {
     cellFunctor.setSoASortingThreshold(0);
     cellFunctor.setAoSSortingThreshold(0);
 
+    // For SoA Forces won't accumulate, as SoAExtractor is never called, for AoS they will as AoS modifies the values
+    // directly.
     auto measureUnsorted = [&]() {
       unsortedTimer.start();
       for (size_t j = 0; j < _iterations; j++) {

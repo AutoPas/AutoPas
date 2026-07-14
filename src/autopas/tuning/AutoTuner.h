@@ -278,43 +278,19 @@ class AutoTuner {
   const std::set<Configuration> &getSearchSpace() const;
 
   /**
-   * Returns the per-Newton3-state, per-direction-type SoA sorting thresholds determined by the SoA sorting
-   * threshold benchmark, running the benchmark first (lazily, once) if it has not run yet.
-   * @tparam Functor_T Pairwise functor type.
-   * @tparam Particle_T Particle type.
-   * @param functor Functor instance used to drive the benchmark if it still needs to run.
-   * @return Per-Newton3-state, per-direction-type thresholds, indexed as [newton3][direction] (see
-   * SortingThresholdBenchmark for the indexing convention).
+   * Returns the sorting-threshold benchmark owned by this tuner. Callers are responsible for checking
+   * SortingThresholdBenchmark::hasRunAoS()/hasRunSoA() and calling runBenchmark() themselves before reading
+   * results.
+   * @return Reference to the benchmark object.
    */
-  template <class Functor_T, class Particle_T>
-  std::array<std::array<size_t, 3>, 2> getSoASortingThresholds(Functor_T &functor) {
-    if (not _sortingThresholdBenchmark.hasRunSoA()) {
-      _sortingThresholdBenchmark.runBenchmark<Functor_T, Particle_T, true>(functor);
-    }
-    return _sortingThresholdBenchmark.getSoAThresholds();
-  }
-
-  /**
-   * Returns the per-Newton3-state, per-direction-type AoS sorting thresholds determined by the AoS sorting
-   * threshold benchmark, running the benchmark first (lazily, once) if it has not run yet.
-   * @tparam Functor_T Pairwise functor type.
-   * @tparam Particle_T Particle type.
-   * @param functor Functor instance used to drive the benchmark if it still needs to run.
-   * @return Per-Newton3-state, per-direction-type thresholds, indexed as [newton3][direction] (see
-   * SortingThresholdBenchmark for the indexing convention).
-   */
-  template <class Functor_T, class Particle_T>
-  std::array<std::array<size_t, 3>, 2> getAoSSortingThresholds(Functor_T &functor) {
-    if (not _sortingThresholdBenchmark.hasRunAoS()) {
-      _sortingThresholdBenchmark.runBenchmark<Functor_T, Particle_T, false>(functor);
-    }
-    return _sortingThresholdBenchmark.getAoSThresholds();
-  }
+  SortingThresholdBenchmark &getSortingThresholdBenchmark() { return _sortingThresholdBenchmark; }
 
  private:
   /**
-   * Stores the results of the sorting threshold benchmark.
-   * Lazily run via getSoASortingThresholds()/getAoSSortingThresholds() on the first call to either.
+   * Stores the results of the sorting threshold benchmark. Owned here since it is a tuning-derived
+   * characteristic of a (functor, hardware) pair, but running it and reading results is the caller's
+   * responsibility via getSortingThresholdBenchmark().
+
    */
   SortingThresholdBenchmark _sortingThresholdBenchmark{};
 
