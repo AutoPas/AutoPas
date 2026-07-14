@@ -66,7 +66,6 @@ class SortingThresholdBenchmark {
    * @return True if the AoS benchmark has run.
    */
   [[nodiscard]] bool hasRunAoS() const { return _hasRunAoS; }
-
   /**
    * Runs the micro-benchmark for sorting thresholds, sweeping both Newton3 states and all three direction types,
    * and storing the resulting thresholds.
@@ -243,12 +242,9 @@ class SortingThresholdBenchmark {
     const double invSqrt3 = 1. / sqrt(3.);
     const double invSqrt2 = 1. / sqrt(2.);
 
-    size_t numParticlesEqDistr = static_cast<size_t>(std::ceil(numParticles * (1. - _scatterFactor)));
-
-    size_t numParticlesScatter = numParticles - numParticlesEqDistr;
-
-    size_t numParticlesCell1 = numParticlesEqDistr / 2;
-    size_t numParticlesCell2 = numParticlesEqDistr / 2 + numParticlesEqDistr % 2;
+    auto numParticlesEqDistr = static_cast<size_t>(std::ceil(numParticles * (1. - _scatterFactor)));
+    size_t numParticlesScatter = numParticles - numParticlesEqDistr + numParticlesEqDistr % 2;
+    size_t numParticlesPerCell = numParticlesEqDistr / 2;
 
     // Prepare for random scattering.
     std::random_device rd;
@@ -327,10 +323,10 @@ class SortingThresholdBenchmark {
       size_t toAddCell1 = distrib(gen);
       // Vary the seed per repetition per cell so each repetition samples a fresh particle
       // layout instead of repeatedly timing the exact same configuration.
-      fillWithRandomParticles(cell1, defaultParticle, cell1Low, cell1High, numParticlesCell1 + toAddCell1,
+      fillWithRandomParticles(cell1, defaultParticle, cell1Low, cell1High, numParticlesPerCell + toAddCell1,
                               static_cast<unsigned int>(2 * i));
       fillWithRandomParticles(cell2, defaultParticle, cell2Low, cell2High,
-                              numParticlesCell2 + numParticlesScatter - toAddCell1,
+                              numParticlesPerCell + numParticlesScatter - toAddCell1,
                               static_cast<unsigned int>(2 * i + 1));
 
       long unsortedDelta = 0;
@@ -375,8 +371,6 @@ class SortingThresholdBenchmark {
   template <class Functor_T, class Particle_T, bool useSoA>
   size_t runSearch(Functor_T &functor, size_t layout, bool useNewton3) {
     size_t lowCount = 0;
-    // Use a smaller max particle count for AoS, since the AoS sorted path is expected to pay off at a lower
-    // particle count than the SoA sorted path (see _maxAoSParticles).
     size_t highCount = useSoA ? _maxSoAParticles : _maxAoSParticles;
 
     while (lowCount < highCount) {
