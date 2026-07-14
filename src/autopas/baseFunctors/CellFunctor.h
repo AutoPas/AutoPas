@@ -155,7 +155,7 @@ class CellFunctor {
   [[nodiscard]] bool shouldUseSorting(size_t particleCount, const std::array<double, 3> &sortingDirection,
                                       bool useSoA) const {
     if (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0) {
-      const auto zeroCount = std::count(std::begin(sortingDirection), std::end(sortingDirection), 0.0);
+      const auto zeroCount = std::ranges::count(sortingDirection, 0.0);
       const auto &thresholds = useSoA ? _soaSortingThresholds : _aosSortingThresholds;
       return particleCount >= thresholds[static_cast<size_t>(_useNewton3)][static_cast<size_t>(zeroCount)];
     }

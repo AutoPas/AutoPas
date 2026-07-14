@@ -345,7 +345,7 @@ class SortingThresholdBenchmark {
         unsortedDelta = measureUnsorted();
       }
 
-      AutoPasLog(DEBUG, "SortingThresholdBenchmark rep {}/{} layout={} n={}: unsorted={}ns sorted={}ns", i + 1,
+      AutoPasLog(TRACE, "SortingThresholdBenchmark rep {}/{} layout={} n={}: unsorted={}ns sorted={}ns", i + 1,
                  _repetitions, _layoutNames[layout], numParticles, unsortedDelta, sortedDelta);
 
       // A repetition only counts as a "sorted win" if it clears the margin: see _sortedWinMarginFraction.
@@ -356,7 +356,7 @@ class SortingThresholdBenchmark {
 
     const long meanSorted = sortedTimer.getTotalTime() / static_cast<long>(_repetitions);
     const long meanUnsorted = unsortedTimer.getTotalTime() / static_cast<long>(_repetitions);
-    AutoPasLog(INFO, "SortingThresholdBenchmark layout={} n={}: mean unsorted={}ns mean sorted={}ns sortedWins={}/{}",
+    AutoPasLog(TRACE, "SortingThresholdBenchmark layout={} n={}: mean unsorted={}ns mean sorted={}ns sortedWins={}/{}",
                _layoutNames[layout], numParticles, meanUnsorted, meanSorted, sortedWins, _repetitions);
     return sortedWins;
   }
@@ -389,15 +389,15 @@ class SortingThresholdBenchmark {
       // agree by a clear margin (see _sortedWinMarginFraction and _requiredSortedWinRatio).
       if (winRatio >= _requiredSortedWinRatio) {
         highCount = mid;
-        AutoPasLog(DEBUG, "SortingThresholdBenchmark search {} layout={} n={}: sorted won {}/{} reps → high={}",
+        AutoPasLog(TRACE, "SortingThresholdBenchmark search {} layout={} n={}: sorted won {}/{} reps → high={}",
                    _newton3Names[useNewton3], _layoutNames[layout], mid, outcome, _repetitions, highCount);
       } else {
         lowCount = mid + 1;
-        AutoPasLog(DEBUG, "SortingThresholdBenchmark search {} layout={} n={}: sorted won only {}/{} reps → low={}",
+        AutoPasLog(TRACE, "SortingThresholdBenchmark search {} layout={} n={}: sorted won only {}/{} reps → low={}",
                    _newton3Names[useNewton3], _layoutNames[layout], mid, outcome, _repetitions, lowCount);
       }
     }
-    AutoPasLog(INFO, "SortingThresholdBenchmark {} layout={} threshold={}", _newton3Names[useNewton3],
+    AutoPasLog(DEBUG, "SortingThresholdBenchmark {} layout={} threshold={}", _newton3Names[useNewton3],
                _layoutNames[layout], lowCount);
     return lowCount;
   }
