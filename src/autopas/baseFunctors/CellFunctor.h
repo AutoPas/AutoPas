@@ -145,29 +145,19 @@ class CellFunctor {
 
  private:
   /**
-   * Evaluate whether the AoSFunctor should use sorting, depending on the set AoS pair-sorting thresholds.
-   * @param particleCount Total number of involved particles.
+   * Evaluate whether the AoS or SoA path should use sorting, depending on the set AoS/SoA pair-sorting thresholds.
+   * @param particleCount Total number of involved particles (or, for the SoA path, the sum of both SoA buffer
+   * sizes).
    * @param sortingDirection No sorting when the sorting direction is {0., 0., 0.}.
-   * @return whether the AoSFunctor should use the SortedCellView.
+   * @param useSoA Whether to evaluate against the SoA thresholds (true) or the AoS thresholds (false).
+   * @return Whether the corresponding path should use sorted iteration.
    */
-  [[nodiscard]] bool shouldUseAoSSorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
+  [[nodiscard]] bool shouldUseSorting(size_t particleCount, const std::array<double, 3> &sortingDirection,
+                                      bool useSoA) const {
     if (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0) {
       const auto zeroCount = std::count(std::begin(sortingDirection), std::end(sortingDirection), 0.0);
-      return particleCount >= _aosSortingThresholds[static_cast<size_t>(_useNewton3)][static_cast<size_t>(zeroCount)];
-    }
-    return false;
-  }
-
-  /**
-   * Evaluate whether the SoA path should use sorted pair iteration, depending on the set SoA sorting threshold.
-   * @param particleCount Total number of involved particles (sum of both SoA buffer sizes).
-   * @param sortingDirection No sorting when the sorting direction is {0., 0., 0.}.
-   * @return Whether the SoA path should use SoAFunctorPairSorted.
-   */
-  [[nodiscard]] bool shouldUseSoASorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
-    if (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0) {
-      const auto zeroCount = std::count(std::begin(sortingDirection), std::end(sortingDirection), 0.0);
-      return particleCount >= _soaSortingThresholds[static_cast<size_t>(_useNewton3)][static_cast<size_t>(zeroCount)];
+      const auto &thresholds = useSoA ? _soaSortingThresholds : _aosSortingThresholds;
+      return particleCount >= thresholds[static_cast<size_t>(_useNewton3)][static_cast<size_t>(zeroCount)];
     }
     return false;
   }
@@ -194,7 +184,7 @@ class CellFunctor {
 
   /**
    * Applies the SoA functor to all particle pairs between cell1 and cell2.
-   * Uses SoAFunctorPairSorted when shouldUseSoASorting() is true; otherwise SoAFunctorPair.
+   * Uses SoAFunctorPairSorted when shouldUseSorting() is true; otherwise SoAFunctorPair.
    * @param cell1
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
@@ -373,7 +363,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
     }
   };
 
-  if (shouldUseAoSSorting(cell1.size() + cell2.size(), sortingDirection)) {
+  if (shouldUseSorting(cell1.size() + cell2.size(), sortingDirection, /*useSoA*/ false)) {
     // Use sorted cell views
     SortedCellView<ParticleCell_T> cell1Sorted(cell1, sortingDirection);
     SortedCellView<ParticleCell_T> cell2Sorted(cell2, sortingDirection);
@@ -448,7 +438,8 @@ template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoAImpl(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
   if constexpr (ParticleFunctor_T::supportsSoASorting) {
-    if (shouldUseSoASorting(cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size(), sortingDirection)) {
+    if (shouldUseSorting(cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size(), sortingDirection,
+                         /*useSoA*/ true)) {
       using Particle_T = ParticleCell_T::ParticleType;
       auto &threadData = _soaThreadData[autopas::autopas_get_thread_num()];
 
