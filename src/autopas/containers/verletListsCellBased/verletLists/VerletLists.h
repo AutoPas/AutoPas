@@ -94,7 +94,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * get the actual neighbor list
    * @return the neighbor list
    */
-  typename VerletListHelpers<Particle_T>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
+  VerletListGeneratorFunctor<Particle_T>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
@@ -120,8 +120,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
-    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(_aosNeighborLists,
-                                                                         this->getCutoff() + this->getVerletSkin());
+    VerletListGeneratorFunctor<Particle_T> f(_aosNeighborLists, this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
     DataLayoutOption dataLayout;
@@ -134,7 +133,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
                                          static_cast<int>(_buildVerletListType));
     }
     auto traversal =
-        LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
+        LCC08Traversal<ParticleCellType, VerletListGeneratorFunctor<Particle_T>>(
             this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f, this->getInteractionLength(),
             this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
     this->_linkedCells.computeInteractions(&traversal);
@@ -202,7 +201,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Neighbor Lists: Map of particle pointers to vector of particle pointers.
    */
-  typename VerletListHelpers<Particle_T>::NeighborListAoSType _aosNeighborLists;
+  VerletListGeneratorFunctor<Particle_T>::NeighborListAoSType _aosNeighborLists;
 
   /**
    * Mapping of every particle, represented by its pointer, to an index.
