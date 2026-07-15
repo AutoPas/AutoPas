@@ -90,28 +90,14 @@ class CellFunctor3B {
    * @param aosSortingThreshold SortingThresholdInfoSingle wrapping the sum of the number of particles in three cells
    * from which sorting should be enabled.
    */
-  void setAoSSortingThreshold(const SortingThresholdInfoInterface &aosSortingThreshold);
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold);
 
   /**
    * Set the SoA sorting-threshold.
    * Stored for interface consistency with CellFunctor; CellFunctor3B does not currently apply SoA-level sorting.
    * @param soaSortingThreshold SortingThresholdInfoSingle wrapping the threshold value.
    */
-  void setSoASortingThreshold(const SortingThresholdInfoInterface &soaSortingThreshold);
-
-  /**
-   * No-op: CellFunctor3B has no SoA sorting path.
-   * Provided for interface parity with CellFunctor so that traversals using a conditional CellFunctorType
-   * (e.g. DSSequentialTraversal) compile for both pairwise and triwise cases.
-   */
-  void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> /*thresholds*/) {}
-
-  /**
-   * No-op: SortingThresholdBenchmark currently only works with the simple CellFunctor.
-   * Provided for interface parity with CellFunctor so that traversals using a conditional CellFunctorType
-   * (e.g. DSSequentialTraversal) compile for both pairwise and triwise cases.
-   */
-  void setAoSSortingThresholds(std::array<std::array<size_t, 3>, 2> /*thresholds*/) {}
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold);
 
  private:
   /**
@@ -198,13 +184,13 @@ class CellFunctor3B {
 };
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThreshold(
+void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThresholds(
     const SortingThresholdInfoInterface &aosSortingThreshold) {
   _aosSortingThreshold = dynamic_cast<const SortingThresholdInfoSingle &>(aosSortingThreshold).getThreshold();
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThreshold(
+void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThresholds(
     const SortingThresholdInfoInterface &soaSortingThreshold) {
   _soaSortingThreshold = dynamic_cast<const SortingThresholdInfoSingle &>(soaSortingThreshold).getThreshold();
 }

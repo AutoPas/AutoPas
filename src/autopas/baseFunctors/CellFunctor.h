@@ -297,8 +297,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
       this->_functor.AoSFunctor(p2, p1, false);
     }
   };
-
-  if (cell.size() >= _aosSortingThresholds) {
+  // TODO: This is currently arbitrary, think of a good way to handle this
+  if (cell.size() >= _aosSortingThresholds.getThreshold(_useNewton3, {1, 0, 0})) {
     SortedCellView<ParticleCell_T> cellSorted(cell, utils::ArrayMath::normalize(cell.getCellLength()));
 
     for (auto cellIter1 = cellSorted._particles.begin(); cellIter1 != cellSorted._particles.end(); ++cellIter1) {

@@ -82,8 +82,7 @@ class SortingThresholdBenchmark {
     if constexpr (UseSoA) {
       for (const auto &n3 : Newton3Option::getAllOptions()) {
         for (const auto &layout : CellLayoutOption::getAllOptions()) {
-          _soaThresholds.setThreshold(n3, layout,
-                                      runSearch<Functor_T, Particle_T, true>(functor, layout, static_cast<bool>(n3)));
+          _soaThresholds.setThreshold(n3, layout, runSearch<Functor_T, Particle_T, true>(functor, layout, n3));
         }
       }
       _hasRunSoA = true;
@@ -91,8 +90,7 @@ class SortingThresholdBenchmark {
       if constexpr (std::constructible_from<Particle_T, std::array<double, 3>, std::array<double, 3>, size_t>) {
         for (const auto &n3 : Newton3Option::getAllOptions()) {
           for (const auto &layout : CellLayoutOption::getAllOptions()) {
-            _aosThresholds.setThreshold(n3, layout,
-                                        runSearch<Functor_T, Particle_T, true>(functor, layout, static_cast<bool>(n3)));
+            _aosThresholds.setThreshold(n3, layout, runSearch<Functor_T, Particle_T, true>(functor, layout, n3));
           }
         }
       } else {
@@ -274,8 +272,9 @@ class SortingThresholdBenchmark {
                         newton3 == Newton3Option::enabled};
     size_t sortedWins = 0;
     // Set to 0 so whether sorting happens is controlled entirely through the sorting direction.
-    cellFunctor.setSoASortingThreshold(0);
-    cellFunctor.setAoSSortingThreshold(0);
+    const SortingThresholdInfoSingle zeroThreshold(0);
+    cellFunctor.setSoASortingThresholds(zeroThreshold);
+    cellFunctor.setAoSSortingThresholds(zeroThreshold);
 
     // For SoA Forces won't accumulate, as SoAExtractor is never called, for AoS they will as AoS modifies the values
     // directly.

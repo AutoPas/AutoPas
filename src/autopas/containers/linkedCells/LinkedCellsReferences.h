@@ -187,9 +187,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
     if (traversalInterface && cellPairTraversal) {
-      cellPairTraversal->setAoSSortingThreshold(this->_aosSortingThreshold);
-      cellPairTraversal->setAoSSortingThresholds(this->_aosSortingThresholds);
-      cellPairTraversal->setSoASortingThresholds(this->_soaSortingThresholds);
+      cellPairTraversal->setAoSSortingThresholds(*this->_aosSortingThresholds);
+      cellPairTraversal->setSoASortingThresholds(*this->_soaSortingThresholds);
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       utils::ExceptionHandler::exception(

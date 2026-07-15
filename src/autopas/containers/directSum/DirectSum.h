@@ -504,9 +504,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     auto *dsTraversal = dynamic_cast<DSTraversalInterface *>(traversal);
     auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCellType> *>(traversal);
     if (dsTraversal && cellTraversal) {
-      cellTraversal->setAoSSortingThreshold(this->_aosSortingThreshold);
-      cellTraversal->setAoSSortingThresholds(this->_aosSortingThresholds);
-      cellTraversal->setSoASortingThresholds(this->_soaSortingThresholds);
+      cellTraversal->setAoSSortingThresholds(*this->_aosSortingThresholds);
+      cellTraversal->setSoASortingThresholds(*this->_soaSortingThresholds);
       cellTraversal->setCellsToTraverse(this->_cells);
     } else {
       utils::ExceptionHandler::exception(

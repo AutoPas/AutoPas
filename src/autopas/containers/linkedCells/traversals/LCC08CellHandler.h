@@ -9,6 +9,7 @@
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/baseFunctors/CellFunctor3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
+#include "autopas/utils/SortingThresholdInfoInterface.h"
 #include "autopas/utils/checkFunctorType.h"
 
 namespace autopas {
@@ -82,25 +83,17 @@ class LCC08CellHandler {
   inline void processBaseCellTriwise(std::vector<ParticleCell_T> &cells, unsigned long baseIndex);
 
   /**
-   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
-   */
-  void setAoSSortingThreshold(size_t aosSortingThreshold) { _cellFunctor.setAoSSortingThreshold(aosSortingThreshold); }
-  /**
-   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
-   */
-  void setSoASortingThreshold(size_t soaSortingThreshold) { _cellFunctor.setSoASortingThreshold(soaSortingThreshold); }
-  /**
    * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    */
-  void setAoSSortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) {
-    _cellFunctor.setAoSSortingThresholds(thresholds);
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) {
+    _cellFunctor.setAoSSortingThresholds(aosSortingThreshold);
   }
 
   /**
    * @copydoc autopas::CellTraversal::setSoASortingThresholds()
    */
-  void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) {
-    _cellFunctor.setSoASortingThresholds(thresholds);
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold) {
+    _cellFunctor.setSoASortingThresholds(soaSortingThreshold);
   }
 
  protected:

@@ -51,29 +51,17 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell_T, Functo
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced; }
 
   /**
-   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
-   */
-  void setAoSSortingThreshold(size_t aosSortingThreshold) override {
-    _cellHandler.setAoSSortingThreshold(aosSortingThreshold);
-  }
-  /**
-   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
-   */
-  void setSoASortingThreshold(size_t soaSortingThreshold) override {
-    _cellHandler.setSoASortingThreshold(soaSortingThreshold);
-  }
-  /**
    * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    */
-  void setAoSSortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {
-    _cellHandler.setAoSSortingThresholds(thresholds);
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) override {
+    _cellHandler.setAoSSortingThresholds(aosSortingThreshold);
   }
 
   /**
    * @copydoc autopas::CellTraversal::setSoASortingThresholds()
    */
-  void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {
-    _cellHandler.setSoASortingThresholds(thresholds);
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold) override {
+    _cellHandler.setSoASortingThresholds(soaSortingThreshold);
   }
 
  private:

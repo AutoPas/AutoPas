@@ -122,29 +122,17 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
   }
 
   /**
-   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
-   */
-  void setAoSSortingThreshold(size_t aosSortingThreshold) override {
-    _cellFunctor.setAoSSortingThreshold(aosSortingThreshold);
-  }
-  /**
-   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
-   */
-  void setSoASortingThreshold(size_t soaSortingThreshold) override {
-    _cellFunctor.setSoASortingThreshold(soaSortingThreshold);
-  }
-  /**
    * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    */
-  void setAoSSortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {
-    _cellFunctor.setAoSSortingThresholds(thresholds);
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) override {
+    _cellFunctor.setAoSSortingThresholds(aosSortingThreshold);
   }
 
   /**
    * @copydoc autopas::CellTraversal::setSoASortingThresholds()
    */
-  void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {
-    _cellFunctor.setSoASortingThresholds(thresholds);
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold) override {
+    _cellFunctor.setSoASortingThresholds(soaSortingThreshold);
   }
 
  private:
