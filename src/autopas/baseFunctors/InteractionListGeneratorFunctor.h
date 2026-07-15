@@ -9,6 +9,7 @@
 #include <atomic>
 
 #include "autopas/baseFunctors/PairwiseFunctor.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
 namespace autopas {
@@ -35,7 +36,7 @@ namespace autopas {
  */
 template <class Particle_T, bool isInternal = false>
 class InteractionListGeneratorFunctor
-    : public PairwiseFunctor<Particle_T, InteractionListGeneratorFunctor<Particle_T>> {
+    : public PairwiseFunctor<Particle_T, InteractionListGeneratorFunctor<Particle_T, isInternal>> {
  public:
   /**
    * Structure of the SoAs defined by the particle.
@@ -149,10 +150,13 @@ class InteractionListGeneratorFunctor
     const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
     const double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
     const double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
     size_t numPart = soa.size();
     for (unsigned int i = 0; i < numPart; ++i) {
+      if (ownedStatePtr[i] == OwnershipState::dummy) continue;
       for (unsigned int j = i + 1; j < numPart; ++j) {
+        if (ownedStatePtr[j] == OwnershipState::dummy) continue;
         const double drx = xptr[i] - xptr[j];
         const double dry = yptr[i] - yptr[j];
         const double drz = zptr[i] - zptr[j];
@@ -196,17 +200,21 @@ class InteractionListGeneratorFunctor
     const double *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
     const double *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
     const double *const __restrict z1ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedState1Ptr = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
 
     auto **const __restrict ptr2ptr = soa2.template begin<Particle_T::AttributeNames::ptr>();
     const double *const __restrict x2ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
     const double *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
     const double *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedState2Ptr = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
 
     size_t numPart1 = soa1.size();
     for (unsigned int i = 0; i < numPart1; ++i) {
+      if (ownedState1Ptr[i] == OwnershipState::dummy) continue;
       size_t numPart2 = soa2.size();
 
       for (unsigned int j = 0; j < numPart2; ++j) {
+        if (ownedState2Ptr[j] == OwnershipState::dummy) continue;
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
         const double drz = z1ptr[i] - z2ptr[j];
@@ -255,6 +263,9 @@ class InteractionListGeneratorFunctor
     const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
     const double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
     const double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    if (ownedStatePtr[indexFirst] == OwnershipState::dummy) return;
 
     auto &firstList = _neighborListsAoS.at(ptrptr[indexFirst]);
     const double xFirst = xptr[indexFirst];
@@ -262,6 +273,7 @@ class InteractionListGeneratorFunctor
     const double zFirst = zptr[indexFirst];
 
     for (const size_t j : verletList) {
+      if (ownedStatePtr[j] == OwnershipState::dummy) continue;
       const double drx = xFirst - xptr[j];
       const double dry = yFirst - yptr[j];
       const double drz = zFirst - zptr[j];
@@ -284,10 +296,10 @@ class InteractionListGeneratorFunctor
   /**
    * @copydoc autopas::Functor::getNeededAttr()
    */
-  constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
-    return std::array<typename Particle_T::AttributeNames, 4>{
+  constexpr static std::array<typename Particle_T::AttributeNames, 5> getNeededAttr() {
+    return std::array<typename Particle_T::AttributeNames, 5>{
         Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
-        Particle_T::AttributeNames::posZ};
+        Particle_T::AttributeNames::posZ, Particle_T::AttributeNames::ownershipState};
   }
 
   /**
