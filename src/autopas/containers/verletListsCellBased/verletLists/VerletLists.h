@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "VerletListHelpers.h"
+#include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
@@ -94,7 +94,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * get the actual neighbor list
    * @return the neighbor list
    */
-  VerletListGeneratorFunctor<Particle_T>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
+  InteractionListGeneratorFunctor<Particle_T>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
@@ -120,7 +120,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
-    VerletListGeneratorFunctor<Particle_T> f(_aosNeighborLists, this->getCutoff() + this->getVerletSkin());
+    InteractionListGeneratorFunctor<Particle_T> f(_aosNeighborLists, this->getCutoff() + this->getVerletSkin(),
+                                                  useNewton3);
 
     /// @todo autotune traversal
     DataLayoutOption dataLayout;
@@ -132,10 +133,9 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
                                          static_cast<int>(_buildVerletListType));
     }
-    auto traversal =
-        LCC08Traversal<ParticleCellType, VerletListGeneratorFunctor<Particle_T>>(
-            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f, this->getInteractionLength(),
-            this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+    auto traversal = LCC08Traversal<ParticleCellType, InteractionListGeneratorFunctor<Particle_T>>(
+        this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f, this->getInteractionLength(),
+        this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
     this->_linkedCells.computeInteractions(&traversal);
 
     _soaListIsValid = false;
@@ -201,7 +201,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Neighbor Lists: Map of particle pointers to vector of particle pointers.
    */
-  VerletListGeneratorFunctor<Particle_T>::NeighborListAoSType _aosNeighborLists;
+  InteractionListGeneratorFunctor<Particle_T>::NeighborListAoSType _aosNeighborLists;
 
   /**
    * Mapping of every particle, represented by its pointer, to an index.

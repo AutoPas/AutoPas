@@ -6,8 +6,8 @@
 
 #pragma once
 
+#include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {
@@ -34,7 +34,7 @@ class VLTraversalInterface {
    */
   virtual void setCellsAndNeighborLists(
       std::vector<LinkedParticleCell> &cells,
-      VerletListGeneratorFunctor<typename LinkedParticleCell::ParticleType>::NeighborListAoSType &aosNeighborLists,
+      InteractionListGeneratorFunctor<typename LinkedParticleCell::ParticleType>::NeighborListAoSType &aosNeighborLists,
       std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &soaNeighborLists) {
     _cells = &cells;
     _aosNeighborLists = &aosNeighborLists;
@@ -49,7 +49,7 @@ class VLTraversalInterface {
   /**
    * The AoS neighbor list of the verlet lists container.
    */
-  VerletListGeneratorFunctor<typename LinkedParticleCell::ParticleType>::NeighborListAoSType *_aosNeighborLists =
+  InteractionListGeneratorFunctor<typename LinkedParticleCell::ParticleType>::NeighborListAoSType *_aosNeighborLists =
       nullptr;
   /**
    * The SoA neighbor list of the verlet lists container.
