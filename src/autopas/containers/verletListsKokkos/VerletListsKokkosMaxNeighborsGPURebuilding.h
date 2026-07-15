@@ -64,6 +64,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
         }
     }
 
+
     // If possible, a method for adding a whole vector would make more sense (first touch policy, etc.)
     // TODO: provide an additional function for this
 
@@ -161,12 +162,13 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
         auto& haloSoA = _haloParticles.getSoA();
 
         while (true) {
+            double startAllloc = buildTimer.seconds();
             // Offsets are per owned particle; entries hold maxNeighbors slots per owned particle
             Kokkos::realloc(_neighborListOffsets, numberOfOwned);
             Kokkos::realloc(_neighborListEntries, numberOfOwned * _maxNeighbors);
             Kokkos::realloc(_haloNeighborListOffsets, numberOfOwned);
             Kokkos::realloc(_haloNeighborListEntries, numberOfOwned * _maxNeighbors);
-
+            _sectionsTimes._allocation.addTiming(rebuildTimer.seconds()-startAlloc);
             const bool ownedOverflow = _useTeamsRebuild
                 ? buildNeighborListsTeams(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view)
                 : buildNeighborListsFlat(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view);
@@ -190,6 +192,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
 
         const double rebuildTime = rebuildTimer.seconds() - startRebuild;
         spdlog::info("Rebuilding Verlet Lists took {} s", rebuildTime);
+        sectionsTimes._totalRebuild.addTiming(rebuildTime);
         _rebuildTimingStats.addTiming(rebuildTime);
 
         _neighborListValid = true;
@@ -205,6 +208,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
         traversal->traverseParticles();
         Kokkos::fence();
         const double traversalTime = traversalTimer.seconds() - startTraversal;
+        _sectionsTimes._traversal._total.addTiming(traversalTime);
         _traversalTimingStats.addTiming(traversalTime);
         spdlog::info("Traversal took {} s", traversalTime);
         traversal->endTraversal();
@@ -403,10 +407,20 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
     }
 
 
+
     private:
+        struct SectionTimings{
+            KernelTimings _traversal{"traversal, VerletListsKokkosMaxNeighbors::computeInteractions()"};
+            KernelTimings _buildNL{"build NeighborList, VerletListsKokkosMaxNeighbors::buildNeighborListsFlat/Teams()"};
+            TimingStats _allocation{"allocation, Kokkos::realloc of entries and offsets"};
+            TimingStats _totalRebuild{"total rebuild, VerletListsKokkosMaxNeighbors::rebuildNeighborLists()"};
+        };
 
         bool buildNeighborListsFlat(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
             spdlog::info("buildNeighborlistflat()");
+            Kokkos::Timer buildTimer;
+            double startRebuilding = buildTimer.seconds();
+
             const size_t N = soa1.size();
             const size_t M = soa2.size();
             spdlog::debug("VerletListsKokkosTraversalFlat::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
@@ -431,6 +445,10 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
 
             spdlog::info("Launching kernel with N={} and M={}", N, M);
             auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+            double endPrep = buildTimer.seconds();
+            _sectionsTimes._buildNL._preparation.addTiming(endPrep-startRebuilding);
+
+            double startKernel = buildTimer.seconds();
             Kokkos::parallel_for("vl_kokkos_rebuild_flat", rangePolicy, KOKKOS_LAMBDA(const int i) {
 
                 const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
@@ -461,17 +479,27 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                 }
                 offsets(i) = i * maxNeighbors + count;
             });
-            spdlog::info("Kernel launch complete, checking for overflow...");
+            Kokkos::fence();
+            double endKernel = buildTimer.seconds();
+            _sectionsTimes._buildNL._kernel.addTiming(endKernel-startKernel);
 
+
+            spdlog::info("Kernel launch complete, checking for overflow...");
+            double startCleanup = buildTimer.seconds();
             // Read the flag back on the host. deep_copy is blocking, so the kernel is finished here
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
+            double endTime = buildTimer.seconds();
+            _sectionsTimes._buildNL._cleanup.addTiming(endTime-startCleanup);
+            _sectionsTimes._buildNL._total.addTiming(endTime-startRebuilding);
             return overflow != 0;
         }
 
         
         bool buildNeighborListsTeams(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
             spdlog::info("buildNeighborListsTeams()");
+            Kokkos::Timer buildTimer;
+            double startBuild= buildTimer.seconds();
             const size_t N = soa1.size();
             const size_t M = soa2.size();
             spdlog::debug("VerletListsKokkosTraversalTeams::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
@@ -502,6 +530,8 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
             spdlog::info("Launching team kernel with N={} and M={}", N, M);
             auto teamPolicy = Kokkos::TeamPolicy<ExecSpace>(N, Kokkos::AUTO)
                                   .set_scratch_size(0, Kokkos::PerTeam(scratchBytes));
+            _sectionTimes._buildNL._preparation.addTiming(buildTimer.seconds()-startBuild);
+            double startKernel = buildTimer.seconds()
             Kokkos::parallel_for("vl_kokkos_rebuild_teams", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
                 const int i = teamHandle.league_rank();
 
@@ -539,12 +569,18 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                     offsets(i) = i * maxNeighbors + finalCount;
                 });
             });
+            Kokkos::fence();
+            _sectionsTimes._buildNL._kernel.addTiming(buildTimer.seconds()-startKernel);
             spdlog::info("Team kernel launch complete, checking for overflow...");
-
+            double startCleanup= buildTimer.seconds();
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
-            Kokkos::fence();
+            double endCleanup = buildTimer.seconds();
+            _sectionsTimes._buildNL._cleanup.addTiming(endCleanup-startCleanup);
+            _sectionsTimes._buildNL._total.addTiming(endCleanup-startBuild);
+
             return overflow != 0;
+        
         }
         
         template <typename Traversal>
@@ -770,6 +806,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
 
     
     bool _useTeamsRebuild {true};
+    SectionTimings _sectionsTimes{};
     TimingStats _traversalTimingStats {"VerletListsKokkosMaxNeighbors::computeInteractions"};
     TimingStats _rebuildTimingStats {"VerletListsKokkosMaxNeighbors::rebuildNeighborLists"};
 

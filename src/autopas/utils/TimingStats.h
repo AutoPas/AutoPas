@@ -51,4 +51,11 @@ class TimingStats{
 
 };
 
+struct KernelTimings{
+    TimingStats _preparation{"preparation before Kernel"};
+    TimingStats _kernel{"actual Kernel"};
+    TimingStats _cleanup{"anything after Kernel"};
+    TimingStats _total{"total"};
+};
+
 #endif  // TIMINGSTATS_H
