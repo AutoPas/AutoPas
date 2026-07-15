@@ -8,9 +8,12 @@
 
 #include <algorithm>
 #include <array>
+#include <memory>
 
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/TraversalInterface.h"
+#include "autopas/utils/SortingThesholdInfoSingle.h"
+#include "autopas/utils/SortingThresholdInfoInterface.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -45,14 +48,9 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
         _boxMax(boxMax),
         _cutoff(cutoff),
         _skin(skin),
-        _aosSortingThreshold(aosSortingThreshold) {
-    for (auto &row : _aosSortingThresholds) {
-      row.fill(aosSortingThreshold);
-    }
-    for (auto &row : _soaSortingThresholds) {
-      row.fill(soaSortingThreshold);
-    }
-  }
+        _aosSortingThreshold(aosSortingThreshold),
+        _aosSortingThresholds(std::make_shared<const SortingThresholdInfoSingle>(aosSortingThreshold)),
+        _soaSortingThresholds(std::make_shared<const SortingThresholdInfoSingle>(soaSortingThreshold)) {}
 
   /**
    * Destructor of CellBasedParticleContainer.
@@ -162,15 +160,15 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   /**
    * @copydoc autopas::ParticleContainerInterface::setAoSSortingThresholds()
    */
-  void setAoSSortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {
-    _aosSortingThresholds = thresholds;
+  void setAoSSortingThresholds(std::shared_ptr<const SortingThresholdInfoInterface> aosSortingThresholds) override {
+    _aosSortingThresholds = std::move(aosSortingThresholds);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::setSoASortingThresholds()
    */
-  void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) override {
-    _soaSortingThresholds = thresholds;
+  void setSoASortingThresholds(std::shared_ptr<const SortingThresholdInfoInterface> soaSortingThresholds) override {
+    _soaSortingThresholds = std::move(soaSortingThresholds);
   }
 
  protected:
@@ -186,17 +184,16 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   size_t _aosSortingThreshold;
   /**
-   * Per-Newton3-state, per-direction AoS pair-sorting thresholds, indexed as [newton3][direction] (direction =
-   * number of zero components in sortingDirection: 0=Corner, 1=Edge, 2=Face).
-   * Initialized from the scalar aosSortingThreshold; overridden by setAoSSortingThresholds().
+   * Current AoS pair-sorting threshold, forwarded to freshly generated traversals in prepareTraversal().
+   * Owned as a shared_ptr so the container can hold whichever concrete shape it was given (a uniform
+   * SortingThresholdInfoSingle at construction, or e.g. a SortingThresholdInfo2B via setAoSSortingThreshold()
+   * later) without needing to know that shape itself.
    */
-  std::array<std::array<size_t, 3>, 2> _aosSortingThresholds{};
+  std::shared_ptr<const SortingThresholdInfoInterface> _aosSortingThresholds;
   /**
-   * Per-Newton3-state, per-direction SoA sorting thresholds, indexed as [newton3][direction] (direction = number
-   * of zero components in sortingDirection: 0=Corner, 1=Edge, 2=Face).
-   * Initialized from the scalar soaSortingThreshold; overridden by setSoASortingThresholds().
+   * @copydoc _aosSortingThresholdInfo
    */
-  std::array<std::array<size_t, 3>, 2> _soaSortingThresholds{};
+  std::shared_ptr<const SortingThresholdInfoInterface> _soaSortingThresholds;
 
  private:
   std::array<double, 3> _boxMin;

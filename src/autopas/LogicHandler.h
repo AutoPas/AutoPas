@@ -27,6 +27,7 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
+#include "autopas/utils/SortingThresholdInfo2B.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/TraceTimer.h"
@@ -842,12 +843,13 @@ class LogicHandler {
   size_t _numRebuildsInNonTuningPhase{0};
 
   /**
-   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
+   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor.
+   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
   size_t _aosSortingThreshold;
-
   /**
    * Number of particles in two SoA buffers from which SoA sorting should be performed.
+   * Default comes from the LJFunctorHWY Benchmarks.
    */
   size_t _soaSortingThreshold;
 
@@ -1281,15 +1283,17 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
       auto &sortingThresholdBenchmark = autoTuner.getSortingThresholdBenchmark();
 
       if (not sortingThresholdBenchmark.hasRunAoS()) {
-        sortingThresholdBenchmark.template runBenchmark<Functor, Particle_T, false>(*functor);
+        sortingThresholdBenchmark.runBenchmark<Functor, Particle_T, false>(*functor);
       }
-      _currentContainer->setAoSSortingThresholds(sortingThresholdBenchmark.getAoSThresholds());
+      _currentContainer->setAoSSortingThresholds(
+          std::make_shared<const SortingThresholdInfo2B>(sortingThresholdBenchmark.getAoSThreshold()));
 
       if constexpr (Functor::supportsSoASorting) {
         if (not sortingThresholdBenchmark.hasRunSoA()) {
-          sortingThresholdBenchmark.template runBenchmark<Functor, Particle_T, true>(*functor);
+          sortingThresholdBenchmark.runBenchmark<Functor, Particle_T, true>(*functor);
         }
-        _currentContainer->setSoASortingThresholds(sortingThresholdBenchmark.getSoAThresholds());
+        _currentContainer->setSoASortingThresholds(
+            std::make_shared<const SortingThresholdInfo2B>(sortingThresholdBenchmark.getSoAThreshold()));
       }
     }
   }

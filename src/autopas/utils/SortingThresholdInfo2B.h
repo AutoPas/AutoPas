@@ -38,6 +38,16 @@ class SortingThresholdInfo2B : public SortingThresholdInfoInterface {
   }
 
   /**
+   * Set the threshold for a given Newton3 state and CellLayoutOption.
+   * @param newton3
+   * @param layout
+   * @param value
+   */
+  void setThreshold(Newton3Option newton3, CellLayoutOption layout, size_t value) {
+    _thresholds[static_cast<std::size_t>(newton3)][static_cast<std::size_t>(layout)] = value;
+  }
+
+  /**
    * Get the threshold for a given Newton3 state and CellLayoutOption.
    * @param newton3
    * @param layout
@@ -53,8 +63,19 @@ class SortingThresholdInfo2B : public SortingThresholdInfoInterface {
    * @param layout
    * @param value
    */
-  void setThreshold(Newton3Option newton3, CellLayoutOption layout, size_t value) {
-    _thresholds[static_cast<std::size_t>(newton3)][static_cast<std::size_t>(layout)] = value;
+  void setThreshold(bool newton3, std::array<double, 3> sortingDirection, size_t value) {
+    setThreshold(newton3 ? Newton3Option::enabled : Newton3Option::disabled,
+                 CellLayoutOption::fromSortingDirection(sortingDirection), value);
+  }
+  /**
+   * Get the threshold for a given Newton3 state and CellLayoutOption.
+   * @param newton3
+   * @param layout
+   * @return The stored threshold.
+   */
+  [[nodiscard]] size_t getThreshold(bool newton3, std::array<double, 3> sortingDirection) const {
+    return getThreshold(newton3 ? Newton3Option::enabled : Newton3Option::disabled,
+                        CellLayoutOption::fromSortingDirection(sortingDirection));
   }
 
  private:

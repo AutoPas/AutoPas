@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <vector>
 
 #include "autopas/cells/ParticleCell.h"
@@ -18,6 +19,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
+#include "autopas/utils/SortingThresholdInfoInterface.h"
 #include "autopas/utils/inBox.h"
 #include "autopas/utils/optRef.h"
 
@@ -252,22 +254,22 @@ class ParticleContainerInterface {
   virtual void computeInteractions(TraversalInterface *traversal) = 0;
 
   /**
-   * Set per-Newton3-state, per-direction AoS pair-sorting thresholds.
-   * Cell-based containers store these and forward to traversals in prepareTraversal(). Containers without a
-   * CellFunctor should explicitly override with an empty body.
-   * @param thresholds Per-Newton3-state, per-direction thresholds, indexed as [newton3][direction] (direction =
-   * number of zero components in sortingDirection: 0=Corner, 1=Edge, 2=Face).
+   * Set the aos-sorting-threshold for traversals that use the CellFunctor.
+   * Cell-based containers store this shared_ptr as-is (agnostic to the concrete shape it points to) and forward it
+   * to freshly generated traversals in prepareTraversal(). Containers without a CellFunctor should explicitly
+   * override with an empty body.
+   * @param aosSortingThresholds
    */
-  virtual void setAoSSortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) = 0;
+  virtual void setAoSSortingThresholds(std::shared_ptr<const SortingThresholdInfoInterface> aosSortingThresholds) = 0;
 
   /**
-   * Set per-Newton3-state, per-direction SoA sorting thresholds.
-   * Cell-based containers store these and forward to traversals in prepareTraversal(). Containers without a
-   * CellFunctor should explicitly override with an empty body.
-   * @param thresholds Per-Newton3-state, per-direction thresholds, indexed as [newton3][direction] (direction =
-   * number of zero components in sortingDirection: 0=Corner, 1=Edge, 2=Face).
+   * Set the SoA sorting-threshold for traversals that use the CellFunctor.
+   * Cell-based containers store this shared_ptr as-is (agnostic to the concrete shape it points to) and forward it
+   * to freshly generated traversals in prepareTraversal(). Containers without a CellFunctor should explicitly
+   * override with an empty body.
+   * @param soaSortingThresholds
    */
-  virtual void setSoASortingThresholds(std::array<std::array<size_t, 3>, 2> thresholds) = 0;
+  virtual void setSoASortingThresholds(std::shared_ptr<const SortingThresholdInfoInterface> soaSortingThresholds) = 0;
 
   /**
    * Get the upper corner of the container without halo.

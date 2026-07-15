@@ -7,7 +7,7 @@
 #pragma once
 
 #include "array"
-#include "string"
+#include "cstddef"
 
 namespace autopas {
 /**
@@ -45,6 +45,7 @@ class LogicHandlerInfo {
    * Default comes from the LJFunctorHWY Benchmarks.
    */
   size_t soaSortingThreshold{100};
+
   /**
    * If true, LogicHandler runs SortingThresholdBenchmark on the first iterate() call and uses the results to
    * override the fixed aosSortingThreshold and soaSortingThreshold in CellFunctor.

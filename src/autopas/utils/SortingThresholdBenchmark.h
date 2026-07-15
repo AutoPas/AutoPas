@@ -14,6 +14,7 @@
 
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/SortingThresholdInfo2B.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/Logger.h"
 
@@ -27,11 +28,7 @@ namespace autopas {
  * The AoS half is benchmarked for any pairwise functor. The SoA half is only benchmarked for functors with
  * Functor_T::supportsSoASorting == true (see runBenchmark()).
  *
- * Stores one threshold per Newton3 state and direction type, indexed as [newton3][direction]:
- *   [0]   → Newton3 disabled, [1] → Newton3 enabled
- *   [][0] → Corner (three non-zero components)
- *   [][1] → Edge   (two non-zero components)
- *   [][2] → Face   (one non-zero component)
+ * Stores one threshold per Newton3 state and direction type.
  *
  * Newton3 on/off is benchmarked separately because it changes how much work the sorted/unsorted paths do per call
  * (symmetric force application vs. one-sided passes), which can shift the break-even point.
@@ -46,14 +43,14 @@ class SortingThresholdBenchmark {
    * Only meaningful once hasRunSoA() is true.
    * @return Copy of the internal threshold array, indexed as [newton3][direction] (see class documentation).
    */
-  std::array<std::array<size_t, 3>, 2> getSoAThresholds() const { return _soaThresholds; }
+  SortingThresholdInfo2B getSoAThreshold() const { return _soaThresholds; }
 
   /**
    * Return all per-Newton3-state, per-direction-type AoS pair-sorting thresholds.
    * Only meaningful once hasRunAoS() is true.
    * @return Copy of the internal threshold array, indexed as [newton3][direction] (see class documentation).
    */
-  std::array<std::array<size_t, 3>, 2> getAoSThresholds() const { return _aosThresholds; }
+  SortingThresholdInfo2B getAoSThreshold() const { return _aosThresholds; }
 
   /**
    * Returns whether runBenchmark<..., true>() (the SoA half) has already been called.
@@ -83,18 +80,19 @@ class SortingThresholdBenchmark {
   template <class Functor_T, class Particle_T, bool UseSoA>
   void runBenchmark(Functor_T &functor) {
     if constexpr (UseSoA) {
-      for (size_t n3 = 0; n3 < 2; n3++) {
-        for (size_t layout = 0; layout < 3; layout++) {
-          _soaThresholds[n3][layout] = runSearch<Functor_T, Particle_T, true>(functor, layout, static_cast<bool>(n3));
+      for (const auto &n3 : Newton3Option::getAllOptions()) {
+        for (const auto &layout : CellLayoutOption::getAllOptions()) {
+          _soaThresholds.setThreshold(n3, layout,
+                                      runSearch<Functor_T, Particle_T, true>(functor, layout, static_cast<bool>(n3)));
         }
       }
       _hasRunSoA = true;
     } else {
       if constexpr (std::constructible_from<Particle_T, std::array<double, 3>, std::array<double, 3>, size_t>) {
-        for (size_t n3 = 0; n3 < 2; n3++) {
-          for (size_t layout = 0; layout < 3; layout++) {
-            _aosThresholds[n3][layout] =
-                runSearch<Functor_T, Particle_T, false>(functor, layout, static_cast<bool>(n3));
+        for (const auto &n3 : Newton3Option::getAllOptions()) {
+          for (const auto &layout : CellLayoutOption::getAllOptions()) {
+            _aosThresholds.setThreshold(n3, layout,
+                                        runSearch<Functor_T, Particle_T, true>(functor, layout, static_cast<bool>(n3)));
           }
         }
       } else {
@@ -121,25 +119,14 @@ class SortingThresholdBenchmark {
 
   /**
    * Per-Newton3-state, per-direction-type SoA sorting threshold values, initialized to the compile-time default.
-   * Indexed as [newton3][direction] (see class documentation for the indexing convention).
    */
-  std::array<std::array<size_t, 3>, 2> _soaThresholds{{{100, 100, 100}, {100, 100, 100}}};
+  SortingThresholdInfo2B _soaThresholds{100};
 
   /**
    * Per-Newton3-state, per-direction-type AoS pair-sorting threshold values, initialized to the compile-time
-   * default. Indexed as [newton3][direction] (see class documentation for the indexing convention).
+   * default.
    */
-  std::array<std::array<size_t, 3>, 2> _aosThresholds{{{8, 8, 8}, {8, 8, 8}}};
-
-  /**
-   * Human-readable names for the direction-type index (0=Corner, 1=Edge, 2=Face), used only for log messages.
-   */
-  static constexpr std::array<std::string_view, 3> _layoutNames{"Corner", "Edge", "Face"};
-
-  /**
-   * Human-readable names for the Newton3-state index (0=disabled, 1=enabled), used only for log messages.
-   */
-  static constexpr std::array<std::string_view, 2> _newton3Names{"N3off", "N3on"};
+  SortingThresholdInfo2B _aosThresholds{8};
 
   /**
    * Number of timed calls per repetition to get stable measurement.
@@ -228,12 +215,12 @@ class SortingThresholdBenchmark {
    * @param functor Functor instance used to drive the benchmark.
    * @param layout Direction-type index (0=Corner, 1=Edge, 2=Face).
    * @param numParticles Number of particles placed in each of the two cells.
-   * @param useNewton3 Whether the benchmarked CellFunctor should apply Newton3.
+   * @param newton3 Whether the benchmarked CellFunctor should apply Newton3.
    * @return The number of repetitions (out of _repetitions) in which the sorted path was measured as faster than
    * the unsorted path by at least _sortedWinMarginFraction.
    */
   template <class Functor_T, class Particle_T, bool useSoA>
-  size_t executeRun(Functor_T &functor, size_t layout, size_t numParticles, bool useNewton3) {
+  size_t executeRun(Functor_T &functor, CellLayoutOption layout, size_t numParticles, Newton3Option newton3) {
     using BenchCell = FullParticleCell<Particle_T>;
     using BenchCF = internal::CellFunctor<BenchCell, Functor_T, false>;
 
@@ -263,17 +250,17 @@ class SortingThresholdBenchmark {
     std::array sortingDirection = {0., 0., 0.};
 
     switch (layout) {
-      case 0:
+      case CellLayoutOption::corner:
         cell2Low = {cutoff, cutoff, cutoff};
         cell2High = {2. * cutoff, 2. * cutoff, 2. * cutoff};
         sortingDirection = {invSqrt3, invSqrt3, invSqrt3};
         break;
-      case 1:
+      case CellLayoutOption::edge:
         cell2Low = {cutoff, cutoff, 0.};
         cell2High = {2. * cutoff, 2. * cutoff, cutoff};
         sortingDirection = {invSqrt2, invSqrt2, 0.};
         break;
-      case 2:
+      case CellLayoutOption::face:
         cell2Low = {cutoff, 0., 0.};
         cell2High = {2 * cutoff, cutoff, cutoff};
         sortingDirection = {1, 0., 0.};
@@ -283,7 +270,8 @@ class SortingThresholdBenchmark {
     }
 
     utils::Timer sortedTimer, unsortedTimer;
-    BenchCF cellFunctor{functor, cutoff, useSoA ? DataLayoutOption::soa : DataLayoutOption::aos, useNewton3};
+    BenchCF cellFunctor{functor, cutoff, useSoA ? DataLayoutOption::soa : DataLayoutOption::aos,
+                        newton3 == Newton3Option::enabled};
     size_t sortedWins = 0;
     // Set to 0 so whether sorting happens is controlled entirely through the sorting direction.
     cellFunctor.setSoASortingThreshold(0);
@@ -365,18 +353,18 @@ class SortingThresholdBenchmark {
    * @tparam useSoA Selects the benchmarked data layout: true = SoA, false = AoS.
    * @param functor Functor instance used to drive the benchmark.
    * @param layout Direction-type index (0=Corner, 1=Edge, 2=Face).
-   * @param useNewton3 Whether the benchmarked CellFunctor should apply Newton3.
+   * @param newton3 Whether the benchmarked CellFunctor should apply Newton3.
    * @return Smallest particle count at which sorted beats unsorted, or the upper search bound if never.
    */
   template <class Functor_T, class Particle_T, bool useSoA>
-  size_t runSearch(Functor_T &functor, size_t layout, bool useNewton3) {
+  size_t runSearch(Functor_T &functor, CellLayoutOption layout, Newton3Option newton3) {
     size_t lowCount = 0;
     size_t highCount = useSoA ? _maxSoAParticles : _maxAoSParticles;
 
     while (lowCount < highCount) {
       size_t mid = lowCount + (highCount - lowCount) / 2;
 
-      const auto outcome = executeRun<Functor_T, Particle_T, useSoA>(functor, layout, mid, useNewton3);
+      const auto outcome = executeRun<Functor_T, Particle_T, useSoA>(functor, layout, mid, newton3);
       const double winRatio = static_cast<double>(outcome) / static_cast<double>(_repetitions);
 
       // Conservative decision rule: only accept "sorted wins" once a clear majority of repetitions
@@ -391,8 +379,7 @@ class SortingThresholdBenchmark {
                    _newton3Names[useNewton3], _layoutNames[layout], mid, outcome, _repetitions, lowCount);
       }
     }
-    AutoPasLog(DEBUG, "SortingThresholdBenchmark {} layout={} threshold={}", _newton3Names[useNewton3],
-               _layoutNames[layout], lowCount);
+    AutoPasLog(DEBUG, "SortingThresholdBenchmark {} layout={} threshold={}", newton3, layout, lowCount);
     return lowCount;
   }
 };
