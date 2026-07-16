@@ -314,10 +314,10 @@ bool isNearRel(FloatType a, FloatType b, double maxRelativeDifference = EPSILON_
 #ifdef AUTOPAS_ENABLE_KOKKOS
 template <std::floating_point FloatType>
 KOKKOS_INLINE_FUNCTION bool isNearRelKokkos(FloatType a, FloatType b,
-                                            double maxRelativeDifference = EPSILON_RELATIVE_EQUALITY) {
-  const auto greaterNumber = Kokkos::max(Kokkos::abs(a), Kokkos::abs(b));
-  const auto absoluteDifference = maxRelativeDifference * greaterNumber;
-  const auto diff = Kokkos::abs(a - b);
+                                            FloatType maxRelativeDifference = EPSILON_RELATIVE_EQUALITY) {
+  const FloatType greaterNumber = Kokkos::max(Kokkos::abs(a), Kokkos::abs(b));
+  const FloatType absoluteDifference = maxRelativeDifference * greaterNumber;
+  const FloatType diff = Kokkos::abs(a - b);
   return diff <= absoluteDifference;
 }
 #endif

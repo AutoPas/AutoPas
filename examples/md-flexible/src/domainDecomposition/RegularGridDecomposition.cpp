@@ -324,51 +324,50 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
   if (containerAllowsKokkos) {
 #ifdef AUTOPAS_ENABLE_KOKKOS
     constexpr auto dimCount = _dimensionCount;
-    const auto sixthRootOfTwo = _sixthRootOfTwo;
-    const auto maxReflSkin = _maxReflectiveSkin;
+    const FloatPrecision sixthRootOfTwo = _sixthRootOfTwo;
     const auto boundaries = _boundaryTypeKokkos;
-    Kokkos::Array<double, 3> localBoxMin = {_localBoxMin.at(0), _localBoxMin.at(1), _localBoxMin.at(2)};
-    Kokkos::Array<double, 3> localBoxMax = {_localBoxMax.at(0), _localBoxMax.at(1), _localBoxMax.at(2)};
-    Kokkos::Array<double, 3> globalBoxMin = {_globalBoxMin.at(0), _globalBoxMin.at(1), _globalBoxMin.at(2)};
-    Kokkos::Array<double, 3> globalBoxMax = {_globalBoxMax.at(0), _globalBoxMax.at(1), _globalBoxMax.at(2)};
+    Kokkos::Array<FloatPrecision, 3> localBoxMin = {static_cast<FloatPrecision>(_localBoxMin.at(0)), static_cast<FloatPrecision>(_localBoxMin.at(1)), static_cast<FloatPrecision>(_localBoxMin.at(2))};
+    Kokkos::Array<FloatPrecision, 3> localBoxMax = {static_cast<FloatPrecision>(_localBoxMax.at(0)), static_cast<FloatPrecision>(_localBoxMax.at(1)), static_cast<FloatPrecision>(_localBoxMax.at(2))};
+    Kokkos::Array<FloatPrecision, 3> globalBoxMin = {static_cast<FloatPrecision>(_globalBoxMin.at(0)), static_cast<FloatPrecision>(_globalBoxMin.at(1)), static_cast<FloatPrecision>(_globalBoxMin.at(2))};
+    Kokkos::Array<FloatPrecision, 3> globalBoxMax = {static_cast<FloatPrecision>(_globalBoxMax.at(0)), static_cast<FloatPrecision>(_globalBoxMax.at(1)), static_cast<FloatPrecision>(_globalBoxMax.at(2))};
 
     autoPasContainer.forEachKokkos<DeviceSpace::execution_space>(
         KOKKOS_LAMBDA(int i, const autopas::utilsKokkos::KokkosStorage<ParticleType> &storage) {
-          const auto posX = storage.template operator()<ParticleType::AttributeNames::posX, ForEachHostFlag>(i);
-          const auto posY = storage.template operator()<ParticleType::AttributeNames::posY, ForEachHostFlag>(i);
-          const auto posZ = storage.template operator()<ParticleType::AttributeNames::posZ, ForEachHostFlag>(i);
+          const FloatPrecision posX = storage.template operator()<ParticleType::AttributeNames::posX, ForEachHostFlag>(i);
+          const FloatPrecision posY = storage.template operator()<ParticleType::AttributeNames::posY, ForEachHostFlag>(i);
+          const FloatPrecision posZ = storage.template operator()<ParticleType::AttributeNames::posZ, ForEachHostFlag>(i);
 
-          Kokkos::Array pos{posX, posY, posZ};
+          Kokkos::Array<FloatPrecision, 3> pos{posX, posY, posZ};
           Kokkos::Array<FloatPrecision, 3> force{0, 0, 0};
 
           for (int dim = 0; dim < dimCount; ++dim) {
             if (boundaries[dim] != options::BoundaryTypeOption::reflective) continue;
 
             auto reflectKokkos = [&](bool isUpper, FloatPrecision distanceToBoundary) {
-              constexpr auto sigma = 1.;  // TODO: extract from particle
+              constexpr FloatPrecision sigma = static_cast<FloatPrecision>(0.5);  // TODO: extract from particle
 
-              if (distanceToBoundary < sixthRootOfTwo * 0.5 * sigma) {
+              if (distanceToBoundary < sixthRootOfTwo * static_cast<FloatPrecision>(0.5) * sigma) {
                 const auto LJKernel = [](const FloatPrecision particlePos, const FloatPrecision mirrorPos,
                                          const FloatPrecision sigmaSquared, const FloatPrecision epsilon24) {
-                  const auto displacement = particlePos - mirrorPos;
-                  const auto distanceSquared = displacement * displacement;
+                  const FloatPrecision displacement = particlePos - mirrorPos;
+                  const FloatPrecision distanceSquared = displacement * displacement;
 
-                  const auto inverseDistanceSquared = 1. / distanceSquared;
+                  const FloatPrecision inverseDistanceSquared = static_cast<FloatPrecision>(1.) / distanceSquared;
 
-                  const auto lj2 = sigmaSquared * inverseDistanceSquared;
-                  const auto lj6 = lj2 * lj2 * lj2;
-                  const auto lj12 = lj6 * lj6;
-                  const auto lj12m6 = lj12 - lj6;
+                  const FloatPrecision lj2 = sigmaSquared * inverseDistanceSquared;
+                  const FloatPrecision lj6 = lj2 * lj2 * lj2;
+                  const FloatPrecision lj12 = lj6 * lj6;
+                  const FloatPrecision lj12m6 = lj12 - lj6;
 
-                  const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * inverseDistanceSquared;
+                  const FloatPrecision scalarMultiple = epsilon24 * (lj12 + lj12m6) * inverseDistanceSquared;
 
                   return displacement * scalarMultiple;
                 };
 
-                const auto sigmaSquared = sigma * sigma;
-                const auto epsilon24 = 24.;  // TODO: extract from particle
-                const auto mirrorPosition = pos[dim] + (isUpper ? 2 * distanceToBoundary : -2 * distanceToBoundary);
-                const auto f = LJKernel(pos[dim], mirrorPosition, sigmaSquared, epsilon24);
+                const FloatPrecision sigmaSquared = sigma * sigma;
+                const FloatPrecision epsilon24 = 24.;  // TODO: extract from particle
+                const FloatPrecision mirrorPosition = pos[dim] + (isUpper ? 2 * distanceToBoundary : -2 * distanceToBoundary);
+                const FloatPrecision f = LJKernel(pos[dim], mirrorPosition, sigmaSquared, epsilon24);
 
                 force[dim] += f;
               }
