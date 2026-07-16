@@ -1294,11 +1294,11 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
         if (particleIter.isValid()) {
           const Particle_T defaultParticle = *particleIter;
           if (needsAoSRun) {
-            sortingThresholdBenchmark.runBenchmark<Functor, Particle_T, false>(*functor, defaultParticle);
+            sortingThresholdBenchmark.runAoSBenchmark<Functor, Particle_T>(*functor, defaultParticle);
           }
           if constexpr (Functor::supportsSoASorting) {
             if (needsSoARun) {
-              sortingThresholdBenchmark.runBenchmark<Functor, Particle_T, true>(*functor, defaultParticle);
+              sortingThresholdBenchmark.runSoABenchmark<Functor, Particle_T>(*functor, defaultParticle);
             }
           }
         }

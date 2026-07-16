@@ -279,8 +279,8 @@ class AutoTuner {
 
   /**
    * Returns the sorting-threshold benchmark owned by this tuner. Callers are responsible for checking
-   * SortingThresholdBenchmark::hasRunAoS()/hasRunSoA() and calling runBenchmark() themselves before reading
-   * results.
+   * SortingThresholdBenchmark::hasRunAoS()/hasRunSoA() and calling runAoSBenchmark()/runSoABenchmark() themselves
+   * before reading results.
    * @return Reference to the benchmark object.
    */
   SortingThresholdBenchmark &getSortingThresholdBenchmark() { return _sortingThresholdBenchmark; }

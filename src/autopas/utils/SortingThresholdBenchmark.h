@@ -24,7 +24,7 @@ namespace autopas {
  * unsorted double loop) and the SoA path (SoAFunctorPairSorted vs. SoAFunctorPair).
  *
  * The AoS half is benchmarked for any pairwise functor. The SoA half is only benchmarked for functors with
- * Functor_T::supportsSoASorting == true (see runBenchmark()).
+ * Functor_T::supportsSoASorting == true (see runSoABenchmark()).
  *
  * Stores one threshold per Newton3 state and direction type.
  *
@@ -51,65 +51,72 @@ class SortingThresholdBenchmark {
   SortingThresholdInfo2B getAoSThreshold() const { return _aosThresholds; }
 
   /**
-   * Returns whether runBenchmark<..., true>() (the SoA half) has already been called.
+   * Returns whether runSoABenchmark() has already been called.
    * @return True if the SoA benchmark has run.
    */
   [[nodiscard]] bool hasRunSoA() const { return _hasRunSoA; }
 
   /**
-   * Returns whether runBenchmark<..., false>() (the AoS half) has already been called.
+   * Returns whether runAoSBenchmark() has already been called.
    * @return True if the AoS benchmark has run.
    */
   [[nodiscard]] bool hasRunAoS() const { return _hasRunAoS; }
+
   /**
-   * Runs the micro-benchmark for sorting thresholds, sweeping both Newton3 states and all three direction types,
-   * and storing the resulting thresholds.
-   * Templated on which path to benchmark so callers can trigger each path
-   * independently and only instantiate this for the functor/particle combinations they actually need.
-   * - UseSoA == true: benchmarks the SoA path and sets hasRunSoA() to true. Callers should only instantiate this
-   *   for functors with Functor_T::supportsSoASorting == true.
-   * - UseSoA == false: benchmarks the AoS path and sets hasRunAoS() to true.
+   * Runs the micro-benchmark for the SoA sorting threshold, sweeping both Newton3 states and all three direction
+   * types, and storing the resulting thresholds. Sets hasRunSoA() to true.
+   * Callers should only instantiate this for functors with Functor_T::supportsSoASorting == true.
    * @tparam Functor_T Pairwise functor type.
    * @tparam Particle_T Particle type.
-   * @tparam UseSoA Whether to benchmark the SoA path (true) or the AoS path (false).
    * @param functor Functor instance used to drive the benchmark cells.
    * @param defaultParticle Template particle (e.g. sampled from the live simulation) whose non-positional
    * properties are copied onto every particle generated for the benchmark cells.
    */
-  template <class Functor_T, class Particle_T, bool UseSoA>
-  void runBenchmark(Functor_T &functor, const Particle_T &defaultParticle) {
+  template <class Functor_T, class Particle_T>
+  void runSoABenchmark(Functor_T &functor, const Particle_T &defaultParticle) {
     std::array<std::array<size_t, 3>, 2> thresholds;
-    if constexpr (UseSoA) {
-      for (const auto &n3 : Newton3Option::getAllOptions()) {
-        for (const auto &layout : CellLayoutOption::getAllOptions()) {
-          thresholds[n3][layout] = runSearch<Functor_T, Particle_T, true>(functor, defaultParticle, layout, n3);
-        }
+    for (const auto &n3 : Newton3Option::getAllOptions()) {
+      for (const auto &layout : CellLayoutOption::getAllOptions()) {
+        thresholds[n3][layout] = runSearch<Functor_T, Particle_T, true>(functor, defaultParticle, layout, n3);
       }
-      _soaThresholds = {
-          thresholds[0][1], thresholds[0][2], thresholds[0][0], thresholds[1][0], thresholds[1][1], thresholds[1][2],
-      };
-      _hasRunSoA = true;
-    } else {
-      for (const auto &n3 : Newton3Option::getAllOptions()) {
-        for (const auto &layout : CellLayoutOption::getAllOptions()) {
-          thresholds[n3][layout] = runSearch<Functor_T, Particle_T, true>(functor, defaultParticle, layout, n3);
-        }
-      }
-      _aosThresholds = {
-          thresholds[0][1], thresholds[0][2], thresholds[0][0], thresholds[1][0], thresholds[1][1], thresholds[1][2],
-      };
-      _hasRunAoS = true;
     }
+    _soaThresholds = {
+        thresholds[0][1], thresholds[0][2], thresholds[0][0], thresholds[1][0], thresholds[1][1], thresholds[1][2],
+    };
+    _hasRunSoA = true;
+  }
+
+  /**
+   * Runs the micro-benchmark for the AoS sorting threshold, sweeping both Newton3 states and all three direction
+   * types, and storing the resulting thresholds. Sets hasRunAoS() to true.
+   * @tparam Functor_T Pairwise functor type.
+   * @tparam Particle_T Particle type.
+   * @param functor Functor instance used to drive the benchmark cells.
+   * @param defaultParticle Template particle (e.g. sampled from the live simulation) whose non-positional
+   * properties are copied onto every particle generated for the benchmark cells.
+   */
+  template <class Functor_T, class Particle_T>
+  void runAoSBenchmark(Functor_T &functor, const Particle_T &defaultParticle) {
+    std::array<std::array<size_t, 3>, 2> thresholds;
+    for (const auto &n3 : Newton3Option::getAllOptions()) {
+      for (const auto &layout : CellLayoutOption::getAllOptions()) {
+        thresholds[n3][layout] = runSearch<Functor_T, Particle_T, false>(functor, defaultParticle, layout, n3);
+      }
+    }
+    _aosThresholds = {
+        thresholds[0][1], thresholds[0][2], thresholds[0][0], thresholds[1][0], thresholds[1][1], thresholds[1][2],
+    };
+    _hasRunAoS = true;
   }
 
  private:
   /**
-   * Set to true by runBenchmark<..., true>() once the SoA benchmark has completed.
+   * Set to true by runSoABenchmark() once the SoA benchmark has completed.
    */
   bool _hasRunSoA{false};
 
   /**
-   * Set to true by runBenchmark<..., false>() once the AoS benchmark has completed.
+   * Set to true by runAoSBenchmark() once the AoS benchmark has completed.
    */
   bool _hasRunAoS{false};
 
