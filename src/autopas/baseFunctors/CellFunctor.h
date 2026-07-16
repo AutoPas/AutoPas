@@ -85,6 +85,7 @@ class CellFunctor {
    * Set the aos-sorting-threshold.
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
+   * For single cell sorting the newton3(on/off)/Face threshold is used as a stand in.
    * @param aosSortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
   void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold);

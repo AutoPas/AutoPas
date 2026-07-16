@@ -32,7 +32,9 @@ namespace autopas {
  * (symmetric force application vs. one-sided passes), which can shift the break-even point.
  *
  * The search performed in runSearch() is deliberately biased towards a conservative (higher) threshold, to avoid noisy
- * measurements influencing the threshold to be too low, causing slowdowns.
+ * measurements influencing the threshold to be too low. A too low threshold would actively regress performance while a
+ * too high threshold would at worst still perform the same as baseline. One goal of these thresholds is to avoid any
+ * performance regression.
  */
 class SortingThresholdBenchmark {
  public:
