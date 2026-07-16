@@ -211,7 +211,7 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
   if constexpr (sorted) {
     autopas::internal::CellFunctor<FMCell, decltype(ljFunctorHWY), /*bidirectional=*/false> cf(
         ljFunctorHWY, _cutoff, autopas::DataLayoutOption::soa, newton3);
-    cf.setSoASortingThreshold(0);
+    cf.setSoASortingThresholds(autopas::SortingThresholdInfoSingle{0});
     cf.processCellPair(cell1HWY, cell2HWY, sortingDirection);
   } else {
     ljFunctorHWY.SoAFunctorPair(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, newton3);
