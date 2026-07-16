@@ -186,13 +186,21 @@ class CellFunctor3B {
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThresholds(
     const SortingThresholdInfoInterface &aosSortingThreshold) {
-  _aosSortingThreshold = dynamic_cast<const SortingThresholdInfoSingle &>(aosSortingThreshold).threshold;
+  if (const auto *aosSortingThresholdInfo = dynamic_cast<const SortingThresholdInfoSingle *>(&aosSortingThreshold)) {
+    _aosSortingThreshold = aosSortingThresholdInfo->threshold;
+  }
+  throw utils::ExceptionHandler::AutoPasException(
+      "CellFunctor3b was called with wrong SortingThresholdInfo Type. (Supported is single)");
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThresholds(
     const SortingThresholdInfoInterface &soaSortingThreshold) {
-  _soaSortingThreshold = dynamic_cast<const SortingThresholdInfoSingle &>(soaSortingThreshold).threshold;
+  if (const auto *soaSortingThresholdInfo = dynamic_cast<const SortingThresholdInfoSingle *>(&soaSortingThreshold)) {
+    _soaSortingThreshold = soaSortingThresholdInfo->threshold;
+  }
+  throw utils::ExceptionHandler::AutoPasException(
+      "CellFunctor3b was called with wrong SortingThresholdInfo Type. (Supported is single)");
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>

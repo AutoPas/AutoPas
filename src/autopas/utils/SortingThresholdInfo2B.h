@@ -18,12 +18,29 @@ namespace autopas {
  * Provides publicly accessible named data as well as a getter to easily get the correct Value from a configuration.
  */
 struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
+  /**
+   * Threshold for config {n3: off, cellLayout: Face}
+   */
   size_t noN3FaceThreshold;
+  /**
+   * Threshold for config {n3: off, cellLayout: Edge}
+   */
   size_t noN3EdgeThreshold;
+  /**
+   * Threshold for config {n3: off, cellLayout: Corner}
+   */
   size_t noN3CornerThreshold;
-
+  /**
+   * Threshold for config {n3: on, cellLayout: Face}
+   */
   size_t n3FaceThreshold;
+  /**
+   * Threshold for config {n3: on, cellLayout: Edge}
+   */
   size_t n3EdgeThreshold;
+  /**
+   * Threshold for config {n3: on, cellLayout: Corner}
+   */
   size_t n3CornerThreshold;
 
   /**
