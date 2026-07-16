@@ -199,21 +199,27 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
     }
 
     void computeInteractions(TraversalInterface *traversal) override {
+        Kokkos::Timer tTimer{};
+        double startTraversePrep=tTimer.seconds();
         prepareTraversal(traversal);
 
         // TODO: if this is the common structure, why isn't this generalized and called in a higher level of the hierarchy?
         traversal->initTraversal();
-        Kokkos::Timer traversalTimer;
+        double stopTPrep = tTimer.seconds();
+        _sectionsTimes._traversal._preparation.addTiming(traversalTime);
         const double startTraversal = traversalTimer.seconds();
         traversal->traverseParticles();
         Kokkos::fence();
         const double traversalTime = traversalTimer.seconds() - startTraversal;
-        _sectionsTimes._traversal._total.addTiming(traversalTime);
+        _sectionsTimes._traversal._kernel.addTiming(traversalTime);
         _traversalTimingStats.addTiming(traversalTime);
         spdlog::info("Traversal took {} s", traversalTime);
+        double startTCleanup = tTimer.seconds()
         traversal->endTraversal();
-
         finishTraversal(traversal);
+        double endCleanup= tTimer.seconds();
+        _sectionsTimes._traversal._cleanup.addTiming(endCleanup-startTCleanup);
+        _sectionsTimes._traversal._total.addTiming(endCleanup - startTraversePrep);
     }
 
     [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
@@ -532,6 +538,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                                   .set_scratch_size(0, Kokkos::PerTeam(scratchBytes));
             _sectionTimes._buildNL._preparation.addTiming(buildTimer.seconds()-startBuild);
             double startKernel = buildTimer.seconds()
+            
             Kokkos::parallel_for("vl_kokkos_rebuild_teams", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
                 const int i = teamHandle.league_rank();
 

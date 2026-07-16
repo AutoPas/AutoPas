@@ -168,12 +168,13 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
         const double rebuildTime = rebuildTimer.seconds() - startRebuild;
         spdlog::info("Rebuilding Verlet Lists took {} s", rebuildTime);
         _rebuildTimingStats.addTiming(rebuildTime);
+        _sectionTimings._total.addTiming(rebuildTime);
         _neighborListValid = true;
     }
 
     void computeInteractions(TraversalInterface *traversal) override {
-        prepareTraversal(traversal);
 
+        prepareTraversal(traversal);
         // TODO: if this is the common structure, why isn't this generalized and called in a higher level of the hierarchy?
         traversal->initTraversal();
         Kokkos::Timer traversalTimer;
@@ -185,7 +186,6 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
         spdlog::info("Traversal took {} s", traversalTime);
         _traversalTimingStats.addTiming(traversalTime);
         traversal->endTraversal();
-
         finishTraversal(traversal);
     }
 
@@ -382,10 +382,20 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
 
     private:
 
+        struct SectionTimings{
+            KernelTimings _countingKernel{"counting Kernel"};
+            KernelTimings _offsetKernel{"offset deducing from neighborcounts Kernel"};
+            KernelTimings _fillingKernel{"filling entries array Kernel"};
+            KernelTimings _traversal{"computeInteractions(), traversal()"};
+            TimingStats _total{"rebuildNeighborList{}"};
+            TimingStats _allocation{"allocation"};
+        };
+
         bool buildNeighborListsFlat(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, Kokkos::DualView<size_t*>& offsetsDual, Kokkos::DualView<size_t*>& entriesDual, bool skipSelf){
             spdlog::info("buildNeighborlistflat()");
 
-
+            Kokkos::Time bTimer;
+            double startBuild= bTimer.seconds();
             const size_t N = soa1.size();
             const size_t M = soa2.size();
             spdlog::debug("VerletListsKokkosTraversalFlat::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
@@ -411,6 +421,9 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
             auto offsets = offsetsDual.d_view;
 
             auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+            double endPrep = bTimer.seconds();
+            _sectionTimings._countingKernel._preparation.addTiming(endPrep-startBuild);
+            double startKernel = bTimer.seconds();
             Kokkos::parallel_for ("vl_gpu_rebuilding_countingNeighbors", rangePolicy, KOKKOS_LAMBDA (const int i) {
 
                 const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
@@ -435,8 +448,13 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
                 }
                 offsets(i) = neighborCount;
             });
+            Kokkos::fence();
+            double endKernel = bTimer.seconds()
+            _sectionTimings._countingKernel._kernel.addTiming(endPrep-startBuild);
             // Exclusive prefix sum to convert neighbor counts to the offsets where each neighbor list starts, 4-argument parallel_scan chosen for final reduction value needed to allocate entries
+            
             size_t totalNeighbors = 0;
+            double startKernelOff = bTimer.seconds();
             Kokkos::parallel_scan("vl_gpu_rebuilding_exclusivePrefixSum", rangePolicy, KOKKOS_LAMBDA (const int i, size_t& update, const bool final) {
                 const size_t neighborCount = offsets(i);
                 if (final) {
@@ -444,15 +462,22 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
                 }
                 update += neighborCount;
             }, totalNeighbors);
+            Kokkos::fence();
+            double endKernelOff = bTimer.seconds();
+            _sectionTimings._offsetKernel._kernel.addTiming(endKernelOff-startKernelOff);
 
             // store total nieghbors in last index, needed for traversal to function correctly
             Kokkos::deep_copy(Kokkos::subview(offsets, N), totalNeighbors);
-
+            
+            double startAllocation = bTimer.seconds();
             Kokkos::realloc(entriesDual, totalNeighbors);
+            double endAllocation = bTimer.seconds();
+            _sectionTimings._allocation.addTiming(0);
             auto entries = entriesDual.d_view;
 
             spdlog::info("Number of neighbors found: {}", totalNeighbors);
 
+            double startFillKernel = bTimer.seconds();
             Kokkos::parallel_for ("vl_gpu_rebuilding_fillNeighbors", rangePolicy, KOKKOS_LAMBDA (const int i) {
 
                 const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
@@ -479,16 +504,21 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
             });
             // Fence so the fill kernel runtime is attributed to the rebuild timer
             Kokkos::fence();
+            double endFillKernel = bTimer.seconds();
 
             // lists produced entirely on device, mark the device copy as priority, later host reads trigger needed syncs
             offsetsDual.modify_device();
             entriesDual.modify_device();
-
+            double endBuild = bTimer.seconds();
+            _sectionTimings._fillingKernel._kernel.addTiming(endFillKernel-startFillKernel);
+            _sectionTimings._total.addTiming(endBuild-startBuild);
             return true;
         }
 
         bool buildNeighborListsTeams(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, Kokkos::DualView<size_t*>& offsetsDual, Kokkos::DualView<size_t*>& entriesDual, bool skipSelf){
             spdlog::info("RebuildNeighborListsTeams()");
+            Kokkos::Timer bTimer{};
+            double startBuild = bTimer.seconds();
             const auto N = soa1.size();
             const auto M = soa2.size();
             if(N== 0 || M == 0){
@@ -513,6 +543,10 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
             spdlog::info("Launching team kernel with N={} and M={}", N, M);
             auto teamPolicy = Kokkos::TeamPolicy<ExecSpace>(N, Kokkos::AUTO)
                                   .set_scratch_size(0, Kokkos::PerTeam(scratchBytes));
+            double endPrep = bTimer.seconds();
+            _sectionTimings._countingKernel._preparation.addTiming(endPrep-startBuild);
+            
+            double startCounting = bTimer.seconds();
             Kokkos::parallel_for("vl_kokkos_rebuild_teams_countNeighbors", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
                 const int i = teamHandle.league_rank();
 
@@ -548,8 +582,12 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
                     offsets(i) = count(0);
                 });
             });
+            Kokkos::fence();
+            double endCounting = bTimer.seconds();
+            _sectionTimings._countingKernel.kernel.addTiming(endCounting-startCounting);
             auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
             size_t totalNeighbors = 0;
+            double startOffset = bTimer.seconds();
             Kokkos::parallel_scan("vl_gpu_rebuilding_exclusivePrefixSum", rangePolicy, KOKKOS_LAMBDA (const int i, size_t& update, const bool final) {
                 const size_t neighborCount = offsets(i);
                 if (final) {
@@ -557,13 +595,20 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
                 }
                 update += neighborCount;
             }, totalNeighbors);
+            Kokkos::fence();
+            double endOffset = bTimer.seconds()
 
             Kokkos::deep_copy(Kokkos::subview(offsets, N), totalNeighbors);
+            double endCleanupOffset = bTimer.seconds();
             Kokkos::realloc(entriesDual, totalNeighbors);
+            double entriesAllocation = bTimer.seconds();
+            _sectionTimings._offsetKernel._kernel.addTiming(endOffset-startOffset);
+            _sectionTimings._offsetKernel._cleanup.addTiming(endCleanupOffset-endOffset);
+            _sectionTimings._allocation.addTiming(entriesAllocation-endCleanupOffset);
             auto entries = entriesDual.d_view;
             spdlog::info("Number of neighbors found: {}", totalNeighbors);
 
-
+            double startFill = bTimer.seconds();
             Kokkos::parallel_for("vl_kokkos_rebuild_teams_countNeighbors", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
                 const int i = teamHandle.league_rank();
 
@@ -594,11 +639,14 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
                     }
                 });
             });
-
+            Kokkos::fence();
+            double endFill = bTimer.seconds();
             offsetsDual.modify_device();
             entriesDual.modify_device();
-            Kokkos::fence();
-
+            double endCleanup = bTimer.seconds();
+            _sectionTimings._fillKernel._kernel.addTiming(endFill-startFill);
+            _sectionTimings._fillKernel._cleanup.addTiming(endCleanup-endFill);
+            _sectionTimings._fillKernel._kernel.addTiming(endCleanup-startBuild);
             return true;
         }
         
@@ -815,6 +863,8 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
     Kokkos::DualView<size_t*> _haloNeighborListOffsets {"vl_haloNeighborListOffsets", 0};
     Kokkos::DualView<size_t*> _haloNeighborListEntries {"vl_haloNeighborListEntries", 0};
     bool _neighborListValid {false};
+
+    SectionTimings _sectionTimings{};
     TimingStats _rebuildTimingStats {"VerletListsKokkos::rebuildNeighborLists"};
     TimingStats _traversalTimingStats {"VerletListsKokkos::computeInteractions"};
 

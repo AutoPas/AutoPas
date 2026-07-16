@@ -52,10 +52,13 @@ class TimingStats{
 };
 
 struct KernelTimings{
+    std::string _operationName{};
     TimingStats _preparation{"preparation before Kernel"};
-    TimingStats _kernel{"actual Kernel"};
+    TimingStats _kernel{"actual Kernel/operation"};
     TimingStats _cleanup{"anything after Kernel"};
     TimingStats _total{"total"};
+
+    KernelTimings(std::string& name) : _operationName(name){}
 };
 
 #endif  // TIMINGSTATS_H
