@@ -1,6 +1,7 @@
 /**
  * @file SortingThresholdInfo2B.h
  * @date 14 Jul 2026
+ * @author hmeyran
  */
 
 #pragma once
@@ -8,17 +9,13 @@
 #include <cstddef>
 
 #include "autopas/options/CellLayoutOption.h"
-#include "autopas/options/Newton3Option.h"
-#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SortingThresholdInfoInterface.h"
 
 namespace autopas {
 
 /**
  * Per-Newton3-state, per-CellLayoutOption pair-sorting thresholds for a 2-body CellFunctor.
- *
- * Replaces the previous opaque std::array<std::array<size_t, 3>, 2> grid with named members, accessed through
- * getThreshold()/setThreshold().
+ * Provides publicly accessible named data as well as a getter to easily get the correct Value from a configuration.
  */
 struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
   size_t noN3FaceThreshold;
@@ -40,7 +37,15 @@ struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
         noN3FaceThreshold(uniformThreshold),
         noN3EdgeThreshold(uniformThreshold),
         noN3CornerThreshold(uniformThreshold) {}
-
+  /**
+   * Constructor to set each per Newton3/CellLayout combination value explicitly.
+   * @param noN3FaceThreshold
+   * @param noN3EdgeThreshold
+   * @param noN3CornerThreshold
+   * @param n3FaceThreshold
+   * @param n3EdgeThreshold
+   * @param n3CornerThreshold
+   */
   SortingThresholdInfo2B(size_t noN3FaceThreshold, size_t noN3EdgeThreshold, size_t noN3CornerThreshold,
                          size_t n3FaceThreshold, size_t n3EdgeThreshold, size_t n3CornerThreshold)
       : noN3FaceThreshold(noN3FaceThreshold),
@@ -49,7 +54,12 @@ struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
         n3FaceThreshold(n3FaceThreshold),
         n3EdgeThreshold(n3EdgeThreshold),
         n3CornerThreshold(n3CornerThreshold) {}
-
+  /**
+   * Getter to automatically get the correct threshold based on current newton3/CellLayout configuration
+   * @param newton3 whether the newton3 optimization is enabled or not.
+   * @param sortingDirection the cell axis used for sorting. CellLayout is deduced from this.
+   * @return correct threshold value for the given configuration.
+   */
   size_t getThresholdByConfig(bool newton3, std::array<double, 3> sortingDirection) const {
     size_t zeroes = std::ranges::count(sortingDirection, 0);
     if (newton3) {

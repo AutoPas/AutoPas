@@ -13,13 +13,20 @@
 namespace autopas {
 
 /**
- * Per-Newton3-state, per-CellLayoutOption pair-sorting thresholds for a 2-body CellFunctor.
- *
- * Replaces the previous opaque std::array<std::array<size_t, 3>, 2> grid with named members, accessed through
- * getThreshold()/setThreshold().
+ * Single threshold value struct.
+ * Stand in for the old single value way of handling the sorting Threshold. Used as a fallback option and the default
+ * value.
  */
 struct SortingThresholdInfoSingle : SortingThresholdInfoInterface {
+  /**
+   * Constructor for single threshold value.
+   * Intentionally not explicit to make it easier to use this like you would the threshold before.
+   * @param threshold
+   */
   SortingThresholdInfoSingle(size_t threshold) : threshold(threshold) {}
+  /**
+   * Actual threshold data.
+   */
   size_t threshold;
 };
 
