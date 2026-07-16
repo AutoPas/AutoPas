@@ -147,82 +147,93 @@ class LogicHandler {
     if (_currentContainer->allowsKokkos()) {
       // TODO: add profiling regions
 
+      Kokkos::Profiling::pushRegion("autopas::LogicHandler::collectLeavingParticlesFromBuffer");
       auto& owned = _bufferKokkos.getOwnedStorage();
       const size_t ownedSize = owned.size();
 
-      const auto &boxMinKokkos = Kokkos::Array<double, 3>{boxMin.at(0), boxMin.at(1), boxMin.at(2)};
-      const auto &boxMaxKokkos = Kokkos::Array<double, 3>{boxMax.at(0), boxMax.at(1), boxMax.at(2)};
+      if (ownedSize > 0) {
+        const auto &boxMinKokkos = Kokkos::Array<double, 3>{boxMin.at(0), boxMin.at(1), boxMin.at(2)};
+        const auto &boxMaxKokkos = Kokkos::Array<double, 3>{boxMax.at(0), boxMax.at(1), boxMax.at(2)};
 
-      owned.template syncAll<DeviceSpace::execution_space>();
+        owned.template syncAll<DeviceSpace::execution_space>();
 
-      /* 0. Prepare data structures */
-      Kokkos::Profiling::pushRegion("initialize Migrants and container list");
-      utilsKokkos::KokkosStorage<Particle_T> migrants{owned.getIntendedLayout(), ownedSize};
-      utilsKokkos::KokkosStorage<Particle_T> containerList{owned.getIntendedLayout(), ownedSize};
-      Kokkos::Profiling::popRegion(); // initialize migrants
+        /* 0. Prepare data structures */
+        Kokkos::Profiling::pushRegion("initialize Migrants, container list, and counters");
+        utilsKokkos::KokkosStorage<Particle_T> migrants{owned.getIntendedLayout(), ownedSize};
+        utilsKokkos::KokkosStorage<Particle_T> containerList{owned.getIntendedLayout(), ownedSize};
 
-      Kokkos::View<int *, DeviceSpace> migrantCounter{"migrantCounter", 1};
-      Kokkos::View<int *, DeviceSpace> containerCounter{"containerCounter", 1};
+        Kokkos::View<int *, DeviceSpace> migrantCounter{"migrantCounter", 1};
+        Kokkos::View<int *, DeviceSpace> containerCounter{"containerCounter", 1};
 
-      /* 1. Loop over all particles */
-      Kokkos::parallel_for("autopas::LogicHandler::collectLeavingParticlesFromBuffer_parallel_for", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, ownedSize), KOKKOS_LAMBDA(const size_t i) {
-        /* particle is owned */
-          if (owned.template fulfillsIteratorRequirements<false, useHostView>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
+        Kokkos::Profiling::popRegion(); // initialize migrants
 
-            /* particle is outside the box? */
-            if (not owned.template fulfillsIteratorRequirements<true, useHostView>(i, IteratorBehavior::ownedOrHaloOrDummy, boxMinKokkos, boxMaxKokkos)) {
-              int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
-              migrants.template copyParticle<useHostView>(migrantIndex, owned, i);
+        Kokkos::Profiling::pushRegion("execute parallel for");
+        /* 1. Loop over all particles */
+        Kokkos::parallel_for("autopas::LogicHandler::collectLeavingParticlesFromBuffer_parallel_for", Kokkos::RangePolicy<DeviceSpace::execution_space>(0, ownedSize), KOKKOS_LAMBDA(const size_t i) {
+          /* particle is owned */
+            if (owned.template fulfillsIteratorRequirements<false, useHostView>(i, IteratorBehavior::owned, boxMinKokkos, boxMaxKokkos)) {
 
-              owned.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i) = OwnershipState::dummy;
+              /* particle is outside the box? */
+              if (not owned.template fulfillsIteratorRequirements<true, useHostView>(i, IteratorBehavior::ownedOrHaloOrDummy, boxMinKokkos, boxMaxKokkos)) {
+                int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
+                migrants.template copyParticle<useHostView>(migrantIndex, owned, i);
+
+                owned.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i) = OwnershipState::dummy;
+              }
+              /* insert owned to container? */
+              else if (insertOwnedParticlesToContainer) {
+                int containerIndex = Kokkos::atomic_fetch_inc(&containerCounter(0));
+                containerList.template copyParticle<useHostView>(containerIndex, owned, i);
+              }
             }
-            /* insert owned to container? */
-            else if (insertOwnedParticlesToContainer) {
-              int containerIndex = Kokkos::atomic_fetch_inc(&containerCounter(0));
-              containerList.template copyParticle<useHostView>(containerIndex, owned, i);
-            }
+        });
+        Kokkos::Profiling::popRegion(); // execute
+        owned.template modifyAll<DeviceSpace::execution_space>();
+
+        auto migrantCounterMirror = Kokkos::create_mirror_view(migrantCounter);
+        Kokkos::deep_copy(migrantCounterMirror, migrantCounter);
+
+        int numMigrants = migrantCounterMirror(0);
+
+        if (numMigrants > 0) {
+          Kokkos::Profiling::pushRegion("transfer migrants for std::vector");
+          migrants.resize(numMigrants);
+          migrants.template convertTo<DeviceSpace::execution_space, useHostView>(DataLayoutOption::aos);
+          migrants.template modifyAll<DeviceSpace::execution_space>();
+          migrants.template syncAll<Kokkos::HostSpace::execution_space>();
+          leavingBufferParticles.reserve(numMigrants);
+
+          for (int i = 0; i < numMigrants; ++i) {
+            Particle_T migrant =
+                migrants.getAoS().template getParticle<true>(i);
+            leavingBufferParticles.push_back(migrant);
           }
-      });
-      owned.template modifyAll<DeviceSpace::execution_space>();
+          Kokkos::Profiling::popRegion(); // transfer migrants
+        }
 
-      auto migrantCounterMirror = Kokkos::create_mirror_view(migrantCounter);
-      Kokkos::deep_copy(migrantCounterMirror, migrantCounter);
+        auto containerCounterMirror = Kokkos::create_mirror_view(containerCounter);
+        Kokkos::deep_copy(containerCounterMirror, containerCounter);
 
-      int numMigrants = migrantCounterMirror(0);
+        int numContainerLists = containerCounterMirror(0);
 
-      if (numMigrants > 0) {
-        migrants.resize(numMigrants);
-        migrants.template convertTo<DeviceSpace::execution_space, useHostView>(DataLayoutOption::aos);
-        migrants.template modifyAll<DeviceSpace::execution_space>();
-        migrants.template syncAll<Kokkos::HostSpace::execution_space>();
-        leavingBufferParticles.reserve(numMigrants);
+        if (numContainerLists > 0) {
+          Kokkos::Profiling::pushRegion("add container list particles to container");
+          containerList.template convertTo<DeviceSpace::execution_space, useHostView>(DataLayoutOption::aos);
+          containerList.template modifyAll<DeviceSpace::execution_space>();
+          containerList.template syncAll<Kokkos::HostSpace::execution_space>();
+          for (int i = 0; i < numContainerLists; ++i) {
+            Particle_T p = containerList.getAoS().template getParticle<true>(i);
+            p.setOwnershipState(OwnershipState::owned);
+            _currentContainer->addParticle(p);
+          }
+          Kokkos::Profiling::popRegion(); // add container list
+        }
 
-        for (int i = 0; i < numMigrants; ++i) {
-          Particle_T migrant =
-              migrants.getAoS().template getParticle<true>(i);
-          leavingBufferParticles.push_back(migrant);
+        if (insertOwnedParticlesToContainer) {
+          _bufferKokkos.deleteAllParticles();
         }
       }
-
-      auto containerCounterMirror = Kokkos::create_mirror_view(containerCounter);
-      Kokkos::deep_copy(containerCounterMirror, containerCounter);
-
-      int numContainerLists = containerCounterMirror(0);
-
-      if (numContainerLists > 0) {
-        containerList.template convertTo<DeviceSpace::execution_space, useHostView>(DataLayoutOption::aos);
-        containerList.template modifyAll<DeviceSpace::execution_space>();
-        containerList.template syncAll<Kokkos::HostSpace::execution_space>();
-        for (int i = 0; i < numContainerLists; ++i) {
-          Particle_T p = containerList.getAoS().template getParticle<true>(i);
-          p.setOwnershipState(OwnershipState::owned);
-          _currentContainer->addParticle(p);
-        }
-      }
-
-      if (insertOwnedParticlesToContainer) {
-        _bufferKokkos.deleteAllParticles();
-      }
+      Kokkos::Profiling::popRegion(); // collectLeavingParticlesFromBuffer
     } else {
       for (auto &cell : _particleBuffer) {
         auto &buffer = cell._particles;
@@ -474,8 +485,9 @@ class LogicHandler {
       // If the container is valid, we add it to the particle buffer.
       if (_currentContainer->allowsKokkos()) {
         _bufferKokkos.addParticle(particleCopy);
+      } else {
+        _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
       }
-      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
     }
     _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
   }
@@ -503,11 +515,13 @@ class LogicHandler {
       // Check if we can update an existing halo(dummy) particle.
       bool updated = _currentContainer->updateHaloParticle(haloParticleCopy);
       if (not updated) {
+        // If we couldn't find an existing particle, add it to the halo particle buffer.
         if (_currentContainer->allowsKokkos()) {
           _bufferKokkos.addHaloParticle(haloParticleCopy);
+        } else {
+          _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticleCopy);
         }
-        // If we couldn't find an existing particle, add it to the halo particle buffer.
-        _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticleCopy);
+
       }
     }
     _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
@@ -634,7 +648,11 @@ class LogicHandler {
     withStaticContainerType(getContainer(), [&](auto &container) {
       container.template forEachKokkos<ExecSpace>(forEachLambda, behavior, label);
     });
-    // TODO: also delegate to buffer particles
+    if (behavior & IteratorBehavior::containerOnly) {
+      return;
+    }
+    // TODO: this could be a separate instruction stream
+    _bufferKokkos.template forEachKokkos<ExecSpace>(forEachLambda, behavior, label + "_buffer");
   }
 
   template <class ExecSpace, typename Result, typename Reduction, typename Lambda>
@@ -643,7 +661,28 @@ class LogicHandler {
     withStaticContainerType(getContainer(), [&](auto &container) {
       container.template reduceKokkos<ExecSpace, Result, Reduction>(forEachLambda, result, behavior, label);
     });
-    // TODO: also delegate to buffer particles
+    if (behavior & IteratorBehavior::containerOnly) {
+      return;
+    }
+    // TODO: this could be a separate instruction stream
+    _bufferKokkos.template reduceKokkos<ExecSpace, Result, Reduction>(forEachLambda, result, behavior, label + "_buffer");
+  }
+
+  template <class ExecSpace, typename Lambda>
+  void forEachInRegionKokkos(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                           const std::array<double, 3> &higherCorner,
+                           IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
+                           const std::string &label = "forEachInRegionKokkos") {
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.template forEachInRegionKokkos<ExecSpace, true>(forEachLambda, behavior, lowerCorner, higherCorner,
+                                                                label);
+    });
+
+    if (behavior & IteratorBehavior::containerOnly) {
+      return;
+    }
+    // TODO: this could be a separate instruction stream
+    _bufferKokkos.template forEachInRegionKokkos<ExecSpace, true>(forEachLambda, behavior, lowerCorner, higherCorner, label + "_buffer");
   }
 
   /**

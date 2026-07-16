@@ -463,7 +463,8 @@ class KokkosMoleculeLJ {
   friend std::ostream &operator<<(std::ostream &os, const KokkosMoleculeLJ &particle) {
     using autopas::utils::ArrayUtils::operator<<;
     os << "Particle"
-       << "\nID      : " << particle._id << "\nOwnershipState : " << particle._ownershipState;
+       << "\nID      : " << particle._id << "\nOwnershipState : " << particle._ownershipState
+       << "\nPosition: " << "[ " << particle._r[0] << ", " << particle._r[1] << ", " << particle._r[2] << "]";
     // clang-format on
     return os;
   }

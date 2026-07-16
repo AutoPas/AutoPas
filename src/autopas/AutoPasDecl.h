@@ -419,11 +419,7 @@ class AutoPas {
                              const std::array<double, 3> &higherCorner,
                              IteratorBehavior behavior = IteratorBehavior::ownedOrHalo,
                              const std::string &label = "forEachInRegionKokkos") {
-    withStaticContainerType(getContainer(), [&](auto &container) {
-      container.template forEachInRegionKokkos<ExecSpace, true>(forEachLambda, behavior, lowerCorner, higherCorner,
-                                                                label);
-    });
-    // TODO: also consider buffer particles -> begin() does
+    _logicHandler->template forEachInRegionKokkos<ExecSpace>(forEachLambda, lowerCorner, higherCorner, behavior, label);
   }
 
   /**

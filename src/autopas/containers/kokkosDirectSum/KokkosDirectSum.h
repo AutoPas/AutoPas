@@ -41,6 +41,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
       : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin),
         _dataLayout(dataLayout),
         _ownedParticles(dataLayout, 0),
+        _migrants(dataLayout, 0),
         _haloParticles(dataLayout, 0) {}
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::kokkosDirectSum; }
@@ -50,6 +51,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _ownedParticles.resize(numParticles);
+    _migrants.resize(numParticles);
     _haloParticles.resize(numParticlesHaloEstimate);
   }
 
@@ -93,6 +95,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
 
   void deleteAllParticles() override {
     _ownedParticles.clear();
+    _migrants.clear();
     _haloParticles.clear();
   }
 
@@ -100,6 +103,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
     // TODO: this should maybe better just count the number of particles in both lists that fulfill the behavior
     // requirement
     size_t number = 0;
+    std::cout << "getNumberOfParticles not implemented" << std::endl;
     return number;
   }
 
@@ -140,10 +144,6 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
     Kokkos::Profiling::pushRegion("autopas::KokkosDirectSum::updateContainer");
 
     /* Prepare data structures */
-    Kokkos::Profiling::pushRegion("initialize Migrants");
-    utilsKokkos::KokkosStorage<Particle_T> migrants{_ownedParticles.getIntendedLayout(), _ownedParticles.size()};
-    Kokkos::Profiling::popRegion(); // initialize migrants
-
     auto &boxMin = ParticleContainerInterface<Particle_T>::_boxMin;
     auto &boxMax = ParticleContainerInterface<Particle_T>::_boxMax;
 
@@ -152,6 +152,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
 
     _ownedParticles.template syncAll<DeviceSpace::execution_space>();
     auto &owned = _ownedParticles;
+    auto &migrants = _migrants;
 
     Kokkos::View<int *, DeviceSpace> migrantCounter{"migrantCounter", 1};
 
@@ -233,9 +234,6 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
 
     std::vector<Particle_T> migrantVector{};
     if (numMigrants > 0) {
-      Kokkos::Profiling::pushRegion("resize Migrants");
-      migrants.resize(numMigrants);
-      Kokkos::Profiling::popRegion(); // resize migrants
       Kokkos::Profiling::pushRegion("transfer migrants to std::vector"),
       migrants.template convertTo<DeviceSpace::execution_space, useHostView>(DataLayoutOption::aos);
       migrants.template modifyAll<DeviceSpace::execution_space>();
@@ -340,45 +338,47 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
     // TODO: decide on how to deduce this template parameters based on the ExecSpace
     constexpr bool host = false;
 
-    /* owned or dummies; this basically filters out only halo, sequential, container only */
-    if (behavior & 0b101) {
-      _ownedParticles.template syncAll<ExecSpace>();
-      _ownedParticles.template convertTo<ExecSpace, host>(_dataLayout);
-      auto &owned = _ownedParticles;
-      Kokkos::parallel_for(
-          label + "_owned", Kokkos::RangePolicy<ExecSpace>(0, _ownedParticles.size()), KOKKOS_LAMBDA(int i) {
-            if (owned.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos,
+    auto executeLambda = [&](utilsKokkos::KokkosStorage<Particle_T>& storage, const std::string& labelSuffix) {
+      storage.template syncAll<ExecSpace>();
+      storage.template convertTo<ExecSpace, host>(_dataLayout);
+      if (behavior & IteratorBehavior::forceSequential) {
+        Kokkos::parallel_for(
+          label + labelSuffix, Kokkos::RangePolicy<Kokkos::Serial>(0, storage.size()), KOKKOS_LAMBDA(int i) {
+            if (storage.template fulfillsIteratorRequirements<regionIter, true>(i, behavior, lowerCornerKokkos,
                                                                               higherCornerKokkos)) {
-              forEachLambda(i, owned);
+              forEachLambda(i, storage);
             }
           });
-      owned.template modifyAll<ExecSpace>();
-      owned.markLayoutModified(_dataLayout);
+      } else {
+        Kokkos::parallel_for(
+          label + labelSuffix, Kokkos::RangePolicy<ExecSpace>(0, storage.size()), KOKKOS_LAMBDA(int i) {
+            if (storage.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos,
+                                                                              higherCornerKokkos)) {
+              forEachLambda(i, storage);
+            }
+          });
+      }
+
+      storage.template modifyAll<ExecSpace>();
+      storage.markLayoutModified(_dataLayout);
+    };
+
+    /* owned or dummies; this basically filters out only halo, sequential, container only */
+    if (behavior & 0b101) {
+      executeLambda(_ownedParticles, "_owned");
     }
     /* halo or dummies; this basically filters out only owned, sequential, container only */
     if (behavior & 0b110) {
-      _haloParticles.template syncAll<ExecSpace>();
-      _haloParticles.template convertTo<ExecSpace, host>(_dataLayout);
-      auto &halo = _haloParticles;
-      Kokkos::parallel_for(
-          label + "_halo", Kokkos::RangePolicy<ExecSpace>(0, _haloParticles.size()), KOKKOS_LAMBDA(int i) {
-            if (halo.template fulfillsIteratorRequirements<regionIter, host>(i, behavior, lowerCornerKokkos,
-                                                                             higherCornerKokkos)) {
-              forEachLambda(i, halo);
-            }
-          });
-      halo.template modifyAll<ExecSpace>();
-      halo.markLayoutModified(_dataLayout);
+      executeLambda(_haloParticles, "_halo");
     }
     /* force sequential (sequential yes, but which particles? all? only owned? */
-    if (behavior & 0b1000) {
+    if (behavior & IteratorBehavior::forceSequential) {
       // TODO: implement
     }
     /* container only (whatever that means...) */
-    if (behavior & 0b10000) {
-      // TODO: implement
+    if (behavior & IteratorBehavior::containerOnly) {
+      // TODO: implement, also this should not happen as the buffer particles are not delegated to this function and are filtered earlier
     }
-    // TODO: also consider particles in the additionalStorage (they come from the LogicHandler's additional buffer)
 
     Kokkos::Profiling::popRegion();
   }
@@ -666,14 +666,11 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
 
   DataLayoutOption _dataLayout{};
 
-  // TODO: find a better solution than having the flags in the container (maybe it makes sense to have them in the
-  // kokkosStorage bool _aosUpToDate = false;
-
-  // bool _soaUpToDate = false;
-
   utilsKokkos::KokkosStorage<Particle_T> _ownedParticles{};
 
   utilsKokkos::KokkosStorage<Particle_T> _haloParticles{};
+
+  utilsKokkos::KokkosStorage<Particle_T> _migrants {};
 };
 }  // namespace autopas
 
