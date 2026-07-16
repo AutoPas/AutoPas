@@ -8,9 +8,7 @@
 
 #include <array>
 #include <cmath>
-#include <concepts>
 #include <random>
-#include <string_view>
 
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/particles/OwnershipState.h"
@@ -70,20 +68,21 @@ class SortingThresholdBenchmark {
    * independently and only instantiate this for the functor/particle combinations they actually need.
    * - UseSoA == true: benchmarks the SoA path and sets hasRunSoA() to true. Callers should only instantiate this
    *   for functors with Functor_T::supportsSoASorting == true.
-   * - UseSoA == false: benchmarks the AoS path and sets hasRunAoS() to true. Internally
-   *   guarded by whether Particle_T is constructible the way this benchmark needs (position, velocity, id):.
+   * - UseSoA == false: benchmarks the AoS path and sets hasRunAoS() to true.
    * @tparam Functor_T Pairwise functor type.
    * @tparam Particle_T Particle type.
    * @tparam UseSoA Whether to benchmark the SoA path (true) or the AoS path (false).
    * @param functor Functor instance used to drive the benchmark cells.
+   * @param defaultParticle Template particle (e.g. sampled from the live simulation) whose non-positional
+   * properties are copied onto every particle generated for the benchmark cells.
    */
   template <class Functor_T, class Particle_T, bool UseSoA>
-  void runBenchmark(Functor_T &functor) {
+  void runBenchmark(Functor_T &functor, const Particle_T &defaultParticle) {
     std::array<std::array<size_t, 3>, 2> thresholds;
     if constexpr (UseSoA) {
       for (const auto &n3 : Newton3Option::getAllOptions()) {
         for (const auto &layout : CellLayoutOption::getAllOptions()) {
-          thresholds[n3][layout] = runSearch<Functor_T, Particle_T, true>(functor, layout, n3);
+          thresholds[n3][layout] = runSearch<Functor_T, Particle_T, true>(functor, defaultParticle, layout, n3);
         }
       }
       _soaThresholds = {
@@ -91,22 +90,14 @@ class SortingThresholdBenchmark {
       };
       _hasRunSoA = true;
     } else {
-      if constexpr (std::constructible_from<Particle_T, std::array<double, 3>, std::array<double, 3>, size_t>) {
-        for (const auto &n3 : Newton3Option::getAllOptions()) {
-          for (const auto &layout : CellLayoutOption::getAllOptions()) {
-            thresholds[n3][layout] = runSearch<Functor_T, Particle_T, true>(functor, layout, n3);
-          }
+      for (const auto &n3 : Newton3Option::getAllOptions()) {
+        for (const auto &layout : CellLayoutOption::getAllOptions()) {
+          thresholds[n3][layout] = runSearch<Functor_T, Particle_T, true>(functor, defaultParticle, layout, n3);
         }
-        _aosThresholds = {
-            thresholds[0][1], thresholds[0][2], thresholds[0][0], thresholds[1][0], thresholds[1][1], thresholds[1][2],
-        };
-      } else {
-        AutoPasLog(WARN,
-                   "SortingThresholdBenchmark: Particle type is not constructible from (position, velocity, id), "
-                   "skipping the AoS sorting-threshold benchmark and using the default thresholds instead.");
       }
-      // Here so that this benchmark doesn't get executed every iteration if the particle doesn't support threshold
-      // benchmarking
+      _aosThresholds = {
+          thresholds[0][1], thresholds[0][2], thresholds[0][0], thresholds[1][0], thresholds[1][1], thresholds[1][2],
+      };
       _hasRunAoS = true;
     }
   }
@@ -218,6 +209,8 @@ class SortingThresholdBenchmark {
    * @tparam Particle_T Particle type.
    * @tparam useSoA Selects the benchmarked data layout: true measures the SoA path, false the AoS path.
    * @param functor Functor instance used to drive the benchmark.
+   * @param defaultParticle Template particle whose non-positional properties are copied onto every particle
+   * generated for the benchmark cells.
    * @param layout Direction-type index (0=Corner, 1=Edge, 2=Face).
    * @param numParticles Number of particles placed in each of the two cells.
    * @param newton3 Whether the benchmarked CellFunctor should apply Newton3.
@@ -225,11 +218,11 @@ class SortingThresholdBenchmark {
    * the unsorted path by at least _sortedWinMarginFraction.
    */
   template <class Functor_T, class Particle_T, bool useSoA>
-  size_t executeRun(Functor_T &functor, CellLayoutOption layout, size_t numParticles, Newton3Option newton3) {
+  size_t executeRun(Functor_T &functor, const Particle_T &defaultParticle, CellLayoutOption layout, size_t numParticles,
+                    Newton3Option newton3) {
     using BenchCell = FullParticleCell<Particle_T>;
     using BenchCF = internal::CellFunctor<BenchCell, Functor_T, false>;
 
-    const Particle_T defaultParticle({0, 0, 0}, {0, 0, 0}, 0);
     const double cutoff = functor.getCutoff();
     const double invSqrt3 = 1. / sqrt(3.);
     const double invSqrt2 = 1. / sqrt(2.);
@@ -358,19 +351,22 @@ class SortingThresholdBenchmark {
    * @tparam Particle_T Particle type.
    * @tparam useSoA Selects the benchmarked data layout: true = SoA, false = AoS.
    * @param functor Functor instance used to drive the benchmark.
+   * @param defaultParticle Template particle whose non-positional properties are copied onto every particle
+   * generated for the benchmark cells.
    * @param layout Direction-type index (0=Corner, 1=Edge, 2=Face).
    * @param newton3 Whether the benchmarked CellFunctor should apply Newton3.
    * @return Smallest particle count at which sorted beats unsorted, or the upper search bound if never.
    */
   template <class Functor_T, class Particle_T, bool useSoA>
-  size_t runSearch(Functor_T &functor, CellLayoutOption layout, Newton3Option newton3) {
+  size_t runSearch(Functor_T &functor, const Particle_T &defaultParticle, CellLayoutOption layout,
+                   Newton3Option newton3) {
     size_t lowCount = 0;
     size_t highCount = useSoA ? _maxSoAParticles : _maxAoSParticles;
 
     while (lowCount < highCount) {
       size_t mid = lowCount + (highCount - lowCount) / 2;
 
-      const auto outcome = executeRun<Functor_T, Particle_T, useSoA>(functor, layout, mid, newton3);
+      const auto outcome = executeRun<Functor_T, Particle_T, useSoA>(functor, defaultParticle, layout, mid, newton3);
       const double winRatio = static_cast<double>(outcome) / static_cast<double>(_repetitions);
 
       // Conservative decision rule: only accept "sorted wins" once a clear majority of repetitions
