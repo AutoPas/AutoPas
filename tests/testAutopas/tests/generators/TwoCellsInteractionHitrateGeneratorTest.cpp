@@ -12,9 +12,9 @@
 #include <set>
 #include <vector>
 
+#include "autopas/generators/PseudoContainer.h"
+#include "autopas/generators/TwoCellsInteractionHitrateGenerator.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "generators/src/PseudoContainer.h"
-#include "generators/src/TwoCellsInteractionHitrateGenerator.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 /**
  * Particle type used across all tests.
@@ -78,8 +78,8 @@ double dist3D(const MoleculeType &a, const MoleculeType &b) {
  * @param seed RNG seed for deterministic placement.
  */
 void fill(CellType &v1, CellType &v2, std::size_t n, double hitrate, unsigned int seed = 42) {
-  autopasTools::PseudoContainer c1(v1), c2(v2);
-  autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
+  autopas::generators::PseudoContainer c1(v1), c2(v2);
+  autopas::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
       c1, c2, kBoxMin1, kBoxMax1, kBoxMin2, kBoxMax2, n, hitrate, kCutoff, MoleculeType{}, seed);
 }
 
@@ -217,10 +217,10 @@ TEST_F(TwoCellsInteractionHitrateGeneratorTest, testDeterminism) {
  */
 TEST_F(TwoCellsInteractionHitrateGeneratorTest, testPreconditionNonAdjacentCells) {
   CellType v1, v2;
-  autopasTools::PseudoContainer c1(v1), c2(v2);
+  autopas::generators::PseudoContainer c1(v1), c2(v2);
   const std::array<double, 3> gappedMin2 = {kBoxMax1[0] + 1.0, 0., 0.};
   auto call = [&]() {
-    autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
+    autopas::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
         c1, c2, kBoxMin1, kBoxMax1, gappedMin2, kBoxMax2, 10ul, 0.5, kCutoff, MoleculeType{});
   };
   EXPECT_THROW(call(), autopas::utils::ExceptionHandler::AutoPasException);
@@ -231,9 +231,9 @@ TEST_F(TwoCellsInteractionHitrateGeneratorTest, testPreconditionNonAdjacentCells
  */
 TEST_F(TwoCellsInteractionHitrateGeneratorTest, testPreconditionHitrateOutOfRange) {
   CellType v1, v2;
-  autopasTools::PseudoContainer c1(v1), c2(v2);
+  autopas::generators::PseudoContainer c1(v1), c2(v2);
   auto call = [&](double hitrate) {
-    autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
+    autopas::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
         c1, c2, kBoxMin1, kBoxMax1, kBoxMin2, kBoxMax2, 10ul, hitrate, kCutoff, MoleculeType{});
   };
   EXPECT_THROW(call(1.5), autopas::utils::ExceptionHandler::AutoPasException);
@@ -246,11 +246,11 @@ TEST_F(TwoCellsInteractionHitrateGeneratorTest, testPreconditionHitrateOutOfRang
  */
 TEST_F(TwoCellsInteractionHitrateGeneratorTest, testPreconditionCellTooNarrow) {
   CellType v1, v2;
-  autopasTools::PseudoContainer c1(v1), c2(v2);
+  autopas::generators::PseudoContainer c1(v1), c2(v2);
   // Shrink cell1 so its x-extent equals kCutoff, which is below the required minimum of 1.2 * kCutoff.
   const std::array<double, 3> tooNarrowMin1 = {kBoxMax1[0] - kCutoff, 0., 0.};
   auto call = [&]() {
-    autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
+    autopas::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
         c1, c2, tooNarrowMin1, kBoxMax1, kBoxMin2, kBoxMax2, 10ul, 0.5, kCutoff, MoleculeType{});
   };
   EXPECT_THROW(call(), autopas::utils::ExceptionHandler::AutoPasException);

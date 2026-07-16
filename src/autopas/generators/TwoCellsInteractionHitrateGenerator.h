@@ -16,7 +16,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace autopasTools::generators::TwoCellsInteractionHitrateGenerator {
+namespace autopas::generators::TwoCellsInteractionHitrateGenerator {
 
 /**
  * Fills two cells adjacent in x with n particles each such that exactly
@@ -145,4 +145,4 @@ void fillWithParticles(Container_T &cell1, Container_T &cell2, const std::array<
   }
 }
 
-}  // namespace autopasTools::generators::TwoCellsInteractionHitrateGenerator
+}  // namespace autopas::generators::TwoCellsInteractionHitrateGenerator

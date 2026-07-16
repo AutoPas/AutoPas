@@ -7,7 +7,7 @@
 #include "DSSequentialTraversalTest.h"
 
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
-#include "generators/src/UniformGenerator.h"
+#include "autopas/generators/UniformGenerator.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -29,7 +29,7 @@ std::vector<FPCell> DSSequentialTraversalTest::fillParticleCells(size_t numParti
   auto addParticlesToCell = [&](const size_t cellID, const size_t num, const std::array<double, 3> boxMin,
                                 const std::array<double, 3> boxMax) {
     for (size_t i = 0; i < num; i++) {
-      particle.setR(autopasTools::generators::UniformGenerator::randomPosition(generator, boxMin, boxMax));
+      particle.setR(autopas::generators::UniformGenerator::randomPosition(generator, boxMin, boxMax));
       cells[cellID].addParticle(particle);
     }
   };

@@ -8,8 +8,8 @@
 
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/generators/UniformGenerator.h"
 #include "autopas/particles/ParticleDefinitions.h"
-#include "generators/src/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 
 void LJFunctorTestHWY::SetUp() {
@@ -151,10 +151,10 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
   const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
 
   FMCell cell1Ref, cell2Ref;
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1Ref, defaultParticle, cell1Low, cell1High,
-                                                                numParticles);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell2Ref, defaultParticle, cell2Low, cell2High,
-                                                                numParticles);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1Ref, defaultParticle, cell1Low, cell1High,
+                                                           numParticles);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2Ref, defaultParticle, cell2Low, cell2High,
+                                                           numParticles);
 
   for (auto &particle : cell1Ref) {
     if (doDeleteSomeParticles) {
@@ -241,10 +241,10 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsUseUnalignedViews(bool
   const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
 
   FMCell cell1Ref, cell2Ref;
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1Ref, defaultParticle, cell1Low, cell1High,
-                                                                numParticles);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell2Ref, defaultParticle, cell2Low, cell2High,
-                                                                numParticles);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1Ref, defaultParticle, cell1Low, cell1High,
+                                                           numParticles);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2Ref, defaultParticle, cell2Low, cell2High,
+                                                           numParticles);
 
   for (auto &particle : cell1Ref) {
     if (doDeleteSomeParticles) {
@@ -326,8 +326,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
   const size_t numParticles = 23;
 
   const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
-                                                                numParticles);
+  autopas::generators::UniformGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
+                                                           numParticles);
 
   for (auto &particle : cellHWY) {
     if (doDeleteSomeParticles) {
@@ -410,8 +410,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
   constexpr size_t numParticles = 23;
 
   const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
-                                                                numParticles);
+  autopas::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
+                                                           numParticles);
 
   for (auto &particle : cellAVX) {
     if (doDeleteSomeParticles) {
@@ -503,8 +503,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
   constexpr size_t numParticles = 23;
 
   const Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
-                                                                numParticles);
+  autopas::generators::UniformGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
+                                                           numParticles);
 
   for (auto &particle : cellHWY) {
     if (doDeleteSomeParticles) {

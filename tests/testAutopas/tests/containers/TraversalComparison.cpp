@@ -8,10 +8,10 @@
 
 #include <string>
 
+#include "autopas/generators/UniformGenerator.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StringUtils.h"
-#include "generators/src/UniformGenerator.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -153,11 +153,11 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
                                                             config.loadEstimator};
   auto container = autopas::ContainerSelector<Molecule>::generateContainer(config.container, containerInfo);
 
-  autopasTools::generators::UniformGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
-                                                                container->getBoxMin(), container->getBoxMax(),
-                                                                numParticles);
+  autopas::generators::UniformGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
+                                                           container->getBoxMin(), container->getBoxMax(),
+                                                           numParticles);
   EXPECT_EQ(container->size(), numParticles) << "Wrong number of molecules inserted!";
-  autopasTools::generators::UniformGenerator::fillWithHaloParticles(
+  autopas::generators::UniformGenerator::fillWithHaloParticles(
       *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numParticles /*initial ID*/), container->getCutoff(),
       numHaloParticles);
   EXPECT_EQ(container->size(), numParticles + numHaloParticles) << "Wrong number of halo molecules inserted!";

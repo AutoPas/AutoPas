@@ -7,7 +7,7 @@
 #include "SlicedTraversalTest.h"
 
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
-#include "generators/src/GridGenerator.h"
+#include "autopas/generators/GridGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -21,9 +21,9 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
   std::vector<FMCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
-  autopasTools::generators::GridGenerator::fillWithParticles(cells, edgeLength, edgeLength,
-                                                             autopas::utils::ParticleTypeTrait<FMCell>::value(),
-                                                             {0.99, 0.99, 0.99}, {0.5, 0.5, 0.5}, {1., 1., 1.});
+  autopas::generators::GridGenerator::fillWithParticles(cells, edgeLength, edgeLength,
+                                                        autopas::utils::ParticleTypeTrait<FMCell>::value(),
+                                                        {0.99, 0.99, 0.99}, {0.5, 0.5, 0.5}, {1., 1., 1.});
 
   NumThreadGuard numThreadGuard(4);
 

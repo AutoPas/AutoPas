@@ -9,9 +9,9 @@
 #include <cmath>
 
 #include "Object.h"
+#include "autopas/generators/ClosestPackingGenerator.h"
+#include "autopas/generators/PseudoContainer.h"
 #include "autopas/utils/ArrayMath.h"
-#include "generators/src/ClosestPackingGenerator.h"
-#include "generators/src/PseudoContainer.h"
 
 /**
  * Class describing a cube of hexagonally closest packed particles.
@@ -98,13 +98,13 @@ class CubeClosestPacked : public Object {
    */
   void generate(std::vector<ParticleType> &particles) const override {
     // Wrapper so that std::vector can be used as an AutoPas::ParticleContainer
-    auto particlesWrapper = autopasTools::PseudoContainer(particles);
+    auto particlesWrapper = autopas::generators::PseudoContainer(particles);
 
     // dummy particle used as a template with id of the first newly generated one
     const ParticleType dummyParticle = getDummyParticle(particles.size());
 
-    autopasTools::generators::ClosestPackingGenerator::fillWithParticles(
-        particlesWrapper, _bottomLeftCorner, _topRightCorner, dummyParticle, _particleSpacing);
+    autopas::generators::ClosestPackingGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner,
+                                                                    _topRightCorner, dummyParticle, _particleSpacing);
   }
 
  private:

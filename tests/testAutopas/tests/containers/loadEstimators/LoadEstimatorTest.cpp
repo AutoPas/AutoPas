@@ -7,7 +7,7 @@
 #include "LoadEstimatorTest.h"
 
 #include "autopas/containers/LoadEstimators.h"
-#include "generators/src/GridGenerator.h"
+#include "autopas/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 // using ::testing::_;
@@ -20,8 +20,8 @@ TEST(LoadEstimatorTest, testEqualDistributionSquaredParticlesPerCell) {
   std::vector<FPCell> cells;
   cells.resize(cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2]);
 
-  autopasTools::generators::GridGenerator::fillWithParticles(cells, cellsPerDimension, particlesPerDimension,
-                                                             typename FPCell::ParticleType(), spacing, offset);
+  autopas::generators::GridGenerator::fillWithParticles(cells, cellsPerDimension, particlesPerDimension,
+                                                        typename FPCell::ParticleType(), spacing, offset);
   std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
 
   for (unsigned long i = 1; i < 4; i++) {
@@ -41,8 +41,8 @@ TEST(LoadEstimatorTest, testIncreasingDensitySquaredParticlesPerCell) {
     std::array<double, 3> spacing = {1.0, 1.0, 1.0 / (i + 1)};
     std::array<double, 3> offset = {.5 + i, .5, 0.5 / (i + 1)};
 
-    autopasTools::generators::GridGenerator::fillWithParticles(cells, cellsPerDimension, particlesPerDimension,
-                                                               typename FPCell::ParticleType(), spacing, offset);
+    autopas::generators::GridGenerator::fillWithParticles(cells, cellsPerDimension, particlesPerDimension,
+                                                          typename FPCell::ParticleType(), spacing, offset);
   }
 
   for (unsigned long i = 1; i < 3; i++) {

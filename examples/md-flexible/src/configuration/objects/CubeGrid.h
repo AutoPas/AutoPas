@@ -9,8 +9,8 @@
 #include <numeric>
 
 #include "Object.h"
+#include "autopas/generators/GridGenerator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "generators/src/GridGenerator.h"
 
 /**
  * Class describing a regular 3D particle grid object.
@@ -97,14 +97,14 @@ class CubeGrid : public Object {
    */
   void generate(std::vector<ParticleType> &particles) const override {
     // Wrapper so that std::vector can be used as an AutoPas::ParticleContainer
-    auto particlesWrapper = autopasTools::PseudoContainer(particles);
+    auto particlesWrapper = autopas::generators::PseudoContainer(particles);
 
     // dummy particle used as a template with id of the first newly generated one
     const ParticleType dummyParticle = getDummyParticle(particles.size());
 
-    autopasTools::generators::GridGenerator::fillWithParticles(particlesWrapper, _particlesPerDim, dummyParticle,
-                                                               {_particleSpacing, _particleSpacing, _particleSpacing},
-                                                               _bottomLeftCorner);
+    autopas::generators::GridGenerator::fillWithParticles(particlesWrapper, _particlesPerDim, dummyParticle,
+                                                          {_particleSpacing, _particleSpacing, _particleSpacing},
+                                                          _bottomLeftCorner);
   }
 
  private:

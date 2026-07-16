@@ -10,7 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "LJFunctorTest.h"
-#include "generators/src/UniformGenerator.h"
+#include "autopas/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "testingHelpers/ParticleMatcher.h"
 

@@ -15,7 +15,7 @@
 /**
  * Generator class for gaussian distributions
  */
-namespace autopasTools::generators::GaussianGenerator {
+namespace autopas::generators::GaussianGenerator {
 /**
  * Maximum number of attempts the random generator gets to find a valid position before considering the input to be
  * bad
@@ -71,4 +71,4 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
     container.addParticle(p);
   }
 }
-}  // namespace autopasTools::generators::GaussianGenerator
+}  // namespace autopas::generators::GaussianGenerator

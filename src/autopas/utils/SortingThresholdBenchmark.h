@@ -11,7 +11,7 @@
 #include <random>
 
 #include "autopas/baseFunctors/CellFunctor.h"
-#include "autopas/particles/OwnershipState.h"
+#include "autopas/generators/UniformGenerator.h"
 #include "autopas/utils/SortingThresholdInfo2B.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/Logger.h"
@@ -175,37 +175,6 @@ class SortingThresholdBenchmark {
   const double _scatterFactor = 0.2;
 
   /**
-   * Fills a cell with numParticles copies of defaultParticle at independently uniform-random positions within
-   * [boxLow, boxHigh]. A minimal stand-in for autopasTools::generators::UniformGenerator::fillWithParticles() so
-   * that this core-library header does not need to depend on the autopasTools target.
-   * @tparam Cell_T Cell type; must support addParticle().
-   * @tparam Particle_T Particle type.
-   * @param cell Cell to fill.
-   * @param defaultParticle Template particle whose non-positional properties are copied.
-   * @param boxLow Lower corner of the sampling box.
-   * @param boxHigh Upper corner of the sampling box.
-   * @param numParticles Number of particles to generate.
-   * @param seed Seed for the random engine.
-   */
-  template <class Cell_T, class Particle_T>
-  static void fillWithRandomParticles(Cell_T &cell, const Particle_T &defaultParticle,
-                                      const std::array<double, 3> &boxLow, const std::array<double, 3> &boxHigh,
-                                      size_t numParticles, unsigned int seed = 42) {
-    std::mt19937 generator(seed);
-    std::array<std::uniform_real_distribution<double>, 3> dist{
-        std::uniform_real_distribution<double>(boxLow[0], boxHigh[0]),
-        std::uniform_real_distribution<double>(boxLow[1], boxHigh[1]),
-        std::uniform_real_distribution<double>(boxLow[2], boxHigh[2])};
-    for (size_t i = 0; i < numParticles; ++i) {
-      Particle_T particle(defaultParticle);
-      particle.setR({dist[0](generator), dist[1](generator), dist[2](generator)});
-      particle.setID(i);
-      particle.setOwnershipState(autopas::OwnershipState::owned);
-      cell.addParticle(particle);
-    }
-  }
-
-  /**
    * Measures the mean per-repetition time for the sorted and unsorted pair interaction paths at a given particle
    * count for one direction type and Newton3 state, for either the AoS or the SoA layout.
    *
@@ -317,11 +286,12 @@ class SortingThresholdBenchmark {
       size_t toAddCell1 = distrib(gen);
       // Vary the seed per repetition per cell so each repetition samples a fresh particle
       // layout instead of repeatedly timing the exact same configuration.
-      fillWithRandomParticles(cell1, defaultParticle, cell1Low, cell1High, numParticlesPerCell + toAddCell1,
-                              static_cast<unsigned int>(2 * i));
-      fillWithRandomParticles(cell2, defaultParticle, cell2Low, cell2High,
-                              numParticlesPerCell + numParticlesScatter - toAddCell1,
-                              static_cast<unsigned int>(2 * i + 1));
+      generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, cell1Low, cell1High,
+                                                      numParticlesPerCell + toAddCell1,
+                                                      static_cast<unsigned int>(2 * i));
+      generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, cell2Low, cell2High,
+                                                      numParticlesPerCell + numParticlesScatter - toAddCell1,
+                                                      static_cast<unsigned int>(2 * i + 1));
 
       long unsortedDelta = 0;
       long sortedDelta = 0;

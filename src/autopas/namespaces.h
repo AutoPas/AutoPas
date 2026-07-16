@@ -102,6 +102,12 @@ namespace tuningLogEntry {}
 namespace SearchSpaceGenerators {}
 
 /**
+ * Generators for filling containers with particles in various distributions (uniform, grid, gaussian, closest
+ * packed, ...), used by tests, benchmarks, and md-flexible's particle-object generation.
+ */
+namespace generators {}
+
+/**
  * Helper functions and type aliases for verlet lists cells.
  */
 namespace VerletListsCellsHelpers {}

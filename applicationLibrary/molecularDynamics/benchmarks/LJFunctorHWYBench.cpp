@@ -28,12 +28,12 @@
 
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
+#include "autopas/generators/TwoCellsInteractionHitrateGenerator.h"
+#include "autopas/generators/UniformGenerator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "generators/src/TwoCellsInteractionHitrateGenerator.h"
-#include "generators/src/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
@@ -105,7 +105,7 @@ using BenchFunctor = mdLib::LJFunctorHWY<MoleculeType, /*shifting=*/true, /*useM
 void fillCell(FMCell &cell, const std::array<double, 3> &low, const std::array<double, 3> &high, std::size_t n,
               unsigned seed) {
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell, defaultParticle, low, high, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell, defaultParticle, low, high, n, seed);
 }
 
 /**
@@ -207,9 +207,9 @@ static void BM_AoSFunctorSortedPairFace(benchmark::State &state) {
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
-      cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]}, {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, seed + 1);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]},
+                                                           {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, seed + 1);
   seed += 2;
 
   auto functor = makeFunctor();
@@ -305,7 +305,7 @@ static void BM_SoAFunctorPairHitrate(benchmark::State &state) {
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
+  autopas::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
       cell1, cell2, kLow, kHigh, {kHigh[0], kLow[1], kLow[2]}, {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, hitrate,
       kCutoff, defaultParticle, seed++);
 
@@ -380,7 +380,7 @@ static void BM_SoAFunctorPairSortedHitrate(benchmark::State &state) {
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
+  autopas::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
       cell1, cell2, kLow, kHigh, {kHigh[0], kLow[1], kLow[2]}, {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, hitrate,
       kCutoff, defaultParticle, seed++);
 
@@ -456,9 +456,9 @@ static void BM_SoAFunctorPairFace(benchmark::State &state) {
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
-      cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]}, {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, seed + 1);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]},
+                                                           {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, seed + 1);
   seed += 2;
 
   auto functor = makeFunctor();
@@ -517,9 +517,9 @@ static void BM_SoAFunctorSortedPairFace(benchmark::State &state) {
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
-      cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]}, {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, seed + 1);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]},
+                                                           {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, seed + 1);
   seed += 2;
 
   auto functor = makeFunctor();
@@ -581,8 +581,8 @@ static void BM_SoAFunctorPairEdge(benchmark::State &state) {
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(
       cell2, defaultParticle, {kLow[0] + kCellSize, kLow[1] + kCellSize, kLow[2]},
       {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2]}, n, seed + 1);
   seed += 2;
@@ -644,8 +644,8 @@ static void BM_SoAFunctorPairCorner(benchmark::State &state) {
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(
       cell2, defaultParticle, {kLow[0] + kCellSize, kLow[1] + kCellSize, kLow[2] + kCellSize},
       {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2] + kCellSize}, n, seed + 1);
   seed += 2;
@@ -707,8 +707,8 @@ static void BM_SoAFunctorSortedPairEdge(benchmark::State &state) {
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(
       cell2, defaultParticle, {kLow[0] + kCellSize, kLow[1] + kCellSize, kLow[2]},
       {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2]}, n, seed + 1);
   seed += 2;
@@ -774,8 +774,8 @@ static void BM_SoAFunctorSortedPairCorner(benchmark::State &state) {
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(
       cell2, defaultParticle, {kLow[0] + kCellSize, kLow[1] + kCellSize, kLow[2] + kCellSize},
       {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2] + kCellSize}, n, seed + 1);
   seed += 2;
