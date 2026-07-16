@@ -13,9 +13,9 @@
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/SortedSoAView.h"
-#include "autopas/utils/SortingThesholdInfoSingle.h"
 #include "autopas/utils/SortingThresholdInfo2B.h"
 #include "autopas/utils/SortingThresholdInfoInterface.h"
+#include "autopas/utils/SortingThresholdInfoSingle.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas::internal {
@@ -141,7 +141,7 @@ class CellFunctor {
                                       bool useSoA) const {
     if (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0) {
       const auto &thresholds = useSoA ? _soaSortingThresholds : _aosSortingThresholds;
-      return particleCount >= thresholds.getThreshold(_useNewton3, sortingDirection);
+      return particleCount >= thresholds.getThresholdByConfig(_useNewton3, sortingDirection);
     }
     return false;
   }
@@ -158,7 +158,11 @@ class CellFunctor {
     if (const auto *info2B = dynamic_cast<const SortingThresholdInfo2B *>(&info)) {
       return *info2B;
     }
-    return SortingThresholdInfo2B(dynamic_cast<const SortingThresholdInfoSingle &>(info).getThreshold());
+    if (const auto *info_single = dynamic_cast<const SortingThresholdInfoSingle *>(&info)) {
+      return SortingThresholdInfo2B(info_single->threshold);
+    }
+    throw utils::ExceptionHandler::AutoPasException(
+        "CellFunctor was called with wrong SortingThresholdInfo Type. (Supported are single and 2B)");
   }
 
   /**
@@ -298,7 +302,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
     }
   };
   // TODO: This is currently arbitrary, think of a good way to handle this
-  if (cell.size() >= _aosSortingThresholds.getThreshold(_useNewton3, {1, 0, 0})) {
+  if (cell.size() >= _aosSortingThresholds.getThresholdByConfig(_useNewton3, {1, 0, 0})) {
     SortedCellView<ParticleCell_T> cellSorted(cell, utils::ArrayMath::normalize(cell.getCellLength()));
 
     for (auto cellIter1 = cellSorted._particles.begin(); cellIter1 != cellSorted._particles.end(); ++cellIter1) {

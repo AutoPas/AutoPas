@@ -79,20 +79,27 @@ class SortingThresholdBenchmark {
    */
   template <class Functor_T, class Particle_T, bool UseSoA>
   void runBenchmark(Functor_T &functor) {
+    std::array<std::array<size_t, 3>, 2> thresholds;
     if constexpr (UseSoA) {
       for (const auto &n3 : Newton3Option::getAllOptions()) {
         for (const auto &layout : CellLayoutOption::getAllOptions()) {
-          _soaThresholds.setThreshold(n3, layout, runSearch<Functor_T, Particle_T, true>(functor, layout, n3));
+          thresholds[n3][layout] = runSearch<Functor_T, Particle_T, true>(functor, layout, n3);
         }
       }
+      _soaThresholds = {
+          thresholds[0][1], thresholds[0][2], thresholds[0][0], thresholds[1][0], thresholds[1][1], thresholds[1][2],
+      };
       _hasRunSoA = true;
     } else {
       if constexpr (std::constructible_from<Particle_T, std::array<double, 3>, std::array<double, 3>, size_t>) {
         for (const auto &n3 : Newton3Option::getAllOptions()) {
           for (const auto &layout : CellLayoutOption::getAllOptions()) {
-            _aosThresholds.setThreshold(n3, layout, runSearch<Functor_T, Particle_T, true>(functor, layout, n3));
+            thresholds[n3][layout] = runSearch<Functor_T, Particle_T, true>(functor, layout, n3);
           }
         }
+        _aosThresholds = {
+            thresholds[0][1], thresholds[0][2], thresholds[0][0], thresholds[1][0], thresholds[1][1], thresholds[1][2],
+        };
       } else {
         AutoPasLog(WARN,
                    "SortingThresholdBenchmark: Particle type is not constructible from (position, velocity, id), "

@@ -20,66 +20,56 @@ namespace autopas {
  * Replaces the previous opaque std::array<std::array<size_t, 3>, 2> grid with named members, accessed through
  * getThreshold()/setThreshold().
  */
-class SortingThresholdInfo2B : public SortingThresholdInfoInterface {
- public:
-  /**
-   * Constructor. All thresholds are initialized to their in-class default (8).
-   */
-  SortingThresholdInfo2B() = default;
+struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
+  size_t noN3FaceThreshold;
+  size_t noN3EdgeThreshold;
+  size_t noN3CornerThreshold;
+
+  size_t n3FaceThreshold;
+  size_t n3EdgeThreshold;
+  size_t n3CornerThreshold;
 
   /**
    * Constructor setting every Newton3-state / CellLayoutOption combination to the same value.
    * @param uniformThreshold Threshold value applied to all six combinations.
    */
-  explicit SortingThresholdInfo2B(size_t uniformThreshold) {
-    for (auto &row : _thresholds) {
-      std::ranges::fill(row, uniformThreshold);
+  explicit SortingThresholdInfo2B(size_t uniformThreshold)
+      : n3FaceThreshold(uniformThreshold),
+        n3EdgeThreshold(uniformThreshold),
+        n3CornerThreshold(uniformThreshold),
+        noN3FaceThreshold(uniformThreshold),
+        noN3EdgeThreshold(uniformThreshold),
+        noN3CornerThreshold(uniformThreshold) {}
+
+  SortingThresholdInfo2B(size_t noN3FaceThreshold, size_t noN3EdgeThreshold, size_t noN3CornerThreshold,
+                         size_t n3FaceThreshold, size_t n3EdgeThreshold, size_t n3CornerThreshold)
+      : noN3FaceThreshold(noN3FaceThreshold),
+        noN3EdgeThreshold(noN3EdgeThreshold),
+        noN3CornerThreshold(noN3CornerThreshold),
+        n3FaceThreshold(n3FaceThreshold),
+        n3EdgeThreshold(n3EdgeThreshold),
+        n3CornerThreshold(n3CornerThreshold) {}
+
+  size_t getThresholdByConfig(bool newton3, std::array<double, 3> sortingDirection) const {
+    size_t zeroes = std::ranges::count(sortingDirection, 0);
+    if (newton3) {
+      if (zeroes == 0) {
+        return n3CornerThreshold;
+      }
+      if (zeroes == 1) {
+        return n3EdgeThreshold;
+      }
+      return n3FaceThreshold;
+    } else {
+      if (zeroes == 0) {
+        return noN3CornerThreshold;
+      }
+      if (zeroes == 1) {
+        return noN3EdgeThreshold;
+      }
+      return noN3FaceThreshold;
     }
   }
-
-  /**
-   * Set the threshold for a given Newton3 state and CellLayoutOption.
-   * @param newton3
-   * @param layout
-   * @param value
-   */
-  void setThreshold(Newton3Option newton3, CellLayoutOption layout, size_t value) {
-    _thresholds[static_cast<std::size_t>(newton3)][static_cast<std::size_t>(layout)] = value;
-  }
-
-  /**
-   * Get the threshold for a given Newton3 state and CellLayoutOption.
-   * @param newton3
-   * @param layout
-   * @return The stored threshold.
-   */
-  [[nodiscard]] size_t getThreshold(Newton3Option newton3, CellLayoutOption layout) const {
-    return _thresholds[static_cast<std::size_t>(newton3)][static_cast<std::size_t>(layout)];
-  }
-
-  /**
-   * Set the threshold for a given Newton3 state and CellLayoutOption.
-   * @param newton3
-   * @param layout
-   * @param value
-   */
-  void setThreshold(bool newton3, std::array<double, 3> sortingDirection, size_t value) {
-    setThreshold(newton3 ? Newton3Option::enabled : Newton3Option::disabled,
-                 CellLayoutOption::fromSortingDirection(sortingDirection), value);
-  }
-  /**
-   * Get the threshold for a given Newton3 state and CellLayoutOption.
-   * @param newton3
-   * @param layout
-   * @return The stored threshold.
-   */
-  [[nodiscard]] size_t getThreshold(bool newton3, std::array<double, 3> sortingDirection) const {
-    return getThreshold(newton3 ? Newton3Option::enabled : Newton3Option::disabled,
-                        CellLayoutOption::fromSortingDirection(sortingDirection));
-  }
-
- private:
-  std::array<std::array<size_t, 3>, 2> _thresholds{};
 };
 
 }  // namespace autopas

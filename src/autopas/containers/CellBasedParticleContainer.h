@@ -12,8 +12,8 @@
 
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/TraversalInterface.h"
-#include "autopas/utils/SortingThesholdInfoSingle.h"
 #include "autopas/utils/SortingThresholdInfoInterface.h"
+#include "autopas/utils/SortingThresholdInfoSingle.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {

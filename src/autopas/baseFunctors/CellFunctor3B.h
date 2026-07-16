@@ -9,8 +9,8 @@
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/SortingThesholdInfoSingle.h"
 #include "autopas/utils/SortingThresholdInfoInterface.h"
+#include "autopas/utils/SortingThresholdInfoSingle.h"
 namespace autopas::internal {
 /**
  * A cell functor. This functor is built from the normal Functor of the template
@@ -186,13 +186,13 @@ class CellFunctor3B {
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThresholds(
     const SortingThresholdInfoInterface &aosSortingThreshold) {
-  _aosSortingThreshold = dynamic_cast<const SortingThresholdInfoSingle &>(aosSortingThreshold).getThreshold();
+  _aosSortingThreshold = dynamic_cast<const SortingThresholdInfoSingle &>(aosSortingThreshold).threshold;
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThresholds(
     const SortingThresholdInfoInterface &soaSortingThreshold) {
-  _soaSortingThreshold = dynamic_cast<const SortingThresholdInfoSingle &>(soaSortingThreshold).getThreshold();
+  _soaSortingThreshold = dynamic_cast<const SortingThresholdInfoSingle &>(soaSortingThreshold).threshold;
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
