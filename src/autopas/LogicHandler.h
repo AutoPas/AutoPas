@@ -1337,7 +1337,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
     // type. A previous pairwise call above may have switched them to a SortingThresholdInfo2B, which CellFunctor3B
     // (used by triwise traversals) cannot accept. Reset them to the plain SortingThresholdInfoSingle default before
     // this triwise traversal is prepared, so that prepareTraversal() always hands CellFunctor3B a compatible type.
-    // This is fragile but anavoidable with the current way that threshold information is passed.
+    // This is fragile but unavoidable with the current way that threshold information is passed.
     _currentContainer->setAoSSortingThresholds(_defaultAoSSortingThresholdSingle);
     _currentContainer->setSoASortingThresholds(_defaultSoASortingThresholdSingle);
   }
