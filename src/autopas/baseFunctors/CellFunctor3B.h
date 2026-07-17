@@ -188,6 +188,7 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSort
     const SortingThresholdInfoInterface &aosSortingThreshold) {
   if (const auto *aosSortingThresholdInfo = dynamic_cast<const SortingThresholdInfoSingle *>(&aosSortingThreshold)) {
     _aosSortingThreshold = aosSortingThresholdInfo->threshold;
+    return;
   }
   throw utils::ExceptionHandler::AutoPasException(
       "CellFunctor3b was called with wrong SortingThresholdInfo Type. (Supported is single)");
@@ -198,6 +199,7 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASort
     const SortingThresholdInfoInterface &soaSortingThreshold) {
   if (const auto *soaSortingThresholdInfo = dynamic_cast<const SortingThresholdInfoSingle *>(&soaSortingThreshold)) {
     _soaSortingThreshold = soaSortingThresholdInfo->threshold;
+    return;
   }
   throw utils::ExceptionHandler::AutoPasException(
       "CellFunctor3b was called with wrong SortingThresholdInfo Type. (Supported is single)");
