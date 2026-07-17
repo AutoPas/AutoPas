@@ -1304,12 +1304,16 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
         }
       }
 
-      _currentContainer->setAoSSortingThresholds(
-          std::make_shared<const SortingThresholdInfo2B>(sortingThresholdBenchmark.getAoSThreshold()));
+      if (sortingThresholdBenchmark.hasRunAoS()) {
+        _currentContainer->setAoSSortingThresholds(
+            std::make_shared<const SortingThresholdInfo2B>(sortingThresholdBenchmark.getAoSThreshold()));
+      }
 
       if constexpr (Functor::supportsSoASorting) {
-        _currentContainer->setSoASortingThresholds(
-            std::make_shared<const SortingThresholdInfo2B>(sortingThresholdBenchmark.getSoAThreshold()));
+        if (sortingThresholdBenchmark.hasRunSoA()) {
+          _currentContainer->setSoASortingThresholds(
+              std::make_shared<const SortingThresholdInfo2B>(sortingThresholdBenchmark.getSoAThreshold()));
+        }
       }
     }
   }
