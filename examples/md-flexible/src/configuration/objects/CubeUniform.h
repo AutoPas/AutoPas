@@ -6,7 +6,7 @@
 #pragma once
 
 #include "Object.h"
-#include "autopas/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/utils/ArrayMath.h"
 
 /**

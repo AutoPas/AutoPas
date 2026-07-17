@@ -11,7 +11,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"

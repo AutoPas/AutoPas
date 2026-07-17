@@ -6,8 +6,8 @@
 #pragma once
 
 #include "Object.h"
-#include "autopas/generators/GaussianGenerator.h"
-#include "autopas/generators/PseudoContainer.h"
+#include "autopas/utils/generators/GaussianGenerator.h"
+#include "autopas/utils/generators/PseudoContainer.h"
 #include "autopas/utils/ArrayMath.h"
 
 /**

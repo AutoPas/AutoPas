@@ -8,7 +8,7 @@
 
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 

@@ -6,7 +6,7 @@
 
 #include "SortedSoAViewTest.h"
 
-#include "autopas/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/utils/SortedSoAView.h"
 #include "testingHelpers/commonTypedefs.h"
 

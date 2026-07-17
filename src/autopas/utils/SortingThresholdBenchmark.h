@@ -12,7 +12,7 @@
 #include <random>
 
 #include "autopas/baseFunctors/CellFunctor.h"
-#include "autopas/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/utils/SortingThresholdInfo2B.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/Logger.h"

@@ -7,7 +7,7 @@
 #include "AutoPasAllContainersTest.h"
 
 #include "autopas/AutoPasImpl.h"
-#include "autopas/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;

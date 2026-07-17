@@ -6,8 +6,8 @@
 
 #include "GeneratorsTest.h"
 
-#include "autopas/generators/GridGenerator.h"
-#include "autopas/generators/UniformGenerator.h"
+#include "autopas/utils/generators/GridGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "src/configuration/YamlParser.h"
 #include "testingHelpers/commonTypedefs.h"

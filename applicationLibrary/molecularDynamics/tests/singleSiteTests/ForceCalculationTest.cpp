@@ -7,7 +7,7 @@
 #include "ForceCalculationTest.h"
 
 #include "autopas/AutoPasDecl.h"
-#include "autopas/generators/GridGenerator.h"
+#include "autopas/utils/generators/GridGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 

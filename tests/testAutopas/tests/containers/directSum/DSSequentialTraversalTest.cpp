@@ -7,7 +7,7 @@
 #include "DSSequentialTraversalTest.h"
 
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
-#include "autopas/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 
 using ::testing::_;
 using ::testing::AtLeast;

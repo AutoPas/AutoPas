@@ -28,8 +28,8 @@
 
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/generators/TwoCellsInteractionHitrateGenerator.h"
-#include "autopas/generators/UniformGenerator.h"
+#include "autopas/utils/generators/TwoCellsInteractionHitrateGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/AlignedAllocator.h"

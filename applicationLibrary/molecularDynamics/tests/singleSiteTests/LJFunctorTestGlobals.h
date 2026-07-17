@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "LJFunctorTest.h"
-#include "autopas/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "testingHelpers/LJPotential.h"
 

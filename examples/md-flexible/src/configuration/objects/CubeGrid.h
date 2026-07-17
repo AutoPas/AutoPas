@@ -9,7 +9,7 @@
 #include <numeric>
 
 #include "Object.h"
-#include "autopas/generators/GridGenerator.h"
+#include "autopas/utils/generators/GridGenerator.h"
 #include "autopas/utils/ArrayMath.h"
 
 /**

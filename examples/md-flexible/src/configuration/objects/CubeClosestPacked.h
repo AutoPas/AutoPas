@@ -9,8 +9,8 @@
 #include <cmath>
 
 #include "Object.h"
-#include "autopas/generators/ClosestPackingGenerator.h"
-#include "autopas/generators/PseudoContainer.h"
+#include "autopas/utils/generators/ClosestPackingGenerator.h"
+#include "autopas/utils/generators/PseudoContainer.h"
 #include "autopas/utils/ArrayMath.h"
 
 /**

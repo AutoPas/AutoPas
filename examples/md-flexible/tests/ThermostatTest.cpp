@@ -6,7 +6,7 @@
 
 #include "ThermostatTest.h"
 
-#include "autopas/generators/GridGenerator.h"
+#include "autopas/utils/generators/GridGenerator.h"
 #include "src/Thermostat.h"
 
 void ThermostatTest::initContainer(AutoPasType &autopas, const ParticleType &dummy,

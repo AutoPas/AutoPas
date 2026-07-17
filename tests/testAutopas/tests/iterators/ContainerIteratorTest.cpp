@@ -9,7 +9,7 @@
 #include "IteratorTestHelper.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "testingHelpers/EmptyPairwiseFunctor.h"
