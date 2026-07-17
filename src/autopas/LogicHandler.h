@@ -27,7 +27,6 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
-#include "autopas/utils/SortingThresholdInfo2B.h"
 #include "autopas/utils/SortingThresholdInfoSingle.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -1320,15 +1319,16 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
         }
       }
 
+      // getAoSThreshold()/getSoAThreshold() hand out the same cached shared_ptr on every call once the respective
+      // benchmark has run, so re-applying them here (needed every call in case an intervening triwise call reset
+      // the container, see the else branch below) is a cheap shared_ptr copy, not a reallocation.
       if (sortingThresholdBenchmark.hasRunAoS()) {
-        _currentContainer->setAoSSortingThresholds(
-            std::make_shared<const SortingThresholdInfo2B>(sortingThresholdBenchmark.getAoSThreshold()));
+        _currentContainer->setAoSSortingThresholds(sortingThresholdBenchmark.getAoSThreshold());
       }
 
       if constexpr (Functor::supportsSoASorting) {
         if (sortingThresholdBenchmark.hasRunSoA()) {
-          _currentContainer->setSoASortingThresholds(
-              std::make_shared<const SortingThresholdInfo2B>(sortingThresholdBenchmark.getSoAThreshold()));
+          _currentContainer->setSoASortingThresholds(sortingThresholdBenchmark.getSoAThreshold());
         }
       }
     }

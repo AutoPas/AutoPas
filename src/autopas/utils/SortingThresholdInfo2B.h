@@ -48,12 +48,12 @@ struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
    * @param uniformThreshold Threshold value applied to all six combinations.
    */
   explicit SortingThresholdInfo2B(size_t uniformThreshold)
-      : n3FaceThreshold(uniformThreshold),
-        n3EdgeThreshold(uniformThreshold),
-        n3CornerThreshold(uniformThreshold),
-        noN3FaceThreshold(uniformThreshold),
+      : noN3FaceThreshold(uniformThreshold),
         noN3EdgeThreshold(uniformThreshold),
-        noN3CornerThreshold(uniformThreshold) {}
+        noN3CornerThreshold(uniformThreshold),
+        n3FaceThreshold(uniformThreshold),
+        n3EdgeThreshold(uniformThreshold),
+        n3CornerThreshold(uniformThreshold) {}
   /**
    * Constructor to set each per Newton3/CellLayout combination value explicitly.
    * @param noN3FaceThreshold

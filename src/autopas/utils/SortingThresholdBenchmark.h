@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cmath>
+#include <memory>
 #include <random>
 
 #include "autopas/baseFunctors/CellFunctor.h"
@@ -41,16 +42,22 @@ class SortingThresholdBenchmark {
   /**
    * Return all per-Newton3-state, per-direction-type SoA sorting thresholds.
    * Only meaningful once hasRunSoA() is true.
-   * @return Copy of the internal threshold array, indexed as [newton3][direction] (see class documentation).
+   * The returned pointer is stable (the same instance is reused every call) once runSoABenchmark() has completed,
+   * so callers can cheaply re-apply it every iteration (e.g. to a container) without reallocating.
+   * @return Shared pointer to the internal threshold values, indexed as [newton3][direction] (see class
+   * documentation).
    */
-  SortingThresholdInfo2B getSoAThreshold() const { return _soaThresholds; }
+  std::shared_ptr<const SortingThresholdInfo2B> getSoAThreshold() const { return _soaThresholds; }
 
   /**
    * Return all per-Newton3-state, per-direction-type AoS pair-sorting thresholds.
    * Only meaningful once hasRunAoS() is true.
-   * @return Copy of the internal threshold array, indexed as [newton3][direction] (see class documentation).
+   * The returned pointer is stable (the same instance is reused every call) once runAoSBenchmark() has completed,
+   * so callers can cheaply re-apply it every iteration (e.g. to a container) without reallocating.
+   * @return Shared pointer to the internal threshold values, indexed as [newton3][direction] (see class
+   * documentation).
    */
-  SortingThresholdInfo2B getAoSThreshold() const { return _aosThresholds; }
+  std::shared_ptr<const SortingThresholdInfo2B> getAoSThreshold() const { return _aosThresholds; }
 
   /**
    * Returns whether runSoABenchmark() has already been called.
@@ -84,9 +91,8 @@ class SortingThresholdBenchmark {
     }
     // thresholds[n3][layout] is indexed by CellLayoutOption (corner=0, edge=1, face=2), while the constructor
     // below takes named (Face, Edge, Corner) parameters per Newton3 state, so the layout index is reversed here.
-    _soaThresholds = {
-        thresholds[0][2], thresholds[0][1], thresholds[0][0], thresholds[1][2], thresholds[1][1], thresholds[1][0],
-    };
+    _soaThresholds = std::make_shared<const SortingThresholdInfo2B>(
+        thresholds[0][2], thresholds[0][1], thresholds[0][0], thresholds[1][2], thresholds[1][1], thresholds[1][0]);
     _hasRunSoA = true;
   }
 
@@ -109,9 +115,8 @@ class SortingThresholdBenchmark {
     }
     // thresholds[n3][layout] is indexed by CellLayoutOption (corner=0, edge=1, face=2), while the constructor
     // below takes named (Face, Edge, Corner) parameters per Newton3 state, so the layout index is reversed here.
-    _aosThresholds = {
-        thresholds[0][2], thresholds[0][1], thresholds[0][0], thresholds[1][2], thresholds[1][1], thresholds[1][0],
-    };
+    _aosThresholds = std::make_shared<const SortingThresholdInfo2B>(
+        thresholds[0][2], thresholds[0][1], thresholds[0][0], thresholds[1][2], thresholds[1][1], thresholds[1][0]);
     _hasRunAoS = true;
   }
 
@@ -128,14 +133,18 @@ class SortingThresholdBenchmark {
 
   /**
    * Per-Newton3-state, per-direction-type SoA sorting threshold values, initialized to the compile-time default.
+   * Held as a shared_ptr so that getSoAThreshold() can hand out the same instance on every call once
+   * runSoABenchmark() has completed, instead of forcing callers to reallocate on every access.
    */
-  SortingThresholdInfo2B _soaThresholds{100};
+  std::shared_ptr<const SortingThresholdInfo2B> _soaThresholds{std::make_shared<const SortingThresholdInfo2B>(100)};
 
   /**
    * Per-Newton3-state, per-direction-type AoS pair-sorting threshold values, initialized to the compile-time
    * default.
+   * Held as a shared_ptr so that getAoSThreshold() can hand out the same instance on every call once
+   * runAoSBenchmark() has completed, instead of forcing callers to reallocate on every access.
    */
-  SortingThresholdInfo2B _aosThresholds{8};
+  std::shared_ptr<const SortingThresholdInfo2B> _aosThresholds{std::make_shared<const SortingThresholdInfo2B>(8)};
 
   /**
    * Number of timed calls per repetition to get stable measurement.
