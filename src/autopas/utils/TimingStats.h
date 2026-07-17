@@ -1,6 +1,7 @@
 #ifndef TIMINGSTATS_H
 #define TIMINGSTATS_H
 
+#include <cmath>
 #include <limits>
 #include <spdlog/spdlog.h>
 #include <vector>
@@ -58,7 +59,10 @@ struct KernelTimings{
     TimingStats _cleanup{"anything after Kernel"};
     TimingStats _total{"total"};
 
-    KernelTimings(std::string& name) : _operationName(name){}
+    KernelTimings(const std::string& name) : _operationName(name){}
+    ~KernelTimings(){
+        spdlog::info("\n\n\n Timing Stats of ({}) \n",_operationName);
+    }
 };
 
 #endif  // TIMINGSTATS_H
