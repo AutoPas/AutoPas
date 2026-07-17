@@ -9,8 +9,8 @@
 #include "LJFunctorSVETest.h"
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/particles/ParticleDefinitions.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 

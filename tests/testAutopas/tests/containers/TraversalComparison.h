@@ -11,8 +11,8 @@
 #include <cstdlib>
 
 #include "AutoPasTestBase.h"
-#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 

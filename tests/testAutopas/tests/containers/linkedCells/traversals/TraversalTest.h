@@ -10,10 +10,10 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/utils/generators/GridGenerator.h"
-#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/utils/generators/GridGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 

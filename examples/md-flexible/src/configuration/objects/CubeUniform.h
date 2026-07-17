@@ -6,8 +6,8 @@
 #pragma once
 
 #include "Object.h"
-#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 
 /**
  * Class describing an cuboid object filled with uniformly randomly distributed particles.

@@ -6,9 +6,9 @@
 #pragma once
 
 #include "Object.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/generators/GaussianGenerator.h"
 #include "autopas/utils/generators/PseudoContainer.h"
-#include "autopas/utils/ArrayMath.h"
 
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.

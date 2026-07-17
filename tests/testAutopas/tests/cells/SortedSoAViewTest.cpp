@@ -6,8 +6,8 @@
 
 #include "SortedSoAViewTest.h"
 
-#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/utils/SortedSoAView.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using TestFunctor = LJFunctorType<>;

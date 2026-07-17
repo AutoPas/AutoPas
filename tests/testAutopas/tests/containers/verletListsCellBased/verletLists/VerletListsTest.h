@@ -10,8 +10,8 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/particles/ParticleDefinitions.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"

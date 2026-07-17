@@ -12,9 +12,9 @@
 #include <set>
 #include <vector>
 
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/generators/PseudoContainer.h"
 #include "autopas/utils/generators/TwoCellsInteractionHitrateGenerator.h"
-#include "autopas/utils/ExceptionHandler.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 /**
  * Particle type used across all tests.

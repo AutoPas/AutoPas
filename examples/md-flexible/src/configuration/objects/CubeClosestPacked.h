@@ -9,9 +9,9 @@
 #include <cmath>
 
 #include "Object.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/generators/ClosestPackingGenerator.h"
 #include "autopas/utils/generators/PseudoContainer.h"
-#include "autopas/utils/ArrayMath.h"
 
 /**
  * Class describing a cube of hexagonally closest packed particles.
