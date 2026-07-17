@@ -9,7 +9,7 @@
 #include <array>
 #include <set>
 
-#include "Option.h"
+#include "autopas/options/Option.h"
 
 namespace autopas {
 inline namespace options {

@@ -159,8 +159,8 @@ class CellFunctor {
     if (const auto *info2B = dynamic_cast<const SortingThresholdInfo2B *>(&info)) {
       return *info2B;
     }
-    if (const auto *info_single = dynamic_cast<const SortingThresholdInfoSingle *>(&info)) {
-      return SortingThresholdInfo2B(info_single->threshold);
+    if (const auto *infoSingle = dynamic_cast<const SortingThresholdInfoSingle *>(&info)) {
+      return SortingThresholdInfo2B(infoSingle->threshold);
     }
     throw utils::ExceptionHandler::AutoPasException(
         "CellFunctor was called with wrong SortingThresholdInfo Type. (Supported are single and 2B)");

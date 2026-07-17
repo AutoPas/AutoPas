@@ -82,8 +82,10 @@ class SortingThresholdBenchmark {
         thresholds[n3][layout] = runSearch<Functor_T, Particle_T, true>(functor, defaultParticle, layout, n3);
       }
     }
+    // thresholds[n3][layout] is indexed by CellLayoutOption (corner=0, edge=1, face=2), while the constructor
+    // below takes named (Face, Edge, Corner) parameters per Newton3 state, so the layout index is reversed here.
     _soaThresholds = {
-        thresholds[0][1], thresholds[0][2], thresholds[0][0], thresholds[1][0], thresholds[1][1], thresholds[1][2],
+        thresholds[0][2], thresholds[0][1], thresholds[0][0], thresholds[1][2], thresholds[1][1], thresholds[1][0],
     };
     _hasRunSoA = true;
   }
@@ -105,8 +107,10 @@ class SortingThresholdBenchmark {
         thresholds[n3][layout] = runSearch<Functor_T, Particle_T, false>(functor, defaultParticle, layout, n3);
       }
     }
+    // thresholds[n3][layout] is indexed by CellLayoutOption (corner=0, edge=1, face=2), while the constructor
+    // below takes named (Face, Edge, Corner) parameters per Newton3 state, so the layout index is reversed here.
     _aosThresholds = {
-        thresholds[0][1], thresholds[0][2], thresholds[0][0], thresholds[1][0], thresholds[1][1], thresholds[1][2],
+        thresholds[0][2], thresholds[0][1], thresholds[0][0], thresholds[1][2], thresholds[1][1], thresholds[1][0],
     };
     _hasRunAoS = true;
   }

@@ -28,6 +28,7 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/SortingThresholdInfo2B.h"
+#include "autopas/utils/SortingThresholdInfoSingle.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/TraceTimer.h"
@@ -68,6 +69,8 @@ class LogicHandler {
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _aosSortingThreshold(logicHandlerInfo.aosSortingThreshold),
         _soaSortingThreshold(logicHandlerInfo.soaSortingThreshold),
+        _defaultAoSSortingThresholdSingle(std::make_shared<const SortingThresholdInfoSingle>(_aosSortingThreshold)),
+        _defaultSoASortingThresholdSingle(std::make_shared<const SortingThresholdInfoSingle>(_soaSortingThreshold)),
         _iterationLogger(outputSuffix,
                          std::any_of(tunerManager->getAutoTuners().begin(), tunerManager->getAutoTuners().end(),
                                      [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
@@ -853,6 +856,19 @@ class LogicHandler {
    */
   size_t _soaSortingThreshold;
 
+  /**
+   * Cached SortingThresholdInfoSingle wrapping _aosSortingThreshold, constructed once so that it can be reused
+   * whenever the container's AoS sorting threshold needs to be reset to a type CellFunctor3B accepts (see
+   * computeInteractionsPipeline()) without reallocating on every triwise call.
+   */
+  std::shared_ptr<const SortingThresholdInfoSingle> _defaultAoSSortingThresholdSingle;
+  /**
+   * Cached SortingThresholdInfoSingle wrapping _soaSortingThreshold, constructed once so that it can be reused
+   * whenever the container's SoA sorting threshold needs to be reset to a type CellFunctor3B accepts (see
+   * computeInteractionsPipeline()) without reallocating on every triwise call.
+   */
+  std::shared_ptr<const SortingThresholdInfoSingle> _defaultSoASortingThresholdSingle;
+
   std::shared_ptr<TuningManager> _tuningManager;
 
   /**
@@ -1316,6 +1332,14 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
         }
       }
     }
+  } else if (_logicHandlerInfo.useSortingThresholdBenchmark) {
+    // The container's sorting thresholds are shared by every traversal prepared from it, regardless of interaction
+    // type. A previous pairwise call above may have switched them to a SortingThresholdInfo2B, which CellFunctor3B
+    // (used by triwise traversals) cannot accept. Reset them to the plain SortingThresholdInfoSingle default before
+    // this triwise traversal is prepared, so that prepareTraversal() always hands CellFunctor3B a compatible type.
+    // This is fragile but anavoidable with the current way that threshold information is passed.
+    _currentContainer->setAoSSortingThresholds(_defaultAoSSortingThresholdSingle);
+    _currentContainer->setSoASortingThresholds(_defaultSoASortingThresholdSingle);
   }
 
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.

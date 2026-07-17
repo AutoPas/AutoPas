@@ -34,6 +34,7 @@
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/SortingThresholdInfoSingle.h"
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
@@ -217,7 +218,7 @@ static void BM_AoSFunctorSortedPairFace(benchmark::State &state) {
 
   autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::aos, newton3);
-  cellFunctor.setAoSSortingThreshold(0);  // always take the sorted path
+  cellFunctor.setAoSSortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
 
   const std::array<double, 3> sortingDirection{1.0, 0.0, 0.0};
 
@@ -390,7 +391,7 @@ static void BM_SoAFunctorPairSortedHitrate(benchmark::State &state) {
 
   autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
-  cellFunctor.setSoASortingThreshold(0);  // always take the sorted path
+  cellFunctor.setSoASortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
 
   const std::array<double, 3> sortingDirection{1.0, 0.0, 0.0};
 
@@ -528,7 +529,7 @@ static void BM_SoAFunctorSortedPairFace(benchmark::State &state) {
 
   autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
-  cellFunctor.setSoASortingThreshold(0);  // always take the sorted path
+  cellFunctor.setSoASortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
 
   const std::array<double, 3> sortingDirection{1.0, 0.0, 0.0};
 
@@ -719,7 +720,7 @@ static void BM_SoAFunctorSortedPairEdge(benchmark::State &state) {
 
   autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
-  cellFunctor.setSoASortingThreshold(0);  // always take the sorted path
+  cellFunctor.setSoASortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
 
   const double normalized = 1.0 / sqrt(2.0);
   const std::array<double, 3> sortingDirection{normalized, normalized, 0.0};
@@ -786,7 +787,7 @@ static void BM_SoAFunctorSortedPairCorner(benchmark::State &state) {
 
   autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
-  cellFunctor.setSoASortingThreshold(0);  // always take the sorted path
+  cellFunctor.setSoASortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
 
   const double invSqrt3 = 1.0 / sqrt(3.0);
   const std::array<double, 3> sortingDirection{invSqrt3, invSqrt3, invSqrt3};
