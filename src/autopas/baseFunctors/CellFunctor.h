@@ -12,6 +12,7 @@
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SortedSoAView.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -38,11 +39,7 @@ class CellFunctor {
    * @param useNewton3 Parameter to specify whether newton3 is used or not.
    */
   explicit CellFunctor(ParticleFunctor_T &f, const double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
-      : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {
-    if (dataLayout == DataLayoutOption::soa) {
-      _soaThreadData.resize(autopas::autopas_get_max_threads());
-    }
-  }
+      : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**
    * Process the interactions inside one cell.
@@ -221,6 +218,21 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortin
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
   _soaSortingThreshold = soaSortingThreshold;
+  // DIAGNOSTIC ONLY (branch test/lazy-soathreaddata-alloc): skip allocating the per-thread SoA sorting
+  // buffers when the threshold is set high enough that no realistic cell pair could ever reach it. This is
+  // to test whether the unconditional allocation in the CellFunctor constructor (present on every SoA
+  // traversal regeneration, once per iteration, independent of whether sorting ever triggers) is responsible
+  // for the ExchangeHaloParticles timing shift observed when comparing af9a1530 against its pre-SoA-sorting
+  // parent with the threshold raised to "disable" the feature. Not a correctness fix: soaSortingReachableCap
+  // is a heuristic upper bound on realistic combined two-cell SoA buffer sizes, not a proven bound. Calling
+  // this setter with a threshold above the cap AND a later scenario where cell pairs actually exceed the cap
+  // will hit the ExceptionHandler::exception guard in processCellPairSoAImpl below instead of corrupting
+  // memory, but should not be relied upon outside this experiment.
+  constexpr size_t soaSortingReachableCap = 500;
+  if (_dataLayout == DataLayoutOption::soa and soaSortingThreshold <= soaSortingReachableCap and
+      _soaThreadData.empty()) {
+    _soaThreadData.resize(autopas::autopas_get_max_threads());
+  }
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
@@ -400,6 +412,13 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
   if constexpr (ParticleFunctor_T::supportsSoASorting) {
     if (shouldUseSoASorting(cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size(), sortingDirection)) {
+      // See DIAGNOSTIC ONLY comment in setSoASortingThreshold(): the reachable-cap heuristic there can be wrong.
+      if (_soaThreadData.empty()) {
+        autopas::utils::ExceptionHandler::exception(
+            "CellFunctor: SoA sorting triggered but per-thread buffers were never allocated because "
+            "soaSortingReachableCap in setSoASortingThreshold() (test/lazy-soathreaddata-alloc) was set too "
+            "low for this scenario's cell sizes.");
+      }
       using Particle_T = ParticleCell_T::ParticleType;
       auto &threadData = _soaThreadData[autopas::autopas_get_thread_num()];
 
