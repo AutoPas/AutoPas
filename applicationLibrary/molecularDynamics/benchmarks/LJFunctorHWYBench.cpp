@@ -12,7 +12,8 @@
  *
  *   2. Cell Pair with specific Layout,  uniform generator.
  *      Each layout has an unsorted (SoAFunctorPair) and a sorted
- *      (SoAFunctorPairSorted) variant. all four vecPatterns are swept.
+ *      (SoAFunctorPairSorted) variant. all four vecPatterns are swept, as well as cellSizeFactor
+ *      (the cell side length as a multiple of the cutoff).
  *
  *   3. Baselines: AoSFunctor, SoAFunctorSingle, SoAFunctorVerlet — single cell,
  *      varying N and newton3. Reference points for absolute throughput.
@@ -24,6 +25,7 @@
 #include <benchmark/benchmark.h>
 
 #include <array>
+#include <numeric>
 #include <vector>
 
 #include "autopas/baseFunctors/CellFunctor.h"
@@ -88,6 +90,16 @@ const std::vector<int64_t> hitrates = {0, 5, 10, 15, 20, 30, 50};
  * VecPattern used by the Benchmarks in the Hitrate study.
  */
 constexpr int kFixedVecPattern = VectorizationPattern::p1xVec;
+
+/**
+ * cellSizeFactor values (×10, e.g. 13 → 1.3) swept by the Layout study Benchmarks. This is the multiplicative
+ * factor, relative to kCutoff, that determines the cell side length (cellSize = cellSizeFactor * kCutoff),
+ * applied uniformly to all three dimensions so the cell remains a cube. Replaces the fixed kCellSize for those
+ * Benchmarks.
+ * Stored as int64_t (×10) rather than double: benchmark::internal::Benchmark::ArgsProduct and state.range() only
+ * accept int64_t, so a double factor can't be swept directly.
+ */
+const std::vector<int64_t> kCellSizeFactors = {13, 15, 18, 20};
 
 /**
  * Functor config used to benchmark.
@@ -443,6 +455,7 @@ BENCHMARK(BM_SoAFunctorPairSortedHitrate)
  * - state.range(0): The number of Particles in the Cell
  * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
+ * - state.range(3): cellSizeFactor ×10 (e.g. 13 → 1.3); cellSize = cellSizeFactor * kCutoff.
  *
  * The Benchmark uses the UniformGenerator to generate the cells in a Face Layout, without a specified hitrate.
  * It measures total time of the SoALoader + SoAFunctorPair + SoAExtractor (Loader
@@ -453,13 +466,15 @@ static void BM_SoAFunctorPairFace(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double cellSize = (state.range(3) / 10.0) * kCutoff;
+  const std::array<double, 3> high{cellSize, cellSize, cellSize};
 
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
-  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]},
-                                                           {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, seed + 1);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, high, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, {high[0], kLow[1], kLow[2]},
+                                                           {high[0] + cellSize, high[1], high[2]}, n, seed + 1);
   seed += 2;
 
   auto functor = makeFunctor();
@@ -481,20 +496,21 @@ static void BM_SoAFunctorPairFace(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
- * Benchmarks the unsorted SoAFunctorPair in a Face Layout across all VecPatterns, sweeping kNValues and newton3.
+ * Benchmarks the unsorted SoAFunctorPair in a Face Layout across all VecPatterns, sweeping kNValues, newton3, and
+ * cellSizeFactor.
  * @name BM_SoA_Pair_Face
  * @details
- * - Arguments: {Number of Particles, newton3, VecPattern}
- * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
+ * - Arguments: {Number of Particles, newton3, VecPattern, cellSizeFactor}
+ * - Sweeps kNValues, both newton3 on and off with all VecPatterns and all cellSizeFactors in kCellSizeFactors.
  * - This is part of the Layout study.
  */
 BENCHMARK(BM_SoAFunctorPairFace)
     ->ArgsProduct({kNValues,
                    {0, 1},
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2),
-                    static_cast<int>(VectorizationPattern::pVecx1)}})
-    ->ArgNames({"N", "n3", "vecPat"})
+                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
+                   kCellSizeFactors})
+    ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_Pair_Face");
 
@@ -504,6 +520,7 @@ BENCHMARK(BM_SoAFunctorPairFace)
  * - state.range(0): The number of Particles in the Cell
  * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
+ * - state.range(3): cellSizeFactor ×10 (e.g. 13 → 1.3); cellSize = cellSizeFactor * kCutoff.
  *
  * The Benchmark uses the UniformGenerator to generate the cells in a Face Layout, without a specified hitrate.
  * It measures total time of the SoALoader + SoAFunctorPairSorted + SoAExtractor (Loader
@@ -514,13 +531,15 @@ static void BM_SoAFunctorSortedPairFace(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double cellSize = (state.range(3) / 10.0) * kCutoff;
+  const std::array<double, 3> high{cellSize, cellSize, cellSize};
 
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
-  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, {kHigh[0], kLow[1], kLow[2]},
-                                                           {kHigh[0] + kCellSize, kHigh[1], kHigh[2]}, n, seed + 1);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, high, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, {high[0], kLow[1], kLow[2]},
+                                                           {high[0] + cellSize, high[1], high[2]}, n, seed + 1);
   seed += 2;
 
   auto functor = makeFunctor();
@@ -545,20 +564,21 @@ static void BM_SoAFunctorSortedPairFace(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
- *  Benchmarks the sorted SoAFunctorPair in a Face Layout across all VecPatterns, sweeping kNValues and newton3.
+ *  Benchmarks the sorted SoAFunctorPair in a Face Layout across all VecPatterns, sweeping kNValues, newton3, and
+ *  cellSizeFactor.
  * @name BM_SoA_PairSorted_Face
  * @details
- * - Arguments: {Number of Particles, newton3, VecPattern}
- * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
+ * - Arguments: {Number of Particles, newton3, VecPattern, cellSizeFactor}
+ * - Sweeps kNValues, both newton3 on and off with all VecPatterns and all cellSizeFactors in kCellSizeFactors.
  * - This is part of the Layout study.
  */
 BENCHMARK(BM_SoAFunctorSortedPairFace)
     ->ArgsProduct({kNValues,
                    {0, 1},
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2),
-                    static_cast<int>(VectorizationPattern::pVecx1)}})
-    ->ArgNames({"N", "n3", "vecPat"})
+                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
+                   kCellSizeFactors})
+    ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_PairSorted_Face");
 
@@ -568,6 +588,7 @@ BENCHMARK(BM_SoAFunctorSortedPairFace)
  * - state.range(0): The number of Particles in the Cell
  * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
+ * - state.range(3): cellSizeFactor ×10 (e.g. 13 → 1.3); cellSize = cellSizeFactor * kCutoff.
  *
  * The Benchmark uses the UniformGenerator to generate the cells in an Edge Layout, without a specified hitrate.
  * It measures total time of the SoALoader + SoAFunctorPair + SoAExtractor (Loader
@@ -578,14 +599,16 @@ static void BM_SoAFunctorPairEdge(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double cellSize = (state.range(3) / 10.0) * kCutoff;
+  const std::array<double, 3> high{cellSize, cellSize, cellSize};
 
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, high, n, seed);
   autopas::generators::UniformGenerator::fillWithParticles(
-      cell2, defaultParticle, {kLow[0] + kCellSize, kLow[1] + kCellSize, kLow[2]},
-      {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2]}, n, seed + 1);
+      cell2, defaultParticle, {kLow[0] + cellSize, kLow[1] + cellSize, kLow[2]},
+      {high[0] + cellSize, high[1] + cellSize, high[2]}, n, seed + 1);
   seed += 2;
 
   auto functor = makeFunctor();
@@ -608,20 +631,21 @@ static void BM_SoAFunctorPairEdge(benchmark::State &state) {
 }
 
 /**
- * Benchmarks the unsorted SoAFunctorPair in an Edge Layout across all VecPatterns, sweeping kNValues and newton3.
+ * Benchmarks the unsorted SoAFunctorPair in an Edge Layout across all VecPatterns, sweeping kNValues, newton3, and
+ * cellSizeFactor.
  * @name BM_SoA_Pair_Edge
  * @details
- * - Arguments: {Number of Particles, newton3, VecPattern}
- * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
+ * - Arguments: {Number of Particles, newton3, VecPattern, cellSizeFactor}
+ * - Sweeps kNValues, both newton3 on and off with all VecPatterns and all cellSizeFactors in kCellSizeFactors.
  * - This is part of the Layout study.
  */
 BENCHMARK(BM_SoAFunctorPairEdge)
     ->ArgsProduct({kNValues,
                    {0, 1},
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2),
-                    static_cast<int>(VectorizationPattern::pVecx1)}})
-    ->ArgNames({"N", "n3", "vecPat"})
+                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
+                   kCellSizeFactors})
+    ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_Pair_Edge");
 
@@ -631,6 +655,7 @@ BENCHMARK(BM_SoAFunctorPairEdge)
  * - state.range(0): The number of Particles in the Cell
  * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
+ * - state.range(3): cellSizeFactor ×10 (e.g. 13 → 1.3); cellSize = cellSizeFactor * kCutoff.
  *
  * The Benchmark uses the UniformGenerator to generate the cells in a Corner Layout, without a specified hitrate.
  * It measures total time of the SoALoader + SoAFunctorPair + SoAExtractor (Loader
@@ -641,14 +666,16 @@ static void BM_SoAFunctorPairCorner(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double cellSize = (state.range(3) / 10.0) * kCutoff;
+  const std::array<double, 3> high{cellSize, cellSize, cellSize};
 
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, high, n, seed);
   autopas::generators::UniformGenerator::fillWithParticles(
-      cell2, defaultParticle, {kLow[0] + kCellSize, kLow[1] + kCellSize, kLow[2] + kCellSize},
-      {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2] + kCellSize}, n, seed + 1);
+      cell2, defaultParticle, {kLow[0] + cellSize, kLow[1] + cellSize, kLow[2] + cellSize},
+      {high[0] + cellSize, high[1] + cellSize, high[2] + cellSize}, n, seed + 1);
   seed += 2;
 
   auto functor = makeFunctor();
@@ -671,20 +698,21 @@ static void BM_SoAFunctorPairCorner(benchmark::State &state) {
 }
 
 /**
- * Benchmarks the unsorted SoAFunctorPair in a Corner Layout across all VecPatterns, sweeping kNValues and newton3.
+ * Benchmarks the unsorted SoAFunctorPair in a Corner Layout across all VecPatterns, sweeping kNValues, newton3, and
+ * cellSizeFactor.
  * @name BM_SoA_Pair_Corner
  * @details
- * - Arguments: {Number of Particles, newton3, VecPattern}
- * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
+ * - Arguments: {Number of Particles, newton3, VecPattern, cellSizeFactor}
+ * - Sweeps kNValues, both newton3 on and off with all VecPatterns and all cellSizeFactors in kCellSizeFactors.
  * - This is part of the Layout study.
  */
 BENCHMARK(BM_SoAFunctorPairCorner)
     ->ArgsProduct({kNValues,
                    {0, 1},
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2),
-                    static_cast<int>(VectorizationPattern::pVecx1)}})
-    ->ArgNames({"N", "n3", "vecPat"})
+                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
+                   kCellSizeFactors})
+    ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_Pair_Corner");
 
@@ -694,6 +722,7 @@ BENCHMARK(BM_SoAFunctorPairCorner)
  * - state.range(0): The number of Particles in the Cell
  * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
+ * - state.range(3): cellSizeFactor ×10 (e.g. 13 → 1.3); cellSize = cellSizeFactor * kCutoff.
  *
  * The Benchmark uses the UniformGenerator to generate the cells in an Edge Layout, without a specified hitrate.
  * It measures total time of the SoALoader + SoAFunctorPairSorted + SoAExtractor (Loader
@@ -704,14 +733,16 @@ static void BM_SoAFunctorSortedPairEdge(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double cellSize = (state.range(3) / 10.0) * kCutoff;
+  const std::array<double, 3> high{cellSize, cellSize, cellSize};
 
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, high, n, seed);
   autopas::generators::UniformGenerator::fillWithParticles(
-      cell2, defaultParticle, {kLow[0] + kCellSize, kLow[1] + kCellSize, kLow[2]},
-      {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2]}, n, seed + 1);
+      cell2, defaultParticle, {kLow[0] + cellSize, kLow[1] + cellSize, kLow[2]},
+      {high[0] + cellSize, high[1] + cellSize, high[2]}, n, seed + 1);
   seed += 2;
 
   auto functor = makeFunctor();
@@ -738,20 +769,21 @@ static void BM_SoAFunctorSortedPairEdge(benchmark::State &state) {
 }
 
 /**
- * Benchmarks the sorted SoAFunctorPair in an Edge Layout across all VecPatterns, sweeping kNValues and newton3.
+ * Benchmarks the sorted SoAFunctorPair in an Edge Layout across all VecPatterns, sweeping kNValues, newton3, and
+ * cellSizeFactor.
  * @name BM_SoA_PairSorted_Edge
  * @details
- * - Arguments: {Number of Particles, newton3, VecPattern}
- * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
+ * - Arguments: {Number of Particles, newton3, VecPattern, cellSizeFactor}
+ * - Sweeps kNValues, both newton3 on and off with all VecPatterns and all cellSizeFactors in kCellSizeFactors.
  * - This is part of the Layout study.
  */
 BENCHMARK(BM_SoAFunctorSortedPairEdge)
     ->ArgsProduct({kNValues,
                    {0, 1},
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2),
-                    static_cast<int>(VectorizationPattern::pVecx1)}})
-    ->ArgNames({"N", "n3", "vecPat"})
+                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
+                   kCellSizeFactors})
+    ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_PairSorted_Edge");
 
@@ -761,6 +793,7 @@ BENCHMARK(BM_SoAFunctorSortedPairEdge)
  * - state.range(0): The number of Particles in the Cell
  * - state.range(1): Whether to use newton3 optimization or not.
  * - state.range(2): The VecPattern to use.
+ * - state.range(3): cellSizeFactor ×10 (e.g. 13 → 1.3); cellSize = cellSizeFactor * kCutoff.
  *
  * The Benchmark uses the UniformGenerator to generate the cells in a Corner Layout, without a specified hitrate.
  * It measures total time of the SoALoader + SoAFunctorPairSorted + SoAExtractor (Loader
@@ -771,14 +804,16 @@ static void BM_SoAFunctorSortedPairCorner(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double cellSize = (state.range(3) / 10.0) * kCutoff;
+  const std::array<double, 3> high{cellSize, cellSize, cellSize};
 
   static unsigned seed = 42;
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, kHigh, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, high, n, seed);
   autopas::generators::UniformGenerator::fillWithParticles(
-      cell2, defaultParticle, {kLow[0] + kCellSize, kLow[1] + kCellSize, kLow[2] + kCellSize},
-      {kHigh[0] + kCellSize, kHigh[1] + kCellSize, kHigh[2] + kCellSize}, n, seed + 1);
+      cell2, defaultParticle, {kLow[0] + cellSize, kLow[1] + cellSize, kLow[2] + cellSize},
+      {high[0] + cellSize, high[1] + cellSize, high[2] + cellSize}, n, seed + 1);
   seed += 2;
 
   auto functor = makeFunctor();
@@ -805,20 +840,21 @@ static void BM_SoAFunctorSortedPairCorner(benchmark::State &state) {
 }
 
 /**
- * Benchmarks the sorted SoAFunctorPair in a Corner Layout across all VecPatterns, sweeping kNValues and newton3.
+ * Benchmarks the sorted SoAFunctorPair in a Corner Layout across all VecPatterns, sweeping kNValues, newton3, and
+ * cellSizeFactor.
  * @name BM_SoA_PairSorted_Corner
  * @details
- * - Arguments: {Number of Particles, newton3, VecPattern}
- * - Sweeps kNValues, both newton3 on and off with all VecPatterns.
+ * - Arguments: {Number of Particles, newton3, VecPattern, cellSizeFactor}
+ * - Sweeps kNValues, both newton3 on and off with all VecPatterns and all cellSizeFactors in kCellSizeFactors.
  * - This is part of the Layout study.
  */
 BENCHMARK(BM_SoAFunctorSortedPairCorner)
     ->ArgsProduct({kNValues,
                    {0, 1},
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2),
-                    static_cast<int>(VectorizationPattern::pVecx1)}})
-    ->ArgNames({"N", "n3", "vecPat"})
+                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
+                   kCellSizeFactors})
+    ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_PairSorted_Corner");
 
