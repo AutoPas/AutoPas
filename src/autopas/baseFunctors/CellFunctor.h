@@ -42,8 +42,10 @@ class CellFunctor {
    */
   explicit CellFunctor(ParticleFunctor_T &f, const double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
       : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {
-    if (dataLayout == DataLayoutOption::soa) {
-      _soaThreadData.resize(autopas::autopas_get_max_threads());
+    if constexpr (ParticleFunctor_T::supportsSoASorting) {
+      if (dataLayout == DataLayoutOption::soa) {
+        _soaThreadData.resize(autopas::autopas_get_max_threads());
+      }
     }
   }
 
