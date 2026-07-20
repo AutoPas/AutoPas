@@ -148,15 +148,13 @@ class SortingThresholdBenchmark {
 
   /**
    * Number of timed calls per repetition to get stable measurement.
-   * @todo: Adjust this based on input size.
    */
   const size_t _iterations = 25;
 
   /**
    * Number of independent measurement repetitions per particle count.
-   * @todo: Try out different numbers of repetitions.
    */
-  const size_t _repetitions = 25;
+  const size_t _repetitions = 100;
   /**
    * Upper bound on the particle count searched by the binary search for the SoA path.
    */
@@ -172,7 +170,7 @@ class SortingThresholdBenchmark {
   /**
    * Minimum relative speed-up the sorted path must show over the unsorted path within a single repetition
    * for that repetition to count as a clear win for sorting.
-   * @todo: Adjust this based on how noisy the target hardware is.
+   * Used to avoid noisy measurements influencing the data.
    */
   const double _sortedWinMarginFraction = 0.05;
 
@@ -180,7 +178,6 @@ class SortingThresholdBenchmark {
    * Minimum fraction of repetitions within a single executeRun() call that must count as a clear win for
    * sorting (see _sortedWinMarginFraction) before runSearch() accepts "sorted is faster" for the tested
    * particle count.
-   * @todo: Adjust this based on how noisy the target hardware is.
    */
   const double _requiredSortedWinRatio = 0.7;
 
