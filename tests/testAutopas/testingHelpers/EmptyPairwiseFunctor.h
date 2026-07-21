@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/baseFunctors/Functor.h"
+#include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/options/DataLayoutOption.h"
 

@@ -94,7 +94,9 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * get the actual neighbor list
    * @return the neighbor list
    */
-  InteractionListGeneratorFunctor<Particle_T, true>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
+  InteractionListGeneratorFunctor<Particle_T, true>::NeighborListAoSType &getVerletListsAoS() {
+    return _aosNeighborLists;
+  }
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
@@ -121,7 +123,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
     InteractionListGeneratorFunctor<Particle_T, true> f(_aosNeighborLists, this->getCutoff() + this->getVerletSkin(),
-                                                  useNewton3);
+                                                        useNewton3);
 
     /// @todo autotune traversal
     DataLayoutOption dataLayout;

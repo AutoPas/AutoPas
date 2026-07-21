@@ -76,13 +76,13 @@ class InteractionListGeneratorFunctor
   bool isRelevantForTuning() override { return not isInternal; }
 
   /**
-   * Whether InteractionListGeneratorFunctor allows non-newton3. Is always allowed.
+   * Whether InteractionListGeneratorFunctor allows Newton3. Is always allowed.
    * @return
    */
   bool allowsNewton3() override { return true; }
 
   /**
-   * Whether InteractionListGeneratorFunctor allows non-newton3. This is not allowed if not gathering N3 lists. (Not
+   * Whether InteractionListGeneratorFunctor allows non-newton3. This is not allowed if gathering N3 lists. (Not
    * a fundamental issue but messy implementation and not really needed).
    * @return
    */
@@ -101,7 +101,7 @@ class InteractionListGeneratorFunctor
   void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
 
-    [[unlikely]] if (_gatherNewton3Lists and not newton3) {
+    if (_gatherNewton3Lists and not newton3) [[unlikely]] {
       utils::ExceptionHandler::exception(
           "InteractionListGeneratorFunctor should not be used with newton3=false and gatherNewton3Lists=true.");
     }
@@ -138,10 +138,6 @@ class InteractionListGeneratorFunctor
   /**
    * SoAFunctor for verlet list generation. (single cell version)
    * @param soa the soa
-   * @param newton3 Whether AutoPas is using N3 or not for list generation. For this function, this is ignored and
-   * N3 is always used. This is regardless of whether the user requests N3 lists or not. If this and gatherNewton3Lists
-   * match, the handling is trivial. If newton3=true and gatherNewton3Lists=false, we just add each particle to each
-   * other's list.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool /*newton3*/) override {
     if (soa.size() == 0) return;
@@ -153,9 +149,10 @@ class InteractionListGeneratorFunctor
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
     size_t numPart = soa.size();
-    for (unsigned int i = 0; i < numPart; ++i) {
+    for (size_t i = 0; i < numPart; ++i) {
       if (ownedStatePtr[i] == OwnershipState::dummy) continue;
-      for (unsigned int j = i + 1; j < numPart; ++j) {
+      auto &iList = _neighborListsAoS.at(ptrptr[i]);
+      for (size_t j = i + 1; j < numPart; ++j) {
         if (ownedStatePtr[j] == OwnershipState::dummy) continue;
         const double drx = xptr[i] - xptr[j];
         const double dry = yptr[i] - yptr[j];
@@ -169,7 +166,7 @@ class InteractionListGeneratorFunctor
 
         if (dr2 < _interactionLengthSquared) {
           // This SoAFunctorSingle implementation always used newton3 in practice, regardless of the option.
-          _neighborListsAoS.at(ptrptr[i]).push_back(ptrptr[j]);
+          iList.push_back(ptrptr[j]);
           if (not _gatherNewton3Lists) {
             _neighborListsAoS.at(ptrptr[j]).push_back(ptrptr[i]);
           }
@@ -189,7 +186,7 @@ class InteractionListGeneratorFunctor
    * needed.
    */
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
-    [[unlikely]] if (_gatherNewton3Lists and not newton3) {
+    if (_gatherNewton3Lists and not newton3) [[unlikely]] {
       utils::ExceptionHandler::exception(
           "InteractionListGeneratorFunctor should not be used with newton3=false and gatherNewton3Lists=true.");
     }
@@ -208,12 +205,13 @@ class InteractionListGeneratorFunctor
     const double *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
     const auto *const __restrict ownedState2Ptr = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
 
-    size_t numPart1 = soa1.size();
-    for (unsigned int i = 0; i < numPart1; ++i) {
+    const size_t numPart1 = soa1.size();
+    for (size_t i = 0; i < numPart1; ++i) {
+      auto &iList = _neighborListsAoS.at(ptr1ptr[i]);
       if (ownedState1Ptr[i] == OwnershipState::dummy) continue;
-      size_t numPart2 = soa2.size();
+      const size_t numPart2 = soa2.size();
 
-      for (unsigned int j = 0; j < numPart2; ++j) {
+      for (size_t j = 0; j < numPart2; ++j) {
         if (ownedState2Ptr[j] == OwnershipState::dummy) continue;
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
@@ -226,7 +224,7 @@ class InteractionListGeneratorFunctor
         const double dr2 = drx2 + dry2 + drz2;
 
         if (dr2 < _interactionLengthSquared) {
-          _neighborListsAoS.at(ptr1ptr[i]).push_back(ptr2ptr[j]);
+          iList.push_back(ptr2ptr[j]);
           if (newton3 and not _gatherNewton3Lists) {
             _neighborListsAoS.at(ptr2ptr[j]).push_back(ptr1ptr[i]);
           }
@@ -252,7 +250,7 @@ class InteractionListGeneratorFunctor
    */
   void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, AlignedAllocator<size_t>> &verletList, bool newton3) override {
-    [[unlikely]] if (_gatherNewton3Lists and not newton3) {
+    if (_gatherNewton3Lists and not newton3) [[unlikely]] {
       utils::ExceptionHandler::exception(
           "InteractionListGeneratorFunctor should not be used with newton3=false and gatherNewton3Lists=true.");
     }
