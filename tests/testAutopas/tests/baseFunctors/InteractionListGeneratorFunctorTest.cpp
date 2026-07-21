@@ -702,8 +702,8 @@ TEST_P(IntListGenFuncThreadSafeTest, AoSFunctor) {
     if (mode.n3Used) {
       for (const auto &round : coloringRounds) {
         AUTOPAS_OPENMP(parallel for)
-        for (auto [i, j] : round) {
-          functor.AoSFunctor(cell[i], cell[j], /*newton3*/ true);
+        for (size_t thread = 0; thread < round.size(); ++thread) {
+          functor.AoSFunctor(cell[round[thread].first], cell[round[thread].second], /*newton3*/ true);
         }
       }
     } else {
@@ -808,8 +808,9 @@ TEST_P(IntListGenFuncThreadSafeTest, SoAFunctorPair) {
     if (mode.n3Used) {
       for (const auto &round : coloringRounds) {
         AUTOPAS_OPENMP(parallel for)
-        for (auto [i, j] : round) {
-          functor.SoAFunctorPair(cells[i]._particleSoABuffer, cells[j]._particleSoABuffer, /*newton3*/ true);
+        for (size_t thread = 0; thread < round.size(); ++thread) {
+          functor.SoAFunctorPair(cells[round[thread].first]._particleSoABuffer,
+                                 cells[round[thread].second]._particleSoABuffer, /*newton3*/ true);
         }
       }
     } else {
@@ -913,7 +914,9 @@ TEST_P(IntListGenFuncThreadSafeTest, SoAFunctorVerletPairwiseLists) {
     if (mode.n3Used) {
       for (const auto &round : coloringRounds) {
         AUTOPAS_OPENMP(parallel for)
-        for (auto [c1, c2] : round) {
+        for (size_t thread = 0; thread < round.size(); ++thread) {
+          const auto c1 = round[thread].first;
+          const auto c2 = round[thread].second;
           for (size_t p = 0; p < particlesPerCell; ++p) {
             functor.SoAFunctorVerlet(cell._particleSoABuffer, c1 * particlesPerCell + p, verletLists[c1][c2][p],
                                      /*newton3*/ true);
