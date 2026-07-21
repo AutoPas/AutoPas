@@ -8,7 +8,7 @@
 
 #include <gmock/gmock.h>
 
-// #include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ReferenceParticleCell.h"
 #include "autopas/options/DataLayoutOption.h"
