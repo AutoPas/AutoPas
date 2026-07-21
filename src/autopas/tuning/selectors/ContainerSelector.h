@@ -71,7 +71,7 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
     }
     case ContainerOption::verletLists: {
       container = std::make_unique<VerletLists<Particle_T>>(
-          boxMin, boxMax, cutoff, verletSkin, VerletLists<Particle_T>::BuildVerletListType::VerletSoA, cellSizeFactor);
+          boxMin, boxMax, cutoff, verletSkin, VerletLists<Particle_T>::BuildVerletListType::VerletAoS, cellSizeFactor);
       break;
     }
     case ContainerOption::verletListsCells: {

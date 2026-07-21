@@ -195,8 +195,8 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
     }
     // Verlet
     case TraversalOption::vl_list_iteration: {
-      traversal = std::make_unique<VLListIterationTraversal<ParticleCell_T, PairwiseFunctor_T>>(&pairwiseFunctor,
-                                                                                                dataLayout, useNewton3);
+      traversal = std::make_unique<VLListIterationTraversal<ParticleCell_T, PairwiseFunctor_T>>(
+          &pairwiseFunctor, traversalInfo.interactionLength, dataLayout, useNewton3);
       break;
     }
     // Var Verlet Lists

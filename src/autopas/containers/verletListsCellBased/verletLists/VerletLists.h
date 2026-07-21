@@ -68,7 +68,10 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
               const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)
       : VerletListsLinkedBase<Particle_T>(boxMin, boxMax, cutoff, skin, cellSizeFactor),
-        _buildVerletListType(buildVerletListType) {}
+        _buildVerletListType(buildVerletListType),
+        _borderLength((cutoff + skin) * cellSizeFactor) {
+    AutoPasLog(DEBUG, "Border length: {}", _borderLength);
+  }
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
@@ -80,7 +83,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<ParticleCellType> *>(traversal);
     if (verletTraversalInterface) {
       verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
-                                                         _soaNeighborLists);
+                                                         _aosLongNeighborLists, _soaNeighborLists, _borderLength);
     } else {
       utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
@@ -120,8 +123,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
-    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(_aosNeighborLists,
-                                                                         this->getCutoff() + this->getVerletSkin());
+    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(
+        _aosNeighborLists, _aosLongNeighborLists, this->getCutoff() + this->getVerletSkin(), this->_borderLength);
 
     /// @todo autotune traversal
     DataLayoutOption dataLayout;
@@ -150,11 +153,13 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   size_t generateAoSNeighborLists() {
     size_t numParticles = 0;
     _aosNeighborLists.clear();
+    _aosLongNeighborLists.clear();
     // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
     // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles) {
       // create the verlet list entries for all particles
       _aosNeighborLists[&(*iter)];
+      _aosLongNeighborLists[&(*iter)];
     }
 
     return numParticles;
@@ -203,6 +208,10 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * Neighbor Lists: Map of particle pointers to vector of particle pointers.
    */
   typename VerletListHelpers<Particle_T>::NeighborListAoSType _aosNeighborLists;
+  typename VerletListHelpers<Particle_T>::NeighborListAoSType _aosLongNeighborLists;
+
+  /** Where to separate short and long neighbours */
+  const double _borderLength;
 
   /**
    * Mapping of every particle, represented by its pointer, to an index.

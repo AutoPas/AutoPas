@@ -31,8 +31,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLListIterationTraversal(PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor) {}
+  explicit VLListIterationTraversal(PairwiseFunctor *pairwiseFunctor, const double interactionLength,
+                                    DataLayoutOption dataLayout, bool useNewton3)
+      : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor), _interactionLength(interactionLength) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }
 
@@ -73,7 +74,14 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 
   void traverseParticles() override {
     auto &aosNeighborLists = *(this->_aosNeighborLists);
+    auto &aosLongNeighborLists = *(this->_aosLongNeighborLists);
     auto &soaNeighborLists = *(this->_soaNeighborLists);
+
+    const auto shortNeighbourListsRange = this->_shortNeighbourListsRange;
+    const auto interactionLength = this->_interactionLength;
+    const bool useLongNeighbourLists = interactionLength > shortNeighbourListsRange;
+    AutoPasLog(DEBUG, "S: {} I: {} B: {}", shortNeighbourListsRange, interactionLength, useLongNeighbourLists);
+
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
         // If we use parallelization,
@@ -91,12 +99,37 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
               }
             }
           }
+
+          if (useLongNeighbourLists) {
+            buckets = aosLongNeighborLists.bucket_count();
+            AUTOPAS_OPENMP(parallel for schedule(dynamic))
+            for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
+              auto endIter = aosLongNeighborLists.end(bucketId);
+              for (auto bucketIter = aosLongNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
+                ParticleType &particle = *(bucketIter->first);
+                for (auto neighborPtr : bucketIter->second) {
+                  ParticleType &neighbor = *neighborPtr;
+                  _functor->AoSFunctor(particle, neighbor, false);
+                }
+              }
+            }
+          }
         } else {
           for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
             ParticleType &particle = *particlePtr;
             for (auto neighborPtr : neighborPtrList) {
               ParticleType &neighbor = *neighborPtr;
               _functor->AoSFunctor(particle, neighbor, _useNewton3);
+            }
+          }
+
+          if (useLongNeighbourLists) {
+            for (auto &[particlePtr, neighborPtrList] : aosLongNeighborLists) {
+              ParticleType &particle = *particlePtr;
+              for (auto neighborPtr : neighborPtrList) {
+                ParticleType &neighbor = *neighborPtr;
+                _functor->AoSFunctor(particle, neighbor, _useNewton3);
+              }
             }
           }
         }
@@ -129,6 +162,11 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * Functor for Traversal
    */
   PairwiseFunctor *_functor;
+
+  /**
+   * Interaction length (cutoff + skin).
+   */
+  const double _interactionLength;
 
   /**
    * SoA buffer of verlet lists.

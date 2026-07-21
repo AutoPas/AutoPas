@@ -38,12 +38,16 @@ class VerletListHelpers {
     /**
      * Constructor
      * @param verletListsAoS
+     * @param verletListsLongAoS
      * @param interactionLength
      */
-    VerletListGeneratorFunctor(NeighborListAoSType &verletListsAoS, double interactionLength)
+    VerletListGeneratorFunctor(NeighborListAoSType &verletListsAoS, NeighborListAoSType &verletListsLongAoS,
+                               double interactionLength, double borderLength)
         : PairwiseFunctor<Particle_T, VerletListGeneratorFunctor>(interactionLength),
           _verletListsAoS(verletListsAoS),
-          _interactionLengthSquared(interactionLength * interactionLength) {}
+          _verletListsLongAoS(verletListsLongAoS),
+          _interactionLengthSquared(interactionLength * interactionLength),
+          _borderLengthSquared(borderLength * borderLength) {}
 
     std::string getName() override { return "VerletListGeneratorFunctor"; }
 
@@ -70,7 +74,9 @@ class VerletListHelpers {
       auto dist = i.getR() - j.getR();
 
       double distsquare = utils::ArrayMath::dot(dist, dist);
-      if (distsquare < _interactionLengthSquared) {
+      if (distsquare >= _interactionLengthSquared) return;
+
+      if (distsquare < _borderLengthSquared) {
         // this is thread safe, only if particle i is accessed by only one
         // thread at a time. which is ensured, as particle i resides in a
         // specific cell and each cell is only accessed by one thread at a time
@@ -79,6 +85,8 @@ class VerletListHelpers {
 
         _verletListsAoS.at(&i).push_back(&j);
         // no newton3 here, as AoSFunctor(j,i) will also be called if newton3 is disabled.
+      } else {
+        _verletListsLongAoS.at(&i).push_back(&j);
       }
     }
 
@@ -182,7 +190,9 @@ class VerletListHelpers {
 
    private:
     NeighborListAoSType &_verletListsAoS;
+    NeighborListAoSType &_verletListsLongAoS;
     double _interactionLengthSquared;
+    double _borderLengthSquared;
   };
 
   /**
