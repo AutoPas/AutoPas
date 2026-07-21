@@ -47,7 +47,8 @@ class CellTraversal {
    * sorted view of the particles to avoid unnecessary distance checks.
    * Traversals that hold a CellFunctor (or LCC08CellHandler) should forward to it. Others should explicitly
    * override with an empty body.
-   * @param aosSortingThreshold
+   * @param aosSortingThreshold Both CellFunctor and CellFunctor3B support SortingThresholdInfoSingle. CellFunctor
+   * additionally supports SortingThresholdInfo2B.
    */
   virtual void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) = 0;
 
@@ -56,7 +57,8 @@ class CellTraversal {
    * If the sum of the SoA buffer sizes of two cells exceeds this value, the SoA path uses SoAFunctorPairSorted.
    * Traversals that hold a CellFunctor (or LCC08CellHandler) should forward to it. Others should explicitly
    * override with an empty body.
-   * @param soaSortingThreshold
+   * @param soaSortingThreshold Both CellFunctor and CellFunctor3B support SortingThresholdInfoSingle. CellFunctor
+   * additionally supports SortingThresholdInfo2B
    */
   virtual void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold) = 0;
 
