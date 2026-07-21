@@ -68,6 +68,9 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
+void calculateLongVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
+                             const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+
 /**
  * Calculate and update the angular velocity for every particle.
  *

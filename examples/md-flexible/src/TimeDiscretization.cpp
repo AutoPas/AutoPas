@@ -35,7 +35,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     auto v = iter->getV();
-    auto f = iter->getTotalF();
+    auto f = iter->getF();
     iter->setOldF(f);
     iter->setF(globalForce);
     if (reset_slow_forces) {
@@ -160,9 +160,23 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
-    const auto force = iter->getTotalF();
+    const auto force = iter->getF();
     const auto oldForce = iter->getOldF();
     const auto changeInVel = (force + oldForce) * (deltaT / (2 * molecularMass));
+    iter->addV(changeInVel);
+  }
+}
+
+void calculateLongVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
+                             const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
+  // helper declarations for operations with vector
+  using namespace autopas::utils::ArrayMath::literals;
+
+  AUTOPAS_OPENMP(parallel)
+  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
+    const auto force = iter->getSlowF();
+    const auto changeInVel = (force) * (deltaT / (2 * molecularMass));
     iter->addV(changeInVel);
   }
 }

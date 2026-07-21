@@ -117,7 +117,7 @@ class Simulation {
   /**
    * If the current iteration is a respa iteration (calculates both slow and fast forces)
    */
-  bool _is_respa_iteration = true;
+  // bool _is_respa_iteration = true;
 
   /**
    * Counts completed iterations that were used for tuning
@@ -309,7 +309,7 @@ class Simulation {
    * Updates the position of particles in the local AutoPas container. In addition, the oldForce is set to the value of
    * the current forces and the force buffers of the particles are reset to the global force.
    */
-  void updatePositionsAndResetForces();
+  void updatePositionsAndResetForces(const bool reset_long_forces = false);
 
   /**
    * Update the quaternion orientation of the particles in the local AutoPas container.
@@ -320,12 +320,13 @@ class Simulation {
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
    * is used).
    */
-  void updateInteractionForces();
+  void updateInteractionForces(const bool updateLongForces = false);
 
   /**
    * Updates the velocities of particles in the local AutoPas container.
    */
   void updateVelocities();
+  void updateLongVelocities();
 
   /**
    * Updates the angular velocities of the particles in the local AutoPas container.
@@ -371,7 +372,7 @@ class Simulation {
    * Calculates the pairwise forces between particles in the autopas container.
    * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
-  bool calculatePairwiseForces();
+  bool calculatePairwiseForces(const bool updateLongForces = false);
 
   /**
    * Calculates the triwise forces between particles in the autopas container.
@@ -415,7 +416,7 @@ class Simulation {
    * @return Return value of f.
    */
   template <class ReturnType, class FunctionType>
-  ReturnType applyWithChosenFunctor(FunctionType f);
+  ReturnType applyWithChosenFunctor(FunctionType f, const bool updateLongForces = false);
 
   /**
    *

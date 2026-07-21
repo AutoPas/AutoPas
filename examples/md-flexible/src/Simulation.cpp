@@ -225,11 +225,19 @@ void Simulation::run() {
       _timers.vtk.stop();
     }
 
-    _is_respa_iteration = _iteration % _configuration.slow_frequency.value == 0;
+    const bool is_respa_iteration = _iteration % _configuration.slow_frequency.value == 0;
+    const bool next_is_respa_iteration = (_iteration + 1) % _configuration.slow_frequency.value == 0;
 
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      updatePositionsAndResetForces();
+      // Outer iteration starts now. Add the first half kick
+      if (is_respa_iteration) {
+        updateLongVelocities();
+      }
+
+      // If the next iteration is respa, we calculate the long forces again this iteration.
+      // For this we need to reset them
+      updatePositionsAndResetForces(next_is_respa_iteration);
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
@@ -289,7 +297,9 @@ void Simulation::run() {
       _timers.computationalLoad.start();
     }
 
-    updateInteractionForces();
+    // Next iteration is outer again. This means that the long forces need to be calculated here
+    // and the second half kick needs to be added
+    updateInteractionForces(next_is_respa_iteration);
 
     if (_configuration.pauseSimulationDuringTuning.value) {
       // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
@@ -298,6 +308,12 @@ void Simulation::run() {
 
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updateVelocities();
+
+      // Add the second half kick
+      if (next_is_respa_iteration) {
+        updateLongVelocities();
+      }
+
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateAngularVelocities();
 #endif
@@ -311,7 +327,7 @@ void Simulation::run() {
                                 AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
     autopas::AutoPas_MPI_Reduce(&_totalVirialSum, &virialSumOverMPIRanks, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM, 0,
                                 AUTOPAS_MPI_COMM_WORLD);
-    if (_domainDecomposition->getDomainIndex() == 0) {
+    if (_domainDecomposition->getDomainIndex() == 0 and next_is_respa_iteration) {
       _globalLogger->logGlobals(_iteration, potentialEnergyOverMPIRanks, virialSumOverMPIRanks);
     }
     _totalPotentialEnergy = 0.;
@@ -455,11 +471,11 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
   return ss.str();
 }
 
-void Simulation::updatePositionsAndResetForces() {
+void Simulation::updatePositionsAndResetForces(const bool reset_long_forces) {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value, _configuration.fastParticlesThrow.value, _is_respa_iteration);
+      _configuration.globalForce.value, _configuration.fastParticlesThrow.value, reset_long_forces);
   _timers.positionUpdate.stop();
 }
 
@@ -471,7 +487,7 @@ void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.stop();
 }
 
-void Simulation::updateInteractionForces() {
+void Simulation::updateInteractionForces(const bool updateLongForces) {
   _timers.forceUpdateTotal.start();
 
   _previousIterationWasTuningIteration = _currentIterationIsTuningIteration;
@@ -481,7 +497,7 @@ void Simulation::updateInteractionForces() {
   // Calculate pairwise forces
   if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
     _timers.forceUpdatePairwise.start();
-    _currentIterationIsTuningIteration |= calculatePairwiseForces();
+    _currentIterationIsTuningIteration |= calculatePairwiseForces(updateLongForces);
     timeIteration += _timers.forceUpdatePairwise.stop();
   }
   // Calculate triwise forces
@@ -518,6 +534,18 @@ void Simulation::updateVelocities() {
   }
 }
 
+void Simulation::updateLongVelocities() {
+  // The timestep needs to be multiplied by the frequency
+  const double deltaT = _configuration.deltaT.value * _configuration.slow_frequency.value;
+
+  if (deltaT != 0) {
+    _timers.velocityUpdate.start();
+    TimeDiscretization::calculateLongVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                                deltaT);
+    _timers.velocityUpdate.stop();
+  }
+}
+
 void Simulation::updateAngularVelocities() {
   const double deltaT = _configuration.deltaT.value;
 
@@ -543,15 +571,17 @@ long Simulation::accumulateTime(const long &time) {
   return reducedTime;
 }
 
-bool Simulation::calculatePairwiseForces() {
-  const auto wasTuningIteration = applyWithChosenFunctor<bool>([&](auto &&functor) {
-    auto isTuningIteration = _autoPasContainer->computeInteractions(&functor);
+bool Simulation::calculatePairwiseForces(const bool updateLongForces) {
+  const auto wasTuningIteration = applyWithChosenFunctor<bool>(
+      [&](auto &&functor) {
+        auto isTuningIteration = _autoPasContainer->computeInteractions(&functor);
 #ifdef MD_FLEXIBLE_CALC_GLOBALS
-    _totalPotentialEnergy += functor.getPotentialEnergy();
-    _totalVirialSum += functor.getVirial();
+        _totalPotentialEnergy += functor.getPotentialEnergy();
+        _totalVirialSum += functor.getVirial();
 #endif
-    return isTuningIteration;
-  });
+        return isTuningIteration;
+      },
+      updateLongForces);
 
   return wasTuningIteration;
 }
@@ -832,18 +862,18 @@ void Simulation::loadParticles() {
 }
 
 template <class ReturnType, class FunctionType>
-ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
+ReturnType Simulation::applyWithChosenFunctor(FunctionType f, const bool updateLongForces) {
   const double cutoff = _configuration.cutoff.value;
 
   // On normal interation, dr2 is [0, fast_cutoff]. On respa, it is [0, fast_cutoff] and (fast_cutoff, slow_cutoff]
   const double fast_cutoff = _configuration.fast_cutoff.value;
-  const double slow_cutoff = _configuration.slow_cutoff.value;
+  const double slow_cutoff = _configuration.cutoff.value;
 
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-      if (_is_respa_iteration) {
+      if (updateLongForces) {
         return f(LJFunctorTypeAutovecRespa{slow_cutoff, fast_cutoff, particlePropertiesLibrary});
       } else {
         return f(LJFunctorTypeAutovec{fast_cutoff, 0.0, particlePropertiesLibrary});
