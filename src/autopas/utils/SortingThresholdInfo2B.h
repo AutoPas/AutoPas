@@ -97,6 +97,33 @@ struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
       return noN3FaceThreshold;
     }
   }
+  /**
+   * Setter to set struct values by configuration, represented by options.
+   * @param n3 whether the newton3 optimization is used
+   * @param layout how the Cells are placed in relation with each other.
+   * @param value the value to set.
+   */
+  void setThresholdByOption(Newton3Option n3, CellLayoutOption layout, size_t value) {
+    if (n3 == Newton3Option::enabled) {
+      switch (layout) {
+        case CellLayoutOption::corner:
+          n3CornerThreshold = value;
+        case CellLayoutOption::edge:
+          n3EdgeThreshold = value;
+        case CellLayoutOption::face:
+          n3FaceThreshold = value;
+      }
+    } else {
+      switch (layout) {
+        case CellLayoutOption::corner:
+          noN3CornerThreshold = value;
+        case CellLayoutOption::edge:
+          noN3EdgeThreshold = value;
+        case CellLayoutOption::face:
+          noN3FaceThreshold = value;
+      }
+    }
+  }
 };
 
 }  // namespace autopas

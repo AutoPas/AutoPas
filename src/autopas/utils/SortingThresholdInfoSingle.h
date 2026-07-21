@@ -14,13 +14,10 @@ namespace autopas {
 
 /**
  * Single threshold value struct.
- * Stand in for the old single value way of handling the sorting Threshold. Used as a fallback option and the default
- * value.
  */
 struct SortingThresholdInfoSingle : SortingThresholdInfoInterface {
   /**
    * Constructor for single threshold value.
-   * Intentionally not explicit to make it easier to use this like you would the threshold before.
    * @param threshold
    */
   SortingThresholdInfoSingle(size_t threshold) : threshold(threshold) {}
