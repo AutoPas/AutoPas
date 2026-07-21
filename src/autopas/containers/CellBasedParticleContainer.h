@@ -179,7 +179,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   std::vector<ParticleCellType> _cells;
   /**
    * Current AoS pair-sorting threshold, forwarded to freshly generated traversals in prepareTraversal().
-   * Owned as a shared_ptr so the container can hold whichever concrete shape it was given (a uniform
+   * Owned as a shared_ptr to the interface so the container can hold whichever concrete shape it was given (a uniform
    * SortingThresholdInfoSingle at construction, or e.g. a SortingThresholdInfo2B via setAoSSortingThresholds()
    * later) without needing to know that shape itself.
    */
