@@ -94,7 +94,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * get the actual neighbor list
    * @return the neighbor list
    */
-  InteractionListGeneratorFunctor<Particle_T>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
+  InteractionListGeneratorFunctor<Particle_T, true>::NeighborListAoSType &getVerletListsAoS() { return _aosNeighborLists; }
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
@@ -120,7 +120,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    */
   virtual void updateVerletListsAoS(bool useNewton3) {
     generateAoSNeighborLists();
-    InteractionListGeneratorFunctor<Particle_T> f(_aosNeighborLists, this->getCutoff() + this->getVerletSkin(),
+    InteractionListGeneratorFunctor<Particle_T, true> f(_aosNeighborLists, this->getCutoff() + this->getVerletSkin(),
                                                   useNewton3);
 
     /// @todo autotune traversal
@@ -133,7 +133,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
                                          static_cast<int>(_buildVerletListType));
     }
-    auto traversal = LCC08Traversal<ParticleCellType, InteractionListGeneratorFunctor<Particle_T>>(
+    auto traversal = LCC08Traversal<ParticleCellType, InteractionListGeneratorFunctor<Particle_T, true>>(
         this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f, this->getInteractionLength(),
         this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
     this->_linkedCells.computeInteractions(&traversal);
@@ -201,7 +201,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Neighbor Lists: Map of particle pointers to vector of particle pointers.
    */
-  InteractionListGeneratorFunctor<Particle_T>::NeighborListAoSType _aosNeighborLists;
+  InteractionListGeneratorFunctor<Particle_T, true>::NeighborListAoSType _aosNeighborLists;
 
   /**
    * Mapping of every particle, represented by its pointer, to an index.

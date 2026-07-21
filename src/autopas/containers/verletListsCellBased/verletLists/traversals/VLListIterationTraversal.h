@@ -7,7 +7,6 @@
 #pragma once
 
 #include "VLTraversalInterface.h"
-#include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/WrapOpenMP.h"
