@@ -9,6 +9,7 @@
 #include <cstddef>
 
 #include "autopas/options/CellLayoutOption.h"
+#include "autopas/options/Newton3Option.h"
 #include "autopas/utils/SortingThresholdInfoInterface.h"
 
 namespace autopas {
