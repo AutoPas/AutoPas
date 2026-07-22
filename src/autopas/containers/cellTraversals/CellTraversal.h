@@ -58,7 +58,7 @@ class CellTraversal {
    * Traversals that hold a CellFunctor (or LCC08CellHandler) should forward to it. Others should explicitly
    * override with an empty body.
    * @param soaSortingThreshold Both CellFunctor and CellFunctor3B support SortingThresholdInfoSingle. CellFunctor
-   * additionally supports SortingThresholdInfo2B
+   * additionally supports SortingThresholdInfo2B.
    */
   virtual void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold) = 0;
 

@@ -100,28 +100,34 @@ struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
   }
   /**
    * Setter to set struct values by configuration, represented by options.
-   * @param n3 whether the newton3 optimization is used
-   * @param layout how the Cells are placed in relation with each other.
-   * @param value the value to set.
+   * @param n3 Whether the Newton3 optimization is used.
+   * @param layout How the cells are placed in relation to each other.
+   * @param value The value to set.
    */
   void setThresholdByOption(Newton3Option n3, CellLayoutOption layout, size_t value) {
     if (n3 == Newton3Option::enabled) {
       switch (layout) {
         case CellLayoutOption::corner:
           n3CornerThreshold = value;
+          break;
         case CellLayoutOption::edge:
           n3EdgeThreshold = value;
+          break;
         case CellLayoutOption::face:
           n3FaceThreshold = value;
+          break;
       }
     } else {
       switch (layout) {
         case CellLayoutOption::corner:
           noN3CornerThreshold = value;
+          break;
         case CellLayoutOption::edge:
           noN3EdgeThreshold = value;
+          break;
         case CellLayoutOption::face:
           noN3FaceThreshold = value;
+          break;
       }
     }
   }
