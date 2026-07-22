@@ -109,9 +109,7 @@ class MDFlexConfig {
      * @return
      */
     [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
+      struct option retStruct{name.c_str(), requiresArgument, nullptr, getOptChar};
       return retStruct;
     }
   };
@@ -605,8 +603,7 @@ class MDFlexConfig {
       false, "use-sorting-threshold-benchmark", true,
       "If true, AutoPas runs a micro-benchmark to determine the optimal AoS/SoA pair-sorting threshold per cell layout "
       "(Face, Edge, Corner) instead of the fixed aos/soa-sorting-threshold. SoA Thresholds are only determined for "
-      "functors "
-      "that support SoA sorting."};
+      "functors that support SoA sorting."};
 
   // Options for additional Object Generation on command line
   /**
