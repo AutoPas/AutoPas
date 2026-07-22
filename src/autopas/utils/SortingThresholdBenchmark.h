@@ -55,7 +55,7 @@ class SortingThresholdBenchmark {
    * @return Shared pointer to the internal threshold values, indexed as [newton3][direction] (see class
    * documentation).
    */
-  std::shared_ptr<const SortingThresholdInfoInterface> getSoAThreshold() const { return _soaThresholds; }
+  [[nodiscard]] std::shared_ptr<const SortingThresholdInfoInterface> getSoAThreshold() const { return _soaThresholds; }
 
   /**
    * Return all per-Newton3-state, per-direction-type AoS pair-sorting thresholds if hasRunAoS() is true, otherwise
@@ -65,7 +65,7 @@ class SortingThresholdBenchmark {
    * @return Shared pointer to the internal threshold values, indexed as [newton3][direction] (see class
    * documentation).
    */
-  std::shared_ptr<const SortingThresholdInfoInterface> getAoSThreshold() const { return _aosThresholds; }
+  [[nodiscard]] std::shared_ptr<const SortingThresholdInfoInterface> getAoSThreshold() const { return _aosThresholds; }
 
   /**
    * Returns whether runSoABenchmark() has already been called.
