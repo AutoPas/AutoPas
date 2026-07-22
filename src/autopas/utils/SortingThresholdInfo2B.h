@@ -79,20 +79,20 @@ struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
    * @return correct threshold value for the given configuration.
    */
   size_t getThresholdByConfig(bool newton3, std::array<double, 3> sortingDirection) const {
-    size_t zeroes = std::ranges::count(sortingDirection, 0);
+    const CellLayoutOption layout = CellLayoutOption::fromSortingDirection(sortingDirection);
     if (newton3) {
-      if (zeroes == 0) {
+      if (layout == CellLayoutOption::corner) {
         return n3CornerThreshold;
       }
-      if (zeroes == 1) {
+      if (layout == CellLayoutOption::edge) {
         return n3EdgeThreshold;
       }
       return n3FaceThreshold;
     } else {
-      if (zeroes == 0) {
+      if (layout == CellLayoutOption::corner) {
         return noN3CornerThreshold;
       }
-      if (zeroes == 1) {
+      if (layout == CellLayoutOption::edge) {
         return noN3EdgeThreshold;
       }
       return noN3FaceThreshold;

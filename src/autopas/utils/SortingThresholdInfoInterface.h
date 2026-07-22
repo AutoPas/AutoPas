@@ -17,7 +17,7 @@ namespace autopas {
  */
 struct SortingThresholdInfoInterface {
   /**
-   * default destructor to make this a pure virtual struct.
+   * Default destructor to make this a pure virtual struct.
    */
   virtual ~SortingThresholdInfoInterface() = default;
 };

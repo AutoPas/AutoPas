@@ -57,10 +57,7 @@ class SortingThresholdBenchmark {
   /**
    * Return all per-Newton3-state, per-direction-type AoS pair-sorting thresholds if hasRunAoS() is true, otherwise
    * the uniform default passed to the constructor.
-   * The returned pointer is stable (the same instance is reused every call) once runAoSBenchmark() has completed,
-   * so callers can cheaply re-apply it every iteration (e.g. to a container) without reallocating.
-   * @return Shared pointer to the internal threshold values, indexed as [newton3][direction] (see class
-   * documentation).
+   * @return Shared pointer to the internal threshold values.
    */
   [[nodiscard]] std::shared_ptr<const SortingThresholdInfoInterface> getAoSThreshold() const { return _aosThresholds; }
 
@@ -202,7 +199,8 @@ class SortingThresholdBenchmark {
    * @param defaultParticle Template particle whose non-positional properties are copied onto every particle
    * generated for the benchmark cells.
    * @param layout Direction-type index (0=Corner, 1=Edge, 2=Face).
-   * @param numParticles Number of particles placed in each of the two cells.
+   * @param numParticles Combined number of particles placed in the two cells, with 40% of the particles landing in each
+   * cell and 20% being randomly distributed between the cells.
    * @param newton3 Whether the benchmarked CellFunctor should apply Newton3.
    * @return The number of repetitions (out of _repetitions) in which the sorted path was measured as faster than
    * the unsorted path by at least _sortedWinMarginFraction.

@@ -302,7 +302,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
       this->_functor.AoSFunctor(p2, p1, false);
     }
   };
-  // TODO: Which parameter from the Thresholds is used for inner cell sorting is currently arbitrary, think of a good
+  // @todo: Which parameter from the Thresholds is used for inner cell sorting is currently arbitrary, think of a good
   // way to handle this
   if (cell.size() >= _aosSortingThresholds.getThresholdByConfig(_useNewton3, {1, 0, 0})) {
     SortedCellView<ParticleCell_T> cellSorted(cell, utils::ArrayMath::normalize(cell.getCellLength()));

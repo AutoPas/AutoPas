@@ -15,6 +15,7 @@
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/LeavingParticleCollector.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/octree/OctreeLeafNode.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeNodeWrapper.h"
@@ -153,6 +154,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   void computeInteractions(TraversalInterface *traversal) override {
     if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCellType> *>(traversal)) {
       traversalInterface->setCells(&this->_cells);
+    }
+    if (auto *cellTraversal = dynamic_cast<CellTraversal<OctreeLeafNode<Particle_T>> *>(traversal)) {
+      cellTraversal->setAoSSortingThresholds(*this->_aosSortingThresholds);
+      cellTraversal->setSoASortingThresholds(*this->_soaSortingThresholds);
     }
 
     traversal->initTraversal();

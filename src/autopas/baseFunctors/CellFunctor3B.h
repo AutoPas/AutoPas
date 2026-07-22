@@ -112,6 +112,20 @@ class CellFunctor3B {
   }
 
   /**
+   * Resolves a SortingThresholdInfoInterface into the scalar threshold value CellFunctor3B expects.
+   * CellFunctor3B only supports SortingThresholdInfoSingle.
+   * @param info
+   * @return The scalar threshold value.
+   */
+  [[nodiscard]] static size_t resolveThreshold(const SortingThresholdInfoInterface &info) {
+    if (const auto *infoSingle = dynamic_cast<const SortingThresholdInfoSingle *>(&info)) {
+      return infoSingle->threshold;
+    }
+    throw utils::ExceptionHandler::AutoPasException(
+        "CellFunctor3b was called with wrong SortingThresholdInfo Type. (Supported is single)");
+  }
+
+  /**
    * Applies the functor to all particle triplets exploiting Newton's third law of motion.
    * There is only one version of this function as newton3 is always allowed to be applied inside a cell.
    * The value of _useNewton3 defines how to apply the aos functor:
@@ -186,23 +200,13 @@ class CellFunctor3B {
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThresholds(
     const SortingThresholdInfoInterface &aosSortingThreshold) {
-  if (const auto *aosSortingThresholdInfo = dynamic_cast<const SortingThresholdInfoSingle *>(&aosSortingThreshold)) {
-    _aosSortingThreshold = aosSortingThresholdInfo->threshold;
-    return;
-  }
-  throw utils::ExceptionHandler::AutoPasException(
-      "CellFunctor3b was called with wrong SortingThresholdInfo Type. (Supported is single)");
+  _aosSortingThreshold = resolveThreshold(aosSortingThreshold);
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThresholds(
     const SortingThresholdInfoInterface &soaSortingThreshold) {
-  if (const auto *soaSortingThresholdInfo = dynamic_cast<const SortingThresholdInfoSingle *>(&soaSortingThreshold)) {
-    _soaSortingThreshold = soaSortingThresholdInfo->threshold;
-    return;
-  }
-  throw utils::ExceptionHandler::AutoPasException(
-      "CellFunctor3b was called with wrong SortingThresholdInfo Type. (Supported is single)");
+  _soaSortingThreshold = resolveThreshold(soaSortingThreshold);
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
