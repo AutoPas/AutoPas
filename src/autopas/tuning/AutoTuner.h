@@ -279,8 +279,8 @@ class AutoTuner {
 
   /**
    * Returns the sorting-threshold benchmark owned by this tuner. getAoSThreshold()/getSoAThreshold() are always
-   * safe to read (they hand out a construction-time default until runAoSBenchmark()/runSoABenchmark() have run);
-   * callers only need to consult hasRunAoS()/hasRunSoA() to decide whether a benchmark run is still needed.
+   * safe to read. Callers only need to consult hasRunAoS()/hasRunSoA() to decide whether a benchmark run is still
+   * needed.
    * @return Reference to the benchmark object.
    */
   SortingThresholdBenchmark &getSortingThresholdBenchmark() { return _sortingThresholdBenchmark; }

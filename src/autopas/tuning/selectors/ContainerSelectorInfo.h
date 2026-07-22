@@ -43,8 +43,6 @@ class ContainerSelectorInfo {
    * @param aosSortingThreshold Number of particles in two cells from which sorting should be performed
    * @param loadEstimator load estimation algorithm for balanced traversals.
    * @param soaSortingThreshold Number of particles in two SoA buffers from which SoA sorting should be performed.
-   * @note This still takes size_t single value thresholds as changing these to structs would be a large refactor,
-   * including all the comparative functions. Struct Threshold Values are only st through the explicit setters.
    */
   explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                  double cutoff, double cellSizeFactor, double verletSkin,
