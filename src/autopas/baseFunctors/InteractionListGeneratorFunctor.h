@@ -15,24 +15,12 @@
 namespace autopas {
 
 /**
- * This functor generates lists of particles within interactionLength of each other, which could be used within
- * user simulators to replace their neighbor identification/contact detection/cutoff check passes, although they should
- * consider the warning below.
- *
- * In some fields this can be called "cutoff checking" or "broad-phase contact detection" but we will refer to this
- * in this file as neighbor identification.
- *
- * @warning To take fully advantage of AutoPas, we recommend, instead of using this functor and apply forces externally
- * to AutoPas, using a functor which  integrates neighbor identification and force calculation in one call over using
- * this functor (see @ref LJFunctor.h as an example). We provide this functor primarily for codes which already
- * perform separate neighbor identification and force calculation passes, to easily experience some benefit of AutoPas
- * with minimal code refactors.
+ * This functor generates lists of particles within interactionLength of each other: can be used internally for Verlet
+ * list generation and provides a base for a public-facing externally used version, provided in the applicationLibrary.
  *
  * @details After applying AutoPas's computeInteractions function with this functor, a
  * std::unordered_map<Particle_T *, std::vector<Particle_T *>> is filled, mapping from each particle pointer to a vector
  * of pointers to all particles within interactionLength of the first.
- *
- * @note This functor is also used internally for some Verlet List generation.
  *
  * @tparam Particle_T The type of Particle class used.
  * @tparam isInternal Should be set true if used internally within AutoPas. Makes the functor irrelevant for tuning.
@@ -53,7 +41,8 @@ class InteractionListGeneratorFunctor
 
   /**
    * Constructor
-   * @param neighborListsAoS
+   * @param neighborListsAoS Reference to the neighbor list map. Must be initialized, i.e. every particle should already
+   * have an entry, before use.
    * @param interactionLength The distance between particles within which particle pairs get added to the neighbor
    * lists.
    * @param gatherNewton3Lists If false, for a particle pair i, j that are neighbors, **both** particle j will be in
