@@ -307,6 +307,13 @@ class InteractionListGeneratorFunctor
   }
 
   /**
+   * @copydoc autopas::Functor::getNeededAttr(std::false_type)
+   */
+  constexpr static std::array<typename Particle_T::AttributeNames, 5> getNeededAttr(std::false_type) {
+    return getNeededAttr();
+  }
+
+  /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
   constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() {
