@@ -50,10 +50,7 @@ class SortingThresholdBenchmark {
   /**
    * Return all per-Newton3-state, per-direction-type SoA sorting thresholds if hasRunSoA() is true, otherwise the
    * uniform default passed to the constructor.
-   * The returned pointer is stable (the same instance is reused every call) once runSoABenchmark() has completed,
-   * so callers can cheaply re-apply it every iteration (e.g. to a container) without reallocating.
-   * @return Shared pointer to the internal threshold values, indexed as [newton3][direction] (see class
-   * documentation).
+   * @return Shared pointer to the internal threshold values.
    */
   [[nodiscard]] std::shared_ptr<const SortingThresholdInfoInterface> getSoAThreshold() const { return _soaThresholds; }
 
@@ -86,7 +83,7 @@ class SortingThresholdBenchmark {
    * @tparam Functor_T Pairwise functor type.
    * @tparam Particle_T Particle type.
    * @param functor Functor instance used to drive the benchmark cells.
-   * @param defaultParticle Template particle (e.g. sampled from the live simulation) whose non-positional
+   * @param defaultParticle Template particle (e.g. sampled from the particle container) whose non-positional
    * properties are copied onto every particle generated for the benchmark cells.
    */
   template <class Functor_T, class Particle_T>
@@ -108,7 +105,7 @@ class SortingThresholdBenchmark {
    * @tparam Functor_T Pairwise functor type.
    * @tparam Particle_T Particle type.
    * @param functor Functor instance used to drive the benchmark cells.
-   * @param defaultParticle Template particle (e.g. sampled from the live simulation) whose non-positional
+   * @param defaultParticle Template particle (e.g. sampled from the particle container) whose non-positional
    * properties are copied onto every particle generated for the benchmark cells.
    */
   template <class Functor_T, class Particle_T>
