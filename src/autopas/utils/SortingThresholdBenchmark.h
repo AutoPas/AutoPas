@@ -29,35 +29,43 @@ namespace autopas {
  *
  * Stores one threshold per Newton3 state and direction type.
  *
- * Newton3 on/off is benchmarked separately because it changes how much work the sorted/unsorted paths do per call
- * (symmetric force application vs. one-sided passes), which can shift the break-even point.
- *
  * The search performed in runSearch() is deliberately biased towards a conservative (higher) threshold, to avoid noisy
  * measurements influencing the threshold to be too low. A too low threshold would actively regress performance while a
  * too high threshold would at worst still perform the same as baseline. One goal of these thresholds is to avoid any
- * performance regression.
+ * performance regression against the non sorted case.
  */
 class SortingThresholdBenchmark {
  public:
   /**
-   * Return all per-Newton3-state, per-direction-type SoA sorting thresholds.
-   * Only meaningful once hasRunSoA() is true.
+   * Constructs a benchmark whose thresholds default to the given uniform values until/unless a benchmark run
+   * overwrites them. The defaults are stored as a SortingThresholdInfoSingle rather than a SortingThresholdInfo2B so
+   * that getAoSThreshold()/getSoAThreshold() are always safe to hand to either CellFunctor or CellFunctor3B.
+   * @param aosSortingThresholdDefault Uniform AoS threshold used before/without a benchmark run.
+   * @param soaSortingThresholdDefault Uniform SoA threshold used before/without a benchmark run.
+   */
+  SortingThresholdBenchmark(size_t aosSortingThresholdDefault, size_t soaSortingThresholdDefault)
+      : _soaThresholds(std::make_shared<const SortingThresholdInfoSingle>(soaSortingThresholdDefault)),
+        _aosThresholds(std::make_shared<const SortingThresholdInfoSingle>(aosSortingThresholdDefault)) {}
+
+  /**
+   * Return all per-Newton3-state, per-direction-type SoA sorting thresholds if hasRunSoA() is true, otherwise the
+   * uniform default passed to the constructor.
    * The returned pointer is stable (the same instance is reused every call) once runSoABenchmark() has completed,
    * so callers can cheaply re-apply it every iteration (e.g. to a container) without reallocating.
    * @return Shared pointer to the internal threshold values, indexed as [newton3][direction] (see class
    * documentation).
    */
-  std::shared_ptr<const SortingThresholdInfo2B> getSoAThreshold() const { return _soaThresholds; }
+  std::shared_ptr<const SortingThresholdInfoInterface> getSoAThreshold() const { return _soaThresholds; }
 
   /**
-   * Return all per-Newton3-state, per-direction-type AoS pair-sorting thresholds.
-   * Only meaningful once hasRunAoS() is true.
+   * Return all per-Newton3-state, per-direction-type AoS pair-sorting thresholds if hasRunAoS() is true, otherwise
+   * the uniform default passed to the constructor.
    * The returned pointer is stable (the same instance is reused every call) once runAoSBenchmark() has completed,
    * so callers can cheaply re-apply it every iteration (e.g. to a container) without reallocating.
    * @return Shared pointer to the internal threshold values, indexed as [newton3][direction] (see class
    * documentation).
    */
-  std::shared_ptr<const SortingThresholdInfo2B> getAoSThreshold() const { return _aosThresholds; }
+  std::shared_ptr<const SortingThresholdInfoInterface> getAoSThreshold() const { return _aosThresholds; }
 
   /**
    * Returns whether runSoABenchmark() has already been called.
@@ -83,16 +91,14 @@ class SortingThresholdBenchmark {
    */
   template <class Functor_T, class Particle_T>
   void runSoABenchmark(Functor_T &functor, const Particle_T &defaultParticle) {
-    std::array<std::array<size_t, 3>, 2> thresholds;
+    SortingThresholdInfo2B thresholds = SortingThresholdInfo2B(0);
     for (const auto &n3 : Newton3Option::getAllOptions()) {
       for (const auto &layout : CellLayoutOption::getAllOptions()) {
-        thresholds[n3][layout] = runSearch<Functor_T, Particle_T, true>(functor, defaultParticle, layout, n3);
+        thresholds.setThresholdByOption(n3, layout,
+                                        runSearch<Functor_T, Particle_T, true>(functor, defaultParticle, layout, n3));
       }
     }
-    // thresholds[n3][layout] is indexed by CellLayoutOption (corner=0, edge=1, face=2), while the constructor
-    // below takes named (Face, Edge, Corner) parameters per Newton3 state, so the layout index is reversed here.
-    _soaThresholds = std::make_shared<const SortingThresholdInfo2B>(
-        thresholds[0][2], thresholds[0][1], thresholds[0][0], thresholds[1][2], thresholds[1][1], thresholds[1][0]);
+    _soaThresholds = std::make_shared<const SortingThresholdInfo2B>(thresholds);
     _hasRunSoA = true;
   }
 
@@ -107,16 +113,14 @@ class SortingThresholdBenchmark {
    */
   template <class Functor_T, class Particle_T>
   void runAoSBenchmark(Functor_T &functor, const Particle_T &defaultParticle) {
-    std::array<std::array<size_t, 3>, 2> thresholds;
+    SortingThresholdInfo2B thresholds = SortingThresholdInfo2B(0);
     for (const auto &n3 : Newton3Option::getAllOptions()) {
       for (const auto &layout : CellLayoutOption::getAllOptions()) {
-        thresholds[n3][layout] = runSearch<Functor_T, Particle_T, false>(functor, defaultParticle, layout, n3);
+        thresholds.setThresholdByOption(n3, layout,
+                                        runSearch<Functor_T, Particle_T, false>(functor, defaultParticle, layout, n3));
       }
     }
-    // thresholds[n3][layout] is indexed by CellLayoutOption (corner=0, edge=1, face=2), while the constructor
-    // below takes named (Face, Edge, Corner) parameters per Newton3 state, so the layout index is reversed here.
-    _aosThresholds = std::make_shared<const SortingThresholdInfo2B>(
-        thresholds[0][2], thresholds[0][1], thresholds[0][0], thresholds[1][2], thresholds[1][1], thresholds[1][0]);
+    _aosThresholds = std::make_shared<const SortingThresholdInfo2B>(thresholds);
     _hasRunAoS = true;
   }
 
@@ -132,19 +136,20 @@ class SortingThresholdBenchmark {
   bool _hasRunAoS{false};
 
   /**
-   * Per-Newton3-state, per-direction-type SoA sorting threshold values, initialized to the compile-time default.
+   * SoA sorting threshold value. A SortingThresholdInfoSingle wrapping the constructor-provided default until
+   * runSoABenchmark() replaces it with a SortingThresholdInfo2B.
    * Held as a shared_ptr so that getSoAThreshold() can hand out the same instance on every call once
    * runSoABenchmark() has completed, instead of forcing callers to reallocate on every access.
    */
-  std::shared_ptr<const SortingThresholdInfo2B> _soaThresholds{std::make_shared<const SortingThresholdInfo2B>(100)};
+  std::shared_ptr<const SortingThresholdInfoInterface> _soaThresholds;
 
   /**
-   * Per-Newton3-state, per-direction-type AoS pair-sorting threshold values, initialized to the compile-time
-   * default.
+   * AoS pair-sorting threshold value. A SortingThresholdInfoSingle wrapping the constructor-provided default until
+   * runAoSBenchmark() replaces it with a SortingThresholdInfo2B.
    * Held as a shared_ptr so that getAoSThreshold() can hand out the same instance on every call once
    * runAoSBenchmark() has completed, instead of forcing callers to reallocate on every access.
    */
-  std::shared_ptr<const SortingThresholdInfo2B> _aosThresholds{std::make_shared<const SortingThresholdInfo2B>(8)};
+  std::shared_ptr<const SortingThresholdInfoInterface> _aosThresholds;
 
   /**
    * Number of timed calls per repetition to get stable measurement.

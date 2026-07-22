@@ -278,9 +278,9 @@ class AutoTuner {
   const std::set<Configuration> &getSearchSpace() const;
 
   /**
-   * Returns the sorting-threshold benchmark owned by this tuner. Callers are responsible for checking
-   * SortingThresholdBenchmark::hasRunAoS()/hasRunSoA() and calling runAoSBenchmark()/runSoABenchmark() themselves
-   * before reading results.
+   * Returns the sorting-threshold benchmark owned by this tuner. getAoSThreshold()/getSoAThreshold() are always
+   * safe to read (they hand out a construction-time default until runAoSBenchmark()/runSoABenchmark() have run);
+   * callers only need to consult hasRunAoS()/hasRunSoA() to decide whether a benchmark run is still needed.
    * @return Reference to the benchmark object.
    */
   SortingThresholdBenchmark &getSortingThresholdBenchmark() { return _sortingThresholdBenchmark; }
@@ -288,11 +288,10 @@ class AutoTuner {
  private:
   /**
    * Stores the results of the sorting threshold benchmark. Owned here since it is a tuning-derived
-   * characteristic of a (functor, hardware) pair, but running it and reading results is the caller's
-   * responsibility via getSortingThresholdBenchmark().
-
+   * characteristic of a (functor, hardware) pair, one per interaction type since each interaction type has its own
+   * AutoTuner. Running it and reading results is the caller's responsibility via getSortingThresholdBenchmark().
    */
-  SortingThresholdBenchmark _sortingThresholdBenchmark{};
+  SortingThresholdBenchmark _sortingThresholdBenchmark;
 
   /**
    * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be

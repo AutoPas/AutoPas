@@ -7,7 +7,6 @@
 #pragma once
 
 #include "array"
-#include "cstddef"
 
 namespace autopas {
 /**
@@ -36,19 +35,9 @@ class LogicHandlerInfo {
    */
   unsigned int verletClusterSize{4};
   /**
-   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor.
-   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
-   */
-  size_t aosSortingThreshold{8};
-  /**
-   * Number of particles in two SoA buffers from which SoA sorting should be performed.
-   * Default comes from the LJFunctorHWY Benchmarks.
-   */
-  size_t soaSortingThreshold{100};
-
-  /**
    * If true, LogicHandler runs SortingThresholdBenchmark on the first iterate() call and uses the results to
-   * override the fixed aosSortingThreshold and soaSortingThreshold in CellFunctor.
+   * override the fixed aosSortingThreshold and soaSortingThreshold in CellFunctor (see
+   * AutoTunerInfo::aosSortingThreshold/soaSortingThreshold for the fixed defaults).
    */
   bool useSortingThresholdBenchmark{false};
   /**
