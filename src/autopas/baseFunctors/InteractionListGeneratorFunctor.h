@@ -16,14 +16,17 @@ namespace autopas {
 
 /**
  * This functor generates lists of particles within interactionLength of each other, which could be used within
- * user simulators to replace their contact detection passes, although they should consider the warning below.
+ * user simulators to replace their neighbor identification/contact detection/cutoff check passes, although they should
+ * consider the warning below.
  *
- * @warning Performing contact detection with this functor and then applying forces externally to AutoPas is not
- * recommended, as it does not take advantage of AutoPas's full algorithm library and will also be at best inefficient
- * or at worse unsupported by any future GPU extension of AutoPas. We provide this functor primarily for codes which
- * perform a separate contact detection and force calculation passes, to easily experience some benefit of AutoPas. For
- * the full capabilities of AutoPas, we recommend writing a functor class that directly applies relevant interactions.
- * See applicationLibrary for examples.
+ * In some fields this can be called "cutoff checking" or "broad-phase contact detection" but we will refer to this
+ * in this file as neighbor identification.
+ *
+ * @warning To take fully advantage of AutoPas, we recommend, instead of using this functor and apply forces externally
+ * to AutoPas, using a functor which  integrates neighbor identification and force calculation in one call over using
+ * this functor (see @ref LJFunctor.h as an example). We provide this functor primarily for codes which already
+ * perform separate neighbor identification and force calculation passes, to easily experience some benefit of AutoPas
+ * with minimal code refactors.
  *
  * @details After applying AutoPas's computeInteractions function with this functor, a
  * std::unordered_map<Particle_T *, std::vector<Particle_T *>> is filled, mapping from each particle pointer to a vector
@@ -53,12 +56,12 @@ class InteractionListGeneratorFunctor
    * @param neighborListsAoS
    * @param interactionLength The distance between particles within which particle pairs get added to the neighbor
    * lists.
-   * @param gatherNewton3Lists If false, for a particle pair i, j in contact, **both** particle j will be in particle
-   * i's list **and** particle i will be in particle j's list. If true, for a particle pair i, j in contact, **either**
-   * particle j will be in particle i's list **or** particle i will be in particle j's list. The latter can be used more
-   * easily to reduce calculations by applying forces to both particles in the pair, but care should be taken to avoid
-   * race conditions. If true, we make no guarantee which of particle i or j will be in the other's list. If true, this
-   * functor will only allow functor calls with newton3 enabled.
+   * @param gatherNewton3Lists If false, for a particle pair i, j that are neighbors, **both** particle j will be in
+   * particle i's list **and** particle i will be in particle j's list. If true, for a particle pair i, j that are
+   * neighbors, **either** particle j will be in particle i's list **or** particle i will be in particle j's list. The
+   * latter can be used more easily to reduce calculations by applying forces to both particles in the pair, but care
+   * should be taken to avoid race conditions. If true, we make no guarantee which of particle i or j will be in the
+   * other's list. If true, this functor will only allow functor calls with newton3 enabled.
    */
   InteractionListGeneratorFunctor(NeighborListAoSType &neighborListsAoS, double interactionLength,
                                   bool gatherNewton3Lists)
@@ -166,6 +169,7 @@ class InteractionListGeneratorFunctor
 
         if (dr2 < _interactionLengthSquared) {
           // This SoAFunctorSingle implementation always used newton3 in practice, regardless of the option.
+          // This is thread safe (see comment in AoS functor)
           iList.push_back(ptrptr[j]);
           if (not _gatherNewton3Lists) {
             _neighborListsAoS.at(ptrptr[j]).push_back(ptrptr[i]);
@@ -224,6 +228,7 @@ class InteractionListGeneratorFunctor
         const double dr2 = drx2 + dry2 + drz2;
 
         if (dr2 < _interactionLengthSquared) {
+          // This is thread safe (see comment in AoS functor)
           iList.push_back(ptr2ptr[j]);
           if (newton3 and not _gatherNewton3Lists) {
             _neighborListsAoS.at(ptr2ptr[j]).push_back(ptr1ptr[i]);
@@ -283,6 +288,7 @@ class InteractionListGeneratorFunctor
       const double dr2 = drx2 + dry2 + drz2;
 
       if (dr2 < _interactionLengthSquared) {
+        // This is thread safe (see comment in AoS functor)
         firstList.push_back(ptrptr[j]);
         if (newton3 and not _gatherNewton3Lists) {
           _neighborListsAoS.at(ptrptr[j]).push_back(ptrptr[indexFirst]);
