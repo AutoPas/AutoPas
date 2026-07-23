@@ -40,7 +40,16 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
             URL_HASH MD5=3c60096bf151e11cde6efc6e5ede1195
     )
 
+    # PMT's CMakeLists FORCEs CMAKE_BUILD_TYPE=Release into the shared cache when it is unset. When
+    # AutoPas is a subproject, undo that afterwards so the parent project keeps ownership of the build
+    # type (a standalone build sets its own default earlier, so PMT finds it already set and leaves it).
+    set(autopasPmtSavedBuildType "${CMAKE_BUILD_TYPE}")
+
     FetchContent_MakeAvailable(pmt)
+
+    if (NOT AUTOPAS_STANDALONE_BUILD AND NOT autopasPmtSavedBuildType)
+        unset(CMAKE_BUILD_TYPE CACHE)
+    endif ()
 
     # sensors available in pmt that are not currently required in AutoPas
     mark_as_advanced(
