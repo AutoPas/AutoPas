@@ -1,3 +1,9 @@
+# Reuse a googletest a parent project already provides (avoids a duplicate `gtest` target collision).
+if (TARGET gtest)
+    message(STATUS "AutoPas: Reusing googletest provided by parent project")
+    return()
+endif ()
+
 message(STATUS "gtest - using bundled version")
 find_package(Threads REQUIRED)
 

@@ -7,6 +7,13 @@ set(AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
 
 if (AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
     message(STATUS "Rules-Based Tuning Enabled")
+
+    # Reuse an antlr4 runtime a parent project already provides as `antlr4cpp`.
+    if (TARGET antlr4cpp)
+        message(STATUS "AutoPas: Reusing antlr4cpp provided by parent project")
+        return()
+    endif ()
+
     message(STATUS "antlr4cpp - using bundled version")
 
     include(ExternalProject)

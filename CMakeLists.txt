@@ -20,6 +20,8 @@ set(AUTOPAS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/)
 # load custom conditional options
 include(optionConditional)
+# load shared dependency-resolution helpers (autopas_alias_dependency, autopas_promote_global)
+include(autopas_dependency_helpers)
 
 # Determine if AutoPas is built as the primary project or not.
 option_conditional(AUTOPAS_STANDALONE_BUILD

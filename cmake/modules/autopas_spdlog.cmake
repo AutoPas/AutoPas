@@ -1,24 +1,29 @@
-option(spdlog_ForceBundled "Do not look for an installed version, always use bundled." ON)
+# Gets spdlog by (in order of priority): reusing a target a parent project provides, an installed
+# version via find_package, or the bundled 1.17.0 copy. Set spdlog_ForceBundled=ON to force bundled.
+option(spdlog_ForceBundled "Ignore any provided/installed spdlog and always use the bundled copy." OFF)
+mark_as_advanced(spdlog_ForceBundled)
 
-if (NOT ${spdlog_ForceBundled})
-    # first try: check if we find any installed version
+if (NOT spdlog_ForceBundled)
+    # Path 1: reuse a spdlog target a parent project already defined.
+    if (TARGET spdlog::spdlog OR TARGET spdlog)
+        message(STATUS "AutoPas: Reusing spdlog provided by parent project")
+        autopas_alias_dependency(spdlog spdlog::spdlog)
+        return()
+    endif ()
+    # Path 2: installed version
     set(expectedVersion 1.17.0)
     find_package(spdlog ${expectedVersion} QUIET)
     if (spdlog_FOUND)
         message(STATUS "spdlog - using installed system version ${spdlog_VERSION}")
-        # promote target to global visibility to be used elsewhere
-        set_target_properties(spdlog::spdlog PROPERTIES IMPORTED_GLOBAL TRUE)
+        autopas_promote_global(spdlog)
+        autopas_promote_global(spdlog::spdlog)
+        autopas_alias_dependency(spdlog spdlog::spdlog)
         return()
-    else ()
-        message(STATUS "spdlog - no system version compatible to version ${expectedVersion} found")
-        message(
-            STATUS
-                "spdlog - if you want to use your version point the cmake variable spdlog_DIR to the directory containing spdlogConfig.cmake in order to pass hints to find_package"
-        )
     endif ()
+    message(STATUS "spdlog - no system version >= ${expectedVersion} found; using bundled copy")
 endif ()
 
-# system version not found -> install bundled version
+# Path 3 + fallback: bundled version.
 message(STATUS "spdlog - using bundled version 1.17.0 (commit 79524dd)")
 
 # Enable FetchContent CMake module

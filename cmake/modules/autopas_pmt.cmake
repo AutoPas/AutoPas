@@ -5,8 +5,6 @@ option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
 
 if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
 
-    option(pmt_ForceBundled "Do not look for an installed version, always used bundled." ON)
-
     # RAPL sensor is disabled in PMT (PMT_BUILD_RAPL is OFF by default),
     # however in AutoPas, it is set to ON by default whenever energy measurement is enabled.
     set(PMT_BUILD_RAPL ON CACHE BOOL "RAPL is by default enabled when PMT is enabled" FORCE)
@@ -14,16 +12,16 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
     # LIKWID can be enabled by setting the cmake option PMT_BUILD_LIKWID to ON. This is particularly useful on some clusters where RAPL does not work.
     set(PMT_BUILD_LIKWID OFF CACHE BOOL "LIKWID is OFF by default when PMT is enabled, but enabling it can allow for energy measurements on machines where RAPL cannot be used." )
 
-    if (NOT ${pmt_ForceBundled})
-        if (pmt_FOUND)
-            message(STATUS "pmt - using installed version ${pmt_VERSION}")
-            set_target_properties(pmt::pmt PROPERTIES "IMPORTED_GLOBAL" "TRUE")
-            return()
-        else()
-            message(STATUS "pmt not found!")
-            message(STATUS "pmt - if you want to use your version point the cmake variable pmt_DIR to the directory containing pmtConfig.cmake in order to find package")
-        endif()
-    endif()
+    # AutoPas requires its own patched PMT (see the patch note below), so it never looks for an
+    # installed one. If a parent project already provides a `pmt` target, warn and reuse it: the parent
+    # must either disable AutoPas's energy measurements or drop its own `pmt` so ours is used.
+    if (TARGET pmt)
+        message(
+            WARNING
+                "AutoPas needs its own patched PMT, but a parent project already provides a 'pmt' target. Set AUTOPAS_ENABLE_ENERGY_MEASUREMENTS=OFF, or remove your 'pmt' target so AutoPas can build its patched version. Reusing the provided PMT for now; energy measurements may be incorrect."
+        )
+        return()
+    endif ()
 
     message(STATUS "pmt - using bundled version (commit 7a56fa3a) and patch")
 
