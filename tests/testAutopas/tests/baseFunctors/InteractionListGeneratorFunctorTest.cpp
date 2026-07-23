@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include "autopas/AutoPas.h"
 #include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -587,79 +588,6 @@ TEST_F(InteractionListGeneratorFunctorTest, AllowsNonNewton3DependsOnGatherN3Lis
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Full flow: list generation + LJFunctor application vs. direct LJFunctor application
-// ---------------------------------------------------------------------------------------------------------------------
-
-/**
- * Full-flow test: generates interaction lists with InteractionListGeneratorFunctor on a 3x3x3 grid of particles,
- * applies LJFunctor's AoSFunctor to every list entry. As all interactions returned by InteractionListGeneratorFunctor
- * should be within the cutoff, each application should lead to force contributions (this is checked). Finally, the
- * resulting forces are compared against directly applying LJFunctor's AoSFunctor to all particle pairs.
- */
-TEST_P(InteractionListGeneratorFunctorFullFlowTest, ForcesMatchDirectLJApplication) {
-  const auto &[mode, ownershipVariant] = GetParam();
-
-  // 3x3x3 grid with spacing 1, with the case's OwnershipStates assigned to the particles in a round-robin.
-  constexpr std::array<size_t, 3> particlesPerDim{3, 3, 3};
-  const auto ownerships =
-      expandOwnerships(ownershipVariant, particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]);
-
-  FMCell cell, referenceCell;
-  for (FMCell *cellPtr : {&cell, &referenceCell}) {
-    autopasTools::generators::GridGenerator::fillWithParticles(*cellPtr, particlesPerDim, Molecule{}, {1., 1., 1.},
-                                                               {0., 0., 0.});
-    for (size_t i = 0; i < cellPtr->size(); ++i) {
-      (*cellPtr)[i].setOwnershipState(ownerships[i]);
-    }
-  }
-
-  // Generate the interaction lists.
-  InteractionListTypeAoS map;
-  initMap(map, cell);
-  InteractionListGenFunc listGenFunctor(map, cutoffLength, mode.gatherN3Lists);
-  applyAoSOverAllPairs(listGenFunctor, cell, mode.n3Used);
-
-  LJFunctorType<> ljFunctor(cutoffLength);
-  ljFunctor.setParticleProperties(/*epsilon24*/ 24., /*sigmaSquared*/ 1.);
-
-  // Apply the LJ functor to the generated lists.
-  for (auto &[particlePtr, neighborList] : map) {
-    for (auto *neighborPtr : neighborList) {
-      const auto particleForceBefore = particlePtr->getF();
-      const auto neighborForceBefore = neighborPtr->getF();
-      ljFunctor.AoSFunctor(*particlePtr, *neighborPtr, mode.gatherN3Lists);
-      EXPECT_NE(particlePtr->getF(), particleForceBefore)
-          << "Force of particle " << particlePtr->getID() << " unchanged by interaction with particle "
-          << neighborPtr->getID();
-      if (mode.gatherN3Lists) {
-        EXPECT_NE(neighborPtr->getF(), neighborForceBefore)
-            << "Force of particle " << neighborPtr->getID() << " unchanged by interaction with particle "
-            << particlePtr->getID();
-      }
-    }
-  }
-
-  // Create reference forces
-  for (size_t i = 0; i < referenceCell.size(); ++i) {
-    for (size_t j = i + 1; j < referenceCell.size(); ++j) {
-      ljFunctor.AoSFunctor(referenceCell[i], referenceCell[j], /*newton3*/ true);
-    }
-  }
-
-  // Check forces match
-  for (size_t i = 0; i < cell.size(); ++i) {
-    for (size_t d = 0; d < 3; ++d) {
-      EXPECT_NEAR(cell[i].getF()[d], referenceCell[i].getF()[d], 1e-10)
-          << "Force mismatch for particle " << i << " in dimension " << d;
-    }
-  }
-}
-
-INSTANTIATE_TEST_SUITE_P(Generated, InteractionListGeneratorFunctorFullFlowTest,
-                         ::testing::Combine(::testing::ValuesIn(n3Modes), ::testing::ValuesIn(ownershipVariants)),
-                         ParamNameGenerator());
-
-// ---------------------------------------------------------------------------------------------------------------------
 // Thread safety
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -995,4 +923,198 @@ TEST_F(InteractionListGeneratorFunctorTest, ThreadSafeSoAFunctorVerlet) {
 
     expectListsMatch(map, cell, referenceMap, referenceCell);
   }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Neighbor List initialization test
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Tests that InteractionListGeneratorFunctor::initializeNeighborList initializes the map with one empty list per
+ * particle, keyed on the particle's address, and repeated calls clear previous contents.
+ */
+TEST_F(InteractionListGeneratorFunctorTest, InitializeNeighborListSeedsAndClearsMap) {
+  autopas::AutoPas<Molecule> autoPas;
+  autoPas.setBoxMin({0., 0., 0.});
+  autoPas.setBoxMax({10., 10., 10.});
+  autoPas.setCutoff(1.0);
+  autoPas.setVerletSkin(0.2);
+  autoPas.init();
+
+  autoPas.addParticle(Molecule({1., 1., 1.}, {0., 0., 0.}, 0));
+  autoPas.addParticle(Molecule({2., 1., 1.}, {0., 0., 0.}, 1));
+  autoPas.addParticle(Molecule({3., 1., 1.}, {0., 0., 0.}, 2));
+
+  InteractionListTypeAoS neighborLists;
+  InteractionListGenFunc functor(neighborLists, cutoffLength, /*gatherNewton3Lists*/ false);
+
+  functor.initializeNeighborList(autoPas.begin());
+
+  // One empty list per particle, keyed on the particle's address.
+  size_t numParticles = 0;
+  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+    EXPECT_EQ(neighborLists.count(&(*iter)), 1u)
+        << "Particle with ID " << (*iter).getID() << " should have exactly one entry in the map, but found "
+        << neighborLists.count(&(*iter)) << ".";
+    EXPECT_TRUE(neighborLists.at(&(*iter)).empty());
+    ++numParticles;
+  }
+  EXPECT_EQ(numParticles, 3u);
+  EXPECT_EQ(neighborLists.size(), numParticles);
+
+  // Populate a list and insert a stale key, then reinitialize: the second call must clear both.
+  Molecule staleParticle({0., 0., 0.}, {0., 0., 0.}, 99);
+  neighborLists[&staleParticle];
+  neighborLists.at(&(*autoPas.begin())).push_back(&staleParticle);
+
+  functor.initializeNeighborList(autoPas.begin());
+
+  EXPECT_EQ(neighborLists.count(&staleParticle), 0u);
+  EXPECT_EQ(neighborLists.size(), numParticles);
+  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+    EXPECT_TRUE(neighborLists.at(&(*iter)).empty());
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Full flow: list generation + LJFunctor application vs. direct LJFunctor application
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Full-flow test: generates interaction lists with InteractionListGeneratorFunctor on a 3x3x3 grid of particles,
+ * applies LJFunctor's AoSFunctor to every list entry. As all interactions returned by InteractionListGeneratorFunctor
+ * should be within the cutoff, each application should lead to force contributions (this is checked). Finally, the
+ * resulting forces are compared against directly applying LJFunctor's AoSFunctor to all particle pairs.
+ */
+TEST_P(InteractionListGeneratorFunctorFullFlowTest, ForcesMatchDirectLJApplication) {
+  const auto &[mode, ownershipVariant] = GetParam();
+
+  // 3x3x3 grid with spacing 1, with the case's OwnershipStates assigned to the particles in a round-robin.
+  constexpr std::array<size_t, 3> particlesPerDim{3, 3, 3};
+  const auto ownerships =
+      expandOwnerships(ownershipVariant, particlesPerDim[0] * particlesPerDim[1] * particlesPerDim[2]);
+
+  FMCell cell, referenceCell;
+  for (FMCell *cellPtr : {&cell, &referenceCell}) {
+    autopasTools::generators::GridGenerator::fillWithParticles(*cellPtr, particlesPerDim, Molecule{}, {1., 1., 1.},
+                                                               {0., 0., 0.});
+    for (size_t i = 0; i < cellPtr->size(); ++i) {
+      (*cellPtr)[i].setOwnershipState(ownerships[i]);
+    }
+  }
+
+  // Generate the interaction lists.
+  InteractionListTypeAoS map;
+  initMap(map, cell);
+  InteractionListGenFunc listGenFunctor(map, cutoffLength, mode.gatherN3Lists);
+  applyAoSOverAllPairs(listGenFunctor, cell, mode.n3Used);
+
+  LJFunctorType<> ljFunctor(cutoffLength);
+  ljFunctor.setParticleProperties(/*epsilon24*/ 24., /*sigmaSquared*/ 1.);
+
+  // Apply the LJ functor to the generated lists.
+  for (auto &[particlePtr, neighborList] : map) {
+    for (auto *neighborPtr : neighborList) {
+      const auto particleForceBefore = particlePtr->getF();
+      const auto neighborForceBefore = neighborPtr->getF();
+      ljFunctor.AoSFunctor(*particlePtr, *neighborPtr, mode.gatherN3Lists);
+      EXPECT_NE(particlePtr->getF(), particleForceBefore)
+          << "Force of particle " << particlePtr->getID() << " unchanged by interaction with particle "
+          << neighborPtr->getID();
+      if (mode.gatherN3Lists) {
+        EXPECT_NE(neighborPtr->getF(), neighborForceBefore)
+            << "Force of particle " << neighborPtr->getID() << " unchanged by interaction with particle "
+            << particlePtr->getID();
+      }
+    }
+  }
+
+  // Create reference forces
+  for (size_t i = 0; i < referenceCell.size(); ++i) {
+    for (size_t j = i + 1; j < referenceCell.size(); ++j) {
+      ljFunctor.AoSFunctor(referenceCell[i], referenceCell[j], /*newton3*/ true);
+    }
+  }
+
+  // Check forces match
+  for (size_t i = 0; i < cell.size(); ++i) {
+    for (size_t d = 0; d < 3; ++d) {
+      EXPECT_NEAR(cell[i].getF()[d], referenceCell[i].getF()[d], 1e-10)
+          << "Force mismatch for particle " << i << " in dimension " << d;
+    }
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(Generated, InteractionListGeneratorFunctorFullFlowTest,
+                         ::testing::Combine(::testing::ValuesIn(n3Modes), ::testing::ValuesIn(ownershipVariants)),
+                         ParamNameGenerator());
+
+// ---------------------------------------------------------------------------------------------------------------------
+// End-to-end test: Actual compilation and correct usage with AutoPas
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * End-to-end test that AutoPas compiles and runs with the InteractionListGeneratorFunctor and that
+ * computeInteractions() automatically initializes the functor's neighbor list map for the current particles, so the
+ * caller does not have to seed it.
+ *
+ * This also acts as a regression test for a problem which arose during the development of the functor: between the
+ * seeding of the map and the actual application of the functor, no particle is allowed to be moved in memory, or
+ * the seeding becomes invalid. Originally, the balancing of the buffer vectors violated this, which had to be
+ * corrected, hence why this test adds to the buffer.
+ */
+TEST_F(InteractionListGeneratorFunctorTest, ComputeInteractionsInitializesMap) {
+  // Two threads => two per-thread buffers that get balanced.
+  const NumThreadGuard numThreadGuard(2);
+
+  autopas::AutoPas<Molecule> autoPas;
+  autoPas.setBoxMin({0., 0., 0.});
+  autoPas.setBoxMax({10., 10., 10.});
+  autoPas.setCutoff(1.0);
+  autoPas.setVerletSkin(0.2);
+  autoPas.init();
+
+  InteractionListTypeAoS neighborLists;
+  InteractionListGenFunc functor(neighborLists, /*interactionLength*/ 1.0, /*gatherNewton3Lists*/ false);
+
+  // Two particles added into the container.
+  autoPas.addParticle(Molecule({1.0, 1.0, 1.0}, {0., 0., 0.}, 0));
+  autoPas.addParticle(Molecule({1.5, 1.0, 1.0}, {0., 0., 0.}, 1));
+
+  // Test compute interactions
+  autoPas.computeInteractions(&functor);
+
+  // The two container particles must each have ended up in the other's list.
+  {
+    std::vector<Molecule *> particlePtrs;
+    for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+      particlePtrs.push_back(&(*iter));
+    }
+    ASSERT_EQ(particlePtrs.size(), 2u);
+    ASSERT_EQ(neighborLists.size(), 2u);
+    const auto &list0 = neighborLists.at(particlePtrs[0]);
+    const auto &list1 = neighborLists.at(particlePtrs[1]);
+    EXPECT_NE(std::ranges::find(list0, particlePtrs[1]), list0.end());
+    EXPECT_NE(std::ranges::find(list1, particlePtrs[0]), list1.end());
+  }
+
+  // Two further owned particles (inside the box) and two halo particles (outside the box) now land in the buffers.
+  // Specifically, they get added to the thread 0 buffer.
+  autoPas.addParticle(Molecule({8.0, 8.0, 8.0}, {0., 0., 0.}, 2));
+  autoPas.addParticle(Molecule({8.5, 8.0, 8.0}, {0., 0., 0.}, 3));
+  autoPas.addHaloParticle(Molecule({-0.5, 1.0, 1.0}, {0., 0., 0.}, 4));
+  autoPas.addHaloParticle(Molecule({10.5, 8.0, 8.0}, {0., 0., 0.}, 5));
+
+  // Second pass balances the buffers (relocating buffer particles) and re-initializes the map. Must not crash, throw,
+  // or leave dangling references.
+  autoPas.computeInteractions(&functor);
+
+  // Every current particle (container + buffers, owned + halo) must have an entry in the freshly initialized map.
+  size_t numParticles = 0;
+  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+    EXPECT_EQ(neighborLists.count(&(*iter)), 1u) << "Particle missing from the initialized neighbor list map.";
+    ++numParticles;
+  }
+  EXPECT_EQ(numParticles, 6u);
+  EXPECT_EQ(neighborLists.size(), 6u);
 }

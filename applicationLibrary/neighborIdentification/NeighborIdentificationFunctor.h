@@ -39,8 +39,8 @@ class NeighborIdentificationFunctor : public InteractionListGeneratorFunctor<Par
 
   /**
    * Constructor
-   * @param neighborListsAoS Reference to the neighbor list map. Must be initialized, i.e. every particle should already
-   * have an entry, before use.
+   * @param neighborListsAoS Reference to the neighbor list map. When used with AutoPas::computeInteractions, the map
+   * will be overridden.
    * @param interactionLength The distance between particles within which particle pairs get added to the neighbor
    * lists.
    * @param gatherNewton3Lists If false, for a particle pair i, j that are neighbors, **both** particle j will be in

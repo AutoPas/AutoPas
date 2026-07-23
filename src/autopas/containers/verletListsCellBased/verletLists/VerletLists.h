@@ -152,7 +152,9 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     size_t numParticles = 0;
     _aosNeighborLists.clear();
     // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
-    // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
+    // We have to iterate also over dummy particles, as the SoA list from AoS list conversion, requires a list structure
+    // matching the SoA structure, which includes dummies. Because of this, we do not use the
+    // InteractionListGeneratorFunctor::initializeNeighborList function.
     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles) {
       // create the verlet list entries for all particles
       _aosNeighborLists[&(*iter)];
