@@ -12,6 +12,7 @@
 #include <random>
 
 #include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/options/SortingDirectionOption.h"
 #include "autopas/utils/SortingThresholdInfo2B.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/generators/UniformGenerator.h"
@@ -87,9 +88,9 @@ class SortingThresholdBenchmark {
   void runSoABenchmark(Functor_T &functor, const Particle_T &defaultParticle) {
     SortingThresholdInfo2B thresholds = SortingThresholdInfo2B(0);
     for (const auto &n3 : Newton3Option::getAllOptions()) {
-      for (const auto &layout : CellLayoutOption::getAllOptions()) {
-        thresholds.setThresholdByOption(n3, layout,
-                                        runSearch<Functor_T, Particle_T, true>(functor, defaultParticle, layout, n3));
+      for (const auto &cellDirection : SortingDirectionOption::getAllOptions()) {
+        thresholds.setThresholdByOption(
+            n3, cellDirection, runSearch<Functor_T, Particle_T, true>(functor, defaultParticle, cellDirection, n3));
       }
     }
     _soaThresholds = std::make_shared<const SortingThresholdInfo2B>(thresholds);
@@ -109,9 +110,9 @@ class SortingThresholdBenchmark {
   void runAoSBenchmark(Functor_T &functor, const Particle_T &defaultParticle) {
     SortingThresholdInfo2B thresholds = SortingThresholdInfo2B(0);
     for (const auto &n3 : Newton3Option::getAllOptions()) {
-      for (const auto &layout : CellLayoutOption::getAllOptions()) {
-        thresholds.setThresholdByOption(n3, layout,
-                                        runSearch<Functor_T, Particle_T, false>(functor, defaultParticle, layout, n3));
+      for (const auto &cellDirection : SortingDirectionOption::getAllOptions()) {
+        thresholds.setThresholdByOption(
+            n3, cellDirection, runSearch<Functor_T, Particle_T, false>(functor, defaultParticle, cellDirection, n3));
       }
     }
     _aosThresholds = std::make_shared<const SortingThresholdInfo2B>(thresholds);
@@ -190,15 +191,14 @@ class SortingThresholdBenchmark {
    * count for one direction type and Newton3 state, for either the AoS or the SoA layout.
    *
    * Particles are regenerated each repetition so the sort always operates on fresh random data.
-   * The sorted path is controlled by passing the layout-specific sortingDirection; the unsorted
-   * path is forced by passing a zero direction (CellFunctor skips sorting when direction is zero).
+   * The sorted path is controlled by passing a non zero sorting Direction.
    * @tparam Functor_T Pairwise functor type.
    * @tparam Particle_T Particle type.
    * @tparam useSoA Selects the benchmarked data layout: true measures the SoA path, false the AoS path.
    * @param functor Functor instance used to drive the benchmark.
    * @param defaultParticle Template particle whose non-positional properties are copied onto every particle
    * generated for the benchmark cells.
-   * @param layout Direction-type index (0=Corner, 1=Edge, 2=Face).
+   * @param cellDirection Direction-type index (0=Corner, 1=Edge, 2=Face).
    * @param numParticles Combined number of particles placed in the two cells, with 40% of the particles landing in each
    * cell and 20% being randomly distributed between the cells.
    * @param newton3 Whether the benchmarked CellFunctor should apply Newton3.
@@ -206,8 +206,8 @@ class SortingThresholdBenchmark {
    * the unsorted path by at least _sortedWinMarginFraction.
    */
   template <class Functor_T, class Particle_T, bool useSoA>
-  size_t executeRun(Functor_T &functor, const Particle_T &defaultParticle, CellLayoutOption layout, size_t numParticles,
-                    Newton3Option newton3) {
+  size_t executeRun(Functor_T &functor, const Particle_T &defaultParticle, SortingDirectionOption cellDirection,
+                    size_t numParticles, Newton3Option newton3) {
     using BenchCell = FullParticleCell<Particle_T>;
     using BenchCF = internal::CellFunctor<BenchCell, Functor_T, false>;
 
@@ -235,24 +235,24 @@ class SortingThresholdBenchmark {
 
     std::array sortingDirection = {0., 0., 0.};
 
-    switch (layout) {
-      case CellLayoutOption::corner:
+    switch (cellDirection) {
+      case SortingDirectionOption::corner:
         cell2Low = {cutoff, cutoff, cutoff};
         cell2High = {2. * cutoff, 2. * cutoff, 2. * cutoff};
         sortingDirection = {invSqrt3, invSqrt3, invSqrt3};
         break;
-      case CellLayoutOption::edge:
+      case SortingDirectionOption::edge:
         cell2Low = {cutoff, cutoff, 0.};
         cell2High = {2. * cutoff, 2. * cutoff, cutoff};
         sortingDirection = {invSqrt2, invSqrt2, 0.};
         break;
-      case CellLayoutOption::face:
+      case SortingDirectionOption::face:
         cell2Low = {cutoff, 0., 0.};
         cell2High = {2 * cutoff, cutoff, cutoff};
         sortingDirection = {1, 0., 0.};
         break;
       default:
-        utils::ExceptionHandler::exception("Layout {} is not a valid/supported layout!", layout);
+        utils::ExceptionHandler::exception("Cell Direction {} is not a valid/supported Direction!", cellDirection);
     }
 
     utils::Timer sortedTimer, unsortedTimer;
@@ -317,8 +317,8 @@ class SortingThresholdBenchmark {
         unsortedDelta = measureUnsorted();
       }
 
-      AutoPasLog(TRACE, "SortingThresholdBenchmark rep {}/{} layout={} n={}: unsorted={}ns sorted={}ns", i + 1,
-                 _repetitions, layout, numParticles, unsortedDelta, sortedDelta);
+      AutoPasLog(TRACE, "SortingThresholdBenchmark rep {}/{} cell direction={} n={}: unsorted={}ns sorted={}ns", i + 1,
+                 _repetitions, cellDirection, numParticles, unsortedDelta, sortedDelta);
 
       // A repetition only counts as a "sorted win" if it clears the margin: see _sortedWinMarginFraction.
       if (static_cast<double>(sortedDelta) < static_cast<double>(unsortedDelta) * (1. - _sortedWinMarginFraction)) {
@@ -328,8 +328,9 @@ class SortingThresholdBenchmark {
 
     const long meanSorted = sortedTimer.getTotalTime() / static_cast<long>(_repetitions);
     const long meanUnsorted = unsortedTimer.getTotalTime() / static_cast<long>(_repetitions);
-    AutoPasLog(TRACE, "SortingThresholdBenchmark layout={} n={}: mean unsorted={}ns mean sorted={}ns sortedWins={}/{}",
-               layout, numParticles, meanUnsorted, meanSorted, sortedWins, _repetitions);
+    AutoPasLog(TRACE,
+               "SortingThresholdBenchmark cell direction={} n={}: mean unsorted={}ns mean sorted={}ns sortedWins={}/{}",
+               cellDirection, numParticles, meanUnsorted, meanSorted, sortedWins, _repetitions);
     return sortedWins;
   }
 
@@ -342,12 +343,12 @@ class SortingThresholdBenchmark {
    * @param functor Functor instance used to drive the benchmark.
    * @param defaultParticle Template particle whose non-positional properties are copied onto every particle
    * generated for the benchmark cells.
-   * @param layout Direction-type index (0=Corner, 1=Edge, 2=Face).
+   * @param cellDirection Direction-type index (0=Corner, 1=Edge, 2=Face).
    * @param newton3 Whether the benchmarked CellFunctor should apply Newton3.
    * @return Smallest particle count at which sorted beats unsorted, or the upper search bound if never.
    */
   template <class Functor_T, class Particle_T, bool useSoA>
-  size_t runSearch(Functor_T &functor, const Particle_T &defaultParticle, CellLayoutOption layout,
+  size_t runSearch(Functor_T &functor, const Particle_T &defaultParticle, SortingDirectionOption cellDirection,
                    Newton3Option newton3) {
     size_t lowCount = 0;
     size_t highCount = useSoA ? _maxSoAParticles : _maxAoSParticles;
@@ -355,22 +356,24 @@ class SortingThresholdBenchmark {
     while (lowCount < highCount) {
       size_t mid = lowCount + (highCount - lowCount) / 2;
 
-      const auto outcome = executeRun<Functor_T, Particle_T, useSoA>(functor, defaultParticle, layout, mid, newton3);
+      const auto outcome =
+          executeRun<Functor_T, Particle_T, useSoA>(functor, defaultParticle, cellDirection, mid, newton3);
       const double winRatio = static_cast<double>(outcome) / static_cast<double>(_repetitions);
 
       // Conservative decision rule: only accept "sorted wins" once a clear majority of repetitions
       // agree by a clear margin (see _sortedWinMarginFraction and _requiredSortedWinRatio).
       if (winRatio >= _requiredSortedWinRatio) {
         highCount = mid;
-        AutoPasLog(TRACE, "SortingThresholdBenchmark search {} layout={} n={}: sorted won {}/{} reps → high={}",
-                   newton3, layout, mid, outcome, _repetitions, highCount);
+        AutoPasLog(TRACE, "SortingThresholdBenchmark search {} cell direction={} n={}: sorted won {}/{} reps → high={}",
+                   newton3, cellDirection, mid, outcome, _repetitions, highCount);
       } else {
         lowCount = mid + 1;
-        AutoPasLog(TRACE, "SortingThresholdBenchmark search {} layout={} n={}: sorted won only {}/{} reps → low={}",
-                   newton3, layout, mid, outcome, _repetitions, lowCount);
+        AutoPasLog(TRACE,
+                   "SortingThresholdBenchmark search {} cell direction={} n={}: sorted won only {}/{} reps → low={}",
+                   newton3, cellDirection, mid, outcome, _repetitions, lowCount);
       }
     }
-    AutoPasLog(DEBUG, "SortingThresholdBenchmark {} layout={} threshold={}", newton3, layout, lowCount);
+    AutoPasLog(DEBUG, "SortingThresholdBenchmark {} cell direction={} threshold={}", newton3, cellDirection, lowCount);
     return lowCount;
   }
 };

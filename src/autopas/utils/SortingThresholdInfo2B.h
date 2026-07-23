@@ -8,44 +8,44 @@
 
 #include <cstddef>
 
-#include "autopas/options/CellLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
+#include "autopas/options/SortingDirectionOption.h"
 #include "autopas/utils/SortingThresholdInfoInterface.h"
 
 namespace autopas {
 
 /**
- * Per-Newton3-state, per-CellLayoutOption pair-sorting thresholds for a 2-body CellFunctor.
+ * Per-Newton3-state, per-SortingDirectionOption pair-sorting thresholds for a 2-body CellFunctor.
  * Provides publicly accessible named data as well as a getter to easily get the correct Value from a configuration.
  */
 struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
   /**
-   * Threshold for config {n3: off, cellLayout: Face}
+   * Threshold for config {n3: off, cellDirection: Face}
    */
   size_t noN3FaceThreshold;
   /**
-   * Threshold for config {n3: off, cellLayout: Edge}
+   * Threshold for config {n3: off, cellDirection: Edge}
    */
   size_t noN3EdgeThreshold;
   /**
-   * Threshold for config {n3: off, cellLayout: Corner}
+   * Threshold for config {n3: off, cellDirection: Corner}
    */
   size_t noN3CornerThreshold;
   /**
-   * Threshold for config {n3: on, cellLayout: Face}
+   * Threshold for config {n3: on, cellDirection: Face}
    */
   size_t n3FaceThreshold;
   /**
-   * Threshold for config {n3: on, cellLayout: Edge}
+   * Threshold for config {n3: on, cellDirection: Edge}
    */
   size_t n3EdgeThreshold;
   /**
-   * Threshold for config {n3: on, cellLayout: Corner}
+   * Threshold for config {n3: on, cellDirection: Corner}
    */
   size_t n3CornerThreshold;
 
   /**
-   * Constructor setting every Newton3-state / CellLayoutOption combination to the same value.
+   * Constructor setting every Newton3-state / SortingDirectionOption combination to the same value.
    * @param uniformThreshold Threshold value applied to all six combinations.
    */
   explicit SortingThresholdInfo2B(size_t uniformThreshold)
@@ -55,8 +55,9 @@ struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
         n3FaceThreshold(uniformThreshold),
         n3EdgeThreshold(uniformThreshold),
         n3CornerThreshold(uniformThreshold) {}
+
   /**
-   * Constructor to set each per Newton3/CellLayout combination value explicitly.
+   * Constructor to set each per Newton3/CellDirection combination value explicitly.
    * @param noN3FaceThreshold
    * @param noN3EdgeThreshold
    * @param noN3CornerThreshold
@@ -72,27 +73,28 @@ struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
         n3FaceThreshold(n3FaceThreshold),
         n3EdgeThreshold(n3EdgeThreshold),
         n3CornerThreshold(n3CornerThreshold) {}
+
   /**
-   * Getter to automatically get the correct threshold based on current newton3/CellLayout configuration
+   * Getter to automatically get the correct threshold based on current newton3/CellDirection configuration
    * @param newton3 whether the newton3 optimization is enabled or not.
-   * @param sortingDirection the cell axis used for sorting. CellLayout is deduced from this.
+   * @param sortingDirection the cell axis used for sorting. CellDirection is deduced from this.
    * @return correct threshold value for the given configuration.
    */
   size_t getThresholdByConfig(bool newton3, std::array<double, 3> sortingDirection) const {
-    const CellLayoutOption layout = CellLayoutOption::fromSortingDirection(sortingDirection);
+    const SortingDirectionOption cellDirection = SortingDirectionOption::fromRawArray(sortingDirection);
     if (newton3) {
-      if (layout == CellLayoutOption::corner) {
+      if (cellDirection == SortingDirectionOption::corner) {
         return n3CornerThreshold;
       }
-      if (layout == CellLayoutOption::edge) {
+      if (cellDirection == SortingDirectionOption::edge) {
         return n3EdgeThreshold;
       }
       return n3FaceThreshold;
     } else {
-      if (layout == CellLayoutOption::corner) {
+      if (cellDirection == SortingDirectionOption::corner) {
         return noN3CornerThreshold;
       }
-      if (layout == CellLayoutOption::edge) {
+      if (cellDirection == SortingDirectionOption::edge) {
         return noN3EdgeThreshold;
       }
       return noN3FaceThreshold;
@@ -101,31 +103,31 @@ struct SortingThresholdInfo2B : SortingThresholdInfoInterface {
   /**
    * Setter to set struct values by configuration, represented by options.
    * @param n3 Whether the Newton3 optimization is used.
-   * @param layout How the cells are placed in relation to each other.
+   * @param cellDirection How the cells are placed in relation to each other.
    * @param value The value to set.
    */
-  void setThresholdByOption(Newton3Option n3, CellLayoutOption layout, size_t value) {
+  void setThresholdByOption(Newton3Option n3, SortingDirectionOption cellDirection, size_t value) {
     if (n3 == Newton3Option::enabled) {
-      switch (layout) {
-        case CellLayoutOption::corner:
+      switch (cellDirection) {
+        case SortingDirectionOption::corner:
           n3CornerThreshold = value;
           break;
-        case CellLayoutOption::edge:
+        case SortingDirectionOption::edge:
           n3EdgeThreshold = value;
           break;
-        case CellLayoutOption::face:
+        case SortingDirectionOption::face:
           n3FaceThreshold = value;
           break;
       }
     } else {
-      switch (layout) {
-        case CellLayoutOption::corner:
+      switch (cellDirection) {
+        case SortingDirectionOption::corner:
           noN3CornerThreshold = value;
           break;
-        case CellLayoutOption::edge:
+        case SortingDirectionOption::edge:
           noN3EdgeThreshold = value;
           break;
-        case CellLayoutOption::face:
+        case SortingDirectionOption::face:
           noN3FaceThreshold = value;
           break;
       }

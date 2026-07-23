@@ -1,5 +1,5 @@
 /**
- * @file CellLayoutOption.h
+ * @file SortingDirectionOption.h
  * @date 14.07.2026
  * @author hmeyran
  */
@@ -17,11 +17,8 @@ inline namespace options {
 /**
  * Class representing the classification of a normalized cell-pair sortingDirection by the number of its zero
  * components.
- *
- * // TODO: name collides conceptually with DataLayoutOption (AoS/SoA); rename if a clearer name is found
- * // (candidates considered: SortingDirectionOption, DirectionTypeOption).
  */
-class CellLayoutOption : public Option<CellLayoutOption> {
+class SortingDirectionOption : public Option<SortingDirectionOption> {
  public:
   /**
    * Possible choices for the direction-type classification, indexed by the number of zero components in the
@@ -45,13 +42,13 @@ class CellLayoutOption : public Option<CellLayoutOption> {
   /**
    * Constructor.
    */
-  CellLayoutOption() = default;
+  SortingDirectionOption() = default;
 
   /**
    * Constructor from value.
    * @param option
    */
-  constexpr CellLayoutOption(Value option) : _value(option) {}
+  constexpr SortingDirectionOption(Value option) : _value(option) {}
 
   /**
    * Cast to value.
@@ -63,26 +60,26 @@ class CellLayoutOption : public Option<CellLayoutOption> {
    * Set of options that are very unlikely to be interesting.
    * @return
    */
-  static std::set<CellLayoutOption> getDiscouragedOptions() { return {}; }
+  static std::set<SortingDirectionOption> getDiscouragedOptions() { return {}; }
 
   /**
-   * Provides a way to iterate over the possible choices of CellLayoutOption.
+   * Provides a way to iterate over the possible choices of SortingDirectionOption.
    * @return map option -> string representation
    */
-  static std::map<CellLayoutOption, std::string> getOptionNames() {
+  static std::map<SortingDirectionOption, std::string> getOptionNames() {
     return {
-        {CellLayoutOption::corner, "Corner"},
-        {CellLayoutOption::edge, "Edge"},
-        {CellLayoutOption::face, "Face"},
+        {SortingDirectionOption::corner, "Corner"},
+        {SortingDirectionOption::edge, "Edge"},
+        {SortingDirectionOption::face, "Face"},
     };
   };
 
   /**
    * Classifies a normalized sortingDirection by its number of zero components.
    * @param sortingDirection Normalized vector connecting the centers of two cells. Must not be {0., 0., 0.}.
-   * @return The corresponding CellLayoutOption.
+   * @return The corresponding SortingDirectionOption.
    */
-  static CellLayoutOption fromSortingDirection(const std::array<double, 3> &sortingDirection) {
+  static SortingDirectionOption fromRawArray(const std::array<double, 3> &sortingDirection) {
     return static_cast<Value>(std::ranges::count(sortingDirection, 0.0));
   }
 

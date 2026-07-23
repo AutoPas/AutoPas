@@ -151,7 +151,7 @@ class CellFunctor {
    * Resolves a SortingThresholdInfoInterface into a concrete SortingThresholdInfo2B.
    * If the given info is already a SortingThresholdInfo2B, it is used as-is. Otherwise it is expected to be a
    * SortingThresholdInfoSingle, whose single scalar value is broadcast uniformly to all Newton3-state /
-   * CellLayoutOption combinations.
+   * SortingDirectionOption combinations.
    * @param info
    * @return Concrete SortingThresholdInfo2B.
    */
