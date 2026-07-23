@@ -14,10 +14,9 @@
 #include "autopas/utils/AlignedAllocator.h"
 #include "neighborIdentification/NeighborIdentificationFunctor.h"
 
-
 /**
  * This is a simple test suite that checks that the public-facing NeighborIdentificationFunctor matches the internal
- * InteractionListGeneratorFunctor, except for the functor name. 
+ * InteractionListGeneratorFunctor, except for the functor name.
  */
 
 namespace {
@@ -40,7 +39,7 @@ constexpr double interactionLength = 1.0;
 template <class Functor_T>
 Functor_T::NeighborListAoSType runAoS(Cell &cell) {
   typename Functor_T::NeighborListAoSType map;
-  for (auto & particle : cell) {
+  for (auto &particle : cell) {
     map[&particle];
   }
   Functor_T functor(map, interactionLength, /*gatherNewton3Lists*/ false);

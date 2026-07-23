@@ -41,8 +41,9 @@ class InteractionListGeneratorFunctor
 
   /**
    * Constructor
-   * @param neighborListsAoS Reference to the neighbor list map. Must be initialized, i.e. every particle should already
-   * have an entry, before use.
+   * @param neighborListsAoS Reference to the neighbor list map. Must be initialized before the actual functor calls
+   * but, if used with computeInteractions, this will be handled automatically (this will override anything in the
+   * list).
    * @param interactionLength The distance between particles within which particle pairs get added to the neighbor
    * lists.
    * @param gatherNewton3Lists If false, for a particle pair i, j that are neighbors, **both** particle j will be in
@@ -64,6 +65,24 @@ class InteractionListGeneratorFunctor
    * @return The name of the functor
    */
   std::string getName() override { return "InteractionListGeneratorFunctor"; }
+
+  /**
+   * Initializes the neighbor list map for the given range of particles: clears any previous contents and inserts an
+   * empty neighbor list for every particle. This must happen before the functor is applied, and it must also happen
+   * after any particle rearrangement in memory. AutoPas's computeInteractions() calls
+   * this automatically when this functor (or a child of it) is used, so the handling of the list is safe when used
+   * with computeInteractions.
+   *
+   * @tparam ParticleIterator_T Type of the particle iterator
+   * @param particlesBegin Iterator to the first particle. Iterated until no longer valid.
+   */
+  template <class ParticleIterator_T>
+  void initializeNeighborList(ParticleIterator_T particlesBegin) {
+    _neighborListsAoS.clear();
+    for (auto iter = particlesBegin; iter.isValid(); ++iter) {
+      _neighborListsAoS[&(*iter)];
+    }
+  }
 
   /**
    * Whether particle is relevant for tuning. True, unless functor used internally.
