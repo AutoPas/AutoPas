@@ -56,7 +56,7 @@ add_library(neighborIdentificationLibrary INTERFACE)
 
 target_link_libraries(neighborIdentificationLibrary INTERFACE autopas)
 
-target_include_directories(neighborIdentificationLibrary INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(neighborIdentificationLibrary INTERFACE ./neighborIdentification)
 
 # --------------------------------tests---------------------------------------
 
