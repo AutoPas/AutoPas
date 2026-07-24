@@ -204,11 +204,11 @@ To update the parser, the easiest way to do this is via the CLion plugin for Ant
 > The guidelines below describe the **new** git subtree workflow. Until all dependencies are migrated, they remain as `.zip` archives in [`libs/`](/libs) which are extracted at configure time.
 
 * Dependencies are kept in [`libs/`](/libs) as **git subtrees** of their upstream repositories whenever possible. 
-* If a dependency lacks a clean, standalone upstream git repository (for example, `libuuid` originates from the massive `util-linux` project, and pulling that entire tree would unnecessarily bloat the repository), it should be kept as a bundled `.zip` archive.
 * Each subtree is to be added with `--squash`, so only a snapshot of that repository is kept, without a full git history. 
 * CMake modules under [`cmake/modules/`](/cmake/modules) point `FetchContent` / `ExternalProject_Add` at the in-tree path with `SOURCE_DIR`, so no download happens at configure time. This is used primarily to aid with HPC systems that do not allow downloading dependencies at compile-time.
-* Some subtrees carry one or more **follow-up commits** on top of the squashed import. These are normal commits in our history and can re-applied via 3-way merge when the subtree is next pulled.
-* These subtrees are marked `linguist-vendored` in [`.gitattributes`](/.gitattributes) so GitHub excludes them from language statistics and collapses them in PR diff views.
+* Some subtrees carry one or more **follow-up commits** on top of the squashed import. These are normal commits in our history and can be re-applied via 3-way merge when the subtree is next pulled.
+* Dependencies that are part of a larger project should be pruned by adding such custom commits on top of the subtree's squashed import to keep the repository size manageable.
+* The subtrees are marked `linguist-vendored` in [`.gitattributes`](/.gitattributes) so GitHub excludes them from language statistics and collapses them in PR diff views.
 
 ### Overview of dependencies
 
@@ -223,7 +223,6 @@ The table below lists the dependencies. The **Path** column currently reflects t
 | googletest | [`libs/googletest-1.15.2.zip`](/libs/googletest-1.15.2.zip) | https://github.com/google/googletest | tag `v1.15.2` | — |
 | harmony | [`libs/harmony.zip`](/libs/harmony.zip) | https://github.com/ActiveHarmony/harmony | branch `hotfix-v4.6.0` | `example/` pruned |
 | highway | [`libs/highway-1.3.0.zip`](/libs/highway-1.3.0.zip) | https://github.com/google/highway | tag `1.3.0` | — |
-| libuuid | [`libs/libuuid-1.0.3.zip`](/libs/libuuid-1.0.3.zip) | https://github.com/util-linux/util-linux (embedded) | — | — |
 | pmt | [`libs/pmt-master.zip`](/libs/pmt-master.zip) | https://git.astron.nl/RD/pmt | commit `7a56fa3a` | AutoPas-specific patch |
 | spdlog | [`libs/spdlog-1.17.0.zip`](/libs/spdlog-1.17.0.zip) | https://github.com/gabime/spdlog | tag `v1.17.0` | — |
 | utfcpp | [`libs/utfcpp-4.0.6.zip`](/libs/utfcpp-4.0.6.zip) | https://github.com/nemtrif/utfcpp | tag `v4.0.6` | — |
