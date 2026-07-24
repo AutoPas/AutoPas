@@ -1,4 +1,4 @@
-container                        :  [VerletListsKokkosGPURebuildingMaxNeighbors]
+container                        :  [VerletListsKokkosMaxNeighborsGPURebuilding]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
@@ -15,8 +15,8 @@ cutoff                           :  3
 box-min                          :  [0, 0, 0]
 box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
-deltaT                           :  0.0
-iterations                       :  10
+deltaT                           :  0.0005
+iterations                       :  50
 energy-sensor                    :  rapl
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,-12]
@@ -37,7 +37,7 @@ Objects:
     0:  
       particle-spacing           :  1.122462048
       bottomLeftCorner           :  [1, 1, 1]
-      box-length                 :  [89.5, 57.5, 18.5]
+      box-length                 :  [66.79, 66.79, 66.79]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
 # thermostat:

@@ -450,7 +450,6 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
             spdlog::info("Launching kernel with N={} and M={}", N, M);
             auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
             double endPrep = buildTimer.seconds();
-            _sectionTimes._buildNL._preparation.addTiming(endPrep-startRebuilding);
 
             double startKernel = buildTimer.seconds();
             Kokkos::parallel_for("vl_kokkos_rebuild_flat", rangePolicy, KOKKOS_LAMBDA(const int i) {
@@ -485,7 +484,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
             });
             Kokkos::fence();
             double endKernel = buildTimer.seconds();
-            _sectionTimes._buildNL._kernel.addTiming(endKernel-startKernel);
+            spdlog::info("EndKernel-startKernel {}", endKernel-startKernel);
 
 
             spdlog::info("Kernel launch complete, checking for overflow...");
@@ -494,8 +493,12 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
             double endTime = buildTimer.seconds();
-            _sectionTimes._buildNL._cleanup.addTiming(endTime-startCleanup);
-            _sectionTimes._buildNL._total.addTiming(endTime-startRebuilding);
+            if(overflow==0){
+                _sectionTimes._buildNL._kernel.addTiming(endKernel-startKernel);
+                _sectionTimes._buildNL._preparation.addTiming(endPrep-startRebuilding);
+                _sectionTimes._buildNL._cleanup.addTiming(endTime-startCleanup);
+                _sectionTimes._buildNL._total.addTiming(endTime-startRebuilding);
+            }
             return overflow != 0;
         }
 
@@ -534,7 +537,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
             spdlog::info("Launching team kernel with N={} and M={}", N, M);
             auto teamPolicy = Kokkos::TeamPolicy<ExecSpace>(N, Kokkos::AUTO)
                                   .set_scratch_size(0, Kokkos::PerTeam(scratchBytes));
-            _sectionTimes._buildNL._preparation.addTiming(buildTimer.seconds()-startBuild);
+            double endPrep = buildTimer.seconds();
             double startKernel = buildTimer.seconds();
             
             Kokkos::parallel_for("vl_kokkos_rebuild_teams", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
@@ -575,15 +578,18 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                 });
             });
             Kokkos::fence();
-            _sectionTimes._buildNL._kernel.addTiming(buildTimer.seconds()-startKernel);
+            double endKernel = buildTimer.seconds();
             spdlog::info("Team kernel launch complete, checking for overflow...");
             double startCleanup= buildTimer.seconds();
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
             double endCleanup = buildTimer.seconds();
-            _sectionTimes._buildNL._cleanup.addTiming(endCleanup-startCleanup);
-            _sectionTimes._buildNL._total.addTiming(endCleanup-startBuild);
-
+            if(overflow == 0){
+                _sectionTimes._buildNL._preparation.addTiming(endPrep-startBuild);
+                _sectionTimes._buildNL._kernel.addTiming(endKernel-startKernel);
+                _sectionTimes._buildNL._cleanup.addTiming(endCleanup-startCleanup);
+                _sectionTimes._buildNL._total.addTiming(endCleanup-startBuild);
+            }
             return overflow != 0;
         
         }
@@ -810,7 +816,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
     size_t _maxNeighbors {64};
 
     
-    bool _useTeamsRebuild {true};
+    bool _useTeamsRebuild {false};
     SectionTimings _sectionTimes{};
    
 };
