@@ -56,19 +56,13 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    * @param cutoff
    * @param skin
    * @param cellSizeFactor cell size factor relative to cutoff
-   * @param aosSortingThreshold number of particles in two cells from which AoS sorting should be performed.
-   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
-   * @param soaSortingThreshold Sum of the SoA buffer sizes of two cells from which SoA sorting should be enabled.
-   * Default comes from the LJFunctorHWY Benchmarks.
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
   LinkedCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-              const double skin, const double cellSizeFactor = 1.0, const size_t aosSortingThreshold = 8,
-              const size_t soaSortingThreshold = 100,
+              const double skin, const double cellSizeFactor = 1.0,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThreshold,
-                                                     soaSortingThreshold),
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skin, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 

@@ -76,8 +76,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
-  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "",
-                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 
   // Add particles. Calling add(Halo)Particle on a fresh logicHandler should place the particles directly in the
   // container.
@@ -397,8 +396,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
-  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "",
-                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 
   // fill the container with the given particles
   for (const auto &p : particles) {

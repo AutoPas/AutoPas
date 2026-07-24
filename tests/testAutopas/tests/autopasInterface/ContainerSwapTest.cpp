@@ -82,9 +82,7 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
-  autopas::LogicHandler<ParticleFP64> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "",
-                                                   autoTunerInfo.aosSortingThreshold,
-                                                   autoTunerInfo.soaSortingThreshold);
+  autopas::LogicHandler<ParticleFP64> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 
   // Helper to add particles to the container.
   auto addParticlesToContainer = [&](auto &containerToFill) {

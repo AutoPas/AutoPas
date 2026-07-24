@@ -54,15 +54,9 @@ class LogicHandler {
    * @param logicHandlerInfo
    * @param rebuildFrequency
    * @param outputSuffix
-   * @param aosSortingThreshold Default AoS sorting threshold used to seed newly generated containers.
-   * Mirrors AutoTunerInfo::aosSortingThreshold, which independently seeds each AutoTuner's
-   * SortingThresholdBenchmark; passed here explicitly since LogicHandler has no other access to AutoTunerInfo.
-   * @param soaSortingThreshold Default SoA sorting threshold used to seed newly generated containers.
-   * @see AutoTunerInfo::aosSortingThreshold, AutoTunerInfo::soaSortingThreshold
    */
   LogicHandler(const std::shared_ptr<TuningManager> &tunerManager, const LogicHandlerInfo &logicHandlerInfo,
-               unsigned int rebuildFrequency, const std::string &outputSuffix, size_t aosSortingThreshold,
-               size_t soaSortingThreshold)
+               unsigned int rebuildFrequency, const std::string &outputSuffix)
       : _tuningManager(tunerManager),
         _logicHandlerInfo(logicHandlerInfo),
         _neighborListRebuildFrequency{rebuildFrequency},
@@ -71,8 +65,6 @@ class LogicHandler {
         _remainderPairwiseInteractionHandler(_spatialLocks),
         _remainderTriwiseInteractionHandler(_spatialLocks),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
-        _aosSortingThreshold(aosSortingThreshold),
-        _soaSortingThreshold(soaSortingThreshold),
         _iterationLogger(outputSuffix,
                          std::any_of(tunerManager->getAutoTuners().begin(), tunerManager->getAutoTuners().end(),
                                      [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
@@ -85,10 +77,10 @@ class LogicHandler {
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
-      _currentContainerSelectorInfo = ContainerSelectorInfo{
-          _logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,     _logicHandlerInfo.cutoff,
-          configuration.cellSizeFactor, _logicHandlerInfo.verletSkin, _verletClusterSize,
-          _aosSortingThreshold,         _soaSortingThreshold,         configuration.loadEstimator};
+      _currentContainerSelectorInfo =
+          ContainerSelectorInfo{_logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,     _logicHandlerInfo.cutoff,
+                                configuration.cellSizeFactor, _logicHandlerInfo.verletSkin, _verletClusterSize,
+                                configuration.loadEstimator};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
@@ -837,17 +829,6 @@ class LogicHandler {
   unsigned int _verletClusterSize;
 
   /**
-   * Default AoS sorting threshold used to seed newly generated containers, passed in at construction (mirrors
-   * AutoTunerInfo::aosSortingThreshold; see the constructor for why LogicHandler needs its own copy).
-   */
-  size_t _aosSortingThreshold;
-
-  /**
-   * Default SoA sorting threshold used to seed newly generated containers. @see _aosSortingThreshold
-   */
-  size_t _soaSortingThreshold;
-
-  /**
    * This is used to store the total number of neighbor lists rebuild.
    */
   size_t _numRebuilds{0};
@@ -1283,9 +1264,9 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   // apply its result to the active container. Retrying on the next iteration if the edge case that no Particle is
   // available occurs. SortingThresholdBenchmark is pairwise-only. Within pairwise functors, AoS benchmarking runs for
   // any of them. SoA benchmarking additionally requires Functor::supportsSoASorting.
-  if (_logicHandlerInfo.useSortingThresholdBenchmark) {
-    auto &sortingThresholdBenchmark = _tuningManager->getAutoTuners()[interactionType]->getSortingThresholdBenchmark();
+  auto &sortingThresholdBenchmark = _tuningManager->getAutoTuners()[interactionType]->getSortingThresholdBenchmark();
 
+  if (_logicHandlerInfo.useSortingThresholdBenchmark) {
     if constexpr (utils::isPairwiseFunctor<Functor>()) {
       const bool needsAoSRun = not sortingThresholdBenchmark.hasRunAoS();
       const bool needsSoARun = Functor::supportsSoASorting and not sortingThresholdBenchmark.hasRunSoA();
@@ -1307,13 +1288,12 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
         }
       }
     }
-
-    // Each interaction type has its own AutoTuner and thus its own SortingThresholdBenchmark, so this always
-    // applies the thresholds belonging to the interaction type of the functor being run right now. That makes it
-    // safe to apply unconditionally regardless of interaction type or functor kind.
-    _currentContainer->setAoSSortingThresholds(sortingThresholdBenchmark.getAoSThreshold());
-    _currentContainer->setSoASortingThresholds(sortingThresholdBenchmark.getSoAThreshold());
   }
+  // Each interaction type has its own AutoTuner and thus its own SortingThresholdBenchmark. Before any benchmark run,
+  // getAoSThreshold()/getSoAThreshold() return the uniform default it was seeded with, so this is safe to apply
+  // unconditionally, regardless of useSortingThresholdBenchmark, interaction type, or functor kind.
+  _currentContainer->setAoSSortingThresholds(sortingThresholdBenchmark.getAoSThreshold());
+  _currentContainer->setSoASortingThresholds(sortingThresholdBenchmark.getSoAThreshold());
 
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
   const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
@@ -1406,10 +1386,9 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   }
 
   std::unique_ptr<ParticleContainerInterface<Particle_T>> containerPtr{nullptr};
-  auto containerInfo =
-      ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
-                            _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _aosSortingThreshold, _soaSortingThreshold, config.loadEstimator);
+  auto containerInfo = ContainerSelectorInfo(
+      _currentContainer->getBoxMin(), _currentContainer->getBoxMax(), _currentContainer->getCutoff(),
+      config.cellSizeFactor, _currentContainer->getVerletSkin(), _verletClusterSize, config.loadEstimator);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.
