@@ -848,12 +848,12 @@ class LogicHandler {
   size_t _soaSortingThreshold;
 
   /**
-   * This is used to store the total number of neighbour lists rebuild.
+   * This is used to store the total number of neighbor lists rebuild.
    */
   size_t _numRebuilds{0};
 
   /**
-   * This is used to store the total number of neighbour lists rebuilds in the non-tuning phase.
+   * This is used to store the total number of neighbor lists rebuilds in the non-tuning phase.
    * This is reset at the start of a new tuning phase.
    */
   size_t _numRebuildsInNonTuningPhase{0};
@@ -964,7 +964,7 @@ template <typename Particle_T>
 void LogicHandler<Particle_T>::updateRebuildPositions() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
-  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
+  // e.g. neighbor list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
   AUTOPAS_OPENMP(parallel)
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
@@ -1012,7 +1012,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
-  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
+  // e.g. neighbor list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
   AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
