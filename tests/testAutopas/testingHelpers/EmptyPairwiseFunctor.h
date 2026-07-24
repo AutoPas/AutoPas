@@ -23,6 +23,7 @@ class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, EmptyPa
    * Structure of the SoAs defined by the particle.
    */
   using SoAArraysType = typename Particle_T::SoAArraysType;
+  using autopas::PairwiseFunctor<Particle_T, EmptyPairwiseFunctor<Particle_T>>::SoAFunctorVerlet;
 
   /**
    * Default constructor.

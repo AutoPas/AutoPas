@@ -34,8 +34,13 @@ class MockPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, MockPair
   // virtual void SoAFunctorVerlet(SoAView &soa, const std::vector, (override)<std::vector<size_t,
   // AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
   MOCK_METHOD(void, SoAFunctorVerlet,
-              (autopas::SoAView<typename Particle_T::SoAArraysType> soa, size_t indexFirst,
-               (const std::vector<size_t, autopas::AlignedAllocator<size_t>> &), bool newton3),
+              (autopas::SoAView<typename Particle_T::SoAArraysType> soa, const size_t indexFirst,
+               (const std::vector<size_t, autopas::AlignedAllocator<size_t>> &) neighborList,
+               bool newton3),
+              (override));
+
+  MOCK_METHOD(void, SoAFunctorVerlet, (autopas::SoAView<typename Particle_T::SoAArraysType> soa, const size_t indexFirst,
+                               const size_t *neighborList, size_t neighborCount, bool newton3),
               (override));
 
   MOCK_METHOD(void, SoALoader,
