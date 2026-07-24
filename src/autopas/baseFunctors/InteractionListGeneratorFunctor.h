@@ -60,6 +60,10 @@ class InteractionListGeneratorFunctor
         _interactionLengthSquared(interactionLength * interactionLength),
         _gatherNewton3Lists(gatherNewton3Lists) {}
 
+  /**
+   *
+   * @return The name of the functor
+   */
   std::string getName() override { return "InteractionListGeneratorFunctor"; }
 
   /**
