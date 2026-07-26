@@ -1243,34 +1243,22 @@ class LJFunctorHWY
  public:
   // clang-format off
   /**
-  * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
-  * @note Vector overload - kept for backward compatibility.
-  */
-  // clang-format on
-  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                               const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                               bool newton3) final {
-    SoAFunctorVerlet(soa, indexFirst, neighborList.data(), neighborList.size(), newton3);
-  }
-
-  /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
-   * @note Raw-pointer overload - zero allocation.
    */
-  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, const size_t *neighborList,
-                               size_t neighborCount, bool newton3) final {
-    if (soa.size() == 0 or neighborCount == 0) return;
+  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, std::span<const size_t> neighborList,
+                               bool newton3) final {
+    if (soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
-      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList, neighborCount);
+      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
     } else {
-      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList, neighborCount);
+      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
     }
   }
 
  private:
   template <bool newton3>
   inline void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                   const size_t *const __restrict neighborList, const size_t neighborListSize) {
+                                   std::span<const size_t> neighborList) {
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
     if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
       return;
@@ -1316,12 +1304,13 @@ class LJFunctorHWY
     ownedStates2Tmp.fill(static_cast<int64_t>(autopas::OwnershipState::dummy));
 
     size_t j = 0;
+    const size_t neighborListSize = neighborList.size();
     const size_t vecEnd = (neighborListSize / _vecLengthDouble) * _vecLengthDouble;
 
     for (; j < vecEnd; j += _vecLengthDouble) {
       SoAKernelVerlet<newton3>(indexFirst, j, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
                                reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
-                               &typeIDPtr[indexFirst], typeIDPtr, neighborList, fxAcc, fyAcc, fzAcc, virialSumX,
+                               &typeIDPtr[indexFirst], typeIDPtr, neighborList.data(), fxAcc, fyAcc, fzAcc, virialSumX,
                                virialSumY, virialSumZ, uPotSum);
     }
 

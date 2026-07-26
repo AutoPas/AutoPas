@@ -604,33 +604,20 @@ class LJFunctorAVX
   // clang-format off
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
-   * @note Vector overload - kept for backward compatibility.
    */
-  // clang-format on
-  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                               const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                               bool newton3) final {
-    SoAFunctorVerlet(soa, indexFirst, neighborList.data(), neighborList.size(), newton3);
-  }
-
-  /**
-   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
-   * @note Raw-pointer overload - zero allocation.
-   */
-  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, const size_t *neighborList,
-                               size_t neighborCount, bool newton3) final {
-    if (soa.size() == 0 or neighborCount == 0) return;
+  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, std::span<const size_t> neighborList, bool newton3) final {
+    if (soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
-      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList, neighborCount);
+      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
     } else {
-      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList, neighborCount);
+      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
     }
   }
 
  private:
   template <bool newton3>
   inline void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                   const size_t *const __restrict neighborList, const size_t neighborListSize) {
+                                   std::span<const size_t> neighborList) {
 #ifdef __AVX__
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
     if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
@@ -680,6 +667,7 @@ class LJFunctorAVX
     //
     // If b is a power of 2 the following holds:
     // a & ~(b - 1) == a - (a mod b)
+    const size_t neighborListSize = neighborList.size();
     for (; j < (neighborListSize & ~(vecLength - 1)); j += vecLength) {
       // AVX2 variant:
       // create buffer for 4 interaction particles

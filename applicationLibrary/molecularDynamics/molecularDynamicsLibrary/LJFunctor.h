@@ -562,27 +562,15 @@ class LJFunctor
   // clang-format off
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet(soa, indexFirst, neighborList, newton3)
-   * @note Vector overload — kept for backward compatibility with call sites that
-   *       hold a std::vector reference (e.g. VLCTraversalInterface).
-   */
-  // clang-format on
-  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) final {
-    SoAFunctorVerlet(soa, indexFirst, neighborList.data(), neighborList.size(), newton3);
-  }
-
-  /**
-   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet(soa, indexFirst, neighborList, neighborCount, newton3)
    * @note Raw-pointer overload — zero allocation, passes CRS slice directly.
    */
-  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, const size_t *neighborList,
-                        size_t neighborCount, bool newton3) final {
-    if (soa.size() == 0 or neighborCount == 0) return;
+  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, std::span<const size_t> neighborList,
+                        bool newton3) final {
+    if (soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
-      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList, neighborCount);
+      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
     } else {
-      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList, neighborCount);
+      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
     }
   }
 
@@ -820,7 +808,7 @@ class LJFunctor
  private:
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                            const size_t *const __restrict neighborListPtr, const size_t neighborListSize) {
+                            std::span<const size_t> neighborList) {
     const auto *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
     const auto *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
@@ -880,6 +868,7 @@ class LJFunctor
 
     // if the size of the verlet list is larger than the given size vecsize,
     // we will use a vectorized version.
+    const size_t neighborListSize = neighborList.size();
     if (neighborListSize >= vecsize) {
       alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
       alignas(64) std::array<autopas::OwnershipState, vecsize> ownedStateArr{};
@@ -901,10 +890,10 @@ class LJFunctor
         if constexpr (useMixing) {
           for (size_t j = 0; j < vecsize; j++) {
             sigmaSquareds[j] =
-                _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[neighborListPtr[joff + j]]);
-            epsilon24s[j] = _PPLibrary->getMixing24Epsilon(typeptr1[indexFirst], typeptr2[neighborListPtr[joff + j]]);
+                _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[neighborList[joff + j]]);
+            epsilon24s[j] = _PPLibrary->getMixing24Epsilon(typeptr1[indexFirst], typeptr2[neighborList[joff + j]]);
             if constexpr (applyShift) {
-              shift6s[j] = _PPLibrary->getMixingShift6(typeptr1[indexFirst], typeptr2[neighborListPtr[joff + j]]);
+              shift6s[j] = _PPLibrary->getMixingShift6(typeptr1[indexFirst], typeptr2[neighborList[joff + j]]);
             }
           }
         }
@@ -912,10 +901,10 @@ class LJFunctor
         // gather position of particle j
 #pragma omp simd safelen(vecsize)
         for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-          xArr[tmpj] = xptr[neighborListPtr[joff + tmpj]];
-          yArr[tmpj] = yptr[neighborListPtr[joff + tmpj]];
-          zArr[tmpj] = zptr[neighborListPtr[joff + tmpj]];
-          ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
+          xArr[tmpj] = xptr[neighborList[joff + tmpj]];
+          yArr[tmpj] = yptr[neighborList[joff + tmpj]];
+          zArr[tmpj] = zptr[neighborList[joff + tmpj]];
+          ownedStateArr[tmpj] = ownedStatePtr[neighborList[joff + tmpj]];
         }
         // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
@@ -1003,7 +992,7 @@ class LJFunctor
         if (newton3) {
 #pragma omp simd safelen(vecsize)
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-            const size_t j = neighborListPtr[joff + tmpj];
+            const size_t j = neighborList[joff + tmpj];
             fxptr[j] -= fxArr[tmpj];
             fyptr[j] -= fyArr[tmpj];
             fzptr[j] -= fzArr[tmpj];
@@ -1013,7 +1002,7 @@ class LJFunctor
     }
     // this loop goes over the remainder and uses no optimizations
     for (size_t jNeighIndex = joff; jNeighIndex < neighborListSize; ++jNeighIndex) {
-      size_t j = neighborListPtr[jNeighIndex];
+      size_t j = neighborList[jNeighIndex];
       if (indexFirst == j) continue;
       if constexpr (useMixing) {
         sigmaSquared = _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[j]);

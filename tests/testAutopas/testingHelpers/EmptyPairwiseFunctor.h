@@ -53,8 +53,7 @@ class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, EmptyPa
    * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    */
   void SoAFunctorVerlet(autopas::SoAView<typename Particle_T::SoAArraysType> soa, size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) override{};
+                        std::span<const size_t> neighborList, bool newton3) override{};
 
   /**
    * @copydoc autopas::Functor::allowsNewton3()

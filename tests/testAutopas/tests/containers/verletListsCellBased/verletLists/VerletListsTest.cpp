@@ -280,7 +280,7 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
       .Times(numCells);
   EXPECT_CALL(mockFunctor, SoAExtractor(testing::An<autopas::FullParticleCell<ParticleFP64> &>(), _, _))
       .Times(numCells);
-  EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, _, _)).Times(1);
+  EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, _)).Times(1);
 
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.computeInteractions(&verletTraversal);

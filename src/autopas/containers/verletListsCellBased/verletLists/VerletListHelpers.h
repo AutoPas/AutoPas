@@ -39,6 +39,8 @@ class VerletListHelpers {
     [[nodiscard]] const size_t *begin(size_t i) const { return indices.data() + offsets[i]; }
     /// Pointer to the first neighbor index of particle i (mutable).
     [[nodiscard]] size_t *begin(size_t i) { return indices.data() + offsets[i]; }
+    /// Returns a span of the neighbors of particle i.
+    [[nodiscard]] std::span<const size_t> getNeighbors(size_t i) const { return {begin(i), count(i)}; }
   };
 
   /**

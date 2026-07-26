@@ -160,7 +160,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
         if (not _useNewton3) {
           AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(numParticles / (autopas::autopas_get_max_threads() * 10), 1ul)))
           for (size_t i = 0; i < numParticles; ++i) {
-            _functor.SoAFunctorVerlet(_soa, i, neighborList.begin(i), neighborList.count(i), false);
+            _functor.SoAFunctorVerlet(_soa, i, neighborList.getNeighbors(i), false);
           }
         } else {
           // Parallelized SoA with Newton3 using C27 coloring
@@ -172,14 +172,14 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
               for (size_t c = 0; c < cellsOfColor.size(); ++c) {
                 const auto &range = cellsOfColor[c];
                 for (size_t i = range.first; i < range.second; ++i) {
-                  _functor.SoAFunctorVerlet(_soa, i, neighborList.begin(i), neighborList.count(i), true);
+                  _functor.SoAFunctorVerlet(_soa, i, neighborList.getNeighbors(i), true);
                 }
               }
             }
           } else {
             // Fallback to serial if cell grid dimensions are not available
             for (size_t i = 0; i < numParticles; ++i) {
-              _functor.SoAFunctorVerlet(_soa, i, neighborList.begin(i), neighborList.count(i), true);
+              _functor.SoAFunctorVerlet(_soa, i, neighborList.getNeighbors(i), true);
             }
           }
         }
