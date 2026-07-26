@@ -750,8 +750,8 @@ class LJFunctorHWY
     // endI bounds the outer loop from above, mirroring startI: i-particles from endI onwards cannot interact
     // with any j-particle, so the loop stops there instead of running to n1 and relying on the per-block
     // jVecStart >= jVecEnd skip below.
-    const std::ptrdiff_t endI =
-        sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().endI) : static_cast<std::ptrdiff_t>(n1);
+    const std::ptrdiff_t endI = sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().endI)
+                                                                  : static_cast<std::ptrdiff_t>(n1);
 
     VectorDouble virialSumX = highway::Zero(tag_double);
     VectorDouble virialSumY = highway::Zero(tag_double);
