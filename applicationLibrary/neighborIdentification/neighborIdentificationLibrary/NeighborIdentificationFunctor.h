@@ -145,7 +145,6 @@ gathering N3 lists.
   /**
    * SoAFunctor for verlet list generation. (single cell version)
    * @param soa the soa
-   * @param newton3 Whether newton3 is used.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool /*newton3*/) override {
     if (soa.size() == 0) return;
@@ -239,8 +238,7 @@ gathering N3 lists.
   /**
    * SoAFunctorVerlet for interaction list generation.
    *
-   * Generates interaction list entries for the particle at index indexFirst in soa and
-every potential neighbor
+   * Generates interaction list entries for the particle at index indexFirst in soa and every potential neighbor
    * given by the Verlet list.
    *
    * @param soa the soa

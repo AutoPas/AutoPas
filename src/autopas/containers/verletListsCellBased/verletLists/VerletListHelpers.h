@@ -31,15 +31,30 @@ class VerletListHelpers {
     std::vector<size_t> offsets;                            ///< size N+1
     std::vector<size_t, AlignedAllocator<size_t>> indices;  ///< flat neighbor indices
 
-    /// Number of particles tracked by this list.
+    /**
+     * Number of particles tracked by this list.
+     * @return number of particles
+     */
     [[nodiscard]] size_t size() const { return offsets.empty() ? 0u : offsets.size() - 1u; }
-    /// Number of neighbors of particle i.
+    /** Number of neighbors of particle i.
+     * @param i particle index
+     * @return number of neighbors
+     */
     [[nodiscard]] size_t count(size_t i) const { return offsets[i + 1] - offsets[i]; }
-    /// Pointer to the first neighbor index of particle i (const).
+    /** Pointer to the first neighbor index of particle i (const).
+     * @param i particle index
+     * @return pointer to the first neighbor index
+     */
     [[nodiscard]] const size_t *begin(size_t i) const { return indices.data() + offsets[i]; }
-    /// Pointer to the first neighbor index of particle i (mutable).
+    /** Pointer to the first neighbor index of particle i (mutable).
+     * @param i particle index
+     * @return pointer to the first neighbor index
+     */
     [[nodiscard]] size_t *begin(size_t i) { return indices.data() + offsets[i]; }
-    /// Returns a span of the neighbors of particle i.
+    /** Returns a span of the neighbors of particle i.
+     * @param i particle index
+     * @return span of neighbor indices
+     */
     [[nodiscard]] std::span<const size_t> getNeighbors(size_t i) const { return {begin(i), count(i)}; }
   };
 
@@ -250,6 +265,12 @@ class VerletListHelpers {
     bool allowsNewton3() override { return true; }
     bool allowsNonNewton3() override { return true; }
 
+    /**
+     *
+     * @param i
+     * @param j
+     * @param newton3
+     */
     void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
       using namespace autopas::utils::ArrayMath::literals;
       if (i.isDummy() or j.isDummy()) return;
@@ -262,6 +283,11 @@ class VerletListHelpers {
       }
     }
 
+    /**
+     *
+     * @param soa
+     * @param newton3
+     */
     void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
       if (soa.size() == 0) return;
       auto **const __restrict ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
@@ -285,6 +311,11 @@ class VerletListHelpers {
       }
     }
 
+    /**
+     *
+     * @param soa1
+     * @param soa2
+     */
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.size() == 0 || soa2.size() == 0) return;
       auto **const __restrict ptr1ptr = soa1.template begin<Particle_T::AttributeNames::ptr>();
@@ -308,10 +339,19 @@ class VerletListHelpers {
       }
     }
 
+    /**
+     *
+     * @return
+     */
     constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
       return {Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
               Particle_T::AttributeNames::posZ};
     }
+
+    /**
+     *
+     * @return
+     */
     constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() { return {}; }
 
    private:
@@ -357,6 +397,12 @@ class VerletListHelpers {
     bool allowsNewton3() override { return true; }
     bool allowsNonNewton3() override { return true; }
 
+    /**
+     *
+     * @param i
+     * @param j
+     * @param newton3
+     */
     void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
       using namespace autopas::utils::ArrayMath::literals;
       if (i.isDummy() or j.isDummy()) return;
@@ -371,6 +417,11 @@ class VerletListHelpers {
       }
     }
 
+    /**
+     *
+     * @param soa
+     * @param newton3
+     */
     void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
       if (soa.size() == 0) return;
       auto **const __restrict ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
@@ -393,6 +444,11 @@ class VerletListHelpers {
       }
     }
 
+    /**
+     *
+     * @param soa1
+     * @param soa2
+     */
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.size() == 0 || soa2.size() == 0) return;
       auto **const __restrict ptr1ptr = soa1.template begin<Particle_T::AttributeNames::ptr>();
@@ -417,10 +473,19 @@ class VerletListHelpers {
       }
     }
 
+    /**
+     *
+     * @return
+     */
     constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
       return {Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
               Particle_T::AttributeNames::posZ};
     }
+
+    /**
+     *
+     * @return
+     */
     constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() { return {}; }
 
    private:

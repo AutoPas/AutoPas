@@ -561,8 +561,7 @@ class LJFunctor
  public:
   // clang-format off
   /**
-   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet(soa, indexFirst, neighborList, newton3)
-   * @note Raw-pointer overload — zero allocation, passes CRS slice directly.
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    */
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, std::span<const size_t> neighborList,
                         bool newton3) final {
