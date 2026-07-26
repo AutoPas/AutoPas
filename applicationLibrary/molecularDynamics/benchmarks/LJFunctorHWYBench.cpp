@@ -18,7 +18,7 @@
  *   3. Baselines: AoSFunctor, SoAFunctorSingle, SoAFunctorVerlet — single cell,
  *      varying N and newton3. Reference points for absolute throughput.
  *
- * Cell size: kCellSize = 4 (≈ 1.33 × cutoff); both cells are equal-sized cubes with side lengths kCellSize. N ∈
+ * Cell size: kCellSize = 4 (≈ 1.33 × cutoff). Both cells are equal-sized cubes with side lengths kCellSize. N ∈
  * {10…150} per cell. All Benchmark generate particles with rotating seeds per repetition: 42 + repetition_index
  */
 
@@ -99,7 +99,7 @@ constexpr int kFixedVecPattern = VectorizationPattern::p1xVec;
  * Stored as int64_t (×10) rather than double: benchmark::internal::Benchmark::ArgsProduct and state.range() only
  * accept int64_t, so a double factor can't be swept directly.
  */
-const std::vector<int64_t> kCellSizeFactors = {13, 15, 18, 20};
+const std::vector<int64_t> kCellSizeFactors = {10, 13, 15, 18, 20};
 
 /**
  * Functor config used to benchmark.
