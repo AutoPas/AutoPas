@@ -36,20 +36,17 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @param boxMax
    * @param cutoff
    * @param skin
-   * @param aosSortingThreshold Sum of the number of particles in two cells from which AoS sorting should be enabled.
-   * @param soaSortingThreshold Sum of the SoA buffer sizes of two cells from which SoA sorting should be enabled.
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                             const double cutoff, const double skin, const size_t aosSortingThreshold,
-                             const size_t soaSortingThreshold)
+                             const double cutoff, const double skin)
       : ParticleContainerInterface<ParticleType>(skin),
         _cells(),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
         _skin(skin),
-        _aosSortingThresholds(std::make_shared<const SortingThresholdInfoSingle>(aosSortingThreshold)),
-        _soaSortingThresholds(std::make_shared<const SortingThresholdInfoSingle>(soaSortingThreshold)) {}
+        _aosSortingThresholds(std::make_shared<const SortingThresholdInfoSingle>(0)),
+        _soaSortingThresholds(std::make_shared<const SortingThresholdInfoSingle>(0)) {}
 
   /**
    * Destructor of CellBasedParticleContainer.
@@ -179,7 +176,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   std::vector<ParticleCellType> _cells;
   /**
    * Current AoS pair-sorting threshold, forwarded to freshly generated traversals in prepareTraversal().
-   * Owned as a shared_ptr so the container can hold whichever concrete shape it was given (a uniform
+   * Owned as a shared_ptr to the interface so the container can hold whichever concrete shape it was given (a uniform
    * SortingThresholdInfoSingle at construction, or e.g. a SortingThresholdInfo2B via setAoSSortingThresholds()
    * later) without needing to know that shape itself.
    */

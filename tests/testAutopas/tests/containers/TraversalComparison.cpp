@@ -10,6 +10,7 @@
 
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/utils/SortingThresholdInfoSingle.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
@@ -142,16 +143,11 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   constexpr unsigned int rebuildFrequency = 1;
   const size_t aosSortingThreshold = useSorting ? 5 : std::numeric_limits<size_t>::max();
   const size_t soaSortingThreshold = useSorting ? 5 : std::numeric_limits<size_t>::max();
-  const auto containerInfo = autopas::ContainerSelectorInfo{_boxMin,
-                                                            boxMax,
-                                                            _cutoff,
-                                                            config.cellSizeFactor,
-                                                            skin,
-                                                            32,
-                                                            aosSortingThreshold,
-                                                            soaSortingThreshold,
-                                                            config.loadEstimator};
+  const auto containerInfo =
+      autopas::ContainerSelectorInfo{_boxMin, boxMax, _cutoff, config.cellSizeFactor, skin, 32, config.loadEstimator};
   auto container = autopas::ContainerSelector<Molecule>::generateContainer(config.container, containerInfo);
+  container->setAoSSortingThresholds(std::make_shared<const autopas::SortingThresholdInfoSingle>(aosSortingThreshold));
+  container->setSoASortingThresholds(std::make_shared<const autopas::SortingThresholdInfoSingle>(soaSortingThreshold));
 
   autopas::generators::UniformGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
                                                            container->getBoxMin(), container->getBoxMax(),

@@ -157,7 +157,7 @@ class CellFunctor {
    * Resolves a SortingThresholdInfoInterface into a concrete SortingThresholdInfo2B.
    * If the given info is already a SortingThresholdInfo2B, it is used as-is. Otherwise it is expected to be a
    * SortingThresholdInfoSingle, whose single scalar value is broadcast uniformly to all Newton3-state /
-   * CellLayoutOption combinations.
+   * SortingDirectionOption combinations.
    * @param info
    * @return Concrete SortingThresholdInfo2B.
    */
@@ -308,7 +308,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
       this->_functor.AoSFunctor(p2, p1, false);
     }
   };
-  // TODO: This is currently arbitrary, think of a good way to handle this
+  // @todo: Which parameter from the Thresholds is used for inner cell sorting is currently arbitrary, think of a good
+  // way to handle this
   if (cell.size() >= _aosSortingThresholds.getThresholdByConfig(_useNewton3, {1, 0, 0})) {
     SortedCellView<ParticleCell_T> cellSorted(cell, utils::ArrayMath::normalize(cell.getCellLength()));
 

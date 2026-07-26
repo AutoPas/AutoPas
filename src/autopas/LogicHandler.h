@@ -27,7 +27,6 @@
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
-#include "autopas/utils/SortingThresholdInfoSingle.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/TraceTimer.h"
@@ -66,10 +65,6 @@ class LogicHandler {
         _remainderPairwiseInteractionHandler(_spatialLocks),
         _remainderTriwiseInteractionHandler(_spatialLocks),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
-        _aosSortingThreshold(logicHandlerInfo.aosSortingThreshold),
-        _soaSortingThreshold(logicHandlerInfo.soaSortingThreshold),
-        _defaultAoSSortingThresholdSingle(std::make_shared<const SortingThresholdInfoSingle>(_aosSortingThreshold)),
-        _defaultSoASortingThresholdSingle(std::make_shared<const SortingThresholdInfoSingle>(_soaSortingThreshold)),
         _iterationLogger(outputSuffix,
                          std::any_of(tunerManager->getAutoTuners().begin(), tunerManager->getAutoTuners().end(),
                                      [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
@@ -82,10 +77,10 @@ class LogicHandler {
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
-      _currentContainerSelectorInfo = ContainerSelectorInfo{
-          _logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,     _logicHandlerInfo.cutoff,
-          configuration.cellSizeFactor, _logicHandlerInfo.verletSkin, _verletClusterSize,
-          _aosSortingThreshold,         _soaSortingThreshold,         configuration.loadEstimator};
+      _currentContainerSelectorInfo =
+          ContainerSelectorInfo{_logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,     _logicHandlerInfo.cutoff,
+                                configuration.cellSizeFactor, _logicHandlerInfo.verletSkin, _verletClusterSize,
+                                configuration.loadEstimator};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
@@ -834,39 +829,15 @@ class LogicHandler {
   unsigned int _verletClusterSize;
 
   /**
-   * This is used to store the total number of neighbour lists rebuild.
+   * This is used to store the total number of neighbor lists rebuild.
    */
   size_t _numRebuilds{0};
 
   /**
-   * This is used to store the total number of neighbour lists rebuilds in the non-tuning phase.
+   * This is used to store the total number of neighbor lists rebuilds in the non-tuning phase.
    * This is reset at the start of a new tuning phase.
    */
   size_t _numRebuildsInNonTuningPhase{0};
-
-  /**
-   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor.
-   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
-   */
-  size_t _aosSortingThreshold;
-  /**
-   * Number of particles in two SoA buffers from which SoA sorting should be performed.
-   * Default comes from the LJFunctorHWY Benchmarks.
-   */
-  size_t _soaSortingThreshold;
-
-  /**
-   * Cached SortingThresholdInfoSingle wrapping _aosSortingThreshold, constructed once so that it can be reused
-   * whenever the container's AoS sorting threshold needs to be reset to a type CellFunctor3B accepts (see
-   * computeInteractionsPipeline()) without reallocating on every triwise call.
-   */
-  std::shared_ptr<const SortingThresholdInfoSingle> _defaultAoSSortingThresholdSingle;
-  /**
-   * Cached SortingThresholdInfoSingle wrapping _soaSortingThreshold, constructed once so that it can be reused
-   * whenever the container's SoA sorting threshold needs to be reset to a type CellFunctor3B accepts (see
-   * computeInteractionsPipeline()) without reallocating on every triwise call.
-   */
-  std::shared_ptr<const SortingThresholdInfoSingle> _defaultSoASortingThresholdSingle;
 
   std::shared_ptr<TuningManager> _tuningManager;
 
@@ -974,7 +945,7 @@ template <typename Particle_T>
 void LogicHandler<Particle_T>::updateRebuildPositions() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
-  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
+  // e.g. neighbor list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
   AUTOPAS_OPENMP(parallel)
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
@@ -1022,7 +993,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
-  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
+  // e.g. neighbor list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
   AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
@@ -1290,21 +1261,19 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   _tuningManager->logTuningResult(tuningTimer.getTotalTime(), _iteration, interactionType);
 
   // Run SortingThresholdBenchmark lazily on the first iteration for which an owned particle is available, and
-  // inject the result into the active container. Until then this is a no-op and hasRunAoS()/hasRunSoA() stay
-  // false, so the benchmark is simply retried on the next call to this function.
-  // SortingThresholdBenchmark is pairwise-only. Within pairwise functors, AoS benchmarking runs for any of them. SoA
-  // benchmarking additionally requires Functor::supportsSoASorting.
-  if constexpr (utils::isPairwiseFunctor<Functor>()) {
-    if (_logicHandlerInfo.useSortingThresholdBenchmark) {
-      auto &autoTuner = *_tuningManager->getAutoTuners()[interactionType];
-      auto &sortingThresholdBenchmark = autoTuner.getSortingThresholdBenchmark();
+  // apply its result to the active container. Retrying on the next iteration if the edge case that no Particle is
+  // available occurs. SortingThresholdBenchmark is pairwise-only. Within pairwise functors, AoS benchmarking runs for
+  // any of them. SoA benchmarking additionally requires Functor::supportsSoASorting.
+  auto &sortingThresholdBenchmark = _tuningManager->getAutoTuners()[interactionType]->getSortingThresholdBenchmark();
 
+  if (_logicHandlerInfo.useSortingThresholdBenchmark) {
+    if constexpr (utils::isPairwiseFunctor<Functor>()) {
       const bool needsAoSRun = not sortingThresholdBenchmark.hasRunAoS();
       const bool needsSoARun = Functor::supportsSoASorting and not sortingThresholdBenchmark.hasRunSoA();
       if (needsAoSRun or needsSoARun) {
         // Sample an existing particle from the container to use as the template for the particles generated by the
-        // benchmark, so that particle types needing more than (position, velocity, id) to be valid (e.g. multi-site
-        // molecules) are benchmarked with realistic properties instead of a synthetic default construction.
+        // benchmark and to use it to copy construct new Particles.
+        // Because AutoPas doesn't make any assumptions about the Particle apart from it being copy-constructible.
         auto particleIter = begin(IteratorBehavior::owned);
         if (particleIter.isValid()) {
           const Particle_T defaultParticle = *particleIter;
@@ -1318,29 +1287,13 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
           }
         }
       }
-
-      // getAoSThreshold()/getSoAThreshold() hand out the same cached shared_ptr on every call once the respective
-      // benchmark has run, so re-applying them here (needed every call in case an intervening triwise call reset
-      // the container, see the else branch below) is a cheap shared_ptr copy, not a reallocation.
-      if (sortingThresholdBenchmark.hasRunAoS()) {
-        _currentContainer->setAoSSortingThresholds(sortingThresholdBenchmark.getAoSThreshold());
-      }
-
-      if constexpr (Functor::supportsSoASorting) {
-        if (sortingThresholdBenchmark.hasRunSoA()) {
-          _currentContainer->setSoASortingThresholds(sortingThresholdBenchmark.getSoAThreshold());
-        }
-      }
     }
-  } else if (_logicHandlerInfo.useSortingThresholdBenchmark) {
-    // The container's sorting thresholds are shared by every traversal prepared from it, regardless of interaction
-    // type. A previous pairwise call above may have switched them to a SortingThresholdInfo2B, which CellFunctor3B
-    // (used by triwise traversals) cannot accept. Reset them to the plain SortingThresholdInfoSingle default before
-    // this triwise traversal is prepared, so that prepareTraversal() always hands CellFunctor3B a compatible type.
-    // This is fragile but unavoidable with the current way that threshold information is passed.
-    _currentContainer->setAoSSortingThresholds(_defaultAoSSortingThresholdSingle);
-    _currentContainer->setSoASortingThresholds(_defaultSoASortingThresholdSingle);
   }
+  // Each interaction type has its own AutoTuner and thus its own SortingThresholdBenchmark. Before any benchmark run,
+  // getAoSThreshold()/getSoAThreshold() return the uniform default it was seeded with, so this is safe to apply
+  // unconditionally, regardless of useSortingThresholdBenchmark, interaction type, or functor kind.
+  _currentContainer->setAoSSortingThresholds(sortingThresholdBenchmark.getAoSThreshold());
+  _currentContainer->setSoASortingThresholds(sortingThresholdBenchmark.getSoAThreshold());
 
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
   const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
@@ -1433,10 +1386,9 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   }
 
   std::unique_ptr<ParticleContainerInterface<Particle_T>> containerPtr{nullptr};
-  auto containerInfo =
-      ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
-                            _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _aosSortingThreshold, _soaSortingThreshold, config.loadEstimator);
+  auto containerInfo = ContainerSelectorInfo(
+      _currentContainer->getBoxMin(), _currentContainer->getBoxMax(), _currentContainer->getCutoff(),
+      config.cellSizeFactor, _currentContainer->getVerletSkin(), _verletClusterSize, config.loadEstimator);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.
