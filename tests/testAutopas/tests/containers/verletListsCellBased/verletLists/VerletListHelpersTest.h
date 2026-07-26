@@ -1,5 +1,5 @@
 /**
- * @file VerletListHelpersTest.cpp
+ * @file VerletListHelpersTest.h
  * @author muehlhaeusser
  * @date 2026-07-26
  */

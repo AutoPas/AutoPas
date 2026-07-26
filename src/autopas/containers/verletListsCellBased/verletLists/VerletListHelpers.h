@@ -7,6 +7,8 @@
 #pragma once
 
 #include <atomic>
+#include <unordered_map>
+#include <vector>
 
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
@@ -315,7 +317,8 @@ class VerletListHelpers {
     }
 
     /**
-     * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
+     * @param soa1 SoA of first cell
+     * @param soa2 SoA of second cell
      */
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.size() == 0 || soa2.size() == 0) return;
@@ -445,7 +448,8 @@ class VerletListHelpers {
     }
 
     /**
-     * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
+     * @param soa1 SoA of first cell
+     * @param soa2 SoA of second cell
      */
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.size() == 0 || soa2.size() == 0) return;
