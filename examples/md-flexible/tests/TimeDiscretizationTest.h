@@ -13,7 +13,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopasTools/generators/GridGenerator.h"
+#include "generators/src/GridGenerator.h"
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "src/TimeDiscretization.h"

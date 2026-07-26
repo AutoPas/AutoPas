@@ -1137,18 +1137,35 @@ class AutoPas {
   const std::string &getRuleFileName() const { return _tuningStrategyFactoryInfo.ruleFileName; }
 
   /**
-   * Set the sorting-threshold for traversals that use the CellFunctor
+   * Set the aos-sorting-threshold for traversals that use the CellFunctor
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
-   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
+   * @param aosSortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
-  void setSortingThreshold(size_t sortingThreshold) { _sortingThreshold = sortingThreshold; }
+  void setAoSSortingThreshold(size_t aosSortingThreshold) {
+    _logicHandlerInfo.aosSortingThreshold = aosSortingThreshold;
+  }
 
   /**
-   * Get the sorting-threshold for traversals that use the CellFunctor.
-   * @return sorting-threshold
+   * Get the aos-sorting-threshold for traversals that use the CellFunctor.
+   * @return aos-sorting-threshold
    */
-  size_t getSortingThreshold() const { return _sortingThreshold; }
+  size_t getAoSSortingThreshold() const { return _logicHandlerInfo.aosSortingThreshold; }
+
+  /**
+   * Set the SoA sorting-threshold.
+   * If the sum of the SoA buffer sizes of two cells exceeds this value, the SoA path uses SoAFunctorPairSorted.
+   * @param soaSortingThreshold Sum of the SoA buffer sizes from which SoA sorting should be enabled.
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold) {
+    _logicHandlerInfo.soaSortingThreshold = soaSortingThreshold;
+  }
+
+  /**
+   * Get the SoA sorting-threshold.
+   * @return SoA sorting-threshold
+   */
+  size_t getSoASortingThreshold() const { return _logicHandlerInfo.soaSortingThreshold; }
 
  private:
   autopas::ParticleContainerInterface<Particle_T> &getContainer();
@@ -1246,10 +1263,6 @@ class AutoPas {
    * This is useful when multiple instances of AutoPas exist, especially in an MPI context.
    */
   std::string _outputSuffix{""};
-  /**
-   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
-   */
-  size_t _sortingThreshold{8};
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
    * Triggers reserve() and provides a parallel loop with deliberate scheduling.

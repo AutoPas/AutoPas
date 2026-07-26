@@ -7,7 +7,7 @@
 #include "CellBlock3DTest.h"
 
 #include "autopas/utils/ArrayUtils.h"
-#include "autopasTools/generators/GridGenerator.h"
+#include "generators/src/GridGenerator.h"
 
 void CellBlock3DTest::SetUp() {
   // Initialize different cell blocks

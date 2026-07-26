@@ -6,6 +6,7 @@
  */
 
 #include "autopas/AutoPasImpl.h"
+#include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/EmptyPairwiseFunctor.h"
 #include "testingHelpers/NonConstructibleParticle.h"
@@ -23,6 +24,7 @@ template bool autopas::AutoPas<Molecule>::computeInteractions(
     LJFunctorType</* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                   /*globals*/ false> *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
+template bool autopas::AutoPas<Molecule>::computeInteractions(autopas::InteractionListGeneratorFunctor<Molecule> *);
 template bool autopas::AutoPas<NonConstructibleParticle>::computeInteractions(
     MockPairwiseFunctor<NonConstructibleParticle> *);
 
