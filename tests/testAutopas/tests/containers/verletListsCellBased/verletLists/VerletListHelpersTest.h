@@ -28,9 +28,13 @@ class VerletListHelpersTest : public ::testing::Test {
    * Helper function to generate N interacting particles at the origin.
    */
   void generateDenseParticles(size_t n) {
+    // 1. Add all particles first (triggers vector reallocations)
     for (size_t i = 0; i < n; ++i) {
-      // All particles at origin, so distance is 0.0 (they all interact)
       cell.addParticle(ParticleType({0., 0., 0.}, {0., 0., 0.}, i));
+    }
+
+    // 2. Populate the map AFTER all additions are done, so pointers are completely stable
+    for (size_t i = 0; i < n; ++i) {
       particleToIndex[&cell[i]] = i;
     }
   }
