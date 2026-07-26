@@ -29,6 +29,7 @@ class VerletListHelpers;
  */
 struct SoASortingData {
   size_t startI;                        ///< First index in soa1 whose projection range overlaps soa2.
+  size_t endI;                          ///< Exclusive upper bound index in soa1 whose projection range overlaps soa2.
   const std::vector<size_t> &maxIndex;  ///< Per-particle upper bound index into soa2 (exclusive).
   const std::vector<size_t> &minIndex;  ///< Per-particle lower bound index into soa2 (inclusive).
 };

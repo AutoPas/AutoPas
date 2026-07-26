@@ -110,15 +110,19 @@ class CellFunctor {
    * The returned SoASortingData contains:
    * - startI: index of the first i-particle that could interact with any j-particle. All i before startI
    *   project farther than cutoff below projIdxJ[0] and can be skipped unconditionally.
+   * - endI: exclusive upper bound; index of the first i-particle (from startI onwards) that projects farther
+   *   than cutoff above projIdxJ.back(). All i from endI onwards can be skipped unconditionally, symmetric to
+   *   startI.
    * - maxIndex[i]: exclusive upper bound; the first j where projJ > projI[i] + cutoff. A functor iterating
    *   j up to (but not including) this index will not miss any candidate pair for particle i.
    * - minIndex[i]: inclusive lower bound; the first j where projJ >= projI[i] - cutoff. A functor may start
    *   its j-loop here and skip all earlier j-particles for particle i.
    *
-   * Both maxIndex and minIndex are monotonically non-decreasing with i. A functor processing i-particles in
-   * order can therefore advance its j-loop bounds without backtracking, and may also derive valid bounds for
-   * a contiguous block of i-particles (For example with VecPatterns != 1xVec) by taking minIndex of the first and
-   * maxIndex of the last.
+   * Both maxIndex and minIndex are monotonically non-decreasing with i and are only populated for i in
+   * [startI, endI); entries outside that range are left at 0. A functor processing i-particles in order can
+   * therefore advance its j-loop bounds without backtracking, and may also derive valid bounds for a
+   * contiguous block of i-particles (For example with VecPatterns != 1xVec) by taking minIndex of the first
+   * and maxIndex of the last.
    *
    * @param projIdxI Sorted (projection, original index) pairs for the outer-loop (i) cell.
    * @param projIdxJ Sorted (projection, original index) pairs for the inner-loop (j) cell.
@@ -378,17 +382,25 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
   if (nJ == 0) {
     maxIndexCache.assign(nI, 0);
     minIndexCache.assign(nI, 0);
-    return {nI, maxIndexCache, minIndexCache};
+    return {nI, nI, maxIndexCache, minIndexCache};
   }
 
   // Compute startI: the first i-particle that can interact with any j-particle.
   // Any i with `projI[i] < projJ[0] - cutoff` is strictly farther than cutoff from every j along the
   // sorting axis, so it cannot contribute an interaction and is skipped. Particles exactly at the cutoff
   // distance are kept, consistent with the inclusive cutoff test used below for minIndex/maxIndex.
-  const double threshold = projIdxJ[0].first - _sortingCutoff;
-  auto startIter = std::lower_bound(projIdxI.begin(), projIdxI.end(), threshold,
+  const double startThreshold = projIdxJ[0].first - _sortingCutoff;
+  auto startIter = std::lower_bound(projIdxI.begin(), projIdxI.end(), startThreshold,
                                     [](const auto &elem, double val) { return elem.first < val; });
   const size_t startI = static_cast<size_t>(startIter - projIdxI.begin());
+
+  // Compute endI: the exclusive upper bound of i-particles that can interact with any j-particle. Symmetric
+  // to startI: any i with `projI[i] > projJ.back() + cutoff` is strictly farther than cutoff from every j
+  // along the sorting axis, so it and all following i (projIdxI is sorted) can be skipped unconditionally.
+  const double endThreshold = projIdxJ[nJ - 1].first + _sortingCutoff;
+  auto endIter = std::upper_bound(projIdxI.begin(), projIdxI.end(), endThreshold,
+                                  [](double val, const auto &elem) { return val < elem.first; });
+  const size_t endI = static_cast<size_t>(endIter - projIdxI.begin());
 
   // Compute maxIndexCache and minIndexCache in a single O(nI + nJ) sweep.
   // Both bounds are monotonically non-decreasing with i because projIdxI is sorted, so each pointer only
@@ -397,7 +409,7 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
   maxIndexCache.assign(nI, 0);
   minIndexCache.assign(nI, 0);
   size_t jUpper = 0, jLower = 0;
-  for (size_t i = startI; i < nI; ++i) {
+  for (size_t i = startI; i < endI; ++i) {
     // jUpper: first j where projJ > projI[i] + cutoff (exclusive upper bound).
     while (jUpper < nJ and projIdxJ[jUpper].first <= projIdxI[i].first + _sortingCutoff) {
       ++jUpper;
@@ -410,7 +422,7 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
     minIndexCache[i] = jLower;
   }
 
-  return {startI, maxIndexCache, minIndexCache};
+  return {startI, endI, maxIndexCache, minIndexCache};
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
