@@ -240,9 +240,12 @@ class VerletListHelpers {
    */
   class VerletListCounterFunctor : public PairwiseFunctor<Particle_T, VerletListCounterFunctor> {
    public:
+    // Matching SoA type
     using SoAArraysType = typename Particle_T::SoAArraysType;
 
-    /// One atomic counter per particle, each padded to its own cache line.
+    /**
+     * One atomic counter per particle, each padded to its own cache line.
+     */
     struct alignas(64) PaddedAtomic {
       std::atomic<size_t> value{0};
     };
@@ -372,7 +375,9 @@ class VerletListHelpers {
    */
   class VerletListFillerFunctor : public PairwiseFunctor<Particle_T, VerletListFillerFunctor> {
    public:
+    // Matching SoA type
     using SoAArraysType = typename Particle_T::SoAArraysType;
+    // Atomic counter
     using PaddedAtomic = typename VerletListCounterFunctor::PaddedAtomic;
 
     /**
