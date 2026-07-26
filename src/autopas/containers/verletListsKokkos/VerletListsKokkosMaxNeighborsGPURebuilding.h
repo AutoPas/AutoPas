@@ -164,11 +164,11 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
         while (true) {
             double startAlloc = rebuildTimer.seconds();
             // Offsets are per owned particle; entries hold maxNeighbors slots per owned particle
-            Kokkos::realloc(_neighborListOffsets, numberOfOwned);
-            Kokkos::realloc(_neighborListEntries, numberOfOwned * _maxNeighbors);
-            Kokkos::realloc(_haloNeighborListOffsets, numberOfOwned);
-            Kokkos::realloc(_haloNeighborListEntries, numberOfOwned * _maxNeighbors);
-            _sectionTimes._allocation.addTiming(rebuildTimer.seconds()-startAlloc);
+            Kokkos::realloc(Kokkos::WithoutInitializing,_neighborListOffsets, numberOfOwned);
+            Kokkos::realloc(Kokkos::WithoutInitializing,_neighborListEntries, numberOfOwned * _maxNeighbors);
+            Kokkos::realloc(Kokkos::WithoutInitializing,_haloNeighborListOffsets, numberOfOwned);
+            Kokkos::realloc(Kokkos::WithoutInitializing,_haloNeighborListEntries, numberOfOwned * _maxNeighbors);
+            double endAlloc = rebuildTimer.seconds();
             const bool ownedOverflow = _useTeamsRebuild
                 ? buildNeighborListsTeams(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view)
                 : buildNeighborListsFlat(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view);
@@ -177,6 +177,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                 ? buildNeighborListsTeams(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view)
                 : buildNeighborListsFlat(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view);
             if (!ownedOverflow && !haloOverflow) {
+                _sectionTimes._allocation.addTiming(endAlloc-startAlloc);
                 break;
             }
             const size_t grown = _maxNeighbors * 2;

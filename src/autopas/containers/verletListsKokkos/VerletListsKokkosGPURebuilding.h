@@ -422,7 +422,7 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
             spdlog::info("Launching kernel with N={} and M={}", N, M);
 
             // offsets has N+1 entries. offsets(i)..offsets(i+1) delimits particle i neighbor list
-            Kokkos::realloc(offsetsDual, N + 1);
+            Kokkos::realloc(Kokkos::WithoutInitializing, offsetsDual, N + 1);
             auto offsets = offsetsDual.d_view;
 
             auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
@@ -476,7 +476,7 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
             Kokkos::fence();
             
             double startAllocation = bTimer.seconds();
-            Kokkos::realloc(entriesDual, totalNeighbors);
+            Kokkos::realloc(Kokkos::WithoutInitializing, entriesDual, totalNeighbors);
             double endAllocation = bTimer.seconds();
             _sectionTimes._allocation.addTiming(endAllocation-startAllocation);
             auto entries = entriesDual.d_view;
@@ -537,7 +537,7 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
             const auto soa1Device = soa1.deviceView();
             const auto soa2Device = soa2.deviceView();
 
-            Kokkos::realloc(offsetsDual, N + 1);
+            Kokkos::realloc(Kokkos::WithoutInitializing, offsetsDual, N + 1);
             auto offsets = offsetsDual.d_view;
 
             using ExecSpace = typename DeviceSpace::execution_space;
@@ -606,7 +606,7 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
             Kokkos::deep_copy(Kokkos::subview(offsets, N), totalNeighbors);
             Kokkos::fence();
             double endCleanupOffset = bTimer.seconds();
-            Kokkos::realloc(entriesDual, totalNeighbors);
+            Kokkos::realloc(Kokkos::WithoutInitializing, entriesDual, totalNeighbors);
             double entriesAllocation = bTimer.seconds();
             _sectionTimes._offsetKernel._kernel.addTiming(endOffset-startOffset);
             _sectionTimes._offsetKernel._cleanup.addTiming(endCleanupOffset-endOffset);
