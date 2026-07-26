@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "autopas/LogicHandlerInfo.h"
-#include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
@@ -1118,9 +1117,8 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   utils::ArrayUtils::balanceVectors(_particleBuffer, cellToVec);
   utils::ArrayUtils::balanceVectors(_haloParticleBuffer, cellToVec);
 
-  // For InteractionListGeneratorFunctor or child classes thereof, initialize their neighbor
-  if constexpr (std::is_base_of_v<InteractionListGeneratorFunctor<Particle_T, false>, Functor> or
-                std::is_base_of_v<InteractionListGeneratorFunctor<Particle_T, true>, Functor>) {
+  // Mainly for NeighborIdentificationFunctor, initialize the neighbors
+  if constexpr (requires { functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo)); }) {
     functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo));
   }
 

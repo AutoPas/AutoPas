@@ -1,5 +1,5 @@
 /**
- * @file InteractionListGeneratorFunctorTest.h
+ * @file NeighborIdentificationFunctorTest.h
  * @author S. Newcome
  * @date 16.07.2026
  */
@@ -18,9 +18,9 @@
 #include "autopas/particles/OwnershipState.h"
 
 /**
- * Base fixture for all InteractionListGeneratorFunctor tests.
+ * Base fixture for all NeighborIdentificationFunctor tests.
  */
-class InteractionListGeneratorFunctorTest : public AutoPasTestBase {};
+class NeighborIdentificationFunctorTest : public AutoPasTestBase {};
 
 /**
  * Per-particle neighbor lists given as particle IDs, indexed by particle ID.
@@ -180,25 +180,25 @@ struct PairListGenerationParams {
  * Fixture shared by the parameterized AoSFunctor, SoAFunctorSingle and SoAFunctorVerlet tests, which all run over the
  * same set of test cases.
  */
-class InteractionListGeneratorFunctorListGenTest : public InteractionListGeneratorFunctorTest,
-                                                   public ::testing::WithParamInterface<ListGenerationParams> {};
+class NeighborIdentificationFunctorListGenTest : public NeighborIdentificationFunctorTest,
+                                                 public ::testing::WithParamInterface<ListGenerationParams> {};
 
 /**
  * Fixture for the parameterized SoAFunctorPair tests.
  */
-class InteractionListGeneratorFunctorSoAPairTest : public InteractionListGeneratorFunctorTest,
-                                                   public ::testing::WithParamInterface<PairListGenerationParams> {};
+class NeighborIdentificationFunctorSoAPairTest : public NeighborIdentificationFunctorTest,
+                                                 public ::testing::WithParamInterface<PairListGenerationParams> {};
 
 /**
  * Fixture for the parameterized full-flow tests, parameterized over the cross product of the newton3 modes and the
  * ownership variants.
  */
-class InteractionListGeneratorFunctorFullFlowTest
-    : public InteractionListGeneratorFunctorTest,
+class NeighborIdentificationFunctorFullFlowTest
+    : public NeighborIdentificationFunctorTest,
       public ::testing::WithParamInterface<std::tuple<N3Mode, OwnershipVariant>> {};
 
 /**
  * Fixture shared by the thread safety tests (except Verlet).
  */
-class IntListGenFuncThreadSafeTest : public InteractionListGeneratorFunctorTest,
-                                     public ::testing::WithParamInterface<N3Mode> {};
+class NeighborIdentificationFunctorThreadSafeTest : public NeighborIdentificationFunctorTest,
+                                                    public ::testing::WithParamInterface<N3Mode> {};
