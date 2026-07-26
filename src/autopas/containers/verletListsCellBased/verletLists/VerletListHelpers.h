@@ -240,13 +240,18 @@ class VerletListHelpers {
    */
   class VerletListCounterFunctor : public PairwiseFunctor<Particle_T, VerletListCounterFunctor> {
    public:
-    // Matching SoA type
+    /**
+     * Structure of the SoAs defined by the particle.
+     */
     using SoAArraysType = typename Particle_T::SoAArraysType;
 
     /**
      * One atomic counter per particle, each padded to its own cache line.
      */
     struct alignas(64) PaddedAtomic {
+      /**
+       * The actual counter value.
+       */
       std::atomic<size_t> value{0};
     };
 
@@ -269,10 +274,7 @@ class VerletListHelpers {
     bool allowsNonNewton3() override { return true; }
 
     /**
-     *
-     * @param i
-     * @param j
-     * @param newton3
+     * @copydoc autopas::PairwiseFunctor::AoSFunctor()
      */
     void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
       using namespace autopas::utils::ArrayMath::literals;
@@ -287,9 +289,7 @@ class VerletListHelpers {
     }
 
     /**
-     *
-     * @param soa
-     * @param newton3
+     * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
      */
     void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
       if (soa.size() == 0) return;
@@ -315,9 +315,7 @@ class VerletListHelpers {
     }
 
     /**
-     *
-     * @param soa1
-     * @param soa2
+     * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
      */
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.size() == 0 || soa2.size() == 0) return;
@@ -343,8 +341,7 @@ class VerletListHelpers {
     }
 
     /**
-     *
-     * @return
+     * @copydoc autopas::PairwiseFunctor::getNeededAttr()
      */
     constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
       return {Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
@@ -352,8 +349,7 @@ class VerletListHelpers {
     }
 
     /**
-     *
-     * @return
+     * @copydoc autopas::PairwiseFunctor::getComputedAttr()
      */
     constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() { return {}; }
 
@@ -375,9 +371,13 @@ class VerletListHelpers {
    */
   class VerletListFillerFunctor : public PairwiseFunctor<Particle_T, VerletListFillerFunctor> {
    public:
-    // Matching SoA type
+    /**
+     * Structure of the SoAs defined by the particle.
+     */
     using SoAArraysType = typename Particle_T::SoAArraysType;
-    // Atomic counter
+    /**
+     * Atomic counter
+     */
     using PaddedAtomic = typename VerletListCounterFunctor::PaddedAtomic;
 
     /**
@@ -403,10 +403,7 @@ class VerletListHelpers {
     bool allowsNonNewton3() override { return true; }
 
     /**
-     *
-     * @param i
-     * @param j
-     * @param newton3
+     * @copydoc autopas::PairwiseFunctor::AoSFunctor()
      */
     void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
       using namespace autopas::utils::ArrayMath::literals;
@@ -423,9 +420,7 @@ class VerletListHelpers {
     }
 
     /**
-     *
-     * @param soa
-     * @param newton3
+     * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
      */
     void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
       if (soa.size() == 0) return;
@@ -450,9 +445,7 @@ class VerletListHelpers {
     }
 
     /**
-     *
-     * @param soa1
-     * @param soa2
+     * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
      */
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
       if (soa1.size() == 0 || soa2.size() == 0) return;
@@ -479,8 +472,7 @@ class VerletListHelpers {
     }
 
     /**
-     *
-     * @return
+     * @copydoc autopas::PairwiseFunctor::getNeededAttr()
      */
     constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
       return {Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
@@ -488,8 +480,7 @@ class VerletListHelpers {
     }
 
     /**
-     *
-     * @return
+     * @copydoc autopas::PairwiseFunctor::getComputedAttr()
      */
     constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() { return {}; }
 
