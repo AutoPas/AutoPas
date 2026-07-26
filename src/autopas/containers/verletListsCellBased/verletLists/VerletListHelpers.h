@@ -214,10 +214,12 @@ class VerletListHelpers {
   /**
    * Pass-1 functor for the two-pass CRS build.
    *
-   * For every interacting pair (i, j) it increments a per-particle neighbor counter. The counters are then prefix-summed to produce the CRS offsets before pass 2 runs.
+   * For every interacting pair (i, j) it increments a per-particle neighbor counter. The counters are then
+   * prefix-summed to produce the CRS offsets before pass 2 runs.
    *
-   * Thread safety: each counter is a std::atomic<size_t> padded to a full cache line (64 bytes) so that adjacent particles never share a cache line.
-   * This eliminates false-sharing stalls that would otherwise dominate on multi-socket / many-core systems.
+   * Thread safety: each counter is a std::atomic<size_t> padded to a full cache line (64 bytes) so that adjacent
+   * particles never share a cache line. This eliminates false-sharing stalls that would otherwise dominate on
+   * multi-socket / many-core systems.
    */
   class VerletListCounterFunctor : public PairwiseFunctor<Particle_T, VerletListCounterFunctor> {
    public:
@@ -305,8 +307,8 @@ class VerletListHelpers {
     }
 
     constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
-      return {Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX,
-              Particle_T::AttributeNames::posY, Particle_T::AttributeNames::posZ};
+      return {Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+              Particle_T::AttributeNames::posZ};
     }
     constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() { return {}; }
 
@@ -319,9 +321,12 @@ class VerletListHelpers {
   /**
    * Pass-2 functor for the two-pass CRS build.
    *
-   * The CRS offsets are already set. For each interacting pair (i, j) this functor writes j's index directly into the pre-allocated _neighborList.indices slice for particle i, advancing a per-particle fill cursor with a relaxed atomic fetch-add.
+   * The CRS offsets are already set. For each interacting pair (i, j) this functor writes j's index directly into the
+   * pre-allocated _neighborList.indices slice for particle i, advancing a per-particle fill cursor with a relaxed
+   * atomic fetch-add.
    *
-   * The fill cursors reuse the same cache-line-padded PaddedAtomic array as the counter pass (reset to the CRS start offset before this pass runs).
+   * The fill cursors reuse the same cache-line-padded PaddedAtomic array as the counter pass (reset to the CRS start
+   * offset before this pass runs).
    */
   class VerletListFillerFunctor : public PairwiseFunctor<Particle_T, VerletListFillerFunctor> {
    public:
@@ -336,8 +341,7 @@ class VerletListHelpers {
      * @param particleToIndex Map from particle pointer to its dense SoA index.
      * @param interactionLength cutoff + skin.
      */
-    VerletListFillerFunctor(NeighborListCRS &neighborList,
-                            std::vector<PaddedAtomic> &fillPos,
+    VerletListFillerFunctor(NeighborListCRS &neighborList, std::vector<PaddedAtomic> &fillPos,
                             const std::unordered_map<const Particle_T *, size_t> &particleToIndex,
                             double interactionLength)
         : PairwiseFunctor<Particle_T, VerletListFillerFunctor>(interactionLength),
@@ -412,8 +416,8 @@ class VerletListHelpers {
     }
 
     constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
-      return {Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX,
-              Particle_T::AttributeNames::posY, Particle_T::AttributeNames::posZ};
+      return {Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+              Particle_T::AttributeNames::posZ};
     }
     constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() { return {}; }
 

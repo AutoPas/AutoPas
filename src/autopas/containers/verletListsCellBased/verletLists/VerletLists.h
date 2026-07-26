@@ -139,7 +139,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Rebuilds _particleToIndex and _neighborList from scratch.
    *
-   * Dispatches to the single-pass path when only one thread is available (lower overhead, no atomics) and to the two-pass lock-free path when multiple threads are active (eliminates false sharing and malloc contention).
+   * Dispatches to the single-pass path when only one thread is available (lower overhead, no atomics) and to the
+   * two-pass lock-free path when multiple threads are active (eliminates false sharing and malloc contention).
    *
    * @param useNewton3  Whether the force traversal will use Newton's third law.
    */
@@ -165,19 +166,18 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
   /**
-   * Single-threaded rebuild: One traversal with VerletListGeneratorFunctor writing into per-particle std::vector<size_t>, followed by a serial prefix-sum + copy into the flat CRS.
+   * Single-threaded rebuild: One traversal with VerletListGeneratorFunctor writing into per-particle
+   * std::vector<size_t>, followed by a serial prefix-sum + copy into the flat CRS.
    */
-  void updateNeighborListsSingleThread(size_t N, double interactionLength,
-                                        DataLayoutOption dataLayout, bool useNewton3) {
+  void updateNeighborListsSingleThread(size_t N, double interactionLength, DataLayoutOption dataLayout,
+                                       bool useNewton3) {
     std::vector<std::vector<size_t>> tempLists(N);
-    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(
-        tempLists, _particleToIndex, interactionLength);
+    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(tempLists, _particleToIndex,
+                                                                         interactionLength);
     auto traversal =
-        LCC08Traversal<ParticleCellType,
-                       typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
-            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f,
-            this->getInteractionLength(), this->_linkedCells.getCellBlock().getCellLength(),
-            dataLayout, useNewton3);
+        LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
+            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f, this->getInteractionLength(),
+            this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
     this->_linkedCells.computeInteractions(&traversal);
 
     // Prefix-sum + copy:
@@ -193,8 +193,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
                 _neighborList.indices.begin() + static_cast<std::ptrdiff_t>(_neighborList.offsets[i]));
     }
 
-    AutoPasLog(DEBUG, "VerletLists::updateNeighborLists (1T): {} particles, {} neighbors, avg {:.2f}",
-               N, totalNeighbors, N > 0 ? static_cast<double>(totalNeighbors) / static_cast<double>(N) : 0.0);
+    AutoPasLog(DEBUG, "VerletLists::updateNeighborLists (1T): {} particles, {} neighbors, avg {:.2f}", N,
+               totalNeighbors, N > 0 ? static_cast<double>(totalNeighbors) / static_cast<double>(N) : 0.0);
   }
 
   /**
@@ -213,21 +213,19 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    *
    * Optimal when autopas_get_max_threads() > 1.
    */
-  void updateNeighborListsMultiThread(size_t N, double interactionLength,
-                                       DataLayoutOption dataLayout, bool useNewton3) {
+  void updateNeighborListsMultiThread(size_t N, double interactionLength, DataLayoutOption dataLayout,
+                                      bool useNewton3) {
     using PaddedAtomic = typename VerletListHelpers<Particle_T>::VerletListCounterFunctor::PaddedAtomic;
 
     // Pass 1: Count neighbors per particle
     std::vector<PaddedAtomic> counts(N);
     {
-      typename VerletListHelpers<Particle_T>::VerletListCounterFunctor counter(
-          counts, _particleToIndex, interactionLength);
+      typename VerletListHelpers<Particle_T>::VerletListCounterFunctor counter(counts, _particleToIndex,
+                                                                               interactionLength);
       auto traversal =
-          LCC08Traversal<ParticleCellType,
-                         typename VerletListHelpers<Particle_T>::VerletListCounterFunctor>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), counter,
-              this->getInteractionLength(), this->_linkedCells.getCellBlock().getCellLength(),
-              dataLayout, useNewton3);
+          LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListCounterFunctor>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), counter, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
       this->_linkedCells.computeInteractions(&traversal);
     }
 
@@ -240,8 +238,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     const size_t totalNeighbors = _neighborList.offsets[N];
     _neighborList.indices.resize(totalNeighbors);
 
-    AutoPasLog(DEBUG, "VerletLists::updateNeighborLists (MT): {} particles, {} neighbors, avg {:.2f}",
-               N, totalNeighbors, N > 0 ? static_cast<double>(totalNeighbors) / static_cast<double>(N) : 0.0);
+    AutoPasLog(DEBUG, "VerletLists::updateNeighborLists (MT): {} particles, {} neighbors, avg {:.2f}", N,
+               totalNeighbors, N > 0 ? static_cast<double>(totalNeighbors) / static_cast<double>(N) : 0.0);
 
     // Pass 2: Fill CRS indices directly
     // Reuse the PaddedAtomic array as fill cursors, seeding each with offsets[i].
@@ -249,14 +247,12 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       counts[i].value.store(_neighborList.offsets[i], std::memory_order_relaxed);
     }
     {
-      typename VerletListHelpers<Particle_T>::VerletListFillerFunctor filler(
-          _neighborList, counts, _particleToIndex, interactionLength);
+      typename VerletListHelpers<Particle_T>::VerletListFillerFunctor filler(_neighborList, counts, _particleToIndex,
+                                                                             interactionLength);
       auto traversal =
-          LCC08Traversal<ParticleCellType,
-                         typename VerletListHelpers<Particle_T>::VerletListFillerFunctor>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), filler,
-              this->getInteractionLength(), this->_linkedCells.getCellBlock().getCellLength(),
-              dataLayout, useNewton3);
+          LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListFillerFunctor>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), filler, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
       this->_linkedCells.computeInteractions(&traversal);
     }
   }

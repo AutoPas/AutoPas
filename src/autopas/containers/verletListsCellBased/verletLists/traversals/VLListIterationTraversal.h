@@ -78,7 +78,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       for (size_t c = 0; c < cells.size(); ++c) {
         if (offsets[c] < offsets[c + 1]) {
           auto c3D = utils::ThreeDimensionalMapping::oneToThreeD(c, _cellsPerDim);
-          size_t color = (c3D[0] % 2) + 2 * (c3D[1] % 2) + 4 * (c3D[2] % 2);
+          size_t color = (c3D[0] % 3) + 3 * (c3D[1] % 3) + 9 * (c3D[2] % 3);
           _colorCells[color].push_back({offsets[c], offsets[c + 1]});
         }
       }
@@ -123,10 +123,10 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
             }
           }
         } else {
-          // Parallelized AoS with Newton3 using C08 coloring
+          // Parallelized AoS with Newton3 using C27 coloring
           const bool hasCellsPerDim = (_cellsPerDim[0] > 0 && _cellsPerDim[1] > 0 && _cellsPerDim[2] > 0);
           if (hasCellsPerDim) {
-            for (int color = 0; color < 8; ++color) {
+            for (int color = 0; color < 27; ++color) {
               const auto &cellsOfColor = _colorCells[color];
               AUTOPAS_OPENMP(parallel for schedule(dynamic))
               for (size_t c = 0; c < cellsOfColor.size(); ++c) {
@@ -163,10 +163,10 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
             _functor.SoAFunctorVerlet(_soa, i, neighborList.begin(i), neighborList.count(i), false);
           }
         } else {
-          // Parallelized SoA with Newton3 using C08 coloring
+          // Parallelized SoA with Newton3 using C27 coloring
           const bool hasCellsPerDim = (_cellsPerDim[0] > 0 && _cellsPerDim[1] > 0 && _cellsPerDim[2] > 0);
           if (hasCellsPerDim) {
-            for (int color = 0; color < 8; ++color) {
+            for (int color = 0; color < 27; ++color) {
               const auto &cellsOfColor = _colorCells[color];
               AUTOPAS_OPENMP(parallel for schedule(dynamic))
               for (size_t c = 0; c < cellsOfColor.size(); ++c) {
@@ -215,9 +215,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   std::array<unsigned long, 3> _cellsPerDim;
 
   /**
-   * Particle indices grouped by their cell and then by the cell's C08 color.
+   * Particle indices grouped by their cell and then by the cell's C27 color.
    */
-  std::array<std::vector<std::pair<size_t, size_t>>, 8> _colorCells;
+  std::array<std::vector<std::pair<size_t, size_t>>, 27> _colorCells;
 };
 
 }  // namespace autopas

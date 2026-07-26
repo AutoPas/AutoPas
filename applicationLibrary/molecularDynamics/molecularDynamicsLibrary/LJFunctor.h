@@ -576,8 +576,8 @@ class LJFunctor
    * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet(soa, indexFirst, neighborList, neighborCount, newton3)
    * @note Raw-pointer overload — zero allocation, passes CRS slice directly.
    */
-  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                        const size_t *neighborList, size_t neighborCount, bool newton3) final {
+  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, const size_t *neighborList,
+                        size_t neighborCount, bool newton3) final {
     if (soa.size() == 0 or neighborCount == 0) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList, neighborCount);
@@ -853,7 +853,6 @@ class LJFunctor
     SoAFloatPrecision fxacc = 0;
     SoAFloatPrecision fyacc = 0;
     SoAFloatPrecision fzacc = 0;
-
 
     // checks whether particle i is owned.
     const auto ownedStateI = ownedStatePtr[indexFirst];

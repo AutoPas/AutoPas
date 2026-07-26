@@ -426,11 +426,11 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
       configsPerContainer[autopas::ContainerOption::linkedCells] - 48;
 
-  // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                              =   2
-  //   Subtotal:                                                                                              =   2
+  // VerletLists:           vl_list_iteration           (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
+  //   Subtotal:                                                                                              =   4
   // Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
   // Verlet Lists only supports 1xVec pattern => Multiply by 1
-  configsPerContainer[autopas::ContainerOption::verletLists] = 4;
+  configsPerContainer[autopas::ContainerOption::verletLists] = 8;
 
   // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
   //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 LB heuristics) =  12

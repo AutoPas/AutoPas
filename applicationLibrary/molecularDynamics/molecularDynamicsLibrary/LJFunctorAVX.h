@@ -617,8 +617,8 @@ class LJFunctorAVX
    * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    * @note Raw-pointer overload - zero allocation.
    */
-  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                               const size_t *neighborList, size_t neighborCount, bool newton3) final {
+  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, const size_t *neighborList,
+                               size_t neighborCount, bool newton3) final {
     if (soa.size() == 0 or neighborCount == 0) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList, neighborCount);

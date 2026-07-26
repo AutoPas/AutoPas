@@ -208,6 +208,17 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::Configuration
         // non useNewton3 variant should not happen
         EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, not useNewton3)).Times(0);
 
+      } else if (container.getContainerType() == autopas::ContainerOption::verletLists) {
+        if constexpr (interactionType == autopas::InteractionTypeOption::pairwise) {
+          EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, _, useNewton3))
+              .Times(testing::AtLeast(1))
+              // signature: SoAFunctorVerlet(soa, particleIndex, neighbors, useNewton3)
+              .WillRepeatedly(
+                  testing::Invoke([&](auto, auto, auto, auto neighborCount, auto) { callsPair += neighborCount; }));
+
+          // non useNewton3 variant should not happen
+          EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, _, not useNewton3)).Times(0);
+        }
       } else {
         // single cell
         EXPECT_CALL(mockFunctor, SoAFunctorSingle(_, useNewton3))

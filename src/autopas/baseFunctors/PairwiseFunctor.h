@@ -106,8 +106,8 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * @param neighborCount Number of entries starting at neighborList
    * @param newton3      Whether to apply Newton's third law
    */
-  virtual void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                const size_t *neighborList, size_t neighborCount, bool newton3) {
+  virtual void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const size_t *neighborList,
+                                size_t neighborCount, bool newton3) {
     // Default: delegate to the vector overload for backward compatibility.
     // Override this method in a concrete functor to bypass the allocation entirely.
     const std::vector<size_t, AlignedAllocator<size_t>> tmp(neighborList, neighborList + neighborCount);

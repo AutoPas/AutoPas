@@ -1117,21 +1117,20 @@ class LJFunctorHWY
   }
 
   template <bool newton3>
-  inline void SoAKernelVerlet(const size_t i, const size_t j, const MaskDouble &ownedMaskI,
-                              const VectorDouble &x1, const VectorDouble &y1,
-                              const VectorDouble &z1, const double *const __restrict xPtr,
+  inline void SoAKernelVerlet(const size_t i, const size_t j, const MaskDouble &ownedMaskI, const VectorDouble &x1,
+                              const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict xPtr,
                               const double *const __restrict yPtr, const double *const __restrict zPtr,
                               const int64_t *const __restrict ownedStatePtr, double *const __restrict fxPtr,
                               double *const __restrict fyPtr, double *const __restrict fzPtr,
                               const size_t *const typeID1Ptr, const size_t *const typeIDPtr,
-                              const size_t *const __restrict neighborList,
-                              VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
-                              VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &uPotSum) {
+                              const size_t *const __restrict neighborList, VectorDouble &fxAcc, VectorDouble &fyAcc,
+                              VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
+                              VectorDouble &virialSumZ, VectorDouble &uPotSum) {
     VectorDouble epsilon24s = highway::Undefined(tag_double);
     VectorDouble sigmaSquareds = highway::Undefined(tag_double);
     VectorDouble shift6s = highway::Undefined(tag_double);
 
-    const auto indices = highway::LoadU(tag_long, reinterpret_cast<const int64_t*>(neighborList + j));
+    const auto indices = highway::LoadU(tag_long, reinterpret_cast<const int64_t *>(neighborList + j));
 
     if constexpr (useMixing) {
       HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
@@ -1162,7 +1161,7 @@ class LJFunctorHWY
     const auto x2 = highway::GatherIndex(tag_double, xPtr, indices);
     const auto y2 = highway::GatherIndex(tag_double, yPtr, indices);
     const auto z2 = highway::GatherIndex(tag_double, zPtr, indices);
-    
+
     const auto ownedState2 = highway::GatherIndex(tag_long, ownedStatePtr, indices);
     const MaskLong ownedMaskJLong = highway::Ne(ownedState2, highway::Zero(tag_long));
     const MaskDouble ownedMaskJ = highway::RebindMask(tag_double, ownedMaskJLong);
@@ -1210,7 +1209,7 @@ class LJFunctorHWY
       const auto fx2Old = highway::GatherIndex(tag_double, fxPtr, indices);
       const auto fy2Old = highway::GatherIndex(tag_double, fyPtr, indices);
       const auto fz2Old = highway::GatherIndex(tag_double, fzPtr, indices);
-      
+
       const auto fx2New = highway::Sub(fx2Old, fx);
       const auto fy2New = highway::Sub(fy2Old, fy);
       const auto fz2New = highway::Sub(fz2Old, fz);
@@ -1255,11 +1254,11 @@ class LJFunctorHWY
   }
 
   /**
-  * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
-  * @note Raw-pointer overload - zero allocation.
-  */
-  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                               const size_t *neighborList, size_t neighborCount, bool newton3) final {
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
+   * @note Raw-pointer overload - zero allocation.
+   */
+  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, const size_t *neighborList,
+                               size_t neighborCount, bool newton3) final {
     if (soa.size() == 0 or neighborCount == 0) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList, neighborCount);
@@ -1320,10 +1319,10 @@ class LJFunctorHWY
     const size_t vecEnd = (neighborListSize / _vecLengthDouble) * _vecLengthDouble;
 
     for (; j < vecEnd; j += _vecLengthDouble) {
-      SoAKernelVerlet<newton3>(
-          indexFirst, j, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr),
-          fxPtr, fyPtr, fzPtr, &typeIDPtr[indexFirst], typeIDPtr, neighborList,
-          fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum);
+      SoAKernelVerlet<newton3>(indexFirst, j, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
+                               reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
+                               &typeIDPtr[indexFirst], typeIDPtr, neighborList, fxAcc, fyAcc, fzAcc, virialSumX,
+                               virialSumY, virialSumZ, uPotSum);
     }
 
     const int rest = static_cast<int>(neighborListSize & (_vecLengthDouble - 1));
