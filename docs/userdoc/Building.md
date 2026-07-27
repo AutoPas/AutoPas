@@ -38,6 +38,14 @@ Here is an example of a parallel compilation of the md-flexible example:
 cmake --build . --target md-flexible --parallel 12
 ```
 
+### Building the Stand-Alone Tools
+The stand-alone tools in [tools/](/tools), namely `ruleChecker` and `tuningLogToSQL`, are not built by default.
+They can be enabled via the CMake option:
+```bash
+cmake -DAUTOPAS_BUILD_TOOLS=ON ..
+```
+Note that `ruleChecker` additionally requires `AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON` and `tuningLogToSQL` requires `libsqlite3`.
+
 ### Enabling Rules-Based Tuning and Fuzzy Tuning
 <a id="rules-based-tuning-fuzzy-tuning"></a>
 
