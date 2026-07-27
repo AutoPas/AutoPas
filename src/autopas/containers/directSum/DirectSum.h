@@ -61,9 +61,16 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    * @param boxMax
    * @param cutoff
    * @param skin
+   * @param aosSortingThresholdFallback Sum of the number of particles in two cells from which AoS sorting should be
+   * enabled.
+   * @param soaSortingThresholdFallback Sum of the SoA buffer sizes of two cells from which SoA sorting should be
+   * enabled.
    */
-  DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double skin)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin), _cellBorderFlagManager() {
+  DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double skin,
+            const size_t aosSortingThresholdFallback, const size_t soaSortingThresholdFallback)
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThresholdFallback,
+                                                     soaSortingThresholdFallback),
+        _cellBorderFlagManager() {
     using namespace autopas::utils::ArrayMath::literals;
     // 1 owned and 6 halo cells
     this->_cells.resize(7);

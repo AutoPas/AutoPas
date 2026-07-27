@@ -36,17 +36,22 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @param boxMax
    * @param cutoff
    * @param skin
+   * @param aosSortingThresholdFallback Sum of the number of particles in two cells from which AoS sorting should be
+   * enabled, used to seed the container until it is overwritten with a benchmarked threshold.
+   * @param soaSortingThresholdFallback Sum of the SoA buffer sizes of two cells from which SoA sorting should be
+   * enabled, used to seed the container until it is overwritten with a benchmarked threshold.
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                             const double cutoff, const double skin)
+                             const double cutoff, const double skin, const size_t aosSortingThresholdFallback,
+                             const size_t soaSortingThresholdFallback)
       : ParticleContainerInterface<ParticleType>(skin),
         _cells(),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
         _skin(skin),
-        _aosSortingThresholds(std::make_shared<const SortingThresholdInfoSingle>(0)),
-        _soaSortingThresholds(std::make_shared<const SortingThresholdInfoSingle>(0)) {}
+        _aosSortingThresholds(std::make_shared<const SortingThresholdInfoSingle>(aosSortingThresholdFallback)),
+        _soaSortingThresholds(std::make_shared<const SortingThresholdInfoSingle>(soaSortingThresholdFallback)) {}
 
   /**
    * Destructor of CellBasedParticleContainer.

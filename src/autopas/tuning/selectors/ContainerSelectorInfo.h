@@ -26,6 +26,8 @@ class ContainerSelectorInfo {
         cellSizeFactor(1.),
         verletSkin(0.),
         verletClusterSize(64),
+        aosSortingThresholdFallback(0),
+        soaSortingThresholdFallback(0),
         loadEstimator(LoadEstimatorOption::none) {}
 
   /**
@@ -38,17 +40,24 @@ class ContainerSelectorInfo {
    * @param verletSkin Length added to the cutoff for the verlet lists' skin per timestep inbetween
    * rebuilding lists.
    * @param verletClusterSize Size of verlet Clusters
+   * @param aosSortingThresholdFallback Number of particles in two cells from which sorting should be performed, used
+   * to seed newly generated containers until they are overwritten with a benchmarked threshold.
+   * @param soaSortingThresholdFallback Number of particles in two SoA buffers from which SoA sorting should be
+   * performed, used to seed newly generated containers until they are overwritten with a benchmarked threshold.
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
   explicit ContainerSelectorInfo(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                  double cutoff, double cellSizeFactor, double verletSkin,
-                                 unsigned int verletClusterSize, LoadEstimatorOption loadEstimator)
+                                 unsigned int verletClusterSize, size_t aosSortingThresholdFallback,
+                                 size_t soaSortingThresholdFallback, LoadEstimatorOption loadEstimator)
       : boxMin(boxMin),
         boxMax(boxMax),
         cutoff(cutoff),
         cellSizeFactor(cellSizeFactor),
         verletSkin(verletSkin),
         verletClusterSize(verletClusterSize),
+        aosSortingThresholdFallback(aosSortingThresholdFallback),
+        soaSortingThresholdFallback(soaSortingThresholdFallback),
         loadEstimator(loadEstimator) {}
 
   /**
@@ -58,7 +67,10 @@ class ContainerSelectorInfo {
    */
   bool operator==(const ContainerSelectorInfo &other) const {
     return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin and
-           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator;
+           verletClusterSize == other.verletClusterSize and
+           aosSortingThresholdFallback == other.aosSortingThresholdFallback and
+           soaSortingThresholdFallback == other.soaSortingThresholdFallback and
+           loadEstimator == other.loadEstimator;
   }
 
   /**
@@ -71,14 +83,16 @@ class ContainerSelectorInfo {
   /**
    * Comparison operator for ContainerSelectorInfo objects.
    * Configurations are compared member wise in the order: cellSizeFactor, verletSkin, verletClusterSize,
-   * loadEstimator
+   * aosSortingThresholdFallback, soaSortingThresholdFallback, loadEstimator
    *
    * @param other
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkin, verletClusterSize, loadEstimator) <
-           std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize, other.loadEstimator);
+    return std::tie(cellSizeFactor, verletSkin, verletClusterSize, aosSortingThresholdFallback,
+                    soaSortingThresholdFallback, loadEstimator) <
+           std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize,
+                    other.aosSortingThresholdFallback, other.soaSortingThresholdFallback, other.loadEstimator);
   }
 
   /**
@@ -108,6 +122,16 @@ class ContainerSelectorInfo {
    * Size of Verlet Clusters
    */
   unsigned int verletClusterSize;
+  /**
+   * Threshold beyond which, if the sum of the number of particles in two cells is greater, the cells are sorted;
+   * used to seed newly generated containers until they are overwritten with a benchmarked threshold.
+   */
+  size_t aosSortingThresholdFallback;
+  /**
+   * Threshold beyond which, if the sum of the SoA buffer sizes of two cells is greater, SoA sorting is applied;
+   * used to seed newly generated containers until they are overwritten with a benchmarked threshold.
+   */
+  size_t soaSortingThresholdFallback;
   /**
    * Load estimator for balanced sliced traversals.
    */

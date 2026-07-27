@@ -56,9 +56,15 @@ class LogicHandler {
    * @param logicHandlerInfo
    * @param rebuildFrequency
    * @param outputSuffix
+   * @param aosSortingThresholdFallback Default AoS sorting threshold used to seed newly generated containers.
+   * Mirrors AutoTunerInfo::aosSortingThreshold, which independently seeds each AutoTuner's
+   * SortingThresholdBenchmark. Passed here explicitly since LogicHandler has no other access to AutoTunerInfo.
+   * @param soaSortingThresholdFallback Default SoA sorting threshold used to seed newly generated containers.
+   * @see AutoTunerInfo::aosSortingThreshold, AutoTunerInfo::soaSortingThreshold
    */
   LogicHandler(const std::shared_ptr<TuningManager> &tunerManager, const LogicHandlerInfo &logicHandlerInfo,
-               unsigned int rebuildFrequency, const std::string &outputSuffix)
+               unsigned int rebuildFrequency, const std::string &outputSuffix, size_t aosSortingThresholdFallback,
+               size_t soaSortingThresholdFallback)
       : _tuningManager(tunerManager),
         _logicHandlerInfo(logicHandlerInfo),
         _neighborListRebuildFrequency{rebuildFrequency},
@@ -67,6 +73,8 @@ class LogicHandler {
         _remainderPairwiseInteractionHandler(_spatialLocks),
         _remainderTriwiseInteractionHandler(_spatialLocks),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
+        _aosSortingThresholdFallback(aosSortingThresholdFallback),
+        _soaSortingThresholdFallback(soaSortingThresholdFallback),
         _iterationLogger(outputSuffix,
                          std::any_of(tunerManager->getAutoTuners().begin(), tunerManager->getAutoTuners().end(),
                                      [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
@@ -79,10 +87,10 @@ class LogicHandler {
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
-      _currentContainerSelectorInfo =
-          ContainerSelectorInfo{_logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,     _logicHandlerInfo.cutoff,
-                                configuration.cellSizeFactor, _logicHandlerInfo.verletSkin, _verletClusterSize,
-                                configuration.loadEstimator};
+      _currentContainerSelectorInfo = ContainerSelectorInfo{
+          _logicHandlerInfo.boxMin,        _logicHandlerInfo.boxMax,        _logicHandlerInfo.cutoff,
+          configuration.cellSizeFactor,    _logicHandlerInfo.verletSkin,    _verletClusterSize,
+          _aosSortingThresholdFallback,    _soaSortingThresholdFallback,    configuration.loadEstimator};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
@@ -831,6 +839,17 @@ class LogicHandler {
   unsigned int _verletClusterSize;
 
   /**
+   * Default AoS sorting threshold used to seed newly generated containers, passed in at construction (mirrors
+   * AutoTunerInfo::aosSortingThreshold; see the constructor for why LogicHandler needs its own copy).
+   */
+  size_t _aosSortingThresholdFallback;
+
+  /**
+   * Default SoA sorting threshold used to seed newly generated containers. @see _aosSortingThresholdFallback
+   */
+  size_t _soaSortingThresholdFallback;
+
+  /**
    * This is used to store the total number of neighbor lists rebuild.
    */
   size_t _numRebuilds{0};
@@ -1399,9 +1418,11 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   }
 
   std::unique_ptr<ParticleContainerInterface<Particle_T>> containerPtr{nullptr};
-  auto containerInfo = ContainerSelectorInfo(
-      _currentContainer->getBoxMin(), _currentContainer->getBoxMax(), _currentContainer->getCutoff(),
-      config.cellSizeFactor, _currentContainer->getVerletSkin(), _verletClusterSize, config.loadEstimator);
+  auto containerInfo =
+      ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
+                            _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
+                            _verletClusterSize, _aosSortingThresholdFallback, _soaSortingThresholdFallback,
+                            config.loadEstimator);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.

@@ -70,10 +70,15 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @param cutoff The cutoff radius
    * @param skin The skin radius
    * @param cellSizeFactor The cell size factor
+   * @param aosSortingThresholdFallback The threshold for AoS sorting.
+   * @param soaSortingThresholdFallback Sum of the SoA buffer sizes of two cells from which SoA sorting should be
+   * enabled.
    */
   Octree(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-         const double skin, const double cellSizeFactor)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin) {
+         const double skin, const double cellSizeFactor, const size_t aosSortingThresholdFallback,
+         const size_t soaSortingThresholdFallback)
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThresholdFallback,
+                                                     soaSortingThresholdFallback) {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (cellSizeFactor != 1.0) {

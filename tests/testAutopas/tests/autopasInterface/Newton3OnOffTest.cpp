@@ -8,7 +8,6 @@
 
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
-#include "autopas/utils/SortingThresholdInfoSingle.h"
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/utils/logging/Logger.h"
 
@@ -64,12 +63,9 @@ void Newton3OnOffTest::countFunctorCalls(autopas::Configuration config) {
     return;
   }
   const autopas::ContainerSelectorInfo containerInfo(getBoxMin(), getBoxMax(), getCutoff(), config.cellSizeFactor,
-                                                     getVerletSkin(), getClusterSize(), config.loadEstimator);
+                                                     getVerletSkin(), getClusterSize(), getAoSSortingThreshold(),
+                                                     getSoASortingThreshold(), config.loadEstimator);
   auto container = autopas::ContainerSelector<ParticleFP64>::generateContainer(config.container, containerInfo);
-  container->setAoSSortingThresholds(
-      std::make_shared<const autopas::SortingThresholdInfoSingle>(getAoSSortingThreshold()));
-  container->setSoASortingThresholds(
-      std::make_shared<const autopas::SortingThresholdInfoSingle>(getSoASortingThreshold()));
 
   const ParticleFP64 defaultParticle{};
   autopas::generators::UniformGenerator::fillWithParticles(*container, defaultParticle, container->getBoxMin(),
