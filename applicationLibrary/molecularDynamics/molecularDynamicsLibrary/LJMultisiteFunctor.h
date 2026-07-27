@@ -1140,7 +1140,7 @@ class LJMultisiteFunctor
 
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexPrime,
-                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+                            std::span<const size_t> neighborList) {
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
     // Skip if primary particle is dummy
@@ -1186,7 +1186,6 @@ class LJMultisiteFunctor
     const auto const_shift6 = _shift6;
 
     const size_t neighborListSize = neighborList.size();
-    const size_t *const __restrict neighborListPtr = neighborList.data();
 
     // Count sites
     const size_t siteCountMolPrime =
