@@ -60,7 +60,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * Constructor
    * @param cutoff
    */
-  explicit PairwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff) {};
+  explicit PairwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff){};
 
   virtual ~PairwiseFunctor() = default;
 

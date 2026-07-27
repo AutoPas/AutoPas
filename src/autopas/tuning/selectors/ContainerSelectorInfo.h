@@ -69,8 +69,7 @@ class ContainerSelectorInfo {
     return cellSizeFactor == other.cellSizeFactor and verletSkin == other.verletSkin and
            verletClusterSize == other.verletClusterSize and
            aosSortingThresholdFallback == other.aosSortingThresholdFallback and
-           soaSortingThresholdFallback == other.soaSortingThresholdFallback and
-           loadEstimator == other.loadEstimator;
+           soaSortingThresholdFallback == other.soaSortingThresholdFallback and loadEstimator == other.loadEstimator;
   }
 
   /**
@@ -91,8 +90,8 @@ class ContainerSelectorInfo {
   bool operator<(const ContainerSelectorInfo &other) {
     return std::tie(cellSizeFactor, verletSkin, verletClusterSize, aosSortingThresholdFallback,
                     soaSortingThresholdFallback, loadEstimator) <
-           std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize,
-                    other.aosSortingThresholdFallback, other.soaSortingThresholdFallback, other.loadEstimator);
+           std::tie(other.cellSizeFactor, other.verletSkin, other.verletClusterSize, other.aosSortingThresholdFallback,
+                    other.soaSortingThresholdFallback, other.loadEstimator);
   }
 
   /**
