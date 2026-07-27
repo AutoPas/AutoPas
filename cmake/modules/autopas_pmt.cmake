@@ -25,21 +25,18 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
         endif()
     endif()
 
-    message(STATUS "pmt - using bundled version (commit 7a56fa3a) and patch")
+    message(STATUS "pmt - using bundled subtree (upstream commit 7a56fa3a + additional AutoPas fix commit)")
 
     include(FetchContent)
 
     FetchContent_Declare(
             pmt
-            URL
-            # pmt-master.zip contains commit 7a56fa3a (master as on Dec 19, 2024) with patch applied
-            # The patch applies the following changes:
-            # removal of 100 ms minimum time interval for energy samples, and
-            # removing asynchronous energy measurement
-            # better error handling
-            # the patch can found under AutoPas/libs/patches/patch-file-pmt-for-autopas.patch
-            ${AUTOPAS_SOURCE_DIR}/libs/pmt-master.zip
-            URL_HASH MD5=3c60096bf151e11cde6efc6e5ede1195
+            # libs/pmt is a git subtree at upstream commit 7a56fa3a (Dec 19, 2024)
+            # with the AutoPas-specific changes applied as the follow-up commit, including:
+            # - removal of 100 ms minimum time interval for energy samples
+            # - removing asynchronous energy measurement
+            # - better error handling
+            SOURCE_DIR ${AUTOPAS_SOURCE_DIR}/libs/pmt
     )
 
     FetchContent_MakeAvailable(pmt)

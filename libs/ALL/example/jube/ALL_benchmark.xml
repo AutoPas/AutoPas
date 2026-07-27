@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jube>
+    <benchmark name="ALL JUBE benchmark" outpath="bench_run">
+        <parameterset name="param_set">
+            <parameter name="file" tag="Y">./globalBlockCoordsWye.txt</parameter>
+            <parameter name="file" tag="rot_Y">./rot_globalBlockCoordsWye.txt</parameter>
+            <parameter name="file" tag="Polymer">./globalBlockCoordsPolymer.txt</parameter>
+            <parameter name="sys_size" tag="Y">42 10 50</parameter>
+            <parameter name="sys_size" tag="rot_Y">60 30 40</parameter>
+            <parameter name="sys_size" tag="Polymer">75 75 450</parameter>
+            <!--parameter name="method" type="int">0,1,2,3</parameter>
+            <parameter name="weight" type="int">0,1</parameter>
+            <parameter name="gamma" type="float">4.0,8.0,16.0,32.0</parameter><-->
+            <parameter name="method" type="int">0,1,4</parameter>
+            <parameter name="method_name" mode="python">["STAGGERED","TENSOR","FORCEBASED","VORONOI","HISTOGRAM"][${method}]</parameter>
+            <parameter name="max_iter" mode="python" type="int">[500,500,-1,-1,3][${method}]</parameter>
+            <parameter name="weight" type="int">0,1</parameter>
+            <parameter name="gamma" type="float">4.0,8.0,16.0</parameter>
+
+        </parameterset>
+
+        <parameterset name="proc_set">
+            <!--parameter name="index_proc" type="int">0,1,2,3</parameter><-->
+            <parameter name="index_proc" type="int">0,1,2,3</parameter>
+            <parameter name="n_proc" mode="python" type="int">[8,27,64,125][${index_proc}]</parameter>
+            <parameter name="proc_dim" mode="python">["2 2 2","3 3 3","4 4 4","5 5 5"][${index_proc}]</parameter>
+        </parameterset>
+
+        <parameterset name="submit_set">
+            <parameter name="submit_account">slchem</parameter>
+            <parameter name="submit_tpn">48</parameter>
+            <parameter name="submit_tasks">$n_proc</parameter>
+            <parameter name="submit_outfile">stdout</parameter>
+            <parameter name="submit_errfile">stderr</parameter>
+            <parameter name="submit_time">00:30:00</parameter>
+            <parameter name="submit_exec">srun -n ${n_proc} ./ALL_test ${method} ${max_iter} ${gamma} ${weight} input.bin ${sys_size} ${proc_dim}</parameter>
+            <parameter name="submit_done">done</parameter>
+        </parameterset>
+
+        <fileset name="submit_file">
+            <copy>jureca.sbatch.in</copy>
+            <copy>ALL_test</copy>
+            <copy>ASCII2MPIBIN</copy>
+            <copy tag="Polymer">input/globalBlockCoordsPolymer.txt</copy>
+            <copy tag="Y">input/globalBlockCoordsWye.txt</copy>
+            <copy tag="rot_Y">input/rot_globalBlockCoordsWye.txt</copy>
+        </fileset>
+
+        <substituteset name="submit_sub">
+            <iofile in="jureca.sbatch.in" out="jureca.sbatch" />
+            <sub source="#account#" dest="${submit_account}" />
+            <sub source="#tasks#" dest="${submit_tasks}" />
+            <sub source="#tpn#" dest="${submit_tpn}" />
+            <sub source="#outfile#" dest="${submit_outfile}" />
+            <sub source="#errfile#" dest="${submit_errfile}" />
+            <sub source="#time#" dest="${submit_time}" />
+            <sub source="#exec#" dest="${submit_exec}" />
+            <sub source="#done#" dest="${submit_done}" />
+        </substituteset>
+
+        <patternset name="cmd_pat">
+            <pattern name="min_step" type="int">min_step: $jube_pat_int</pattern>
+            <pattern name="min_ratio" type="float">min_ratio: $jube_pat_fp</pattern>
+        </patternset>
+
+        <step name="execute">
+            <use>param_set</use>
+            <use>proc_set</use>
+            <use>submit_set</use>
+            <use>submit_file,submit_sub</use>
+            <do>./ASCII2MPIBIN ${file} input.bin ${proc_dim}</do>
+            <do done_file="${submit_done}">sbatch jureca.sbatch</do>
+        </step>
+
+        <analyser name="analyse">
+            <use>cmd_pat</use>
+            <analyse step="execute">
+                <file>stdout</file>
+            </analyse>
+        </analyser>
+
+        <result>
+            <use>analyse</use>
+            <table name="result" style="pretty" sort="method_name,n_proc">
+                <column>n_proc</column>
+                <column>file</column>
+                <column>method_name</column>
+                <column>weight</column>
+                <column>gamma</column>
+                <column>min_step</column>
+                <column>min_ratio</column>
+            </table>
+        </result>
+    </benchmark>
+</jube>

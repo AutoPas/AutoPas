@@ -1,0 +1,92 @@
+{
+  "buildType": {
+    "default": "debug",
+    "choices": {
+      "debug": {
+        "short": "Debug",
+        "long": "Emit debug information without performing optimizations",
+        "buildType": "Debug"
+      },
+      "release": {
+        "short": "Release",
+        "long": "Standard build with performing optimizations",
+        "buildType": "Release"
+      },
+      "minsize": {
+        "short": "MinSizeRel",
+        "long": "Optimize for smallest binary size",
+        "buildType": "MinSizeRel"
+      },
+      "reldeb": {
+        "short": "RelWithDebInfo",
+        "long": "Perform optimizations AND include debugging information",
+        "buildType": "RelWithDebInfo"
+      }
+    }
+  },
+  "options": {
+    "default": "",
+    "choices": {
+      "allActive": {
+        "short": "everything enabled",
+        "settings": {
+          "CM_ALL_AUTO_DOC": "ON",
+          "CM_ALL_FORTRAN": "ON",
+          "CM_ALL_USE_F08": "ON",
+          "CM_ALL_TESTS": "ON",
+          "CM_ALL_VORONOI": "ON",
+          "CM_ALL_VTK_OUTPUT": "ON",
+          "VTK_DIR": "~/local/vtk-7.1.1/lib/cmake/vtk-7.1/"
+        }
+      },
+      "VTK-noF-noV": {
+        "short": "VTK w/o Voronoi/Fortran",
+        "settings": {
+          "CM_ALL_AUTO_DOC": "ON",
+          "CM_ALL_FORTRAN": "OFF",
+          "CM_ALL_USE_F08": "OFF",
+          "CM_ALL_TESTS": "ON",
+          "CM_ALL_VORONOI": "ON",
+          "CM_ALL_VTK_OUTPUT": "ON",
+          "VTK_DIR": "~/local/vtk-7.1.1/lib/cmake/vtk-7.1/"
+        }
+      },
+      "VTK-F-noV": {
+        "short": "VTK w Fortran w/o F08/Voronoi",
+        "settings": {
+          "CM_ALL_AUTO_DOC": "ON",
+          "CM_ALL_FORTRAN": "ON",
+          "CM_ALL_USE_F08": "OFF",
+          "CM_ALL_TESTS": "ON",
+          "CM_ALL_VORONOI": "OFF",
+          "CM_ALL_VTK_OUTPUT": "ON",
+          "VTK_DIR": "~/local/vtk-7.1.1/lib/cmake/vtk-7.1/"
+        }
+      },
+      "VTK-F08-noV": {
+        "short": "VTK w Fortran08 w/o Voronoi",
+        "settings": {
+          "CM_ALL_AUTO_DOC": "ON",
+          "CM_ALL_FORTRAN": "ON",
+          "CM_ALL_USE_F08": "ON",
+          "CM_ALL_TESTS": "ON",
+          "CM_ALL_VORONOI": "OFF",
+          "CM_ALL_VTK_OUTPUT": "ON",
+          "VTK_DIR": "~/local/vtk-7.1.1/lib/cmake/vtk-7.1/"
+        }
+      },
+      "VTK-noF-V": {
+        "short": "VTK w/o Fortran w Voronoi",
+        "settings": {
+          "CM_ALL_AUTO_DOC": "ON",
+          "CM_ALL_FORTRAN": "ON",
+          "CM_ALL_USE_F08": "OFF",
+          "CM_ALL_TESTS": "ON",
+          "CM_ALL_VORONOI": "OFF",
+          "CM_ALL_VTK_OUTPUT": "ON",
+          "VTK_DIR": "~/local/vtk-7.1.1/lib/cmake/vtk-7.1/"
+        }
+      }
+    }
+  }
+}

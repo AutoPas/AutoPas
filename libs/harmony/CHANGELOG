@@ -1,0 +1,89 @@
+/**
+
+Change Log
+==========
+
+[Version 4.6.0] - 2016-03-03
+----------------------------
+
+### Added
+* ANGEL search strategy for multiple objectives.
+* Group layer plug-in to support independent tuning variables.
+* Tuning search task abstraction.
+* Tuning search task pause/resume/restart features.
+* Tuning search tasks may now be defined using a file.
+* Support for multiple tuning tasks within a standalone session.
+* Support for the Darwin/OSX platform.
+* Support for multiple compilers (GCC, Clang, Intel, Portland Group).
+
+### Changed
+* Adapt client API to control multiple tuning tasks from a single descriptor.
+* Initialize search configuration from client environment.
+* Use Nelder-Mead strategy by default for single-client tuning tasks.
+* Adhere version numbers to [Semantic Versioning](http://semver.org/).
+
+### Deprecated
+* Version 4.5 client API for single tuning task sessions.
+
+
+
+[Version 4.5] - 2013-09-30
+--------------------------
+
+### Added
+* Standalone mode - Harmony Server is no longer necessary.
+* User's Guide documentation.
+
+### Changed
+* Improved plug-in system for modular strategies and processing layers.
+* Unified Client and Session API.
+* Removed dependency on Tcl interpreter.
+* Removed extraneous repository files - 10x reduction of distribution package.
+
+
+
+[Version 4.0] - 2013-01-03
+--------------------------
+
+### Added
+* Support for multiple tuning sessions within the Harmony server.
+* Modular strategy and layer plug-in framework.
+* Abstraction of tuning session.
+* Improved client API.
+
+### Changed
+* Complied with ISO/ANSI C99 standard for increased portability.
+
+
+
+[Version 4.0 beta] - 2012-10-10
+-------------------------------
+
+### Added
+* Web-based user interface.
+* Tuna - The command-line tuning application.
+* Central configuration system to simplify client/server setup.
+
+
+
+Version 3.1 - 2009-07-23
+------------------------
+
+
+
+Version 3.0 - 2009-03-15
+------------------------
+
+
+
+Version 2.1 - 2003-07
+---------------------
+
+
+
+[Version 4.6.0]: https://git.dyninst.org/?p=activeharmony.git;a=shortlog;h=refs/tags/v4.6.0
+[Version 4.5]: https://git.dyninst.org/?p=activeharmony.git;a=shortlog;h=refs/tags/v4.5
+[Version 4.0]: https://git.dyninst.org/?p=activeharmony.git;a=shortlog;h=refs/tags/v4.0
+[Version 4.0 beta]: https://git.dyninst.org/?p=activeharmony.git;a=shortlog;h=refs/tags/v4.0_beta
+
+*/

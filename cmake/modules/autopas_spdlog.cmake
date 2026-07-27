@@ -27,12 +27,7 @@ include(FetchContent)
 # Build spdlog and make the cmake targets available
 FetchContent_Declare(
     spdlog
-    URL
-        # spdlog master:
-        # https://github.com/gabime/spdlog/archive/refs/tags/v1.17.0.zip
-        # spdlog commit 79524dd (04.01.2026):
-        ${AUTOPAS_SOURCE_DIR}/libs/spdlog-1.17.0.zip
-    URL_HASH MD5=d38d278383b768847ccc4616879df42f
+    SOURCE_DIR ${AUTOPAS_SOURCE_DIR}/libs/spdlog
 )
 
 # Disable stuff we don't need (Sets values to OFF and hides them)

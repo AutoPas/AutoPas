@@ -29,13 +29,7 @@ include(FetchContent)
 # Build yaml-cpp and make the cmake targets available
 FetchContent_Declare(
     yaml-cpp
-    URL
-        # yaml-cpp-master:
-        # https://github.com/jbeder/yaml-cpp/archive/refs/heads/master.zip
-        # commit 2f86d13:
-        ${AUTOPAS_SOURCE_DIR}/libs/yaml-cpp-2f86d13.zip
-    URL_HASH MD5=d402b60e57c14fcb30138c5b28a333d1
-    # needed to compile with ninja
+    SOURCE_DIR ${AUTOPAS_SOURCE_DIR}/libs/yaml-cpp
 )
 
 # Disable everything we don't need

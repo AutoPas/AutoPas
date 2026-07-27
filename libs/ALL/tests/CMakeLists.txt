@@ -1,0 +1,11 @@
+add_subdirectory(unit)
+if(CM_ALL_TESTS_INTEGRATION)
+    if(NOT CM_ALL_FORTRAN)
+        message(FATAL_ERROR "Feature tests are only available if Fortran is enabled as well")
+    endif()
+    add_subdirectory(feature)
+endif()
+if(CM_ALL_FORTRAN)
+    add_subdirectory(fortran_error)
+endif()
+# vim: sw=4 ts=4 et

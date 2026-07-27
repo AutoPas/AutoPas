@@ -37,12 +37,7 @@ endif ()
 # Build Eigen3 and make the cmake targets available
 FetchContent_Declare(
     Eigen3
-    URL
-        # eigen-master:
-        # https://bitbucket.org/eigen/eigen/get/default.zip
-        # eigen-3.3.90:
-        ${AUTOPAS_SOURCE_DIR}/libs/eigen-3.4.0.zip
-    URL_HASH MD5=994092410ba29875184f7725e0371596
+    SOURCE_DIR ${AUTOPAS_SOURCE_DIR}/libs/eigen
 )
 # In case FetchContent_Populate gets removed:
 # Another "hacky" solution is to add the line

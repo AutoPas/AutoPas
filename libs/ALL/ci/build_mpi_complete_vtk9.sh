@@ -1,0 +1,21 @@
+#!/bin/bash
+set -exo pipefail
+source $(cd "$(dirname "$0")"; pwd -P)/ci_funcs.sh
+
+#dot -v
+which ls
+ls /usr/local/lib/cmake/
+
+# load MPI environment
+load_MPI
+
+# build
+mkdir -p build && cd build
+
+if [[ $? == 0 ]]; then
+
+    #CC=/usr/lib64/mpi/gcc/openmpi3/bin/mpicc CXX=/usr/lib64/mpi/gcc/openmpi3/bin/mpicxx FC=/usr/lib64/mpi/gcc/openmpi3/bin/mpif90 ${CMAKE} ..
+    ${CMAKE} .. -DCM_ALL_FORTRAN=ON -DCM_ALL_USE_F08=ON -DCM_ALL_VORONOI=ON -DCM_ALL_VTK_OUTPUT=ON -DCM_ALL_TESTS=ON -DCM_ALL_AUTO_DOC=OFF -DVTK_DIR=/usr/local/lib/cmake/vtk-9.0 
+    make
+    make test
+fi

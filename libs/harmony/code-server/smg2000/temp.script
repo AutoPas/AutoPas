@@ -1,0 +1,23 @@
+
+    source: OUT__1__6119__.spd
+    procedure: 0
+    loop: 0
+
+    TI=12
+    TJ=12
+    TK=12
+    UI=1
+    US=2
+
+    permute([2,3,1,4])
+    known(hypre__mx>=1)
+    known(hypre__my>=1)
+    known(hypre__mz>=1)
+    known(stencil_size>=1)
+    tile(0,4,TI)
+    tile(0,3,TJ)
+    tile(0,3,TK)
+    unroll(0,6,US)
+    unroll(0,7,UI)
+    #print
+    

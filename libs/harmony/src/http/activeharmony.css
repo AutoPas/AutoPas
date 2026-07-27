@@ -1,0 +1,65 @@
+/*
+ * Copyright 2003-2016 Jeffrey K. Hollingsworth
+ *
+ * This file is part of Active Harmony.
+ *
+ * Active Harmony is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Active Harmony is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Active Harmony.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#refresh_row
+{
+  border: none;
+  text-align: center;
+}
+
+#plot_div
+{
+  float: right;
+  width: 640px;
+  height: 480px;
+  margin-right: 15px;
+}
+
+#table_div
+{
+  display: none;
+  float: left;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+table
+{
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+th
+{
+  border: 1px solid black;
+  font-weight: normal;
+}
+
+td
+{
+  border: 1px solid black;
+  text-align: right;
+  padding: 2px;
+}
+
+hr.thin
+{
+  margin: 0;
+}

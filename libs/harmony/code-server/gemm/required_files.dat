@@ -1,0 +1,17 @@
+## comments begin with #
+# no middle comments allowed.
+#  for example, the following is not allowed.
+#  gemm.sp2 # suif
+#  Here we provide a list of files that are required by CHiLL for code
+#  transformations (for example, suif intermediate files).
+# If you are using a particular version of CHiLL, please specify the name here. (Also
+# make sure that the CHiLL executable exists in the code-generator/<appname> directory.
+# If you would like to compile and link the modified code with a driver to create an
+#  executable, provide the name of the driver here.
+# the first three are must haves.
+code.properties
+generate_temp_script.sh
+gemm_default.f
+gemm.sp2
+gemm.f
+chill_script.gemm.sh

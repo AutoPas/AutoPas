@@ -9,8 +9,7 @@ if (MD_FLEXIBLE_ENABLE_ALLLBL)
   include(FetchContent)
   FetchContent_Declare(
     allfetch
-    URL ${AUTOPAS_SOURCE_DIR}/libs/ALL-0.9.3.zip
-    URL_HASH MD5=aa30549b3decce8df1ee82e90b198b04
+    SOURCE_DIR ${AUTOPAS_SOURCE_DIR}/libs/ALL
   )
   
   # Get ALL source and binary directories from CMake project
