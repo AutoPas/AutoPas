@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "autopas/LogicHandlerInfo.h"
+#include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
@@ -26,6 +27,7 @@
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -1110,6 +1112,17 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   }
   timerRebuild.stop();
   std::tie(std::ignore, std::ignore, std::ignore, energyTotalRebuild) = autoTuner.sampleEnergy();
+
+  // Balance buffer vectors
+  const auto cellToVec = [](auto &cell) -> std::vector<Particle_T> & { return cell._particles; };
+  utils::ArrayUtils::balanceVectors(_particleBuffer, cellToVec);
+  utils::ArrayUtils::balanceVectors(_haloParticleBuffer, cellToVec);
+
+  // For InteractionListGeneratorFunctor or child classes thereof, initialize their neighbor
+  if constexpr (std::is_base_of_v<InteractionListGeneratorFunctor<Particle_T, false>, Functor> or
+                std::is_base_of_v<InteractionListGeneratorFunctor<Particle_T, true>, Functor>) {
+    functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo));
+  }
 
   timerComputeInteractions.start();
   _currentContainer->computeInteractions(&traversal);
