@@ -53,6 +53,7 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
 
     # sensors available in pmt that are not currently required in AutoPas
     mark_as_advanced(
+            PMT_BUILD_AMDSMI
             PMT_BUILD_CRAY
             PMT_BUILD_NVML
             PMT_BUILD_POWERSENSOR2
