@@ -21,17 +21,23 @@ template <class Particle>
 class VerletListHelpers;
 
 /**
- * Precomputed index bounds for iterating a pre-sorted SoA pair. Produced by CellFunctor and
- * consumed by SoAFunctorPairSorted overrides.
+ * Precomputed index bounds for iterating a pre-sorted pair of SoA buffers, soa1 as the outer (i) loop and soa2 as
+ * the inner (j) loop. Produced by CellFunctor::computeSortingData() and consumed by SoAFunctorPairSorted
+ * overrides.
  *
- * @note Importantly SoASortingData does not hold its own storage but rather references. meaning the storage must
- * outlive the struct.
+ * minIndex and endI are needed for the reversed case, i.e. if bidrectional is true and newton3 false.
+ * @note SoASortingData does not hold its own storage but rather references, meaning the storage must outlive the
+ * struct.
  */
 struct SoASortingData {
-  size_t startI;                        ///< First index in soa1 whose projection range overlaps soa2.
-  size_t endI;                          ///< Exclusive upper bound index in soa1 whose projection range overlaps soa2.
-  const std::vector<size_t> &maxIndex;  ///< Per-particle upper bound index into soa2 (exclusive).
-  const std::vector<size_t> &minIndex;  ///< Per-particle lower bound index into soa2 (inclusive).
+  size_t startI;  ///< First index into soa1 that can interact with soa2, skipping soa1 particles too far below.
+  size_t endI;    ///< Exclusive upper bound index into soa1 that can interact with soa2, skipping soa1 particles
+                  ///< too far above. Whether this or startI is the no-op bound depends on the call, see struct doc.
+  const std::vector<size_t> &maxIndex;  ///< Per-i (soa1) exclusive upper bound index into soa2, skipping soa2
+                                        ///< particles too far above particle i.
+  const std::vector<size_t> &minIndex;  ///< Per-i (soa1) inclusive lower bound index into soa2, skipping soa2
+                                        ///< particles too far below particle i. Whether this or maxIndex is the
+                                        ///< no-op bound depends on the call, see struct doc.
 };
 
 /**
@@ -54,7 +60,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * Constructor
    * @param cutoff
    */
-  explicit PairwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff){};
+  explicit PairwiseFunctor(double cutoff) : Functor<Particle_T, CRTP_T>(cutoff) {};
 
   virtual ~PairwiseFunctor() = default;
 

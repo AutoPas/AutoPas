@@ -124,6 +124,9 @@ class CellFunctor {
    * contiguous block of i-particles (For example with VecPatterns != 1xVec) by taking minIndex of the first
    * and maxIndex of the last.
    *
+   * endI and minIndex are only needed for the bidrectional non newton3 case, as there the direction of sorting is
+   * reversed.
+   *
    * @param projIdxI Sorted (projection, original index) pairs for the outer-loop (i) cell.
    * @param projIdxJ Sorted (projection, original index) pairs for the inner-loop (j) cell.
    * @param maxIndexCache Output buffer for maxIndex; resized and overwritten by this function.
@@ -447,6 +450,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 
       if constexpr (bidirectional) {
         if (not _useNewton3) {
+          // Roles swapped relative to the call above: startI/maxIndex are now trivial (0 / nJ), endI/minIndex do
+          // the pruning instead.
           _functor.SoAFunctorPairSorted(
               view2.getView(), view1.getView(),
               computeSortingData(threadData.projIdx2, threadData.projIdx1, threadData.maxIndex, threadData.minIndex),
