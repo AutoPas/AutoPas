@@ -2,7 +2,7 @@
 
 <!--*
 # Document freshness: For more information, see go/fresh-source.
-freshness: { owner: 'janwas' reviewed: '2025-02-11' }
+freshness: { owner: 'janwas' reviewed: '2026-03-30' }
 *-->
 
 ## Wishlist
@@ -24,7 +24,7 @@ LoadnPair: Gather with optimizations in particular for 2x64-bit, which use
 Also StorePair
 
 Lookup128 for 32x 32-bit and 16x 64-bit. permutex2var on AVX-512, else Gather.
-Also Lookup64 and Lookup32.
+Also Lookup512 (-bit).
 
 ReduceMin/MaxOrNaN
 
@@ -43,10 +43,8 @@ scalbn, tan, tgamma
 
 ### Remaining STL functions for hwy/contrib/algo
 
-*   Min/MaxValue
 *   IndexOfMin/Max
 *   AllOf / AnyOf / NoneOf
-*   Count(If) (https://en.algorithmica.org/hpc/simd/masking/)
 *   EqualSpan
 *   ReverseSpan
 *   ShuffleSpan
@@ -78,7 +76,6 @@ For crypto. Native on Icelake+.
 ### SVE codegen
 
 *   SVE2.1: TBLQ for `TableLookupBytes`
-*   SVE2: use XAR for `RotateRight`
 *   `CombineShiftRightBytes` use `TableLookupLanes` instead?
 *   `Shuffle*`: use `TableLookupLanes` instead?
 *   Use SME once available: DUP predicate, REVD (rotate 128-bit elements by 64),
@@ -185,3 +182,5 @@ For SVE (svld1sb_u32)+WASM? Compiler can probably already fuse.
 *   ~~AddSub and MulAddSub~~ - by johnplatts
 *   ~~hypot~~ - by johnplatts
 *   ~~exp2~~ - by johnplatts
+*   ~~Min/MaxValue~~
+*   ~~Count(If) (https://en.algorithmica.org/hpc/simd/masking/)~~

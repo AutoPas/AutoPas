@@ -22,7 +22,7 @@ concurrency:
 jobs:
   cmake:
     name: Build and test ${{ matrix.name }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04-8core
     strategy:
       matrix:
         include:
@@ -30,31 +30,31 @@ jobs:
             extra_deps: clang-11
             c_compiler: clang-11
             cxx_compiler: clang++-11
-            cxx_standard: 11
+            cxx_standard: 17
 
           - name: Clang-12
             extra_deps: clang-12
             c_compiler: clang-12
             cxx_compiler: clang++-12
-            cxx_standard: 11
+            cxx_standard: 17
 
           - name: Clang-13
             extra_deps: clang-13
             c_compiler: clang-13
             cxx_compiler: clang++-13
-            cxx_standard: 11
+            cxx_standard: 17
 
           - name: Clang-14
             extra_deps: clang-14
             c_compiler: clang-14
             cxx_compiler: clang++-14
-            cxx_standard: 11
+            cxx_standard: 17
 
           - name: Clang-15
             extra_deps: clang-15
             c_compiler: clang-15
             cxx_compiler: clang++-15
-            cxx_standard: 11
+            cxx_standard: 17
 
           - name: Clang-15 (C++20)
             extra_deps: clang-15
@@ -76,21 +76,21 @@ jobs:
             c_compiler: gcc-9
             cxx_compiler: g++-9
             cxx_flags: -ftrapv
-            cxx_standard: 11
+            cxx_standard: 17
 
           - name: GCC-10
             extra_deps: g++-10
             c_compiler: gcc-10
             cxx_compiler: g++-10
             cxx_flags: -ftrapv
-            cxx_standard: 11
+            cxx_standard: 17
 
           - name: GCC-11
             extra_deps: g++-11
             c_compiler: gcc-11
             cxx_compiler: g++-11
             cxx_flags: -ftrapv
-            cxx_standard: 11
+            cxx_standard: 17
 
           - name: GCC-11 (C++20)
             extra_deps: g++-11
@@ -99,11 +99,13 @@ jobs:
             cxx_flags: -ftrapv
             cxx_standard: 20
 
-          - name: GCC-12
+          - name: GCC-12 (C++11)
             extra_deps: g++-12
             c_compiler: gcc-12
             cxx_compiler: g++-12
             cxx_flags: -ftrapv
+            # contrib/ requires C++17
+            extra_cmake_flags: -DHWY_ENABLE_CONTRIB=OFF
             cxx_standard: 11
 
           - name: GCC-12 (C++20)
@@ -124,14 +126,14 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
         with:
           egress-policy: audit  # cannot be block - runner does git checkout
 
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4.0.0
 
       - name: Install deps
-        run: sudo apt-get install ${{ matrix.extra_deps }}
+        run: sudo apt-get update && sudo apt-get install ${{ matrix.extra_deps }}
 
       - name: Build and test
         run: |
@@ -143,7 +145,7 @@ jobs:
 
   cmake_ubuntu_2404:
     name: Build and test ${{ matrix.name }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-8core
     strategy:
       matrix:
         include:
@@ -191,6 +193,39 @@ jobs:
             cxx_flags: -DHWY_DISABLED_TARGETS=0x58
             cxx_standard: 23
 
+          - name: Clang-19
+            extra_deps: clang-19
+            c_compiler: clang-19
+            cxx_compiler: clang++-19
+            # Disable AVX3_SPR/AVX3_ZEN4 targets in GitHub workflow build with
+            # Clang 16 or later to work around crashes that occur with Clang 16
+            # or later when some of the Google Highway tests are compiled with
+            # all x86 targets enabled
+            cxx_flags: -DHWY_DISABLED_TARGETS=0x58
+            cxx_standard: 17
+
+          - name: Clang-19 (VQSort disabled)
+            extra_deps: clang-19
+            c_compiler: clang-19
+            cxx_compiler: clang++-19
+            # Disable AVX3_SPR/AVX3_ZEN4 targets in GitHub workflow build with
+            # Clang 16 or later to work around crashes that occur with Clang 16
+            # or later when some of the Google Highway tests are compiled with
+            # all x86 targets enabled
+            cxx_flags: -DHWY_DISABLED_TARGETS=0x58 -DHWY_DISABLE_VQSORT=1
+            cxx_standard: 17
+
+          - name: Clang-19 (C++23)
+            extra_deps: clang-19
+            c_compiler: clang-19
+            cxx_compiler: clang++-19
+            # Disable AVX3_SPR/AVX3_ZEN4 targets in GitHub workflow build with
+            # Clang 16 or later to work around crashes that occur with Clang 16
+            # or later when some of the Google Highway tests are compiled with
+            # all x86 targets enabled
+            cxx_flags: -DHWY_DISABLED_TARGETS=0x58
+            cxx_standard: 23
+
           - name: GCC-13
             extra_deps: g++-13
             c_compiler: gcc-13
@@ -205,16 +240,30 @@ jobs:
             cxx_flags: -ftrapv
             cxx_standard: 23
 
+          - name: GCC-14
+            extra_deps: g++-14
+            c_compiler: gcc-14
+            cxx_compiler: g++-14
+            cxx_flags: -ftrapv
+            cxx_standard: 17
+
+          - name: GCC-14 (C++23)
+            extra_deps: g++-14
+            c_compiler: gcc-14
+            cxx_compiler: g++-14
+            cxx_flags: -ftrapv
+            cxx_standard: 23
+
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
         with:
           egress-policy: audit  # cannot be block - runner does git checkout
 
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4.0.0
 
       - name: Install deps
-        run: sudo apt-get install ${{ matrix.extra_deps }}
+        run: sudo apt-get update && sudo apt-get install ${{ matrix.extra_deps }}
 
       - name: Build and test
         run: |
@@ -225,19 +274,23 @@ jobs:
           ctest --test-dir out
 
   bazel:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-4core
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
         with:
           egress-policy: audit  # cannot be block - runner does git checkout
 
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4.0.0
 
       - uses: bazelbuild/setup-bazelisk@b39c379c82683a5f25d34f0d062761f62693e0b2 # v3.0.0
 
-      - uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.cache/bazel
           key: bazel-${{ runner.os }}
+
+      - name: Verify Bazel Version
+        run: bazel info release
+
       - run: bazel build //...

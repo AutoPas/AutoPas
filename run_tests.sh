@@ -22,7 +22,7 @@ make -j && ctest -j && cd .. && rm -rf build_dbg
 #######################################
 echo 32-bit GCC
 rm -rf build_32 && mkdir build_32 && cd build_32
-CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32 CXX=g++ CC=gcc cmake .. -DHWY_WARNINGS_ARE_ERRORS:BOOL=ON -DHWY_CMAKE_SSE2:BOOL=ON  -DCMAKE_BUILD_TYPE=Release
+CXX=i686-linux-gnu-g++ CC=i686-linux-gnu-gcc cmake .. -DCMAKE_SYSTEM_PROCESSOR=i686 -DHWY_WARNINGS_ARE_ERRORS:BOOL=ON -DHWY_CMAKE_SSE2:BOOL=ON -DCMAKE_BUILD_TYPE=Release
 make -j && ctest -j && cd .. && rm -rf build_32
 
 #######################################
@@ -51,7 +51,7 @@ make -j && ctest -j && cd .. && rm -rf build_arm8
 echo POWER GCC
 export QEMU_LD_PREFIX=/usr/powerpc64le-linux-gnu
 rm -rf build_ppc_gcc && mkdir build_ppc_gcc && cd build_ppc_gcc
-CC=powerpc64le-linux-gnu-gcc-12 CXX=powerpc64le-linux-gnu-g++-12 cmake .. -DCMAKE_BUILD_TYPE=Release -DHWY_WARNINGS_ARE_ERRORS:BOOL=ON -DCMAKE_CROSSCOMPILING_EMULATOR=/usr/bin/qemu-ppc64le-static -DCMAKE_C_COMPILER_TARGET="powerpc64le-linux-gnu" -DCMAKE_CXX_COMPILER_TARGET="powerpc64le-linux-gnu" -DCMAKE_CROSSCOMPILING=true -DCMAKE_SYSTEM_NAME=Linux
+CC=powerpc64le-linux-gnu-gcc-12 CXX=powerpc64le-linux-gnu-g++-12 cmake .. -DCMAKE_BUILD_TYPE=Release -DHWY_WARNINGS_ARE_ERRORS:BOOL=ON -DCMAKE_CROSSCOMPILING_EMULATOR=/usr/bin/qemu-ppc64le -DCMAKE_C_COMPILER_TARGET="powerpc64le-linux-gnu" -DCMAKE_CXX_COMPILER_TARGET="powerpc64le-linux-gnu" -DCMAKE_CROSSCOMPILING=true -DCMAKE_SYSTEM_NAME=Linux
 
 clear && make -j && ctest -j && cd .. && rm -rf build_ppc_gcc
 
@@ -59,7 +59,7 @@ clear && make -j && ctest -j && cd .. && rm -rf build_ppc_gcc
 echo POWER clang
 export QEMU_LD_PREFIX=/usr/powerpc64le-linux-gnu
 rm -rf build_ppc_clang && mkdir build_ppc_clang && cd build_ppc_clang
-CC=clang-17 CXX=clang++-17 cmake .. -DCMAKE_BUILD_TYPE=Release -DHWY_WARNINGS_ARE_ERRORS:BOOL=ON -DCMAKE_CROSSCOMPILING_EMULATOR=/usr/bin/qemu-ppc64le-static -DCMAKE_C_COMPILER_TARGET="powerpc64le-linux-gnu" -DCMAKE_CXX_COMPILER_TARGET="powerpc64le-linux-gnu" -DCMAKE_CROSSCOMPILING=true -DCMAKE_SYSTEM_NAME=Linux
+CXXFLAGS='-Wno-error=pass-failed' CC=clang-17 CXX=clang++-17 cmake .. -DCMAKE_BUILD_TYPE=Release -DHWY_WARNINGS_ARE_ERRORS:BOOL=ON -DCMAKE_CROSSCOMPILING_EMULATOR=/usr/bin/qemu-ppc64le -DCMAKE_C_COMPILER_TARGET="powerpc64le-linux-gnu" -DCMAKE_CXX_COMPILER_TARGET="powerpc64le-linux-gnu" -DCMAKE_CROSSCOMPILING=true -DCMAKE_SYSTEM_NAME=Linux
 
 clear && make -j && ctest -j && cd .. && rm -rf build_ppc_clang
 
@@ -88,7 +88,7 @@ clear && make -j && ctest -j && cd .. && rm -rf build_z15
 echo RVV
 export QEMU_LD_PREFIX=/usr/riscv64-linux-gnu
 rm -rf build_rvv && mkdir build_rvv && cd build_rvv
-CC=riscv64-linux-gnu-gcc-13 CXX=riscv64-linux-gnu-g++-13 cmake .. -DCMAKE_C_COMPILER_TARGET="riscv64-linux-gnu" -DCMAKE_CXX_COMPILER_TARGET="riscv64-linux-gnu" -DCMAKE_CROSSCOMPILING=true -DCMAKE_CROSSCOMPILING_EMULATOR="/usr/bin/qemu-riscv64;-cpu;max;-L;/usr/riscv64-linux-gnu" -DCMAKE_SYSTEM_NAME=Linux
+CC=riscv64-linux-gnu-gcc-15 CXX=riscv64-linux-gnu-g++-15 cmake .. -DCMAKE_C_COMPILER_TARGET="riscv64-linux-gnu" -DCMAKE_CXX_COMPILER_TARGET="riscv64-linux-gnu" -DCMAKE_CROSSCOMPILING=true -DCMAKE_CROSSCOMPILING_EMULATOR="/usr/bin/qemu-riscv64;-cpu;max;-L;/usr/riscv64-linux-gnu" -DCMAKE_SYSTEM_NAME=Linux
 clear && make -j && ctest -j && cd .. && rm -rf build_rvv
 
 

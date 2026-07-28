@@ -36,7 +36,7 @@ if(POLICY CMP0128)
   cmake_policy(SET CMP0128 NEW)
 endif()
 
-project(hwy VERSION 1.3.0)  # Keep in sync with base.h version
+project(hwy VERSION 1.4.0)  # Keep in sync with base.h version
 # `hwy` is lowercase to handle find_package() in Config mode:
 set(namespace "${PROJECT_NAME}::")
 
@@ -68,14 +68,6 @@ endif()
 # The following is only required with GCC < 6.1.0 or CLANG < 16.0
 set(HWY_CMAKE_ARM7 OFF CACHE BOOL "Set copts for Armv7 with NEON (requires vfpv4)?")
 
-# Upstream compilers(GCC 14 or CLANG 18) start enabling LSX by default, but
-# enabling LASX still require -mlasx flag to be passed explicitly, in order
-# to enable all targets, we can check them directly, adding them if they are
-# supported.  In this way, Our local compilers(GCC 8.3.0 or CLANG 8.0.1) also
-# could enable LSX & LASX targets.  Any better ideas or suggestions are welcome.
-set(HWY_CMAKE_LSX ON CACHE BOOL "Add -mlsx flag?")
-set(HWY_CMAKE_LASX ON CACHE BOOL "Add -mlasx flag?")
-
 # This must be set on 32-bit x86 with GCC < 13.1, otherwise math_test will be
 # skipped. For GCC 13.1+, you can also build with -fexcess-precision=standard.
 set(HWY_CMAKE_SSE2 OFF CACHE BOOL "Set SSE2 as baseline for 32-bit x86?")
@@ -105,21 +97,15 @@ if (NOT DEFINED CMAKE_CXX_STANDARD)
   if ("cxx_std_17" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
     set(HWY_CXX_STD_TGT_COMPILE_FEATURE cxx_std_17)
   else()
-    if ("cxx_std_14" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
-      set(HWY_CXX_STD_TGT_COMPILE_FEATURE cxx_std_14)
-    else()
-      set(HWY_CXX_STD_TGT_COMPILE_FEATURE cxx_std_11)
-    endif()
+    message(WARNING "cxx_std_17 not found in CMAKE_CXX_COMPILE_FEATURES but vqsort requires C++17")
+    set(HWY_CXX_STD_TGT_COMPILE_FEATURE cxx_std_14)
   endif()
 else()
-  if (CMAKE_CXX_STANDARD GREATER_EQUAL 14 AND CMAKE_CXX_STANDARD LESS 98)
-    if (CMAKE_CXX_STANDARD GREATER_EQUAL 17)
-      set(HWY_CXX_STD_TGT_COMPILE_FEATURE cxx_std_17)
-    else()
-      set(HWY_CXX_STD_TGT_COMPILE_FEATURE cxx_std_14)
-    endif()
+  if (CMAKE_CXX_STANDARD GREATER_EQUAL 17 AND CMAKE_CXX_STANDARD LESS 98)
+    set(HWY_CXX_STD_TGT_COMPILE_FEATURE cxx_std_17)
   else()
-    set(HWY_CXX_STD_TGT_COMPILE_FEATURE cxx_std_11)
+    message(WARNING "CMAKE_CXX_STANDARD < 17 but vqsort requires C++17")
+    set(HWY_CXX_STD_TGT_COMPILE_FEATURE cxx_std_14)
   endif()
 endif()
 
@@ -143,34 +129,6 @@ check_cxx_source_compiles(
     }"
   HWY_RISCV
 )
-
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "loongarch32|loongarch64")
-  include(CheckCXXCompilerFlag)
-  if (HWY_CMAKE_LSX)
-    set (CMAKE_REQUIRED_FLAGS -mlsx)
-    check_cxx_source_compiles(
-       "int main() {
-          #if !defined(__loongarch_sx)
-          static_assert(false, \"__loongarch_sx is not defined\");
-          #endif
-          return 0;
-        }"
-      COMPILER_SUPPORT_LSX_FLAG
-    )
-  endif()
-  if (HWY_CMAKE_LASX)
-    set (CMAKE_REQUIRED_FLAGS -mlasx)
-    check_cxx_source_compiles(
-       "int main() {
-          #if !defined(__loongarch_asx)
-          static_assert(false, \"__loongarch_asx is not defined\");
-          #endif
-          return 0;
-       }"
-      COMPILER_SUPPORT_LASX_FLAG
-    )
-  endif()
-endif()
 
 if (WIN32)
   set (ORIG_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
@@ -263,6 +221,7 @@ list(APPEND HWY_CONTRIB_SOURCES
     hwy/contrib/dot/dot-inl.h
     hwy/contrib/image/image.cc
     hwy/contrib/image/image.h
+    hwy/contrib/math/fast_math-inl.h
     hwy/contrib/math/math-inl.h
     hwy/contrib/matvec/matvec-inl.h
     hwy/contrib/random/random-inl.h
@@ -276,11 +235,14 @@ list(APPEND HWY_CONTRIB_SOURCES
     hwy/contrib/sort/vqsort.h
     hwy/contrib/thread_pool/futex.h
     hwy/contrib/thread_pool/spin.h
+    hwy/contrib/thread_pool/thread_pool.cc
     hwy/contrib/thread_pool/thread_pool.h
     hwy/contrib/thread_pool/topology.cc
     hwy/contrib/thread_pool/topology.h
     hwy/contrib/algo/copy-inl.h
+    hwy/contrib/algo/count-inl.h
     hwy/contrib/algo/find-inl.h
+    hwy/contrib/algo/minmax-inl.h
     hwy/contrib/algo/transform-inl.h
     hwy/contrib/unroller/unroller-inl.h
 )
@@ -291,6 +253,7 @@ set(HWY_SOURCES
     hwy/aligned_allocator.h
     hwy/auto_tune.h
     hwy/base.h
+    hwy/bit_set.h
     hwy/cache_control.h
     hwy/detect_compiler_arch.h  # private
     hwy/detect_targets.h  # private
@@ -419,14 +382,6 @@ else()
     -Wcast-align # see -Wcast-align=strict on x86
   )
 
-  # In case LSX/LASX are available but not enabled by defautl.
-  if(COMPILER_SUPPORT_LSX_FLAG)
-    list(APPEND HWY_FLAGS -mlsx)
-  endif()
-  if(COMPILER_SUPPORT_LASX_FLAG)
-    list(APPEND HWY_FLAGS -mlasx)
-  endif()
-
   if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     list(APPEND HWY_FLAGS
       -Wfloat-overflow-conversion
@@ -488,7 +443,7 @@ else()
   endif()
 
   # Suppress STL iterator warnings. Supported by GCC 4.4.7 and newer, which
-  # predates the C++11 we require.
+  # predates the C++14 (and C++17 for VQSort) we require.
   if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
     list(APPEND HWY_FLAGS -Wno-psabi)
   endif()
@@ -516,9 +471,8 @@ else()
   endif()  # HWY_CMAKE_ARM7
 
   if(HWY_RISCV)
-    # gcc(13) and recent clang both support V, but not yet runtime dispatch, so
-    # we add the gcv compiler flag, which then requires the CPU (now when using
-    # either compiler) to support V.
+    # Add the gcv compiler flag so that RVV is available as a baseline target.
+    # Without this, Clang 19+ can still use RVV via runtime dispatch.
     if(HWY_CMAKE_RVV)
       if(RISCV_XLEN EQUAL 64)
         list(APPEND HWY_FLAGS -march=rv64gcv1p0)
@@ -802,12 +756,31 @@ set_target_properties(hwy_profiler_example
     PROPERTIES RUNTIME_OUTPUT_DIRECTORY "examples/")
 endif()  # HWY_ENABLE_CONTRIB
 
+# Simple array sum example
+add_executable(sum_array_simple hwy/examples/sum_array_simple.cc)
+target_compile_options(sum_array_simple PRIVATE ${HWY_FLAGS})
+target_compile_features(sum_array_simple PRIVATE ${HWY_CXX_STD_TGT_COMPILE_FEATURE})
+target_link_libraries(sum_array_simple PRIVATE hwy)
+target_link_libraries(sum_array_simple PRIVATE ${ATOMICS_LIBRARIES})
+set_target_properties(sum_array_simple
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "examples/")
+
+# Advanced array sum example
+add_executable(sum_array_advanced hwy/examples/sum_array_advanced.cc)
+target_compile_options(sum_array_advanced PRIVATE ${HWY_FLAGS})
+target_compile_features(sum_array_advanced PRIVATE ${HWY_CXX_STD_TGT_COMPILE_FEATURE})
+target_link_libraries(sum_array_advanced PRIVATE hwy)
+target_link_libraries(sum_array_advanced PRIVATE ${ATOMICS_LIBRARIES})
+set_target_properties(sum_array_advanced
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "examples/")
+
 endif()  # HWY_ENABLE_EXAMPLES
 # -------------------------------------------------------- Tests
 
+if(HWY_ENABLE_TESTS)
 include(CTest)
 
-if(BUILD_TESTING AND HWY_ENABLE_TESTS)
+if(BUILD_TESTING)
 enable_testing()
 include(GoogleTest)
 
@@ -861,6 +834,7 @@ set(HWY_TEST_FILES
   hwy/tests/blockwise_test.cc
   hwy/tests/cast_test.cc
   hwy/tests/combine_test.cc
+  hwy/tests/compare_128_test.cc
   hwy/tests/compare_test.cc
   hwy/tests/complex_arithmetic_test.cc
   hwy/tests/compress_test.cc
@@ -886,6 +860,7 @@ set(HWY_TEST_FILES
   hwy/tests/mask_slide_test.cc
   hwy/tests/mask_test.cc
   hwy/tests/masked_arithmetic_test.cc
+  hwy/tests/masked_compare_test.cc
   hwy/tests/masked_minmax_test.cc
   hwy/tests/memory_test.cc
   hwy/tests/minmax_magnitude_test.cc
@@ -895,6 +870,7 @@ set(HWY_TEST_FILES
   hwy/tests/mul_by_pow2_test.cc
   hwy/tests/mul_pairwise_test.cc
   hwy/tests/mul_test.cc
+  hwy/tests/neg_test.cc
   hwy/tests/reduction_test.cc
   hwy/tests/resize_test.cc
   hwy/tests/reverse_test.cc
@@ -922,7 +898,9 @@ list(APPEND HWY_TEST_LIBS hwy_contrib)
 list(APPEND HWY_TEST_FILES
   hwy/auto_tune_test.cc
   hwy/contrib/algo/copy_test.cc
+  hwy/contrib/algo/count_value_test.cc
   hwy/contrib/algo/find_test.cc
+  hwy/contrib/algo/minmax_value_test.cc
   hwy/contrib/algo/transform_test.cc
   hwy/contrib/bit_pack/bit_pack_test.cc
   hwy/contrib/dot/dot_test.cc
@@ -931,6 +909,9 @@ list(APPEND HWY_TEST_FILES
   # Disabled due to SIGILL in clang7 debug build during gtest discovery phase,
   # not reproducible locally. Still tested via bazel build.
   hwy/contrib/math/math_test.cc
+  hwy/contrib/math/math_hyper_test.cc
+  hwy/contrib/math/math_tan_test.cc
+  hwy/contrib/math/math_trig_test.cc
   hwy/contrib/random/random_test.cc
   hwy/contrib/sort/bench_sort.cc
   hwy/contrib/sort/sort_test.cc
@@ -995,8 +976,10 @@ endforeach ()
 
 # The skeleton test uses the skeleton library code.
 target_sources(skeleton_test PRIVATE hwy/examples/skeleton.cc)
+target_compile_definitions(skeleton_test PRIVATE hwy_EXPORTS)
 
 endif()  # BUILD_TESTING
+endif()  # HWY_ENABLE_TESTS
 
 if (HWY_ENABLE_INSTALL)
   # write hwy-config file to handle `Config` mode
