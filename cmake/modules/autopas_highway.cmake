@@ -19,4 +19,4 @@ mark_as_advanced(
         HWY_WARNINGS_ARE_ERRORS  # Highway developer flag to treat compiler warnings as errors
 )
 
-add_subdirectory(${AUTOPAS_SOURCE_DIR}/libs/highway ${CMAKE_CURRENT_BINARY_DIR}/highway)
+add_subdirectory(${AUTOPAS_SOURCE_DIR}/libs/highway ${CMAKE_CURRENT_BINARY_DIR}/highway EXCLUDE_FROM_ALL)
