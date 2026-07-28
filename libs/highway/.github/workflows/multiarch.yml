@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   multiarch:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04-8core
     strategy:
       fail-fast: true
       matrix:
@@ -24,7 +24,7 @@ jobs:
             distro: ubuntu_latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6.0.2
     - name: Build and test
       uses: uraimo/run-on-arch-action@v3.0.1
       id: build
@@ -49,7 +49,7 @@ jobs:
           ctest --test-dir out
   aarch64_cmake:
     name: Build and test ${{ matrix.name }} on AArch64
-    runs-on: ubuntu-24.04-arm
+    runs-on: arm-ubuntu-arm-24.04-8core
     strategy:
       matrix:
         include:
@@ -68,14 +68,14 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
         with:
           egress-policy: audit  # cannot be block - runner does git checkout
 
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4.0.0
 
       - name: Install deps
-        run: sudo apt-get install ${{ matrix.extra_deps }}
+        run: sudo apt-get update && sudo apt-get install ${{ matrix.extra_deps }}
 
       - name: Build and test
         run: |
@@ -87,7 +87,7 @@ jobs:
 
   loongarch64_cmake:
     name: Build and test ${{ matrix.name }} on LoongArch64
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-4core
     strategy:
       matrix:
         include:
@@ -102,11 +102,11 @@ jobs:
           wget https://github.com/loongson/build-tools/releases/download/2025.02.21/x86_64-cross-tools-loongarch64-binutils_2.44-gcc_14.2.0-glibc_2.41.tar.xz
           sudo tar -xvf x86_64-cross-tools-loongarch64-binutils_2.44-gcc_14.2.0-glibc_2.41.tar.xz -C /opt
       - name: Harden Runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
         with:
           egress-policy: audit  # cannot be block - runner does git checkout
 
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4.0.0
 
       - name: Install deps
         run: |
