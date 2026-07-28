@@ -119,7 +119,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::Configuration config) {
                .Times(testing::AtLeast(1));
       // Verlet based containers resize the SoA before they call SoALoader, so no need for the testing::Invoke here
       if (std::set{autopas::ContainerOption::varVerletListsAsBuild, autopas::ContainerOption::pairwiseVerletLists,
-                   autopas::ContainerOption::verletListsCells}
+                   autopas::ContainerOption::verletListsCells, autopas::ContainerOption::verletLists}
               .count(container->getContainerType()) == 0) {
         expectation->WillRepeatedly(
             testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));

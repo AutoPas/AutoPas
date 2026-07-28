@@ -171,20 +171,14 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
               for (size_t c = 0; c < cellsOfColor.size(); ++c) {
                 const auto &range = cellsOfColor[c];
                 for (size_t i = range.first; i < range.second; ++i) {
-                  const auto neighbors = neighborList.getNeighbors(i);
-                  if (not neighbors.empty()) {
-                    _functor.SoAFunctorVerlet(_soa, i, neighbors, true);
-                  }
+                  _functor.SoAFunctorVerlet(_soa, i, neighborList.getNeighbors(i), true);
                 }
               }
             }
           } else {
             // Fallback to serial if cell grid dimensions are not available
             for (size_t i = 0; i < numParticles; ++i) {
-              const auto neighbors = neighborList.getNeighbors(i);
-              if (not neighbors.empty()) {
-                _functor.SoAFunctorVerlet(_soa, i, neighbors, true);
-              }
+              _functor.SoAFunctorVerlet(_soa, i, neighborList.getNeighbors(i), true);
             }
           }
         }
