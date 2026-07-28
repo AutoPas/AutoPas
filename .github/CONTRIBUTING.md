@@ -220,7 +220,7 @@ The table below lists the dependencies. The **Path** column currently reflects t
 | antlr4 | [`libs/antlr4-cpp-runtime-4.13.2-source.zip`](/libs/antlr4-cpp-runtime-4.13.2-source.zip) | https://github.com/antlr/antlr4 | tag `4.13.2` | non-Cpp runtimes pruned |
 | benchmark | [`libs/benchmark-1.9.4.zip`](/libs/benchmark-1.9.4.zip) | https://github.com/google/benchmark | tag `v1.9.4` | — |
 | eigen | [`libs/eigen-3.4.0.zip`](/libs/eigen-3.4.0.zip) | https://gitlab.com/libeigen/eigen | tag `3.4.0` | — |
-| googletest | [`libs/googletest-1.15.2.zip`](/libs/googletest-1.15.2.zip) | https://github.com/google/googletest | tag `v1.15.2` | — |
+| googletest | [`libs/googletest`](/libs/googletest) | https://github.com/google/googletest | tag `v1.15.2` | — |
 | harmony | [`libs/harmony.zip`](/libs/harmony.zip) | https://github.com/ActiveHarmony/harmony | branch `hotfix-v4.6.0` | `example/` pruned |
 | highway | [`libs/highway-1.3.0.zip`](/libs/highway-1.3.0.zip) | https://github.com/google/highway | tag `1.3.0` | — |
 | pmt | [`libs/pmt-master.zip`](/libs/pmt-master.zip) | https://git.astron.nl/RD/pmt | commit `7a56fa3a` | AutoPas-specific patch |
