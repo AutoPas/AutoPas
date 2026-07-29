@@ -214,19 +214,19 @@ To update the parser, the easiest way to do this is via the CLion plugin for Ant
 
 The table below lists the dependencies. The **Path** column currently reflects the `.zip` archives, but these will be replaced by subtree directories as the migration progresses.
 
-| Dep | Path | Upstream | Pinned ref             | Post-import commits |
-| --- | --- | --- |------------------------| --- |
-| ALL | [`libs/ALL-0.9.3.zip`](/libs/ALL-0.9.3.zip) | https://gitlab.jsc.fz-juelich.de/SLMS/loadbalancing | tag `v0.9.3`           | — |
-| antlr4 | [`libs/antlr4-cpp-runtime-4.13.2-source.zip`](/libs/antlr4-cpp-runtime-4.13.2-source.zip) | https://github.com/antlr/antlr4 | tag `4.13.2`           | non-Cpp runtimes pruned |
-| benchmark | [`libs/benchmark-1.9.4.zip`](/libs/benchmark-1.9.4.zip) | https://github.com/google/benchmark | tag `v1.9.4`           | — |
-| eigen | [`libs/eigen-3.4.0.zip`](/libs/eigen-3.4.0.zip) | https://gitlab.com/libeigen/eigen | tag `3.4.0`            | — |
-| googletest | [`libs/googletest`](/libs/googletest) | https://github.com/google/googletest | tag `v1.17.0`          | — |
-| harmony | [`libs/harmony.zip`](/libs/harmony.zip) | https://github.com/ActiveHarmony/harmony | branch `hotfix-v4.6.0` | `example/` pruned |
-| highway | [`libs/highway-1.3.0.zip`](/libs/highway-1.3.0.zip) | https://github.com/google/highway | tag `1.3.0`            | — |
-| pmt | [`libs/pmt-master.zip`](/libs/pmt-master.zip) | https://git.astron.nl/RD/pmt | commit `7a56fa3a`      | AutoPas-specific patch |
-| spdlog | [`libs/spdlog-1.17.0.zip`](/libs/spdlog-1.17.0.zip) | https://github.com/gabime/spdlog | tag `v1.17.0`          | — |
-| utfcpp | [`libs/utfcpp-4.0.6.zip`](/libs/utfcpp-4.0.6.zip) | https://github.com/nemtrif/utfcpp | tag `v4.0.6`           | — |
-| yaml-cpp | [`libs/yaml-cpp-2f86d13.zip`](/libs/yaml-cpp-2f86d13.zip) | https://github.com/jbeder/yaml-cpp | commit `2f86d137`      | — |
+| Dep        | Path                                                                                      | Upstream                                            | Pinned ref             | Post-import commits     |
+|------------|-------------------------------------------------------------------------------------------|-----------------------------------------------------|------------------------|-------------------------|
+| ALL        | [`libs/ALL-0.9.3.zip`](/libs/ALL-0.9.3.zip)                                               | https://gitlab.jsc.fz-juelich.de/SLMS/loadbalancing | tag `v0.9.3`           | —                       |
+| antlr4     | [`libs/antlr4-cpp-runtime-4.13.2-source.zip`](/libs/antlr4-cpp-runtime-4.13.2-source.zip) | https://github.com/antlr/antlr4                     | tag `4.13.2`           | non-Cpp runtimes pruned |
+| benchmark  | [`libs/benchmark-1.9.4.zip`](/libs/benchmark-1.9.4.zip)                                   | https://github.com/google/benchmark                 | tag `v1.9.4`           | —                       |
+| eigen      | [`libs/eigen-3.4.0.zip`](/libs/eigen-3.4.0.zip)                                           | https://gitlab.com/libeigen/eigen                   | tag `3.4.0`            | —                       |
+| googletest | [`libs/googletest`](/libs/googletest)                                                     | https://github.com/google/googletest                | tag `v1.17.0`          | —                       |
+| harmony    | [`libs/harmony.zip`](/libs/harmony.zip)                                                   | https://github.com/ActiveHarmony/harmony            | branch `hotfix-v4.6.0` | `example/` pruned       |
+| highway    | [`libs/highway-1.3.0.zip`](/libs/highway-1.3.0.zip)                                       | https://github.com/google/highway                   | tag `1.3.0`            | —                       |
+| pmt        | [`libs/pmt-master.zip`](/libs/pmt-master.zip)                                             | https://git.astron.nl/RD/pmt                        | commit `7a56fa3a`      | AutoPas-specific patch  |
+| spdlog     | [`libs/spdlog-1.17.0.zip`](/libs/spdlog-1.17.0.zip)                                       | https://github.com/gabime/spdlog                    | tag `v1.17.0`          | —                       |
+| utfcpp     | [`libs/utfcpp-4.0.6.zip`](/libs/utfcpp-4.0.6.zip)                                         | https://github.com/nemtrif/utfcpp                   | tag `v4.0.6`           | —                       |
+| yaml-cpp   | [`libs/yaml-cpp`](/libs/yaml-cpp)                                                         | https://github.com/jbeder/yaml-cpp                  | tag `yaml-cpp-0.9.0`   | —                       |
 
 ### Updating a dependency
 
