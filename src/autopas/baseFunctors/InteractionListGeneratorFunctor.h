@@ -1,0 +1,350 @@
+/**
+ * @file InteractionListGeneratorFunctor.h
+ * @author seckler
+ * @date 27.04.18
+ */
+
+#pragma once
+
+#include <atomic>
+
+#include "autopas/baseFunctors/PairwiseFunctor.h"
+#include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/SoA.h"
+namespace autopas {
+
+/**
+ * This functor generates lists of particles within interactionLength of each other: can be used internally for Verlet
+ * list generation and provides a base for a public-facing externally used version, provided in the applicationLibrary.
+ *
+ * @details After applying AutoPas's computeInteractions function with this functor, a std::vector<std::vector<size_t>>
+ * is filled, mapping from each particle index to a vector of indices belonging to all particles within
+ * interactionLength of the first.
+ *
+ * @tparam Particle_T The type of Particle class used.
+ * @tparam isInternal Should be set true if used internally within AutoPas. Makes the functor irrelevant for tuning.
+ */
+template <class Particle_T, bool isInternal = true>
+class InteractionListGeneratorFunctor
+    : public PairwiseFunctor<Particle_T, InteractionListGeneratorFunctor<Particle_T, isInternal>> {
+ public:
+  /**
+   * Structure of the SoAs defined by the particle.
+   */
+  using SoAArraysType = Particle_T::SoAArraysType;
+
+  /**
+   * Constructor
+   * @param neighborLists Reference to the (temporary) neighbor lists. They must be initialized before the actual
+   * functor calls but, if used with computeInteractions, this will be handled automatically (this will override
+   * anything in the list).
+   * @param particleToIndex Map from particle pointers to their dense SoA index.
+   *                        Built e.g. by VerletLists::buildParticleIndex().
+   * @param interactionLength The distance between particles within which particle pairs get added to the neighbor
+   * lists.
+   * @param gatherNewton3Lists If false, for a particle pair i, j that are neighbors, **both** particle j will be in
+   * particle i's list **and** particle i will be in particle j's list. If true, for a particle pair i, j that are
+   * neighbors, **either** particle j will be in particle i's list **or** particle i will be in particle j's list. The
+   * latter can be used more easily to reduce calculations by applying forces to both particles in the pair, but care
+   * should be taken to avoid race conditions. If true, we make no guarantee which of particle i or j will be in the
+   * other's list. If true, this functor will only allow functor calls with newton3 enabled.
+   */
+  InteractionListGeneratorFunctor(std::vector<std::vector<size_t>> &neighborLists,
+                                  const std::unordered_map<const Particle_T *, size_t> &particleToIndex,
+                                  double interactionLength, bool gatherNewton3Lists)
+      : PairwiseFunctor<Particle_T, InteractionListGeneratorFunctor>(interactionLength),
+        _neighborLists(neighborLists),
+        _particleToIndex(particleToIndex),
+        _interactionLengthSquared(interactionLength * interactionLength),
+        _gatherNewton3Lists(gatherNewton3Lists) {}
+
+  /**
+   *
+   * @return The name of the functor
+   */
+  std::string getName() override { return "InteractionListGeneratorFunctor"; }
+
+  /**
+   * Initializes the neighbor list for the given number of particles: clears any previous contents of inner lists while
+   * preserving their capacity, and ensures the outer list contains at least numParticles inner lists.
+   *
+   * @param numParticles Total number of particles to allocate lists for.
+   */
+  void initializeNeighborList(size_t numParticles) const {
+    if (_neighborLists.size() < numParticles) {
+      _neighborLists.resize(numParticles);
+    }
+    for (size_t i = 0; i < numParticles; ++i) {
+      _neighborLists[i].clear();
+    }
+  }
+
+  /**
+   * Whether the functor is relevant for tuning. True, unless functor used internally.
+   * @return
+   */
+  bool isRelevantForTuning() override { return not isInternal; }
+
+  /**
+   * Whether InteractionListGeneratorFunctor allows Newton3. Is always allowed.
+   * @return
+   */
+  bool allowsNewton3() override { return true; }
+
+  /**
+   * Whether InteractionListGeneratorFunctor allows non-newton3. This is not allowed if gathering N3 lists. (Not
+   * a fundamental issue but messy implementation and not really needed).
+   * @return
+   */
+  bool allowsNonNewton3() override { return not _gatherNewton3Lists; }
+
+  /**
+   * AoSFunctor for interaction list generation.
+   * @param i
+   * @param j
+   * @param newton3 Whether AutoPas is using N3 or not for list generation. This is regardless of whether the user
+   * requests N3 lists or not. If this and gatherNewton3Lists match, the handling is trivial. If newton3=true and
+   * gatherNewton3Lists=false, we just add each particle to each other's list. We do not allow newton3=false with
+   * gatherNewton3Lists=true - there are no fundamental issues with this but messy to implement and probably not too
+   * needed.
+   */
+  void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    if (_gatherNewton3Lists and not newton3) [[unlikely]] {
+      utils::ExceptionHandler::exception(
+          "InteractionListGeneratorFunctor should not be used with newton3=false and gatherNewton3Lists=true.");
+    }
+
+    if (i.isDummy() or j.isDummy()) {
+      return;
+    }
+    auto dist = i.getR() - j.getR();
+
+    double distSquared = utils::ArrayMath::dot(dist, dist);
+    if (distSquared < _interactionLengthSquared) {
+      // Assuming this functor is used like any other functor, this is thread safe: _neighborLists is a vector of
+      // vectors, meaning we can push_back to particle i's list with the same thread safety as for writing to it force
+      // buffer in e.g. a LJ functor.
+
+      // This is only thread-safe if a vector (neighbor list) exists for all particles and their corresponding indices.
+      // These indices as stored in _particleToIndex must not exceed the total number of particles.
+
+      // - If newton3=false & gatherNewton3Lists=false, we only need to add the i->j interaction to i's list as the j->i
+      // interaction is handled in another call.
+      // - If newton3=true & gatherNewton3Lists=false, we need to add the i->j interaction to j's list and the j->i
+      // interaction to j's list.
+      // - If newton3=true & gatherNewton3Lists=true, we only need to add the i->j interaction to i's list as we don't
+      // want the j->i interaction in the lists. (Could also be the other way around)
+
+      const size_t iIdx = _particleToIndex.at(&i);
+      const size_t jIdx = _particleToIndex.at(&j);
+      _neighborLists.at(iIdx).push_back(jIdx);
+      if (newton3 and not _gatherNewton3Lists) {
+        _neighborLists.at(jIdx).push_back(iIdx);
+      }
+    }
+  }
+
+  /**
+   * SoAFunctor for verlet list generation. (single cell version)
+   * @param soa the soa
+   */
+  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool /*newton3*/) override {
+    if (soa.size() == 0) return;
+
+    auto **const __restrict ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
+    const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    size_t numPart = soa.size();
+    for (size_t i = 0; i < numPart; ++i) {
+      if (ownedStatePtr[i] == OwnershipState::dummy) continue;
+      const size_t iIdx = _particleToIndex.at(ptrptr[i]);
+      auto &iList = _neighborLists.at(iIdx);
+
+      for (size_t j = i + 1; j < numPart; ++j) {
+        if (ownedStatePtr[j] == OwnershipState::dummy) continue;
+        const double drx = xptr[i] - xptr[j];
+        const double dry = yptr[i] - yptr[j];
+        const double drz = zptr[i] - zptr[j];
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double distSquared = drx2 + dry2 + drz2;
+
+        if (distSquared < _interactionLengthSquared) {
+          // This SoAFunctorSingle implementation always used newton3 in practice, regardless of the option.
+          // This is thread safe (see comment in AoS functor)
+          const size_t jIdx = _particleToIndex.at(ptrptr[j]);
+
+          iList.push_back(jIdx);
+          if (not _gatherNewton3Lists) {
+            _neighborLists.at(jIdx).push_back(iIdx);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * SoAFunctor for the verlet list generation. (two cell version)
+   * @param soa1 soa of first cell
+   * @param soa2 soa of second cell
+   * @param newton3 Whether AutoPas is using N3 or not for list generation. This is regardless of whether the user
+   * requests N3 lists or not. If this and gatherNewton3Lists match, the handling is trivial. If newton3=true and
+   * gatherNewton3Lists=false, we just add each particle to each other's list. We do not allow newton3=false with
+   * gatherNewton3Lists=true - there are no fundamental issues with this but messy to implement and probably not too
+   * needed.
+   */
+  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
+    if (_gatherNewton3Lists and not newton3) [[unlikely]] {
+      utils::ExceptionHandler::exception(
+          "InteractionListGeneratorFunctor should not be used with newton3=false and gatherNewton3Lists=true.");
+    }
+
+    if (soa1.size() == 0 or soa2.size() == 0) return;
+
+    auto **const __restrict ptr1ptr = soa1.template begin<Particle_T::AttributeNames::ptr>();
+    const double *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+    const double *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+    const double *const __restrict z1ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedState1Ptr = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    auto **const __restrict ptr2ptr = soa2.template begin<Particle_T::AttributeNames::ptr>();
+    const double *const __restrict x2ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+    const double *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+    const double *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedState2Ptr = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    const size_t numPart1 = soa1.size();
+    for (size_t i = 0; i < numPart1; ++i) {
+      const size_t iIdx = _particleToIndex.at(ptr1ptr[i]);
+      auto &iList = _neighborLists.at(iIdx);
+      if (ownedState1Ptr[i] == OwnershipState::dummy) continue;
+      const size_t numPart2 = soa2.size();
+
+      for (size_t j = 0; j < numPart2; ++j) {
+        if (ownedState2Ptr[j] == OwnershipState::dummy) continue;
+        const double drx = x1ptr[i] - x2ptr[j];
+        const double dry = y1ptr[i] - y2ptr[j];
+        const double drz = z1ptr[i] - z2ptr[j];
+
+        const double drx2 = drx * drx;
+        const double dry2 = dry * dry;
+        const double drz2 = drz * drz;
+
+        const double distSquared = drx2 + dry2 + drz2;
+
+        if (distSquared < _interactionLengthSquared) {
+          // This is thread safe (see comment in AoS functor)
+          const size_t jIdx = _particleToIndex.at(ptr2ptr[j]);
+          iList.push_back(jIdx);
+          if (newton3 and not _gatherNewton3Lists) {
+            _neighborLists.at(jIdx).push_back(iIdx);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * SoAFunctorVerlet for interaction list generation.
+   *
+   * Generates interaction list entries for the particle at index indexFirst in soa and every potential neighbor
+   * given by the Verlet list.
+   *
+   * @param soa the soa
+   * @param indexFirst index of the particle whose neighbors are given in neighborList
+   * @param neighborList indices of the potential neighbors of indexFirst
+   * @param newton3 Whether AutoPas is using N3 or not for list generation. This is regardless of whether the user
+   * requests N3 lists or not. If this and gatherNewton3Lists match, the handling is trivial. If newton3=true and
+   * gatherNewton3Lists=false, we just add each particle to each other's list. We do not allow newton3=false with
+   * gatherNewton3Lists=true - there are no fundamental issues with this but messy to implement and probably not too
+   * needed.
+   */
+  void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, std::span<const size_t> neighborList,
+                        bool newton3) override {
+    if (_gatherNewton3Lists and not newton3) [[unlikely]] {
+      utils::ExceptionHandler::exception(
+          "InteractionListGeneratorFunctor should not be used with newton3=false and gatherNewton3Lists=true.");
+    }
+
+    if (soa.size() == 0 or neighborList.empty()) return;
+
+    auto **const __restrict ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
+    const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    if (ownedStatePtr[indexFirst] == OwnershipState::dummy) return;
+
+    auto &firstList = _neighborLists.at(indexFirst);
+    const double xFirst = xptr[indexFirst];
+    const double yFirst = yptr[indexFirst];
+    const double zFirst = zptr[indexFirst];
+
+    for (const size_t j : neighborList) {
+      if (ownedStatePtr[j] == OwnershipState::dummy) continue;
+      const double drx = xFirst - xptr[j];
+      const double dry = yFirst - yptr[j];
+      const double drz = zFirst - zptr[j];
+
+      const double drx2 = drx * drx;
+      const double dry2 = dry * dry;
+      const double drz2 = drz * drz;
+
+      const double distSquared = drx2 + dry2 + drz2;
+
+      if (distSquared < _interactionLengthSquared) {
+        // This is thread safe (see comment in AoS functor)
+        firstList.push_back(j);
+        if (newton3 and not _gatherNewton3Lists) {
+          _neighborLists.at(j).push_back(indexFirst);
+        }
+      }
+    }
+  }
+
+  /**
+   * @copydoc autopas::Functor::getNeededAttr()
+   */
+  constexpr static std::array<typename Particle_T::AttributeNames, 5> getNeededAttr() {
+    return std::array<typename Particle_T::AttributeNames, 5>{
+        Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+        Particle_T::AttributeNames::posZ, Particle_T::AttributeNames::ownershipState};
+  }
+
+  /**
+   * @copydoc autopas::Functor::getNeededAttr(std::false_type)
+   */
+  constexpr static std::array<typename Particle_T::AttributeNames, 5> getNeededAttr(std::false_type) {
+    return getNeededAttr();
+  }
+
+  /**
+   * @copydoc autopas::Functor::getComputedAttr()
+   */
+  constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() {
+    return std::array<typename Particle_T::AttributeNames, 0>{/*Nothing*/};
+  }
+
+ private:
+  std::vector<std::vector<size_t>> &_neighborLists;
+  const std::unordered_map<const Particle_T *, size_t> &_particleToIndex;
+  double _interactionLengthSquared;
+
+  /**
+   * If true, each particle pair will appear in only one particle's list. Else, each particle pair will appear in each
+   * particle's list.
+   */
+  bool _gatherNewton3Lists{false};
+};
+
+}  // namespace autopas
