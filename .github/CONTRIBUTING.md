@@ -224,7 +224,7 @@ The table below lists the dependencies. The **Path** column currently reflects t
 | harmony    | [`libs/harmony.zip`](/libs/harmony.zip)                                                   | https://github.com/ActiveHarmony/harmony            | branch `hotfix-v4.6.0` | `example/` pruned       |
 | highway    | [`libs/highway-1.3.0.zip`](/libs/highway-1.3.0.zip)                                       | https://github.com/google/highway                   | tag `1.3.0`            | —                       |
 | pmt        | [`libs/pmt-master.zip`](/libs/pmt-master.zip)                                             | https://git.astron.nl/RD/pmt                        | commit `7a56fa3a`      | AutoPas-specific patch  |
-| spdlog     | [`libs/spdlog-1.17.0.zip`](/libs/spdlog-1.17.0.zip)                                       | https://github.com/gabime/spdlog                    | tag `v1.17.0`          | —                       |
+| spdlog     | [`libs/spdlog`](/libs/spdlog)                                                             | https://github.com/gabime/spdlog                    | tag `v1.17.0`          | —                       |
 | utfcpp     | [`libs/utfcpp-4.0.6.zip`](/libs/utfcpp-4.0.6.zip)                                         | https://github.com/nemtrif/utfcpp                   | tag `v4.0.6`           | —                       |
 | yaml-cpp   | [`libs/yaml-cpp`](/libs/yaml-cpp)                                                         | https://github.com/jbeder/yaml-cpp                  | tag `yaml-cpp-0.9.0`   | —                       |
 
