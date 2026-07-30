@@ -39,70 +39,68 @@ namespace autopas::utils {
  * @tparam Particle_T Type to check.
  */
 template <class Particle_T>
-concept ParticleType =
-    std::copyable<Particle_T> and
+concept ParticleType = std::copyable<Particle_T> and
 
     requires(Particle_T p, const Particle_T cp, const std::array<double, 3> &vec, double maxDistSquared,
              std::ostream &os) {
-      // Types needed to build and address the SoAs.
-      typename Particle_T::SoAArraysType;
-      typename Particle_T::AttributeNames;
-      requires std::is_enum_v<typename Particle_T::AttributeNames>;
+  // Types needed to build and address the SoAs.
+  typename Particle_T::SoAArraysType;
+  typename Particle_T::AttributeNames;
+  requires std::is_enum_v<typename Particle_T::AttributeNames>;
 
-      // Position.
-      { cp.getR() } -> std::same_as<const std::array<double, 3> &>;
-      { p.setR(vec) } -> std::same_as<void>;
-      { p.addR(vec) } -> std::same_as<void>;
-      { p.setRDistanceCheck(vec, maxDistSquared) } -> std::same_as<bool>;
-      { p.addRDistanceCheck(vec, maxDistSquared) } -> std::same_as<bool>;
+  // Position.
+  { cp.getR() } -> std::same_as<const std::array<double, 3> &>;
+  { p.setR(vec) } -> std::same_as<void>;
+  { p.addR(vec) } -> std::same_as<void>;
+  { p.setRDistanceCheck(vec, maxDistSquared) } -> std::same_as<bool>;
+  { p.addRDistanceCheck(vec, maxDistSquared) } -> std::same_as<bool>;
 
-      // Velocity.
-      { cp.getV() } -> std::same_as<const std::array<double, 3> &>;
-      { p.setV(vec) } -> std::same_as<void>;
-      { p.addV(vec) } -> std::same_as<void>;
+  // Velocity.
+  { cp.getV() } -> std::same_as<const std::array<double, 3> &>;
+  { p.setV(vec) } -> std::same_as<void>;
+  { p.addV(vec) } -> std::same_as<void>;
 
-      // Force.
-      { cp.getF() } -> std::same_as<const std::array<double, 3> &>;
-      { p.setF(vec) } -> std::same_as<void>;
-      { p.addF(vec) } -> std::same_as<void>;
-      { p.subF(vec) } -> std::same_as<void>;
+  // Force.
+  { cp.getF() } -> std::same_as<const std::array<double, 3> &>;
+  { p.setF(vec) } -> std::same_as<void>;
+  { p.addF(vec) } -> std::same_as<void>;
+  { p.subF(vec) } -> std::same_as<void>;
 
-      // Id. Phrased so that the id type does not have to be named.
-      { cp.getID() } -> std::integral;
-      { p.setID(cp.getID()) } -> std::same_as<void>;
+  // Id. Phrased so that the id type does not have to be named.
+  { cp.getID() } -> std::integral;
+  { p.setID(cp.getID()) } -> std::same_as<void>;
 
-      // Ownership.
-      { cp.isOwned() } -> std::same_as<bool>;
-      { cp.isHalo() } -> std::same_as<bool>;
-      { cp.isDummy() } -> std::same_as<bool>;
-      { cp.getOwnershipState() } -> std::same_as<OwnershipState>;
-      { p.setOwnershipState(OwnershipState::owned) } -> std::same_as<void>;
+  // Ownership.
+  { cp.isOwned() } -> std::same_as<bool>;
+  { cp.isHalo() } -> std::same_as<bool>;
+  { cp.isDummy() } -> std::same_as<bool>;
+  { cp.getOwnershipState() } -> std::same_as<OwnershipState>;
+  { p.setOwnershipState(OwnershipState::owned) } -> std::same_as<void>;
 
-      // String representation.
-      { cp.toString() } -> std::same_as<std::string>;
-      { os << cp } -> std::same_as<std::ostream &>;
+  // String representation.
+  { cp.toString() } -> std::same_as<std::string>;
+  { os << cp } -> std::same_as<std::ostream &>;
 
-      // SoA access.
-      { p.template get<Particle_T::AttributeNames::ptr>() } -> std::same_as<Particle_T *>;
-      { cp.template get<Particle_T::AttributeNames::posX>() } -> std::floating_point;
-      { cp.template get<Particle_T::AttributeNames::posY>() } -> std::floating_point;
-      { cp.template get<Particle_T::AttributeNames::posZ>() } -> std::floating_point;
-      { cp.template get<Particle_T::AttributeNames::ownershipState>() } -> std::same_as<OwnershipState>;
-      { p.template set<Particle_T::AttributeNames::posX>(double{}) } -> std::same_as<void>;
-      { p.template set<Particle_T::AttributeNames::posY>(double{}) } -> std::same_as<void>;
-      { p.template set<Particle_T::AttributeNames::posZ>(double{}) } -> std::same_as<void>;
-      { p.template set<Particle_T::AttributeNames::ownershipState>(OwnershipState::owned) } -> std::same_as<void>;
-    }
-
+  // SoA access.
+  { p.template get<Particle_T::AttributeNames::ptr>() } -> std::same_as<Particle_T *>;
+  { cp.template get<Particle_T::AttributeNames::posX>() } -> std::floating_point;
+  { cp.template get<Particle_T::AttributeNames::posY>() } -> std::floating_point;
+  { cp.template get<Particle_T::AttributeNames::posZ>() } -> std::floating_point;
+  { cp.template get<Particle_T::AttributeNames::ownershipState>() } -> std::same_as<OwnershipState>;
+  { p.template set<Particle_T::AttributeNames::posX>(double{}) } -> std::same_as<void>;
+  { p.template set<Particle_T::AttributeNames::posY>(double{}) } -> std::same_as<void>;
+  { p.template set<Particle_T::AttributeNames::posZ>(double{}) } -> std::same_as<void>;
+  { p.template set<Particle_T::AttributeNames::ownershipState>(OwnershipState::owned) } -> std::same_as<void>;
+}
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    and requires(Particle_T p, const Particle_T cp, const std::array<double, 3> &vec) {
-      { cp.getRAtRebuild() } -> std::same_as<const std::array<double, 3> &>;
-      { p.setRAtRebuild(vec) } -> std::same_as<void>;
-      { p.resetRAtRebuild() } -> std::same_as<void>;
-      // Returned by value as a const array, so this can not be matched with std::same_as.
-      { cp.calculateDisplacementSinceRebuild() } -> std::convertible_to<std::array<double, 3>>;
-    }
+and requires(Particle_T p, const Particle_T cp, const std::array<double, 3> &vec) {
+  { cp.getRAtRebuild() } -> std::same_as<const std::array<double, 3> &>;
+  { p.setRAtRebuild(vec) } -> std::same_as<void>;
+  { p.resetRAtRebuild() } -> std::same_as<void>;
+  // Returned by value as a const array, so this can not be matched with std::same_as.
+  { cp.calculateDisplacementSinceRebuild() } -> std::convertible_to<std::array<double, 3>>;
+}
 #endif
-    ;
+;
 
 }  // namespace autopas::utils

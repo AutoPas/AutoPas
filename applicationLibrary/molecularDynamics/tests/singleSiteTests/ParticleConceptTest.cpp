@@ -9,5 +9,4 @@
 #include "autopas/utils/ParticleConcept.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
-static_assert(autopas::utils::ParticleType<mdLib::MoleculeLJ>,
-              "MoleculeLJ does not satisfy the ParticleType concept!");
+static_assert(autopas::utils::ParticleType<mdLib::MoleculeLJ>, "MoleculeLJ does not satisfy the ParticleType concept!");
