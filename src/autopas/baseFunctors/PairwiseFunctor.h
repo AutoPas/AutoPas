@@ -30,14 +30,27 @@ class VerletListHelpers;
  * struct.
  */
 struct SoASortingData {
-  size_t startI;  ///< First index into soa1 that can interact with soa2, skipping soa1 particles too far below.
-  size_t endI;    ///< Exclusive upper bound index into soa1 that can interact with soa2, skipping soa1 particles
-                  ///< too far above. Whether this or startI is the no-op bound depends on the call, see struct doc.
-  const std::vector<size_t> &maxIndex;  ///< Per-i (soa1) exclusive upper bound index into soa2, skipping soa2
-                                        ///< particles too far above particle i.
-  const std::vector<size_t> &minIndex;  ///< Per-i (soa1) inclusive lower bound index into soa2, skipping soa2
-                                        ///< particles too far below particle i. Whether this or maxIndex is the
-                                        ///< no-op bound depends on the call, see struct doc.
+  /**
+   * First index into soa1 that can interact with soa2, skipping soa1 particles too far below.
+   */
+  size_t startI;
+
+  /**
+   * Exclusive upper bound index into soa1 that can interact with soa2, skipping soa1 particles too far above.
+   * Whether this or startI is the no-op bound depends on the call, see struct doc.
+   */
+  size_t endI;
+
+  /**
+   * Per-i (soa1) exclusive upper bound index into soa2, skipping soa2 particles too far above particle i.
+   */
+  const std::vector<size_t> &maxIndex;
+
+  /**
+   * Per-i (soa1) inclusive lower bound index into soa2, skipping soa2 particles too far below particle i.
+   * Whether this or maxIndex is the no-op bound depends on the call, see struct doc.
+   */
+  const std::vector<size_t> &minIndex;
 };
 
 /**

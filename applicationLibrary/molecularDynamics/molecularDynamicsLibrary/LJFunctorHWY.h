@@ -797,7 +797,7 @@ class LJFunctorHWY
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       // Rest I can't occur in 1xVec case. Bounded by endI, not n1: i-particles from endI onwards cannot
       // interact with any j-particle and are skipped entirely rather than processed as a no-op remainder.
-      const size_t restI = static_cast<size_t>(endI - i);
+      const std::ptrdiff_t restI = endI - i;
       if (restI > 0) {
         // Remainder block covers [i, i + restI - 1]. Same monotonicity argument as above.
         size_t jVecEnd = n2;
@@ -815,10 +815,10 @@ class LJFunctorHWY
         // If this check is false it means there are no particles in soa2 that can interact with particles in soa1
         // I.e. the hitrate in this case is 0%.
         if (jVecStart < jVecEnd) {
-          handleILoopBody<false, newton3, true, vecPattern>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr,
-                                                            ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr, fy2Ptr,
-                                                            fz2Ptr, typeID1Ptr, typeID2Ptr, virialSumX, virialSumY,
-                                                            virialSumZ, uPotSum, restI, jVecStart, jVecEnd);
+          handleILoopBody<false, newton3, true, vecPattern>(
+              i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr,
+              fx2Ptr, fy2Ptr, fz2Ptr, typeID1Ptr, typeID2Ptr, virialSumX, virialSumY, virialSumZ, uPotSum,
+              static_cast<size_t>(restI), jVecStart, jVecEnd);
         }
       }
     }
