@@ -223,11 +223,9 @@ class LJFunctorHWY
     }
   }
 
-  // clang-format off
   /**
-  * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
-  */
-  // clang-format on
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
+   */
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
     switch (_vecPattern) {
@@ -1231,12 +1229,11 @@ class LJFunctorHWY
   }
 
  public:
-  // clang-format off
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    */
-  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst, std::span<const size_t> neighborList,
-                               bool newton3) final {
+  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                               std::span<const size_t> neighborList, bool newton3) final {
     if (soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
