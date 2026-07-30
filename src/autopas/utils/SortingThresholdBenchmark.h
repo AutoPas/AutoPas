@@ -209,7 +209,7 @@ class SortingThresholdBenchmark {
   size_t executeRun(Functor_T &functor, const Particle_T &defaultParticle, SortingDirectionOption cellDirection,
                     size_t numParticles, Newton3Option newton3) {
     using BenchCell = FullParticleCell<Particle_T>;
-    using BenchCF = internal::CellFunctor<BenchCell, Functor_T, false>;
+    using BenchCF = internal::CellFunctor<BenchCell, Functor_T, true>;
 
     const double cutoff = functor.getCutoff();
     const double invSqrt3 = 1. / sqrt(3.);

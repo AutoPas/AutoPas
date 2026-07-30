@@ -270,7 +270,7 @@ static void BM_AoSFunctorSortedPairFace(benchmark::State &state) {
   auto functor = makeFunctor();
   functor.initTraversal();
 
-  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
+  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/true> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::aos, newton3);
   cellFunctor.setAoSSortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
 
@@ -367,7 +367,7 @@ static void BM_SoAFunctorPairHitrate(benchmark::State &state) {
   functor.setVecPattern(pattern);
   functor.initTraversal();
 
-  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
+  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/true> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
 
   for (auto _ : state) {
@@ -443,7 +443,7 @@ static void BM_SoAFunctorPairSortedHitrate(benchmark::State &state) {
   functor.setVecPattern(pattern);
   functor.initTraversal();
 
-  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
+  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/true> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
   cellFunctor.setSoASortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
 
@@ -521,7 +521,7 @@ static void BM_SoAFunctorPairFace(benchmark::State &state) {
   functor.setVecPattern(pattern);
   functor.initTraversal();
 
-  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
+  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/true> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
 
   for (auto _ : state) {
@@ -586,7 +586,7 @@ static void BM_SoAFunctorSortedPairFace(benchmark::State &state) {
   functor.setVecPattern(pattern);
   functor.initTraversal();
 
-  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
+  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/true> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
   cellFunctor.setSoASortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
 
@@ -652,7 +652,7 @@ static void BM_SoAFunctorPairEdge(benchmark::State &state) {
   functor.setVecPattern(pattern);
   functor.initTraversal();
 
-  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
+  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/true> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
 
   for (auto _ : state) {
@@ -718,7 +718,7 @@ static void BM_SoAFunctorPairCorner(benchmark::State &state) {
   functor.setVecPattern(pattern);
   functor.initTraversal();
 
-  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
+  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/true> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
 
   for (auto _ : state) {
@@ -784,7 +784,7 @@ static void BM_SoAFunctorSortedPairEdge(benchmark::State &state) {
   functor.setVecPattern(pattern);
   functor.initTraversal();
 
-  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
+  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/true> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
   cellFunctor.setSoASortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
 
@@ -851,7 +851,7 @@ static void BM_SoAFunctorSortedPairCorner(benchmark::State &state) {
   functor.setVecPattern(pattern);
   functor.initTraversal();
 
-  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/false> cellFunctor(
+  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/true> cellFunctor(
       functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
   cellFunctor.setSoASortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
 
