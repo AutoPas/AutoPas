@@ -6,13 +6,23 @@
 
 #pragma once
 
-#include <atomic>
+#include <concepts>
 
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
 namespace autopas {
+
+/**
+ * Concept defining the requirements for a NeighborListPolicy used by the InteractionListGeneratorFunctor.
+ * @tparam Policy The policy type to check.
+ * @tparam Particle_T The particle type the policy operates on.
+ */
+template <class Policy, class Particle_T>
+concept NeighborListPolicyConcept = requires(Policy policy, size_t numParticles, Particle_T *p1, Particle_T *p2) {
+  { policy.add(p1, p2) } -> std::same_as<void>;
+};
 
 /**
  * This functor generates lists of particles within interactionLength of each other: can be used internally for Verlet
@@ -23,11 +33,11 @@ namespace autopas {
  * interactionLength of the first.
  *
  * @tparam Particle_T The type of Particle class used.
- * @tparam isInternal Should be set true if used internally within AutoPas. Makes the functor irrelevant for tuning.
+ * @tparam NeighborListPolicy_T Policy that defines how particle pointers are added to a neighbor list.
  */
-template <class Particle_T, bool isInternal = true>
+template <class Particle_T, NeighborListPolicyConcept<Particle_T> NeighborListPolicy_T>
 class InteractionListGeneratorFunctor
-    : public PairwiseFunctor<Particle_T, InteractionListGeneratorFunctor<Particle_T, isInternal>> {
+    : public PairwiseFunctor<Particle_T, InteractionListGeneratorFunctor<Particle_T, NeighborListPolicy_T>> {
  public:
   /**
    * Structure of the SoAs defined by the particle.
@@ -36,11 +46,7 @@ class InteractionListGeneratorFunctor
 
   /**
    * Constructor
-   * @param neighborLists Reference to the (temporary) neighbor lists. They must be initialized before the actual
-   * functor calls but, if used with computeInteractions, this will be handled automatically (this will override
-   * anything in the list).
-   * @param particleToIndex Map from particle pointers to their dense SoA index.
-   *                        Built e.g. by VerletLists::buildParticleIndex().
+   * @param neighborListPolicy Policy that defines how particle pointers are added to a neighbor list.
    * @param interactionLength The distance between particles within which particle pairs get added to the neighbor
    * lists.
    * @param gatherNewton3Lists If false, for a particle pair i, j that are neighbors, **both** particle j will be in
@@ -50,12 +56,10 @@ class InteractionListGeneratorFunctor
    * should be taken to avoid race conditions. If true, we make no guarantee which of particle i or j will be in the
    * other's list. If true, this functor will only allow functor calls with newton3 enabled.
    */
-  InteractionListGeneratorFunctor(std::vector<std::vector<size_t>> &neighborLists,
-                                  const std::unordered_map<const Particle_T *, size_t> &particleToIndex,
-                                  double interactionLength, bool gatherNewton3Lists)
+  InteractionListGeneratorFunctor(NeighborListPolicy_T &neighborListPolicy, double interactionLength,
+                                  const bool gatherNewton3Lists)
       : PairwiseFunctor<Particle_T, InteractionListGeneratorFunctor>(interactionLength),
-        _neighborLists(neighborLists),
-        _particleToIndex(particleToIndex),
+        _neighborListPolicy(neighborListPolicy),
         _interactionLengthSquared(interactionLength * interactionLength),
         _gatherNewton3Lists(gatherNewton3Lists) {}
 
@@ -66,25 +70,10 @@ class InteractionListGeneratorFunctor
   std::string getName() override { return "InteractionListGeneratorFunctor"; }
 
   /**
-   * Initializes the neighbor list for the given number of particles: clears any previous contents of inner lists while
-   * preserving their capacity, and ensures the outer list contains at least numParticles inner lists.
-   *
-   * @param numParticles Total number of particles to allocate lists for.
-   */
-  void initializeNeighborList(size_t numParticles) const {
-    if (_neighborLists.size() < numParticles) {
-      _neighborLists.resize(numParticles);
-    }
-    for (size_t i = 0; i < numParticles; ++i) {
-      _neighborLists[i].clear();
-    }
-  }
-
-  /**
    * Whether the functor is relevant for tuning. True, unless functor used internally.
    * @return
    */
-  bool isRelevantForTuning() override { return not isInternal; }
+  bool isRelevantForTuning() override { return false; }
 
   /**
    * Whether InteractionListGeneratorFunctor allows Newton3. Is always allowed.
@@ -138,11 +127,9 @@ class InteractionListGeneratorFunctor
       // - If newton3=true & gatherNewton3Lists=true, we only need to add the i->j interaction to i's list as we don't
       // want the j->i interaction in the lists. (Could also be the other way around)
 
-      const size_t iIdx = _particleToIndex.at(&i);
-      const size_t jIdx = _particleToIndex.at(&j);
-      _neighborLists.at(iIdx).push_back(jIdx);
+      _neighborListPolicy.add(&i, &j);
       if (newton3 and not _gatherNewton3Lists) {
-        _neighborLists.at(jIdx).push_back(iIdx);
+        _neighborListPolicy.add(&j, &i);
       }
     }
   }
@@ -163,8 +150,6 @@ class InteractionListGeneratorFunctor
     size_t numPart = soa.size();
     for (size_t i = 0; i < numPart; ++i) {
       if (ownedStatePtr[i] == OwnershipState::dummy) continue;
-      const size_t iIdx = _particleToIndex.at(ptrptr[i]);
-      auto &iList = _neighborLists.at(iIdx);
 
       for (size_t j = i + 1; j < numPart; ++j) {
         if (ownedStatePtr[j] == OwnershipState::dummy) continue;
@@ -181,11 +166,9 @@ class InteractionListGeneratorFunctor
         if (distSquared < _interactionLengthSquared) {
           // This SoAFunctorSingle implementation always used newton3 in practice, regardless of the option.
           // This is thread safe (see comment in AoS functor)
-          const size_t jIdx = _particleToIndex.at(ptrptr[j]);
-
-          iList.push_back(jIdx);
+          _neighborListPolicy.add(ptrptr[i], ptrptr[j]);
           if (not _gatherNewton3Lists) {
-            _neighborLists.at(jIdx).push_back(iIdx);
+            _neighborListPolicy.add(ptrptr[j], ptrptr[i]);
           }
         }
       }
@@ -224,8 +207,6 @@ class InteractionListGeneratorFunctor
 
     const size_t numPart1 = soa1.size();
     for (size_t i = 0; i < numPart1; ++i) {
-      const size_t iIdx = _particleToIndex.at(ptr1ptr[i]);
-      auto &iList = _neighborLists.at(iIdx);
       if (ownedState1Ptr[i] == OwnershipState::dummy) continue;
       const size_t numPart2 = soa2.size();
 
@@ -243,10 +224,9 @@ class InteractionListGeneratorFunctor
 
         if (distSquared < _interactionLengthSquared) {
           // This is thread safe (see comment in AoS functor)
-          const size_t jIdx = _particleToIndex.at(ptr2ptr[j]);
-          iList.push_back(jIdx);
+          _neighborListPolicy.add(ptr1ptr[i], ptr2ptr[j]);
           if (newton3 and not _gatherNewton3Lists) {
-            _neighborLists.at(jIdx).push_back(iIdx);
+            _neighborListPolicy.add(ptr2ptr[j], ptr1ptr[i]);
           }
         }
       }
@@ -285,7 +265,6 @@ class InteractionListGeneratorFunctor
 
     if (ownedStatePtr[indexFirst] == OwnershipState::dummy) return;
 
-    auto &firstList = _neighborLists.at(indexFirst);
     const double xFirst = xptr[indexFirst];
     const double yFirst = yptr[indexFirst];
     const double zFirst = zptr[indexFirst];
@@ -304,9 +283,9 @@ class InteractionListGeneratorFunctor
 
       if (distSquared < _interactionLengthSquared) {
         // This is thread safe (see comment in AoS functor)
-        firstList.push_back(j);
+        _neighborListPolicy.add(ptrptr[indexFirst], ptrptr[j]);
         if (newton3 and not _gatherNewton3Lists) {
-          _neighborLists.at(j).push_back(indexFirst);
+          _neighborListPolicy.add(ptrptr[j], ptrptr[indexFirst]);
         }
       }
     }
@@ -336,8 +315,7 @@ class InteractionListGeneratorFunctor
   }
 
  private:
-  std::vector<std::vector<size_t>> &_neighborLists;
-  const std::unordered_map<const Particle_T *, size_t> &_particleToIndex;
+  NeighborListPolicy_T &_neighborListPolicy;
   double _interactionLengthSquared;
 
   /**

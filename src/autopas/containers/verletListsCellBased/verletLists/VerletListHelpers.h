@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
@@ -42,192 +43,46 @@ class VerletListHelpers {
      * @param i particle index
      * @return number of neighbors
      */
-    [[nodiscard]] size_t count(size_t i) const { return offsets[i + 1] - offsets[i]; }
+    [[nodiscard]] size_t count(const size_t i) const { return offsets[i + 1] - offsets[i]; }
     /** Pointer to the first neighbor index of particle i (const).
      * @param i particle index
      * @return pointer to the first neighbor index
      */
-    [[nodiscard]] const size_t *begin(size_t i) const { return indices.data() + offsets[i]; }
+    [[nodiscard]] const size_t *begin(const size_t i) const { return indices.data() + offsets[i]; }
     /** Pointer to the first neighbor index of particle i (mutable).
      * @param i particle index
      * @return pointer to the first neighbor index
      */
-    [[nodiscard]] size_t *begin(size_t i) { return indices.data() + offsets[i]; }
+    [[nodiscard]] size_t *begin(const size_t i) { return indices.data() + offsets[i]; }
     /** Returns a span of the neighbors of particle i.
      * @param i particle index
      * @return span of neighbor indices
      */
-    [[nodiscard]] std::span<const size_t> getNeighbors(size_t i) const { return {begin(i), count(i)}; }
+    [[nodiscard]] std::span<const size_t> getNeighbors(const size_t i) const { return {begin(i), count(i)}; }
   };
 
-  /**
-   * This functor can generate verlet lists using the typical pairwise traversal.
-   */
-  class VerletListGeneratorFunctor : public PairwiseFunctor<Particle_T, VerletListGeneratorFunctor> {
+  class CRSNeighborListPolicy {
    public:
-    /**
-     * Structure of the SoAs defined by the particle.
-     */
-    using SoAArraysType = typename Particle_T::SoAArraysType;
+    CRSNeighborListPolicy(std::vector<std::vector<size_t>> &neighborLists,
+                          const std::unordered_map<const Particle_T *, size_t> &particleToIndex)
+        : _neighborLists(neighborLists), _particleToIndex(particleToIndex) {}
 
-    /**
-     * Constructor
-     * @param neighborLists Temporary ragged list: one inner vector per particle index.
-     *                      Populated during the linked-cells traversal; used by
-     *                      VerletLists::buildCRS() to assemble the final flat CRS.
-     * @param particleToIndex Map from particle pointers to their dense SoA index.
-     *                      Built once by VerletLists::buildParticleIndex().
-     * @param interactionLength cutoff + skin radius.
-     */
-    VerletListGeneratorFunctor(std::vector<std::vector<size_t>> &neighborLists,
-                               const std::unordered_map<const Particle_T *, size_t> &particleToIndex,
-                               double interactionLength)
-        : PairwiseFunctor<Particle_T, VerletListGeneratorFunctor>(interactionLength),
-          _neighborLists(neighborLists),
-          _particleToIndex(particleToIndex),
-          _interactionLengthSquared(interactionLength * interactionLength) {}
-
-    std::string getName() override { return "VerletListGeneratorFunctor"; }
-
-    bool isRelevantForTuning() override { return false; }
-
-    bool allowsNewton3() override {
-      utils::ExceptionHandler::exception(
-          "VLCAllCellsGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
-      return true;
-    }
-
-    bool allowsNonNewton3() override {
-      utils::ExceptionHandler::exception(
-          "VLCAllCellsGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
-      return true;
-    }
-
-    void AoSFunctor(Particle_T &i, Particle_T &j, bool /*newton3*/) override {
-      using namespace autopas::utils::ArrayMath::literals;
-
-      if (i.isDummy() or j.isDummy()) {
-        return;
+    void initialize(const size_t numParticles) const {
+      if (_neighborLists.size() < numParticles) {
+        _neighborLists.resize(numParticles);
       }
-      auto dist = i.getR() - j.getR();
-
-      double distSquared = utils::ArrayMath::dot(dist, dist);
-      if (distSquared < _interactionLengthSquared) {
-        // Thread-safe: particle i lives in a specific cell, and each cell is
-        // accessed by exactly one thread at a time (guaranteed by the traversal).
-        // _neighborLists[iIdx] is therefore never accessed concurrently.
-        _neighborLists[_particleToIndex.at(&i)].push_back(_particleToIndex.at(&j));
-        // No newton3 here: AoSFunctor(j, i) is also called when newton3=false.
+      for (size_t i = 0; i < numParticles; ++i) {
+        _neighborLists[i].clear();
       }
     }
 
-    /**
-     * SoAFunctor for verlet list generation. (single cell version)
-     * @param soa the soa
-     * @param newton3 whether to use newton 3
-     */
-    void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
-      if (soa.size() == 0) return;
-
-      auto **const __restrict ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
-      const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
-      const double *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
-      const double *const __restrict zptr = soa.template begin<Particle_T::AttributeNames::posZ>();
-
-      size_t numPart = soa.size();
-      for (unsigned int i = 0; i < numPart; ++i) {
-        const size_t iIdx = _particleToIndex.at(ptrptr[i]);
-        auto &currentList = _neighborLists[iIdx];
-
-        for (unsigned int j = i + 1; j < numPart; ++j) {
-          const double drx = xptr[i] - xptr[j];
-          const double dry = yptr[i] - yptr[j];
-          const double drz = zptr[i] - zptr[j];
-
-          const double drx2 = drx * drx;
-          const double dry2 = dry * dry;
-          const double drz2 = drz * drz;
-
-          const double distSquared = drx2 + dry2 + drz2;
-
-          if (distSquared < _interactionLengthSquared) {
-            const size_t jIdx = _particleToIndex.at(ptrptr[j]);
-            currentList.push_back(jIdx);
-            if (not newton3) {
-              // SoAFunctorSingle is called once for both newton3=true and newton3=false,
-              // so we must explicitly record the reverse direction here.
-              _neighborLists[jIdx].push_back(iIdx);
-            }
-          }
-        }
-      }
-    }
-
-    /**
-     * SoAFunctor for the verlet list generation. (two cell version)
-     * @param soa1 soa of first cell
-     * @param soa2 soa of second cell
-     * @note newton3 is ignored here, as for newton3=false SoAFunctorPair(soa2, soa1) will also be called.
-     */
-    void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
-      if (soa1.size() == 0 || soa2.size() == 0) return;
-
-      auto **const __restrict ptr1ptr = soa1.template begin<Particle_T::AttributeNames::ptr>();
-      const double *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
-      const double *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
-      const double *const __restrict z1ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
-
-      auto **const __restrict ptr2ptr = soa2.template begin<Particle_T::AttributeNames::ptr>();
-      const double *const __restrict x2ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
-      const double *const __restrict y2ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
-      const double *const __restrict z2ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
-
-      // newton3 is ignored: for newton3=false, SoAFunctorPair(soa2, soa1) is also called by the traversal.
-      size_t numPart1 = soa1.size();
-      for (unsigned int i = 0; i < numPart1; ++i) {
-        const size_t iIdx = _particleToIndex.at(ptr1ptr[i]);
-        auto &currentList = _neighborLists[iIdx];
-
-        size_t numPart2 = soa2.size();
-
-        for (unsigned int j = 0; j < numPart2; ++j) {
-          const double drx = x1ptr[i] - x2ptr[j];
-          const double dry = y1ptr[i] - y2ptr[j];
-          const double drz = z1ptr[i] - z2ptr[j];
-
-          const double drx2 = drx * drx;
-          const double dry2 = dry * dry;
-          const double drz2 = drz * drz;
-
-          const double distSquared = drx2 + dry2 + drz2;
-
-          if (distSquared < _interactionLengthSquared) {
-            currentList.push_back(_particleToIndex.at(ptr2ptr[j]));
-          }
-        }
-      }
-    }
-
-    /**
-     * @copydoc autopas::Functor::getNeededAttr()
-     */
-    constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
-      return std::array<typename Particle_T::AttributeNames, 4>{
-          Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
-          Particle_T::AttributeNames::posZ};
-    }
-
-    /**
-     * @copydoc autopas::Functor::getComputedAttr()
-     */
-    constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() {
-      return std::array<typename Particle_T::AttributeNames, 0>{/*Nothing*/};
+    void add(const Particle_T *i, const Particle_T *j) {
+      _neighborLists[_particleToIndex.at(i)].push_back(_particleToIndex.at(j));
     }
 
    private:
     std::vector<std::vector<size_t>> &_neighborLists;
     const std::unordered_map<const Particle_T *, size_t> &_particleToIndex;
-    double _interactionLengthSquared;
   };
 
   /**

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "VerletListHelpers.h"
+#include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
@@ -172,12 +173,16 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   void updateNeighborListsSingleThread(size_t N, double interactionLength, DataLayoutOption dataLayout,
                                        bool useNewton3) {
     std::vector<std::vector<size_t>> tempLists(N);
-    typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor f(tempLists, _particleToIndex,
-                                                                         interactionLength);
-    auto traversal =
-        LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListGeneratorFunctor>(
-            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f, this->getInteractionLength(),
-            this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+
+    typename VerletListHelpers<Particle_T>::CRSNeighborListPolicy policy(tempLists, _particleToIndex);
+
+    InteractionListGeneratorFunctor<Particle_T, typename VerletListHelpers<Particle_T>::CRSNeighborListPolicy> f(
+        policy, interactionLength, useNewton3);
+    auto traversal = LCC08Traversal<
+        ParticleCellType,
+        InteractionListGeneratorFunctor<Particle_T, typename VerletListHelpers<Particle_T>::CRSNeighborListPolicy>>(
+        this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f, this->getInteractionLength(),
+        this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
     this->_linkedCells.computeInteractions(&traversal);
 
     // Prefix-sum + copy:
