@@ -13,9 +13,10 @@
 #include "autopas/containers/octree/OctreeInnerNode.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 class OctreeInnerNode;
 
 /**
@@ -23,7 +24,7 @@ class OctreeInnerNode;
  *
  * @tparam Particle_T
  */
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 class OctreeLeafNode : public OctreeNodeInterface<Particle_T>, public FullParticleCell<Particle_T> {
  public:
   /**

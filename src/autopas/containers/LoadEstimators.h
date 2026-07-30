@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 /**
@@ -52,7 +53,7 @@ unsigned long squaredParticlesPerCell(const std::vector<ParticleCell> &cells,
  * @param cellIndex the index of the current cell being processed
  * @return estimated load for current cell
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 unsigned long neighborListLengthImpl(
     const typename autopas::VerletListsCellsHelpers::AllCellsNeighborListsType<Particle_T> &neighborLists,
     unsigned long cellIndex) {
@@ -71,7 +72,7 @@ unsigned long neighborListLengthImpl(
  * @param cellIndex the index of the current cell being processed
  * @return estimated load for current cell
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 unsigned long neighborListLengthImpl(
     const typename autopas::VerletListsCellsHelpers::PairwiseNeighborListsType<Particle_T> &neighborLists,
     unsigned long cellIndex) {
@@ -94,7 +95,7 @@ unsigned long neighborListLengthImpl(
  * @param upperCorner upper boundary indices for region
  * @return estimated load for given region
  */
-template <class Particle_T, class NeighborList>
+template <utils::ParticleType Particle_T, class NeighborList>
 unsigned long neighborListLength(NeighborList &neighborLists, const std::array<unsigned long, 3> &cellsPerDimension,
                                  const std::array<unsigned long, 3> &lowerCorner,
                                  const std::array<unsigned long, 3> &upperCorner) {

@@ -5,8 +5,11 @@
  */
 
 #pragma once
+
+#include "autopas/utils/ParticleConcept.h"
+
 namespace autopas {
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class AutoPas;
 namespace utils {
 
@@ -41,8 +44,8 @@ struct ParticleTypeTrait<std::vector<ParticleCell>> {
  * @tparam Particle_T
  * @tparam ParticleCell
  */
-template <class Particle_T>
-struct ParticleTypeTrait<autopas::AutoPas<Particle_T>> {
+template <utils::ParticleType Particle_T>
+struct ParticleTypeTrait<AutoPas<Particle_T>> {
   /**
    * The Particle Type.
    */

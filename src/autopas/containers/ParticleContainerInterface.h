@@ -18,13 +18,14 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/inBox.h"
 #include "autopas/utils/optRef.h"
 
 namespace autopas {
 
 // forward declaration
-template <class Particle_T, bool modifiable, bool regionIter>
+template <utils::ParticleType Particle_T, bool modifiable, bool regionIter>
 class ContainerIterator;
 
 /**
@@ -34,7 +35,7 @@ class ContainerIterator;
  *
  * @tparam Particle_T Class for particle.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class ParticleContainerInterface {
  public:
   /**

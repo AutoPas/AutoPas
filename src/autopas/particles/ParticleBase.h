@@ -420,9 +420,9 @@ class ParticleBase {
 
   /**
    * Function to access hidden particle.markAsDeleted() to mark it as internal.
-   * @tparam ParticleIterator
+   * @tparam T
    */
-  template <class T>
+  template <utils::ParticleType T>
   friend void internal::markParticleAsDeleted(T &);
 };
 

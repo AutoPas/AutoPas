@@ -43,6 +43,7 @@
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/checkFunctorType.h"
 
 namespace autopas {
@@ -111,7 +112,7 @@ class TraversalSelector {
    * @param traversalInfo Additional information for the traversal.
    * @return Smartpointer to the generated traversal, or nullptr if no valid traversal could be generated.
    */
-  template <class Particle_T, class Functor_T>
+  template <utils::ParticleType Particle_T, class Functor_T>
   static std::unique_ptr<TraversalInterface> generateTraversalFromConfig(const Configuration &config,
                                                                          Functor_T &functor,
                                                                          const TraversalSelectorInfo &traversalInfo);
@@ -434,7 +435,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTraversal(Travers
   return nullptr;
 }
 
-template <class Particle_T, class Functor_T>
+template <utils::ParticleType Particle_T, class Functor_T>
 std::unique_ptr<TraversalInterface> TraversalSelector::generateTraversalFromConfig(
     const Configuration &config, Functor_T &functor, const TraversalSelectorInfo &traversalInfo) {
   switch (config.container) {

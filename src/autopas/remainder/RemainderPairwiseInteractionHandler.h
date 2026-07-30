@@ -15,6 +15,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/TraceTimer.h"
 #include "autopas/utils/checkFunctorType.h"
 #include "autopas/utils/logging/Logger.h"
@@ -27,7 +28,7 @@ namespace autopas {
  *
  * @tparam Particle_T
  */
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 class RemainderPairwiseInteractionHandler {
  public:
   /**

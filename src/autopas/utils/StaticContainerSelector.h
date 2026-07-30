@@ -19,6 +19,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
 /**
@@ -31,7 +32,7 @@ namespace autopas {
  * E.g: [&](auto &container){container->doSth();}  // The & is optional here. The auto is necessary!
  * @return Returns whatever function returns.
  */
-template <typename Particle_T, typename FunctionType>
+template <utils::ParticleType Particle_T, typename FunctionType>
 decltype(auto) withStaticContainerType(ParticleContainerInterface<Particle_T> &container, FunctionType &&function) {
   switch (container.getContainerType()) {
     case ContainerOption::directSum:

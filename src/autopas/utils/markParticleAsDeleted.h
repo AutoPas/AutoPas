@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "autopas/utils/ParticleConcept.h"
+
 namespace autopas::internal {
 
 /**
@@ -19,7 +21,7 @@ namespace autopas::internal {
  * @param p
  * @note: This function should not be used from outside of AutoPas. Instead, use AutoPas::deleteParticle(iterator).
  */
-template <typename Particle_T>
+template <autopas::utils::ParticleType Particle_T>
 void markParticleAsDeleted(Particle_T &p) {
   p.markAsDeleted();
 }

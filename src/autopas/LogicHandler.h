@@ -29,6 +29,7 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/NumParticlesEstimator.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/TraceTimer.h"
@@ -47,7 +48,7 @@ namespace autopas {
  * This is mainly done by incorporating a global container rebuild frequency, which defines when containers and their
  * neighbor lists will be rebuilt.
  */
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 class LogicHandler {
  public:
   /**
@@ -955,7 +956,7 @@ class LogicHandler {
   FLOPLogger _flopLogger;
 };
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 void LogicHandler<Particle_T>::updateRebuildPositions() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
@@ -968,7 +969,7 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
 #endif
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 void LogicHandler<Particle_T>::checkMinimalSize() const {
   // check boxSize at least cutoff + skin
   for (unsigned int dim = 0; dim < 3; ++dim) {
@@ -982,12 +983,12 @@ void LogicHandler<Particle_T>::checkMinimalSize() const {
   }
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 bool LogicHandler<Particle_T>::getNeighborListsInvalidDoDynamicRebuild() {
   return _neighborListInvalidDoDynamicRebuild;
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 bool LogicHandler<Particle_T>::neighborListsAreValid() {
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
@@ -1000,7 +1001,7 @@ bool LogicHandler<Particle_T>::neighborListsAreValid() {
   return _neighborListsAreValid.load(std::memory_order_relaxed);
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   const auto skin = getContainer().getVerletSkin();
@@ -1019,12 +1020,12 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
 #endif
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 void LogicHandler<Particle_T>::resetNeighborListsInvalidDoDynamicRebuild() {
   _neighborListInvalidDoDynamicRebuild = false;
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 void LogicHandler<Particle_T>::setParticleBuffers(
     const std::vector<FullParticleCell<Particle_T>> &particleBuffers,
     const std::vector<FullParticleCell<Particle_T>> &haloParticleBuffers) {
@@ -1059,13 +1060,13 @@ void LogicHandler<Particle_T>::setParticleBuffers(
   exchangeBuffer(haloParticleBuffers, _haloParticleBuffer, _numParticlesHalo);
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 std::tuple<const std::vector<FullParticleCell<Particle_T>> &, const std::vector<FullParticleCell<Particle_T>> &>
 LogicHandler<Particle_T>::getParticleBuffers() const {
   return {_particleBuffer, _haloParticleBuffer};
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 template <class Functor>
 IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &functor, TraversalInterface &traversal) {
   // Helper to derive the Functor type at compile time
@@ -1155,7 +1156,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
           energyMeasurementsPossible ? energyTotal : nanL};
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 template <class Functor>
 void LogicHandler<Particle_T>::computeRemainderInteractions(Functor &functor, bool newton3, bool useSoA) {
   withStaticContainerType(*_currentContainer, [&](auto &actualContainerType) {
@@ -1179,7 +1180,7 @@ void LogicHandler<Particle_T>::computeRemainderInteractions(Functor &functor, bo
   });
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 template <class Functor>
 std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::selectConfiguration(
     Functor &functor, const InteractionTypeOption &interactionType) {
@@ -1242,7 +1243,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   } while (true);
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 void LogicHandler<Particle_T>::setCurrentContainer(
     std::unique_ptr<ParticleContainerInterface<Particle_T>> newContainer) {
   // copy particles so they do not get lost when the container is switched
@@ -1268,7 +1269,7 @@ void LogicHandler<Particle_T>::setCurrentContainer(
   _currentContainer = std::move(newContainer);
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 template <class Functor>
 bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
                                                            const InteractionTypeOption &interactionType) {
@@ -1345,7 +1346,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   return stillTuning;
 }
 
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 template <class Functor>
 std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::isConfigurationApplicable(
     const Configuration &config, Functor &functor) {

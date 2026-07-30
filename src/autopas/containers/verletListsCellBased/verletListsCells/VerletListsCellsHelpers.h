@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "autopas/options/TraversalOption.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas::VerletListsCellsHelpers {
@@ -26,7 +27,7 @@ namespace autopas::VerletListsCellsHelpers {
  *
  * @tparam Particle_T
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 using AllCellsNeighborListsType = std::vector<std::vector<std::pair<Particle_T *, std::vector<Particle_T *>>>>;
 
 /**
@@ -36,7 +37,7 @@ using AllCellsNeighborListsType = std::vector<std::vector<std::pair<Particle_T *
  *
  * @tparam Particle_T
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 using PairwiseNeighborListsType =
     std::vector<std::vector<std::vector<std::pair<Particle_T *, std::vector<Particle_T *>>>>>;
 

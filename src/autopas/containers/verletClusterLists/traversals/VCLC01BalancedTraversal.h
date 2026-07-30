@@ -8,6 +8,7 @@
 
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -19,7 +20,7 @@ namespace autopas {
  * @tparam Particle_T Particle Type.
  * @tparam PairwiseFunctor The type of the functor.
  */
-template <class Particle_T, class PairwiseFunctor>
+template <utils::ParticleType Particle_T, class PairwiseFunctor>
 class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalInterface<Particle_T> {
  public:
   /**

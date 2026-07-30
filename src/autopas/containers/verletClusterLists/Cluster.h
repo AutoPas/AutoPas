@@ -10,6 +10,7 @@
 #include <iterator>
 #include <vector>
 
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/SoAView.h"
 
 namespace autopas::internal {
@@ -22,7 +23,7 @@ namespace autopas::internal {
  * @tparam Particle_T The type of the particles this cluster consists of.
  * @tparam clusterSize The number of particles in the cluster.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class Cluster {
  public:
   /**

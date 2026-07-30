@@ -175,7 +175,7 @@ class TestParticle : public ParticleFP64 {
     return this;
   }
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
     return ParticleFP64::get<attribute>();
   }
 };

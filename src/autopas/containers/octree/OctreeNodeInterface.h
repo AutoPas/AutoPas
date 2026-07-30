@@ -12,6 +12,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/octree/OctreeDirection.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -20,7 +21,7 @@ namespace autopas {
  * `OctreeLeafNode`s.
  * @tparam Particle_T
  */
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 class OctreeLeafNode;
 
 /**
@@ -28,7 +29,7 @@ class OctreeLeafNode;
  *
  * @tparam Particle_T
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class OctreeNodeInterface {
  public:
   /**
@@ -419,7 +420,7 @@ class OctreeNodeInterface {
  * @param node A pointer to a node
  * @return true if the node has children, false otherwise.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 inline bool GRAY(OctreeNodeInterface<Particle_T> *node) {
   // According to Samet: "All non-leaf nodes are said to be GRAY"
   return node->hasChildren();
@@ -432,7 +433,7 @@ inline bool GRAY(OctreeNodeInterface<Particle_T> *node) {
  * @param node
  * @return The parent of the given node if the node is not the root node, otherwise nullptr.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 inline OctreeNodeInterface<Particle_T> *FATHER(const OctreeNodeInterface<Particle_T> *node) {
   return node->getParent();
 }
@@ -445,7 +446,7 @@ inline OctreeNodeInterface<Particle_T> *FATHER(const OctreeNodeInterface<Particl
  * @return The octant in which the node is in the parent, OOO if the node either does not have a parent or could not be
  * found in the parent.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 static octree::Octant SONTYPE(const OctreeNodeInterface<Particle_T> *node) {
   octree::Octant result = octree::OOO;
   if (FATHER(node)) {
@@ -462,7 +463,7 @@ static octree::Octant SONTYPE(const OctreeNodeInterface<Particle_T> *node) {
   return result;
 }
 
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 OctreeNodeInterface<Particle_T> *OctreeNodeInterface<Particle_T>::GTEQ_FACE_NEIGHBOR(const octree::Face I) {
   // Check precondition
   if (not isFace(I)) {
@@ -487,7 +488,7 @@ OctreeNodeInterface<Particle_T> *OctreeNodeInterface<Particle_T>::GTEQ_FACE_NEIG
   }
 }
 
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 OctreeNodeInterface<Particle_T> *OctreeNodeInterface<Particle_T>::GTEQ_EDGE_NEIGHBOR(const octree::Edge I) {
   // Check precondition
   if (not isEdge(I)) {
@@ -516,7 +517,7 @@ OctreeNodeInterface<Particle_T> *OctreeNodeInterface<Particle_T>::GTEQ_EDGE_NEIG
   }
 }
 
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 OctreeNodeInterface<Particle_T> *OctreeNodeInterface<Particle_T>::GTEQ_VERTEX_NEIGHBOR(const octree::Vertex I) {
   // Check precondition
   if (not isVertex(I)) {

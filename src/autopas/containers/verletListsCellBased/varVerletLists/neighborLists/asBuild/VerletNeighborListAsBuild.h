@@ -9,6 +9,7 @@
 #include "AsBuildPairGeneratorFunctor.h"
 #include "C08TraversalColorChangeNotify.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/VerletNeighborListInterface.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -18,7 +19,7 @@ namespace autopas {
  * during the build with C08 from LinkedCells.
  * @tparam Particle_T The particle type the class uses.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>, ColorChangeObserver {
   /**
    * Adds the generator functor for validation checks as friend so it can call checkPair().

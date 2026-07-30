@@ -9,6 +9,7 @@
 
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/baseFunctors/TriwiseFunctor.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace {
 /**
@@ -22,7 +23,7 @@ std::false_type isPairwiseFunctorImpl(...);
  * @tparam FunctorT
  * @return true
  */
-template <typename Particle_T, typename FunctorT>
+template <autopas::utils::ParticleType Particle_T, typename FunctorT>
 std::true_type isPairwiseFunctorImpl(const autopas::PairwiseFunctor<Particle_T, FunctorT> &);
 
 /**
@@ -36,7 +37,7 @@ std::false_type isTriwiseFunctorImpl(...);
  * @tparam FunctorT
  * @return true
  */
-template <typename Particle_T, typename FunctorT>
+template <autopas::utils::ParticleType Particle_T, typename FunctorT>
 std::true_type isTriwiseFunctorImpl(const autopas::TriwiseFunctor<Particle_T, FunctorT> &);
 }  // namespace
 

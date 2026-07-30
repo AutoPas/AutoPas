@@ -9,6 +9,7 @@
 #include "VVLTraversalInterface.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -20,7 +21,7 @@ namespace autopas {
  * @tparam Particle_T The particle type used by the neighbor list.
  * @tparam PairwiseFunctor The type of the functor to use for the iteration.
  */
-template <class ParticleCell, class Particle_T, class PairwiseFunctor>
+template <class ParticleCell, utils::ParticleType Particle_T, class PairwiseFunctor>
 class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBuild<Particle_T>>,
                             public TraversalInterface {
  private:
@@ -94,7 +95,7 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
   SoA<typename Particle_T::SoAArraysType> *_soa;
 };
 
-template <class ParticleCell, class Particle_T, class PairwiseFunctor>
+template <class ParticleCell, utils::ParticleType Particle_T, class PairwiseFunctor>
 void VVLAsBuildTraversal<ParticleCell, Particle_T, PairwiseFunctor>::iterateAoS(
     VerletNeighborListAsBuild<Particle_T> &neighborList) {
   const auto &list = neighborList.getAoSNeighborList();
@@ -115,7 +116,7 @@ void VVLAsBuildTraversal<ParticleCell, Particle_T, PairwiseFunctor>::iterateAoS(
   }
 }
 
-template <class ParticleCell, class Particle_T, class PairwiseFunctor>
+template <class ParticleCell, utils::ParticleType Particle_T, class PairwiseFunctor>
 void VVLAsBuildTraversal<ParticleCell, Particle_T, PairwiseFunctor>::iterateSoA(
     VerletNeighborListAsBuild<Particle_T> &neighborList) {
   const auto &soaNeighborList = neighborList.getSoANeighborList();

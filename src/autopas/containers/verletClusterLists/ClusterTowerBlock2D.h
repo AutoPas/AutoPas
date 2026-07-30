@@ -12,6 +12,7 @@
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas::internal {
 
@@ -21,7 +22,7 @@ namespace autopas::internal {
  *
  * @tparam Particle_T
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class ClusterTowerBlock2D : public CellBorderAndFlagManager {
  public:
   /**

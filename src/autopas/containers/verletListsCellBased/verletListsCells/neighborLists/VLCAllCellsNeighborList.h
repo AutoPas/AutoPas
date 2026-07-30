@@ -15,6 +15,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCNeighborListInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
 
@@ -23,7 +24,7 @@ namespace autopas {
  * cells.
  * @tparam Particle_T Type of particle to be used for this neighbor list.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle_T> {
  public:
   /**

@@ -11,6 +11,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleCellHelpers.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
@@ -21,7 +22,7 @@ namespace autopas {
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @tparam Particle_T
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VerletListsLinkedBase : public ParticleContainerInterface<Particle_T> {
  public:
   /**

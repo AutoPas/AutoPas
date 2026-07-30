@@ -28,6 +28,7 @@
 #include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
 
@@ -35,7 +36,7 @@ namespace autopas {
 
 // Forward declare Handler so that including this header does not include the whole library with all
 // containers and traversals.
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class LogicHandler;
 
 /**
@@ -43,7 +44,7 @@ class LogicHandler;
  * It acts as an interface from where all features of the library can be triggered and configured.
  * @tparam Particle_T Class for particles
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class AutoPas {
  public:
   /**

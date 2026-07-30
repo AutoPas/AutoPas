@@ -9,10 +9,11 @@
 #include "autopas/baseFunctors/Functor.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
 
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VerletNeighborListAsBuild;
 
 namespace internal {
@@ -25,7 +26,7 @@ namespace internal {
  * @tparam callCheckInstead If false, generate a neighbor list. If true, check the current for validity. Checking
  * validity only works with the AoSFunctor().
  */
-template <class Particle_T, bool callCheckInstead = false>
+template <utils::ParticleType Particle_T, bool callCheckInstead = false>
 class AsBuildPairGeneratorFunctor
     : public autopas::PairwiseFunctor<Particle_T, AsBuildPairGeneratorFunctor<Particle_T, callCheckInstead>> {
  public:

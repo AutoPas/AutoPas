@@ -10,6 +10,7 @@
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/verletClusterLists/Cluster.h"
 #include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas::internal {
@@ -39,7 +40,7 @@ namespace autopas::internal {
  * @tparam Particle_T
  * @tparam clusterSize
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class ClusterTower : public FullParticleCell<Particle_T> {
  public:
   /**

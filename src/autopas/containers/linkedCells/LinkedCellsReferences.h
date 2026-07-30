@@ -20,6 +20,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleCellHelpers.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -35,7 +36,7 @@ namespace autopas {
  * particles in neighboring cells.
  * @tparam Particle_T type of the Particle
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticleCell<Particle_T>> {
  public:
   /**

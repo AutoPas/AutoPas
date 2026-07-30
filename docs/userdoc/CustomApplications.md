@@ -6,8 +6,9 @@ To create a new custom application, custom particle and functor classes have to 
 
 ## Custom Particles
 Your particle class is an object-oriented representation of your particle model.
-For compatibility, it should inherit from [`ParticleBase`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/particles/ParticleBase.h).
-This provides basic features like ID, 3D position, 3D force, and an [`OwnershipState`](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/ParticleOwnershipModel.md), as well as, amongst others, functionalities to automatically convert the particle into an SoA representation.
+For compatibility, it should either inherit from [`ParticleBase`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/particles/ParticleBase.h) (recommended) or implement the same interface. 
+If implementing the interface instead of inheriting from `ParticleBase`, you should implement a class that satisfies the [`ParticleType` concept](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/utils/ParticleConcept.h), which states which functions are required for compatibility with AutoPas and, additionally, you must also implement the `markAsDeleted` private function and make `internal::markParticleAsDeleted` as friend function (see `ParticleBase`). 
+The base particle provides and the concept requires basic features like ID, 3D position, 3D force, and an [`OwnershipState`](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/ParticleOwnershipModel.md), as well as, amongst others, functionalities to automatically convert the particle into an SoA representation.
 
 For this to work, the new particle type has to define a few things to help the code generation:
 - `enum AttributeNames`:

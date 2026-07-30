@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -20,7 +21,7 @@ namespace autopas::internal {
  *
  * @tparam Particle_T The type of the particle the container contains.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VerletClusterListsRebuilder {
  public:
   /**

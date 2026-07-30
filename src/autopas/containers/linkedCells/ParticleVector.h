@@ -9,6 +9,7 @@
 
 #include <vector>
 
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 /**
@@ -18,7 +19,7 @@
  * when operations like delete and resize are performed.
  * @tparam Particle_T of the Particle that is being stored
  */
-template <class Particle_T>
+template <autopas::utils::ParticleType Particle_T>
 class ParticleVector {
  public:
   ParticleVector() = default;

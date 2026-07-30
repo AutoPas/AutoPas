@@ -15,6 +15,7 @@
 #include "autopas/containers/octree/traversals/OTTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/DataLayoutConverter.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
 
@@ -25,7 +26,7 @@ namespace autopas {
  * @tparam Particle_T
  * @tparam PairwiseFunctor
  */
-template <class Particle_T, class PairwiseFunctor>
+template <utils::ParticleType Particle_T, class PairwiseFunctor>
 class OTC18Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
                        public OTTraversalInterface<OctreeNodeWrapper<Particle_T>> {
  public:

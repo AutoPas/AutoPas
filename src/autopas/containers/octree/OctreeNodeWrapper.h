@@ -11,6 +11,7 @@
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeStaticNodeSelector.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -33,7 +34,7 @@ namespace autopas {
  *
  * @tparam Particle_T The particle class that should be used in the octree cell.
  */
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 class OctreeNodeWrapper : public ParticleCell<Particle_T> {
  public:
   /**
