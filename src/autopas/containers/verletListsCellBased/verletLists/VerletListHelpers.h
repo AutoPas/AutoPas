@@ -61,21 +61,28 @@ class VerletListHelpers {
     [[nodiscard]] std::span<const size_t> getNeighbors(const size_t i) const { return {begin(i), count(i)}; }
   };
 
+  /**
+   * Policy for managing neighbor lists using the Compressed-Row-Storage (CRS) format.
+   *
+   * The neighbor lists are "temporary" neighbor lists that get compressed to CRS neighbor lists afterward.
+   * This policy is required by the InteractionListGeneratorFunctor.
+   */
   class CRSNeighborListPolicy {
    public:
+    /**
+     * Constructor.
+     * @param neighborLists temporary neighbor list vectors
+     * @param particleToIndex map to connect particle pointers to their dense SoA indices
+     */
     CRSNeighborListPolicy(std::vector<std::vector<size_t>> &neighborLists,
                           const std::unordered_map<const Particle_T *, size_t> &particleToIndex)
         : _neighborLists(neighborLists), _particleToIndex(particleToIndex) {}
 
-    void initialize(const size_t numParticles) const {
-      if (_neighborLists.size() < numParticles) {
-        _neighborLists.resize(numParticles);
-      }
-      for (size_t i = 0; i < numParticles; ++i) {
-        _neighborLists[i].clear();
-      }
-    }
-
+    /**
+     * Adds particle j to the neighbor list of particle i.
+     * @param i the first particle
+     * @param j the neighbor particle
+     */
     void add(const Particle_T *i, const Particle_T *j) {
       _neighborLists[_particleToIndex.at(i)].push_back(_particleToIndex.at(j));
     }

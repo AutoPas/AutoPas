@@ -14,9 +14,18 @@
 
 namespace autopas {
 
+/**
+ * A policy for managing neighbor lists in an Array of Structures (AoS) layout.
+ * This is needed for the NeighborIdentificationFunctor.
+ * @tparam Particle_T The type of Particle class used.
+ */
 template <class Particle_T>
 class AoSNeighborListPolicy {
  public:
+  /**
+   * Constructor.
+   * @param neighborListAoS neighbor list map to be filled by the functor.
+   */
   explicit AoSNeighborListPolicy(std::unordered_map<Particle_T *, std::vector<Particle_T *>> &neighborListAoS)
       : _neighborListsAoS(neighborListAoS) {}
 
@@ -36,6 +45,11 @@ class AoSNeighborListPolicy {
     }
   }
 
+  /**
+   * Adds a neighbor j to the neighbor list of particle i.
+   * @param i The first particle.
+   * @param j The neighbor particle.
+   */
   void add(Particle_T *i, Particle_T *j) { _neighborListsAoS[i].push_back(j); }
 
  private:
