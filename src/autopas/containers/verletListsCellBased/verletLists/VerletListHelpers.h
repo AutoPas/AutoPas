@@ -10,7 +10,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
@@ -27,8 +26,8 @@ class VerletListHelpers {
    * Flat Compressed-Row-Storage (CRS) neighbor list.
    *
    * For particle i:
-   *   - neighbor count : offsets[i+1] - offsets[i]
-   *   - neighbor slice : indices.data() + offsets[i]
+   *   - neighbor count: offsets[i+1] - offsets[i]
+   *   - neighbor slice: indices.data() + offsets[i]
    */
   struct NeighborListCRS {
     std::vector<size_t> offsets;                            ///< size N+1
@@ -75,7 +74,7 @@ class VerletListHelpers {
      * @param particleToIndex map to connect particle pointers to their dense SoA indices
      */
     CRSNeighborListPolicy(std::vector<std::vector<size_t>> &neighborLists,
-                          const std::unordered_map<const Particle_T *, size_t> &particleToIndex)
+                          std::unordered_map<const Particle_T *, size_t> &particleToIndex)
         : _neighborLists(neighborLists), _particleToIndex(particleToIndex) {}
 
     /**
@@ -83,13 +82,11 @@ class VerletListHelpers {
      * @param i the first particle
      * @param j the neighbor particle
      */
-    void add(const Particle_T *i, const Particle_T *j) {
-      _neighborLists[_particleToIndex.at(i)].push_back(_particleToIndex.at(j));
-    }
+    void add(Particle_T *i, Particle_T *j) { _neighborLists[_particleToIndex[i]].push_back(_particleToIndex[j]); }
 
    private:
     std::vector<std::vector<size_t>> &_neighborLists;
-    const std::unordered_map<const Particle_T *, size_t> &_particleToIndex;
+    std::unordered_map<const Particle_T *, size_t> &_particleToIndex;
   };
 
   /**

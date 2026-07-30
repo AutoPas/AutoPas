@@ -12,11 +12,8 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -43,7 +40,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
 
  public:
   /**
-   * Enum that specifies how the verlet lists should be build
+   * Enum that specifies how the verlet lists should be built
    */
   enum BuildVerletListType {
     /**
@@ -58,13 +55,13 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
 
   /**
    * Constructor of the VerletLists class.
-   * The neighbor lists are build using a search radius of cutoff + skin.
+   * The neighbor lists are built using a search radius of cutoff + skin.
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
    * @param skin The skin radius per timestep.
-   * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
-   * @param cellSizeFactor cell size factor ralative to cutoff
+   * @param buildVerletListType Specifies how the verlet list should be built, see BuildVerletListType
+   * @param cellSizeFactor cell size factor relative to cutoff
    */
   VerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
               const double skin, const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
@@ -81,8 +78,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<ParticleCellType> *>(traversal);
     if (verletTraversalInterface) {
-      verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _neighborList,
-                                                         _particleToIndex);
+      verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _neighborList, _particleToIndex,
+                                                         _indexToParticle);
     } else {
       utils::ExceptionHandler::exception("trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
@@ -97,7 +94,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * Offsets and indices are valid after the most recent rebuildNeighborLists() call.
    * @return the CRS neighbor list
    */
-  const typename VerletListHelpers<Particle_T>::NeighborListCRS &getNeighborList() const { return _neighborList; }
+  const VerletListHelpers<Particle_T>::NeighborListCRS &getNeighborList() const { return _neighborList; }
 
   /**
    * Returns the particle-pointer-to-SoA-index map.
@@ -128,11 +125,13 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    */
   size_t buildParticleIndex() {
     _particleToIndex.clear();
-    // Reserve generously to avoid rehashing (particles + halo estimate).
-    _particleToIndex.reserve(this->_linkedCells.size() * 2);
+    _particleToIndex.reserve(this->_linkedCells.size());
+    _indexToParticle.clear();
+    _indexToParticle.reserve(this->_linkedCells.size());
     size_t idx = 0;
     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++idx) {
       _particleToIndex[&(*iter)] = idx;
+      _indexToParticle.push_back(&*iter);
     }
     return idx;
   }
@@ -203,7 +202,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
   /**
-   * Multi-threaded rebuild:
+   * Multithreaded rebuild:
    *
    * Pass 1 (parallel, VerletListCounterFunctor):
    *   Count neighbors per particle into cache-line-padded atomics.
@@ -220,7 +219,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    */
   void updateNeighborListsMultiThread(size_t N, double interactionLength, DataLayoutOption dataLayout,
                                       bool useNewton3) {
-    using PaddedAtomic = typename VerletListHelpers<Particle_T>::VerletListCounterFunctor::PaddedAtomic;
+    using PaddedAtomic = VerletListHelpers<Particle_T>::VerletListCounterFunctor::PaddedAtomic;
 
     // Pass 1: Count neighbors per particle
     std::vector<PaddedAtomic> counts(N);
@@ -271,10 +270,17 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   std::unordered_map<const Particle_T *, size_t> _particleToIndex;
 
   /**
+   * Flat array mapping SoA index i -> pointer to particle i.
+   * Built in initTraversal() in the same cell/particle iteration order as VerletLists::buildParticleIndex().
+   * Used during AoS force computations to resolve CRS neighbor indices to particles.
+   */
+  std::vector<ParticleType *> _indexToParticle;
+
+  /**
    * Flat CRS neighbor list.
    * Both AoS and SoA traversal paths read from this neighbor structure.
    */
-  typename VerletListHelpers<Particle_T>::NeighborListCRS _neighborList;
+  VerletListHelpers<Particle_T>::NeighborListCRS _neighborList;
 
   /**
    * Specifies which data layout is used when building the neighbor lists.
