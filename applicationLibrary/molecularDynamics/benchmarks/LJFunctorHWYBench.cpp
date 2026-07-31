@@ -545,11 +545,11 @@ static void BM_SoAFunctorPairSortedNoPruneHitrate(benchmark::State &state) {
 }
 /**
  * Ablation counterpart to BM_SoA_PairSorted_VecPatterns with sort-window pruning disabled (see
- * BM_SoAFunctorPairSortedNoPruneHitrate). Same grid: kNValuesReduced, both newton3, all VecPatterns, all hitrates.
+ * BM_SoAFunctorPairSortedNoPruneHitrate). Same grid: kNValues, both newton3, all VecPatterns, all hitrates.
  * @name BM_SoA_PairSorted_NoPrune_VecPatterns
  */
 BENCHMARK(BM_SoAFunctorPairSortedNoPruneHitrate)
-    ->ArgsProduct({kNValuesReduced,
+    ->ArgsProduct({kNValues,
                    {0, 1},
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
                     static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
