@@ -720,7 +720,7 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
         linkedCells.getCellBlock().getCellLength(), autopas::DataLayoutOption::aos, true);
 
     autopas::VLListIterationTraversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJVerlet(
-        fnctr, autopas::DataLayoutOption::aos, true);
+        fnctr, autopas::DataLayoutOption::aos, true, linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
 
     verletLists.rebuildNeighborLists(&traversalLJVerlet);
     verletLists.computeInteractions(&traversalLJVerlet);
@@ -730,7 +730,7 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
         linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), fnctr, linkedCells.getInteractionLength(),
         linkedCells.getCellBlock().getCellLength(), autopas::DataLayoutOption::soa, true);
     autopas::VLListIterationTraversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJVerlet(
-        fnctr, autopas::DataLayoutOption::soa, true);
+        fnctr, autopas::DataLayoutOption::soa, true, linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
 
     verletLists.rebuildNeighborLists(&traversalLJVerlet);
     verletLists.computeInteractions(&traversalLJVerlet);

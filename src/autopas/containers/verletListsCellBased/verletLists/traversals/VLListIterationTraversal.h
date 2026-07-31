@@ -32,8 +32,13 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * @param cellsPerDim Dimensions of the cell grid (needed for coloring)
    */
   explicit VLListIterationTraversal(PairwiseFunctor &pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3,
-                                    const std::array<unsigned long, 3> &cellsPerDim = {1, 1, 1})
-      : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor), _cellsPerDim(cellsPerDim) {}
+                                    const std::array<unsigned long, 3> &cellsPerDim = {0, 0, 0})
+      : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor), _cellsPerDim(cellsPerDim) {
+    if (useNewton3 and std::ranges::all_of(_cellsPerDim, [](auto x) { return x == 0; })) {
+      utils::ExceptionHandler::exception(
+          "VLListIterationTraversal: cellsPerDim must be set if newton3 is enabled to avoid race conditions.");
+    }
+  }
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }
 
