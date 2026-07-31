@@ -1,10 +1,18 @@
-
 project(EigenLapack CXX)
+
+if(EIGEN_BUILD_LAPACK AND EIGEN_BUILD_BLAS)
 
 include(CheckLanguage)
 check_language(Fortran)
 if(CMAKE_Fortran_COMPILER)
   enable_language(Fortran)
+  if("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
+    if ("${CMAKE_Fortran_COMPILER_VERSION}" VERSION_GREATER_EQUAL 10.0)
+      # We use an old version of LAPACK with argument type mismatches.
+      # Allow them to compile anyway with newer GNU versions.
+      set(CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} -fallow-argument-mismatch")
+    endif()
+  endif()
   set(EIGEN_Fortran_COMPILER_WORKS ON)
 else()
   set(EIGEN_Fortran_COMPILER_WORKS OFF)
@@ -14,8 +22,10 @@ add_custom_target(lapack)
 include_directories(../blas)
 
 set(EigenLapack_SRCS
-single.cpp double.cpp complex_single.cpp complex_double.cpp ../blas/xerbla.cpp
+  dsecnd_INT_CPU_TIME.cpp second_INT_CPU_TIME.cpp single.cpp double.cpp complex_single.cpp complex_double.cpp
 )
+
+set(EIGEN_LAPACK_DEF "eigen_lapack_cpp.def")
 
 if(EIGEN_Fortran_COMPILER_WORKS)
 
@@ -30,8 +40,9 @@ set(EigenLapack_SRCS  ${EigenLapack_SRCS}
   dlapy2.f  dlapy3.f  slapy2.f  slapy3.f
   clacgv.f  zlacgv.f
   slamch.f  dlamch.f
-  second_NONE.f dsecnd_NONE.f
 )
+
+set(EIGEN_LAPACK_DEF "eigen_lapack.def")
 
 option(EIGEN_ENABLE_LAPACK_TESTS OFF "Enable the Lapack unit tests")
 
@@ -90,19 +101,24 @@ endif()
 
 set(EIGEN_LAPACK_TARGETS "")
 
-add_library(eigen_lapack_static ${EigenLapack_SRCS} ${ReferenceLapack_SRCS})
+add_library(eigen_lapack_static STATIC ${EigenLapack_SRCS} ${ReferenceLapack_SRCS})
+target_link_libraries(eigen_lapack_static  eigen_blas_static)
 list(APPEND EIGEN_LAPACK_TARGETS eigen_lapack_static)
 
 if (EIGEN_BUILD_SHARED_LIBS)
-  add_library(eigen_lapack SHARED ${EigenLapack_SRCS})
-  list(APPEND EIGEN_LAPACK_TARGETS eigen_lapack)
+  add_library(eigen_lapack SHARED ${EigenLapack_SRCS} ${EIGEN_LAPACK_DEF})
+  # Build LAPACK but link BLAS.
+  target_compile_definitions(eigen_lapack PUBLIC "EIGEN_BLAS_LINK_DLL" "EIGEN_LAPACK_BUILD_DLL")
   target_link_libraries(eigen_lapack  eigen_blas)
+  set_target_properties(eigen_lapack PROPERTIES CXX_VISIBILITY_PRESET hidden)
+  list(APPEND EIGEN_LAPACK_TARGETS eigen_lapack)
 endif()
 
 foreach(target IN LISTS EIGEN_LAPACK_TARGETS)
   if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
     target_link_libraries(${target} ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
   endif()
+  target_link_libraries(${target} Eigen3::Eigen)
   add_dependencies(lapack ${target})
   install(TARGETS ${target}
           RUNTIME DESTINATION bin
@@ -145,6 +161,7 @@ if(EXISTS ${eigen_full_path_to_testing_lapack})
     string(REPLACE "." "_" input_name ${input})
     set(testName "${target}_${input_name}")
     if(EXISTS "${TEST_INPUT}")
+      add_dependencies(buildtests ${target})
       add_test(NAME LAPACK-${testName}
         COMMAND "${CMAKE_COMMAND}"
         -DTEST=$<TARGET_FILE:${target}>
@@ -450,3 +467,6 @@ if(EXISTS ${eigen_full_path_to_testing_lapack})
 
 endif()
 
+elseif(EIGEN_BUILD_LAPACK AND NOT EIGEN_BUILD_BLAS)
+ message(FATAL_ERROR "EIGEN_BUILD_LAPACK requires EIGEN_BUILD_BLAS")
+endif() #EIGEN_BUILD_LAPACK
