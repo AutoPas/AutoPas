@@ -8,6 +8,7 @@
 
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 
 using DensityFunctorType = sphLib::SPHCalcDensityFunctor<sphLib::SPHParticle>;
 
