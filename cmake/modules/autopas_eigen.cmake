@@ -1,7 +1,7 @@
 option(Eigen3_ForceBundled "Do not look for an installed version, always use bundled." ON)
 
 if (NOT ${Eigen3_ForceBundled})
-    set(expectedVersion 3.4.0)
+    set(expectedVersion 5.0.1)
     # capital E actually required...
     find_package(Eigen3 ${expectedVersion} QUIET)
     # actually I don't know our minimal supported version but this is the one I tested.
@@ -23,7 +23,7 @@ if (NOT ${Eigen3_ForceBundled})
 endif ()
 
 # system version not found -> install bundled version
-message(STATUS "Eigen3 - using bundled version 3.4.0 (Release)")
+message(STATUS "Eigen3 - using bundled version 5.0.1 (Release)")
 
 # Do not add_subdirectory, else we would run configure, build and install. Just define a library from the sources
 add_library(
