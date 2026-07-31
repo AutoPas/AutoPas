@@ -25,54 +25,11 @@ endif ()
 # system version not found -> install bundled version
 message(STATUS "Eigen3 - using bundled version 3.4.0 (Release)")
 
-# Enable FetchContent CMake module
-include(FetchContent)
-
-# Modern versions of CMake throw warnings from using FetchContent_Populate. We need to still use this to avoid adding
-# Eigen's CMakeLists, so we set CMP0169 to OLD to avoid the depreciation warnings.
-if (${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.30)
-    cmake_policy(SET CMP0169 OLD)
-endif ()
-
-# Build Eigen3 and make the cmake targets available
-FetchContent_Declare(
+# Do not add_subdirectory, else we would run configure, build and install. Just define a library from the sources
+add_library(
     Eigen3
-    URL
-        # eigen-master:
-        # https://bitbucket.org/eigen/eigen/get/default.zip
-        # eigen-3.3.90:
-        ${AUTOPAS_SOURCE_DIR}/libs/eigen-3.4.0.zip
-    URL_HASH MD5=994092410ba29875184f7725e0371596
+    OBJECT # this is a header only lib therefore object type is needed
+    IMPORTED GLOBAL
 )
-# In case FetchContent_Populate gets removed:
-# Another "hacky" solution is to add the line
-#   SOURCE_SUBDIR  _nonexistent_subdir
-# to the above FetchContent_Declare, resulting in CMake not finding Eigen's CMakeLists. Then, you can replace all of the
-# below (I think) with
-#   FetchContent_MakeAvailable(Eigen3)
-# This requires at least CMake version 3.18. As of 05/2025, no solution appears to be encouraged, so I hope if
-# FetchContent_Populate ever gets removed, there will be some actually encouraged solution but if not, this should work.
 
-# Check if population has already been performed
-FetchContent_GetProperties(Eigen3)
-if (NOT eigen3_POPULATED) # must be lowercase "eigen3" Fetch the content using previously declared
-                          # details
-    FetchContent_Populate(Eigen3)
-
-    # Do not add_subdirectory, else we would run configure, build and install Just define a library
-    # from the sources
-    add_library(
-        Eigen3
-        OBJECT # this is a header only lib therefore object type is needed
-        IMPORTED GLOBAL
-    )
-
-    target_include_directories(Eigen3 SYSTEM INTERFACE "${eigen3_SOURCE_DIR}")
-
-    # add_subdirectory(${eigen3_SOURCE_DIR} ${eigen3_BINARY_DIR})
-endif ()
-
-# Reset the policy
-if (${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.30)
-    cmake_policy(SET CMP0169 NEW)
-endif ()
+target_include_directories(Eigen3 SYSTEM INTERFACE "${AUTOPAS_SOURCE_DIR}/libs/eigen")
