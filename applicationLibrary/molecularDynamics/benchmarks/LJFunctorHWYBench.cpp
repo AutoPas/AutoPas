@@ -503,6 +503,62 @@ BENCHMARK(BM_SoAFunctorPairSortedHitrate)
     ->Name("BM_SoA_PairSorted_Hitrate");
 
 /**
+ * Debug-only ablation of BM_SoAFunctorPairSortedHitrate (debug/investigate-vec-patterns branch, VecPattern/sorting
+ * mechanism investigation -- see BachelorThesis project notes). Identical setup, except
+ * functor.setDisablePairPruning(true) forces the sorted kernel to keep the SortedSoAView memory layout but scan the
+ * full, unpruned j-range (as the unsorted path would), instead of using the minIndex/maxIndex window. Not part of
+ * the thesis-cited benchmark dataset.
+ */
+static void BM_SoAFunctorPairSortedNoPruneHitrate(benchmark::State &state) {
+  const auto n = static_cast<std::size_t>(state.range(0));
+  const bool newton3 = state.range(1) != 0;
+  const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double hitrate = state.range(3) / 100.0;
+
+  static unsigned seed = 42;
+  const auto layout = setupCellPair(autopas::SortingDirectionOption::face);
+  FMCell cell1, cell2;
+  const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  autopas::generators::TwoCellsInteractionHitrateGenerator::fillWithParticles(
+      cell1, cell2, kLow, layout.cell1High, layout.cell2Low, layout.cell2High, n, hitrate, kCutoff, defaultParticle,
+      seed++);
+
+  auto functor = makeFunctor();
+  functor.setVecPattern(pattern);
+  functor.setDisablePairPruning(true);
+  functor.initTraversal();
+
+  autopas::internal::CellFunctor<FMCell, BenchFunctor, /*bidirectional=*/true> cellFunctor(
+      functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
+  cellFunctor.setSoASortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
+
+  for (auto _ : state) {
+    functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
+    functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
+    cellFunctor.processCellPair(cell1, cell2, layout.sortingDirection);
+    functor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    functor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
+    benchmark::DoNotOptimize(cell1._particleSoABuffer);
+    benchmark::DoNotOptimize(cell2._particleSoABuffer);
+  }
+  functor.endTraversal(newton3);
+}
+/**
+ * Ablation counterpart to BM_SoA_PairSorted_VecPatterns with sort-window pruning disabled (see
+ * BM_SoAFunctorPairSortedNoPruneHitrate). Same grid: kNValuesReduced, both newton3, all VecPatterns, all hitrates.
+ * @name BM_SoA_PairSorted_NoPrune_VecPatterns
+ */
+BENCHMARK(BM_SoAFunctorPairSortedNoPruneHitrate)
+    ->ArgsProduct({kNValuesReduced,
+                   {0, 1},
+                   {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
+                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
+                   hitrates})
+    ->ArgNames({"N", "n3", "vecPat", "hitrate%"})
+    ->Repetitions(5)
+    ->Name("BM_SoA_PairSorted_NoPrune_VecPatterns");
+
+/**
  * Benchmark of the SoAFunctorPair (unsorted path) with Cells in a Face direction, via CellFunctor.
  * @param state The Benchmark state.
  * - state.range(0): The number of Particles in the Cell

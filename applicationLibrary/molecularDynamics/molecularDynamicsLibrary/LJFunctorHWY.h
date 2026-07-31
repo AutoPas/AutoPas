@@ -745,13 +745,13 @@ class LJFunctorHWY
     const auto *const __restrict typeID1Ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
     const auto *const __restrict typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
 
-    const std::ptrdiff_t startI =
-        sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().startI) : 0;
+    const bool useSortPruning = sorted && sortingData.has_value() && not _disablePairPruning;
+    const std::ptrdiff_t startI = useSortPruning ? static_cast<std::ptrdiff_t>(sortingData->get().startI) : 0;
     // endI bounds the outer loop from above, mirroring startI: i-particles from endI onwards cannot interact
     // with any j-particle, so the loop stops there instead of running to n1 and relying on the per-block
     // jVecStart >= jVecEnd skip below.
-    const std::ptrdiff_t endI = sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().endI)
-                                                                  : static_cast<std::ptrdiff_t>(n1);
+    const std::ptrdiff_t endI =
+        useSortPruning ? static_cast<std::ptrdiff_t>(sortingData->get().endI) : static_cast<std::ptrdiff_t>(n1);
 
     VectorDouble virialSumX = highway::Zero(tag_double);
     VectorDouble virialSumY = highway::Zero(tag_double);
@@ -766,22 +766,29 @@ class LJFunctorHWY
       size_t jVecEnd{};
       size_t jVecStart = 0;
       if constexpr (sorted) {
-        // The get is always safe here since SoAFunctorPairSorted() will never call this with no sortingData.
-        const auto &sd = sortingData->get();
-        // maxIndex is monotonically non-decreasing, so the tightest valid bound for [i, i + iStep - 1] (the i values
-        // handled in one iteration) is maxIndex of the last particle in the block. For p1xVec
-        // (iStep=1) this collapses to maxIndex[i].
-        jVecEnd = sd.maxIndex[i + iStep - 1];
-        // minIndex is monotonically non-decreasing, so the tightest valid lower bound [i, i + iStep - 1] (the i values
-        // handled in one iteration) is always minIndex[i], the minimum across the block.
-        jVecStart = sd.minIndex[i];
-        // If this check is true it means there are no particles in soa2 that can interact with particles in soa1
-        // I.e. the hitrate in this case is 0%.
-        if (jVecStart >= jVecEnd) {
-          continue;
+        if (useSortPruning) {
+          // The get is always safe here since SoAFunctorPairSorted() will never call this with no sortingData.
+          const auto &sd = sortingData->get();
+          // maxIndex is monotonically non-decreasing, so the tightest valid bound for [i, i + iStep - 1] (the i
+          // values handled in one iteration) is maxIndex of the last particle in the block. For p1xVec
+          // (iStep=1) this collapses to maxIndex[i].
+          jVecEnd = sd.maxIndex[i + iStep - 1];
+          // minIndex is monotonically non-decreasing, so the tightest valid lower bound [i, i + iStep - 1] (the i
+          // values handled in one iteration) is always minIndex[i], the minimum across the block.
+          jVecStart = sd.minIndex[i];
+          // If this check is true it means there are no particles in soa2 that can interact with particles in soa1
+          // I.e. the hitrate in this case is 0%.
+          if (jVecStart >= jVecEnd) {
+            continue;
+          }
+          // Round down to the nearest full SIMD lane boundary so the j-loop starts aligned.
+          jVecStart = jVecStart - (jVecStart % jStep);
+        } else {
+          // Debug-only ablation (_disablePairPruning): keep the sorted layout but scan the full j-range,
+          // matching the unsorted path's iteration count. See setDisablePairPruning().
+          jVecStart = 0;
+          jVecEnd = n2;
         }
-        // Round down to the nearest full SIMD lane boundary so the j-loop starts aligned.
-        jVecStart = jVecStart - (jVecStart % jStep);
         if constexpr (vecPattern == VectorizationPattern::p1xVec) {
           if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
             continue;
@@ -803,14 +810,17 @@ class LJFunctorHWY
         size_t jVecEnd = n2;
         size_t jVecStart = 0;
         if constexpr (sorted) {
-          // The get is always safe here since SoAFunctorPairSorted() will never call this with no sortingData.
-          const auto &sd = sortingData->get();
-          jVecEnd = sd.maxIndex[i + restI - 1];
-          jVecStart = sd.minIndex[i];
-          if (jVecStart < jVecEnd) {
-            // Round down to nearest full SIMD lane boundary.
-            jVecStart = jVecStart - (jVecStart % jStep);
+          if (useSortPruning) {
+            // The get is always safe here since SoAFunctorPairSorted() will never call this with no sortingData.
+            const auto &sd = sortingData->get();
+            jVecEnd = sd.maxIndex[i + restI - 1];
+            jVecStart = sd.minIndex[i];
+            if (jVecStart < jVecEnd) {
+              // Round down to nearest full SIMD lane boundary.
+              jVecStart = jVecStart - (jVecStart % jStep);
+            }
           }
+          // else: debug-only ablation (_disablePairPruning) -- jVecStart/jVecEnd keep their full-range defaults.
         }
         // If this check is false it means there are no particles in soa2 that can interact with particles in soa1
         // I.e. the hitrate in this case is 0%.
@@ -1396,6 +1406,17 @@ class LJFunctorHWY
    */
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
+  /**
+   * Debug-only ablation switch for the VecPattern/sorting mechanism investigation
+   * (debug/investigate-vec-patterns branch, see BachelorThesis project notes). When set, the sorted SoA pair
+   * kernel keeps the SortedSoAView memory layout but scans the full, unpruned j-range (as the unsorted path
+   * would) instead of using the minIndex/maxIndex window from SoASortingData. This isolates whether the sorted
+   * path's pattern-independence is driven by the narrower iteration count or by the sorted-layout cache
+   * locality alone. Not used by any production code path; defaults to false (normal pruning behavior).
+   * @param disable Whether to disable minIndex/maxIndex pruning in the sorted kernel.
+   */
+  void setDisablePairPruning(const bool disable) { _disablePairPruning = disable; }
+
  private:
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
@@ -1436,6 +1457,9 @@ class LJFunctorHWY
 
   // The Vectorization Pattern currently used in the SoA functor.
   VectorizationPattern _vecPattern{};
+
+  // Debug-only ablation switch, see setDisablePairPruning().
+  bool _disablePairPruning{false};
 
   // Vectorization Pattern that the functor can handle.
   static constexpr std::array<VectorizationPattern, 4> _vecPatternsAllowed = {

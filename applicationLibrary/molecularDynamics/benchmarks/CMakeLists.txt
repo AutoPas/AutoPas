@@ -26,5 +26,16 @@ target_link_libraries(
         benchmark::benchmark
 )
 
+# Debug-only tool for the VecPattern/sorting mechanism investigation (debug/investigate-vec-patterns
+# branch). Not part of the thesis-cited benchmark dataset; does not depend on google-benchmark.
+add_executable(PruningRatioDebug PruningRatioDebug.cpp)
+
+target_link_libraries(
+        PruningRatioDebug
+        PRIVATE
+        autopas
+        molecularDynamicsLibrary
+)
+
 # MoleculeLJ lives in the single-site MD mode. The tests rely on the same
 # MD_FLEXIBLE_MODE=0 setting inherited from molecularDynamicsLibrary.
