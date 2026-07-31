@@ -31,6 +31,9 @@ void LogicHandlerTest::initLogicHandler() {
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
+        autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::p1xVec},
+       {autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c18,
+        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
         autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::p1xVec}});
   _tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   _tuningManager->addAutoTuner(
@@ -80,8 +83,7 @@ TEST_F(LogicHandlerTest, testOneParticleForDynamicRebuild) {
   _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
   // 1 ITERATION
-  EXPECT_EQ(container.getNumberOfParticles(), 1)
-      << "The particle stays in the container in iteration 1 \n";
+  EXPECT_EQ(container.getNumberOfParticles(), 1) << "The particle stays in the container in iteration 1 \n";
 
   leavingParticles = _logicHandler->updateContainer();
   EXPECT_EQ(leavingParticles.size(), 0) << "The particle stays in the container in iteration 1 \n";
@@ -109,8 +111,7 @@ TEST_F(LogicHandlerTest, testOneParticleForDynamicRebuild) {
   EXPECT_EQ(leavingParticles.size(), 0) << "The particle stays within the simulation boundary in iteration 2 \n";
 
   EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 1) << "Fast particle is added into the buffer.\n";
-  EXPECT_EQ(container.getNumberOfParticles(), 0)
-      << "Container is empty as the particle has moved to the buffer. \n";
+  EXPECT_EQ(container.getNumberOfParticles(), 0) << "Container is empty as the particle has moved to the buffer. \n";
 
   auto bufferTriggersRebuild = _logicHandler->getDoDynamicRebuild();
   if (bufferTriggersRebuild) {
@@ -157,9 +158,12 @@ TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDyn
   Molecule p1({0.5, boxMaxY - skin * 0.15, 1.}, {0., 0., 0.}, 0, 0);
   _logicHandler->addParticle(p1);
   EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1) << "Only one particle has been added \n";
+  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 0) << "No particles in the buffer yet.\n";
 
+  // Iteration 0
   ASSERT_FALSE(_logicHandler->neighborListsAreValid()) << "Iteration 0 requires a rebuild. \n";
   auto leavingParticles = _logicHandler->updateContainer();
+  EXPECT_EQ(leavingParticles.size(), 0) << "No particle movement at the start. \n";
 
   constexpr double cutoff = 1.1;
   LJFunctorGlobals functor(cutoff);
@@ -167,14 +171,14 @@ TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDyn
 
   _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
-  ASSERT_TRUE(_logicHandler->neighborListsAreValid()) << "No rebuild in iteration 1 \n";
-
+  // Iteration 1
   // 0.3 skin + (boxMaxY - 0.15 skin) = boxMaxY + 0.15 skim -> particle is outside the boundary
   for (auto iter = _logicHandler->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     iter->addR(moveVec);
   }
   leavingParticles = _logicHandler->updateContainer();
-  EXPECT_EQ(leavingParticles.size(), 1) << "Exactly one particle has left the container \n";
+  EXPECT_EQ(leavingParticles.size(), 1) << " Exactly one particle has moved outside the periodic boundary. \n";
+  ASSERT_TRUE(_logicHandler->neighborListsAreValid()) << "No rebuild in iteration 1 \n";
   EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 0) << "No particle left in the container \n";
 
   // shifting particle position to replicate periodic boundary effect
@@ -183,18 +187,18 @@ TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDyn
     _logicHandler->addParticle(particle);
   }
 
-  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 1) << "Migrating particle in the buffer";
-
+  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 1) << "Particle is added into the buffer.\n";
   _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
 
+  // Iteration 2
+
   leavingParticles = _logicHandler->updateContainer();
+  EXPECT_EQ(leavingParticles.size(), 0) << " No particles leave the simulation domain in this iteration. \n";
 
   // Buffer contains one migrating particle and neighbor lists remain valid.
   ASSERT_FALSE(_logicHandler->getDoDynamicRebuild()) << "Particle stays in buffer without triggering rebuild. \n";
+  ASSERT_TRUE(_logicHandler->neighborListsAreValid()) << "Neighbor lists remain valid. \n";
 
-  ASSERT_FALSE(_logicHandler->neighborListsAreValid()) << "Neighbor lists remain valid. \n";
-
-  EXPECT_EQ(leavingParticles.size(), 0);
   EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 1)
       << "Particle stays in buffer without triggering rebuild. \n";
   EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 0)
@@ -205,6 +209,19 @@ TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDyn
   // in the previous iteration.
   EXPECT_EQ(_logicHandler->getNumParticlesBufferEstimate(), 2)
       << "The expected estimate of particles in the buffer is 2 \n";
+  _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
+
+  // Iteration 3
+  // Rebuilding due to tuning
+  leavingParticles = _logicHandler->updateContainer();
+  EXPECT_EQ(leavingParticles.size(), 0) << " No particles leave the simulation domain in this iteration. \n";
+
+  ASSERT_FALSE(_logicHandler->neighborListsAreValid()) << "Neighbor lists remain valid. \n";
+  _logicHandler->computeInteractionsPipeline(&functor, autopas::options::InteractionTypeOption::pairwise);
+
+  EXPECT_EQ(_logicHandler->getNumberOfParticlesBuffer(), 0) << "Particle moved back to container during rebuild. \n";
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1)
+      << "Particle moved back to container during rebuild. \n";
 }
 
 #endif
