@@ -219,7 +219,7 @@ The table below lists the dependencies. The **Path** column currently reflects t
 | ALL        | [`libs/ALL-0.9.3.zip`](/libs/ALL-0.9.3.zip)             | https://gitlab.jsc.fz-juelich.de/SLMS/loadbalancing | tag `v0.9.3`           | —                                          |
 | antlr4     | [`libs/antlr4`](/libs/antlr4)                           | https://github.com/antlr/antlr4                     | tag `4.13.2`           | non-Cpp runtimes pruned                    |
 | benchmark  | [`libs/benchmark-1.9.4.zip`](/libs/benchmark-1.9.4.zip) | https://github.com/google/benchmark                 | tag `v1.9.4`           | —                                          |
-| eigen      | [`libs/eigen-3.4.0.zip`](/libs/eigen-3.4.0.zip)         | https://gitlab.com/libeigen/eigen                   | tag `3.4.0`            | —                                          |
+| eigen      | [`libs/eigen`](/libs/eigen)                             | https://gitlab.com/libeigen/eigen                   | tag `5.0.1`            | —                                          |
 | googletest | [`libs/googletest`](/libs/googletest)                   | https://github.com/google/googletest                | tag `v1.17.0`          | —                                          |
 | harmony    | [`libs/harmony.zip`](/libs/harmony.zip)                 | https://github.com/ActiveHarmony/harmony            | branch `hotfix-v4.6.0` | `example/` pruned                          |
 | highway    | [`libs/highway`](/libs/highway)                         | https://github.com/google/highway                   | tag `1.4.0`            | —                                          |
