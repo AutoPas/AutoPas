@@ -5,10 +5,9 @@
  *
  * Micro-benchmarks for mdLib::LJFunctorHWY covering three groups:
  *
- *   1. Face pair — hitrate-controlled (TwoCellsInteractionHitrateGenerator):
- *        a. Hitrate study: vecPattern fixed to p1xVec; hitrate and N (number of particles) swept.
- *        b. VecPattern study: all four vecPatterns × hitrate × N (reduced set of N to reduce number of benchmarks).
- *      Cells are face-adjacent (shared yz-plane at x = kBoundary).
+ *   1. Hitrate study — face pair, hitrate-controlled (TwoCellsInteractionHitrateGenerator).
+ *      All four vecPatterns × hitrate × N are swept, so the vecPattern comparison is a slice of this
+ *      study rather than a separate family. Cells are face-adjacent (shared yz-plane at x = kBoundary).
  *
  *   2. Cell Pair with specific direction, uniform generator.
  *      Each direction has an unsorted (SoAFunctorPair) and a sorted
@@ -19,13 +18,16 @@
  *      varying N and newton3. Reference points for absolute throughput.
  *
  * Cell size: kCellSize = 4 (≈ 1.33 × cutoff). Both cells are equal-sized cubes with side lengths kCellSize. N ∈
- * {10…150} per cell. All Benchmark generate particles with rotating seeds per repetition: 42 + repetition_index
+ * {10…150} per cell. All Benchmarks regenerate their particles per repetition, from a per-process random base seed
+ * incremented once per repetition, see kSeedBase.
  */
 
 #include <benchmark/benchmark.h>
 
 #include <array>
 #include <cmath>
+#include <random>
+#include <string>
 #include <vector>
 
 #include "autopas/baseFunctors/CellFunctor.h"
@@ -78,19 +80,26 @@ constexpr std::array<double, 3> kHigh{kCellSize, kCellSize, kCellSize};
  */
 const std::vector<int64_t> kNValues = {10, 25, 50, 75, 100, 125, 150};
 /**
- * Number of Particles swept by the Benchmarks in the VecPattern study, reduced to reduce number of different Benchmarks
- * run.
- */
-const std::vector<int64_t> kNValuesReduced = {50, 75, 100};
-/**
  * Hitrates swept by the Benchmarks in the Hitrate study.
+ *
+ * This is the generator's hitrate, i.e. the fraction of particles with at least one partner across the boundary, not
+ * the fraction of particle pairs within the cutoff. The two are related by f = p*h^2 + h*(1-p)/n, where p is the
+ * probability that two independently placed near particles are in range (0.645 for kCellSize/kCutoff), so the values
+ * below are chosen to be roughly evenly spaced in f rather than in h:
+ *   h = 0 / 20 / 30 / 40 / 50 / 70 / 90 %  ->  f = 0 / 2.6 / 5.9 / 10.5 / 16.3 / 31.8 / 52.5 % (at N=100).
+ * Sweeping h evenly instead would put almost every point below f = 6%. h = 0 is kept as a reference point: every
+ * window is empty there, so the sorted path performs its sort, gather and scatter with no kernel work at all, which
+ * isolates its fixed overhead.
  */
-const std::vector<int64_t> hitrates = {0, 5, 10, 15, 20, 30, 50};
+const std::vector<int64_t> hitrates = {0, 20, 30, 40, 50, 70, 90};
 
 /**
- * VecPattern used by the Benchmarks in the Hitrate study.
+ * VecPatterns swept by the pair Benchmarks. Stored as int64_t because ArgsProduct and state.range() only accept
+ * int64_t.
  */
-constexpr int kFixedVecPattern = VectorizationPattern::p1xVec;
+const std::vector<int64_t> kVecPatterns = {
+    static_cast<int64_t>(VectorizationPattern::p1xVec), static_cast<int64_t>(VectorizationPattern::p2xVecDiv2),
+    static_cast<int64_t>(VectorizationPattern::pVecDiv2x2), static_cast<int64_t>(VectorizationPattern::pVecx1)};
 
 /**
  * cellSizeFactor values (×10, e.g. 13 → 1.3) swept by the direction study Benchmarks. This is the multiplicative
@@ -101,6 +110,17 @@ constexpr int kFixedVecPattern = VectorizationPattern::p1xVec;
  * accept int64_t, so a double factor can't be swept directly.
  */
 const std::vector<int64_t> kCellSizeFactors = {10, 13, 15, 18, 20};
+
+/**
+ * Base seed every Benchmark's particle generation starts from, drawn once per process.
+ *
+ * Each Benchmark keeps its own counter starting here and increments it per repetition, so one process still sweeps a
+ * fresh particle configuration per repetition. Drawing the base randomly additionally makes separate invocations of
+ * the binary (e.g. one SLURM job per repetition) sample different configurations instead of all replaying the same
+ * ones, which would leave the spread across those runs measuring only machine noise. The drawn value is written to
+ * the Google Benchmark output as the "seed_base" context entry, so a run can be traced back to its input.
+ */
+const unsigned kSeedBase = std::random_device{}();
 
 /**
  * Functor config used to benchmark.
@@ -215,7 +235,7 @@ static void BM_AoSFunctor(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
 
-  static unsigned seed = 42;
+  static unsigned seed = kSeedBase;
   FMCell cell;
   fillCell(cell, kLow, kHigh, n, seed++);
 
@@ -258,7 +278,7 @@ static void BM_AoSFunctorSortedPairFace(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
 
-  static unsigned seed = 42;
+  static unsigned seed = kSeedBase;
   const auto layout = setupCellPair(autopas::SortingDirectionOption::face);
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -308,7 +328,7 @@ static void BM_SoAFunctorSingle(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
 
-  static unsigned seed = 42;
+  static unsigned seed = kSeedBase;
   FMCell cell;
   fillCell(cell, kLow, kHigh, n, seed++);
 
@@ -355,7 +375,7 @@ static void BM_SoAFunctorPairHitrate(benchmark::State &state) {
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
   const double hitrate = state.range(3) / 100.0;
 
-  static unsigned seed = 42;
+  static unsigned seed = kSeedBase;
   const auto layout = setupCellPair(autopas::SortingDirectionOption::face);
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -382,35 +402,19 @@ static void BM_SoAFunctorPairHitrate(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
- * Benchmarks the unsorted SoAFunctorPair by sweeping kNValues, newton3, and hitrate.
+ * Benchmarks the unsorted SoAFunctorPair by sweeping kNValues, newton3, VecPattern and hitrate.
  * @name BM_SoA_Pair_Hitrate
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern, hitrate}
- * - Sweeps kNValues, both newton3 on and off, kFixedVecPattern with all hitrates defined in the global hitrates
- * - This constitutes the Hitrate study.
+ * - Sweeps kNValues, both newton3 on and off, all kVecPatterns with all hitrates defined in the global hitrates
+ * - This constitutes the Hitrate study. The VecPattern comparison is the same data sliced by vecPat instead of by
+ *   hitrate, so it is not benchmarked separately.
  */
 BENCHMARK(BM_SoAFunctorPairHitrate)
-    ->ArgsProduct({kNValues, {0, 1}, {kFixedVecPattern}, hitrates})
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, hitrates})
     ->ArgNames({"N", "n3", "vecPat", "hitrate%"})
     ->Repetitions(5)
     ->Name("BM_SoA_Pair_Hitrate");
-/**
- * Benchmarks the unsorted SoAFunctorPair across all VecPatterns, sweeping kNValuesReduced, newton3, and hitrate.
- * @name BM_SoA_Pair_VecPatterns
- * @details
- * - Arguments: {Number of Particles, newton3, VecPattern, hitrate}
- * - Sweeps kNValuesReduced, both newton3 on and off, all VecPatterns with all hitrates defined in the global hitrates
- * - This constitutes the VecPattern study.
- */
-BENCHMARK(BM_SoAFunctorPairHitrate)
-    ->ArgsProduct({kNValuesReduced,
-                   {0, 1},
-                   {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
-                   hitrates})
-    ->ArgNames({"N", "n3", "vecPat", "hitrate%"})
-    ->Repetitions(5)
-    ->Name("BM_SoA_Pair_VecPatterns");
 
 /**
  * Benchmark of the SoAFunctorPairSorted (sorted path) with Cells in a Face direction, via CellFunctor.
@@ -431,7 +435,7 @@ static void BM_SoAFunctorPairSortedHitrate(benchmark::State &state) {
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
   const double hitrate = state.range(3) / 100.0;
 
-  static unsigned seed = 42;
+  static unsigned seed = kSeedBase;
   const auto layout = setupCellPair(autopas::SortingDirectionOption::face);
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -459,35 +463,19 @@ static void BM_SoAFunctorPairSortedHitrate(benchmark::State &state) {
   functor.endTraversal(newton3);
 }
 /**
- * Benchmarks the sorted SoAFunctorPair sweeping kNValues, newton3, and hitrate.
+ * Benchmarks the sorted SoAFunctorPair sweeping kNValues, newton3, VecPattern and hitrate.
  * @name BM_SoA_PairSorted_Hitrate
  * @details
  * - Arguments: {Number of Particles, newton3, VecPattern, hitrate}
- * - Sweeps kNValues, both newton3 on and off, kFixedVecPattern with all hitrates defined in the global hitrates
- * - This constitutes the Hitrate study.
+ * - Sweeps kNValues, both newton3 on and off, all kVecPatterns with all hitrates defined in the global hitrates
+ * - Sorted counterpart of BM_SoA_Pair_Hitrate, registered with the identical sweep so the two are comparable
+ *   argument for argument.
  */
 BENCHMARK(BM_SoAFunctorPairSortedHitrate)
-    ->ArgsProduct({kNValues, {0, 1}, {kFixedVecPattern}, hitrates})
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, hitrates})
     ->ArgNames({"N", "n3", "vecPat", "hitrate%"})
     ->Repetitions(5)
     ->Name("BM_SoA_PairSorted_Hitrate");
-/**
- * Benchmarks the sorted SoAFunctorPair across all VecPatterns, sweeping kNValuesReduced, newton3, and hitrate.
- * @name BM_SoA_PairSorted_VecPatterns
- * @details
- * - Arguments: {Number of Particles, newton3, VecPattern, hitrate}
- * - Sweeps kNValuesReduced, both newton3 on and off, all VecPatterns with all hitrates defined in the global hitrates
- * - This constitutes the VecPattern study.
- */
-BENCHMARK(BM_SoAFunctorPairSortedHitrate)
-    ->ArgsProduct({kNValuesReduced,
-                   {0, 1},
-                   {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
-                   hitrates})
-    ->ArgNames({"N", "n3", "vecPat", "hitrate%"})
-    ->Repetitions(5)
-    ->Name("BM_SoA_PairSorted_VecPatterns");
 
 /**
  * Benchmark of the SoAFunctorPair (unsorted path) with Cells in a Face direction, via CellFunctor.
@@ -508,7 +496,7 @@ static void BM_SoAFunctorPairFace(benchmark::State &state) {
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
   const double cellSize = (state.range(3) / 10.0) * kCutoff;
 
-  static unsigned seed = 42;
+  static unsigned seed = kSeedBase;
   const auto layout = setupCellPair(autopas::SortingDirectionOption::face, cellSize);
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -545,11 +533,7 @@ static void BM_SoAFunctorPairFace(benchmark::State &state) {
  * - This is part of the direction study.
  */
 BENCHMARK(BM_SoAFunctorPairFace)
-    ->ArgsProduct({kNValues,
-                   {0, 1},
-                   {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
-                   kCellSizeFactors})
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, kCellSizeFactors})
     ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_Pair_Face");
@@ -573,7 +557,7 @@ static void BM_SoAFunctorSortedPairFace(benchmark::State &state) {
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
   const double cellSize = (state.range(3) / 10.0) * kCutoff;
 
-  static unsigned seed = 42;
+  static unsigned seed = kSeedBase;
   const auto layout = setupCellPair(autopas::SortingDirectionOption::face, cellSize);
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -611,11 +595,7 @@ static void BM_SoAFunctorSortedPairFace(benchmark::State &state) {
  * - This is part of the direction study.
  */
 BENCHMARK(BM_SoAFunctorSortedPairFace)
-    ->ArgsProduct({kNValues,
-                   {0, 1},
-                   {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
-                   kCellSizeFactors})
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, kCellSizeFactors})
     ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_PairSorted_Face");
@@ -639,7 +619,7 @@ static void BM_SoAFunctorPairEdge(benchmark::State &state) {
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
   const double cellSize = (state.range(3) / 10.0) * kCutoff;
 
-  static unsigned seed = 42;
+  static unsigned seed = kSeedBase;
   const auto layout = setupCellPair(autopas::SortingDirectionOption::edge, cellSize);
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -677,11 +657,7 @@ static void BM_SoAFunctorPairEdge(benchmark::State &state) {
  * - This is part of the direction study.
  */
 BENCHMARK(BM_SoAFunctorPairEdge)
-    ->ArgsProduct({kNValues,
-                   {0, 1},
-                   {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
-                   kCellSizeFactors})
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, kCellSizeFactors})
     ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_Pair_Edge");
@@ -705,7 +681,7 @@ static void BM_SoAFunctorPairCorner(benchmark::State &state) {
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
   const double cellSize = (state.range(3) / 10.0) * kCutoff;
 
-  static unsigned seed = 42;
+  static unsigned seed = kSeedBase;
   const auto layout = setupCellPair(autopas::SortingDirectionOption::corner, cellSize);
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -743,11 +719,7 @@ static void BM_SoAFunctorPairCorner(benchmark::State &state) {
  * - This is part of the direction study.
  */
 BENCHMARK(BM_SoAFunctorPairCorner)
-    ->ArgsProduct({kNValues,
-                   {0, 1},
-                   {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
-                   kCellSizeFactors})
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, kCellSizeFactors})
     ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_Pair_Corner");
@@ -771,7 +743,7 @@ static void BM_SoAFunctorSortedPairEdge(benchmark::State &state) {
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
   const double cellSize = (state.range(3) / 10.0) * kCutoff;
 
-  static unsigned seed = 42;
+  static unsigned seed = kSeedBase;
   const auto layout = setupCellPair(autopas::SortingDirectionOption::edge, cellSize);
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -810,11 +782,7 @@ static void BM_SoAFunctorSortedPairEdge(benchmark::State &state) {
  * - This is part of the direction study.
  */
 BENCHMARK(BM_SoAFunctorSortedPairEdge)
-    ->ArgsProduct({kNValues,
-                   {0, 1},
-                   {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
-                   kCellSizeFactors})
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, kCellSizeFactors})
     ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_PairSorted_Edge");
@@ -838,7 +806,7 @@ static void BM_SoAFunctorSortedPairCorner(benchmark::State &state) {
   const auto pattern = static_cast<VectorizationPattern>(state.range(2));
   const double cellSize = (state.range(3) / 10.0) * kCutoff;
 
-  static unsigned seed = 42;
+  static unsigned seed = kSeedBase;
   const auto layout = setupCellPair(autopas::SortingDirectionOption::corner, cellSize);
   FMCell cell1, cell2;
   const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -877,11 +845,7 @@ static void BM_SoAFunctorSortedPairCorner(benchmark::State &state) {
  * - This is part of the direction study.
  */
 BENCHMARK(BM_SoAFunctorSortedPairCorner)
-    ->ArgsProduct({kNValues,
-                   {0, 1},
-                   {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
-                    static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
-                   kCellSizeFactors})
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, kCellSizeFactors})
     ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_PairSorted_Corner");
@@ -900,7 +864,7 @@ static void BM_SoAFunctorVerlet(benchmark::State &state) {
   const auto n = static_cast<std::size_t>(state.range(0));
   const bool newton3 = state.range(1) != 0;
 
-  static unsigned seed = 42;
+  static unsigned seed = kSeedBase;
   FMCell cell;
   fillCell(cell, kLow, kHigh, n, seed++);
 
@@ -934,4 +898,17 @@ BENCHMARK(BM_SoAFunctorVerlet)
     ->Repetitions(5)
     ->Name("BM_SoA_Verlet");
 
-BENCHMARK_MAIN();
+/**
+ * Same as BENCHMARK_MAIN(), except that the drawn kSeedBase is recorded in the output, so a result file states which
+ * particle configurations produced it.
+ */
+int main(int argc, char **argv) {
+  benchmark::Initialize(&argc, argv);
+  if (benchmark::ReportUnrecognizedArguments(argc, argv)) {
+    return 1;
+  }
+  benchmark::AddCustomContext("seed_base", std::to_string(kSeedBase));
+  benchmark::RunSpecifiedBenchmarks();
+  benchmark::Shutdown();
+  return 0;
+}
