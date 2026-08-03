@@ -17,6 +17,11 @@
  *   3. Baselines: AoSFunctor, SoAFunctorSingle, SoAFunctorVerlet — single cell,
  *      varying N and newton3. Reference points for absolute throughput.
  *
+ *   4. Mixing-enabled direction study — exact copies of group 2's Face/Edge/Corner families
+ *      (BM_SoA_Pair(Sorted)_{Face,Edge,Corner}_Mixing), with useMixing=true instead of false (BenchFunctorMixing).
+ *      Added to test whether that one difference from md-flexible's functor explains the gap between this file's
+ *      crossovers and SortingThresholdBenchmark's calibrated thresholds; see the block comment above this group.
+ *
  * Cell size: kCellSize = 4 (≈ 1.33 × cutoff). Both cells are equal-sized cubes with side lengths kCellSize. N ∈
  * {10…150} per cell. All Benchmarks regenerate their particles per repetition, from a per-process random base seed
  * incremented once per repetition, see kSeedBase.
@@ -42,6 +47,7 @@
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 namespace {
 
@@ -128,6 +134,20 @@ const unsigned kSeedBase = std::random_device{}();
 using BenchFunctor = mdLib::LJFunctorHWY<MoleculeType, /*shifting=*/true, /*useMixing=*/false,
                                          autopas::FunctorN3Modes::Both, /*calculateGlobals=*/false,
                                          /*countFLOPs=*/false>;
+
+/**
+ * Mixing-enabled counterpart of BenchFunctor, otherwise identical.
+ *
+ * md-flexible always instantiates LJFunctorHWY with useMixing=true (TypeDefinitions.h), regardless of how many site
+ * types the simulation actually registers, whereas BenchFunctor above uses useMixing=false. With mixing enabled,
+ * fillPhysicsRegisters() looks epsilon/sigma/shift up per lane from a ParticlePropertiesLibrary before the cutoff
+ * mask is evaluated, so that cost is paid even on pruned pairs -- unlike BenchFunctor, which reads three
+ * pre-broadcast scalars. This exists to isolate that one difference: BM_SoA_Pair(Sorted)_{Face,Edge,Corner}_Mixing
+ * below are otherwise exact copies of the non-mixing direction-study Benchmarks.
+ */
+using BenchFunctorMixing = mdLib::LJFunctorHWY<MoleculeType, /*shifting=*/true, /*useMixing=*/true,
+                                               autopas::FunctorN3Modes::Both, /*calculateGlobals=*/false,
+                                               /*countFLOPs=*/false>;
 /**
  * Fills a Cell with Particles (of type MoleculeLJ) using the AutoPas uniform generator.
  * @param cell Cell to fill.
@@ -178,6 +198,29 @@ BenchFunctor makeFunctor() {
   f.setParticleProperties(kEpsilon * 24.0, kSigma * kSigma);
   return f;
 }
+
+/**
+ * Single-site-type ParticlePropertiesLibrary backing makeFunctorMixing(), registering the same epsilon/sigma as
+ * makeFunctor() so the two functors are physically identical and differ only in useMixing. A function-local static
+ * so it outlives every BenchFunctorMixing instance, which holds a reference to it, without needing a named global.
+ * @return Reference to the singleton library.
+ */
+ParticlePropertiesLibrary<double, size_t> &mixingParticlePropertiesLibrary() {
+  static auto ppl = [] {
+    ParticlePropertiesLibrary<double, size_t> lib(kCutoff);
+    lib.addSiteType(0, /*mass=*/1.0);
+    lib.addLJParametersToSite(0, kEpsilon, kSigma);
+    lib.calculateMixingCoefficients();
+    return lib;
+  }();
+  return ppl;
+}
+
+/**
+ * Creates the mixing-enabled Functor used by the *_Mixing Benchmarks, backed by mixingParticlePropertiesLibrary().
+ * @return the Functor.
+ */
+BenchFunctorMixing makeFunctorMixing() { return BenchFunctorMixing(kCutoff, mixingParticlePropertiesLibrary()); }
 
 /**
  * Bounds of cell1/cell2 and the resulting normalized sorting direction for a cell pair placed adjacently in the
@@ -849,6 +892,277 @@ BENCHMARK(BM_SoAFunctorSortedPairCorner)
     ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
     ->Repetitions(5)
     ->Name("BM_SoA_PairSorted_Corner");
+
+// ---------------------------------------------------------------------------------------------------------------
+// Mixing-enabled direction study.
+//
+// Exact copies of the six direction-study Benchmarks above (Face/Edge/Corner x unsorted/sorted), with makeFunctor()
+// replaced by makeFunctorMixing(). Added to test the mechanism proposed for the gap between these Benchmarks and
+// SortingThresholdBenchmark's calibrated thresholds (bachelor_thesis/content/05_evaluation.tex, "Relation to the
+// microbenchmark crossovers"): md-flexible's functor is always instantiated with useMixing=true, this benchmark
+// binary's is not. See BenchFunctorMixing's doc comment above for the proposed mechanism.
+//
+// Kept as full ArgsProduct sweeps, matching the non-mixing Benchmarks, so the comparison in the thesis is not
+// limited to a single point if this data is ever revisited -- but for the one comparison that matters right now
+// (does the mixing-enabled crossover move towards the calibrated thresholds at cellSizeFactor=1.0, p1xVec, the
+// configuration SortingThresholdBenchmark itself uses) only a slice of it needs to actually run on the cluster; see
+// the filter recommendation this benchmark was added for.
+// ---------------------------------------------------------------------------------------------------------------
+
+/**
+ * Mixing-enabled counterpart of BM_SoAFunctorPairFace. See the block comment above.
+ */
+static void BM_SoAFunctorPairFaceMixing(benchmark::State &state) {
+  const auto n = static_cast<std::size_t>(state.range(0));
+  const bool newton3 = state.range(1) != 0;
+  const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double cellSize = (state.range(3) / 10.0) * kCutoff;
+
+  static unsigned seed = kSeedBase;
+  const auto layout = setupCellPair(autopas::SortingDirectionOption::face, cellSize);
+  FMCell cell1, cell2;
+  const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, layout.cell1High, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, layout.cell2Low, layout.cell2High, n,
+                                                           seed + 1);
+  seed += 2;
+
+  auto functor = makeFunctorMixing();
+  functor.setVecPattern(pattern);
+  functor.initTraversal();
+
+  autopas::internal::CellFunctor<FMCell, BenchFunctorMixing, /*bidirectional=*/true> cellFunctor(
+      functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
+
+  for (auto _ : state) {
+    functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
+    functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
+    cellFunctor.processCellPair(cell1, cell2);  // {0,0,0} default direction disables sorting
+    functor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    functor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
+    benchmark::DoNotOptimize(cell1._particleSoABuffer);
+    benchmark::DoNotOptimize(cell2._particleSoABuffer);
+  }
+  functor.endTraversal(newton3);
+}
+BENCHMARK(BM_SoAFunctorPairFaceMixing)
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, kCellSizeFactors})
+    ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
+    ->Repetitions(5)
+    ->Name("BM_SoA_Pair_Face_Mixing");
+
+/**
+ * Mixing-enabled counterpart of BM_SoAFunctorSortedPairFace. See the block comment above.
+ */
+static void BM_SoAFunctorSortedPairFaceMixing(benchmark::State &state) {
+  const auto n = static_cast<std::size_t>(state.range(0));
+  const bool newton3 = state.range(1) != 0;
+  const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double cellSize = (state.range(3) / 10.0) * kCutoff;
+
+  static unsigned seed = kSeedBase;
+  const auto layout = setupCellPair(autopas::SortingDirectionOption::face, cellSize);
+  FMCell cell1, cell2;
+  const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, layout.cell1High, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, layout.cell2Low, layout.cell2High, n,
+                                                           seed + 1);
+  seed += 2;
+
+  auto functor = makeFunctorMixing();
+  functor.setVecPattern(pattern);
+  functor.initTraversal();
+
+  autopas::internal::CellFunctor<FMCell, BenchFunctorMixing, /*bidirectional=*/true> cellFunctor(
+      functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
+  cellFunctor.setSoASortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
+
+  for (auto _ : state) {
+    functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
+    functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
+    cellFunctor.processCellPair(cell1, cell2, layout.sortingDirection);
+    functor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    functor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
+    benchmark::DoNotOptimize(cell1._particleSoABuffer);
+    benchmark::DoNotOptimize(cell2._particleSoABuffer);
+  }
+  functor.endTraversal(newton3);
+}
+BENCHMARK(BM_SoAFunctorSortedPairFaceMixing)
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, kCellSizeFactors})
+    ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
+    ->Repetitions(5)
+    ->Name("BM_SoA_PairSorted_Face_Mixing");
+
+/**
+ * Mixing-enabled counterpart of BM_SoAFunctorPairEdge. See the block comment above.
+ */
+static void BM_SoAFunctorPairEdgeMixing(benchmark::State &state) {
+  const auto n = static_cast<std::size_t>(state.range(0));
+  const bool newton3 = state.range(1) != 0;
+  const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double cellSize = (state.range(3) / 10.0) * kCutoff;
+
+  static unsigned seed = kSeedBase;
+  const auto layout = setupCellPair(autopas::SortingDirectionOption::edge, cellSize);
+  FMCell cell1, cell2;
+  const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, layout.cell1High, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, layout.cell2Low, layout.cell2High, n,
+                                                           seed + 1);
+  seed += 2;
+
+  auto functor = makeFunctorMixing();
+  functor.setVecPattern(pattern);
+  functor.initTraversal();
+
+  autopas::internal::CellFunctor<FMCell, BenchFunctorMixing, /*bidirectional=*/true> cellFunctor(
+      functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
+
+  for (auto _ : state) {
+    functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
+    functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
+    cellFunctor.processCellPair(cell1, cell2);  // {0,0,0} default direction disables sorting
+    functor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    functor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
+    benchmark::DoNotOptimize(cell1._particleSoABuffer);
+    benchmark::DoNotOptimize(cell2._particleSoABuffer);
+  }
+  functor.endTraversal(newton3);
+}
+BENCHMARK(BM_SoAFunctorPairEdgeMixing)
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, kCellSizeFactors})
+    ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
+    ->Repetitions(5)
+    ->Name("BM_SoA_Pair_Edge_Mixing");
+
+/**
+ * Mixing-enabled counterpart of BM_SoAFunctorSortedPairEdge. See the block comment above.
+ */
+static void BM_SoAFunctorSortedPairEdgeMixing(benchmark::State &state) {
+  const auto n = static_cast<std::size_t>(state.range(0));
+  const bool newton3 = state.range(1) != 0;
+  const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double cellSize = (state.range(3) / 10.0) * kCutoff;
+
+  static unsigned seed = kSeedBase;
+  const auto layout = setupCellPair(autopas::SortingDirectionOption::edge, cellSize);
+  FMCell cell1, cell2;
+  const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, layout.cell1High, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, layout.cell2Low, layout.cell2High, n,
+                                                           seed + 1);
+  seed += 2;
+
+  auto functor = makeFunctorMixing();
+  functor.setVecPattern(pattern);
+  functor.initTraversal();
+
+  autopas::internal::CellFunctor<FMCell, BenchFunctorMixing, /*bidirectional=*/true> cellFunctor(
+      functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
+  cellFunctor.setSoASortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
+
+  for (auto _ : state) {
+    functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
+    functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
+    cellFunctor.processCellPair(cell1, cell2, layout.sortingDirection);
+    functor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    functor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
+    benchmark::DoNotOptimize(cell1._particleSoABuffer);
+    benchmark::DoNotOptimize(cell2._particleSoABuffer);
+  }
+  functor.endTraversal(newton3);
+}
+BENCHMARK(BM_SoAFunctorSortedPairEdgeMixing)
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, kCellSizeFactors})
+    ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
+    ->Repetitions(5)
+    ->Name("BM_SoA_PairSorted_Edge_Mixing");
+
+/**
+ * Mixing-enabled counterpart of BM_SoAFunctorPairCorner. See the block comment above.
+ */
+static void BM_SoAFunctorPairCornerMixing(benchmark::State &state) {
+  const auto n = static_cast<std::size_t>(state.range(0));
+  const bool newton3 = state.range(1) != 0;
+  const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double cellSize = (state.range(3) / 10.0) * kCutoff;
+
+  static unsigned seed = kSeedBase;
+  const auto layout = setupCellPair(autopas::SortingDirectionOption::corner, cellSize);
+  FMCell cell1, cell2;
+  const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, layout.cell1High, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, layout.cell2Low, layout.cell2High, n,
+                                                           seed + 1);
+  seed += 2;
+
+  auto functor = makeFunctorMixing();
+  functor.setVecPattern(pattern);
+  functor.initTraversal();
+
+  autopas::internal::CellFunctor<FMCell, BenchFunctorMixing, /*bidirectional=*/true> cellFunctor(
+      functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
+
+  for (auto _ : state) {
+    functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
+    functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
+    cellFunctor.processCellPair(cell1, cell2);  // {0,0,0} default direction disables sorting
+    functor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    functor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
+    benchmark::DoNotOptimize(cell1._particleSoABuffer);
+    benchmark::DoNotOptimize(cell2._particleSoABuffer);
+  }
+  functor.endTraversal(newton3);
+}
+BENCHMARK(BM_SoAFunctorPairCornerMixing)
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, kCellSizeFactors})
+    ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
+    ->Repetitions(5)
+    ->Name("BM_SoA_Pair_Corner_Mixing");
+
+/**
+ * Mixing-enabled counterpart of BM_SoAFunctorSortedPairCorner. See the block comment above.
+ */
+static void BM_SoAFunctorSortedPairCornerMixing(benchmark::State &state) {
+  const auto n = static_cast<std::size_t>(state.range(0));
+  const bool newton3 = state.range(1) != 0;
+  const auto pattern = static_cast<VectorizationPattern>(state.range(2));
+  const double cellSize = (state.range(3) / 10.0) * kCutoff;
+
+  static unsigned seed = kSeedBase;
+  const auto layout = setupCellPair(autopas::SortingDirectionOption::corner, cellSize);
+  FMCell cell1, cell2;
+  const MoleculeType defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+  autopas::generators::UniformGenerator::fillWithParticles(cell1, defaultParticle, kLow, layout.cell1High, n, seed);
+  autopas::generators::UniformGenerator::fillWithParticles(cell2, defaultParticle, layout.cell2Low, layout.cell2High, n,
+                                                           seed + 1);
+  seed += 2;
+
+  auto functor = makeFunctorMixing();
+  functor.setVecPattern(pattern);
+  functor.initTraversal();
+
+  autopas::internal::CellFunctor<FMCell, BenchFunctorMixing, /*bidirectional=*/true> cellFunctor(
+      functor, kCutoff, autopas::DataLayoutOption::soa, newton3);
+  cellFunctor.setSoASortingThresholds(autopas::SortingThresholdInfoSingle(0));  // always take the sorted path
+
+  for (auto _ : state) {
+    functor.SoALoader(cell1, cell1._particleSoABuffer, 0, false);
+    functor.SoALoader(cell2, cell2._particleSoABuffer, 0, false);
+    cellFunctor.processCellPair(cell1, cell2, layout.sortingDirection);
+    functor.SoAExtractor(cell1, cell1._particleSoABuffer, 0);
+    functor.SoAExtractor(cell2, cell2._particleSoABuffer, 0);
+    benchmark::DoNotOptimize(cell1._particleSoABuffer);
+    benchmark::DoNotOptimize(cell2._particleSoABuffer);
+  }
+  functor.endTraversal(newton3);
+}
+BENCHMARK(BM_SoAFunctorSortedPairCornerMixing)
+    ->ArgsProduct({kNValues, {0, 1}, kVecPatterns, kCellSizeFactors})
+    ->ArgNames({"N", "n3", "vecPat", "cellSizeFactor"})
+    ->Repetitions(5)
+    ->Name("BM_SoA_PairSorted_Corner_Mixing");
 
 /**
  * Benchmark of the SoAFunctorVerlet.
