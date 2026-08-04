@@ -20,6 +20,10 @@
  * Cell size: kCellSize = 4 (≈ 1.33 × cutoff). Both cells are equal-sized cubes with side lengths kCellSize. N ∈
  * {10…150} per cell. All Benchmarks regenerate their particles per repetition, from a per-process random base seed
  * incremented once per repetition, see kSeedBase.
+ *
+ * BenchFunctor is instantiated with useMixing=true, backed by a single-site-type ParticlePropertiesLibrary (see
+ * particlePropertiesLibrary()), matching md-flexible's functor instantiation (TypeDefinitions.h always sets
+ * useMixing=true) rather than reading pre-broadcast scalar epsilon/sigma/shift.
  */
 
 #include <benchmark/benchmark.h>
@@ -42,6 +46,7 @@
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 namespace {
 
@@ -124,8 +129,15 @@ const unsigned kSeedBase = std::random_device{}();
 
 /**
  * Functor config used to benchmark.
+ *
+ * useMixing is enabled to match md-flexible, which always instantiates LJFunctorHWY with useMixing=true
+ * (TypeDefinitions.h) regardless of how many site types a simulation actually registers. With mixing enabled,
+ * epsilon/sigma/shift are looked up per lane from a ParticlePropertiesLibrary instead of read as pre-broadcast
+ * scalars, so that lookup cost is paid on every pair. Only a single site type is registered (see
+ * particlePropertiesLibrary() below), so the values themselves are unchanged from a non-mixing run with the same
+ * kEpsilon/kSigma; this isolates the lookup overhead without changing what the benchmarks physically measure.
  */
-using BenchFunctor = mdLib::LJFunctorHWY<MoleculeType, /*shifting=*/true, /*useMixing=*/false,
+using BenchFunctor = mdLib::LJFunctorHWY<MoleculeType, /*shifting=*/true, /*useMixing=*/true,
                                          autopas::FunctorN3Modes::Both, /*calculateGlobals=*/false,
                                          /*countFLOPs=*/false>;
 /**
@@ -170,14 +182,27 @@ std::vector<std::vector<std::size_t, autopas::AlignedAllocator<std::size_t>>> bu
 }
 
 /**
- * Creates the Functor use for Benchmarking with cutoff, sigma and epsilon set.
+ * Single-site-type ParticlePropertiesLibrary backing makeFunctor(), registering kEpsilon/kSigma as site type 0.
+ * A function-local static so it outlives every BenchFunctor instance, which holds a reference to it, without
+ * needing a named global.
+ * @return Reference to the singleton library.
+ */
+ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary() {
+  static auto ppl = [] {
+    ParticlePropertiesLibrary<double, size_t> lib(kCutoff);
+    lib.addSiteType(0, /*mass=*/1.0);
+    lib.addLJParametersToSite(0, kEpsilon, kSigma);
+    lib.calculateMixingCoefficients();
+    return lib;
+  }();
+  return ppl;
+}
+
+/**
+ * Creates the Functor use for Benchmarking, backed by particlePropertiesLibrary().
  * @return the Functor.
  */
-BenchFunctor makeFunctor() {
-  BenchFunctor f(kCutoff);
-  f.setParticleProperties(kEpsilon * 24.0, kSigma * kSigma);
-  return f;
-}
+BenchFunctor makeFunctor() { return BenchFunctor(kCutoff, particlePropertiesLibrary()); }
 
 /**
  * Bounds of cell1/cell2 and the resulting normalized sorting direction for a cell pair placed adjacently in the
