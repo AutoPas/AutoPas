@@ -8,6 +8,7 @@
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
 #include <boost/math/statistics/linear_regression.hpp>
+#include <vector>
 
 #include "autopas/utils/Math.h"
 
@@ -99,6 +100,7 @@ class RegressionBase {
   /// Upper limit for the number of points considered for prediction.
   size_t _maxN = 0;
 };
+
 /**
  * Estimates a constant value by computing the arithmetic mean of observed
  * y values in a streaming fashion.
@@ -106,26 +108,13 @@ class RegressionBase {
  * Used as a lightweight baseline estimator for quantities with low variance
  * (e.g. rebuildNeighborListTime).
  */
-class Mean : public RegressionBase {
+class RunningMean : public RegressionBase {
  public:
   /**
    * Default constructor.
    * Initializes the base RegressionBase with minN = 1 and maxN = 100.
    */
-  Mean() : RegressionBase(1, 100) {}
-
-  /**
-   * Constructor with maximum points.
-   * Initializes RegressionBase with minN = 1 and the given maxN.
-   * @param maxN Upper limit for the number of points considered for prediction.
-   */
-  explicit Mean(const size_t maxN) : RegressionBase(1, maxN) {}
-
-  /**
-   * @param minN Lower limit for the number of points considered for prediction.
-   * @param maxN Upper limit for the number of points considered for prediction.
-   */
-  Mean(const size_t minN, const size_t maxN) : RegressionBase(minN, maxN) {}
+  RunningMean() : RegressionBase(1, std::numeric_limits<long>::max()) {}
 
   /// Reset to initial values.
   void reset() { RegressionBase::reset(); }
@@ -152,15 +141,59 @@ class Mean : public RegressionBase {
      * recompute the mean using the current accumulated values.
      * Once the estimator is full, the cached mean can be reused.
      */
-    if (!exceedsMaxPoints()) {
-      _lastMean = static_cast<double>(_sumY) / static_cast<double>(_n);
+    auto runningMean = static_cast<double>(_sumY) / static_cast<double>(_n);
+    return Result{runningMean, ReturnCode::OK_REG, true};
+  }
+};
+
+/**
+ * Estimates a constant value by computing the arithmetic mean of maxN y values with O(N) complexity.
+ */
+class Mean : public RegressionBase {
+ public:
+  /**
+   * Default constructor.
+   * Initializes the base RegressionBase with minN = 1 and maxN = 100.
+   */
+  Mean() = delete;
+
+  /*
+   * Constructor
+   */
+  Mean(size_t maxN) : RegressionBase(1, maxN) { _y.resize(maxN); }
+
+  /// Reset to initial values.
+  void reset() {
+    _y.clear();
+    RegressionBase::reset();
+  }
+
+  /**
+   *If the maximum number of data points has been reached,no further samples are added to keep the estimator bounded.
+   */
+  ReturnCode addNewPoint(long const y) {
+    _sumY -= _y[current_index];
+    _y[current_index] = y;
+    _sumY += y;
+    current_index = (current_index + 1) % _maxN;
+    _n++;
+
+    return ReturnCode::OK_REG;
+  }
+
+  /// The prediction of the Mean class takes the mean over the gathered points.
+  Result predict() {
+    if (not hasEnoughPoints()) {
+      return Result{0, ReturnCode::NOT_ENOUGH_POINTS_REG, false};
     }
-    return Result{_lastMean, ReturnCode::OK_REG, true};
+    auto mean = static_cast<double>(_sumY) / std::min(_maxN, _n);
+    return Result{mean, ReturnCode::OK_REG, true};
   }
 
  private:
-  /// Cached mean value to avoid recomputation once the maximum number of points is reached
-  double _lastMean = 0.0;
+  size_t current_index = 0;
+
+  std::vector<long> _y;
 };
 
 /**
@@ -307,7 +340,7 @@ class SimpleLinearRegressionSeparateZero {
 
  private:
   /// Stores remainder traversal values with an empty buffer.
-  Mean _zero{SIZE_MAX};
+  RunningMean _zero;
 
   /**
    * Stores remainder traversal values with a filled buffer
@@ -431,7 +464,7 @@ class RebuildDecisionContext {
    * The rebuild time is assumed to be approximately constant and is therefore
    * estimated using a running mean.
    */
-  Mean _rebuildNeighborTimeMean{};
+  RunningMean _rebuildNeighborTimeMean{};
 
   /**
    * Stores (numParticlesBuffer, remainderTraversalTime) pairs for each iteration.

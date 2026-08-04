@@ -11,36 +11,60 @@
 using namespace autopas::utils::RegressionModels;
 
 TEST(RegressionModelsTest, testMean) {
-  Mean mean(1, 3);
+  RunningMean mean;
+  Mean mean_2(2);  // Mean over last two samples
+  Mean mean_3(3);  // Mean over last three samples
   EXPECT_EQ(mean.getN(), 0);
+  EXPECT_EQ(mean_2.getN(), 0);
+  EXPECT_EQ(mean_3.getN(), 0);
 
   // Add points
   EXPECT_EQ(mean.addNewPoint(10), RegressionBase::ReturnCode::OK_REG);
   EXPECT_EQ(mean.addNewPoint(20), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(mean_2.addNewPoint(10), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(mean_2.addNewPoint(20), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(mean_3.addNewPoint(10), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(mean_3.addNewPoint(20), RegressionBase::ReturnCode::OK_REG);
 
   // check predict
   auto result = mean.predict();
   EXPECT_TRUE(result._isOk);
   EXPECT_DOUBLE_EQ(result._value, 15);
+  EXPECT_DOUBLE_EQ(mean_2.predict()._value, 15);
+  EXPECT_DOUBLE_EQ(mean_3.predict()._value, 15);
 
   EXPECT_EQ(mean.addNewPoint(30), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(mean_2.addNewPoint(30), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(mean_3.addNewPoint(30), RegressionBase::ReturnCode::OK_REG);
 
   result = mean.predict();
   EXPECT_TRUE(result._isOk);
   EXPECT_DOUBLE_EQ(result._value, 20);
+  EXPECT_DOUBLE_EQ(mean_2.predict()._value, 25);
+  EXPECT_DOUBLE_EQ(mean_3.predict()._value, 20);
 
   // Exceed maximum number of points
-  EXPECT_EQ(mean.addNewPoint(40), RegressionBase::ReturnCode::EXCEEDED_MAX_POINTS_REG);
+  EXPECT_EQ(mean.addNewPoint(40), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(mean_2.addNewPoint(40), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(mean_3.addNewPoint(40), RegressionBase::ReturnCode::OK_REG);
+
   result = mean.predict();
   EXPECT_TRUE(result._isOk);
-  EXPECT_DOUBLE_EQ(result._value, 20);
+  EXPECT_DOUBLE_EQ(result._value, 25);
+  EXPECT_DOUBLE_EQ(mean_2.predict()._value, 35);
+  EXPECT_DOUBLE_EQ(mean_3.predict()._value, 30);
 
   // Reset
   mean.reset();
+  mean_2.reset();
+  mean_3.reset();
+
   EXPECT_EQ(mean.getN(), 0);
 
   // Correct behavior if there are not enough points for prediction
   EXPECT_EQ(mean.predict()._returnCode, RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG);
+  EXPECT_EQ(mean_2.predict()._returnCode, RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG);
+  EXPECT_EQ(mean_3.predict()._returnCode, RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG);
 
   EXPECT_EQ(mean.addNewPoint(20), RegressionBase::ReturnCode::OK_REG);
   result = mean.predict();
