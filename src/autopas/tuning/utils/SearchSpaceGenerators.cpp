@@ -50,8 +50,8 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
               for (const auto &threadCountOption : threadCounts) {
                 for (const auto &vecPatternOption : allowedVecPatternOptions) {
                   const Configuration configuration{
-                      containerOption,  csf,           traversalOption,   loadEstimatorOption,
-                      dataLayoutOption, newton3Option, threadCountOption, interactionType,
+                      containerOption,  csf,           traversalOption, loadEstimatorOption,
+                      dataLayoutOption, newton3Option, interactionType, threadCountOption,
                       vecPatternOption};
                   if (configuration.hasCompatibleValues()) {
                     searchSet.insert(configuration);
