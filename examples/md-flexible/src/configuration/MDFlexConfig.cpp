@@ -261,6 +261,21 @@ std::string MDFlexConfig::to_string() const {
       })) {
     printOption(acquisitionFunctionOption);
   }
+  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::reinforcementLearning})) {
+    printOption(rlLearningRate);
+    printOption(rlDiscountFactor);
+    printOption(rlExplorationSamples);
+    printOption(rlModel);
+  }
+  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::deepReinforcementLearning})) {
+    printOption(drlExplorationMethod);
+    printOption(drlLearningRate);
+    printOption(drlRetrainingIterations);
+    printOption(drlNumExplorationSamples);
+    printOption(drlNumExploitationSamples);
+    printOption(drlPhaseScale);
+    printOption(drlUpdateWeight);
+  }
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::mpiDivideAndConquer})) {
     printOption(MPITuningMaxDifferenceForBucket);
     printOption(MPITuningWeightForMaxDensity);
