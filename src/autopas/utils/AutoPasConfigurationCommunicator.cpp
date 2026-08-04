@@ -233,8 +233,8 @@ Configuration deserializeConfiguration(SerializedConfiguration config) {
           static_cast<LoadEstimatorOption::Value>(config[2]),
           static_cast<DataLayoutOption::Value>(config[3]),
           static_cast<Newton3Option::Value>(config[4]),
-          threadCount,
           static_cast<InteractionTypeOption::Value>(config[5]),
+          threadCount,
           static_cast<VectorizationPatternOption::Value>(config[6])};
 }
 
