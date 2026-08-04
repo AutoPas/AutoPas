@@ -12,10 +12,10 @@ autopas::FeatureVectorEncoder::FeatureVectorEncoder(
     const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
     const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
     const autopas::NumberSet<double> &cellSizeFactors, const NumberSetFinite<int> &threadCounts,
-    const InteractionTypeOption &interactionType)
+    const InteractionTypeOption &interactionType, const std::vector<VectorizationPatternOption> &vecPatternOptions)
     : _interactionType(interactionType) {
   setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors,
-                    threadCounts);
+                    threadCounts, vecPatternOptions);
 }
 
 autopas::FeatureVectorEncoder::~FeatureVectorEncoder() = default;
@@ -23,21 +23,24 @@ autopas::FeatureVectorEncoder::~FeatureVectorEncoder() = default;
 void autopas::FeatureVectorEncoder::setAllowedOptions(
     const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
     const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-    const autopas::NumberSet<double> &cellSizeFactors, const NumberSet<int> &threadCounts) {
+    const autopas::NumberSet<double> &cellSizeFactors, const NumberSet<int> &threadCounts,
+    const std::vector<VectorizationPatternOption> &vecPatternOptions) {
   _containerTraversalEstimatorOptions = containerTraversalEstimatorOptions;
   _dataLayoutOptions = dataLayoutOptions;
   _newton3Options = newton3Options;
   const auto threadCountsSet = threadCounts.getAll();
   _threadCounts = {threadCountsSet.begin(), threadCountsSet.end()};
+  _vecPatternOptions = vecPatternOptions;
 
   _oneHotDims = _containerTraversalEstimatorOptions.size() + _dataLayoutOptions.size() + _newton3Options.size() +
-                _threadCounts.size() + tunableContinuousDims;
+                _threadCounts.size() + _vecPatternOptions.size() + tunableContinuousDims;
 
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::containerTraversalEstimator)] =
       _containerTraversalEstimatorOptions.size();
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::dataLayout)] = _dataLayoutOptions.size();
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::newton3)] = _newton3Options.size();
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::threadCount)] = threadCounts.size();
+  _discreteRestrictions[static_cast<size_t>(DiscreteIndices::vecPattern)] = _vecPatternOptions.size();
 
   _continuousRestrictions[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = cellSizeFactors.clone();
 }
@@ -272,6 +275,7 @@ autopas::FeatureVectorEncoder::convertToTunable(const autopas::FeatureVector &ve
   discreteValues[static_cast<size_t>(DiscreteIndices::dataLayout)] = getIndex(_dataLayoutOptions, vec.dataLayout);
   discreteValues[static_cast<size_t>(DiscreteIndices::newton3)] = getIndex(_newton3Options, vec.newton3);
   discreteValues[static_cast<size_t>(DiscreteIndices::threadCount)] = getIndex(_threadCounts, vec.threadCount);
+  discreteValues[static_cast<size_t>(DiscreteIndices::vecPattern)] = getIndex(_vecPatternOptions, vec.vecPattern);
 
   ContinuousDimensionType continuousValues;
   continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = vec.cellSizeFactor;
@@ -288,9 +292,10 @@ autopas::FeatureVector autopas::FeatureVectorEncoder::convertFromTunable(
   auto dataLayout = _dataLayoutOptions[discreteValues[static_cast<size_t>(DiscreteIndices::dataLayout)]];
   auto newton3 = _newton3Options[discreteValues[static_cast<size_t>(DiscreteIndices::newton3)]];
   auto threadCount = _threadCounts[discreteValues[static_cast<size_t>(DiscreteIndices::threadCount)]];
+  auto vecPattern = _vecPatternOptions[discreteValues[static_cast<size_t>(DiscreteIndices::vecPattern)]];
 
   auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
 
   return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, threadCount,
-                       _interactionType);
+                       _interactionType, vecPattern);
 }

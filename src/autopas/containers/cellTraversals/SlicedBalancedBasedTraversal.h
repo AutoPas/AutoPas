@@ -33,7 +33,7 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
    * Constructor of the balanced sliced traversal.
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
-  explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
+  explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor,
                                         const double interactionLength, const std::array<double, 3> &cellLength,
                                         DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
       : SlicedLockBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
@@ -58,7 +58,7 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
     utils::Timer timer;
     timer.start();
     loads.resize(maxDimensionLength);
-    AUTOPAS_OPENMP(parallel for schedule(static, 1) num_threads(autopas_get_preferred_num_threads()))
+    AUTOPAS_OPENMP(parallel for schedule(static, 1) num_threads(autopas_get_tuned_num_threads()))
     for (auto x = 0; x < maxDimensionLength; x++) {
       std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
       std::array<unsigned long, 3> upperCorner = this->_cellsPerDimension;

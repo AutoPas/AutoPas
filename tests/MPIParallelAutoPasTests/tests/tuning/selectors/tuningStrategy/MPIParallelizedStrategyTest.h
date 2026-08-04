@@ -37,7 +37,8 @@ class MPIParallelizedStrategyTest : public AutoPasMPITestBase {
                                     autopas::DataLayoutOption::aos,
                                     autopas::Newton3Option::disabled,
                                     threadCount,
-                                    autopas::InteractionTypeOption::pairwise};
+                                    autopas::InteractionTypeOption::pairwise,
+                                    autopas::VectorizationPatternOption::p1xVec};
   autopas::Configuration lc_c04_aos{autopas::ContainerOption::linkedCells,
                                     1.,
                                     autopas::TraversalOption::lc_c04,
@@ -45,7 +46,8 @@ class MPIParallelizedStrategyTest : public AutoPasMPITestBase {
                                     autopas::DataLayoutOption::aos,
                                     autopas::Newton3Option::disabled,
                                     threadCount,
-                                    autopas::InteractionTypeOption::pairwise};
+                                    autopas::InteractionTypeOption::pairwise,
+                                    autopas::VectorizationPatternOption::p1xVec};
   autopas::Configuration lc_c08_aos{autopas::ContainerOption::linkedCells,
                                     1.,
                                     autopas::TraversalOption::lc_c08,
@@ -53,7 +55,8 @@ class MPIParallelizedStrategyTest : public AutoPasMPITestBase {
                                     autopas::DataLayoutOption::aos,
                                     autopas::Newton3Option::disabled,
                                     threadCount,
-                                    autopas::InteractionTypeOption::pairwise};
+                                    autopas::InteractionTypeOption::pairwise,
+                                    autopas::VectorizationPatternOption::p1xVec};
   autopas::Configuration lc_c01_soa{autopas::ContainerOption::linkedCells,
                                     1.,
                                     autopas::TraversalOption::lc_c01,
@@ -61,7 +64,8 @@ class MPIParallelizedStrategyTest : public AutoPasMPITestBase {
                                     autopas::DataLayoutOption::soa,
                                     autopas::Newton3Option::disabled,
                                     threadCount,
-                                    autopas::InteractionTypeOption::pairwise};
+                                    autopas::InteractionTypeOption::pairwise,
+                                    autopas::VectorizationPatternOption::p1xVec};
   autopas::Configuration lc_c04_soa{autopas::ContainerOption::linkedCells,
                                     1.,
                                     autopas::TraversalOption::lc_c04,
@@ -69,5 +73,6 @@ class MPIParallelizedStrategyTest : public AutoPasMPITestBase {
                                     autopas::DataLayoutOption::soa,
                                     autopas::Newton3Option::disabled,
                                     threadCount,
-                                    autopas::InteractionTypeOption::pairwise};
+                                    autopas::InteractionTypeOption::pairwise,
+                                    autopas::VectorizationPatternOption::p1xVec};
 };

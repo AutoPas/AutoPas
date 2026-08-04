@@ -22,8 +22,10 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
@@ -41,7 +43,6 @@ class LogicHandler;
  * The AutoPas class is intended to be the main point of Interaction for the user.
  * It acts as an interface from where all features of the library can be triggered and configured.
  * @tparam Particle_T Class for particles
- * @tparam ParticleCell Class for the particle cells
  */
 template <class Particle_T>
 class AutoPas {
@@ -76,10 +77,17 @@ class AutoPas {
   using RegionConstIteratorT = autopas::ContainerIterator<Particle_T, false, true>;
 
   /**
-   * Constructor for the autopas class.
-   * @param logOutputStream Stream where log output should go to. Default is std::out.
+   * Constructor for the AutoPas class.
+   * @param logOutputStream Stream where log output should go to. Default is std::cout.
    */
   explicit AutoPas(std::ostream &logOutputStream = std::cout);
+
+  /**
+   * Constructor for the AutoPas class.
+   * This constructor can be used when the logging should be directed to a file.
+   * @param logFileName Name of the log file.
+   */
+  explicit AutoPas(const std::string &logFileName);
 
   ~AutoPas();
 
@@ -573,7 +581,7 @@ class AutoPas {
    * get the bool value indicating if the search space is trivial (not more than one configuration to test).
    * @return bool indicating if search space is trivial.
    */
-  [[nodiscard]] bool searchSpaceIsTrivial();
+  [[nodiscard]] bool searchSpaceIsTrivial() const;
 
   /**
    * Set coordinates of the lower corner of the domain.
@@ -956,6 +964,35 @@ class AutoPas {
   }
 
   /**
+   * Get the list of allowed vectorization pattern options.
+   * @param interactionType Get allowed vectorization pattern options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
+   * @return
+   */
+  [[nodiscard]] const std::set<VectorizationPatternOption> &getAllowedVecPatternOptions(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedVecPatternsOptions.at(interactionType);
+  }
+
+  /**
+   * Set the list of allowed vectorization pattern options
+   * For possible options, see options::VectorizationOption::Value
+   * @param allowedVecPatterns
+   * @param interactionType Set allowed vectorization pattern options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise
+   */
+  void setAllowedVecPatterns(const std::set<VectorizationPatternOption> &allowedVecPatterns,
+                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedVecPatternsOptions[iType] = allowedVecPatterns;
+      }
+    } else {
+      _allowedVecPatternsOptions[interactionType] = allowedVecPatterns;
+    }
+  }
+
+  /**
    * Set the list of allowed interaction types.
    * AutoPas will initialize AutoTuners for the allowed interaction types.
    * For possible newton 3 choices see options::interactionTypeOption::Value.
@@ -972,9 +1009,9 @@ class AutoPas {
   [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>>
   getCurrentConfigs() const {
     std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>> currentConfigs;
-    currentConfigs.reserve(_autoTuners.size());
+    currentConfigs.reserve(_tuningManager->getAutoTuners().size());
 
-    for (const auto &[type, tuner] : _autoTuners) {
+    for (const auto &[type, tuner] : _tuningManager->getAutoTuners()) {
       currentConfigs.emplace(type, std::cref(tuner->getCurrentConfig()));
     }
     return currentConfigs;
@@ -1126,18 +1163,35 @@ class AutoPas {
   const std::string &getRuleFileName() const { return _tuningStrategyFactoryInfo.ruleFileName; }
 
   /**
-   * Set the sorting-threshold for traversals that use the CellFunctor
+   * Set the aos-sorting-threshold for traversals that use the CellFunctor
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
-   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
+   * @param aosSortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
-  void setSortingThreshold(size_t sortingThreshold) { _sortingThreshold = sortingThreshold; }
+  void setAoSSortingThreshold(size_t aosSortingThreshold) {
+    _logicHandlerInfo.aosSortingThreshold = aosSortingThreshold;
+  }
 
   /**
-   * Get the sorting-threshold for traversals that use the CellFunctor.
-   * @return sorting-threshold
+   * Get the aos-sorting-threshold for traversals that use the CellFunctor.
+   * @return aos-sorting-threshold
    */
-  size_t getSortingThreshold() const { return _sortingThreshold; }
+  size_t getAoSSortingThreshold() const { return _logicHandlerInfo.aosSortingThreshold; }
+
+  /**
+   * Set the SoA sorting-threshold.
+   * If the sum of the SoA buffer sizes of two cells exceeds this value, the SoA path uses SoAFunctorPairSorted.
+   * @param soaSortingThreshold Sum of the SoA buffer sizes from which SoA sorting should be enabled.
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold) {
+    _logicHandlerInfo.soaSortingThreshold = soaSortingThreshold;
+  }
+
+  /**
+   * Get the SoA sorting-threshold.
+   * @return SoA sorting-threshold
+   */
+  size_t getSoASortingThreshold() const { return _logicHandlerInfo.soaSortingThreshold; }
 
  private:
   autopas::ParticleContainerInterface<Particle_T> &getContainer();
@@ -1195,6 +1249,14 @@ class AutoPas {
       {InteractionTypeOption::pairwise, Newton3Option::getMostOptions()},
       {InteractionTypeOption::triwise, Newton3Option::getMostOptions()}};
   /**
+   * Vector Interaction Patterns
+   */
+  std::unordered_map<InteractionTypeOption::Value, std::set<VectorizationPatternOption>> _allowedVecPatternsOptions{
+      {InteractionTypeOption::pairwise, VectorizationPatternOption::getMostOptions()},
+      // Note: Currently Vectorization Patterns are not implemented for threebody interactions. p1xVec is used as
+      // default.
+      {InteractionTypeOption::triwise, std::set<VectorizationPatternOption>{VectorizationPatternOption::p1xVec}}};
+  /**
    * What kind of interactions AutoPas should expect.
    * By default AutoPas is configured to only use pairwise interactions.
    */
@@ -1217,14 +1279,12 @@ class AutoPas {
   /**
    * LogicHandler of autopas.
    */
-  std::unique_ptr<autopas::LogicHandler<Particle_T>> _logicHandler;
+  std::unique_ptr<LogicHandler<Particle_T>> _logicHandler;
 
   /**
-   * All AutoTuners used in this instance of AutoPas.
-   * There can be up to one per interaction type.
+   * TuningManager which contains all the AutoTuner objects and coordinates them.
    */
-  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> _autoTuners;
-
+  std::shared_ptr<TuningManager> _tuningManager;
   /**
    * Stores whether the mpi communicator was provided externally or not
    */
@@ -1234,10 +1294,6 @@ class AutoPas {
    * This is useful when multiple instances of AutoPas exist, especially in an MPI context.
    */
   std::string _outputSuffix{""};
-  /**
-   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
-   */
-  size_t _sortingThreshold{8};
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
    * Triggers reserve() and provides a parallel loop with deliberate scheduling.

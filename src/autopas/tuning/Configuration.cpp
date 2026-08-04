@@ -6,6 +6,7 @@
 
 #include "Configuration.h"
 
+#include "autopas/containers/CompatibleCellSizeFactors.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -13,7 +14,8 @@ std::string autopas::Configuration::toString() const {
   return "{Interaction Type: " + interactionType.to_string() + " , Container: " + container.to_string() +
          " , CellSizeFactor: " + std::to_string(cellSizeFactor) + " , Traversal: " + traversal.to_string() +
          " , Load Estimator: " + loadEstimator.to_string() + " , Data Layout: " + dataLayout.to_string() +
-         " , Newton 3: " + newton3.to_string() + " , ThreadCount: " + std::to_string(threadCount) + "}";
+         " , Newton 3: " + newton3.to_string() + " , ThreadCount: " + std::to_string(threadCount) +
+         " , VectorizationPattern: " + vecPattern.to_string() + "}";
 }
 
 std::string autopas::Configuration::getCSVHeader() const { return getCSVRepresentation(true); }
@@ -52,42 +54,58 @@ std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) 
 
 bool autopas::Configuration::hasCompatibleValues() const {
   // Check if container and traversal fit together
-  const auto &allContainerTraversals = compatibleTraversals::allCompatibleTraversals(container, interactionType);
-  if (allContainerTraversals.find(traversal) == allContainerTraversals.end()) {
+  const auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(container, interactionType);
+  if (not allContainerTraversals.contains(traversal)) {
     return false;
   }
 
   // Check if the selected load estimator option is applicable.
   const std::set<LoadEstimatorOption> applicableLoadEstimators =
       loadEstimators::getApplicableLoadEstimators(container, traversal, LoadEstimatorOption::getAllOptions());
-  if (applicableLoadEstimators.find(loadEstimator) == applicableLoadEstimators.end()) {
+  if (not applicableLoadEstimators.contains(loadEstimator)) {
     return false;
   }
 
   // Check if any of the traversal's newton3 or data layout restrictions are violated.
   if (newton3 == Newton3Option::enabled) {
-    const auto newton3DisabledTraversals = compatibleTraversals::allTraversalsSupportingOnlyNewton3Disabled();
-    if (newton3DisabledTraversals.find(traversal) != newton3DisabledTraversals.end()) {
+    const auto newton3DisabledOnlyTraversals = compatibleTraversals::allTraversalsSupportingOnlyNewton3Disabled();
+    if (newton3DisabledOnlyTraversals.contains(traversal)) {
       return false;
     }
   }
   if (newton3 == Newton3Option::disabled) {
-    const auto newton3EnabledTraversals = compatibleTraversals::allTraversalsSupportingOnlyNewton3Enabled();
-    if (newton3EnabledTraversals.find(traversal) != newton3EnabledTraversals.end()) {
+    const auto newton3EnabledOnlyTraversals = compatibleTraversals::allTraversalsSupportingOnlyNewton3Enabled();
+    if (newton3EnabledOnlyTraversals.contains(traversal)) {
       return false;
     }
   }
   if (dataLayout == DataLayoutOption::aos) {
-    const auto soaTraversals = compatibleTraversals::allTraversalsSupportingOnlySoA();
-    if (soaTraversals.find(traversal) != soaTraversals.end()) {
+    const auto soaOnlyTraversals = compatibleTraversals::allTraversalsSupportingOnlySoA();
+    if (soaOnlyTraversals.contains(traversal)) {
       return false;
     }
   }
   if (dataLayout == DataLayoutOption::soa) {
-    const auto soaTraversals = compatibleTraversals::allTraversalsSupportingOnlyAoS();
-    if (soaTraversals.find(traversal) != soaTraversals.end()) {
+    const auto aosOnlyTraversals = compatibleTraversals::allTraversalsSupportingOnlyAoS();
+    if (aosOnlyTraversals.contains(traversal)) {
       return false;
     }
+  }
+
+  const auto allContainersSupportingSuper1CSF = compatibleCSFs::allContainersSupportingSuper1CSF();
+  if ((not allContainersSupportingSuper1CSF.contains(container)) and cellSizeFactor > 1.0) {
+    return false;
+  }
+
+  const auto allContainersSupportingSub1CSF = compatibleCSFs::allContainersSupportingSub1CSF();
+  if ((not allContainersSupportingSub1CSF.contains(container)) and cellSizeFactor < 1.0) {
+    return false;
+  }
+
+  // Check if the container supports the VectorizationPattern
+  const auto allowedVecPatterns = compatibleVectorizationPattern::allCompatibleVectorizationPattern(container);
+  if (allowedVecPatterns.find(vecPattern) == allowedVecPatterns.end()) {
+    return false;
   }
 
   return true;
@@ -100,7 +118,7 @@ std::ostream &autopas::operator<<(std::ostream &os, const autopas::Configuration
 bool autopas::Configuration::equalsDiscreteOptions(const autopas::Configuration &rhs) const {
   return container == rhs.container and traversal == rhs.traversal and loadEstimator == rhs.loadEstimator and
          dataLayout == rhs.dataLayout and newton3 == rhs.newton3 and interactionType == rhs.interactionType and
-         threadCount == rhs.threadCount;
+         threadCount == rhs.threadCount and vecPattern == rhs.vecPattern;
 }
 
 bool autopas::Configuration::equalsContinuousOptions(const autopas::Configuration &rhs, double epsilon) const {
@@ -117,9 +135,9 @@ bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Confi
 
 bool autopas::operator<(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
   return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3,
-                  lhs.interactionType, lhs.threadCount) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal,
-                                                                   rhs.loadEstimator, rhs.dataLayout, rhs.newton3,
-                                                                   rhs.interactionType, rhs.threadCount);
+                  lhs.interactionType, lhs.threadCount, lhs.vecPattern) <
+         std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator, rhs.dataLayout, rhs.newton3,
+                  rhs.interactionType, rhs.threadCount, rhs.vecPattern);
 }
 
 std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &configuration) {
@@ -140,5 +158,7 @@ std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &conf
   in >> configuration.newton3;
   in.ignore(max, ':');
   in >> configuration.threadCount;
+  in.ignore(max, ':');
+  in >> configuration.vecPattern;
   return in;
 }

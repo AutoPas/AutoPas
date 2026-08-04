@@ -10,11 +10,13 @@
 
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/CompatibleVectorizationPattern.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -33,21 +35,24 @@ class Configuration {
    * @param _newton3
    * @param _cellSizeFactor
    * @param _interactionType
-   * @param _threadCount (optional, for energy tuning, defaults to maximum)
+   * @param _threadCount (optional, for energy tuning, defaults to maximum number of threads)
+   * @param _vecPattern
    *
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
-                          int _threadCount, InteractionTypeOption _interactionType)
+                          InteractionTypeOption _interactionType, int _threadCount = 0,
+                          VectorizationPatternOption _vecPattern = VectorizationPatternOption::p1xVec)
       : container(_container),
         traversal(_traversal),
         loadEstimator(_loadEstimator),
         dataLayout(_dataLayout),
         newton3(_newton3),
         cellSizeFactor(_cellSizeFactor),
+        interactionType(_interactionType),
         threadCount(_threadCount),
-        interactionType(_interactionType) {}
+        vecPattern(_vecPattern) {}
 
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
@@ -60,7 +65,7 @@ class Configuration {
         dataLayout(),
         newton3(),
         cellSizeFactor(-1.),
-        threadCount(1),
+        threadCount(-1),
         interactionType() {}
 
   /**
@@ -70,15 +75,27 @@ class Configuration {
   [[nodiscard]] std::string toString() const;
 
   /**
-   * Returns a short string representation of the configuration object, suitable for tabular output.
+   * Returns a short string representation of the configuration object, suitable for tabular output or test name.
    * @param fixedLength See Option::to_string().
-   * @return A short string representation.
+   * @param forParameterizedTestName if true, creates a string representation that is safe for use as a test name.
+   * @return Short string representation.
    */
-  [[nodiscard]] std::string toShortString(bool fixedLength = true) const {
-    return "{" + interactionType.to_string(interactionType) + " , " + container.to_string(fixedLength) + " , " +
-           std::to_string(cellSizeFactor) + " , " + traversal.to_string(fixedLength) + " , " +
-           loadEstimator.to_string(fixedLength) + " , " + dataLayout.to_string(fixedLength) + " , " +
-           newton3.to_string(fixedLength) + ", " + std::to_string(threadCount) + "}";
+  [[nodiscard]] std::string toShortString(bool fixedLength = true, bool forParameterizedTestName = false) const {
+    const std::string delimiter = forParameterizedTestName ? "_" : " , ";
+    auto result = (forParameterizedTestName ? "" : "{") + interactionType.to_string() + delimiter +
+                  container.to_string(fixedLength) + delimiter + std::to_string(cellSizeFactor) + delimiter +
+                  traversal.to_string(fixedLength) + delimiter + loadEstimator.to_string(fixedLength) + delimiter +
+                  dataLayout.to_string(fixedLength) + delimiter + newton3.to_string(fixedLength) + delimiter +
+                  std::to_string(threadCount) + delimiter + vecPattern.to_string(fixedLength) +
+                  (forParameterizedTestName ? "" : "}");
+
+    // For parameterized test names, no punctuation is allowed except "_"
+    if (forParameterizedTestName) {
+      std::ranges::replace(result, '.', '_');
+      std::ranges::replace(result, '-', '_');
+    }
+
+    return result;
   }
 
   /**
@@ -131,6 +148,10 @@ class Configuration {
    */
   TraversalOption traversal;
   /**
+   * Vectorization Pattern option
+   */
+  VectorizationPatternOption vecPattern;
+  /**
    * Load Estimator option.
    */
   LoadEstimatorOption loadEstimator;
@@ -147,7 +168,7 @@ class Configuration {
    */
   double cellSizeFactor;
   /**
-   * Preferred OpenMP thread count.
+   * Tuned OpenMP thread count.
    * (Must be between 1 and the number of hardware threads.)
    */
   int threadCount;

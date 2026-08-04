@@ -48,6 +48,7 @@ class BayesianSearch final : public TuningStrategyInterface {
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
    * @param allowedThreadCounts
+   * @param allowedVecPatternOptions
    * @param predAcqFunction acquisition function used for prediction while tuning.
    * @param predNumLHSamples number of samples used for prediction while tuning.
    * @param maxEvidence stop tuning after given number of evidence provided.
@@ -62,6 +63,9 @@ class BayesianSearch final : public TuningStrategyInterface {
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
       const NumberSet<int> &allowedThreadCounts = NumberSetFinite<int>({autopas_get_max_threads()}),
+
+      const std::set<VectorizationPatternOption> &allowedVecPatternOptions =
+          VectorizationPatternOption::getAllOptions(),
       size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()());
@@ -100,6 +104,7 @@ class BayesianSearch final : public TuningStrategyInterface {
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
   std::vector<DataLayoutOption> _dataLayoutOptions;
+  std::vector<VectorizationPatternOption> _vecPatternOptions;
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
   std::unique_ptr<NumberSet<int>> _threadCounts;

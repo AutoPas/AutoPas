@@ -56,7 +56,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.dataLayoutOptions,
       config.dataLayoutOptions3B,
       config.deltaT,
-      config.sortingThreshold,
+      config.aosSortingThreshold,
+      config.soaSortingThreshold,
       config.distributionMean,
       config.distributionStdDev,
       config.dontCreateEndConfig,
@@ -66,6 +67,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.energySensorOption,
       config.threadCounts,
       config.functorOption,
+      config.vecPatternOptions,
       config.functorOption3B,
       config.generatorOption,
       config.globalForce,
@@ -227,11 +229,20 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.sortingThreshold)::getoptChar: {
+      case decltype(config.aosSortingThreshold)::getoptChar: {
         try {
-          config.sortingThreshold.value = stoul(strArg);
+          config.aosSortingThreshold.value = stoul(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing value for sorting-threshold: " << optarg << endl;
+          cerr << "Error parsing value for aos-sorting-threshold: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.soaSortingThreshold)::getoptChar: {
+        try {
+          config.soaSortingThreshold.value = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing value for soa-sorting-threshold: " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -302,6 +313,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("sve") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
+        } else if (strArg.find("hwy") != string::npos or strArg.find("highway")) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
         } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
@@ -322,6 +335,14 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         config.addInteractionType(autopas::InteractionTypeOption::triwise);
+        break;
+      }
+      case decltype(config.vecPatternOptions)::getoptChar: {
+        config.vecPatternOptions.value = autopas::VectorizationPatternOption::parseOptions(strArg);
+        if (config.vecPatternOptions.value.empty()) {
+          cerr << "Unknown Pattern: " << strArg << endl;
+          displayHelp = true;
+        }
         break;
       }
       case decltype(config.generatorOption)::getoptChar: {

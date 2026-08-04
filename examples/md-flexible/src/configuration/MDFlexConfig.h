@@ -23,6 +23,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -205,7 +206,7 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_HWY };
 
   /**
    * Choice of the Triwise functor
@@ -289,6 +290,12 @@ class MDFlexConfig {
       autopas::Newton3Option::getMostOptions(), "newton3-3b", true,
       "List of newton3 options to use for the triwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
+  /**
+   * vectorizationPattern
+   */
+  MDFlexOption<std::set<autopas::VectorizationPatternOption>, __LINE__> vecPatternOptions{
+      autopas::VectorizationPatternOption::getMostOptions(), "vectorization-pattern", true,
+      "Vectorization Pattern for HWY Functor."};
   /**
    * cellSizeFactors
    */
@@ -522,7 +529,7 @@ class MDFlexConfig {
   MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
                                                       FunctorOption::none, "functor", true,
                                                       "Pairwise force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
+                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-highway)"};
   /**
    * functorOption3B
    */
@@ -573,16 +580,28 @@ class MDFlexConfig {
   MDFlexOption<bool, __LINE__> pauseSimulationDuringTuning{false, "pause-simulation-during-tuning", false,
                                                            "Pauses the update of the simulation during tuning phases."};
   /**
-   * sortingThreshold
+   * aosSortingThreshold
    * This value is used in traversal that use the CellFunctor. If the sum of the number of particles in two cells is
    * greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid unnecessary
    * distance checks.
+   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
-  MDFlexOption<size_t, __LINE__> sortingThreshold{
-      8, "sorting-threshold", true,
+  MDFlexOption<size_t, __LINE__> aosSortingThreshold{
+      8, "aos-sorting-threshold", true,
       "Threshold for traversals that use the CellFunctor to start sorting. If the sum of the number of particles in "
       "two cells is greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid "
       "unnecessary distance checks."};
+  /**
+   * soaSortingThreshold
+   * If the sum of the SoA buffer sizes of two cells is greater or equal to this value, the SoA functor pair path
+   * sorts particles by their projection onto the cell-pair direction vector before computing interactions.
+   * Default comes from the LJFunctorHWY Benchmarks.
+   */
+  MDFlexOption<size_t, __LINE__> soaSortingThreshold{
+      50, "soa-sorting-threshold", true,
+      "Threshold for the SoA functor pair path to start sorting. If the sum of the SoA buffer sizes of two cells is "
+      "greater or equal to that value, particles are sorted by their projection onto the cell-pair direction vector "
+      "before computing interactions."};
 
   // Options for additional Object Generation on command line
   /**

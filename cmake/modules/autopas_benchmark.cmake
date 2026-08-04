@@ -1,0 +1,36 @@
+message(STATUS "google benchmark - using bundled version")
+find_package(Threads REQUIRED)
+
+include(FetchContent)
+
+FetchContent_Declare(
+        autopas_benchmark
+        URL ${AUTOPAS_SOURCE_DIR}/libs/benchmark-1.9.4.zip
+        URL_HASH MD5=c7e071d28799fc29f003b68b7d6baada
+)
+
+# Disable benchmark's own testing, googletest dependency, and install rules.
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_INSTALL_DOCS OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF CACHE BOOL "" FORCE)
+
+mark_as_advanced(
+        BENCHMARK_ENABLE_TESTING
+        BENCHMARK_ENABLE_GTEST_TESTS
+        BENCHMARK_ENABLE_INSTALL
+        BENCHMARK_INSTALL_DOCS
+        BENCHMARK_DOWNLOAD_DEPENDENCIES
+        BENCHMARK_ENABLE_ASSEMBLY_TESTS
+        BENCHMARK_ENABLE_DOXYGEN
+        BENCHMARK_ENABLE_EXCEPTIONS
+        BENCHMARK_ENABLE_LIBPFM
+        BENCHMARK_ENABLE_LTO
+        BENCHMARK_ENABLE_WERROR
+        BENCHMARK_FORCE_WERROR
+        BENCHMARK_USE_BUNDLED_GTEST
+        BENCHMARK_USE_LIBCXX
+)
+
+FetchContent_MakeAvailable(autopas_benchmark)

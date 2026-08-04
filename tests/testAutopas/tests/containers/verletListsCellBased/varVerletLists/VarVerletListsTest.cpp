@@ -94,7 +94,7 @@ TEST_F(VarVerletListsTest, testVerletListBuild) {
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
   autopas::VVLAsBuildTraversal<FPCell, ParticleFP64, MPairwiseFunctor> dummyTraversal(
-      &emptyFunctor, autopas::DataLayoutOption::aos, true);
+      emptyFunctor, autopas::DataLayoutOption::aos, true);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
   verletLists.computeInteractions(&dummyTraversal);
@@ -123,7 +123,7 @@ TEST_F(VarVerletListsTest, testVerletList) {
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
   autopas::VVLAsBuildTraversal<FPCell, ParticleFP64, MPairwiseFunctor> dummyTraversal(
-      &mockFunctor, autopas::DataLayoutOption::aos, true);
+      mockFunctor, autopas::DataLayoutOption::aos, true);
   verletLists.rebuildNeighborLists(&dummyTraversal);
   verletLists.computeInteractions(&dummyTraversal);
 
@@ -151,7 +151,7 @@ TEST_F(VarVerletListsTest, testVerletListInSkin) {
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, true));
 
   autopas::VVLAsBuildTraversal<FPCell, ParticleFP64, MPairwiseFunctor> dummyTraversal(
-      &mockFunctor, autopas::DataLayoutOption::aos, true);
+      mockFunctor, autopas::DataLayoutOption::aos, true);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
   verletLists.computeInteractions(&dummyTraversal);
@@ -179,7 +179,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildTwice) {
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
   autopas::VVLAsBuildTraversal<FPCell, ParticleFP64, MPairwiseFunctor> dummyTraversal(
-      &emptyFunctor, autopas::DataLayoutOption::aos, true);
+      emptyFunctor, autopas::DataLayoutOption::aos, true);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
   verletLists.computeInteractions(&dummyTraversal);
@@ -213,7 +213,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildFarAway) {
   MockPairwiseFunctor<ParticleFP64> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
   autopas::VVLAsBuildTraversal<FPCell, ParticleFP64, MPairwiseFunctor> dummyTraversal(
-      &emptyFunctor, autopas::DataLayoutOption::aos, true);
+      emptyFunctor, autopas::DataLayoutOption::aos, true);
   verletLists.rebuildNeighborLists(&dummyTraversal);
   verletLists.computeInteractions(&dummyTraversal);
 
@@ -240,7 +240,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildHalo) {
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, true)).Times(AtLeast(1));
 
   autopas::VVLAsBuildTraversal<FPCell, ParticleFP64, MPairwiseFunctor> dummyTraversal(
-      &emptyFunctor, autopas::DataLayoutOption::aos, true);
+      emptyFunctor, autopas::DataLayoutOption::aos, true);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
   verletLists.computeInteractions(&dummyTraversal);

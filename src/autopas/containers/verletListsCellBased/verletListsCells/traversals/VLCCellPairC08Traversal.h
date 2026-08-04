@@ -33,7 +33,7 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLCCellPairC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit VLCCellPairC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                                    double interactionLength, const std::array<double, 3> &cellLength,
                                    DataLayoutOption dataLayout, bool useNewton3)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
@@ -43,20 +43,26 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
 
   void traverseParticles() override;
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (this->_dataLayout == DataLayoutOption::aos or this->_dataLayout == DataLayoutOption::soa);
-  }
+  /**
+   * PVL C08 is always applicable to the domain.
+   * @return
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlp_c08; }
 
   /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
-  void setSortingThreshold(size_t sortingThreshold) override {}
+  void setAoSSortingThreshold(size_t aosSortingThreshold) override {}
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold) override {}
 
  private:
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
   VLCCellPairC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
   /**
    * Structure of arrays to be used if the data layout is SoA.

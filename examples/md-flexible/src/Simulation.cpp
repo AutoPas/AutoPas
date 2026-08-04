@@ -28,6 +28,9 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeHWY *);
+#endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -37,6 +40,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 
 #include "ParticleCommunicator.h"
 #include "Thermostat.h"
+#include "TimeDiscretization.h"
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
@@ -122,12 +126,17 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   if (_configuration.getInteractionTypes().empty()) {
     std::string functorName{};
     std::tie(_configuration.functorOption.value, functorName) =
-#if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+        std::make_pair(MDFlexConfig::FunctorOption::lj12_6_HWY, "Lennard-Jones HWY Functor.");
+#elif defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6_AVX, "Lennard-Jones AVX Functor.");
 #elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6_SVE, "Lennard-Jones SVE Functor.");
-#else
+#elif defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
         std::make_pair(MDFlexConfig::FunctorOption::lj12_6, "Lennard-Jones AutoVec Functor.");
+#else
+        std::make_pair(MDFlexConfig::FunctorOption::none, "");
+    std::cerr << "No functor specified and no valid fall-back LJ functor available!" << std::endl;
 #endif
     _configuration.addInteractionType(autopas::InteractionTypeOption::pairwise);
     std::cout << "WARNING: No functor was specified. Defaulting to " << functorName << std::endl;
@@ -142,6 +151,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                                               autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
                                           autopas::InteractionTypeOption::pairwise);
+  _autoPasContainer->setAllowedVecPatterns(_configuration.vecPatternOptions.value,
+                                           autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
   // Triwise specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
@@ -178,7 +189,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setDeltaT(_configuration.deltaT.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
-  _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
+  _autoPasContainer->setAoSSortingThreshold(_configuration.aosSortingThreshold.value);
+  _autoPasContainer->setSoASortingThreshold(_configuration.soaSortingThreshold.value);
   _autoPasContainer->setOutputSuffix(outputSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 
@@ -363,7 +375,8 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
                       _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
-                      _configuration.threadCounts.value.get(), autopas::InteractionTypeOption::pairwise)
+                      _configuration.threadCounts.value.get(), _configuration.vecPatternOptions.value,
+                      autopas::InteractionTypeOption::pairwise)
                       .size();
 
         const size_t searchSpaceSizeTriwise =
@@ -373,7 +386,8 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                      _configuration.threadCounts.value.get(), autopas::InteractionTypeOption::triwise)
+                      _configuration.threadCounts.value.get(), _configuration.vecPatternOptions.value,
+                      autopas::InteractionTypeOption::triwise)
                       .size();
 
         return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
@@ -567,7 +581,7 @@ bool Simulation::calculateTriwiseForces() {
 }
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
-  AUTOPAS_OPENMP(parallel shared(_autoPasContainer) num_threads(autopas::autopas_get_preferred_num_threads()))
+  AUTOPAS_OPENMP(parallel shared(_autoPasContainer) num_threads(autopas::autopas_get_tuned_num_threads()))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
   }
@@ -861,6 +875,15 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::lj12_6_HWY: {
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+      return f(LJFunctorTypeHWY{cutoff, std::ref(particlePropertiesLibrary)});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor HWY. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_HWY=ON`.");
+#endif
+    }
     default: {
       throw std::runtime_error("Unknown pairwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));
@@ -874,12 +897,12 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption3B.value) {
     case MDFlexConfig::FunctorOption3B::at: {
-#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
+#if defined(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
       return f(ATMFunctor{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for AxilrodTellerMuto Functor. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
+          "-DMD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC=ON`.");
 #endif
     }
     default: {

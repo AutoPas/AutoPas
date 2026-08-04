@@ -11,7 +11,7 @@ tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
-functor                          :  Lennard-Jones AVX
+functor                          :  lj-hwy
 newton3                          :  [disabled, enabled]
 cutoff                           :  3
 box-min                          :  [0, 0, 0]

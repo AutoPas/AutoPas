@@ -10,6 +10,7 @@
 #include <type_traits>
 
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
 #include "autopas/utils/logging/FLOPLogger.h"
@@ -97,6 +98,20 @@ class Functor {
   }
 
   /**
+   * Whether this functor supports the SortedSoAView optimization path (SoAFunctorPairSorted).
+   * Derived functors that set this to true must also:
+   *   1. Implement getNeededAttr() and getComputedAttr().
+   *   2. Override SoAFunctorPairSorted() — the default throws.
+   *   3. Only list numeric (arithmetic) types in getComputedAttr(), because SortedSoAView scatters them
+   *      back to the source SoA via `+=`. Non-numeric attributes cannot be accumulated this way.
+   *   4. Ensure that the semantics of every computed attribute are additive: the functor accumulates into
+   *      zero-initialized buffers, and SortedSoAView adds the results back with `+=`. Attributes whose
+   *      correct update requires assignment (e.g. `=`) rather than accumulation must not appear in
+   *      getComputedAttr().
+   */
+  static constexpr bool supportsSoASorting = false;
+
+  /**
    * Copies the AoS data of the given cell in the given soa.
    *
    * @param cell Cell from where the data is loaded.
@@ -149,6 +164,14 @@ class Functor {
   virtual bool allowsNonNewton3() = 0;
 
   /**
+   * Specifies whether the functor is capable of using the specified Vectorization Pattern in the SoA functor.
+   *
+   * @param vecPattern
+   * @return whether the functor is capable of using the specified Vectorization Pattern
+   */
+  virtual bool isVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) = 0;
+
+  /**
    * Specifies whether the functor should be considered for the auto-tuning process.
    * @return true if and only if this functor is relevant for auto-tuning.
    */
@@ -166,6 +189,12 @@ class Functor {
    * @return
    */
   [[nodiscard]] double getCutoff() const { return _cutoff; }
+
+  /**
+   * Setter for the vectorization pattern to be used
+   * @param vecPattern
+   */
+  virtual void setVecPattern(const VectorizationPatternOption::Value vecPattern) {}
 
   /**
    * Get the number of FLOPs. Implementation required if FLOPLogger used.

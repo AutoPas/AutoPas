@@ -33,4 +33,6 @@ class AutoPasConfigurationCommunicatorTest : public AutoPasTestBase {
   const std::set<autopas::TraversalOption> pairwiseTraversalOptions =
       autopas::TraversalOption::getMostPairwiseOptions();
   const std::set<autopas::TraversalOption> triwiseTraversalOptions = autopas::TraversalOption::getMostTriwiseOptions();
+  const std::set<autopas::VectorizationPatternOption> vecPatternOptions =
+      autopas::VectorizationPatternOption::getMostOptions();
 };

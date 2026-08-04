@@ -30,7 +30,7 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
   // kinetic energy times 2
   double kineticEnergyMul2 = 0;
-  AUTOPAS_OPENMP(parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary) num_threads(autopas::autopas_get_preferred_num_threads()))
+  AUTOPAS_OPENMP(parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary) num_threads(autopas::autopas_get_tuned_num_threads()))
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     const auto vel = iter->getV();
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -94,7 +94,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     numParticleMap[typeID] = 0ul;
   }
 
-  AUTOPAS_OPENMP(parallel num_threads(autopas::autopas_get_preferred_num_threads())) {
+  AUTOPAS_OPENMP(parallel num_threads(autopas::autopas_get_tuned_num_threads())) {
     // create aggregators for each thread
     std::map<size_t, double> kineticEnergyMul2MapThread;
     std::map<size_t, size_t> numParticleMapThread;
@@ -199,7 +199,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
   }
 
   AUTOPAS_OPENMP(parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)
-                     num_threads(autopas::autopas_get_preferred_num_threads())) {
+                     num_threads(autopas::autopas_get_tuned_num_threads())) {
     // we use a constant seed for repeatability.
     // we need one random engine and distribution per thread
     std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
@@ -262,7 +262,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
 
   // Scale velocities (and angular velocities) with the scaling map
   AUTOPAS_OPENMP(parallel default(none) shared(autopas, scalingMap)
-                     num_threads(autopas::autopas_get_preferred_num_threads()))
+                     num_threads(autopas::autopas_get_tuned_num_threads()))
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     iter->setV(iter->getV() * scalingMap[iter->getTypeId()]);
 #if MD_FLEXIBLE_MODE == MULTISITE

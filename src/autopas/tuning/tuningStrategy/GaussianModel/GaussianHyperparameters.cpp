@@ -55,6 +55,6 @@ void autopas::GaussianHyperparameters::precalculate(double sigma, const std::vec
 
   if (std::isnan(score)) {
     // error score calculation failed
-    utils::ExceptionHandler::exception("GaussianProcess: invalid score ", score);
+    utils::ExceptionHandler::exception("GaussianProcess: invalid score {}", score);
   }
 }

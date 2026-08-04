@@ -23,7 +23,7 @@ class FeatureVectorEncoder {
   /**
    * Indices of the discrete part of convertToTunable().
    */
-  enum class DiscreteIndices { containerTraversalEstimator, dataLayout, newton3, threadCount, TOTALNUMBER };
+  enum class DiscreteIndices { containerTraversalEstimator, dataLayout, newton3, threadCount, vecPattern, TOTALNUMBER };
 
   /**
    * Indices of the continuous part of convertToTunable().
@@ -67,12 +67,13 @@ class FeatureVectorEncoder {
    * @param cellSizeFactors
    * @param threadCounts
    * @param interactionType
+   * @param vecPatternOptions
    */
   FeatureVectorEncoder(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
       const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
       const NumberSet<double> &cellSizeFactors, const NumberSetFinite<int> &threadCounts,
-      const InteractionTypeOption &interactionType);
+      const InteractionTypeOption &interactionType, const std::vector<VectorizationPatternOption> &vecPatternOptions);
 
   ~FeatureVectorEncoder();
 
@@ -83,11 +84,13 @@ class FeatureVectorEncoder {
    * @param newton3Options
    * @param cellSizeFactors
    * @param threadCounts
+   * @param vecPatternOptions
    */
   void setAllowedOptions(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
       const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-      const NumberSet<double> &cellSizeFactors, const NumberSet<int> &threadCounts);
+      const NumberSet<double> &cellSizeFactors, const NumberSet<int> &threadCounts,
+      const std::vector<VectorizationPatternOption> &vecPatternOptions);
 
   /**
    * Get the dimensions of a one-hot encoded vector.
@@ -212,6 +215,7 @@ class FeatureVectorEncoder {
   std::vector<DataLayoutOption> _dataLayoutOptions{};
   std::vector<Newton3Option> _newton3Options{};
   std::vector<int> _threadCounts{};
+  std::vector<VectorizationPatternOption> _vecPatternOptions{};
   InteractionTypeOption _interactionType;
   /**
    * Number of allowed options of each discrete dimension.

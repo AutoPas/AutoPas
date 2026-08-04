@@ -17,11 +17,14 @@ autopas::BayesianSearch::BayesianSearch(
     const autopas::NumberSet<double> &allowedCellSizeFactors, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
-    const autopas::NumberSet<int> &allowedThreadCounts, size_t maxEvidence,
+    const autopas::NumberSet<int> &allowedThreadCounts,
+    const std::set<VectorizationPatternOption> &allowedVecPatternOptions, size_t maxEvidence,
+
     autopas::AcquisitionFunctionOption predAcqFunction, size_t predNumLHSamples, unsigned long seed)
     : _interactionType(interactionType),
       _containerOptionsSet(allowedContainerOptions),
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
+      _vecPatternOptions(allowedVecPatternOptions.begin(), allowedVecPatternOptions.end()),
       _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
       _cellSizeFactors(allowedCellSizeFactors.clone()),
       _threadCounts(allowedThreadCounts.clone()),
@@ -61,7 +64,7 @@ autopas::BayesianSearch::BayesianSearch(
   }
 
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                             *_cellSizeFactors, *_threadCounts);
+                             *_cellSizeFactors, *_threadCounts, _vecPatternOptions);
   _gaussianProcess.setDimension(_encoder.getOneHotDims());
 }
 
@@ -153,7 +156,8 @@ void autopas::BayesianSearch::rejectConfiguration(const autopas::Configuration &
 void autopas::BayesianSearch::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   // time is converted to seconds, to big values may lead to errors in GaussianProcess. Time is also negated to
   // represent a maximization problem
-  _gaussianProcess.addEvidence(_encoder.oneHotEncode(configuration), -evidence.value * secondsPerMicroseconds, true);
+  _gaussianProcess.addEvidence(_encoder.oneHotEncode(configuration), -evidence.effectiveValue * secondsPerMicroseconds,
+                               true);
 }
 
 bool autopas::BayesianSearch::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,

@@ -26,6 +26,8 @@ namespace mdLib {
 /**
  * A functor to handle Lennard-Jones interactions between two Multisite Molecules.
  *
+ * This functor is applicable with the 1xVectorLength pattern only.
+ *
  * @tparam Particle_T The type of particle.
  * @tparam applyShift Flag for the LJ potential to have a truncated shift.
  * @tparam useMixing Flag for if the functor is to be used with multiple particle types. If set to false, _epsilon and

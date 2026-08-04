@@ -36,7 +36,7 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Functo
    * Constructor of the colored sliced traversal.
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
-  explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
+  explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, Functor &functor,
                                    const double interactionLength, const std::array<double, 3> &cellLength,
                                    DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
       : SlicedBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
@@ -53,10 +53,9 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Functo
   inline void cSlicedTraversal(LoopBody &&loopBody);
 
   /**
-   * Checks if the traversal is applicable to the current state of the domain.
-   * @return true iff the traversal can be applied.
+   * @copydoc TraversalInterface::isApplicableToDomain
    */
-  [[nodiscard]] bool isApplicable() const override {
+  [[nodiscard]] bool isApplicableToDomain() const override {
     return this->_cellsPerDimension[this->_dimsSortedByLength[0]] >= this->_overlapLongestAxis;
   }
 
@@ -88,7 +87,7 @@ void SlicedC02BasedTraversal<ParticleCell, Functor>::cSlicedTraversal(LoopBody &
 
   for (size_t offset = 0; offset < 2; offset++) {
     // although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
-    AUTOPAS_OPENMP(parallel for schedule(dynamic, 1) num_threads(autopas_get_preferred_num_threads()))
+    AUTOPAS_OPENMP(parallel for schedule(dynamic, 1) num_threads(autopas_get_tuned_num_threads()))
     for (size_t slice = offset; slice < numSlices; slice += 2) {
       array<unsigned long, 3> myStartArray{0, 0, 0};
       for (size_t i = 0; i < slice; ++i) {

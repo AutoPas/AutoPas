@@ -42,7 +42,7 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
    * @param useNewton3
    * @param typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
    */
-  explicit VLCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit VLCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                                  double interactionLength, const std::array<double, 3> &cellLength,
                                  DataLayoutOption dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
       : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
@@ -66,18 +66,24 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
     return TraversalOption();
   }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (this->_dataLayout == DataLayoutOption::aos or this->_dataLayout == DataLayoutOption::soa);
-  }
+  /**
+   * VLC Sliced C02 is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
-  void setSortingThreshold(size_t sortingThreshold) override {}
+  void setAoSSortingThreshold(size_t aosSortingThreshold) override {}
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold) override {}
 
  private:
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
 };
 
 template <class ParticleCell, class PairwiseFunctor, class NeighborList>

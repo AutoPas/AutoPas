@@ -43,7 +43,7 @@ class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCe
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit LCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit LCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                                      double interactionLength, const std::array<double, 3> &cellLength,
                                      DataLayoutOption dataLayout, bool useNewton3)
       : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
@@ -56,9 +56,17 @@ class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCe
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_balanced; }
 
   /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
    */
-  void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
+  void setAoSSortingThreshold(size_t aosSortingThreshold) override {
+    _cellHandler.setAoSSortingThreshold(aosSortingThreshold);
+  }
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold) override {
+    _cellHandler.setSoASortingThreshold(soaSortingThreshold);
+  }
 
  private:
   LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;

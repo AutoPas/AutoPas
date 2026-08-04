@@ -45,7 +45,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>
     constexpr auto dataLayout = validationMode ? DataLayoutOption::aos : DataLayoutOption::soa;
     auto traversal = C08TraversalColorChangeNotify<FullParticleCell<Particle_T>,
                                                    internal::AsBuildPairGeneratorFunctor<Particle_T, validationMode>>(
-        _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &generatorFunctor,
+        _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), generatorFunctor,
         _baseLinkedCells->getInteractionLength(), _baseLinkedCells->getCellBlock().getCellLength(), this, dataLayout,
         useNewton3);
     _baseLinkedCells->computeInteractions(&traversal);
@@ -169,8 +169,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>
     for (int color = 0; color < _numColors; color++) {
       unsigned int maxThreads = _aosNeighborList[color].size();
       _soaNeighborList[color].resize(maxThreads);
-      const auto numThreads =
-          std::clamp(static_cast<unsigned int>(autopas_get_preferred_num_threads()), 1u, maxThreads);
+      const auto numThreads = std::clamp(static_cast<unsigned int>(autopas_get_tuned_num_threads()), 1u, maxThreads);
       AUTOPAS_OPENMP(parallel num_threads(numThreads))
       AUTOPAS_OPENMP(for schedule(static))
       for (unsigned int thread = 0; thread < maxThreads; thread++) {
@@ -199,7 +198,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>
    * @return A pointer to the SoA filled. Ownership is *not* passed.
    */
   template <class TFunctor>
-  auto *loadSoA(TFunctor *f) {
+  auto *loadSoA(TFunctor &f) {
     _soa.clear();
 
     // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
@@ -212,9 +211,9 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>
 
     _soa.resizeArrays(offsets.back());
 
-    AUTOPAS_OPENMP(parallel for num_threads(autopas_get_preferred_num_threads()))
+    AUTOPAS_OPENMP(parallel for num_threads(autopas_get_tuned_num_threads()))
     for (size_t i = 0; i < cells.size(); ++i) {
-      f->SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
+      f.SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
     }
 
     return &_soa;
@@ -225,10 +224,10 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle_T>
    * @param f The functor to use for extracting the particles.
    */
   template <class TFunctor>
-  void extractSoA(TFunctor *f) {
+  void extractSoA(TFunctor &f) {
     size_t offset = 0;
     for (auto &cell : _baseLinkedCells->getCells()) {
-      f->SoAExtractor(cell, _soa, offset);
+      f.SoAExtractor(cell, _soa, offset);
       offset += cell.size();
     }
   }

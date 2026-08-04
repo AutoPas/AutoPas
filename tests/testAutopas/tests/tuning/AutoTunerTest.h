@@ -28,7 +28,8 @@ class AutoTunerTest : public AutoPasTestBase {
                                               autopas::DataLayoutOption::aos,
                                               autopas::Newton3Option::enabled,
                                               threadCount,
-                                              autopas::InteractionTypeOption::pairwise};
+                                              autopas::InteractionTypeOption::pairwise,
+                                              autopas::VectorizationPatternOption::p1xVec};
   const autopas::Configuration _confDs_seq_noN3{autopas::ContainerOption::directSum,
                                                 _cellSizeFactor,
                                                 autopas::TraversalOption::ds_sequential,
@@ -36,7 +37,8 @@ class AutoTunerTest : public AutoPasTestBase {
                                                 autopas::DataLayoutOption::aos,
                                                 autopas::Newton3Option::disabled,
                                                 threadCount,
-                                                autopas::InteractionTypeOption::pairwise};
+                                                autopas::InteractionTypeOption::pairwise,
+                                                autopas::VectorizationPatternOption::p1xVec};
   const autopas::Configuration _confLc_c01_noN3{autopas::ContainerOption::linkedCells,
                                                 _cellSizeFactor,
                                                 autopas::TraversalOption::lc_c01,
@@ -44,7 +46,8 @@ class AutoTunerTest : public AutoPasTestBase {
                                                 autopas::DataLayoutOption::aos,
                                                 autopas::Newton3Option::disabled,
                                                 threadCount,
-                                                autopas::InteractionTypeOption::pairwise};
+                                                autopas::InteractionTypeOption::pairwise,
+                                                autopas::VectorizationPatternOption::p1xVec};
   const autopas::Configuration _confLc_c18_noN3{autopas::ContainerOption::linkedCells,
                                                 _cellSizeFactor,
                                                 autopas::TraversalOption::lc_c18,
@@ -52,7 +55,8 @@ class AutoTunerTest : public AutoPasTestBase {
                                                 autopas::DataLayoutOption::aos,
                                                 autopas::Newton3Option::disabled,
                                                 threadCount,
-                                                autopas::InteractionTypeOption::pairwise};
+                                                autopas::InteractionTypeOption::pairwise,
+                                                autopas::VectorizationPatternOption::p1xVec};
   const autopas::Configuration _confLc_c18_N3{autopas::ContainerOption::linkedCells,
                                               _cellSizeFactor,
                                               autopas::TraversalOption::lc_c18,
@@ -60,7 +64,8 @@ class AutoTunerTest : public AutoPasTestBase {
                                               autopas::DataLayoutOption::aos,
                                               autopas::Newton3Option::enabled,
                                               threadCount,
-                                              autopas::InteractionTypeOption::pairwise};
+                                              autopas::InteractionTypeOption::pairwise,
+                                              autopas::VectorizationPatternOption::p1xVec};
   const autopas::Configuration _confLc_c08_N3{autopas::ContainerOption::linkedCells,
                                               _cellSizeFactor,
                                               autopas::TraversalOption::lc_c08,
@@ -68,7 +73,8 @@ class AutoTunerTest : public AutoPasTestBase {
                                               autopas::DataLayoutOption::aos,
                                               autopas::Newton3Option::enabled,
                                               threadCount,
-                                              autopas::InteractionTypeOption::pairwise};
+                                              autopas::InteractionTypeOption::pairwise,
+                                              autopas::VectorizationPatternOption::p1xVec};
   const autopas::Configuration _confLc_c08_noN3{autopas::ContainerOption::linkedCells,
                                                 _cellSizeFactor,
                                                 autopas::TraversalOption::lc_c08,
@@ -76,7 +82,8 @@ class AutoTunerTest : public AutoPasTestBase {
                                                 autopas::DataLayoutOption::aos,
                                                 autopas::Newton3Option::disabled,
                                                 threadCount,
-                                                autopas::InteractionTypeOption::pairwise};
+                                                autopas::InteractionTypeOption::pairwise,
+                                                autopas::VectorizationPatternOption::p1xVec};
   // Triwise configs:
   const autopas::Configuration _confLc_c01_3b_noN3{autopas::ContainerOption::linkedCells,
                                                    _cellSizeFactor,
@@ -85,7 +92,8 @@ class AutoTunerTest : public AutoPasTestBase {
                                                    autopas::DataLayoutOption::aos,
                                                    autopas::Newton3Option::disabled,
                                                    threadCount,
-                                                   autopas::InteractionTypeOption::triwise};
+                                                   autopas::InteractionTypeOption::triwise,
+                                                   autopas::VectorizationPatternOption::p1xVec};
   const autopas::Configuration _confDs_3b_N3{autopas::ContainerOption::directSum,
                                              _cellSizeFactor,
                                              autopas::TraversalOption::ds_sequential,
@@ -93,7 +101,8 @@ class AutoTunerTest : public AutoPasTestBase {
                                              autopas::DataLayoutOption::aos,
                                              autopas::Newton3Option::disabled,
                                              threadCount,
-                                             autopas::InteractionTypeOption::triwise};
+                                             autopas::InteractionTypeOption::triwise,
+                                             autopas::VectorizationPatternOption::p1xVec};
 
   /**
    * Tests that ending a tuning phase with a reject configuration is handled correctly.

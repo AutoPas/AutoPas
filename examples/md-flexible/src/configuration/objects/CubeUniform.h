@@ -7,7 +7,7 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "generators/src/UniformGenerator.h"
 
 /**
  * Class describing an cuboid object filled with uniformly randomly distributed particles.

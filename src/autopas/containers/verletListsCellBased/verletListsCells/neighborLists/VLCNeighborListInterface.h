@@ -65,7 +65,7 @@ class VLCNeighborListInterface {
    * @return loaded structure of arrays
    */
   template <class TFunctor>
-  auto *loadSoA(TFunctor *f) {
+  auto *loadSoA(TFunctor &f) {
     _soa.clear();
 
     // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
@@ -77,9 +77,9 @@ class VLCNeighborListInterface {
         [](const size_t &partialSum, const auto &cell) { return partialSum + cell.size(); }, 0);
     _soa.resizeArrays(offsets.back());
 
-    AUTOPAS_OPENMP(parallel for num_threads(autopas_get_preferred_num_threads()))
+    AUTOPAS_OPENMP(parallel for num_threads(autopas_get_tuned_num_threads()))
     for (size_t i = 0; i < cells.size(); ++i) {
-      f->SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
+      f.SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
     }
 
     return &_soa;
@@ -91,10 +91,10 @@ class VLCNeighborListInterface {
    * @param f Functor that handles the extraction.
    */
   template <class TFunctor>
-  void extractSoA(TFunctor *f) {
+  void extractSoA(TFunctor &f) {
     size_t offset = 0;
     for (auto &cell : _internalLinkedCells->getCells()) {
-      f->SoAExtractor(cell, _soa, offset);
+      f.SoAExtractor(cell, _soa, offset);
       offset += cell.size();
     }
   }

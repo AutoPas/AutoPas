@@ -27,7 +27,7 @@ class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
  private:
   using ParticleType = typename ParticleCell::ParticleType;
 
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
   internal::VCLClusterFunctor<ParticleType, PairwiseFunctor> _clusterFunctor;
 
   void processBaseStep(unsigned long x, unsigned long y) {
@@ -55,7 +55,7 @@ class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VCLSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit VCLSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                                  double interactionLength, const std::array<double, 3> &cellLength, size_t clusterSize,
                                  DataLayoutOption dataLayout, bool useNewton3)
       : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
@@ -87,9 +87,13 @@ class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
   }
 
   /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
-  void setSortingThreshold(size_t sortingThreshold) override {}
+  void setAoSSortingThreshold(size_t aosSortingThreshold) override {}
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold) override {}
 };
 }  // namespace autopas

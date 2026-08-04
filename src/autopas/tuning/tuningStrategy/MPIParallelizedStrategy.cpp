@@ -35,8 +35,8 @@ bool MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &co
   // All ranks should stay in tuning mode equally long so that none settles on an optimum
   // before the other's data is there.
   const auto [myBestConf, myBestEvidence] = evidenceCollection.getLatestOptimalConfiguration();
-  const auto globallyBestConfig =
-      utils::AutoPasConfigurationCommunicator::findGloballyBestConfiguration(_bucket, myBestConf, myBestEvidence.value);
+  const auto globallyBestConfig = utils::AutoPasConfigurationCommunicator::findGloballyBestConfiguration(
+      _bucket, myBestConf, myBestEvidence.effectiveValue);
 
   const auto myQueueSize = static_cast<unsigned int>(configQueue.size());
   unsigned int globallyLongestQueueSize{};
@@ -68,10 +68,15 @@ bool MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &co
 
 Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::set<Configuration> &searchSpace,
                                                                    const InteractionTypeOption &interactionType) {
-  Configuration fallBackConfig{ContainerOption::linkedCells, 1.,
-                               TraversalOption::lc_c08,      LoadEstimatorOption::none,
-                               DataLayoutOption::aos,        Newton3Option::disabled,
-                               autopas_get_max_threads(),    interactionType};
+  Configuration fallBackConfig{ContainerOption::linkedCells,
+                               1.,
+                               TraversalOption::lc_c08,
+                               LoadEstimatorOption::none,
+                               DataLayoutOption::aos,
+                               Newton3Option::disabled,
+                               autopas_get_max_threads(),
+                               interactionType,
+                               VectorizationPatternOption::p1xVec};
 
   if (interactionType == InteractionTypeOption::triwise) {
     fallBackConfig.traversal = TraversalOption::lc_c01;

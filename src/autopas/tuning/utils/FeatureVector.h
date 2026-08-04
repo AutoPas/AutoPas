@@ -47,12 +47,13 @@ class FeatureVector : public Configuration {
    * @param cellSizeFactor
    * @param threadCount
    * @param interactionType
+   * @param vecPattern
    */
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
                 LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3, int threadCount,
-                InteractionTypeOption interactionType)
+                InteractionTypeOption interactionType, VectorizationPatternOption vecPattern)
       : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, threadCount,
-                      interactionType) {}
+                      interactionType, vecPattern) {}
 
   /**
    * Construct from Configuration.

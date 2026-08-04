@@ -12,7 +12,7 @@
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
-#include "autopasTools/generators/GridGenerator.h"
+#include "generators/src/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
@@ -27,6 +27,7 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
   const std::set<autopas::Newton3Option> newton3Options({autopas::Newton3Option::disabled});
   const autopas::NumberSetFinite<double> cellSizeFactors({1});
   const autopas::NumberSetFinite<int> threadCounts(threadCountOptions);
+  const std::set<autopas::VectorizationPatternOption> vecPatternOptions({autopas::VectorizationPatternOption::p1xVec});
   const unsigned int verletRebuildFrequency = 20;
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
@@ -43,17 +44,18 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
-      &threadCounts, autopas::InteractionTypeOption::pairwise);
+      &threadCounts, vecPatternOptions, autopas::InteractionTypeOption::pairwise);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::pairwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
-  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tunerManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
+
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
-  autopas::Configuration currentConfig;
   autopasTools::generators::GridGenerator::fillWithParticles(logicHandler.getContainer(), {boxMax, boxMax, boxMax},
                                                              Molecule());
   const size_t numInsertedMolecules = logicHandler.getContainer().size();
@@ -63,15 +65,13 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
     // Should not have any leaving molecules in this test
     auto dummyMoleculesVec = logicHandler.updateContainer();
     stillTuning = logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-    currentConfig = tunerMap[autopas::InteractionTypeOption::pairwise]->getCurrentConfig();
     if (not stillTuning) iterationsAfterTuning++;
   }
 
   EXPECT_EQ(numInsertedMolecules,
             logicHandler.getContainer().size());  // Should not have any leaving molecules in this test
-  // NOTE: currentConfig.threadCount does not return the actual number of threads when thread count tuning is turned off
-  // Instead, check the actual number of threads to be used as set by the current configuration
-  EXPECT_EQ(expectedSelectedThreadCount, autopas::autopas_get_preferred_num_threads());
+  // Check the actual number of threads to be used as set by the current configuration
+  EXPECT_EQ(expectedSelectedThreadCount, autopas::autopas_get_tuned_num_threads());
 }
 
 /**

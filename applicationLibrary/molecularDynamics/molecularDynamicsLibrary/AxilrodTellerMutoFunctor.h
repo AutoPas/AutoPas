@@ -87,6 +87,10 @@ namespace mdLib {
  * A functor to handle Axilrod-Teller-Muto interactions between three particles (molecules).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
+ *
+ * This functor is applicable with the 1x1xVectorLength pattern only. Due to current limitations of vector patterns
+ * implemented in AutoPas, we use the "1xVectorLength" option as a placeholder for now.
+ *
  * @tparam Particle_T The type of particle.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.

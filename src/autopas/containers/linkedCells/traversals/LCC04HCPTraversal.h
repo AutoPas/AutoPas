@@ -39,7 +39,7 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  LCC04HCPTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  LCC04HCPTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor &pairwiseFunctor,
                     const double interactionLength, const std::array<double, 3> &cellLength,
                     DataLayoutOption dataLayout, bool useNewton3)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
@@ -53,7 +53,7 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04_HCP; }
 
-  [[nodiscard]] bool isApplicable() const override {
+  [[nodiscard]] bool isApplicableToDomain() const override {
     // The cellsize cannot be smaller than the cutoff, if OpenMP is used.
     // Also see: https://github.com/AutoPas/AutoPas/issues/464
     const double minLength = *std::min_element(this->_cellLength.cbegin(), this->_cellLength.cend());
@@ -62,9 +62,17 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
   }
 
   /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
    */
-  void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
+  void setAoSSortingThreshold(size_t aosSortingThreshold) override {
+    _cellHandler.setAoSSortingThreshold(aosSortingThreshold);
+  }
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold) override {
+    _cellHandler.setSoASortingThreshold(soaSortingThreshold);
+  }
 
  private:
   void traverseSingleColor(std::vector<ParticleCell> &cells, int color);
@@ -108,7 +116,7 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::processBasePack6(std::vec
 template <class ParticleCell, class PairwiseFunctor>
 void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
-  AUTOPAS_OPENMP(parallel num_threads(autopas_get_preferred_num_threads())) {
+  AUTOPAS_OPENMP(parallel num_threads(autopas_get_tuned_num_threads())) {
     for (int color = 0; color < 4; ++color) {
       traverseSingleColor(cells, color);
 

@@ -42,14 +42,14 @@ void RuleBasedTuning::receiveLiveInfo(const LiveInfo &info) { _currentLiveInfo =
 
 void RuleBasedTuning::addEvidence(const Configuration &configuration, const Evidence &evidence) {
 #ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
-  _tuningTime += evidence.value;
-  _tuningTimeLifetime += evidence.value;
-  _traversalTimes[configuration] = evidence.value;
+  _tuningTime += evidence.effectiveValue;
+  _tuningTimeLifetime += evidence.effectiveValue;
+  _traversalTimes[configuration] = evidence.effectiveValue;
   if (_verifyModeEnabled) {
     verifyCurrentConfigTime(configuration);
     if (_removedConfigurations.find(configuration) != _removedConfigurations.end()) {
-      _wouldHaveSkippedTuningTime += evidence.value;
-      _wouldHaveSkippedTuningTimeLifetime += evidence.value;
+      _wouldHaveSkippedTuningTime += evidence.effectiveValue;
+      _wouldHaveSkippedTuningTimeLifetime += evidence.effectiveValue;
     }
   }
 #endif

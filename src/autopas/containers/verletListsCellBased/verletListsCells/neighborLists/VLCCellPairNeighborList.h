@@ -193,7 +193,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
     }
 
     // Since there are no loop dependencies merge all for loops and create 10 chunks per thread.
-    const auto numThreads = autopas_get_preferred_num_threads();
+    const auto numThreads = autopas_get_tuned_num_threads();
     AUTOPAS_OPENMP(parallel for collapse(3) schedule(dynamic, std::max(cells.size() / (numThreads * 10), 1ul)) \
       num_threads(numThreads) \
     )
@@ -210,8 +210,6 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
           for (const auto &[offset1, offset2, _] : offsets) {
             const auto cell1Index1D = cellIndexBase + offset1;
             const auto cell2Index1D = cellIndexBase + offset2;
-            auto &cell1List = neighborLists[cell1Index1D];
-            auto &cell2List = neighborLists[cell2Index1D];
 
             // For all traversals ensures the partner cell is not outside the boundary
             const auto cell2Index3D = utils::ThreeDimensionalMapping::oneToThreeD(cell2Index1D, cellsPerDim);
@@ -219,6 +217,9 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
                 cell2Index3D[1] < 0 or cell2Index3D[2] >= cellsPerDim[2] or cell2Index3D[2] < 0) {
               continue;
             }
+
+            auto &cell1List = neighborLists[cell1Index1D];
+            auto &cell2List = neighborLists[cell2Index1D];
 
             // Skip if both cells only contain halos or dummys
             if (not(cells[cell1Index1D].getPossibleParticleOwnerships() == OwnershipState::owned) and

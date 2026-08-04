@@ -7,13 +7,13 @@
 #include "AutoPasAllContainersTest.h"
 
 #include "autopas/AutoPasImpl.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "generators/src/UniformGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
 
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasAllContainersTest,
-                         ::testing::ValuesIn(autopas::ContainerOption::getAllOptions()));
+                         ::testing::ValuesIn(generateAllValidContainerConfigurations()));
 
 /**
  * Fill a container with randomly generated particles, invoke addParticles, then check if the expected amount was added.
@@ -29,8 +29,10 @@ TEST_P(AutoPasAllContainersTest, addParticlesTest) {
   autopas::AutoPas<Molecule> autoPas;
   autoPas.setBoxMin(boxMin);
   autoPas.setBoxMax(boxMax);
-  const auto containerOption = GetParam();
-  autoPas.setAllowedContainers({containerOption});
+  const auto config = GetParam();
+  autoPas.setAllowedContainers({config.container});
+  autoPas.setCellSizeFactor(config.cellSizeFactor);
+  // Arbitrarily allow all valid traversals, so AutoPas can be initialized.
   autoPas.setAllowedTraversals(autopas::TraversalOption::getAllOptions());
   autoPas.setNumSamples(autoPas.getTuningInterval());  // to avoid warnings
   autoPas.init();

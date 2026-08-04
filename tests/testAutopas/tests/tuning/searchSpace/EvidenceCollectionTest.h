@@ -14,17 +14,17 @@ class EvidenceCollectionTest : public AutoPasTestBase {
   static constexpr int _numThreads = 1;
 
  public:
-  static constexpr autopas::Configuration _configurationLC_C01 =
-      autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
-                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise, _numThreads);
-  static constexpr autopas::Configuration _configurationLC_C08 =
-      autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
-                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise, _numThreads);
+  static constexpr autopas::Configuration _configurationLC_C01 = autopas::Configuration(
+      autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
+      autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
+      _numThreads, autopas::VectorizationPatternOption::p1xVec);
+  static constexpr autopas::Configuration _configurationLC_C08 = autopas::Configuration(
+      autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
+      autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
+      _numThreads, autopas::VectorizationPatternOption::p1xVec);
 
-  static constexpr autopas::Configuration _configurationLC_Sliced =
-      autopas::Configuration(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
-                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
-                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise, _numThreads);
+  static constexpr autopas::Configuration _configurationLC_Sliced = autopas::Configuration(
+      autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
+      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled,
+      autopas::InteractionTypeOption::pairwise, _numThreads, autopas::VectorizationPatternOption::p1xVec);
 };
