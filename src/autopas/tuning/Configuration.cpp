@@ -25,7 +25,7 @@ std::string autopas::Configuration::getCSVLine() const { return getCSVRepresenta
 bool autopas::Configuration::hasValidValues() const {
   return container != ContainerOption() and cellSizeFactor != -1 and traversal != TraversalOption() and
          loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option() and
-         interactionType != InteractionTypeOption() and threadCount > 0 and threadCount <= autopas_get_max_threads();
+         interactionType != InteractionTypeOption() and threadCount >= 0 and threadCount <= autopas_get_max_threads();
 }
 
 std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) const {

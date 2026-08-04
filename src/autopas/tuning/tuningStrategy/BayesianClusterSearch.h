@@ -83,7 +83,6 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
       const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
       const NumberSet<int> &allowedThreadCounts = NumberSetFinite<int>({autopas_get_max_threads()}),
-
       const std::set<VectorizationPatternOption> &allowedVecPatternOptions =
           VectorizationPatternOption::getAllOptions(),
       size_t maxEvidence = 10,
