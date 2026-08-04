@@ -108,22 +108,30 @@ TEST(RegressionModelsTest, testSimpleLinearRegressionBoost) {
 
   // numDifferentXConsidered
   EXPECT_EQ(reg.getNumDifferentXConsidered(), 0);
-  EXPECT_EQ(reg.addNewPoint(1, 3), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(reg.addNewPoint(1, 1), RegressionBase::ReturnCode::OK_REG);
   EXPECT_EQ(reg.getNumDifferentXConsidered(), 1);
+  // adding another point with x<=1 would be ignored.
   EXPECT_EQ(reg.addNewPoint(1, 2), RegressionBase::ReturnCode::OK_REG);
   EXPECT_EQ(reg.getNumDifferentXConsidered(), 1);
 
-  EXPECT_EQ(reg.addNewPoint(2, 3), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(reg.addNewPoint(3, 7), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(reg.addNewPoint(2, 2), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(reg.addNewPoint(3, 3), RegressionBase::ReturnCode::OK_REG);
+  EXPECT_EQ(reg.getNumDifferentXConsidered(), 3);
 
-  // Four points are considered even though _maxN = 3 because duplicate x values are not removed.
-  EXPECT_EQ(reg.addNewPoint(6, 21), RegressionBase::ReturnCode::OK_REG);  // 4*x - 3.75
+  result = reg.predict(5);
+  EXPECT_TRUE(result._isOk);
+  EXPECT_NEAR(result._value, 5, 1e-6);  // y = x
+
+  // should replace (1,1)
+  EXPECT_EQ(reg.addNewPoint(4, 5), RegressionBase::ReturnCode::OK_REG);
+  // should replace (2,2)
+  EXPECT_EQ(reg.addNewPoint(6, 9), RegressionBase::ReturnCode::OK_REG);
 
   EXPECT_EQ(reg.getNumDifferentXConsidered(), 3);
 
   result = reg.predict(7);
   EXPECT_TRUE(result._isOk);
-  EXPECT_NEAR(result._value, 24.25, 1e-6);  // 4*x - 3.75 = (x=7) 24.25
+  EXPECT_NEAR(result._value, 11, 1e-6);  // y = 2x
 }
 
 TEST(RegressionModelsTest, testRebuildDecisionContext) {

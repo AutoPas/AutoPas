@@ -8,6 +8,8 @@
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
 #include <boost/math/statistics/linear_regression.hpp>
+#include <iostream>
+#include <ostream>
 #include <vector>
 
 #include "autopas/utils/Math.h"
@@ -236,6 +238,7 @@ class SimpleLinearRegressionBoost : public RegressionBase {
     RegressionBase::reset();
     _numDifferentXConsidered = 0;
     _currentMaxX = LONG_MIN;
+    current_index = 0;
     _x.clear();
     _y.clear();
   }
@@ -247,24 +250,24 @@ class SimpleLinearRegressionBoost : public RegressionBase {
    * (smallest) x/y pair is removed. The accumulated sumY is not treated as a ring buffer.
    */
   ReturnCode addNewPoint(const long x, const long y) {
+    // Ensures that added points are monotonically increasing in x, which should be the case anyway.
     if (_currentMaxX < x) {
       _currentMaxX = x;
-      if (this->reachedMaxPoints()) {
-        /*
-         * Ideally, all entries with the same x value should be removed here. However, this case is intentionally
-         * ignored, because of performance and code volume, which means there may be more than _maxN values considered
-         * for prediction.
-         */
-        _x.erase(_x.begin());
-        _y.erase(_y.begin());
-      } else {
+      /*
+       * Ideally, all entries with the same x value should be removed here. However, this case is intentionally
+       * ignored, because of performance and code volume, which means there may be more than _maxN values considered
+       * for prediction.
+       */
+      if (not this->reachedMaxPoints()) {
+        _x.push_back(x);
+        _y.push_back(y);
         _numDifferentXConsidered++;
+      } else {
+        _x[current_index] = x;
+        _y[current_index] = y;
+        current_index = (current_index + 1) % _maxN;
       }
     }
-
-    _x.push_back(x);
-    _y.push_back(y);
-
     return RegressionBase::addNewPoint(y);
   }
 
@@ -302,6 +305,8 @@ class SimpleLinearRegressionBoost : public RegressionBase {
 
   /// Vectors storing the currently considered x values and their corresponding y values for prediction.
   std::vector<long> _x, _y;
+
+  size_t current_index = 0;
 };
 
 /**
