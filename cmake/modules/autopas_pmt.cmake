@@ -25,27 +25,18 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
 
     message(STATUS "pmt - using bundled version (commit 7a56fa3a) and patch")
 
-    include(FetchContent)
-
-    FetchContent_Declare(
-            pmt
-            URL
-            # pmt-master.zip contains commit 7a56fa3a (master as on Dec 19, 2024) with patch applied
-            # The patch applies the following changes:
-            # removal of 100 ms minimum time interval for energy samples, and
-            # removing asynchronous energy measurement
-            # better error handling
-            # the patch can found under AutoPas/libs/patches/patch-file-pmt-for-autopas.patch
-            ${AUTOPAS_SOURCE_DIR}/libs/pmt-master.zip
-            URL_HASH MD5=3c60096bf151e11cde6efc6e5ede1195
-    )
+    # The AutoPas-specific patch applied to this PMT subtree does the following:
+    # - Removes the 100 ms minimum time interval for energy samples
+    # - Removes asynchronous energy measurement threads
+    # - Implements strict error handling (aborts on RAPL permission denied)
+    # The pristine patch file is kept at AutoPas/libs/patches/patch-file-pmt-for-autopas.patch for reference during future upgrades.
 
     # PMT's CMakeLists FORCEs CMAKE_BUILD_TYPE=Release into the shared cache when it is unset. When
     # AutoPas is a subproject, undo that afterwards so the parent project keeps ownership of the build
     # type (a standalone build sets its own default earlier, so PMT finds it already set and leaves it).
     set(autopasPmtSavedBuildType "${CMAKE_BUILD_TYPE}")
 
-    FetchContent_MakeAvailable(pmt)
+    add_subdirectory(${AUTOPAS_SOURCE_DIR}/libs/pmt ${CMAKE_CURRENT_BINARY_DIR}/pmt EXCLUDE_FROM_ALL)
 
     if (NOT AUTOPAS_STANDALONE_BUILD AND NOT autopasPmtSavedBuildType)
         unset(CMAKE_BUILD_TYPE CACHE)
@@ -66,12 +57,7 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
             PMT_BUILD_BINARY
     )
 
-    if (IS_DIRECTORY "${pmt_SOURCE_DIR}")
-        set_property(DIRECTORY ${pmt_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
-    endif()
-
     target_compile_options(pmt PUBLIC -w -DCMAKE_INSTALL_PREFIX="./build")
-
-    target_include_directories(pmt SYSTEM PUBLIC "${pmt_SOURCE_DIR}")
+    target_include_directories(pmt SYSTEM PUBLIC "${AUTOPAS_SOURCE_DIR}/libs/pmt")
 
 endif ()

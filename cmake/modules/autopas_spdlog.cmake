@@ -1,10 +1,18 @@
 # Gets spdlog by (in order of priority): reusing a target a parent project provides, an installed
-# version via find_package, or the bundled 1.17.0 copy. Set spdlog_ForceBundled=ON to force bundled.
+# version via find_package, or the bundled 1.17.0 copy in libs/spdlog. Set spdlog_ForceBundled=ON to force bundled.
 option(spdlog_ForceBundled "Ignore any provided/installed spdlog and always use the bundled copy." OFF)
 mark_as_advanced(spdlog_ForceBundled)
 
+set(AUTOPAS_MIN_LOG_LVL
+        "INFO"
+        CACHE
+        STRING "Choose the finest log level to be compiled."
+)
+set_property(CACHE AUTOPAS_MIN_LOG_LVL PROPERTY STRINGS "TRACE;DEBUG;INFO;WARN;ERROR;CRITICAL;OFF")
+
 if (NOT spdlog_ForceBundled)
-    # Path 1: reuse a spdlog target a parent project already defined.
+    # Path 1: reuse a spdlog target a parent project already defined. AUTOPAS_MIN_LOG_LVL is not applied
+    # here, as the target belongs to the parent project, which decides how its spdlog is compiled.
     if (TARGET spdlog::spdlog OR TARGET spdlog)
         message(STATUS "AutoPas: Reusing spdlog provided by parent project")
         autopas_alias_dependency(spdlog spdlog::spdlog)
@@ -18,6 +26,8 @@ if (NOT spdlog_ForceBundled)
         autopas_promote_global(spdlog)
         autopas_promote_global(spdlog::spdlog)
         autopas_alias_dependency(spdlog spdlog::spdlog)
+        # System targets can only take INTERFACE options, and are already treated as SYSTEM headers by CMake
+        target_compile_options(spdlog INTERFACE -DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${AUTOPAS_MIN_LOG_LVL})
         return()
     endif ()
     message(STATUS "spdlog - no system version >= ${expectedVersion} found; using bundled copy")
@@ -26,20 +36,6 @@ endif ()
 # Path 3 + fallback: bundled version.
 message(STATUS "spdlog - using bundled version 1.17.0 (commit 79524dd)")
 
-# Enable FetchContent CMake module
-include(FetchContent)
-
-# Build spdlog and make the cmake targets available
-FetchContent_Declare(
-    spdlog
-    URL
-        # spdlog master:
-        # https://github.com/gabime/spdlog/archive/refs/tags/v1.17.0.zip
-        # spdlog commit 79524dd (04.01.2026):
-        ${AUTOPAS_SOURCE_DIR}/libs/spdlog-1.17.0.zip
-    URL_HASH MD5=d38d278383b768847ccc4616879df42f
-)
-
 # Disable stuff we don't need (Sets values to OFF and hides them)
 set(SPDLOG_BUILD_EXAMPLE OFF CACHE INTERNAL "Disable spdlog examples")
 set(SPDLOG_BUILD_TESTS   OFF CACHE INTERNAL "Disable spdlog tests")
@@ -47,7 +43,7 @@ set(SPDLOG_BUILD_BENCH   OFF CACHE INTERNAL "Disable spdlog benchmarks")
 set(SPDLOG_INSTALL       OFF CACHE INTERNAL "Disable spdlog install rules")
 set(SPDLOG_FMT_EXTERNAL  OFF CACHE INTERNAL "Ensure bundled fmt is used")
 
-FetchContent_MakeAvailable(spdlog)
+add_subdirectory(${AUTOPAS_SOURCE_DIR}/libs/spdlog ${CMAKE_CURRENT_BINARY_DIR}/spdlog EXCLUDE_FROM_ALL)
 
 # Hide all remaining internal SPDLOG cache variables from ccmake/cmake-gui
 get_cmake_property(_all_cache_vars CACHE_VARIABLES)
@@ -56,19 +52,6 @@ foreach(_var IN LISTS _all_cache_vars)
         mark_as_advanced(${_var})
     endif()
 endforeach()
-
-# Prevent spdlog targets from being included in the default "all" build/install step
-if (IS_DIRECTORY "${spdlog_SOURCE_DIR}")
-    set_property(DIRECTORY ${spdlog_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
-endif ()
-
-# let ccmake and cmake-gui offer options
-set(AUTOPAS_MIN_LOG_LVL
-        "INFO"
-        CACHE
-        STRING "Choose the finest log level to be compiled."
-)
-set_property(CACHE AUTOPAS_MIN_LOG_LVL PROPERTY STRINGS "TRACE;DEBUG;INFO;WARN;ERROR;CRITICAL;OFF")
 
 # Disable warnings
 target_compile_options(spdlog PRIVATE -w)

@@ -1,5 +1,5 @@
 # Gets yaml-cpp by (in order of priority): reusing a target a parent project provides, an installed
-# version via find_package, or the bundled copy. Set yaml-cpp_ForceBundled=ON to force bundled.
+# version via find_package, or the bundled copy in libs/yaml-cpp. Set yaml-cpp_ForceBundled=ON to force bundled.
 option(yaml-cpp_ForceBundled "Ignore any provided/installed yaml-cpp and always use the bundled copy." OFF)
 mark_as_advanced(yaml-cpp_ForceBundled)
 
@@ -13,7 +13,7 @@ if (NOT yaml-cpp_ForceBundled)
     # Path 2: installed version; the version arg enforces our minimum. Use whatever compatible version
     # find_package returns - it creates a target either way, so rejecting it here would leave a
     # `yaml-cpp::yaml-cpp` that collides with the bundled copy's own alias below.
-    set(expectedVersion 0.8.0)
+    set(expectedVersion 0.9.0)
     find_package(yaml-cpp ${expectedVersion} QUIET)
     if (yaml-cpp_FOUND)
         message(STATUS "yaml-cpp - using installed system version ${yaml-cpp_VERSION}")
@@ -26,39 +26,23 @@ if (NOT yaml-cpp_ForceBundled)
 endif ()
 
 # system version not found -> install bundled version
-# This is not a stable release, (is something after 0.8.0), but is required for compatibility with CMake 4.0.
-message(STATUS "yaml-cpp - using bundled version 2f86d13")
-
-# Enable FetchContent CMake module
-include(FetchContent)
-
-# Build yaml-cpp and make the cmake targets available
-FetchContent_Declare(
-    yaml-cpp
-    URL
-        # yaml-cpp-master:
-        # https://github.com/jbeder/yaml-cpp/archive/refs/heads/master.zip
-        # commit 2f86d13:
-        ${AUTOPAS_SOURCE_DIR}/libs/yaml-cpp-2f86d13.zip
-    URL_HASH MD5=d402b60e57c14fcb30138c5b28a333d1
-    # needed to compile with ninja
-)
+message(STATUS "yaml-cpp - using bundled version 0.9.0")
 
 # Disable everything we don't need
-option(YAML_CPP_BUILD_TESTS "" OFF)
-option(YAML_CPP_BUILD_CONTRIB "" OFF)
-option(YAML_CPP_BUILD_TOOLS "" OFF)
+set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "Disable yaml-cpp tests")
+set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "Disable yaml-cpp contrib")
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "Disable yaml-cpp tools")
+set(YAML_CPP_INSTALL OFF CACHE BOOL "Disable yaml-cpp install rules")
 
-# hide options from ccmake
-mark_as_advanced(
-    YAML_BUILD_SHARED_LIBS
-    YAML_CPP_BUILD_CONTRIB
-    YAML_CPP_BUILD_TESTS
-    YAML_CPP_BUILD_TOOLS
-    YAML_CPP_CLANG_FORMAT_EXE
-)
+add_subdirectory(${AUTOPAS_SOURCE_DIR}/libs/yaml-cpp ${CMAKE_CURRENT_BINARY_DIR}/yaml-cpp EXCLUDE_FROM_ALL)
 
-FetchContent_MakeAvailable(yaml-cpp)
+# Hide all remaining internal yaml-cpp cache variables from ccmake/cmake-gui
+get_cmake_property(_all_cache_vars CACHE_VARIABLES)
+foreach(_var IN LISTS _all_cache_vars)
+    if(_var MATCHES "^YAML_")
+        mark_as_advanced(${_var})
+    endif()
+endforeach()
 
 # Disable warnings
 target_compile_options(yaml-cpp PRIVATE -w)
