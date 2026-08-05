@@ -37,5 +37,19 @@ target_link_libraries(
         molecularDynamicsLibrary
 )
 
+# Block-count instrumentation for the same investigation. AUTOPAS_LJ_HWY_BLOCK_COUNTERS is scoped to
+# this target only, so LJFunctorHWYBench and every production target are compiled without it and the
+# hot path is unchanged there.
+add_executable(BlockCountDebug BlockCountDebug.cpp)
+
+target_compile_definitions(BlockCountDebug PRIVATE AUTOPAS_LJ_HWY_BLOCK_COUNTERS)
+
+target_link_libraries(
+        BlockCountDebug
+        PRIVATE
+        autopas
+        molecularDynamicsLibrary
+)
+
 # MoleculeLJ lives in the single-site MD mode. The tests rely on the same
 # MD_FLEXIBLE_MODE=0 setting inherited from molecularDynamicsLibrary.

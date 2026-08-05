@@ -22,6 +22,22 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/optRef.h"
 
+/**
+ * Debug-only profiling aid for the VecPattern/sorting mechanism investigation
+ * (debug/investigate-vec-patterns branch, see BachelorThesis project notes).
+ *
+ * fillJRegisters and handleNewton3Reduction are normally inlined into SoAKernel, which leaves perf
+ * unable to attribute cycles to either of them separately. Defining AUTOPAS_LJ_HWY_PROFILE_NOINLINE
+ * forces both out of line so `perf report --sort=symbol` yields a direct split. This changes code
+ * generation and therefore absolute timings, so such a build measures relative attribution only and
+ * must not be used to produce timing results. Undefined in every normal build.
+ */
+#ifdef AUTOPAS_LJ_HWY_PROFILE_NOINLINE
+#define AUTOPAS_LJ_HWY_NOINLINE __attribute__((noinline))
+#else
+#define AUTOPAS_LJ_HWY_NOINLINE
+#endif
+
 namespace mdLib {
 
 namespace highway = hwy::HWY_NAMESPACE;
@@ -471,7 +487,7 @@ class LJFunctorHWY
   }
 
   template <bool remainder, VectorizationPattern vecPattern>
-  static void handleNewton3Reduction(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
+  static AUTOPAS_LJ_HWY_NOINLINE void handleNewton3Reduction(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
                                      double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
                                      double *const __restrict fz2Ptr, const size_t j, const size_t rest) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
@@ -856,7 +872,7 @@ class LJFunctorHWY
    * @param rest The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, VectorizationPattern vecPattern>
-  static void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
+  static AUTOPAS_LJ_HWY_NOINLINE void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
                              const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
                              VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, MaskDouble &ownedMaskJ,
                              const unsigned int rest) {
@@ -1031,6 +1047,10 @@ class LJFunctorHWY
                         VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
                         VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &uPotSum,
                         const unsigned int restI, const unsigned int restJ) {
+#ifdef AUTOPAS_LJ_HWY_BLOCK_COUNTERS
+    // Counted before anything else: one increment per SIMD block the j-loop actually reaches.
+    ++_visitedBlocks;
+#endif
     VectorDouble epsilon24s = highway::Undefined(tag_double);
     VectorDouble sigmaSquareds = highway::Undefined(tag_double);
     VectorDouble shift6s = highway::Undefined(tag_double);
@@ -1074,6 +1094,12 @@ class LJFunctorHWY
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
       return;
     }
+#ifdef AUTOPAS_LJ_HWY_BLOCK_COUNTERS
+    // Reached only by blocks that survive the cutoff check, i.e. the blocks that go on to run
+    // handleNewton3Reduction. Pruning removes blocks that would have returned above, so this
+    // counter is expected to stay flat between the pruned and unpruned sorted paths.
+    ++_survivingBlocks;
+#endif
 
     // compute LJ Potential
     const auto invDr2 = highway::Div(highway::Set(tag_double, 1.0), dr2);
@@ -1417,6 +1443,33 @@ class LJFunctorHWY
    */
   void setDisablePairPruning(const bool disable) { _disablePairPruning = disable; }
 
+#ifdef AUTOPAS_LJ_HWY_BLOCK_COUNTERS
+  /**
+   * Debug-only instrumentation for the VecPattern/sorting mechanism investigation
+   * (debug/investigate-vec-patterns branch). Compiled out entirely unless
+   * AUTOPAS_LJ_HWY_BLOCK_COUNTERS is defined, so no production build is affected.
+   *
+   * Counts SIMD blocks in the SoA pair kernel, split by whether they survived the cutoff check.
+   * The two counters separate the two costs that distinguish vectorization patterns.
+   * fillJRegisters runs on every visited block, handleNewton3Reduction only on surviving ones.
+   * The counters are plain non-atomic members, so they are only meaningful in a single-threaded run.
+   */
+  void resetBlockCounters() {
+    _visitedBlocks = 0;
+    _survivingBlocks = 0;
+  }
+
+  /**
+   * @return Number of SIMD blocks the j-loop reached since the last reset.
+   */
+  [[nodiscard]] size_t getVisitedBlocks() const { return _visitedBlocks; }
+
+  /**
+   * @return Number of SIMD blocks that passed the cutoff check since the last reset.
+   */
+  [[nodiscard]] size_t getSurvivingBlocks() const { return _survivingBlocks; }
+#endif
+
  private:
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
@@ -1460,6 +1513,12 @@ class LJFunctorHWY
 
   // Debug-only ablation switch, see setDisablePairPruning().
   bool _disablePairPruning{false};
+
+#ifdef AUTOPAS_LJ_HWY_BLOCK_COUNTERS
+  // Debug-only block counters, see resetBlockCounters(). Non-atomic, single-threaded use only.
+  size_t _visitedBlocks{0};
+  size_t _survivingBlocks{0};
+#endif
 
   // Vectorization Pattern that the functor can handle.
   static constexpr std::array<VectorizationPattern, 4> _vecPatternsAllowed = {
