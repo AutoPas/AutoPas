@@ -66,19 +66,24 @@ inline int autopas_get_max_threads() { return omp_get_max_threads(); }
  */
 inline void autopas_set_num_threads(int n) { omp_set_num_threads(n); }
 
-inline int _autopas_tuned_num_threads = autopas_get_max_threads();
+inline int &_autopas_get_tuned_num_threads_ref() {
+  // Lazy initialization
+  static int tunedNumThreads = autopas_get_max_threads();
+  return tunedNumThreads;
+}
+
 /**
  * Set the number of threads to use in OpenMP for loop annotations
  * @param n the number of threads
  */
 inline void autopas_set_tuned_num_threads(int n) {
-  _autopas_tuned_num_threads = (n == 0) ? autopas_get_max_threads() : n;
+  _autopas_get_tuned_num_threads_ref() = (n == 0) ? autopas_get_max_threads() : n;
 }
 /**
  * Get the number of threads to use in OpenMP for loop annotations
  * @return the number of threads
  */
-inline int autopas_get_tuned_num_threads() { return _autopas_tuned_num_threads; }
+inline int autopas_get_tuned_num_threads() { return _autopas_get_tuned_num_threads_ref(); }
 
 /**
  * AutoPasLock for the openmp case, this wraps a omp_lock_t object. To make it copyable, etc.

@@ -184,8 +184,7 @@ std::vector<autopas::Configuration> containerConfigs = {
      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
      autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::linkedCells, 1, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
-     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::InteractionTypeOption::pairwise},
+     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::linkedCellsReferences, 1, autopas::TraversalOption::lc_c01,
      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
      autopas::InteractionTypeOption::pairwise},
@@ -205,8 +204,7 @@ std::vector<autopas::Configuration> containerConfigs = {
      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
      autopas::InteractionTypeOption::pairwise},
     {autopas::ContainerOption::octree, 1, autopas::TraversalOption::ot_c01, autopas::LoadEstimatorOption::none,
-     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::InteractionTypeOption::pairwise}};
+     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise}};
 
 // Generates all unique pairs of configurations, order does not matter and no pairs of the same configuration.
 std::vector<std::pair<autopas::Configuration, autopas::Configuration>> GenerateUniquePairs(
