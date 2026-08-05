@@ -11,13 +11,14 @@
 
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
 /**
  * Interface for neighbor lists used by VarVerletLists.
  * @tparam Particle_T The particle type this neighbor list uses.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VerletNeighborListInterface {
  public:
   /**

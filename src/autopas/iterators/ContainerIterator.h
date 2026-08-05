@@ -18,6 +18,7 @@
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
@@ -55,7 +56,7 @@ namespace containerIteratorUtils {
  * @param regionMax If regionIter is true this should be a std::array<double, 3>
  * @return True iff the given particle's ownership state is compatible with the iterator behavior.
  */
-template <bool regionIter, class Particle_T, class Arr>
+template <bool regionIter, autopas::utils::ParticleType Particle_T, class Arr>
 [[nodiscard]] bool particleFulfillsIteratorRequirements(const Particle_T &p, IteratorBehavior behavior,
                                                         const Arr &regionMin, const Arr &regionMax) {
   // If this is a region iterator check box condition first, otherwise race conditions can occur
@@ -91,7 +92,7 @@ template <bool regionIter, class Particle_T, class Arr>
  * @tparam modifiable If false, this is a const iterator.
  * @tparam regionIter If false, avoid any region checks and iterate the whole container.
  */
-template <class Particle_T, bool modifiable, bool regionIter>
+template <utils::ParticleType Particle_T, bool modifiable, bool regionIter>
 class ContainerIterator {
   template <class T>
   friend void internal::deleteParticle(T &);

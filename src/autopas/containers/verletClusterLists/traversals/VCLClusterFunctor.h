@@ -9,6 +9,7 @@
 #include "autopas/containers/verletClusterLists/Cluster.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas::internal {
 /**
@@ -17,7 +18,7 @@ namespace autopas::internal {
  * @tparam Particle_T The type of particle the clusters contain.
  * @tparam PairwiseFunctor The type of the functor the VCLClusterFunctor should use.
  */
-template <class Particle_T, class PairwiseFunctor>
+template <utils::ParticleType Particle_T, class PairwiseFunctor>
 class VCLClusterFunctor {
  public:
   /**

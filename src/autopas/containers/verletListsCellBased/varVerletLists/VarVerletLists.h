@@ -8,6 +8,7 @@
 
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/traversals/VVLTraversalInterface.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
 
@@ -16,7 +17,7 @@ namespace autopas {
  * @tparam Particle_T The particle type this container contains.
  * @tparam NeighborList The Neighbor List this Verlet Container uses.
  */
-template <class Particle_T, class NeighborList>
+template <utils::ParticleType Particle_T, class NeighborList>
 class VarVerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Type of Particle.

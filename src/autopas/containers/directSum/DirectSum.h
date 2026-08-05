@@ -20,6 +20,7 @@
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/ParticleCellHelpers.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/inBox.h"
 
@@ -42,7 +43,7 @@ namespace autopas {
  *
  * @tparam Particle_T Particle type that is used with this container.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>> {
  public:
   /**

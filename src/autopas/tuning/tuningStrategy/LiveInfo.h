@@ -21,6 +21,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ParticleBinStructure.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -324,7 +325,7 @@ class LiveInfo {
    * @param cutoff The cutoff.
    * @param skin The (Verlet) skin.
    */
-  template <class Particle_T>
+  template <utils::ParticleType Particle_T>
   void gather(ContainerIterator<Particle_T, true, false> particleIter, size_t rebuildFrequency,
               size_t numOwnedParticles, std::array<double, 3> boxMin, std::array<double, 3> boxMax, double cutoff,
               double skin) {

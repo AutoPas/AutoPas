@@ -11,6 +11,7 @@
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/SoA.h"
 namespace autopas {
 
@@ -25,7 +26,7 @@ namespace autopas {
  * @tparam Particle_T The type of Particle class used.
  * @tparam isInternal Should be set true if used internally within AutoPas. Makes the functor irrelevant for tuning.
  */
-template <class Particle_T, bool isInternal = false>
+template <utils::ParticleType Particle_T, bool isInternal = false>
 class InteractionListGeneratorFunctor
     : public PairwiseFunctor<Particle_T, InteractionListGeneratorFunctor<Particle_T, isInternal>> {
  public:

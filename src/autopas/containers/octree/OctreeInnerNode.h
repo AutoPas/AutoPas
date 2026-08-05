@@ -10,6 +10,7 @@
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeStaticNodeSelector.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {
@@ -19,7 +20,7 @@ namespace autopas {
  *
  * @tparam Particle_T
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class OctreeInnerNode : public OctreeNodeInterface<Particle_T> {
  public:
   /**

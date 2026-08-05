@@ -11,9 +11,10 @@
 #include "autopas/containers/octree/OctreeInnerNode.h"
 #include "autopas/containers/octree/OctreeLeafNode.h"
 #include "autopas/containers/octree/OctreeNodeWrapper.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 class OctreeInnerNode;
 
 /**
@@ -25,7 +26,7 @@ class OctreeInnerNode;
  * @param function
  * @return
  */
-template <typename Particle_T, typename FunctionType>
+template <utils::ParticleType Particle_T, typename FunctionType>
 decltype(auto) withStaticNodeType(const std::unique_ptr<OctreeNodeInterface<Particle_T>> &root,
                                   FunctionType &&function) {
   OctreeNodeInterface<Particle_T> *nodePtr = root.get();

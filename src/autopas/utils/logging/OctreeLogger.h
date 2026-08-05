@@ -15,13 +15,14 @@
 
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeNodeWrapper.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
 /**
  * Log an octree to a .vtk file
  * @tparam Particle_T The enclosed particle type
  */
-template <typename Particle_T>
+template <utils::ParticleType Particle_T>
 class OctreeLogger {
  public:
   /**

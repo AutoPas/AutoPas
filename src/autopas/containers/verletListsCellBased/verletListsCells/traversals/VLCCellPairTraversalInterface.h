@@ -6,9 +6,11 @@
 
 #pragma once
 
+#include "autopas/utils/ParticleConcept.h"
+
 namespace autopas {
 
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VLCCellPairNeighborList;
 
 /**
@@ -17,7 +19,7 @@ class VLCCellPairNeighborList;
  * and not compatible with the VLCAllCellsNeighborList within the VerletListsCells container.
  * @tparam Particle_T type of particle
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VLCCellPairTraversalInterface {
  public:
   /**

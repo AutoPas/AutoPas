@@ -19,6 +19,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
 
@@ -27,7 +28,7 @@ namespace autopas {
  *
  * @tparam Particle_T
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class ContainerSelector {
  public:
   /**
@@ -40,7 +41,7 @@ class ContainerSelector {
       ContainerOption containerChoice, const ContainerSelectorInfo &containerInfo);
 };
 
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Particle_T>::generateContainer(
     ContainerOption containerChoice, const ContainerSelectorInfo &containerInfo) {
   const auto &boxMin = containerInfo.boxMin;

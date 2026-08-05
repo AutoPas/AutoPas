@@ -11,6 +11,7 @@
 
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -20,7 +21,7 @@ namespace autopas {
  * This class handles the storage of particles in their full form.
  * @tparam Particle_T
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class ReferenceParticleCell : public ParticleCell<Particle_T> {
  public:
   /**

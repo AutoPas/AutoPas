@@ -14,6 +14,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
 
@@ -28,7 +29,7 @@ namespace autopas {
  * @tparam NeighborList The neighbor list used by this container.
  */
 
-template <class Particle_T, class NeighborList>
+template <utils::ParticleType Particle_T, class NeighborList>
 class VerletListsCells : public VerletListsLinkedBase<Particle_T> {
  public:
   /**

@@ -13,6 +13,7 @@
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/iterators/CellIterator.h"
 #include "autopas/options/IteratorBehavior.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/inBox.h"
 
@@ -22,7 +23,7 @@ namespace autopas {
  * This class handles the storage of particles in their full form.
  * @tparam Particle_T
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class FullParticleCell : public ParticleCell<Particle_T> {
  public:
   /**

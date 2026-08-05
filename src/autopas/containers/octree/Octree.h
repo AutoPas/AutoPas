@@ -21,6 +21,7 @@
 #include "autopas/containers/octree/traversals/OTTraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/utils/ParticleCellHelpers.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/inBox.h"
 #include "autopas/utils/logging/OctreeLogger.h"
 
@@ -36,7 +37,7 @@ namespace autopas {
  *
  * @tparam Particle_T
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
                public internal::CellBorderAndFlagManager {
  public:

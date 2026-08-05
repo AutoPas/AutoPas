@@ -13,6 +13,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/SoA.h"
 
 namespace autopas {
@@ -20,7 +21,7 @@ namespace autopas {
  * Interface of neighbor lists to be used with VerletListsCells container.
  * @tparam Particle_T Type of particle to be used for the neighbor list.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VLCNeighborListInterface {
  public:
   /**

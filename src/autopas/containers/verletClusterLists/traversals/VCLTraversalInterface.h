@@ -7,16 +7,17 @@
 #pragma once
 
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
 
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VerletClusterLists;
 
 /**
  * Interface for traversals of the VerletClusterLists container.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VCLTraversalInterface {
  public:
   /**

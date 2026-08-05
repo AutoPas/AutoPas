@@ -12,6 +12,7 @@
 #include "Functor.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/SoAView.h"
 
 namespace autopas {
@@ -24,7 +25,7 @@ namespace autopas {
  * @tparam Particle_T the type of Particle
  * @tparam CRTP_T the actual type of the functor
  */
-template <class Particle_T, class CRTP_T>
+template <utils::ParticleType Particle_T, class CRTP_T>
 class TriwiseFunctor : public Functor<Particle_T, CRTP_T> {
  public:
   /**

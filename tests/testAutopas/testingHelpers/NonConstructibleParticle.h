@@ -69,4 +69,32 @@ class NonConstructibleParticle : public autopas::ParticleBaseFP64 {
       autopas::utils::ExceptionHandler::exception("ParticleBase::get() unknown attribute {}", attribute);
     }
   }
+
+  /**
+   * Setter, which allows set an attribute using the corresponding attribute name (defined in AttributeNames).
+   * @tparam attribute Attribute name.
+   * @param value New value of the requested attribute.
+   */
+  template <AttributeNames attribute>
+  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+    if constexpr (attribute == AttributeNames::id) {
+      setID(value);
+    } else if constexpr (attribute == AttributeNames::posX) {
+      _r[0] = value;
+    } else if constexpr (attribute == AttributeNames::posY) {
+      _r[1] = value;
+    } else if constexpr (attribute == AttributeNames::posZ) {
+      _r[2] = value;
+    } else if constexpr (attribute == AttributeNames::forceX) {
+      _f[0] = value;
+    } else if constexpr (attribute == AttributeNames::forceY) {
+      _f[1] = value;
+    } else if constexpr (attribute == AttributeNames::forceZ) {
+      _f[2] = value;
+    } else if constexpr (attribute == AttributeNames::ownershipState) {
+      this->_ownershipState = value;
+    } else {
+      autopas::utils::ExceptionHandler::exception("NonConstructibleParticle::set() unknown attribute {}", attribute);
+    }
+  }
 };

@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/SoAView.h"
 
 namespace autopas {
@@ -30,7 +31,7 @@ namespace autopas {
  * @tparam Particle_T Particle type providing AttributeNames and SoAArraysType.
  * @tparam Functor_T Functor type providing getNeededAttr() and getComputedAttr().
  */
-template <class Particle_T, class Functor_T>
+template <utils::ParticleType Particle_T, class Functor_T>
 class SortedSoAView {
   using SoAArraysType = Particle_T::SoAArraysType;
 

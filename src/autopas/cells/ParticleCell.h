@@ -8,6 +8,7 @@
 
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
@@ -45,7 +46,7 @@ enum class CellType {
  * particles
  * @tparam Particle_T the type of particles to be stored in the cells
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class ParticleCell {
  public:
   /**

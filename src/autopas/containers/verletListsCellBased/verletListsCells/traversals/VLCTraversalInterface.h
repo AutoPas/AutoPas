@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "autopas/options/ContainerOption.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
 
@@ -20,10 +21,10 @@ namespace autopas {
  * This avoid circular dependencies in the header files.
  * VLCAllCellsNeighborList.h/VLCCellPairNeighborList.h -> VLCTraversalInterface.h (This file)
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VLCAllCellsNeighborList;
 
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VLCCellPairNeighborList;
 
 /**
@@ -34,7 +35,7 @@ class VLCCellPairNeighborList;
  *
  * The container only accepts traversals in its computeInteractions() method that implement this interface.
  */
-template <class Particle_T, class NeighborList>
+template <utils::ParticleType Particle_T, class NeighborList>
 class VLCTraversalInterface {
  public:
   VLCTraversalInterface() = delete;

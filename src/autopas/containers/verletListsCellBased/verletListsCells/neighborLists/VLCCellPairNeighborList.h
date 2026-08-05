@@ -10,6 +10,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCNeighborListInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairTraversalInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
+#include "autopas/utils/ParticleConcept.h"
 
 namespace autopas {
 
@@ -19,7 +20,7 @@ namespace autopas {
  * and generates a neighbor list for each particle from cell1, which consists of its (potential) partners from cell2.
  * @tparam Particle_T Type of particle to be used for this neighbor list.
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
  public:
   /**

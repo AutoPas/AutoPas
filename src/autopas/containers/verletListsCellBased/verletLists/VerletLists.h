@@ -15,6 +15,7 @@
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleConcept.h"
 #include "autopas/utils/StaticBoolSelector.h"
 
 namespace autopas {
@@ -28,7 +29,7 @@ namespace autopas {
  * Cells are created using a cell size of at least cutoff + skin radius.
  * @tparam Particle_T
  */
-template <class Particle_T>
+template <utils::ParticleType Particle_T>
 class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Type of the Particle.
