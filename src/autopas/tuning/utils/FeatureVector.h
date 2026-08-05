@@ -52,8 +52,8 @@ class FeatureVector : public Configuration {
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
                 LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3, int threadCount,
                 InteractionTypeOption interactionType, VectorizationPatternOption vecPattern)
-      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3,
-                      interactionType, threadCount, vecPattern) {}
+      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType,
+                      threadCount, vecPattern) {}
 
   /**
    * Construct from Configuration.
