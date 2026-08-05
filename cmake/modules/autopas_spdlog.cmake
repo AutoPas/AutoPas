@@ -10,7 +10,7 @@ set(AUTOPAS_MIN_LOG_LVL
 )
 set_property(CACHE AUTOPAS_MIN_LOG_LVL PROPERTY STRINGS "TRACE;DEBUG;INFO;WARN;ERROR;CRITICAL;OFF")
 
-if (NOT spdlog_ForceBundled)
+if (NOT spdlog_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
     # Path 1: reuse a spdlog target a parent project already defined. AUTOPAS_MIN_LOG_LVL is not applied
     # here, as the target belongs to the parent project, which decides how its spdlog is compiled.
     if (TARGET spdlog::spdlog OR TARGET spdlog)

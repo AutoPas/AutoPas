@@ -1,5 +1,9 @@
 # Helpers for handling third-party dependency modules
 
+# Umbrella switch for the per-dependency <dep>_ForceBundled options
+option(AUTOPAS_FORCE_ALL_BUNDLED "Ignore all provided/installed dependencies and always use the bundled copies." OFF)
+
+
 # A dependency can appear under a plain target name and/or a namespaced `ns::name`, depending on whether
 # it comes from a parent project, an installed package (find_package) or the bundled copy. These helpers
 # let each module reuse whichever target is available and expose both names, so consumers can link either

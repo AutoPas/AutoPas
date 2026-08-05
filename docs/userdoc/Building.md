@@ -3,7 +3,7 @@
 ## Requirements
 * CMake 3.14 or newer
 * a CMake generator target (`make` is tested)
-* a C++20 compiler (gcc13, clang16, and ~~icpc 2019~~ are tested)
+* a C++20 compiler (gcc13, clang17, and ~~icpc 2019~~ are tested)
 * OpenMP (comes with GCC, for Clang you need `libomp`)
 
 Optional:
@@ -14,7 +14,8 @@ Optional:
 There are a few more dependencies, however you don't need to install them because they come bundled with AutoPas.
 See [libs/](/libs) for a complete list.
 
-If you insist on using your locally installed version of any of them, set the CMake variable `<LIBNAME>_ForceBundled=OFF`
+By default, AutoPas prefers a version provided by a parent project or installed on your system over the bundled copy.
+To always use the bundled copy of one library, set `<LIBNAME>_ForceBundled=ON`, or set `AUTOPAS_FORCE_ALL_BUNDLED=ON` to do so for all of them.
 
 ## Build Instructions
 Create a build directory and run the default CMake-based build workflow:

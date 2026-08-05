@@ -3,7 +3,7 @@
 option(highway_ForceBundled "Ignore any provided/installed Highway and always use the bundled copy." OFF)
 mark_as_advanced(highway_ForceBundled)
 
-if (NOT highway_ForceBundled)
+if (NOT highway_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
     # Path 1: reuse a Highway target a parent project already defined.
     if (TARGET hwy OR TARGET hwy::hwy)
         message(STATUS "AutoPas: Reusing Google Highway provided by parent project")

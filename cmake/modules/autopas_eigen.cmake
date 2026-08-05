@@ -12,7 +12,7 @@ mark_as_advanced(Eigen3_ForceBundled)
 
 set(AUTOPAS_EIGEN_MIN_VERSION 5.0.1)
 
-if (NOT Eigen3_ForceBundled)
+if (NOT Eigen3_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
     # Path 1: reuse an Eigen target a parent project already defined, avoiding a second copy of Eigen in
     # one binary (two copies with differing versions/config macros violate the One Definition Rule (ODR)).
     # We assume the provided target's version, is compatible, as it is hard to check here, and we assume the developer
@@ -36,7 +36,7 @@ if (NOT Eigen3_ForceBundled)
 elseif (TARGET Eigen3::Eigen OR TARGET Eigen3)
     message(
         WARNING
-            "Eigen3_ForceBundled=ON but a parent project already provides Eigen; using the bundled copy as well puts two Eigen copies in one binary, risking One Definition Rule (ODR) violations."
+            "The bundled Eigen is forced (Eigen3_ForceBundled or AUTOPAS_FORCE_ALL_BUNDLED) but a parent project already provides Eigen; using the bundled copy as well puts two Eigen copies in one binary, risking One Definition Rule (ODR) violations."
     )
 endif ()
 

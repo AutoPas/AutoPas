@@ -3,7 +3,7 @@
 option(yaml-cpp_ForceBundled "Ignore any provided/installed yaml-cpp and always use the bundled copy." OFF)
 mark_as_advanced(yaml-cpp_ForceBundled)
 
-if (NOT yaml-cpp_ForceBundled)
+if (NOT yaml-cpp_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
     # Path 1: reuse a yaml-cpp target a parent project already defined.
     if (TARGET yaml-cpp OR TARGET yaml-cpp::yaml-cpp)
         message(STATUS "AutoPas: Reusing yaml-cpp provided by parent project")
