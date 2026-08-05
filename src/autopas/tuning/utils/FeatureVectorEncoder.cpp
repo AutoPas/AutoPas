@@ -39,7 +39,7 @@ void autopas::FeatureVectorEncoder::setAllowedOptions(
       _containerTraversalEstimatorOptions.size();
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::dataLayout)] = _dataLayoutOptions.size();
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::newton3)] = _newton3Options.size();
-  _discreteRestrictions[static_cast<size_t>(DiscreteIndices::threadCount)] = threadCounts.size();
+  _discreteRestrictions[static_cast<size_t>(DiscreteIndices::threadCount)] = _threadCounts.size();
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::vecPattern)] = _vecPatternOptions.size();
 
   _continuousRestrictions[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = cellSizeFactors.clone();
