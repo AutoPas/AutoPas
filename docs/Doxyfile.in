@@ -54,6 +54,7 @@ INCLUDE_PATH           = @PROJECT_SOURCE_DIR@/src
 IMAGE_PATH             = @PROJECT_SOURCE_DIR@/docs/graphics
 TEMPLATE_RELATIONS     = YES
 HAVE_DOT               = YES
+DOT_GRAPH_MAX_NODES    = 100
 GENERATE_XML           = YES
 USE_MATHJAX            = YES # default NO - Needed for latex equation rendering. Used e.g. in AxilrodTellerMutoFunctor.h
 
