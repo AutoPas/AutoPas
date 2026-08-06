@@ -11,8 +11,8 @@
 class ThreadCountTuningTest : public AutoPasTestBase {
  public:
   /**
-   * Tests if thread count tuning selected the expected number of threads
-   * (minimum for a small simulation size, maximum for a large simulation size).
+   * Tests if thread count tuning selected a valid option out of a given set and (optionally) the the expected number of
+   * threads (e.g. minimum for a small simulation size, maximum for a large simulation size, or max threads if 0).
    *
    * @param boxMax The size of the simulation domain along each side
    * @param threadCountOptions The possible thread counts in the configuration
