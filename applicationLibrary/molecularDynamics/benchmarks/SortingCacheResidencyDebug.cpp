@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <random>
+#include <utility>
 #include <string>
 #include <vector>
 
@@ -73,6 +74,9 @@ constexpr double kCutoff = 2.5;
  * two halves stay aligned to the repeating split pattern, main() rounds up to enforce that.
  */
 size_t gPoolPairs = 1000;
+
+/// Selects the measurement programme. "full" sweeps N in both modes, "itersweep" varies the loop split.
+std::string gMode = "full";
 
 struct Geometry {
   std::array<double, 3> cell1Low{0., 0., 0.};
@@ -151,7 +155,8 @@ struct RunResult {
  * walks a pool of distinct cell pairs so that no call reuses the previous call's data.
  */
 RunResult measure(BenchFunctor &functor, const MoleculeType &defaultParticle, const Geometry &g, size_t numParticles,
-                  bool newton3, bool hot, std::vector<CellPair> &pool) {
+                  bool newton3, bool hot, std::vector<CellPair> &pool, size_t iterations = kIterations,
+                  size_t repetitions = kRepetitions) {
   BenchCF cellFunctor{functor, kCutoff, autopas::DataLayoutOption::soa, newton3};
   const autopas::SortingThresholdInfoSingle zeroThreshold(0);
   cellFunctor.setSoASortingThresholds(zeroThreshold);
@@ -170,16 +175,16 @@ RunResult measure(BenchFunctor &functor, const MoleculeType &defaultParticle, co
   size_t repOffset = 0;
 
   if (not hot) {
-    std::vector<Split> splitTable(kIterations);
+    std::vector<Split> splitTable(iterations);
     for (auto &s : splitTable) {
       s = makeSplit(numParticles, gen);
     }
     for (size_t p = 0; p < pool.size(); ++p) {
-      fillPair(pool[p], g, defaultParticle, splitTable[p % kIterations], static_cast<unsigned int>(2 * p));
+      fillPair(pool[p], g, defaultParticle, splitTable[p % iterations], static_cast<unsigned int>(2 * p));
     }
   }
 
-  for (size_t i = 0; i < kRepetitions; ++i) {
+  for (size_t i = 0; i < repetitions; ++i) {
     CellPair hotPair;
     if (hot) {
       fillPair(hotPair, g, defaultParticle, makeSplit(numParticles, gen), static_cast<unsigned int>(2 * i));
@@ -189,7 +194,7 @@ RunResult measure(BenchFunctor &functor, const MoleculeType &defaultParticle, co
       const std::array<double, 3> dir = sorted ? g.sortingDirection : std::array<double, 3>{0., 0., 0.};
       const size_t base = (repOffset + (sorted ? half : 0)) % pool.size();
       timer.start();
-      for (size_t j = 0; j < kIterations; ++j) {
+      for (size_t j = 0; j < iterations; ++j) {
         CellPair &pair = hot ? hotPair : pool[(base + j) % pool.size()];
         functor.SoALoader(pair.cell1, pair.cell1._particleSoABuffer, 0, false);
         functor.SoALoader(pair.cell2, pair.cell2._particleSoABuffer, 0, false);
@@ -213,11 +218,13 @@ RunResult measure(BenchFunctor &functor, const MoleculeType &defaultParticle, co
     }
     // Advance to pairs neither path has touched yet. Both halves of the pool advance together, so
     // the workload stays matched between the paths.
-    repOffset = (repOffset + kIterations) % half;
+    repOffset = (repOffset + iterations) % half;
   }
 
-  return {static_cast<double>(sortedTimer.getTotalTime()) / static_cast<double>(kRepetitions),
-          static_cast<double>(unsortedTimer.getTotalTime()) / static_cast<double>(kRepetitions), sortedWins};
+  // Normalise per timed call so points with different iteration counts stay comparable.
+  const auto calls = static_cast<double>(repetitions * iterations);
+  return {static_cast<double>(sortedTimer.getTotalTime()) / calls,
+          static_cast<double>(unsortedTimer.getTotalTime()) / calls, sortedWins};
 }
 
 }  // namespace
@@ -225,6 +232,9 @@ RunResult measure(BenchFunctor &functor, const MoleculeType &defaultParticle, co
 int main(int argc, char **argv) {
   if (argc > 1) {
     gPoolPairs = std::stoul(argv[1]);
+  }
+  if (argc > 2) {
+    gMode = argv[2];
   }
   const size_t alignment = 2 * kIterations;
   gPoolPairs = ((gPoolPairs + alignment - 1) / alignment) * alignment;
@@ -243,10 +253,35 @@ int main(int argc, char **argv) {
   std::printf("# cell edge = cutoff = %.3f, pool pairs = %zu, reps = %zu, iterations/rep = %zu\n", kCutoff, gPoolPairs,
               kRepetitions, kIterations);
   std::printf("# newton3 = enabled\n");
-  std::printf("direction,mode,N,mean_unsorted_ns,mean_sorted_ns,ratio,sorted_wins\n");
-
   std::vector<CellPair> pool(gPoolPairs);
 
+  // Iteration-count sweep. Holds the total number of timed calls fixed at 2500 and varies how they
+  // are split between calls-per-timed-region and repetitions, to test whether shortening the inner
+  // loop recovers the cold result. Reported per timed call so the points are directly comparable.
+  if (gMode == "itersweep") {
+    std::printf("direction,mode,iterations,repetitions,N,ns_per_call_unsorted,ns_per_call_sorted,ratio,sorted_wins\n");
+    const std::vector<std::pair<size_t, size_t>> splits{{25, 100}, {5, 500}, {1, 2500}};
+    for (const auto &direction : directions) {
+      const Geometry g = makeGeometry(direction);
+      for (const size_t n : {size_t{100}, size_t{160}, size_t{200}}) {
+        for (const auto &[iters, reps] : splits) {
+          const RunResult r = measure(functor, defaultParticle, g, n, true, /*hot=*/true, pool, iters, reps);
+          std::printf("%s,hot,%zu,%zu,%zu,%.1f,%.1f,%.4f,%zu\n", direction.c_str(), iters, reps, n, r.meanUnsortedNs,
+                      r.meanSortedNs, r.meanSortedNs / r.meanUnsortedNs, r.sortedWins);
+          std::fflush(stdout);
+        }
+        const RunResult c = measure(functor, defaultParticle, g, n, true, /*hot=*/false, pool, kIterations,
+                                    kRepetitions);
+        std::printf("%s,cold,%zu,%zu,%zu,%.1f,%.1f,%.4f,%zu\n", direction.c_str(), kIterations, kRepetitions, n,
+                    c.meanUnsortedNs, c.meanSortedNs, c.meanSortedNs / c.meanUnsortedNs, c.sortedWins);
+        std::fflush(stdout);
+      }
+    }
+    functor.endTraversal(true);
+    return 0;
+  }
+
+  std::printf("direction,mode,N,mean_unsorted_ns,mean_sorted_ns,ratio,sorted_wins\n");
   for (const auto &direction : directions) {
     const Geometry g = makeGeometry(direction);
     for (const bool hot : {true, false}) {
