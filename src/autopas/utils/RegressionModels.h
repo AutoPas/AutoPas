@@ -164,9 +164,9 @@ class Mean : public RegressionBase {
    */
   Mean(size_t maxN) : RegressionBase(1, maxN) { _y.resize(maxN); }
 
-  /// Reset to initial values.
   void reset() {
-    _y.clear();
+    _y.assign(_maxN, 0);
+    current_index = 0;
     RegressionBase::reset();
   }
 
