@@ -31,16 +31,16 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
       "remainderTraversal[ns],"
       "rebuildNeighborLists[ns],"
       "computeInteractionsTotal[ns],"
-      "tuning[ns],"
+      "tuning[ns]"
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-      "numParticlesBuffer,"
+      ",numParticlesBuffer,"
       "numParticlesOwned,"
       "numParticlesHalo,"
       "numParticlesFast,"
       "estimateNumParticlesBuffer,"
       "estimateRemainderTraversal[ns],"
       "estimateRebuildNeighborLists[ns],"
-      "doDynamicRebuild,"
+      "doDynamicRebuild"
 #endif
       ;
   if (energyMeasurements) {

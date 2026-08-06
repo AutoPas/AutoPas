@@ -7,9 +7,8 @@
 #pragma once
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-#include <boost/math/statistics/linear_regression.hpp>
-
 #include <algorithm>
+#include <boost/math/statistics/linear_regression.hpp>
 #include <climits>
 #include <limits>
 #include <utility>
@@ -285,13 +284,13 @@ class SimpleLinearRegressionBoost : public RegressionBase {
     if (not this->hasEnoughPoints()) {
       return Result{0, ReturnCode::NOT_ENOUGH_POINTS_REG, false};
     }
-    std::pair<double, double> ßs;
+    std::pair<double, double> lin_reg_coeffs;
     try {
-      ßs = boost::math::statistics::simple_ordinary_least_squares(_x, _y);
+      lin_reg_coeffs = boost::math::statistics::simple_ordinary_least_squares(_x, _y);
     } catch (...) {
       return Result{0, ReturnCode::UNKNOWN_ERROR_REG, false};
     }
-    const double prediction = ßs.first + ßs.second * static_cast<double>(x);
+    const double prediction = lin_reg_coeffs.first + lin_reg_coeffs.second * static_cast<double>(x);
     return Result{prediction, ReturnCode::OK_REG, true};
   }
 
