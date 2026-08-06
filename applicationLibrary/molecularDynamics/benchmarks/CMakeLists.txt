@@ -26,5 +26,17 @@ target_link_libraries(
         benchmark::benchmark
 )
 
+# Debug-only tool for the sorting-threshold calibration investigation (debug/sorting-threshold-
+# cache-residency branch). Does not depend on google-benchmark. Not part of the thesis-cited
+# benchmark dataset.
+add_executable(SortingCacheResidencyDebug SortingCacheResidencyDebug.cpp)
+
+target_link_libraries(
+        SortingCacheResidencyDebug
+        PRIVATE
+        autopas
+        molecularDynamicsLibrary
+)
+
 # MoleculeLJ lives in the single-site MD mode. The tests rely on the same
 # MD_FLEXIBLE_MODE=0 setting inherited from molecularDynamicsLibrary.
