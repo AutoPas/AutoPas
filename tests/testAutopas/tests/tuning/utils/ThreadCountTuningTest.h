@@ -16,8 +16,8 @@ class ThreadCountTuningTest : public AutoPasTestBase {
    *
    * @param boxMax The size of the simulation domain along each side
    * @param threadCountOptions The possible thread counts in the configuration
-   * @param expectedSelectedThreadCount The expected number of threads of the configuration after tuning has completed
+   * @param expectedSelectedThreadCount Optional expected number of threads of the configuration after tuning has completed (0 = max threads)
    */
   void testThreadCountTuningWithBoxMax(const size_t boxMax, const std::set<int> &threadCountOptions,
-                                       const size_t expectedSelectedThreadCount) const;
+                                       int expectedSelectedThreadCount = -1) const;
 };
