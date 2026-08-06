@@ -8,8 +8,11 @@
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
 #include <boost/math/statistics/linear_regression.hpp>
-#include <iostream>
-#include <ostream>
+
+#include <algorithm>
+#include <climits>
+#include <limits>
+#include <utility>
 #include <vector>
 
 #include "autopas/utils/Math.h"
