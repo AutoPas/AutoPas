@@ -65,15 +65,15 @@ class FeatureVectorEncoder {
    * @param dataLayoutOptions
    * @param newton3Options
    * @param cellSizeFactors
-   * @param threadCounts
    * @param interactionType
+   * @param threadCounts
    * @param vecPatternOptions
    */
   FeatureVectorEncoder(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
       const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-      const NumberSet<double> &cellSizeFactors, const NumberSetFinite<int> &threadCounts,
-      const InteractionTypeOption &interactionType, const std::vector<VectorizationPatternOption> &vecPatternOptions);
+      const NumberSet<double> &cellSizeFactors, const InteractionTypeOption &interactionType,
+      const NumberSetFinite<int> &threadCounts, const std::vector<VectorizationPatternOption> &vecPatternOptions);
 
   ~FeatureVectorEncoder();
 
