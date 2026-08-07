@@ -456,7 +456,7 @@ class RebuildDecisionContext {
       // Full term: (value_remainder * curr_iter - static_cast<double>(_remainderTraversalTimePredictor.getSumY())) /
       // (curr_iter * (curr_iter + 1)), but the denominator is same and can be ignored.
       const double remainderIncline =
-          (value_remainder * curr_iter - static_cast<double>(_remainderTraversalTimePredictor.getSumY()));
+          (value_remainder + static_cast<double>(_remainderTraversalTimePredictor.getSumY()));
       if (remainderIncline >= value_rebuild) {
         doDynamicRebuild = true;
       }
