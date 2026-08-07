@@ -51,9 +51,9 @@ Note that `ruleChecker` additionally requires `AUTOPAS_ENABLE_RULES_BASED_AND_FU
 <a id="rules-based-tuning-fuzzy-tuning"></a>
 
 
-Two of the possible tuning strategies of AutoPas, rules-based tuning and fuzzy-tuning, require dependencies `antlr4cpp` and `uuid`. These
-are bundled with AutoPas, but can take some time to compile and, in some rare cases, lead to compilation errors. 
-As such, by default, rule based tuning is disabled, and `antlr4cpp` and `uuid` are not compiled.
+Two of the possible tuning strategies of AutoPas, rules-based tuning and fuzzy-tuning, require the dependency `antlr4cpp`. This
+is bundled with AutoPas, but can take some time to compile, if not already installed. 
+As such, by default, rule based tuning is disabled, and `antlr4cpp` is not compiled.
 
 Both tuning strategies can be enabled via the CMake option:
 ```bash

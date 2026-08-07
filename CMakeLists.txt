@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(AutoPas)
 
 # CMAKE policies, etc.
@@ -109,6 +109,11 @@ include(autopas_logging)
 include(autopas_other-compileroptions)
 include(autopas_vectorization)
 
+option_conditional(AUTOPAS_BUILD_EXAMPLES
+        "Build examples."
+        AUTOPAS_STANDALONE_BUILD
+)
+
 # tests and examples
 add_subdirectory(tests)
 # application libraries
@@ -116,7 +121,7 @@ add_subdirectory(applicationLibrary)
 # might also include tests, hence might need flags from tests subdirectory
 add_subdirectory(examples)
 
-include(autopas_doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES, which is defined in examples.
+include(autopas_doxygen) # does not really need a target but does need the variable AUTOPAS_BUILD_EXAMPLES.
 
 # write version information
 include(CMakePackageConfigHelpers)

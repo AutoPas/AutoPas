@@ -4,7 +4,7 @@
 
 option_conditional(AUTOPAS_BUILD_MD_LIBRARY
         "Build the molecular dynamics application library. Opt-in when AutoPas is used as a subproject."
-        "AUTOPAS_STANDALONE_BUILD OR AUTOPAS_BUILD_TESTS"
+        "AUTOPAS_STANDALONE_BUILD OR AUTOPAS_BUILD_TESTS OR AUTOPAS_BUILD_EXAMPLES"
 )
 
 if (AUTOPAS_BUILD_MD_LIBRARY)
@@ -46,7 +46,7 @@ endif ()
 
 option_conditional(AUTOPAS_BUILD_SPH_LIBRARY
         "Build the SPH application library. Opt-in when AutoPas is used as a subproject."
-        AUTOPAS_STANDALONE_BUILD
+        "AUTOPAS_STANDALONE_BUILD OR AUTOPAS_BUILD_EXAMPLES"
 )
 
 if (AUTOPAS_BUILD_SPH_LIBRARY)
