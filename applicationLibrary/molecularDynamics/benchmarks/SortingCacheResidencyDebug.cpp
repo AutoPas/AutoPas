@@ -49,13 +49,26 @@
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
 namespace {
 
 using MoleculeType = mdLib::MoleculeLJ;
 using BenchCell = autopas::FullParticleCell<MoleculeType>;
-using BenchFunctor = mdLib::LJFunctorHWY<MoleculeType, /*shifting=*/true, /*useMixing=*/false,
+
+/**
+ * Functor config used to measure, matching LJFunctorHWYBench.cpp.
+ *
+ * useMixing is enabled to match md-flexible, which always instantiates LJFunctorHWY with useMixing=true
+ * (TypeDefinitions.h) regardless of how many site types a simulation actually registers. With mixing enabled,
+ * epsilon/sigma/shift are looked up per lane from a ParticlePropertiesLibrary instead of read as pre-broadcast
+ * scalars, so that lookup cost is paid on every pair. It raises the unsorted path's cost per candidate
+ * interaction and therefore lowers the crossover, so measuring without it does not reproduce the threshold the
+ * production calibration returns. Only a single site type is registered, so the values themselves are unchanged
+ * and this isolates the lookup overhead.
+ */
+using BenchFunctor = mdLib::LJFunctorHWY<MoleculeType, /*shifting=*/true, /*useMixing=*/true,
                                          autopas::FunctorN3Modes::Both, /*calculateGlobals=*/false,
                                          /*countFLOPs=*/false>;
 using BenchCF = autopas::internal::CellFunctor<BenchCell, BenchFunctor, /*bidirectional=*/true>;
@@ -72,6 +85,10 @@ constexpr double kRequiredWinRatio = 0.7;
 constexpr double kScatterFactor = 0.2;
 /// Cutoff. The benchmark sizes its cells by exactly this, so the cell-edge to sorting-cutoff ratio is 1.
 constexpr double kCutoff = 2.5;
+/// LJ epsilon, matching LJFunctorHWYBench.cpp.
+constexpr double kEpsilon = 1.0;
+/// LJ sigma, matching LJFunctorHWYBench.cpp.
+constexpr double kSigma = 1.0;
 
 /// Base seed for the split draws. Fixed so a run is reproducible, overridable to resample.
 size_t gSeed = 0x5eed;
@@ -86,6 +103,25 @@ double gPoolMiB = 256.0;
  */
 constexpr size_t kSoAArrays = std::tuple_size_v<typename MoleculeType::SoAArraysType>;
 constexpr size_t kBytesPerParticle = sizeof(MoleculeType) + kSoAArrays * sizeof(double);
+
+/**
+ * Single-site-type ParticlePropertiesLibrary backing makeFunctor(), registering kEpsilon/kSigma as site type 0.
+ * A function-local static so it outlives every BenchFunctor instance, which holds a reference to it.
+ * @return Reference to the singleton library.
+ */
+ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary() {
+  static auto ppl = [] {
+    ParticlePropertiesLibrary<double, size_t> lib(kCutoff);
+    lib.addSiteType(0, /*mass=*/1.0);
+    lib.addLJParametersToSite(0, kEpsilon, kSigma);
+    lib.calculateMixingCoefficients();
+    return lib;
+  }();
+  return ppl;
+}
+
+/// Creates the functor used for measuring, backed by particlePropertiesLibrary().
+BenchFunctor makeFunctor() { return BenchFunctor(kCutoff, particlePropertiesLibrary()); }
 
 struct Geometry {
   std::array<double, 3> cell1Low{0., 0., 0.};
@@ -293,8 +329,7 @@ int main(int argc, char **argv) {
   }
   const auto targetBytes = static_cast<size_t>(gPoolMiB * 1024.0 * 1024.0);
 
-  BenchFunctor functor(kCutoff);
-  functor.setParticleProperties(24.0, 1.0);
+  BenchFunctor functor = makeFunctor();
   functor.initTraversal();
   const MoleculeType defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
 
