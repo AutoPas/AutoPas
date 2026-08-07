@@ -82,10 +82,10 @@ TEST_F(BayesianSearchTest, testFindBest) {
   autopas::EvidenceCollection evidenceCollection{};
 
   // configuration to find
-  const autopas::FeatureVector best(
-      autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled, threadCount,
-      autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::p1xVec);
+  const autopas::FeatureVector best(autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
+                                    autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
+                                    autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise,
+                                    threadCount, autopas::VectorizationPatternOption::p1xVec);
 
   // artificial time skip
   size_t iteration = 0;
