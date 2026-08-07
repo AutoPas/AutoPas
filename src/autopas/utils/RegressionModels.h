@@ -434,11 +434,11 @@ class RebuildDecisionContext {
    *
    * Updates the internal dynamic rebuild flag (_doDynamicRebuild).
    *
-   * @param rf rebuild frequency, if one would rebuild in the current iteration
+   * @param curr_iter current iteration, or current rebuild frequency if one would rebuild in the current iteration
    * @return True if a dynamic rebuild should be triggered due to particle buffer fullness,if an initial rebuild time
    * estimate is required, or if an error or overflow occurred.
    */
-  bool decideToRebuildOnParticleBufferFullness(const unsigned int rf) {
+  bool decideToRebuildOnParticleBufferFullness(const unsigned int curr_iter) {
     bool doDynamicRebuild{false};
     const auto [value_rebuild, returnCode_rebuild, isOk_rebuild] = _rebuildNeighborTimeMean.predict();
 
@@ -450,10 +450,14 @@ class RebuildDecisionContext {
       _rebuildNeighborTimeEstimate = value_rebuild;
       _remainderTraversalTimeEstimate = value_remainder;
 
-      const double rebuildIncline = value_rebuild / (rf * rf);
+      // Full term: value_rebuild / (curr_iter * (curr_iter + 1)), but denominator is the same, so can be ignored.
+      // const double rebuildIncline = value_rebuild / (curr_iter * (curr_iter + 1));
+
+      // Full term: (value_remainder * curr_iter - static_cast<double>(_remainderTraversalTimePredictor.getSumY())) /
+      // (curr_iter * (curr_iter + 1)), but the denominator is same and can be ignored.
       const double remainderIncline =
-          (value_remainder - static_cast<double>(_remainderTraversalTimePredictor.getSumY()) / rf) / (rf + 1);
-      if (remainderIncline >= rebuildIncline or value_rebuild <= value_remainder) {
+          (value_remainder * curr_iter - static_cast<double>(_remainderTraversalTimePredictor.getSumY()));
+      if (remainderIncline >= value_rebuild or value_rebuild <= value_remainder) {
         doDynamicRebuild = true;
       }
     } else if (returnCode_rebuild == RegressionBase::ReturnCode::OVERFLOW_REG ||
