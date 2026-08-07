@@ -85,14 +85,6 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
 }
 
 /**
- * Tests: * very small scenario (8 particles) -> lowest number of threads
- */
-TEST_F(ThreadCountTuningTest, testThreadCountTuningSmall) {
-  const int maxThreads = std::min(autopas::autopas_get_max_threads(), 4);
-  testThreadCountTuningWithBoxMax(2, {1, maxThreads}, 1);
-}
-
-/**
  * Tests: Only select valid options
  * excluding possible default options (1, max threads)
  */
@@ -109,6 +101,19 @@ TEST_F(ThreadCountTuningTest, testThreadCountTuningOptions) {
  * Tests: Tuning disabled -> use all threads
  */
 TEST_F(ThreadCountTuningTest, testThreadCountTuningDisabled) { testThreadCountTuningWithBoxMax(2, {0}, 0); }
+
+/**
+ * Tests: * very small scenario (8 particles) -> lowest number of threads
+ *  Sensitive to shared CPU usage! (Skipped in CI.)
+ * To run the test explicitly, use:
+ *   ./build/tests/testAutopas/runTests \
+ *     --gtest_filter=ThreadCountTuningTest.DISABLED_testThreadCountTuningSmall \
+ *     --gtest_also_run_disabled_tests
+ */
+TEST_F(ThreadCountTuningTest, DISABLED_testThreadCountTuningSmall) {
+  const int maxThreads = std::min(autopas::autopas_get_max_threads(), 4);
+  testThreadCountTuningWithBoxMax(2, {1, maxThreads}, 1);
+}
 
 /**
  * Tests: larger scenario (33k particles)   -> highest number of threads
