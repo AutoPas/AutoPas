@@ -1,22 +1,28 @@
-option(yaml-cpp_ForceBundled "Do not look for an installed version, always use bundled." ON)
+# Gets yaml-cpp by (in order of priority): reusing a target a parent project provides, an installed
+# version via find_package, or the bundled copy in libs/yaml-cpp. Set yaml-cpp_ForceBundled=ON to force bundled.
+option(yaml-cpp_ForceBundled "Ignore any provided/installed yaml-cpp and always use the bundled copy." OFF)
+mark_as_advanced(yaml-cpp_ForceBundled)
 
-if (NOT ${yaml-cpp_ForceBundled})
+if (NOT yaml-cpp_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
+    # Path 1: reuse a yaml-cpp target a parent project already defined.
+    if (TARGET yaml-cpp OR TARGET yaml-cpp::yaml-cpp)
+        message(STATUS "AutoPas: Reusing yaml-cpp provided by parent project")
+        autopas_alias_dependency(yaml-cpp yaml-cpp::yaml-cpp)
+        return()
+    endif ()
+    # Path 2: installed version; the version arg enforces our minimum. Use whatever compatible version
+    # find_package returns - it creates a target either way, so rejecting it here would leave a
+    # `yaml-cpp::yaml-cpp` that collides with the bundled copy's own alias below.
     set(expectedVersion 0.9.0)
-    # first try: check if we find any installed version
     find_package(yaml-cpp ${expectedVersion} QUIET)
     if (yaml-cpp_FOUND)
         message(STATUS "yaml-cpp - using installed system version ${yaml-cpp_VERSION}")
-        # return here, as we have now found and imported the target.
+        autopas_promote_global(yaml-cpp)
+        autopas_promote_global(yaml-cpp::yaml-cpp)
+        autopas_alias_dependency(yaml-cpp yaml-cpp::yaml-cpp)
         return()
-    else ()
-        message(
-            STATUS "yaml-cpp - no system version compatible to version ${expectedVersion} found"
-        )
-        message(
-            STATUS
-                "yaml-cpp - if you want to use your version point the cmake variable yaml-cpp_DIR to the directory containing  yaml-cpp-config.cmake in order to pass hints to find_package"
-        )
     endif ()
+    message(STATUS "yaml-cpp - no system version >= ${expectedVersion} found; using bundled copy")
 endif ()
 
 # system version not found -> install bundled version

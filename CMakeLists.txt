@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(AutoPas)
 
 # CMAKE policies, etc.
@@ -20,6 +20,8 @@ set(AUTOPAS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/)
 # load custom conditional options
 include(optionConditional)
+# load shared dependency-resolution helpers (autopas_alias_dependency, autopas_promote_global)
+include(autopas_dependency_helpers)
 
 # Determine if AutoPas is built as the primary project or not.
 option_conditional(AUTOPAS_STANDALONE_BUILD
@@ -54,18 +56,20 @@ endif ()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-# let ccmake and cmake-gui offer the default build type options
-set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release;RelWithDebInfo;MinSizeRel")
+if (AUTOPAS_STANDALONE_BUILD)
+    # let ccmake and cmake-gui offer the default build type options
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release;RelWithDebInfo;MinSizeRel")
 
-# set Release as the default build type if it is not yet set.
-if (NOT CMAKE_BUILD_TYPE)
-    set(
-            CMAKE_BUILD_TYPE
-            "Release"
-            CACHE
-            STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
-            FORCE
-    )
+    # set Release as the default build type if it is not yet set.
+    if (NOT CMAKE_BUILD_TYPE)
+        set(
+                CMAKE_BUILD_TYPE
+                "Release"
+                CACHE
+                STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
+                FORCE
+        )
+    endif ()
 endif ()
 
 enable_testing()
@@ -105,6 +109,11 @@ include(autopas_logging)
 include(autopas_other-compileroptions)
 include(autopas_vectorization)
 
+option_conditional(AUTOPAS_BUILD_EXAMPLES
+        "Build examples."
+        AUTOPAS_STANDALONE_BUILD
+)
+
 # tests and examples
 add_subdirectory(tests)
 # application libraries
@@ -112,7 +121,7 @@ add_subdirectory(applicationLibrary)
 # might also include tests, hence might need flags from tests subdirectory
 add_subdirectory(examples)
 
-include(autopas_doxygen) # does not really need a target but the variable AUTOPAS_BUILD_EXAMPLES, which is defined in examples.
+include(autopas_doxygen) # does not really need a target but does need the variable AUTOPAS_BUILD_EXAMPLES.
 
 # write version information
 include(CMakePackageConfigHelpers)

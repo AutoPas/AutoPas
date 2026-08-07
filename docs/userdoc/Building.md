@@ -3,7 +3,7 @@
 ## Requirements
 * CMake 3.14 or newer
 * a CMake generator target (`make` is tested)
-* a C++20 compiler (gcc13, clang16, and ~~icpc 2019~~ are tested)
+* a C++20 compiler (gcc13, clang17, and ~~icpc 2019~~ are tested)
 * OpenMP (comes with GCC, for Clang you need `libomp`)
 
 Optional:
@@ -14,7 +14,8 @@ Optional:
 There are a few more dependencies, however you don't need to install them because they come bundled with AutoPas.
 See [libs/](/libs) for a complete list.
 
-If you insist on using your locally installed version of any of them, set the CMake variable `<LIBNAME>_ForceBundled=OFF`
+By default, AutoPas prefers a version provided by a parent project or installed on your system over the bundled copy.
+To always use the bundled copy of one library, set `<LIBNAME>_ForceBundled=ON`, or set `AUTOPAS_FORCE_ALL_BUNDLED=ON` to do so for all of them.
 
 ## Build Instructions
 Create a build directory and run the default CMake-based build workflow:
@@ -38,13 +39,21 @@ Here is an example of a parallel compilation of the md-flexible example:
 cmake --build . --target md-flexible --parallel 12
 ```
 
+### Building the Stand-Alone Tools
+The stand-alone tools in [tools/](/tools), namely `ruleChecker` and `tuningLogToSQL`, are not built by default.
+They can be enabled via the CMake option:
+```bash
+cmake -DAUTOPAS_BUILD_TOOLS=ON ..
+```
+Note that `ruleChecker` additionally requires `AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON` and `tuningLogToSQL` requires `libsqlite3`.
+
 ### Enabling Rules-Based Tuning and Fuzzy Tuning
 <a id="rules-based-tuning-fuzzy-tuning"></a>
 
 
-Two of the possible tuning strategies of AutoPas, rules-based tuning and fuzzy-tuning, require dependencies `antlr4cpp` and `uuid`. These
-are bundled with AutoPas, but can take some time to compile and, in some rare cases, lead to compilation errors. 
-As such, by default, rule based tuning is disabled, and `antlr4cpp` and `uuid` are not compiled.
+Two of the possible tuning strategies of AutoPas, rules-based tuning and fuzzy-tuning, require the dependency `antlr4cpp`. This
+is bundled with AutoPas, but can take some time to compile, if not already installed. 
+As such, by default, rule based tuning is disabled, and `antlr4cpp` is not compiled.
 
 Both tuning strategies can be enabled via the CMake option:
 ```bash

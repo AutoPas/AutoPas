@@ -23,6 +23,10 @@ endif ()
 
 add_library(autopas STATIC ${MY_SRC})
 
+# Namespaced alias so consumers (e.g. via FetchContent / add_subdirectory) can link a stable,
+# collision-safe target name and use `if (NOT TARGET AutoPas::autopas)` guards
+add_library(AutoPas::autopas ALIAS autopas)
+
 target_link_libraries(
     autopas
     PUBLIC

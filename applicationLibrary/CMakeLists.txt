@@ -2,189 +2,219 @@
 
 # --- molecular dynamics ---
 
-file(
-        GLOB_RECURSE
-        LIB_MD_SRC
-        "molecularDynamics/molecularDynamicsLibrary/*.h"
-        "molecularDynamics/molecularDynamicsLibrary/*.cpp"
+option_conditional(AUTOPAS_BUILD_MD_LIBRARY
+        "Build the molecular dynamics application library. Opt-in when AutoPas is used as a subproject."
+        "AUTOPAS_STANDALONE_BUILD OR AUTOPAS_BUILD_TESTS OR AUTOPAS_BUILD_EXAMPLES"
 )
 
-add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})
+if (AUTOPAS_BUILD_MD_LIBRARY)
+    file(
+            GLOB_RECURSE
+            LIB_MD_SRC
+            "molecularDynamics/molecularDynamicsLibrary/*.h"
+            "molecularDynamics/molecularDynamicsLibrary/*.cpp"
+    )
 
-# Set CMake option for md-flexible mode
-set(MD_FLEXIBLE_MODE
-        "SINGLESITE"
-        CACHE
-        STRING "Choose the mode of md-flexible to be compiled."
-        )
-set_property(CACHE MD_FLEXIBLE_MODE PROPERTY STRINGS "SINGLESITE;MULTISITE")
+    add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})
 
-# Define numerical values for different md-flexible modes
-target_compile_definitions(molecularDynamicsLibrary PUBLIC SINGLESITE=0)
-target_compile_definitions(molecularDynamicsLibrary PUBLIC MULTISITE=1)
+    # Set CMake option for md-flexible mode
+    set(MD_FLEXIBLE_MODE
+            "SINGLESITE"
+            CACHE
+            STRING "Choose the mode of md-flexible to be compiled."
+    )
+    set_property(CACHE MD_FLEXIBLE_MODE PROPERTY STRINGS "SINGLESITE;MULTISITE")
 
-string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
+    # Define numerical values for different md-flexible modes
+    target_compile_definitions(molecularDynamicsLibrary PUBLIC SINGLESITE=0)
+    target_compile_definitions(molecularDynamicsLibrary PUBLIC MULTISITE=1)
 
-if (MD_FLEXIBLE_MODE_lower MATCHES  "singlesite")
-    target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=0)
-elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
-    target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=1)
-endif()
+    string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
 
-target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
+    if (MD_FLEXIBLE_MODE_lower MATCHES  "singlesite")
+        target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=0)
+    elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
+        target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=1)
+    endif()
 
-target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)
+    target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
+
+    target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)
+endif ()
 
 # --- sph ---
 
-file(
-        GLOB_RECURSE
-        LIB_SPH_SRC
-        "sph/SPHLibrary/*.h"
-        "sph/SPHLibrary/*.cpp"
+option_conditional(AUTOPAS_BUILD_SPH_LIBRARY
+        "Build the SPH application library. Opt-in when AutoPas is used as a subproject."
+        "AUTOPAS_STANDALONE_BUILD OR AUTOPAS_BUILD_EXAMPLES"
 )
 
-add_library(SPHLibrary STATIC ${LIB_SPH_SRC})
+if (AUTOPAS_BUILD_SPH_LIBRARY)
+    file(
+            GLOB_RECURSE
+            LIB_SPH_SRC
+            "sph/SPHLibrary/*.h"
+            "sph/SPHLibrary/*.cpp"
+    )
 
-target_link_libraries(SPHLibrary PUBLIC autopas)
+    add_library(SPHLibrary STATIC ${LIB_SPH_SRC})
 
-target_include_directories(SPHLibrary PUBLIC ./sph)
+    target_link_libraries(SPHLibrary PUBLIC autopas)
+
+    target_include_directories(SPHLibrary PUBLIC ./sph)
+endif ()
 
 # --- neighbor identification ---
 
-add_library(neighborIdentificationLibrary INTERFACE)
+option_conditional(AUTOPAS_BUILD_NEIGHBOR_IDENTIFICATION_LIBRARY
+        "Build the neighbor identification functor. Opt-in when AutoPas is used as a subproject."
+        AUTOPAS_STANDALONE_BUILD
+)
 
-target_link_libraries(neighborIdentificationLibrary INTERFACE autopas)
+if (AUTOPAS_BUILD_NEIGHBOR_IDENTIFICATION_LIBRARY)
+    # header only, hence INTERFACE rather than STATIC like the libraries above
+    add_library(neighborIdentificationLibrary INTERFACE)
 
-target_include_directories(neighborIdentificationLibrary INTERFACE ./neighborIdentification)
+    target_link_libraries(neighborIdentificationLibrary INTERFACE autopas)
+
+    target_include_directories(neighborIdentificationLibrary INTERFACE ./neighborIdentification)
+endif ()
 
 # --------------------------------tests---------------------------------------
 
-# --- molecular dynamics ---
-
 if (AUTOPAS_BUILD_TESTS)
-    message(STATUS "applicationLibrary - adding all ${MD_FLEXIBLE_MODE_lower} tests")
 
-    if (MD_FLEXIBLE_MODE_lower MATCHES "singlesite")
-        set(TEST_EXE_NAME "mdLibSingleSiteTests")
-        set(TEST_EXE_UNIQUE_PATH "molecularDynamics/tests/singleSiteTests")
-    elseif (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
-        set(TEST_EXE_NAME "mdLibMultiSiteTests")
-        set(TEST_EXE_UNIQUE_PATH "molecularDynamics/tests/multiSiteTests")
-    endif()
+    # --- molecular dynamics ---
+    if (AUTOPAS_BUILD_MD_LIBRARY)
+        message(STATUS "applicationLibrary - adding all ${MD_FLEXIBLE_MODE_lower} tests")
 
-    # sanity check to prevent against globbing the whole file system
-    if(NOT DEFINED TEST_EXE_NAME OR TEST_EXE_NAME STREQUAL "" OR
-       NOT DEFINED TEST_EXE_UNIQUE_PATH OR TEST_EXE_UNIQUE_PATH STREQUAL "")
-        message(FATAL_ERROR "Both TEST_EXE_NAME and TEST_EXE_UNIQUE_PATH must be defined and not empty.\
-        This probably resulted from MD_FLEXIBLE_MODE being set wrong.\
-        MD_FLEXIBLE_MODE=${MD_FLEXIBLE_MODE}")
-    endif()
+        if (MD_FLEXIBLE_MODE_lower MATCHES "singlesite")
+            set(TEST_EXE_NAME "mdLibSingleSiteTests")
+            set(TEST_EXE_UNIQUE_PATH "molecularDynamics/tests/singleSiteTests")
+        elseif (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
+            set(TEST_EXE_NAME "mdLibMultiSiteTests")
+            set(TEST_EXE_UNIQUE_PATH "molecularDynamics/tests/multiSiteTests")
+        endif()
 
-    file(
-            GLOB_RECURSE
-            TEST_SRC
-            "${TEST_EXE_UNIQUE_PATH}/*.cpp"
-            "${TEST_EXE_UNIQUE_PATH}/*.h"
-            "molecularDynamics/tests/particlePropertiesLibraryTests/*.cpp"
-            "molecularDynamics/tests/particlePropertiesLibraryTests/*.h"
-            "molecularDynamics/tests/templateInstantiations/AutoPasInstantiations.cpp"
-    )
-    add_executable(${TEST_EXE_NAME} ${TEST_SRC} mdLibTests.cpp)
+        # sanity check to prevent against globbing the whole file system
+        if(NOT DEFINED TEST_EXE_NAME OR TEST_EXE_NAME STREQUAL "" OR
+           NOT DEFINED TEST_EXE_UNIQUE_PATH OR TEST_EXE_UNIQUE_PATH STREQUAL "")
+            message(FATAL_ERROR "Both TEST_EXE_NAME and TEST_EXE_UNIQUE_PATH must be defined and not empty.\
+            This probably resulted from MD_FLEXIBLE_MODE being set wrong.\
+            MD_FLEXIBLE_MODE=${MD_FLEXIBLE_MODE}")
+        endif()
 
-    target_include_directories(
-            ${TEST_EXE_NAME}
-            PUBLIC
-            "${PROJECT_SOURCE_DIR}/tests/testAutopas"
-            "molecularDynamics"
-    )
+        file(
+                GLOB_RECURSE
+                TEST_SRC
+                "${TEST_EXE_UNIQUE_PATH}/*.cpp"
+                "${TEST_EXE_UNIQUE_PATH}/*.h"
+                "molecularDynamics/tests/particlePropertiesLibraryTests/*.cpp"
+                "molecularDynamics/tests/particlePropertiesLibraryTests/*.h"
+                "molecularDynamics/tests/templateInstantiations/AutoPasInstantiations.cpp"
+        )
+        add_executable(${TEST_EXE_NAME} ${TEST_SRC} mdLibTests.cpp)
 
-    target_link_libraries(
-            ${TEST_EXE_NAME}
-            PUBLIC
-            autopas generators molecularDynamicsLibrary gmock
-    )
+        target_include_directories(
+                ${TEST_EXE_NAME}
+                PUBLIC
+                "${PROJECT_SOURCE_DIR}/tests/testAutopas"
+                "molecularDynamics"
+        )
 
-    # this cmake module was only introduced in 3.10
-    include(GoogleTest)
-    # more robust, queries the compiled executable
-    gtest_discover_tests(
-            ${TEST_EXE_NAME}
-            TEST_PREFIX "${TEST_EXE_NAME}/"
-            # Use PRE_TEST discovery mode to avoid running MPI executable during build
-            # This prevents SIGPIPE errors in CI when MPI and sanitizers are enabled
-            DISCOVERY_MODE PRE_TEST
-            PROPERTIES
-            ENVIRONMENT "${LSAN_OPTIONS_STR}"
-    )
+        target_link_libraries(
+                ${TEST_EXE_NAME}
+                PUBLIC
+                autopas generators molecularDynamicsLibrary gmock
+        )
 
-# --- SPH ---
-    file(
-            GLOB_RECURSE
-            SPH_TEST_SRC
-            "sph/tests/*.cpp"
-            "sph/tests/*.h"
-    )
+        # this cmake module was only introduced in 3.10
+        include(GoogleTest)
+        # more robust, queries the compiled executable
+        gtest_discover_tests(
+                ${TEST_EXE_NAME}
+                TEST_PREFIX "${TEST_EXE_NAME}/"
+                # Use PRE_TEST discovery mode to avoid running MPI executable during build
+                # This prevents SIGPIPE errors in CI when MPI and sanitizers are enabled
+                DISCOVERY_MODE PRE_TEST
+                PROPERTIES
+                ENVIRONMENT "${LSAN_OPTIONS_STR}"
+        )
+    endif ()
 
-    add_executable(sphLibTests ${SPH_TEST_SRC} sphLibTests.cpp)
+    # --- SPH ---
+    if (AUTOPAS_BUILD_SPH_LIBRARY)
+        file(
+                GLOB_RECURSE
+                SPH_TEST_SRC
+                "sph/tests/*.cpp"
+                "sph/tests/*.h"
+        )
 
-    target_include_directories(
-            sphLibTests PUBLIC
-            ${PROJECT_SOURCE_DIR}/tests/testAutopas sph
-    )
+        add_executable(sphLibTests ${SPH_TEST_SRC} sphLibTests.cpp)
 
-    target_link_libraries(
-            sphLibTests PUBLIC
-            autopas generators SPHLibrary gmock
-    )
+        target_include_directories(
+                sphLibTests PUBLIC
+                ${PROJECT_SOURCE_DIR}/tests/testAutopas sph
+        )
 
-    # this cmake module was only introduced in 3.10
-    include(GoogleTest)
-    # more robust, queries the compiled executable
-    gtest_discover_tests(
-            sphLibTests TEST_PREFIX "sphLibTests/"
-            # Use PRE_TEST discovery mode to avoid running MPI executable during build
-            # This prevents SIGPIPE errors in CI when MPI and sanitizers are enabled
-            DISCOVERY_MODE PRE_TEST
-            PROPERTIES
-            ENVIRONMENT "${LSAN_OPTIONS_STR}"
-    )
+        target_link_libraries(
+                sphLibTests PUBLIC
+                autopas generators SPHLibrary gmock
+        )
 
-# --- neighbor identification ---
-    file(
-            GLOB_RECURSE
-            NEIGHBOR_ID_TEST_SRC
-            "neighborIdentification/tests/*.cpp"
-            "neighborIdentification/tests/*.h"
-    )
+        # this cmake module was only introduced in 3.10
+        include(GoogleTest)
+        # more robust, queries the compiled executable
+        gtest_discover_tests(
+                sphLibTests TEST_PREFIX "sphLibTests/"
+                # Use PRE_TEST discovery mode to avoid running MPI executable during build
+                # This prevents SIGPIPE errors in CI when MPI and sanitizers are enabled
+                DISCOVERY_MODE PRE_TEST
+                PROPERTIES
+                ENVIRONMENT "${LSAN_OPTIONS_STR}"
+        )
+    endif ()
 
-    add_executable(neighborIdentificationLibTests ${NEIGHBOR_ID_TEST_SRC} neighborIdentificationLibTests.cpp)
+    # --- neighbor identification ---
+    if (AUTOPAS_BUILD_NEIGHBOR_IDENTIFICATION_LIBRARY)
+        file(
+                GLOB_RECURSE
+                NEIGHBOR_ID_TEST_SRC
+                "neighborIdentification/tests/*.cpp"
+                "neighborIdentification/tests/*.h"
+        )
 
-    target_include_directories(
-            neighborIdentificationLibTests PUBLIC
-            ${PROJECT_SOURCE_DIR}/tests/testAutopas
-    )
+        add_executable(neighborIdentificationLibTests ${NEIGHBOR_ID_TEST_SRC} neighborIdentificationLibTests.cpp)
 
-    target_link_libraries(
-            neighborIdentificationLibTests PUBLIC
-            autopas neighborIdentificationLibrary gmock
-    )
+        target_include_directories(
+                neighborIdentificationLibTests PUBLIC
+                ${PROJECT_SOURCE_DIR}/tests/testAutopas
+        )
 
-    # this cmake module was only introduced in 3.10
-    include(GoogleTest)
-    # more robust, queries the compiled executable
-    gtest_discover_tests(
-            neighborIdentificationLibTests TEST_PREFIX "neighborIdentificationLibTests/"
-            # Use PRE_TEST discovery mode to avoid running MPI executable during build
-            # This prevents SIGPIPE errors in CI when MPI and sanitizers are enabled
-            DISCOVERY_MODE PRE_TEST
-            PROPERTIES
-            ENVIRONMENT "${LSAN_OPTIONS_STR}"
-    )
+        target_link_libraries(
+                neighborIdentificationLibTests PUBLIC
+                autopas neighborIdentificationLibrary gmock
+        )
+
+        # this cmake module was only introduced in 3.10
+        include(GoogleTest)
+        # more robust, queries the compiled executable
+        gtest_discover_tests(
+                neighborIdentificationLibTests TEST_PREFIX "neighborIdentificationLibTests/"
+                # Use PRE_TEST discovery mode to avoid running MPI executable during build
+                # This prevents SIGPIPE errors in CI when MPI and sanitizers are enabled
+                DISCOVERY_MODE PRE_TEST
+                PROPERTIES
+                ENVIRONMENT "${LSAN_OPTIONS_STR}"
+        )
+    endif ()
 
 else()
     message(STATUS "AUTOPAS_BUILD_TESTS is disabled. Not building Application Libraries tests!")
 endif()
 
-# google benchmark based micro-benchmarks (opt-in)
-add_subdirectory(molecularDynamics/benchmarks)
+# google benchmark based micro-benchmarks (opt-in, standalone only)
+if (AUTOPAS_STANDALONE_BUILD AND AUTOPAS_BUILD_MD_LIBRARY)
+    add_subdirectory(molecularDynamics/benchmarks)
+endif ()
