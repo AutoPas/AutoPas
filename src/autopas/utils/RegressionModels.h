@@ -457,7 +457,7 @@ class RebuildDecisionContext {
       // (curr_iter * (curr_iter + 1)), but the denominator is same and can be ignored.
       const double remainderIncline =
           (value_remainder * curr_iter - static_cast<double>(_remainderTraversalTimePredictor.getSumY()));
-      if (value_rebuild <= value_remainder) {
+      if (remainderIncline >= value_rebuild) {
         doDynamicRebuild = true;
       }
     } else if (returnCode_rebuild == RegressionBase::ReturnCode::OVERFLOW_REG ||
