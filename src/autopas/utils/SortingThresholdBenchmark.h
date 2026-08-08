@@ -8,12 +8,18 @@
 
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <memory>
+#include <optional>
 #include <random>
+#include <sstream>
+#include <string>
+#include <vector>
 
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/options/SortingDirectionOption.h"
 #include "autopas/utils/SortingThresholdInfo2B.h"
+#include "autopas/utils/SortingThresholdInfoSingle.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/utils/logging/Logger.h"
@@ -34,6 +40,29 @@ namespace autopas {
  * measurements influencing the threshold to be too low. A too low threshold would actively regress performance while a
  * too high threshold would at worst still perform the same as baseline. One goal of these thresholds is to avoid any
  * performance regression against the non sorted case.
+ *
+ * DEBUG BRANCH (debug/auto-threshold-side-effect). This class carries two environment-variable hooks that exist
+ * only to split the md-flexible spinodal-decomposition regression at low cellSizeFactor into its two possible
+ * causes. In that scenario ForceUpdateTotal is 10% higher under the calibrated thresholds than under any forced
+ * threshold from 77 to 10000, even though the calibrated Newton3-on values (corner 77, edge 79, face 96) make the
+ * calibrated run a behavioural subset of the forced-77 run, which shows no regression at all. Either the six values
+ * are somehow responsible after all, or merely running the calibration perturbs the simulation that follows it.
+ * The hooks isolate one from the other:
+ *
+ *   AUTOPAS_DEBUG_SORTING_THRESHOLD_OVERRIDE_SOA=<n>
+ *   AUTOPAS_DEBUG_SORTING_THRESHOLD_OVERRIDE_AOS=<n>
+ *     Run the calibration as usual, then discard its result and store a uniform <n> instead. Keeps every side
+ *     effect of having calibrated, removes every decision the calibration would have influenced. A regression that
+ *     survives this is not caused by the threshold values.
+ *
+ *   AUTOPAS_DEBUG_SORTING_THRESHOLD_INJECT_SOA=noN3Face,noN3Edge,noN3Corner,n3Face,n3Edge,n3Corner
+ *   AUTOPAS_DEBUG_SORTING_THRESHOLD_INJECT_AOS=noN3Face,noN3Edge,noN3Corner,n3Face,n3Edge,n3Corner
+ *     Install the six per-(Newton3, direction) values directly and mark the corresponding benchmark half as
+ *     already run, so it is skipped. Keeps the values, removes the side effect. A regression that appears here is
+ *     caused by the threshold values.
+ *
+ * Both halves are independent, and an unset or malformed variable leaves stock behaviour untouched. The applied
+ * thresholds are logged at INFO in every case, so a run's own output records which values it used.
  */
 class SortingThresholdBenchmark {
  public:
@@ -46,7 +75,9 @@ class SortingThresholdBenchmark {
    */
   SortingThresholdBenchmark(size_t aosSortingThresholdDefault, size_t soaSortingThresholdDefault)
       : _soaThresholds(std::make_shared<const SortingThresholdInfoSingle>(soaSortingThresholdDefault)),
-        _aosThresholds(std::make_shared<const SortingThresholdInfoSingle>(aosSortingThresholdDefault)) {}
+        _aosThresholds(std::make_shared<const SortingThresholdInfoSingle>(aosSortingThresholdDefault)) {
+    applyDebugInjection();
+  }
 
   /**
    * Return all per-Newton3-state, per-direction-type SoA sorting thresholds if hasRunSoA() is true, otherwise the
@@ -95,6 +126,8 @@ class SortingThresholdBenchmark {
     }
     _soaThresholds = std::make_shared<const SortingThresholdInfo2B>(thresholds);
     _hasRunSoA = true;
+    logThresholds("SoA", "calibrated", thresholds);
+    applyDebugOverride(_kEnvOverrideSoA, "SoA", _soaThresholds);
   }
 
   /**
@@ -117,9 +150,126 @@ class SortingThresholdBenchmark {
     }
     _aosThresholds = std::make_shared<const SortingThresholdInfo2B>(thresholds);
     _hasRunAoS = true;
+    logThresholds("AoS", "calibrated", thresholds);
+    applyDebugOverride(_kEnvOverrideAoS, "AoS", _aosThresholds);
   }
 
  private:
+  /**
+   * Environment variable read by applyDebugOverride() for the SoA half. See the class documentation.
+   */
+  static constexpr const char *_kEnvOverrideSoA = "AUTOPAS_DEBUG_SORTING_THRESHOLD_OVERRIDE_SOA";
+  /**
+   * Environment variable read by applyDebugOverride() for the AoS half. See the class documentation.
+   */
+  static constexpr const char *_kEnvOverrideAoS = "AUTOPAS_DEBUG_SORTING_THRESHOLD_OVERRIDE_AOS";
+  /**
+   * Environment variable read by applyDebugInjection() for the SoA half. See the class documentation.
+   */
+  static constexpr const char *_kEnvInjectSoA = "AUTOPAS_DEBUG_SORTING_THRESHOLD_INJECT_SOA";
+  /**
+   * Environment variable read by applyDebugInjection() for the AoS half. See the class documentation.
+   */
+  static constexpr const char *_kEnvInjectAoS = "AUTOPAS_DEBUG_SORTING_THRESHOLD_INJECT_AOS";
+
+  /**
+   * Logs one set of per-(Newton3, direction) thresholds at INFO so a run records the values it used.
+   * @param layout "SoA" or "AoS".
+   * @param origin How the values were obtained, e.g. "calibrated" or "injected".
+   * @param thresholds Values to log.
+   */
+  static void logThresholds(const char *layout, const char *origin, const SortingThresholdInfo2B &thresholds) {
+    AutoPasLog(INFO, "SortingThresholdBenchmark {} thresholds ({}): noN3(face,edge,corner)=({},{},{}) n3=({},{},{})",
+               layout, origin, thresholds.noN3FaceThreshold, thresholds.noN3EdgeThreshold,
+               thresholds.noN3CornerThreshold, thresholds.n3FaceThreshold, thresholds.n3EdgeThreshold,
+               thresholds.n3CornerThreshold);
+  }
+
+  /**
+   * Debug hook: parse a single non-negative integer out of the environment.
+   * @param name Environment variable to read.
+   * @return The parsed value, or nullopt if unset or malformed.
+   */
+  static std::optional<size_t> parseDebugUniform(const char *name) {
+    const char *raw = std::getenv(name);
+    if (raw == nullptr) {
+      return std::nullopt;
+    }
+    try {
+      return static_cast<size_t>(std::stoull(raw));
+    } catch (const std::exception &) {
+      AutoPasLog(WARN, "SortingThresholdBenchmark: ignoring malformed {}='{}', expected one integer", name, raw);
+      return std::nullopt;
+    }
+  }
+
+  /**
+   * Debug hook: parse six comma-separated non-negative integers out of the environment, in
+   * SortingThresholdInfo2B constructor order (noN3Face, noN3Edge, noN3Corner, n3Face, n3Edge, n3Corner).
+   * @param name Environment variable to read.
+   * @return The parsed thresholds, or nullopt if unset or malformed.
+   */
+  static std::optional<SortingThresholdInfo2B> parseDebugPerConfig(const char *name) {
+    const char *raw = std::getenv(name);
+    if (raw == nullptr) {
+      return std::nullopt;
+    }
+    std::vector<size_t> values;
+    std::stringstream stream(raw);
+    std::string token;
+    while (std::getline(stream, token, ',')) {
+      try {
+        values.push_back(static_cast<size_t>(std::stoull(token)));
+      } catch (const std::exception &) {
+        values.clear();
+        break;
+      }
+    }
+    if (values.size() != 6) {
+      AutoPasLog(WARN,
+                 "SortingThresholdBenchmark: ignoring malformed {}='{}', expected six comma-separated integers "
+                 "(noN3Face,noN3Edge,noN3Corner,n3Face,n3Edge,n3Corner)",
+                 name, raw);
+      return std::nullopt;
+    }
+    return SortingThresholdInfo2B(values[0], values[1], values[2], values[3], values[4], values[5]);
+  }
+
+  /**
+   * Debug hook: if the injection variables are set, install their values and mark the corresponding benchmark half
+   * as already run so runSoABenchmark()/runAoSBenchmark() are skipped. Called from the constructor, i.e. before any
+   * calibration can happen. Isolates the effect of the calibrated values from the effect of calibrating.
+   */
+  void applyDebugInjection() {
+    if (const auto injected = parseDebugPerConfig(_kEnvInjectSoA)) {
+      _soaThresholds = std::make_shared<const SortingThresholdInfo2B>(*injected);
+      _hasRunSoA = true;
+      logThresholds("SoA", "injected, calibration skipped", *injected);
+    }
+    if (const auto injected = parseDebugPerConfig(_kEnvInjectAoS)) {
+      _aosThresholds = std::make_shared<const SortingThresholdInfo2B>(*injected);
+      _hasRunAoS = true;
+      logThresholds("AoS", "injected, calibration skipped", *injected);
+    }
+  }
+
+  /**
+   * Debug hook: if the override variable is set, replace freshly calibrated thresholds with a uniform value.
+   * Called at the end of a benchmark run, so the calibration itself still happened. Isolates the effect of
+   * calibrating from the effect of the calibrated values.
+   * @param envName Environment variable holding the uniform replacement value.
+   * @param layout "SoA" or "AoS", for the log message.
+   * @param thresholds Threshold member to overwrite.
+   */
+  static void applyDebugOverride(const char *envName, const char *layout,
+                                 std::shared_ptr<const SortingThresholdInfoInterface> &thresholds) {
+    if (const auto uniform = parseDebugUniform(envName)) {
+      thresholds = std::make_shared<const SortingThresholdInfoSingle>(*uniform);
+      AutoPasLog(INFO, "SortingThresholdBenchmark {} thresholds (calibrated result discarded via {}): uniform {}",
+                 layout, envName, *uniform);
+    }
+  }
+
   /**
    * Set to true by runSoABenchmark() once the SoA benchmark has completed.
    */
