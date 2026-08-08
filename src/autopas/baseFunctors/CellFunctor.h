@@ -18,7 +18,92 @@
 #include "autopas/utils/SortingThresholdInfoSingle.h"
 #include "autopas/utils/WrapOpenMP.h"
 
+#ifdef AUTOPAS_DEBUG_SORTING_TALLY
+#include <array>
+#include <cstdio>
+
+#include "autopas/options/SortingDirectionOption.h"
+#endif
+
 namespace autopas::internal {
+
+#ifdef AUTOPAS_DEBUG_SORTING_TALLY
+/**
+ * DEBUG BRANCH (debug/auto-threshold-side-effect), compiled only with -DAUTOPAS_DEBUG_SORTING_TALLY.
+ *
+ * Counts how often a cell-pair interaction actually took the sorted path, split by data layout and by
+ * cell adjacency. This settles by measurement what the section timers can only suggest: whether the
+ * calibrated thresholds and identically-valued injected thresholds really produce the same sorting
+ * decisions. If they do, any timing difference between them cannot come from the values.
+ *
+ * Counters are per thread on separate cache lines and incremented non-atomically, so the tally still
+ * perturbs the hot path by a percent or so. Treat a tally build as an instrument for decision counts
+ * only and take timings from a build without the flag.
+ *
+ * The totals are written to stderr at exit, one line per layout, so they land in the job's .err file.
+ */
+namespace debugSortingTally {
+/// Upper bound on OpenMP threads; CoolMUC-4 nodes run 56.
+constexpr size_t maxThreads = 512;
+
+/// Sorted/unsorted decision counts for one thread, indexed by SortingDirectionOption (0=corner, 1=edge, 2=face).
+struct alignas(64) Slot {
+  size_t sorted[3]{};
+  size_t unsorted[3]{};
+};
+
+/// Per-thread SoA-path decision counts.
+inline std::array<Slot, maxThreads> soaSlots{};
+/// Per-thread AoS-path decision counts.
+inline std::array<Slot, maxThreads> aosSlots{};
+
+/**
+ * Records one sorting decision.
+ * @param useSoA Whether the decision was taken on the SoA path.
+ * @param direction Cell adjacency index, 0=corner, 1=edge, 2=face.
+ * @param sorted Whether the sorted path was chosen.
+ * @param threadId Calling thread's OpenMP id.
+ */
+inline void record(bool useSoA, size_t direction, bool sorted, size_t threadId) {
+  if (direction > 2 or threadId >= maxThreads) {
+    return;
+  }
+  auto &slot = useSoA ? soaSlots[threadId] : aosSlots[threadId];
+  ++(sorted ? slot.sorted[direction] : slot.unsorted[direction]);
+}
+
+/// Sums every thread's counters and writes one line per layout to stderr at exit.
+struct Dumper {
+  ~Dumper() {
+    for (const auto &[name, slots] : {std::pair{"SoA", &soaSlots}, std::pair{"AoS", &aosSlots}}) {
+      size_t sorted[3]{};
+      size_t unsorted[3]{};
+      for (const auto &slot : *slots) {
+        for (size_t d = 0; d < 3; ++d) {
+          sorted[d] += slot.sorted[d];
+          unsorted[d] += slot.unsorted[d];
+        }
+      }
+      const size_t sortedAll = sorted[0] + sorted[1] + sorted[2];
+      const size_t allDecisions = sortedAll + unsorted[0] + unsorted[1] + unsorted[2];
+      if (allDecisions == 0) {
+        continue;
+      }
+      std::fprintf(stderr,
+                   "=== SORTING TALLY %s: sorted=%zu of %zu (%.3f%%) "
+                   "corner=%zu/%zu edge=%zu/%zu face=%zu/%zu (sorted/total) ===\n",
+                   name, sortedAll, allDecisions,
+                   100.0 * static_cast<double>(sortedAll) / static_cast<double>(allDecisions), sorted[0],
+                   sorted[0] + unsorted[0], sorted[1], sorted[1] + unsorted[1], sorted[2], sorted[2] + unsorted[2]);
+    }
+  }
+};
+
+/// Declared after the counter arrays so it is destroyed before them.
+inline Dumper dumper{};
+}  // namespace debugSortingTally
+#endif
+
 /**
  * A cell functor. This functor is built from the normal Functor of the template
  * type ParticleFunctor_T. It is an internal object to handle interactions between
@@ -151,7 +236,12 @@ class CellFunctor {
                                       bool useSoA) const {
     if (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0) {
       const auto &thresholds = useSoA ? _soaSortingThresholds : _aosSortingThresholds;
-      return particleCount >= thresholds.getThresholdByConfig(_useNewton3, sortingDirection);
+      const bool sorted = particleCount >= thresholds.getThresholdByConfig(_useNewton3, sortingDirection);
+#ifdef AUTOPAS_DEBUG_SORTING_TALLY
+      debugSortingTally::record(useSoA, static_cast<size_t>(SortingDirectionOption::fromRawArray(sortingDirection)),
+                                sorted, static_cast<size_t>(autopas::autopas_get_thread_num()));
+#endif
+      return sorted;
     }
     return false;
   }
