@@ -10,7 +10,9 @@
 #include <algorithm>
 #include <boost/math/statistics/linear_regression.hpp>
 #include <climits>
+#include <iostream>
 #include <limits>
+#include <ostream>
 #include <utility>
 #include <vector>
 
@@ -126,17 +128,11 @@ class RunningMean : public RegressionBase {
   /**
    *If the maximum number of data points has been reached,no further samples are added to keep the estimator bounded.
    */
-  ReturnCode addNewPoint(long const y) {
-    if (reachedMaxPoints()) {
-      return ReturnCode::EXCEEDED_MAX_POINTS_REG;
-    }
-
-    return RegressionBase::addNewPoint(y);
-  }
+  ReturnCode addNewPoint(long const y) { return RegressionBase::addNewPoint(y); }
 
   /// The prediction of the Mean class takes the mean over the gathered points.
   Result predict() {
-    if (!hasEnoughPoints()) {
+    if (not hasEnoughPoints()) {
       return Result{0, ReturnCode::NOT_ENOUGH_POINTS_REG, false};
     }
 
@@ -156,8 +152,7 @@ class RunningMean : public RegressionBase {
 class Mean : public RegressionBase {
  public:
   /**
-   * Default constructor.
-   * Initializes the base RegressionBase with minN = 1 and maxN = 100.
+   * Default constructor is removed as it is mandatory to provide a upper bound on number of sample points.
    */
   Mean() = delete;
 
@@ -377,13 +372,12 @@ class RebuildDecisionContext {
    * @param doTuningRebuild
    */
   void afterRebuild(const long rebuildTime, const bool doTuningRebuild) {
+    // @todo: remove the commented parts.
     // tuning iterations distort the rebuild time estimate
-    if (not doTuningRebuild) {
-      if (_rebuildNeighborTimeMean.addNewPoint(rebuildTime) == RegressionBase::ReturnCode::OVERFLOW_REG) {
-        _rebuildNeighborTimeMean.reset();
-        _rebuildNeighborTimeEstimate = std::numeric_limits<double>::quiet_NaN();
-      }
-    }
+    // was commented out as in case of a single AC, this ignores the first rebuild, and then rebuild is never triggered.
+    // if (not doTuningRebuild) {
+    _rebuildNeighborTimeMean.addNewPoint(rebuildTime);
+    //}
 
     _remainderTraversalTimePredictor.reset();
 
@@ -456,8 +450,8 @@ class RebuildDecisionContext {
       // Full term: (value_remainder * curr_iter - static_cast<double>(_remainderTraversalTimePredictor.getSumY())) /
       // (curr_iter * (curr_iter + 1)), but the denominator is same and can be ignored.
       const double remainderIncline =
-          (value_remainder + static_cast<double>(_remainderTraversalTimePredictor.getSumY()));
-      if (remainderIncline >= value_rebuild) {
+          (value_remainder * curr_iter - static_cast<double>(_remainderTraversalTimePredictor.getSumY()));
+      if (remainderIncline >= value_rebuild or value_rebuild <= value_remainder) {
         doDynamicRebuild = true;
       }
     } else if (returnCode_rebuild == RegressionBase::ReturnCode::OVERFLOW_REG ||

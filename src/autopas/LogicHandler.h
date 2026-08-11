@@ -6,9 +6,11 @@
 
 #pragma once
 #include <atomic>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <tuple>
 #include <type_traits>
 #include <vector>
