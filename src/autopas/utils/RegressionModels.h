@@ -451,7 +451,7 @@ class RebuildDecisionContext {
       // (curr_iter * (curr_iter + 1)), but the denominator is same and can be ignored.
       const double remainderIncline =
           (value_remainder * curr_iter - static_cast<double>(_remainderTraversalTimePredictor.getSumY()));
-      if (remainderIncline >= value_rebuild or value_rebuild <= value_remainder) {
+      if (remainderIncline >= value_rebuild) {
         doDynamicRebuild = true;
       }
     } else if (returnCode_rebuild == RegressionBase::ReturnCode::OVERFLOW_REG ||
@@ -469,7 +469,7 @@ class RebuildDecisionContext {
    * The rebuild time is assumed to be approximately constant and is therefore
    * estimated using a running mean.
    */
-  RunningMean _rebuildNeighborTimeMean{};
+  Mean _rebuildNeighborTimeMean = Mean(5);
 
   /**
    * Stores (numParticlesBuffer, remainderTraversalTime) pairs for each iteration.
