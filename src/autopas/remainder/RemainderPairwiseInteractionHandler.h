@@ -246,7 +246,7 @@ class RemainderPairwiseInteractionHandler {
         const auto z1 = storage.template operator()<Particle_T::AttributeNames::posZ, useHostView>(i);
         const auto owned1 = storage.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i);
 
-        if (owned1 != OwnershipState::dummy) {
+        if (owned1 != OwnershipStateFast::dummy) {
           FloatPrecision fxAcc = 0.;
           FloatPrecision fyAcc = 0.;
           FloatPrecision fzAcc = 0.;
@@ -315,7 +315,7 @@ class RemainderPairwiseInteractionHandler {
         const auto z1 = ownedBuffer.template operator()<Particle_T::AttributeNames::posZ, useHostView>(i);
         const auto owned1 = ownedBuffer.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i);
 
-        if (owned1 != OwnershipState::dummy) {
+        if (owned1 != OwnershipStateFast::dummy) {
           FloatPrecision fxAcc = 0.;
           FloatPrecision fyAcc = 0.;
           FloatPrecision fzAcc = 0.;
@@ -377,7 +377,7 @@ class RemainderPairwiseInteractionHandler {
         const auto z1 = ownedBuffer.template operator()<Particle_T::AttributeNames::posZ, useHostView>(i);
         const auto owned1 = ownedBuffer.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i);
 
-        if (owned1 != OwnershipState::dummy) {
+        if (owned1 != OwnershipStateFast::dummy) {
           FloatPrecision fxAcc = 0.;
           FloatPrecision fyAcc = 0.;
           FloatPrecision fzAcc = 0.;

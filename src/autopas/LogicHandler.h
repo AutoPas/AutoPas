@@ -178,7 +178,7 @@ class LogicHandler {
                 int migrantIndex = Kokkos::atomic_fetch_inc(&migrantCounter(0));
                 migrants.template copyParticle<useHostView>(migrantIndex, owned, i);
 
-                owned.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i) = OwnershipState::dummy;
+                owned.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i) = OwnershipStateFast::dummy;
               }
               /* insert owned to container? */
               else if (insertOwnedParticlesToContainer) {

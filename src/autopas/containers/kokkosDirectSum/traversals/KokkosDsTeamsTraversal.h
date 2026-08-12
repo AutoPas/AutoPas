@@ -99,7 +99,7 @@ struct TeamTraversalFunctor {
 
     const auto owned1 = _storageA.template operator()<Particle_T::AttributeNames::ownershipState, false>(i);
 
-    if (owned1 != OwnershipState::dummy) {
+    if (owned1 != OwnershipStateFast::dummy) {
       FloatPrecision fxAcc = 0.;
       FloatPrecision fyAcc = 0.;
       FloatPrecision fzAcc = 0.;

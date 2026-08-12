@@ -112,7 +112,8 @@ class LJFunctorKokkos
                          FloatPrecision &uPotSum, FloatPrecision cutoffSquared, int i, int j) final {
     const auto owned2 = storage2.template operator()<Particle_T::AttributeNames::ownershipState, false>(j);
 
-    if (owned2 != autopas::OwnershipState::dummy) {
+    // TODO: compared to the floating point ifs, this takes much more time to execute (consider having ownershipState as float with guaranteed to be exact values)
+    if (owned2 != autopas::OwnershipStateFast::dummy) {
       const auto x2 = storage2.template operator()<Particle_T::AttributeNames::posX, false>(j);
       const auto y2 = storage2.template operator()<Particle_T::AttributeNames::posY, false>(j);
       const auto z2 = storage2.template operator()<Particle_T::AttributeNames::posZ, false>(j);

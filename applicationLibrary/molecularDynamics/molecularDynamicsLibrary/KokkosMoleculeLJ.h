@@ -35,7 +35,7 @@ class KokkosMoleculeLJ {
         _id{moleculeId},
         _typeId{typeId},
         _mass{0},
-        _ownershipState{autopas::OwnershipState::owned},
+        _ownershipState{autopas::OwnershipStateFast::owned},
         _f{0., 0., 0.}
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
         ,
@@ -56,7 +56,7 @@ class KokkosMoleculeLJ {
         ,
         _id(moleculeId),
         _mass(0),
-        _ownershipState{autopas::OwnershipState::owned},
+        _ownershipState{autopas::OwnershipStateFast::owned},
         _typeId(typeId) {
   }
 
@@ -107,7 +107,7 @@ class KokkosMoleculeLJ {
       ParticleSoAFloatPrecision /*vx*/, ParticleSoAFloatPrecision /*vy*/, ParticleSoAFloatPrecision /*vz*/,
       ParticleSoAFloatPrecision /*fx*/, ParticleSoAFloatPrecision /*fy*/, ParticleSoAFloatPrecision /*fz*/,
       ParticleSoAFloatPrecision /*oldFx*/, ParticleSoAFloatPrecision /*oldFy*/, ParticleSoAFloatPrecision /*oldFz*/,
-      ParticleSoAFloatPrecision /*mass*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+      ParticleSoAFloatPrecision /*mass*/, size_t /*typeid*/, autopas::OwnershipStateFast::Type /*ownershipState*/>::Type;
 
   using KokkosSoAArraysType = autopas::utilsKokkos::KokkosSoA<
       size_t * /*id*/, ParticleSoAFloatPrecision * /*x*/, ParticleSoAFloatPrecision * /*y*/,
@@ -120,7 +120,7 @@ class KokkosMoleculeLJ {
       ParticleSoAFloatPrecision * /*fx*/, ParticleSoAFloatPrecision * /*fy*/, ParticleSoAFloatPrecision * /*fz*/,
       ParticleSoAFloatPrecision * /*oldFx*/, ParticleSoAFloatPrecision * /*oldFy*/,
       ParticleSoAFloatPrecision * /*oldFz*/, ParticleSoAFloatPrecision * /*mass*/, size_t * /*typeid*/,
-      autopas::OwnershipState * /*ownershipState*/>;
+      autopas::OwnershipStateFast::Type * /*ownershipState*/>;
 
   template <AttributeNames attribute>
   constexpr decltype(auto) operator()() {
@@ -335,7 +335,7 @@ class KokkosMoleculeLJ {
     } else if constexpr (attribute == typeId) {
       _typeId = value;
     } else if constexpr (attribute == ownershipState) {
-      _ownershipState = static_cast<autopas::OwnershipState>(value);
+      _ownershipState = static_cast<autopas::OwnershipStateFast::Type>(value);
     } else {
       autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
     }
@@ -343,7 +343,11 @@ class KokkosMoleculeLJ {
 
   void setID(unsigned long id) { _id = id; };
 
-  void setOwnershipState(autopas::OwnershipState value) { _ownershipState = value; }
+  void setOwnershipState(autopas::OwnershipState value) {
+    _ownershipState = autopas::OwnershipStateFast::fromOwnershipState(value);
+  }
+
+  void setOwnershipState(autopas::OwnershipStateFast::Type value) { _ownershipState = value; }
 
   void setV(const std::array<ParticleSoAFloatPrecision, 3> &v) {
     const Kokkos::Array temp{v.at(0), v.at(1), v.at(2)};
@@ -367,7 +371,7 @@ class KokkosMoleculeLJ {
     _oldF = temp;
   }
 
-  void markAsDeleted() { setOwnershipState(autopas::OwnershipState::dummy); }
+  void markAsDeleted() { setOwnershipState(autopas::OwnershipStateFast::dummy); }
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   void resetRAtRebuild() { setRAtRebuild(getR()); }
@@ -391,20 +395,20 @@ class KokkosMoleculeLJ {
    * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is owned by the current AutoPas object, false otherwise
    */
-  [[nodiscard]] bool isOwned() const { return _ownershipState == autopas::OwnershipState::owned; }
+  [[nodiscard]] bool isOwned() const { return _ownershipState == autopas::OwnershipStateFast::owned; }
 
   /**
    * Defines whether the particle is a halo particle, i.e., not owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is not owned by the current AutoPas object, false otherwise.
    * @note when a
    */
-  [[nodiscard]] bool isHalo() const { return _ownershipState == autopas::OwnershipState::halo; }
+  [[nodiscard]] bool isHalo() const { return _ownershipState == autopas::OwnershipStateFast::halo; }
 
   /**
    * Returns whether the particle is a dummy particle.
    * @return true if the particle is a dummy.
    */
-  [[nodiscard]] bool isDummy() const { return _ownershipState == autopas::OwnershipState::dummy; }
+  [[nodiscard]] bool isDummy() const { return _ownershipState == autopas::OwnershipStateFast::dummy; }
 
   unsigned long getID() const { return _id; }
 
@@ -416,7 +420,7 @@ class KokkosMoleculeLJ {
 
   std::array<ParticleSoAFloatPrecision, 3> getOldF() const { return {_oldF[0], _oldF[1], _oldF[2]}; }
 
-  autopas::OwnershipState getOwnershipState() const { return _ownershipState; }
+  autopas::OwnershipState getOwnershipState() const { return autopas::OwnershipStateFast::toOwnershipState(_ownershipState); }
 
   void addV(const std::array<ParticleSoAFloatPrecision, 3> &increment) {
     _v[0] += increment[0];
@@ -487,7 +491,7 @@ class KokkosMoleculeLJ {
 
   ParticleSoAFloatPrecision _mass;
 
-  autopas::OwnershipState _ownershipState;
+  autopas::OwnershipStateFast::Type _ownershipState;
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   Kokkos::Array<ParticleSoAFloatPrecision, 3> _rAtRebuild;

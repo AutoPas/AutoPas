@@ -21,17 +21,45 @@ enum class OwnershipState : int64_t {
   /// Dummy or deleted state, a particle with this state is not an actual particle!
   /// @note LJFunctorAVX requires that the Dummy state should always be the integer zero and the state with the lowest
   /// value.
-  /* TODO: check whether it might be possible to relax the prev constraint and have it as the highest value 0b100 as
-     this would align to the IteratorBehaviors */
-  /* TODO: Yes, LJFunctorAVX wants dummy to be 0 BUT it does not need to be the lowest value (at least I did not see
-     why) */
-  /* TODO: maybe change first value to an unused entry such that dummy can be 0b0100 */
   dummy = 0b0000,  // 0
   /// Owned state, a particle with this state is an actual particle and owned by the current AutoPas object!
   owned = 0b0001,  // 1
   /// Halo state, a particle with this state is an actual particle, but not owned by the current AutoPas object!
   halo = 0b0010,  // 2
 };
+
+namespace OwnershipStateFast {
+  using Type = float;
+  constexpr Type none = 0.0;
+  constexpr Type owned = 1.0;
+  constexpr Type halo = 2.0;
+  constexpr Type dummy = 4.0;
+
+  inline Type fromOwnershipState(OwnershipState ownership) {
+    switch (ownership) {
+      case OwnershipState::dummy:
+        return dummy;
+      case OwnershipState::owned:
+        return owned;
+      case OwnershipState::halo:
+        return halo;
+      default:
+        return none;
+    }
+  }
+
+  inline OwnershipState toOwnershipState(Type ownershipState) {
+    if (ownershipState == owned) {
+      return OwnershipState::owned;
+    }
+    if (ownershipState == halo) {
+      return OwnershipState::halo;
+    }
+    if (ownershipState == dummy) {
+      return OwnershipState::dummy;
+    }
+  }
+}
 
 /**
  * Bitwise AND operator for OwnershipState

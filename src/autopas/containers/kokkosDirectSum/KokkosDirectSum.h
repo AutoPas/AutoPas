@@ -179,7 +179,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
               migrants.template copyParticle<useHostView>(migrantIndex, owned, i);
 
               owned.template operator()<Particle_T::AttributeNames::ownershipState, useHostView>(i) =
-                  OwnershipState::dummy;
+                  OwnershipStateFast::dummy;
             }
         }
       });
@@ -487,7 +487,7 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
     auto &storage = (cellIndex == 0) ? _ownedParticles : _haloParticles;
     // TODO: make sure that storage is synced to HostSpace
     storage.template operator()<Particle_T::AttributeNames::ownershipState, true>(particleIndex) =
-        OwnershipState::dummy;
+        OwnershipStateFast::dummy;
     return true;
   }
 
