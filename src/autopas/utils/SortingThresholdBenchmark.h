@@ -157,6 +157,8 @@ class SortingThresholdBenchmark {
   const size_t _repetitions = 100;
   /**
    * Upper bound on the particle count searched by the binary search for the SoA path.
+   * If the benchmark does not find a faster N < _maxSoAParticles the threshold gets set to infinity, disabling the
+   * optimization.
    */
   const size_t _maxSoAParticles = 250;
 
@@ -164,6 +166,9 @@ class SortingThresholdBenchmark {
    * Upper bound on the particle count searched by the binary search for the AoS path.
    * Smaller than _maxSoAParticles because the AoS sorted path (SortedCellView) is expected to pay off at
    * substantially lower particle counts than the SoA sorted path.
+   * If the benchmark does not find a faster N < _maxAoSParticles the threshold gets set to infinity, disabling the
+   * optimization.
+   *
    */
   const size_t _maxAoSParticles = 50;
 
@@ -345,13 +350,14 @@ class SortingThresholdBenchmark {
    * generated for the benchmark cells.
    * @param cellDirection Direction-type index (0=Corner, 1=Edge, 2=Face).
    * @param newton3 Whether the benchmarked CellFunctor should apply Newton3.
-   * @return Smallest particle count at which sorted beats unsorted, or the upper search bound if never.
+   * @return Smallest particle count at which sorted beats unsorted, or the infinity if never.
    */
   template <class Functor_T, class Particle_T, bool useSoA>
   size_t runSearch(Functor_T &functor, const Particle_T &defaultParticle, SortingDirectionOption cellDirection,
                    Newton3Option newton3) {
     size_t lowCount = 0;
-    size_t highCount = useSoA ? _maxSoAParticles : _maxAoSParticles;
+    const size_t upperBound = useSoA ? _maxSoAParticles : _maxAoSParticles;
+    size_t highCount = upperBound;
 
     while (lowCount < highCount) {
       size_t mid = lowCount + (highCount - lowCount) / 2;
@@ -374,6 +380,10 @@ class SortingThresholdBenchmark {
       }
     }
     AutoPasLog(DEBUG, "SortingThresholdBenchmark {} cell direction={} threshold={}", newton3, cellDirection, lowCount);
+    // If the threshold does not converge we disable the threshold by setting it to infinity.
+    if (lowCount == upperBound) {
+      return std::numeric_limits<unsigned long>::max();
+    }
     return lowCount;
   }
 };
