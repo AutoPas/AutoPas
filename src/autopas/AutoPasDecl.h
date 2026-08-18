@@ -1165,8 +1165,9 @@ class AutoPas {
 
   /**
    * Enable or disable benchmark-based AoS/SoA pair-sorting threshold selection.
-   * When enabled, AutoPas runs a micro-benchmark (once per interaction type) to determine per-direction-type thresholds.
-   * SoA thresholds are only benchmarked for functors that support SoA sorting; otherwise the fixed fallback remains.
+   * When enabled, AutoPas runs a micro-benchmark (once per interaction type) to determine per-direction-type
+   * thresholds. SoA thresholds are only benchmarked for functors that support SoA sorting; otherwise the fixed fallback
+   * remains.
    * @param useSortingThresholdBenchmark
    */
   void setUseSortingThresholdBenchmark(bool useSortingThresholdBenchmark) {
