@@ -1164,9 +1164,9 @@ class AutoPas {
   size_t getSoASortingThreshold() const { return _autoTunerInfo.soaSortingThreshold; }
 
   /**
-   * Enable or disable benchmark-based SoA sorting threshold selection.
-   * When enabled, on the first iterate() call AutoPas runs a micro-benchmark to determine per-direction-type
-   * thresholds and uses them instead of the fixed soaSortingThreshold.
+   * Enable or disable benchmark-based AoS/SoA pair-sorting threshold selection.
+   * When enabled, AutoPas runs a micro-benchmark (once per interaction type) to determine per-direction-type thresholds.
+   * SoA thresholds are only benchmarked for functors that support SoA sorting; otherwise the fixed fallback remains.
    * @param useSortingThresholdBenchmark
    */
   void setUseSortingThresholdBenchmark(bool useSortingThresholdBenchmark) {
