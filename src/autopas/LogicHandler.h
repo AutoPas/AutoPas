@@ -195,24 +195,25 @@ class LogicHandler {
     if (_tuningManager->tuningPhaseJustFinished()) {
       _iterationAfterLastTuningPhase = _iteration;
     }
+    std::vector<Particle_T> leavingParticles;
+
     // We will do a rebuild in this timestep
     if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       _stepsSinceLastListRebuild = 0;
+      // The next call also adds particles to the container if doDataStructureUpdate is true.
+      auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
+
+      AutoPasLog(TRACE, "Initiating container update.");
+      leavingParticles = _currentContainer->updateContainer(not doDataStructureUpdate);
+      leavingParticles.insert(leavingParticles.end(), leavingBufferParticles.begin(), leavingBufferParticles.end());
+
+      // Subtract the amount of leaving particles from the number of owned particles.
+      _numParticlesOwned.fetch_sub(leavingParticles.size(), std::memory_order_relaxed);
+      // updateContainer deletes all halo particles.
+      std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
+      _numParticlesHalo.store(0, std::memory_order_relaxed);
     }
     ++_stepsSinceLastListRebuild;
-
-    // The next call also adds particles to the container if doDataStructureUpdate is true.
-    auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
-
-    AutoPasLog(TRACE, "Initiating container update.");
-    auto leavingParticles = _currentContainer->updateContainer(not doDataStructureUpdate);
-    leavingParticles.insert(leavingParticles.end(), leavingBufferParticles.begin(), leavingBufferParticles.end());
-
-    // Subtract the amount of leaving particles from the number of owned particles.
-    _numParticlesOwned.fetch_sub(leavingParticles.size(), std::memory_order_relaxed);
-    // updateContainer deletes all halo particles.
-    std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
-    _numParticlesHalo.store(0, std::memory_order_relaxed);
     return leavingParticles;
   }
 
