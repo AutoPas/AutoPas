@@ -15,7 +15,7 @@ cutoff                           :  3
 box-min                          :  [0, 0, 0]
 box-max                          :  [7.25, 7.25, 7.25]
 cell-size                        :  [1]
-deltaT                           :  0.0
+deltaT                           :  0.0005
 iterations                       :  50
 energy-sensor                    :  rapl
 boundary-type                    :  [reflective,reflective,reflective]
@@ -47,7 +47,7 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  basicScenarioVerlet
-vtk-write-frequency              :  1000
+vtk-write-frequency              :  0
 vtk-output-folder                :  /home/franziska/Documents/AutoPasOutputs
 no-end-config                    :  true
 log-level                        :  info

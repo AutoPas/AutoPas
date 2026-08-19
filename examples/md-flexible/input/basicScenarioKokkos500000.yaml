@@ -47,7 +47,7 @@ Objects:
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
 vtk-filename                     :  basicScenarioVerlet
-vtk-write-frequency              :  1000
+vtk-write-frequency              :  0
 vtk-output-folder                :  /home/franziska/Documents/AutoPasOutputs
 no-end-config                    :  true
 log-level                        :  info
