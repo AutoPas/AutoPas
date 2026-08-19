@@ -73,16 +73,17 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, 
   [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   /**
-   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    */
-  void setAoSSortingThreshold(size_t aosSortingThreshold) override {
-    _cellFunctor.setAoSSortingThreshold(aosSortingThreshold);
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) override {
+    _cellFunctor.setAoSSortingThresholds(aosSortingThreshold);
   }
+
   /**
-   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
    */
-  void setSoASortingThreshold(size_t soaSortingThreshold) override {
-    _cellFunctor.setSoASortingThreshold(soaSortingThreshold);
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold) override {
+    _cellFunctor.setSoASortingThresholds(soaSortingThreshold);
   }
 
  private:

@@ -190,6 +190,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setAoSSortingThreshold(_configuration.aosSortingThreshold.value);
   _autoPasContainer->setSoASortingThreshold(_configuration.soaSortingThreshold.value);
+  _autoPasContainer->setUseSortingThresholdBenchmark(_configuration.useSortingThresholdBenchmark.value);
   _autoPasContainer->setOutputSuffix(outputSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 

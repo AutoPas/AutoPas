@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <vector>
 
 #include "autopas/cells/ParticleCell.h"
@@ -18,6 +19,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
+#include "autopas/utils/SortingThresholdInfoInterface.h"
 #include "autopas/utils/inBox.h"
 #include "autopas/utils/optRef.h"
 
@@ -250,6 +252,24 @@ class ParticleContainerInterface {
    * @param traversal The traversal to use for the iteration.
    */
   virtual void computeInteractions(TraversalInterface *traversal) = 0;
+
+  /**
+   * Set the aos-sorting-threshold for traversals that use the CellFunctor.
+   * Cell-based containers store this shared_ptr as-is (agnostic to the concrete shape it points to) and forward it
+   * to freshly generated traversals in prepareTraversal(). Containers without a CellFunctor should explicitly
+   * override with an empty body.
+   * @param aosSortingThresholds
+   */
+  virtual void setAoSSortingThresholds(std::shared_ptr<const SortingThresholdInfoInterface> aosSortingThresholds) = 0;
+
+  /**
+   * Set the SoA sorting-threshold for traversals that use the CellFunctor.
+   * Cell-based containers store this shared_ptr as-is (agnostic to the concrete shape it points to) and forward it
+   * to freshly generated traversals in prepareTraversal(). Containers without a CellFunctor should explicitly
+   * override with an empty body.
+   * @param soaSortingThresholds
+   */
+  virtual void setSoASortingThresholds(std::shared_ptr<const SortingThresholdInfoInterface> soaSortingThresholds) = 0;
 
   /**
    * Get the upper corner of the container without halo.

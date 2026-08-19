@@ -12,7 +12,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/inBox.h"
 
-namespace autopasTools::generators {
+namespace autopas::generators {
 /**
  * Generator class for uniform distributions
  */
@@ -126,4 +126,4 @@ void UniformGenerator::fillWithHaloParticles(Container &container, const Particl
     haloAddFunction(container, particle);
   }
 }
-}  // namespace autopasTools::generators
+}  // namespace autopas::generators

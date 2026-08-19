@@ -15,6 +15,7 @@
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/LeavingParticleCollector.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/octree/OctreeLeafNode.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/OctreeNodeWrapper.h"
@@ -69,14 +70,15 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @param cutoff The cutoff radius
    * @param skin The skin radius
    * @param cellSizeFactor The cell size factor
-   * @param aosSortingThreshold The threshold for AoS sorting.
-   * @param soaSortingThreshold Sum of the SoA buffer sizes of two cells from which SoA sorting should be enabled.
+   * @param aosSortingThresholdFallback The threshold for AoS sorting.
+   * @param soaSortingThresholdFallback Sum of the SoA buffer sizes of two cells from which SoA sorting should be
+   * enabled.
    */
   Octree(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-         const double skin, const double cellSizeFactor, const size_t aosSortingThreshold,
-         const size_t soaSortingThreshold)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThreshold,
-                                                     soaSortingThreshold) {
+         const double skin, const double cellSizeFactor, const size_t aosSortingThresholdFallback,
+         const size_t soaSortingThresholdFallback)
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThresholdFallback,
+                                                     soaSortingThresholdFallback) {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (cellSizeFactor != 1.0) {
@@ -153,6 +155,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   void computeInteractions(TraversalInterface *traversal) override {
     if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCellType> *>(traversal)) {
       traversalInterface->setCells(&this->_cells);
+    }
+    if (auto *cellTraversal = dynamic_cast<CellTraversal<OctreeLeafNode<Particle_T>> *>(traversal)) {
+      cellTraversal->setAoSSortingThresholds(*this->_aosSortingThresholds);
+      cellTraversal->setSoASortingThresholds(*this->_soaSortingThresholds);
     }
 
     traversal->initTraversal();

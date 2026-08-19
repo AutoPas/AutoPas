@@ -10,7 +10,7 @@
 #include "AutoPasTestBase.h"
 
 /**
- * Tests for autopasTools::generators::TwoCellsInteractionHitrateGenerator.
+ * Tests for autopas::generators::TwoCellsInteractionHitrateGenerator.
  */
 class TwoCellsInteractionHitrateGeneratorTest : public AutoPasTestBase {
  public:

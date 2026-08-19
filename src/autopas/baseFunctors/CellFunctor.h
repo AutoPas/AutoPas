@@ -13,6 +13,9 @@
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/SortedSoAView.h"
+#include "autopas/utils/SortingThresholdInfo2B.h"
+#include "autopas/utils/SortingThresholdInfoInterface.h"
+#include "autopas/utils/SortingThresholdInfoSingle.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas::internal {
@@ -39,8 +42,10 @@ class CellFunctor {
    */
   explicit CellFunctor(ParticleFunctor_T &f, const double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
       : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {
-    if (dataLayout == DataLayoutOption::soa) {
-      _soaThreadData.resize(autopas::autopas_get_max_threads());
+    if constexpr (ParticleFunctor_T::supportsSoASorting) {
+      if (dataLayout == DataLayoutOption::soa) {
+        _soaThreadData.resize(autopas::autopas_get_max_threads());
+      }
     }
   }
 
@@ -82,9 +87,10 @@ class CellFunctor {
    * Set the aos-sorting-threshold.
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
+   * For single cell sorting the newton3(on/off)/Face threshold is used as a stand in.
    * @param aosSortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
-  void setAoSSortingThreshold(size_t aosSortingThreshold);
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold);
 
   /**
    * Set the SoA sorting-threshold.
@@ -92,7 +98,7 @@ class CellFunctor {
    * SoAFunctorPairSorted instead of SoAFunctorPair.
    * @param soaSortingThreshold Sum of the number of particles in two cells from which SoA sorting should be enabled.
    */
-  void setSoASortingThreshold(size_t soaSortingThreshold);
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold);
 
   /**
    * Computes conservative per-particle index bounds into projIdxJ based on a 1-D projection cutoff check.
@@ -104,15 +110,22 @@ class CellFunctor {
    * The returned SoASortingData contains:
    * - startI: index of the first i-particle that could interact with any j-particle. All i before startI
    *   project farther than cutoff below projIdxJ[0] and can be skipped unconditionally.
+   * - endI: exclusive upper bound; index of the first i-particle (from startI onwards) that projects farther
+   *   than cutoff above projIdxJ.back(). All i from endI onwards can be skipped unconditionally, symmetric to
+   *   startI.
    * - maxIndex[i]: exclusive upper bound; the first j where projJ > projI[i] + cutoff. A functor iterating
    *   j up to (but not including) this index will not miss any candidate pair for particle i.
    * - minIndex[i]: inclusive lower bound; the first j where projJ >= projI[i] - cutoff. A functor may start
    *   its j-loop here and skip all earlier j-particles for particle i.
    *
-   * Both maxIndex and minIndex are monotonically non-decreasing with i. A functor processing i-particles in
-   * order can therefore advance its j-loop bounds without backtracking, and may also derive valid bounds for
-   * a contiguous block of i-particles (For example with VecPatterns != 1xVec) by taking minIndex of the first and
-   * maxIndex of the last.
+   * Both maxIndex and minIndex are monotonically non-decreasing with i and are only populated for i in
+   * [startI, endI); entries outside that range are left at 0. A functor processing i-particles in order can
+   * therefore advance its j-loop bounds without backtracking, and may also derive valid bounds for a
+   * contiguous block of i-particles (For example with VecPatterns != 1xVec) by taking minIndex of the first
+   * and maxIndex of the last.
+   *
+   * endI and minIndex are only needed for the bidrectional non newton3 case, as there the direction of sorting is
+   * reversed.
    *
    * @param projIdxI Sorted (projection, original index) pairs for the outer-loop (i) cell.
    * @param projIdxJ Sorted (projection, original index) pairs for the inner-loop (j) cell.
@@ -127,25 +140,39 @@ class CellFunctor {
 
  private:
   /**
-   * Evaluate whether the AoSFunctor should use sorting, depending on the set sorting threshold.
-   * @param particleCount Total number of involved particles.
+   * Evaluate whether the AoS or SoA path should use sorting, depending on the set AoS/SoA pair-sorting thresholds.
+   * @param particleCount Total number of involved particles (or, for the SoA path, the sum of both SoA buffer
+   * sizes).
    * @param sortingDirection No sorting when the sorting direction is {0., 0., 0.}.
-   * @return whether the AoSFunctor should use the SortedCellView.
+   * @param useSoA Whether to evaluate against the SoA thresholds (true) or the AoS thresholds (false).
+   * @return Whether the corresponding path should use sorted iteration.
    */
-  [[nodiscard]] bool shouldUseAoSSorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
-    return particleCount >= _aosSortingThreshold and
-           (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
+  [[nodiscard]] bool shouldUseSorting(size_t particleCount, const std::array<double, 3> &sortingDirection,
+                                      bool useSoA) const {
+    if (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0) {
+      const auto &thresholds = useSoA ? _soaSortingThresholds : _aosSortingThresholds;
+      return particleCount >= thresholds.getThresholdByConfig(_useNewton3, sortingDirection, bidirectional);
+    }
+    return false;
   }
 
   /**
-   * Evaluate whether the SoA path should use sorted pair iteration, depending on the set SoA sorting threshold.
-   * @param particleCount Total number of involved particles (sum of both SoA buffer sizes).
-   * @param sortingDirection No sorting when the sorting direction is {0., 0., 0.}.
-   * @return Whether the SoA path should use SoAFunctorPairSorted.
+   * Resolves a SortingThresholdInfoInterface into a concrete SortingThresholdInfo2B.
+   * If the given info is already a SortingThresholdInfo2B, it is used as-is. Otherwise it is expected to be a
+   * SortingThresholdInfoSingle, whose single scalar value is broadcast uniformly to all Newton3-state /
+   * SortingDirectionOption combinations.
+   * @param info
+   * @return Concrete SortingThresholdInfo2B.
    */
-  [[nodiscard]] bool shouldUseSoASorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
-    return particleCount >= _soaSortingThreshold and
-           (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
+  [[nodiscard]] static SortingThresholdInfo2B resolveThreshold(const SortingThresholdInfoInterface &info) {
+    if (const auto *info2B = dynamic_cast<const SortingThresholdInfo2B *>(&info)) {
+      return *info2B;
+    }
+    if (const auto *infoSingle = dynamic_cast<const SortingThresholdInfoSingle *>(&info)) {
+      return SortingThresholdInfo2B(infoSingle->threshold);
+    }
+    throw utils::ExceptionHandler::AutoPasException(
+        "CellFunctor was called with wrong SortingThresholdInfo Type. (Supported are single and 2B)");
   }
 
   /**
@@ -170,7 +197,7 @@ class CellFunctor {
 
   /**
    * Applies the SoA functor to all particle pairs between cell1 and cell2.
-   * Uses SoAFunctorPairSorted when shouldUseSoASorting() is true; otherwise SoAFunctorPair.
+   * Uses SoAFunctorPairSorted when shouldUseSorting() is true; otherwise SoAFunctorPair.
    * @param cell1
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
@@ -183,16 +210,12 @@ class CellFunctor {
   const double _sortingCutoff;
 
   /**
-   * Min. number of particles to start AoS sorting. This is the sum of the number of particles in two cells.
+   * Min. number of particles to start AoS sorting for single-cell interactions (processCell()/
+   * processCellAoSImpl()). This is the number of particles in the cell.
    * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
-  size_t _aosSortingThreshold{8};
-
-  /**
-   * Min. number of particles to start SoA sorting. This is the sum of the SoA buffer sizes of two cells.
-   * Default comes from the LJFunctorHWY Benchmarks.
-   */
-  size_t _soaSortingThreshold{50};
+  SortingThresholdInfo2B _aosSortingThresholds{8};
+  SortingThresholdInfo2B _soaSortingThresholds{100};
 
   const DataLayoutOption::Value _dataLayout;
 
@@ -214,13 +237,15 @@ class CellFunctor {
 };
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThreshold(size_t aosSortingThreshold) {
-  _aosSortingThreshold = aosSortingThreshold;
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThresholds(
+    const SortingThresholdInfoInterface &aosSortingThreshold) {
+  _aosSortingThresholds = resolveThreshold(aosSortingThreshold);
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThreshold(size_t soaSortingThreshold) {
-  _soaSortingThreshold = soaSortingThreshold;
+void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThresholds(
+    const SortingThresholdInfoInterface &soaSortingThreshold) {
+  _soaSortingThresholds = resolveThreshold(soaSortingThreshold);
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
@@ -286,8 +311,9 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellA
       this->_functor.AoSFunctor(p2, p1, false);
     }
   };
-
-  if (cell.size() >= _aosSortingThreshold) {
+  // @todo: Which parameter from the Thresholds is used for inner cell sorting is currently arbitrary, think of a good
+  // way to handle this
+  if (cell.size() >= _aosSortingThresholds.getThresholdByConfig(_useNewton3, {1, 0, 0}, bidirectional)) {
     SortedCellView<ParticleCell_T> cellSorted(cell, utils::ArrayMath::normalize(cell.getCellLength()));
 
     for (auto cellIter1 = cellSorted._particles.begin(); cellIter1 != cellSorted._particles.end(); ++cellIter1) {
@@ -324,7 +350,7 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
     }
   };
 
-  if (shouldUseAoSSorting(cell1.size() + cell2.size(), sortingDirection)) {
+  if (shouldUseSorting(cell1.size() + cell2.size(), sortingDirection, /*useSoA*/ false)) {
     // Use sorted cell views
     SortedCellView<ParticleCell_T> cell1Sorted(cell1, sortingDirection);
     SortedCellView<ParticleCell_T> cell2Sorted(cell2, sortingDirection);
@@ -360,17 +386,25 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
   if (nJ == 0) {
     maxIndexCache.assign(nI, 0);
     minIndexCache.assign(nI, 0);
-    return {nI, maxIndexCache, minIndexCache};
+    return {nI, nI, maxIndexCache, minIndexCache};
   }
 
   // Compute startI: the first i-particle that can interact with any j-particle.
   // Any i with `projI[i] < projJ[0] - cutoff` is strictly farther than cutoff from every j along the
   // sorting axis, so it cannot contribute an interaction and is skipped. Particles exactly at the cutoff
   // distance are kept, consistent with the inclusive cutoff test used below for minIndex/maxIndex.
-  const double threshold = projIdxJ[0].first - _sortingCutoff;
-  auto startIter = std::lower_bound(projIdxI.begin(), projIdxI.end(), threshold,
+  const double startThreshold = projIdxJ[0].first - _sortingCutoff;
+  auto startIter = std::lower_bound(projIdxI.begin(), projIdxI.end(), startThreshold,
                                     [](const auto &elem, double val) { return elem.first < val; });
   const size_t startI = static_cast<size_t>(startIter - projIdxI.begin());
+
+  // Compute endI: the exclusive upper bound of i-particles that can interact with any j-particle. Symmetric
+  // to startI: any i with `projI[i] > projJ.back() + cutoff` is strictly farther than cutoff from every j
+  // along the sorting axis, so it and all following i (projIdxI is sorted) can be skipped unconditionally.
+  const double endThreshold = projIdxJ[nJ - 1].first + _sortingCutoff;
+  auto endIter = std::upper_bound(projIdxI.begin(), projIdxI.end(), endThreshold,
+                                  [](double val, const auto &elem) { return val < elem.first; });
+  const size_t endI = static_cast<size_t>(endIter - projIdxI.begin());
 
   // Compute maxIndexCache and minIndexCache in a single O(nI + nJ) sweep.
   // Both bounds are monotonically non-decreasing with i because projIdxI is sorted, so each pointer only
@@ -379,7 +413,7 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
   maxIndexCache.assign(nI, 0);
   minIndexCache.assign(nI, 0);
   size_t jUpper = 0, jLower = 0;
-  for (size_t i = startI; i < nI; ++i) {
+  for (size_t i = startI; i < endI; ++i) {
     // jUpper: first j where projJ > projI[i] + cutoff (exclusive upper bound).
     while (jUpper < nJ and projIdxJ[jUpper].first <= projIdxI[i].first + _sortingCutoff) {
       ++jUpper;
@@ -392,14 +426,15 @@ SoASortingData CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::co
     minIndexCache[i] = jLower;
   }
 
-  return {startI, maxIndexCache, minIndexCache};
+  return {startI, endI, maxIndexCache, minIndexCache};
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPairSoAImpl(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
   if constexpr (ParticleFunctor_T::supportsSoASorting) {
-    if (shouldUseSoASorting(cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size(), sortingDirection)) {
+    if (shouldUseSorting(cell1._particleSoABuffer.size() + cell2._particleSoABuffer.size(), sortingDirection,
+                         /*useSoA*/ true)) {
       using Particle_T = ParticleCell_T::ParticleType;
       auto &threadData = _soaThreadData[autopas::autopas_get_thread_num()];
 
@@ -415,6 +450,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
 
       if constexpr (bidirectional) {
         if (not _useNewton3) {
+          // Roles swapped relative to the call above: startI/maxIndex are now trivial (0 / nJ), endI/minIndex do
+          // the pruning instead.
           _functor.SoAFunctorPairSorted(
               view2.getView(), view1.getView(),
               computeSortingData(threadData.projIdx2, threadData.projIdx1, threadData.maxIndex, threadData.minIndex),

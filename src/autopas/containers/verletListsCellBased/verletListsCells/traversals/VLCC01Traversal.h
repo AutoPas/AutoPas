@@ -67,14 +67,14 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
   [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   /**
-   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
-  void setAoSSortingThreshold(size_t aosSortingThreshold) override {}
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) override {}
   /**
-   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
    */
-  void setSoASortingThreshold(size_t soaSortingThreshold) override {}
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold) override {}
 
  private:
   PairwiseFunctor &_functor;

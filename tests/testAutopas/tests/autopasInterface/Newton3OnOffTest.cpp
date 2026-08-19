@@ -8,8 +8,8 @@
 
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/utils/logging/Logger.h"
-#include "generators/src/UniformGenerator.h"
 
 using ::testing::_;
 using ::testing::Combine;
@@ -68,8 +68,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::Configuration config) {
   auto container = autopas::ContainerSelector<ParticleFP64>::generateContainer(config.container, containerInfo);
 
   const ParticleFP64 defaultParticle{};
-  autopasTools::generators::UniformGenerator::fillWithParticles(*container, defaultParticle, container->getBoxMin(),
-                                                                container->getBoxMax(), 200);
+  autopas::generators::UniformGenerator::fillWithParticles(*container, defaultParticle, container->getBoxMin(),
+                                                           container->getBoxMax(), 200);
   // Do not add any halo particles to this test!
   // Given an owned particle p1 and a halo particle p2 the following interactions are necessary:
   // Newton3   : p1 <-> p2

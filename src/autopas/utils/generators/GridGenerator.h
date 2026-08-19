@@ -10,7 +10,7 @@
 #include "autopas/utils/ParticleTypeTrait.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
-namespace autopasTools::generators {
+namespace autopas::generators {
 /**
  * Generator for grids of particles.
  */
@@ -104,4 +104,4 @@ void GridGenerator::fillWithParticles(
     }
   }
 }
-}  // namespace autopasTools::generators
+}  // namespace autopas::generators

@@ -1,3 +1,2 @@
-add_subdirectory(generators)
 add_subdirectory(ruleChecker)
 add_subdirectory(tuningLogToSQL)
