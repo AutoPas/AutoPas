@@ -72,7 +72,7 @@ class TraversalSelector {
   static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType, Functor_T &functor,
                                                                const TraversalSelectorInfo &traversalInfo,
                                                                DataLayoutOption dataLayout, bool useNewton3,
-                                                               size_t kokkosChunkSize, size_t kokkosTeamSize);
+                                                               size_t kokkosChunkSize, size_t kokkosTeamSize, size_t kokkosVectorSize);
 
   /**
    * Generates a given pairwise Traversal for the given properties.
@@ -90,7 +90,7 @@ class TraversalSelector {
                                                                        PairwiseFunctor_T &pairwiseFunctor,
                                                                        const TraversalSelectorInfo &traversalInfo,
                                                                        DataLayoutOption dataLayout, bool useNewton3,
-                                                                       size_t kokkosChunkSize, size_t kokkosTeamSize);
+                                                                       size_t kokkosChunkSize, size_t kokkosTeamSize, size_t kokkosVectorSize);
 
   /**
    * Generates a given triwise Traversal for the given properties.
@@ -127,7 +127,7 @@ class TraversalSelector {
 template <class ParticleCell_T, class PairwiseFunctor_T>
 std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal(
     TraversalOption traversalType, PairwiseFunctor_T &pairwiseFunctor, const TraversalSelectorInfo &traversalInfo,
-    DataLayoutOption dataLayout, bool useNewton3, size_t kokkosChunkSize, size_t kokkosTeamSize) {
+    DataLayoutOption dataLayout, bool useNewton3, size_t kokkosChunkSize, size_t kokkosTeamSize, size_t kokkosVectorSize) {
   std::unique_ptr<TraversalInterface> traversal;
   switch (traversalType) {
     // Direct sum
@@ -153,7 +153,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
     }
     case TraversalOption::ds_kokkos_chunks: {
       traversal = std::make_unique<KokkosDsChunksTraversal<PairwiseFunctor_T, typename ParticleCell_T::ParticleType>>(
-          &pairwiseFunctor, dataLayout, useNewton3, kokkosChunkSize, kokkosChunkSize);
+          &pairwiseFunctor, dataLayout, useNewton3, kokkosTeamSize, kokkosChunkSize, kokkosVectorSize);
       break;
     }
 #endif
@@ -445,10 +445,10 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
 template <class ParticleCell_T, class Functor_T>
 std::unique_ptr<TraversalInterface> TraversalSelector::generateTraversal(
     TraversalOption traversalType, Functor_T &functor, const TraversalSelectorInfo &traversalInfo,
-    DataLayoutOption dataLayout, bool useNewton3, size_t kokkosChunkSize, size_t kokkosTeamSize) {
+    DataLayoutOption dataLayout, bool useNewton3, size_t kokkosChunkSize, size_t kokkosTeamSize, size_t kokkosVectorSize) {
   if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
     return generatePairwiseTraversal<ParticleCell_T, Functor_T>(traversalType, functor, traversalInfo, dataLayout,
-                                                                useNewton3, kokkosChunkSize, kokkosTeamSize);
+                                                                useNewton3, kokkosChunkSize, kokkosTeamSize, kokkosVectorSize);
   } else if constexpr (utils::isTriwiseFunctor<Functor_T>()) {
     return generateTriwiseTraversal<ParticleCell_T, Functor_T>(traversalType, functor, traversalInfo, dataLayout,
                                                                useNewton3);
@@ -465,11 +465,11 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTraversalFromConf
     case ContainerOption::Value::linkedCellsReferences:
       return TraversalSelector::generateTraversal<ReferenceParticleCell<Particle_T>, Functor_T>(
           config.traversal, functor, traversalInfo, config.dataLayout, config.newton3, config.kokkosChunkSize,
-          config.kokkosTeamSize);
+          config.kokkosTeamSize, config.kokkosVectorSize);
     default:
       return TraversalSelector::generateTraversal<FullParticleCell<Particle_T>, Functor_T>(
           config.traversal, functor, traversalInfo, config.dataLayout, config.newton3, config.kokkosChunkSize,
-          config.kokkosTeamSize);
+          config.kokkosTeamSize, config.kokkosVectorSize);
   }
 }
 }  // namespace autopas

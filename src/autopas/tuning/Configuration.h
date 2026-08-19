@@ -43,7 +43,7 @@ class Configuration {
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout,
                           DataLayoutOption _containerLayout, Newton3Option _newton3,
-                          InteractionTypeOption _interactionType, size_t chunkSize, size_t teamSize,
+                          InteractionTypeOption _interactionType, size_t chunkSize, size_t teamSize, size_t vectorSize,
                           VectorizationPatternOption _vecPattern = VectorizationPatternOption::p1xVec)
       : container(_container),
         traversal(_traversal),
@@ -55,7 +55,8 @@ class Configuration {
         cellSizeFactor(_cellSizeFactor),
         interactionType(_interactionType),
         kokkosChunkSize(chunkSize),
-        kokkosTeamSize(teamSize) {}
+        kokkosTeamSize(teamSize),
+        kokkosVectorSize(vectorSize){}
 
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
@@ -173,6 +174,8 @@ class Configuration {
   size_t kokkosChunkSize;
 
   size_t kokkosTeamSize;
+
+  size_t kokkosVectorSize;
 
  private:
   /**

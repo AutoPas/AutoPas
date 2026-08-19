@@ -152,9 +152,10 @@ class KokkosDsChunksTraversal : public DSKokkosTraversalInterface<Particle_T> {
    * @param chunkSize Size of the Chunks for the Kokkos Teams, one team works one chunkSize consecutive i-particles
    */
   explicit KokkosDsChunksTraversal(Functor *functor, DataLayoutOption dataLayout, bool useNewton3, size_t teamSize,
-                                   size_t chunkSize)
+                                   size_t chunkSize, size_t vectorSize)
       : DSKokkosTraversalInterface<Particle_T>(dataLayout, useNewton3),
         _functor{functor},
+        _vectorSize(vectorSize),
         _teamSize(teamSize),
         _chunkSize(chunkSize) {}
 
@@ -198,7 +199,7 @@ class KokkosDsChunksTraversal : public DSKokkosTraversalInterface<Particle_T> {
     const size_t numChunks = N / chunkSize;
 
     auto teamPolicy = Kokkos::TeamPolicy<typename DSKokkosTraversalInterface<Particle_T>::DeviceSpace::execution_space>(
-        numChunks + 1, _teamSize, Kokkos::AUTO);
+        numChunks + 1, _teamSize, _vectorSize);
 
     constexpr bool calculateGlobals = Functor::globalCalculationRequested();
     if constexpr (calculateGlobals) {
@@ -235,6 +236,8 @@ class KokkosDsChunksTraversal : public DSKokkosTraversalInterface<Particle_T> {
   }
 
   Functor *_functor;
+
+  const size_t _vectorSize{0};
 
   const size_t _teamSize{0};
 

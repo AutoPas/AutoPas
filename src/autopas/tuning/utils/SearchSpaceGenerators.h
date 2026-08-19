@@ -88,7 +88,7 @@ std::set<Configuration> cartesianProduct(
     const std::set<DataLayoutOption> &allowedContainerLayoutOptions,
     const std::set<Newton3Option> &allowedNewton3Options, const NumberSet<double> *allowedCellSizeFactors,
     const InteractionTypeOption &interactionType, const std::set<size_t> &kokkosChunkSize,
-    const std::set<size_t> &kokkosTeamSize, const std::set<VectorizationPatternOption> &allowedVecPatternOptions);
+    const std::set<size_t> &kokkosTeamSize, const std::set<size_t> &kokkosVectorSize, const std::set<VectorizationPatternOption> &allowedVecPatternOptions);
 
 /**
  * Crudely trying to reconstruct the dimensions of the search space from a given set of options.

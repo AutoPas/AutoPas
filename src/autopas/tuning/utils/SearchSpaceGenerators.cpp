@@ -22,7 +22,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<DataLayoutOption> &allowedContainerLayoutOptions,
     const std::set<Newton3Option> &allowedNewton3Options, const NumberSet<double> *allowedCellSizeFactors,
     const InteractionTypeOption &interactionType, const std::set<size_t> &kokkosChunkSize,
-    const std::set<size_t> &kokkosTeamSize, const std::set<VectorizationPatternOption> &allowedVecPatternOptions) {
+    const std::set<size_t> &kokkosTeamSize, const std::set<size_t> &kokkosVectorSize, const std::set<VectorizationPatternOption> &allowedVecPatternOptions) {
   if (allowedCellSizeFactors->isInterval()) {
     utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
   }
@@ -50,13 +50,15 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
               for (const auto &newton3Option : allowedNewton3Options) {
                 for (const auto &chunkSize : kokkosChunkSize) {
                   for (const auto &teamSize : kokkosTeamSize) {
-                    for (const auto &vecPatternOption : allowedVecPatternOptions) {
-                      const Configuration configuration{
+                    for (const auto &vectorSize : kokkosVectorSize) {
+                      for (const auto &vecPatternOption : allowedVecPatternOptions) {
+                        const Configuration configuration{
                           containerOption,       csf,           traversalOption, loadEstimatorOption, dataLayoutOption,
-                          containerLayoutOption, newton3Option, interactionType, chunkSize,           teamSize,
+                          containerLayoutOption, newton3Option, interactionType, chunkSize,           teamSize, vectorSize,
                           vecPatternOption};
-                      if (configuration.hasCompatibleValues()) {
-                        searchSet.insert(configuration);
+                        if (configuration.hasCompatibleValues()) {
+                          searchSet.insert(configuration);
+                        }
                       }
                     }
                   }
@@ -79,7 +81,7 @@ SearchSpaceGenerators::OptionSpace SearchSpaceGenerators::inferOptionDimensions(
     const std::set<Configuration> &searchSet) {
   OptionSpace optionSpace;
   for (const auto &[container, traversal, vecPattern, loadEst, dataLayout, containerLayout, newton3, csf, interactT,
-                    kokkosChunkSize, kokkosTeamSize] : searchSet) {
+                    kokkosChunkSize, kokkosTeamSize, kokkosVectorSize] : searchSet) {
     optionSpace.containerOptions.insert(container);
     optionSpace.traversalOptions.insert(traversal);
     optionSpace.loadEstimatorOptions.insert(loadEst);

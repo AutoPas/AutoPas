@@ -521,6 +521,7 @@ class AutoPas {
 
   void setKokkosTeamSize(const std::set<size_t> &kokkosTeamSize) { _allowedKokkosTeamSize = kokkosTeamSize; }
 
+  void setKokkosVectorSize(const std::set<size_t> &kokkosVectorSize) { _allowedKokkosVectorSize = kokkosVectorSize; }
   /**
    * Get cutoff radius.
    * @return
@@ -1203,6 +1204,8 @@ class AutoPas {
   std::set<size_t> _allowedKokkosChunkSize{0};
 
   std::set<size_t> _allowedKokkosTeamSize{0};
+
+  std::set<size_t> _allowedKokkosVectorSize{0};
 
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.

@@ -91,7 +91,7 @@ void AutoPas<Particle_T>::init() {
         _allowedContainers, _allowedTraversals[interactionType], _allowedLoadEstimators,
         _allowedDataLayouts[interactionType], _allowedContainerLayouts[interactionType],
         _allowedNewton3Options[interactionType], &cellSizeFactors, interactionType, _allowedKokkosChunkSize,
-        _allowedKokkosTeamSize, _allowedVecPatternsOptions[interactionType]);
+        _allowedKokkosTeamSize, _allowedKokkosVectorSize, _allowedVecPatternsOptions[interactionType]);
 
     AutoTuner::TuningStrategiesListType tuningStrategies;
     tuningStrategies.reserve(_tuningStrategyOptions.size());
