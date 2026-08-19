@@ -109,6 +109,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.yamlFilename,
       config.kokkosChunkSize,
       config.kokkosTeamSize,
+      config.kokkosVectorSize,
       zshCompletionsOption,
       helpOption)};
   // clang-format on
@@ -677,6 +678,19 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           }
         } catch (const exception &) {
           cerr << "Error parsing kokkos chunk size: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.kokkosVectorSize)::getoptChar: {
+        try {
+          auto intermediate = autopas::utils::StringUtils::parseNumberSet(strArg)->getAll();
+          config.kokkosVectorSize.value.clear();
+          for (auto &item : intermediate) {
+            config.kokkosVectorSize.value.emplace(static_cast<size_t>(item));
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing kokkos vector size: " << optarg << endl;
           displayHelp = true;
         }
         break;

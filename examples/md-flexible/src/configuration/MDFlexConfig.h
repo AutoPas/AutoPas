@@ -480,6 +480,10 @@ class MDFlexConfig {
   MDFlexOption<std::set<size_t>, __LINE__> kokkosChunkSize{
       {32}, "kokkos-chunk-size", true, "Kokkos chunk size for outer traversal loop"};
 
+  /**/
+  MDFlexOption<std::set<size_t>, __LINE__> kokkosVectorSize{
+    {32}, "kokkos-vector-size", true, "Kokkos vector size for inner most traversal loop"};
+
   /**
    * verletRebuildFrequency
    */

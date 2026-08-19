@@ -898,6 +898,20 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         } catch (const std::exception &e) {
           errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
         }
+      } else if (key == config.kokkosVectorSize.name) {
+        expected = "unsigned integer > 0";
+        description = config.kokkosVectorSize.description;
+        try {
+          config.kokkosVectorSize.value.clear();
+          auto intermediate = autopas::utils::StringUtils::parseNumberSet(
+                                  autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}))
+                                  ->getAll();
+          for (auto &item : intermediate) {
+            config.kokkosVectorSize.value.emplace(static_cast<size_t>(item));
+          }
+        } catch (const std::exception &e) {
+          errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
+        }
       } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;

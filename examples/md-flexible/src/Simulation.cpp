@@ -194,6 +194,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setOutputSuffix(outputSuffix);
   _autoPasContainer->setKokkosChunkSize(_configuration.kokkosChunkSize.value);
   _autoPasContainer->setKokkosTeamSize(_configuration.kokkosTeamSize.value);
+  _autoPasContainer->setKokkosVectorSize(_configuration.kokkosVectorSize.value);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 
   _autoPasContainer->init();
@@ -378,7 +379,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
                       _configuration.containerLayoutOptions.value, _configuration.newton3Options.value,
                       _configuration.cellSizeFactors.value.get(), autopas::InteractionTypeOption::pairwise,
-                      _configuration.kokkosChunkSize.value, _configuration.kokkosTeamSize.value,
+                      _configuration.kokkosChunkSize.value, _configuration.kokkosTeamSize.value, _configuration.kokkosVectorSize.value,
                       _configuration.vecPatternOptions.value)
                       .size();
 
@@ -390,7 +391,7 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
                       _configuration.containerLayoutOptions.value, _configuration.newton3Options3B.value,
                       _configuration.cellSizeFactors.value.get(), autopas::InteractionTypeOption::triwise,
-                      _configuration.kokkosChunkSize.value, _configuration.kokkosTeamSize.value,
+                      _configuration.kokkosChunkSize.value, _configuration.kokkosTeamSize.value, _configuration.kokkosVectorSize.value,
                       _configuration.vecPatternOptions.value)
                       .size();
 
