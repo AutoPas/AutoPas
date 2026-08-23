@@ -387,6 +387,8 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
 
     private:
 
+        using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
+
         struct SectionTimings{
             KernelTimings _countingKernel{"counting Kernel"};
             KernelTimings _offsetKernel{"offset deducing from neighborcounts Kernel"};
@@ -413,8 +415,8 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
                     N, soa2.size());
                 return false;
             }
-            const float interactionLength = _cutoff + this->getVerletSkin();
-            const float interactionLengthSqr = interactionLength * interactionLength;
+            const FloatPrecision interactionLength = _cutoff + this->getVerletSkin();
+            const FloatPrecision interactionLengthSqr = interactionLength * interactionLength;
             const auto soa1Device = soa1.deviceView();
             const auto soa2Device = soa2.deviceView();
 
@@ -531,8 +533,8 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
                 return false;
 
             }
-            const float interactionLength = this->_cutoff + this->getVerletSkin();
-            const float interactionLengthSqr = interactionLength * interactionLength;
+            const FloatPrecision interactionLength = this->_cutoff + this->getVerletSkin();
+            const FloatPrecision interactionLengthSqr = interactionLength * interactionLength;
 
             const auto soa1Device = soa1.deviceView();
             const auto soa2Device = soa2.deviceView();

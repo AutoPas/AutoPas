@@ -166,16 +166,19 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
             // Offsets are per owned particle; entries hold maxNeighbors slots per owned particle
             Kokkos::realloc(Kokkos::WithoutInitializing,_neighborListOffsets, numberOfOwned);
             Kokkos::realloc(Kokkos::WithoutInitializing,_neighborListEntries, numberOfOwned * _maxNeighbors);
-            Kokkos::realloc(Kokkos::WithoutInitializing,_haloNeighborListOffsets, numberOfOwned);
-            Kokkos::realloc(Kokkos::WithoutInitializing,_haloNeighborListEntries, numberOfOwned * _maxNeighbors);
+            if(haloSoA.size()>0){
+                Kokkos::realloc(Kokkos::WithoutInitializing,_haloNeighborListOffsets, numberOfOwned);
+                Kokkos::realloc(Kokkos::WithoutInitializing,_haloNeighborListEntries, numberOfOwned * _maxNeighbors);
+            }
             double endAlloc = rebuildTimer.seconds();
             const bool ownedOverflow = _useTeamsRebuild
                 ? buildNeighborListsTeams(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view)
                 : buildNeighborListsFlat(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view);
 
-            const bool haloOverflow = _useTeamsRebuild
+            
+            const bool haloOverflow = haloSoA.size()> 0 ? (_useTeamsRebuild
                 ? buildNeighborListsTeams(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view)
-                : buildNeighborListsFlat(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view);
+                : buildNeighborListsFlat(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view)):false;
             if (!ownedOverflow && !haloOverflow) {
                 _sectionTimes._allocation.addTiming(endAlloc-startAlloc);
                 break;
@@ -414,6 +417,8 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
 
 
     private:
+        using FloatPrecision = Particle_T::ParticleSoAFloatPrecision;
+
         struct SectionTimings{
             KernelTimings _traversal{"traversal, VerletListsKokkosMaxNeighbors::computeInteractions()"};
             KernelTimings _buildNL{"build NeighborList, VerletListsKokkosMaxNeighbors::buildNeighborListsFlat/Teams()"};
@@ -439,8 +444,8 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                 return false;
             }
             const size_t maxNeighbors = _maxNeighbors;
-            const float interactionLength = _cutoff + this->getVerletSkin();
-            const float interactionLengthSqr = interactionLength * interactionLength;
+            const FloatPrecision interactionLength = _cutoff + this->getVerletSkin();
+            const FloatPrecision interactionLengthSqr = interactionLength * interactionLength;
             const auto soa1Device = soa1.deviceView();
             const auto soa2Device = soa2.deviceView();
 
@@ -521,8 +526,8 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                 return false;
             }
             const size_t maxNeighbors = _maxNeighbors;
-            const float interactionLength = _cutoff + this->getVerletSkin();
-            const float interactionLengthSqr = interactionLength * interactionLength;
+            const FloatPrecision interactionLength = _cutoff + this->getVerletSkin();
+            const FloatPrecision interactionLengthSqr = interactionLength * interactionLength;
             const auto soa1Device = soa1.deviceView();
             const auto soa2Device = soa2.deviceView();
 
@@ -817,7 +822,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
     size_t _maxNeighbors {64};
 
     
-    bool _useTeamsRebuild {false};
+    bool _useTeamsRebuild {true};
     SectionTimings _sectionTimes{};
    
 };
