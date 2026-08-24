@@ -50,6 +50,14 @@ target_link_libraries(SPHLibrary PUBLIC autopas)
 
 target_include_directories(SPHLibrary PUBLIC ./sph)
 
+# --- neighbor identification ---
+
+add_library(neighborIdentificationLibrary INTERFACE)
+
+target_link_libraries(neighborIdentificationLibrary INTERFACE autopas)
+
+target_include_directories(neighborIdentificationLibrary INTERFACE ./neighborIdentification)
+
 # --------------------------------tests---------------------------------------
 
 # --- molecular dynamics ---
@@ -94,7 +102,7 @@ if (AUTOPAS_BUILD_TESTS)
     target_link_libraries(
             ${TEST_EXE_NAME}
             PUBLIC
-            autopas autopasTools molecularDynamicsLibrary gmock
+            autopas generators molecularDynamicsLibrary gmock
     )
 
     # this cmake module was only introduced in 3.10
@@ -127,7 +135,7 @@ if (AUTOPAS_BUILD_TESTS)
 
     target_link_libraries(
             sphLibTests PUBLIC
-            autopas autopasTools SPHLibrary gmock
+            autopas generators SPHLibrary gmock
     )
 
     # this cmake module was only introduced in 3.10
@@ -142,6 +150,41 @@ if (AUTOPAS_BUILD_TESTS)
             ENVIRONMENT "${LSAN_OPTIONS_STR}"
     )
 
+# --- neighbor identification ---
+    file(
+            GLOB_RECURSE
+            NEIGHBOR_ID_TEST_SRC
+            "neighborIdentification/tests/*.cpp"
+            "neighborIdentification/tests/*.h"
+    )
+
+    add_executable(neighborIdentificationLibTests ${NEIGHBOR_ID_TEST_SRC} neighborIdentificationLibTests.cpp)
+
+    target_include_directories(
+            neighborIdentificationLibTests PUBLIC
+            ${PROJECT_SOURCE_DIR}/tests/testAutopas
+    )
+
+    target_link_libraries(
+            neighborIdentificationLibTests PUBLIC
+            autopas generators molecularDynamicsLibrary neighborIdentificationLibrary gmock
+    )
+
+    # this cmake module was only introduced in 3.10
+    include(GoogleTest)
+    # more robust, queries the compiled executable
+    gtest_discover_tests(
+            neighborIdentificationLibTests TEST_PREFIX "neighborIdentificationLibTests/"
+            # Use PRE_TEST discovery mode to avoid running MPI executable during build
+            # This prevents SIGPIPE errors in CI when MPI and sanitizers are enabled
+            DISCOVERY_MODE PRE_TEST
+            PROPERTIES
+            ENVIRONMENT "${LSAN_OPTIONS_STR}"
+    )
+
 else()
     message(STATUS "AUTOPAS_BUILD_TESTS is disabled. Not building Application Libraries tests!")
 endif()
+
+# google benchmark based micro-benchmarks (opt-in)
+add_subdirectory(molecularDynamics/benchmarks)

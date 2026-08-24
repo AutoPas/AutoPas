@@ -8,7 +8,6 @@
 
 #include "autopas/baseFunctors/Functor.h"
 #include "autopas/cells/ParticleCell.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 
 /**
@@ -23,6 +22,7 @@ class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, EmptyPa
    * Structure of the SoAs defined by the particle.
    */
   using SoAArraysType = typename Particle_T::SoAArraysType;
+  using autopas::PairwiseFunctor<Particle_T, EmptyPairwiseFunctor<Particle_T>>::SoAFunctorVerlet;
 
   /**
    * Default constructor.
@@ -52,8 +52,7 @@ class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, EmptyPa
    * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    */
   void SoAFunctorVerlet(autopas::SoAView<typename Particle_T::SoAArraysType> soa, size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) override{};
+                        std::span<const size_t> neighborList, bool newton3) override{};
 
   /**
    * @copydoc autopas::Functor::allowsNewton3()

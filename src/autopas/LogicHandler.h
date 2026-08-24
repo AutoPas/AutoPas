@@ -26,6 +26,7 @@
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -65,7 +66,8 @@ class LogicHandler {
         _remainderPairwiseInteractionHandler(_spatialLocks),
         _remainderTriwiseInteractionHandler(_spatialLocks),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
-        _sortingThreshold(logicHandlerInfo.sortingThreshold),
+        _aosSortingThreshold(logicHandlerInfo.aosSortingThreshold),
+        _soaSortingThreshold(logicHandlerInfo.soaSortingThreshold),
         _iterationLogger(outputSuffix,
                          std::any_of(tunerManager->getAutoTuners().begin(), tunerManager->getAutoTuners().end(),
                                      [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
@@ -78,14 +80,10 @@ class LogicHandler {
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
-      _currentContainerSelectorInfo = ContainerSelectorInfo{_logicHandlerInfo.boxMin,
-                                                            _logicHandlerInfo.boxMax,
-                                                            _logicHandlerInfo.cutoff,
-                                                            configuration.cellSizeFactor,
-                                                            _logicHandlerInfo.verletSkin,
-                                                            _verletClusterSize,
-                                                            _sortingThreshold,
-                                                            configuration.loadEstimator};
+      _currentContainerSelectorInfo = ContainerSelectorInfo{
+          _logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,     _logicHandlerInfo.cutoff,
+          configuration.cellSizeFactor, _logicHandlerInfo.verletSkin, _verletClusterSize,
+          _aosSortingThreshold,         _soaSortingThreshold,         configuration.loadEstimator};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
@@ -571,6 +569,17 @@ class LogicHandler {
    * For this, the container and traversal need to be instantiated, hence if the configuration is applicable, it sets
    * the current container and returns the traversal.
    *
+   * This function uses
+   * - Configuration::hasCompatibleValues for checking configuration is compatible independent of the functor and
+   * domain.
+   * - TraversalInterface::isApplicableToDomain (via TraversalSelector::generateTraversalFromConfig) for checking
+   * configuration (specifically traversal) is compatible with the domain.
+   *
+   * In addition, this function checks that the configuration is applicable to the functor.
+   *
+   * @note for developers: this function should not directly check configuration compatibility where it could be done
+   * indirectly through Configuration::hasCompatibleValues or TraversalInterface::isApplicableToDomain.
+   *
    * @tparam Functor
    * @param config
    * @param functor
@@ -833,7 +842,12 @@ class LogicHandler {
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
-  size_t _sortingThreshold;
+  size_t _aosSortingThreshold;
+
+  /**
+   * Number of particles in two SoA buffers from which SoA sorting should be performed.
+   */
+  size_t _soaSortingThreshold;
 
   std::shared_ptr<TuningManager> _tuningManager;
 
@@ -1096,6 +1110,16 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   timerRebuild.stop();
   std::tie(std::ignore, std::ignore, std::ignore, energyTotalRebuild) = autoTuner.sampleEnergy();
 
+  // Balance buffer vectors
+  const auto cellToVec = [](auto &cell) -> std::vector<Particle_T> & { return cell._particles; };
+  utils::ArrayUtils::balanceVectors(_particleBuffer, cellToVec);
+  utils::ArrayUtils::balanceVectors(_haloParticleBuffer, cellToVec);
+
+  // Mainly for NeighborIdentificationFunctor, initialize the neighbors
+  if constexpr (requires { functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo)); }) {
+    functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo));
+  }
+
   timerComputeInteractions.start();
   _currentContainer->computeInteractions(&traversal);
   timerComputeInteractions.stop();
@@ -1322,12 +1346,15 @@ template <typename Particle_T>
 template <class Functor>
 std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::isConfigurationApplicable(
     const Configuration &config, Functor &functor) {
-  // Check if the container supports the traversal
-  const auto allContainerTraversals =
-      compatibleTraversals::allCompatibleTraversals(config.container, config.interactionType);
-  if (allContainerTraversals.find(config.traversal) == allContainerTraversals.end()) {
-    AutoPasLog(WARN, "Configuration rejected: Container {} does not support the traversal {}.", config.container,
-               config.traversal);
+  // Check if the configuration is compatible, independent of domain or functor
+  if (not config.hasCompatibleValues()) {
+    AutoPasLog(
+        WARN,
+        "A configuration was rejected by LogicHandler::isConfigurationApplicable, as it was incompatible"
+        " independently of domain or functor. This should not occur and implies illegal configurations are being added"
+        " to the configuration queue during simulation (potentially by a tuning strategy).");
+    AutoPasLog(WARN, "Configuration rejected: {}", config.toString());
+    // Such illegal configurations should be filtered out in the generation of the search space.
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
@@ -1349,7 +1376,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   auto containerInfo =
       ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
                             _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _sortingThreshold, config.loadEstimator);
+                            _verletClusterSize, _aosSortingThreshold, _soaSortingThreshold, config.loadEstimator);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.
@@ -1366,7 +1393,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   const auto traversalInfo =
       generateNewContainer ? containerPtr->getTraversalSelectorInfo() : _currentContainer->getTraversalSelectorInfo();
 
-  // Generates a traversal if applicable, otherwise returns a nullptr
+  // Generates a traversal if applicable to domain, otherwise returns a nullptr
   auto traversalPtr =
       TraversalSelector::generateTraversalFromConfig<Particle_T, Functor>(config, functor, traversalInfo);
 

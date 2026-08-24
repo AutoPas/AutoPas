@@ -50,8 +50,9 @@ class VLCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlc_c08; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    // This traversal is only safe to use for CSF>=1
+  [[nodiscard]] bool isApplicableToDomain() const override {
+    // This traversal is only safe to use with cell lengths at least as large as _interactionLength (typically holds for
+    // CSF>=1)
     const double minCellLength = *std::min_element(this->_cellLength.cbegin(), this->_cellLength.cend());
     const bool maxOneCellInCutoff = minCellLength >= this->_interactionLength;
 
@@ -59,10 +60,14 @@ class VLCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
   }
 
   /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
-  void setSortingThreshold(size_t sortingThreshold) override {}
+  void setAoSSortingThreshold(size_t aosSortingThreshold) override {}
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold) override {}
 
  private:
   PairwiseFunctor &_functor;
