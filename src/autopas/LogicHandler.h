@@ -367,14 +367,6 @@ class LogicHandler {
     const auto &boxMin = _currentContainer->getBoxMin();
     const auto &boxMax = _currentContainer->getBoxMax();
     Particle_T haloParticleCopy = haloParticle;
-    if (utils::inBox(haloParticleCopy.getR(), boxMin, boxMax)) {
-      utils::ExceptionHandler::exception(
-          "LogicHandler: Trying to add a halo particle that is not outside the box of the container.\n"
-          "Box Min {}\n"
-          "Box Max {}\n"
-          "{}",
-          utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticleCopy.toString());
-    }
     haloParticleCopy.setOwnershipState(OwnershipState::halo);
     if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       // If the neighbor lists are not valid, we can add the particle.
