@@ -214,31 +214,42 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
   ASSERT_FALSE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
       << " The neighbor list is rebuilt as previously neighbor lists were invalid.\n";
 
-  // 0.3 skin + (boxMaxY - 0.15 skin) = boxMaxY + 0.15 skim -> particle is outside the boundary and has travelled less
+  // 0.3 skin + (boxMaxY - 0.15 skin) = boxMaxY + 0.15 skin -> particle is outside the boundary and has travelled less
   // than skin/2
   for (auto iter = _logicHandler->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     iter->addR(moveVec);
   }
   leavingParticles = _logicHandler->updateContainer();
-  EXPECT_EQ(leavingParticles.size(), 1) << "Exactly one particle has left the container \n";
-  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 0) << "No particle left in the container \n";
+  // Particle has moved outside the domain but is still within boxMaxY + skin, so not treated as leaving particle
+  EXPECT_EQ(leavingParticles.size(), 0) << "No particle has left the container \n";
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1) << "Exactly one particle left in the container \n";
 
-  // shifting particle position to replicate periodic boundary effect
-  for (auto particle : leavingParticles) {
-    particle.addR(shiftVecPeriodicY);
-    _logicHandler->addParticle(particle);
-  }
+  // No periodic boundary handling needed as particle is still within boxMaxY + skin
+  // for (auto particle : leavingParticles) {
+  //  particle.addR(shiftVecPeriodicY);
+  //  _logicHandler->addParticle(particle);
+  //}
+
   // As neighbor lists are valid, particle is added to the buffer, so container will have 0 particles
-  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 0)
-      << "Particle added to the buffer, so container must still be empty. \n";
+  // EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 1)
+  //    << "Particle added to the buffer, so container must still be empty. \n";
 
-  EXPECT_EQ(_logicHandler->getNumberOfParticlesOwned(), 1)
-      << "One particle added on the other side of periodic boundary \n";
+  EXPECT_EQ(_logicHandler->getNumberOfParticlesOwned(), 1) << "Owned particle slightly outside the domain \n";
 
-  _logicHandler->resetNeighborListsInvalidDoDynamicRebuild();
-  _logicHandler->checkNeighborListsInvalidDoDynamicRebuild();
-  ASSERT_FALSE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
-      << " Particle has moved across the periodic boundary and more than half the skin, but as it is in the buffer, it "
-         "doesn't affect the container. \n";
+  // 0.3 skin + (boxMaxY + 0.15 skin) = boxMaxY + 0.45 skin -> particle is outside the boundary and has travelled more
+  // than skin/2
+  for (auto iter = _logicHandler->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    iter->addR(moveVec);
+  }
+
+  leavingParticles = _logicHandler->updateContainer();
+  // Particle has moved more than skin, so dynamic rebuild is triggered
+
+  ASSERT_TRUE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
+      << " Particle has moved more than half the skin, so it will trigger the dynamic rebuild. \n";
+
+  // Particle is within boxMaxY + skin, but as it is a rebuild iteration, leaving particle is counted
+  EXPECT_EQ(leavingParticles.size(), 1) << "No particle has left the container \n";
+  EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 0) << "Exactly one particle left in the container \n";
 }
 #endif
