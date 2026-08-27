@@ -364,9 +364,20 @@ class LogicHandler {
    * @copydoc AutoPas::addHaloParticle()
    */
   void addHaloParticle(const Particle_T &haloParticle) {
-    const auto &boxMin = _currentContainer->getBoxMin();
-    const auto &boxMax = _currentContainer->getBoxMax();
+    // Halo particles can be inside the domain within a skin distance of the boundaries.
+    const auto &boxMin =
+        utils::ArrayMath::addScalar(_currentContainer->getBoxMin(), _currentContainer->getVerletSkin());
+    const auto &boxMax =
+        utils::ArrayMath::addScalar(_currentContainer->getBoxMax(), -_currentContainer->getVerletSkin());
     Particle_T haloParticleCopy = haloParticle;
+    if (utils::inBox(haloParticleCopy.getR(), boxMin, boxMax)) {
+      utils::ExceptionHandler::exception(
+          "LogicHandler: Trying to add a halo particle that is not outside the box of the container.\n"
+          "Box Min {}\n"
+          "Box Max {}\n"
+          "{}",
+          utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticleCopy.toString());
+    }
     haloParticleCopy.setOwnershipState(OwnershipState::halo);
     if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       // If the neighbor lists are not valid, we can add the particle.
