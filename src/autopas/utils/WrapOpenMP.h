@@ -62,9 +62,29 @@ inline int autopas_get_max_threads() { return omp_get_max_threads(); }
 
 /**
  * Wrapper for omp_set_num_threads().
+ * (Sets the maximum, not the tuned number of threads.)
  * @param n New max number of threads.
  */
 inline void autopas_set_num_threads(int n) { omp_set_num_threads(n); }
+
+inline int &_autopas_get_tuned_num_threads_ref() {
+  // Lazy initialization
+  static int tunedNumThreads = autopas_get_max_threads();
+  return tunedNumThreads;
+}
+
+/**
+ * Set the number of threads to use in OpenMP for loop annotations
+ * @param n the number of threads
+ */
+inline void autopas_set_tuned_num_threads(int n) {
+  _autopas_get_tuned_num_threads_ref() = (n == 0) ? autopas_get_max_threads() : n;
+}
+/**
+ * Get the number of threads to use in OpenMP for loop annotations
+ * @return the number of threads
+ */
+inline int autopas_get_tuned_num_threads() { return _autopas_get_tuned_num_threads_ref(); }
 
 /**
  * AutoPasLock for the openmp case, this wraps a omp_lock_t object. To make it copyable, etc.
@@ -115,8 +135,10 @@ class AutoPasLock {
  * Custom reductions:
  */
 // reduction for merging vectors: {1,2} + {2,3} -> {1,2,2,3}
-#pragma omp declare reduction(vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
-#pragma omp declare reduction(vecMerge : std::vector<double> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+#pragma omp declare reduction( \
+        vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+#pragma omp declare reduction( \
+        vecMerge : std::vector<double> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 
 #else
 
@@ -148,6 +170,17 @@ inline int autopas_get_max_threads() { return 1; }
  * Does nothing when OpenMP is disabled.
  */
 inline void autopas_set_num_threads(int /* n */) {}
+
+/**
+ * Set the number of threads to use in OpenMP for loop annotations
+ * @param n the number of threads (Ignored without OpenMP support)
+ */
+inline void autopas_set_tuned_num_threads(int n) {}
+/**
+ * Get the number of threads to use in OpenMP for loop annotations
+ * @return the number of threads (Always 1 without OpenMP support)
+ */
+inline int autopas_get_tuned_num_threads() { return 1; }
 
 /**
  * AutoPasLock for the sequential case.

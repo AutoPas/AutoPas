@@ -58,7 +58,7 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
     utils::Timer timer;
     timer.start();
     loads.resize(maxDimensionLength);
-    AUTOPAS_OPENMP(parallel for schedule(static, 1))
+    AUTOPAS_OPENMP(parallel for schedule(static, 1) num_threads(autopas_get_tuned_num_threads()))
     for (auto x = 0; x < maxDimensionLength; x++) {
       std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
       std::array<unsigned long, 3> upperCorner = this->_cellsPerDimension;
@@ -82,7 +82,7 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
     auto loadEstimationTime = timer.stop();
     AutoPasLog(DEBUG, "load estimation took {} nanoseconds", loadEstimationTime);
 
-    auto numSlices = (size_t)autopas_get_max_threads();
+    auto numSlices = (size_t)autopas_get_tuned_num_threads();
     AutoPasLog(DEBUG, "{} threads available.", numSlices);
     // using greedy algorithm to assign slice thicknesses. May lead to less slices being used.
     unsigned int totalThickness = 0;

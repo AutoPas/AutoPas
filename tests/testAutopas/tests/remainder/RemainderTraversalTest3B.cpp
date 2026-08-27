@@ -64,7 +64,7 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3, autopas::InteractionTypeOption::triwise,
-        autopas::VectorizationPatternOption::p1xVec}});
+        autopas::autopas_get_max_threads(), autopas::VectorizationPatternOption::p1xVec}});
   auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
@@ -453,7 +453,8 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-        autopas::InteractionTypeOption::triwise, autopas::VectorizationPatternOption::p1xVec}});
+        autopas::InteractionTypeOption::triwise, autopas::autopas_get_max_threads(),
+        autopas::VectorizationPatternOption::p1xVec}});
   auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),

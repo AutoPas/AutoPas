@@ -75,6 +75,7 @@ Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::se
                                DataLayoutOption::aos,
                                Newton3Option::disabled,
                                interactionType,
+                               autopas_get_max_threads(),
                                VectorizationPatternOption::p1xVec};
 
   if (interactionType == InteractionTypeOption::triwise) {

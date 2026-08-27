@@ -180,7 +180,7 @@ void LCC04Traversal<ParticleCell_T, Functor_T>::processBasePack32(std::vector<Pa
 template <class ParticleCell_T, class Functor_T>
 void LCC04Traversal<ParticleCell_T, Functor_T>::traverseParticles() {
   auto &cells = *(this->_cells);
-  AUTOPAS_OPENMP(parallel) {
+  AUTOPAS_OPENMP(parallel num_threads(autopas_get_tuned_num_threads())) {
     for (int color = 0; color < 4; ++color) {
       traverseSingleColor(cells, color);
 

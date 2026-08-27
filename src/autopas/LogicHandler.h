@@ -657,7 +657,7 @@ class LogicHandler {
     // Initialize the maximum velocity to zero
     double maxVelocity = 0;
     // Iterate over the owned particles in container to determine maximum velocity
-    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
+    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity) num_threads(autopas_get_tuned_num_threads()))
     for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
       std::array<double, 3> tempVel = iter->getV();
       double tempVelAbs = sqrt(dot(tempVel, tempVel));
@@ -961,7 +961,7 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel)
+  AUTOPAS_OPENMP(parallel num_threads(autopas_get_tuned_num_threads()))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     iter->resetRAtRebuild();
   }
@@ -1009,7 +1009,9 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
+  AUTOPAS_OPENMP(parallel reduction(or
+                                    : _neighborListInvalidDoDynamicRebuild)
+                     num_threads(autopas_get_tuned_num_threads()))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
@@ -1290,6 +1292,7 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
 
   /// Computing the particle interactions
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
+  autopas_set_tuned_num_threads(_tuningManager->getCurrentConfig(interactionType).threadCount);
   const IterationMeasurements measurements = computeInteractions(*functor, *traversalPtr);
 
   /// Debug Output
@@ -1365,6 +1368,15 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   if ((config.newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
       (config.newton3 == Newton3Option::disabled and not functor.allowsNonNewton3())) {
     AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!", config.newton3);
+    return {nullptr, /*rejectIndefinitely*/ true};
+  }
+
+  // Check if the thread count is valid
+  int maxThreads = autopas_get_max_threads();
+  // Valid options: 0 = No thread count tuning (use all threads), 1-maxThreads = Use explicit number of threads
+  if (config.threadCount != 0 and (config.threadCount < 1 or config.threadCount > maxThreads)) {
+    AutoPasLog(DEBUG, "Configuration rejected: The requested thread count of {} is not in [0,1-{}]!",
+               config.threadCount, maxThreads);
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 

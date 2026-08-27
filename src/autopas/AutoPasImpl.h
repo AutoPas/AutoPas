@@ -85,10 +85,11 @@ void AutoPas<Particle_T>::init() {
 
   _tuningManager = std::make_shared<TuningManager>(_autoTunerInfo);
   // Create autotuners for each interaction type
+  const auto threadCounts = NumberSetFinite<int>{_allowedThreadCounts->getAll()};
   for (const auto &interactionType : _allowedInteractionTypeOptions) {
     const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
         _allowedContainers, _allowedTraversals[interactionType], _allowedLoadEstimators,
-        _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors,
+        _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors, &threadCounts,
         _allowedVecPatternsOptions[interactionType], interactionType);
 
     AutoTuner::TuningStrategiesListType tuningStrategies;
@@ -169,7 +170,8 @@ void AutoPas<Particle_T>::addParticlesAux(size_t numParticlesToAdd, size_t numHa
                                           F loopBody) {
   reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
           getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
-  AUTOPAS_OPENMP(parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads())))
+  const auto numThreads = autopas_get_tuned_num_threads();
+  AUTOPAS_OPENMP(parallel for schedule(static, std::max(1ul, collectionSize / numThreads)) num_threads(numThreads))
   for (auto i = 0; i < collectionSize; ++i) {
     loopBody(i);
   }
@@ -191,7 +193,7 @@ template <class Collection, class F>
 void AutoPas<Particle_T>::addParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
-  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
+  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue) num_threads(autopas_get_tuned_num_threads()))
   for (auto i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);
@@ -248,7 +250,7 @@ template <class Collection, class F>
 void AutoPas<Particle_T>::addHaloParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
-  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
+  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue) num_threads(autopas_get_tuned_num_threads()))
   for (auto i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);

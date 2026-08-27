@@ -106,7 +106,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
     /// numThreads should be at least 1 and maximal max_threads
     AUTOPAS_OPENMP(parallel for num_threads(std::clamp(static_cast<int>(this->_cells.size()) / 1000,  \
                                                        1,                                             \
-                                                       autopas::autopas_get_max_threads())))
+                                                       autopas_get_tuned_num_threads())))
     for (size_t i = 0; i < this->_cells.size(); ++i) {
       this->_cells[i].clear();
     }
@@ -121,7 +121,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
     // numThreads should be at least 1 and maximal max_threads
     AUTOPAS_OPENMP(parallel for num_threads(std::clamp(static_cast<int>(this->_cells.size()) / 100000, \
                                                        1,                                              \
-                                                       autopas::autopas_get_max_threads()))            \
+                                                       autopas_get_tuned_num_threads()))  \
                                 reduction(+ : numParticles))
     for (size_t index = 0; index < _cells.size(); ++index) {
       numParticles += _cells[index].getNumberOfParticles(behavior);
@@ -139,7 +139,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
     // numThreads should be at least 1 and maximal max_threads
     AUTOPAS_OPENMP(parallel for num_threads(std::clamp(static_cast<int>(this->_cells.size()) / 100000, \
                                                        1,                                              \
-                                                       autopas::autopas_get_max_threads()))            \
+                                                       autopas_get_tuned_num_threads()))  \
                                 reduction(+ : numParticles))
     for (size_t index = 0; index < _cells.size(); ++index) {
       numParticles += _cells[index].size();

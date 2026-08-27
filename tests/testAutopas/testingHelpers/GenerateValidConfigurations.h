@@ -89,6 +89,7 @@ inline std::ostream &operator<<(std::ostream &os, const ContainerConfiguration &
  * @param allowedDataLayoutOptions By default, all options.
  * @param allowedNewton3Options By default, all options.
  * @param allowedCellSizeFactors By default, {0.5, 1.0, 1.5}
+ * @param allowedThreadCounts By default, {max_threads}
  * @param allowedVectorPatterns By default, all options.
  * @return
  */
@@ -101,22 +102,24 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     const std::set<autopas::DataLayoutOption> &allowedDataLayoutOptions = autopas::DataLayoutOption::getAllOptions(),
     const std::set<autopas::Newton3Option> &allowedNewton3Options = autopas::Newton3Option::getAllOptions(),
     const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
+    const std::set<int> &allowedThreadCounts = {autopas::autopas_get_max_threads()},
     const std::set<autopas::VectorizationPatternOption> &allowedVectorPatterns =
         autopas::VectorizationPatternOption::getAllOptions()) {
   const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);
+  const autopas::NumberSetFinite<int> tcs(allowedThreadCounts);
   if (interactionType == autopas::InteractionTypeOption::all) {
     std::set<autopas::Configuration> allConfigs;
     for (auto iType : autopas::InteractionTypeOption::getMostOptions()) {
       const auto configs = autopas::SearchSpaceGenerators::cartesianProduct(
           allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-          allowedNewton3Options, &csfs, allowedVectorPatterns, iType);
+          allowedNewton3Options, &csfs, &tcs, allowedVectorPatterns, iType);
       allConfigs.insert(configs.begin(), configs.end());
     }
     return allConfigs;
   } else {
     return autopas::SearchSpaceGenerators::cartesianProduct(
         allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-        allowedNewton3Options, &csfs, allowedVectorPatterns, interactionType);
+        allowedNewton3Options, &csfs, &tcs, allowedVectorPatterns, interactionType);
   }
 }
 
@@ -126,51 +129,57 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
  * why.
  * @param allowedContainerOptions By default, all options.
  * @param allowedCellSizeFactors By default, {0.5, 1.0, 1.5}
+ * @param allowedThreadCounts By default, {max_threads}
  * @return
  */
 inline std::set<ContainerConfiguration> generateAllValidContainerConfigurations(
     const std::set<autopas::ContainerOption> &allowedContainerOptions = autopas::ContainerOption::getAllOptions(),
-    const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5}) {
+    const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
+    const std::set<int> &allowedThreadCounts = {autopas::autopas_get_max_threads()}) {
   std::set<ContainerConfiguration> containerConfigs;
   for (const auto &containerOption : allowedContainerOptions) {
     for (const auto csf : allowedCellSizeFactors) {
-      // Create a dummy configuration to check validity
-      // We use pairwise interaction as default, since it should not matter for container/csf compatibility.
-      // We also use the first valid traversal for this container.
-      const auto interactionType = autopas::InteractionTypeOption(autopas::InteractionTypeOption::pairwise);
-      const auto traversals = autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType);
-      if (traversals.empty()) {
-        autopas::utils::ExceptionHandler::exception(
-            "{} has no compatible traversals with interaction type {}! This "
-            "suggests that either that something is incorrect with this "
-            "container or that generateAllValidContainerConfigurations's "
-            "assumption that all containers have at least one {} compatible "
-            "traversal no longer holds!",
-            containerOption.to_string(), interactionType.to_string(), interactionType.to_string());
-        continue;
-      }
-      const auto &traversalOption = *traversals.begin();
-      const auto loadEstimators = autopas::loadEstimators::getApplicableLoadEstimators(
-          containerOption, traversalOption, autopas::LoadEstimatorOption::getAllOptions());
-      if (loadEstimators.empty()) {
-        autopas::utils::ExceptionHandler::exception(
-            "{} with traversal {} has no applicable load estimators! Either "
-            "something is incorrect or generateAllValidContainerConfigurations's "
-            "assumption that there is always an applicable load estimator (even "
-            "if 'none') no longer holds.");
-        continue;
-      }
-      const auto &loadEstimatorOption = *loadEstimators.begin();
+      for (const auto tc : allowedThreadCounts) {
+        // Create a dummy configuration to check validity
+        // We use pairwise interaction as default, since it should not matter for container/csf compatibility.
+        // We also use the first valid traversal for this container.
+        const auto interactionType = autopas::InteractionTypeOption(autopas::InteractionTypeOption::pairwise);
+        const auto traversals =
+            autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType);
+        if (traversals.empty()) {
+          autopas::utils::ExceptionHandler::exception(
+              "{} has no compatible traversals with interaction type {}! This "
+              "suggests that either that something is incorrect with this "
+              "container or that generateAllValidContainerConfigurations's "
+              "assumption that all containers have at least one {} compatible "
+              "traversal no longer holds!",
+              containerOption.to_string(), interactionType.to_string(), interactionType.to_string());
+          continue;
+        }
+        const auto &traversalOption = *traversals.begin();
+        const auto loadEstimators = autopas::loadEstimators::getApplicableLoadEstimators(
+            containerOption, traversalOption, autopas::LoadEstimatorOption::getAllOptions());
+        if (loadEstimators.empty()) {
+          autopas::utils::ExceptionHandler::exception(
+              "{} with traversal {} has no applicable load estimators! Either "
+              "something is incorrect or generateAllValidContainerConfigurations's "
+              "assumption that there is always an applicable load estimator (even "
+              "if 'none') no longer holds.");
+          continue;
+        }
+        const auto &loadEstimatorOption = *loadEstimators.begin();
 
-      const autopas::Configuration configuration{containerOption,
-                                                 csf,
-                                                 traversalOption,
-                                                 loadEstimatorOption,
-                                                 autopas::DataLayoutOption::aos,
-                                                 autopas::Newton3Option::enabled,
-                                                 interactionType};
-      if (configuration.hasCompatibleValues()) {
-        containerConfigs.insert({containerOption, csf});
+        const autopas::Configuration configuration{containerOption,
+                                                   csf,
+                                                   traversalOption,
+                                                   loadEstimatorOption,
+                                                   autopas::DataLayoutOption::aos,
+                                                   autopas::Newton3Option::enabled,
+                                                   interactionType,
+                                                   tc};
+        if (configuration.hasCompatibleValues()) {
+          containerConfigs.insert({containerOption, csf});
+        }
       }
     }
   }
