@@ -103,6 +103,16 @@ TEST_F(ThreadCountTuningTest, testThreadCountTuningOptions) {
 TEST_F(ThreadCountTuningTest, testThreadCountTuningDisabled) { testThreadCountTuningWithBoxMax(2, {0}, 0); }
 
 /**
+ * Tests: Set requested number of threads
+ */
+TEST_F(ThreadCountTuningTest, testThreadCountTuningRange) {
+  auto maxThreads = autopas::autopas_get_max_threads();
+  for (int n = 1; n <= maxThreads; n*=2) {
+    testThreadCountTuningWithBoxMax(4, {n}, n);
+  }
+}
+
+/**
  * Tests: * very small scenario (8 particles) -> lowest number of threads
  *  Sensitive to shared CPU usage! (Skipped in CI.)
  * To run the test explicitly, use:

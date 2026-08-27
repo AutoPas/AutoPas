@@ -62,6 +62,7 @@ inline int autopas_get_max_threads() { return omp_get_max_threads(); }
 
 /**
  * Wrapper for omp_set_num_threads().
+ * (Sets the maximum, not the tuned number of threads.)
  * @param n New max number of threads.
  */
 inline void autopas_set_num_threads(int n) { omp_set_num_threads(n); }
