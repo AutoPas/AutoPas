@@ -40,7 +40,6 @@ cmake --build . --target md-flexible --parallel 12
 
 ### Enabling Kokkos Support
 AutoPas provides Kokkos-based GPU support for selected containers and traversals.
-At the moment, no container is merged into the master yet.
 
 The Kokkos support can be enabled via the CMake option:
 ```bash
@@ -52,13 +51,14 @@ If you have a local Kokkos installation, you might need to point to the local Ko
 cmake -DKokkos_DIR={/path/to/your/kokkos/installation}/lib/cmake/Kokkos
 ```
 
-If CMake cannot find a local Kokkos installation on your device, it fetches version 5.1.1 from GitHub. In this case, you will have to configure the Kokkos backends manually:
+If CMake cannot find a local Kokkos installation on your device, it fetches version 5.1.1 from GitHub. In this case, you will have to configure the Kokkos backends manually.
+By default, the Kokkos backends for OpenMP, Cuda, etc. are disabled.
 
 ```bash
 cmake -DKokkos_ENABLE_OPENMP=ON/OFF -DKokkos_ENABLE_CUDA=ON/OFF
 ```
 
-Please note that to the best of our knowledge, md-flexible only compiles and links with Clang and with the following additional CMake settings:
+The md-flexible target only compiles and links with Clang with the following additional CMake settings:
 ```bash
 cmake -DAUTOPAS_USE_AUTOVEC=OFF #more requirements to come eventually
 ```
