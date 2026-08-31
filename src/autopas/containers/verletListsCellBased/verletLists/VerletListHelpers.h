@@ -54,11 +54,26 @@ class VerletListHelpers {
      * @return pointer to the first neighbor index
      */
     [[nodiscard]] size_t *begin(const size_t i) { return indices.data() + offsets[i]; }
-    /** Returns a span of the neighbors of particle i.
+    /** Pointer to past-the-end neighbor index of particle i (const).
+     * @param i particle index
+     * @return pointer to past-the-end neighbor index
+     */
+    [[nodiscard]] const size_t *end(const size_t i) const { return indices.data() + offsets[i + 1]; }
+    /** Pointer to past-the-end neighbor index of particle i (mutable).
+     * @param i particle index
+     * @return pointer to past-the-end neighbor index
+     */
+    [[nodiscard]] size_t *end(const size_t i) { return indices.data() + offsets[i + 1]; }
+    /** Returns a const span of the neighbors of particle i.
      * @param i particle index
      * @return span of neighbor indices
      */
     [[nodiscard]] std::span<const size_t> getNeighbors(const size_t i) const { return {begin(i), count(i)}; }
+    /** Returns a mutable span of the neighbors of particle i.
+     * @param i particle index
+     * @return mutable span of neighbor indices
+     */
+    [[nodiscard]] std::span<size_t> getNeighbors(const size_t i) { return {begin(i), count(i)}; }
   };
 
   /**
@@ -91,9 +106,76 @@ class VerletListHelpers {
   };
 
   /**
-   * Neighbor pairs list AoS style.
+   * Flat Compressed-Row-Storage (CRS) neighbor pairs list.
+   *
+   * For particle i:
+   *   - neighbor pairs count: offsets[i+1] - offsets[i]
+   *   - neighbor pairs slice: pairs.data() + offsets[i]
    */
-  using NeighborPairsListAoSType = std::unordered_map<Particle_T *, std::vector<std::pair<Particle_T *, Particle_T *>>>;
+  struct NeighborPairsListCRS {
+    std::vector<size_t> offsets;  ///< size N+1
+    std::vector<std::pair<size_t, size_t>, AlignedAllocator<std::pair<size_t, size_t>>>
+        pairs;  ///< flat neighbor index pairs
+
+    /**
+     * Number of particles tracked by this list.
+     * @return number of particles
+     */
+    [[nodiscard]] size_t size() const { return offsets.empty() ? 0u : offsets.size() - 1u; }
+    /** Number of neighbor pairs of particle i.
+     * @param i particle index
+     * @return number of neighbor pairs
+     */
+    [[nodiscard]] size_t count(const size_t i) const { return offsets[i + 1] - offsets[i]; }
+    /** Pointer to the first neighbor pair of particle i (const).
+     * @param i particle index
+     * @return pointer to the first neighbor pair
+     */
+    [[nodiscard]] const std::pair<size_t, size_t> *begin(const size_t i) const { return pairs.data() + offsets[i]; }
+    /** Pointer to the first neighbor pair of particle i (mutable).
+     * @param i particle index
+     * @return pointer to the first neighbor pair
+     */
+    [[nodiscard]] std::pair<size_t, size_t> *begin(const size_t i) { return pairs.data() + offsets[i]; }
+    /** Returns a span of the neighbor pairs of particle i.
+     * @param i particle index
+     * @return span of neighbor pairs
+     */
+    [[nodiscard]] std::span<const std::pair<size_t, size_t>> getNeighborPairs(const size_t i) const {
+      return {begin(i), count(i)};
+    }
+  };
+
+  /**
+   * Policy for managing neighbor pairs lists using the Compressed-Row-Storage (CRS) format.
+   *
+   * The neighbor pairs lists are "temporary" lists that get compressed to CRS neighbor pairs lists afterward.
+   */
+  class CRSPairNeighborListPolicy {
+   public:
+    /**
+     * Constructor.
+     * @param neighborPairsLists temporary neighbor pair list vectors
+     * @param particleToIndex map to connect particle pointers to their dense SoA indices
+     */
+    CRSPairNeighborListPolicy(std::vector<std::vector<std::pair<size_t, size_t>>> &neighborPairsLists,
+                              const std::unordered_map<const Particle_T *, size_t> &particleToIndex)
+        : _neighborPairsLists(neighborPairsLists), _particleToIndex(particleToIndex) {}
+
+    /**
+     * Adds neighbor pair (j, k) to the neighbor pairs list of particle i.
+     * @param i the first particle
+     * @param j the second particle
+     * @param k the third particle
+     */
+    void add(Particle_T *i, Particle_T *j, Particle_T *k) {
+      _neighborPairsLists[_particleToIndex.at(i)].push_back({_particleToIndex.at(j), _particleToIndex.at(k)});
+    }
+
+   private:
+    std::vector<std::vector<std::pair<size_t, size_t>>> &_neighborPairsLists;
+    const std::unordered_map<const Particle_T *, size_t> &_particleToIndex;
+  };
 
   /**
    * Pass-1 functor for the two-pass CRS build.
@@ -365,7 +447,7 @@ class VerletListHelpers {
   };
 
   /**
-   * This functor can generate verlet lists of neighbor pairs for a triwise traversal.
+   * This functor can generate verlet lists of neighbor pairs for a triwise traversal (single-pass / single-threaded).
    */
   class PairVerletListGeneratorFunctor : public TriwiseFunctor<Particle_T, PairVerletListGeneratorFunctor> {
    public:
@@ -376,12 +458,16 @@ class VerletListHelpers {
 
     /**
      * Constructor
-     * @param pairVerletListsAoS
-     * @param interactionLength
+     * @param tempNeighborPairsLists Temporary neighbor pairs lists per particle
+     * @param particleToIndex Map from particle pointer to its dense SoA index.
+     * @param interactionLength cutoff + skin
      */
-    PairVerletListGeneratorFunctor(NeighborPairsListAoSType &pairVerletListsAoS, double interactionLength)
+    PairVerletListGeneratorFunctor(std::vector<std::vector<std::pair<size_t, size_t>>> &tempNeighborPairsLists,
+                                   const std::unordered_map<const Particle_T *, size_t> &particleToIndex,
+                                   double interactionLength)
         : TriwiseFunctor<Particle_T, PairVerletListGeneratorFunctor>(interactionLength),
-          _pairVerletListsAoS(pairVerletListsAoS),
+          _tempNeighborPairsLists(tempNeighborPairsLists),
+          _particleToIndex(particleToIndex),
           _interactionLengthSquared(interactionLength * interactionLength) {}
 
     std::string getName() override { return "PairVerletListGeneratorFunctor"; }
@@ -415,14 +501,10 @@ class VerletListHelpers {
       const double distSquareJK = utils::ArrayMath::dot(distJK, distJK);
       if (distSquareIJ < _interactionLengthSquared and distSquareIK < _interactionLengthSquared and
           distSquareJK < _interactionLengthSquared) {
-        // this is thread safe, only if particle i is accessed by only one
-        // thread at a time. which is ensured, as particle i resides in a
-        // specific cell and each cell is only accessed by one thread at a time
-        // (ensured by traversals)
-        // also the list is not allowed to be resized!
-
-        _pairVerletListsAoS.at(&i).push_back(std::make_pair(&j, &k));
-        // no newton3 here, as AoSFunctor(j,i,k) and AoSFunctor (k,i,j) will also be called if newton3 is disabled.
+        const size_t iIdx = _particleToIndex.at(&i);
+        const size_t jIdx = _particleToIndex.at(&j);
+        const size_t kIdx = _particleToIndex.at(&k);
+        _tempNeighborPairsLists[iIdx].push_back({jIdx, kIdx});
       }
     }
 
@@ -443,7 +525,166 @@ class VerletListHelpers {
     }
 
    private:
-    NeighborPairsListAoSType &_pairVerletListsAoS;
+    std::vector<std::vector<std::pair<size_t, size_t>>> &_tempNeighborPairsLists;
+    const std::unordered_map<const Particle_T *, size_t> &_particleToIndex;
+    double _interactionLengthSquared;
+  };
+
+  /**
+   * Pass-1 functor for the two-pass CRS neighbor pairs build.
+   *
+   * For every interacting triplet (i, j, k) where all pairwise distances are within interactionLength,
+   * it increments particle i's neighbor-pairs counter.
+   */
+  class PairVerletListCounterFunctor : public TriwiseFunctor<Particle_T, PairVerletListCounterFunctor> {
+   public:
+    /**
+     * Structure of the SoAs defined by the particle.
+     */
+    using SoAArraysType = typename Particle_T::SoAArraysType;
+    /**
+     * Atomic counter
+     */
+    using PaddedAtomic = typename VerletListCounterFunctor::PaddedAtomic;
+
+    /**
+     * @param counts        Per-particle neighbor pair counters (size N).
+     * @param particleToIndex Map from particle pointer to its dense SoA index.
+     * @param interactionLength cutoff + skin.
+     */
+    PairVerletListCounterFunctor(std::vector<PaddedAtomic> &counts,
+                                 const std::unordered_map<const Particle_T *, size_t> &particleToIndex,
+                                 double interactionLength)
+        : TriwiseFunctor<Particle_T, PairVerletListCounterFunctor>(interactionLength),
+          _counts(counts),
+          _particleToIndex(particleToIndex),
+          _interactionLengthSquared(interactionLength * interactionLength) {}
+
+    std::string getName() override { return "PairVerletListCounterFunctor"; }
+    bool isRelevantForTuning() override { return false; }
+    bool allowsNewton3() override { return true; }
+    bool allowsNonNewton3() override { return true; }
+
+    void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool /*newton3*/) override {
+      using namespace autopas::utils::ArrayMath::literals;
+
+      if (i.isDummy() or j.isDummy() or k.isDummy()) {
+        return;
+      }
+      const auto distIJ = j.getR() - i.getR();
+      const auto distIK = k.getR() - i.getR();
+      const auto distJK = k.getR() - j.getR();
+
+      const double distSquareIJ = utils::ArrayMath::dot(distIJ, distIJ);
+      const double distSquareIK = utils::ArrayMath::dot(distIK, distIK);
+      const double distSquareJK = utils::ArrayMath::dot(distJK, distJK);
+      if (distSquareIJ < _interactionLengthSquared and distSquareIK < _interactionLengthSquared and
+          distSquareJK < _interactionLengthSquared) {
+        _counts[_particleToIndex.at(&i)].value.fetch_add(1, std::memory_order_relaxed);
+      }
+    }
+
+    /**
+     * @copydoc autopas::Functor::getNeededAttr()
+     */
+    constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
+      return std::array<typename Particle_T::AttributeNames, 4>{
+          Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+          Particle_T::AttributeNames::posZ};
+    }
+
+    /**
+     * @copydoc autopas::Functor::getComputedAttr()
+     */
+    constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() {
+      return std::array<typename Particle_T::AttributeNames, 0>{/*Nothing*/};
+    }
+
+   private:
+    std::vector<PaddedAtomic> &_counts;
+    const std::unordered_map<const Particle_T *, size_t> &_particleToIndex;
+    double _interactionLengthSquared;
+  };
+
+  /**
+   * Pass-2 functor for the two-pass CRS neighbor pairs build.
+   *
+   * Writes the pair (j, k) directly into the pre-allocated _neighborPairsList.pairs slice for particle i.
+   */
+  class PairVerletListFillerFunctor : public TriwiseFunctor<Particle_T, PairVerletListFillerFunctor> {
+   public:
+    /**
+     * Structure of the SoAs defined by the particle.
+     */
+    using SoAArraysType = typename Particle_T::SoAArraysType;
+    /**
+     * Atomic counter
+     */
+    using PaddedAtomic = typename VerletListCounterFunctor::PaddedAtomic;
+
+    /**
+     * @param neighborPairsList The CRS pair structure with offsets already filled and pairs pre-allocated.
+     * @param fillPos           Per-particle fill cursors, initialized to offsets[i].
+     * @param particleToIndex   Map from particle pointer to its dense SoA index.
+     * @param interactionLength cutoff + skin.
+     */
+    PairVerletListFillerFunctor(NeighborPairsListCRS &neighborPairsList, std::vector<PaddedAtomic> &fillPos,
+                                const std::unordered_map<const Particle_T *, size_t> &particleToIndex,
+                                double interactionLength)
+        : TriwiseFunctor<Particle_T, PairVerletListFillerFunctor>(interactionLength),
+          _neighborPairsList(neighborPairsList),
+          _fillPos(fillPos),
+          _particleToIndex(particleToIndex),
+          _interactionLengthSquared(interactionLength * interactionLength) {}
+
+    std::string getName() override { return "PairVerletListFillerFunctor"; }
+    bool isRelevantForTuning() override { return false; }
+    bool allowsNewton3() override { return true; }
+    bool allowsNonNewton3() override { return true; }
+
+    void AoSFunctor(Particle_T &i, Particle_T &j, Particle_T &k, bool /*newton3*/) override {
+      using namespace autopas::utils::ArrayMath::literals;
+
+      if (i.isDummy() or j.isDummy() or k.isDummy()) {
+        return;
+      }
+      const auto distIJ = j.getR() - i.getR();
+      const auto distIK = k.getR() - i.getR();
+      const auto distJK = k.getR() - j.getR();
+
+      const double distSquareIJ = utils::ArrayMath::dot(distIJ, distIJ);
+      const double distSquareIK = utils::ArrayMath::dot(distIK, distIK);
+      const double distSquareJK = utils::ArrayMath::dot(distJK, distJK);
+      if (distSquareIJ < _interactionLengthSquared and distSquareIK < _interactionLengthSquared and
+          distSquareJK < _interactionLengthSquared) {
+        const size_t iIdx = _particleToIndex.at(&i);
+        const size_t jIdx = _particleToIndex.at(&j);
+        const size_t kIdx = _particleToIndex.at(&k);
+        const size_t insertPos = _fillPos[iIdx].value.fetch_add(1, std::memory_order_relaxed);
+        _neighborPairsList.pairs[insertPos] = {jIdx, kIdx};
+      }
+    }
+
+    /**
+     * @copydoc autopas::Functor::getNeededAttr()
+     */
+    constexpr static std::array<typename Particle_T::AttributeNames, 4> getNeededAttr() {
+      return std::array<typename Particle_T::AttributeNames, 4>{
+          Particle_T::AttributeNames::ptr, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+          Particle_T::AttributeNames::posZ};
+    }
+
+    /**
+     * @copydoc autopas::Functor::getComputedAttr()
+     */
+    constexpr static std::array<typename Particle_T::AttributeNames, 0> getComputedAttr() {
+      return std::array<typename Particle_T::AttributeNames, 0>{/*Nothing*/};
+    }
+
+   private:
+    NeighborPairsListCRS &_neighborPairsList;
+    std::vector<PaddedAtomic> &_fillPos;
+    const std::unordered_map<const Particle_T *, size_t> &_particleToIndex;
     double _interactionLengthSquared;
   };
 

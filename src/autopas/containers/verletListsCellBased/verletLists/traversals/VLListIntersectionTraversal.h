@@ -39,9 +39,7 @@ class VLListIntersectionTraversal : public TraversalInterface, public VLTraversa
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_intersection; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (not _useNewton3) and _dataLayout == DataLayoutOption::aos;
-  }
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
@@ -62,50 +60,41 @@ class VLListIntersectionTraversal : public TraversalInterface, public VLTraversa
   }
 
   void traverseParticles() override {
-    auto &aosNeighborLists = *(this->_aosNeighborLists);
-    auto &soaNeighborLists = *(this->_soaNeighborLists);
+    auto &neighborList = *(this->_neighborList);
+    const size_t numParticles = neighborList.size();
+    const auto &indexToParticle = *this->_indexToParticle;
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
-        /// @todo add parelelization
         if (not _useNewton3) {
-          const size_t buckets = aosNeighborLists.bucket_count();
-
           AUTOPAS_OPENMP(parallel) {
             // create a buffer per Thread for all intersections
-            auto intersectingNeighbors = std::vector<ParticleType *>();
+            std::vector<size_t> intersectingNeighbors;
 
             AUTOPAS_OPENMP(for schedule(dynamic))
-            for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
-              auto endIter = aosNeighborLists.end(bucketId);
-              for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
-                ParticleType &particle = *(bucketIter->first);
-                if (not particle.isOwned()) {
-                  // skip Halo particles as N3 is disabled
-                  continue;
-                }
-                auto &neighborList = bucketIter->second;
-                auto neighborPtrIter1 = neighborList.begin();
-                for (; neighborPtrIter1 != neighborList.end(); ++neighborPtrIter1) {
-                  ParticleType &neighbor1 = *(*neighborPtrIter1);
-                  auto &neighborList1 = (aosNeighborLists.find(&neighbor1))->second;
+            for (size_t i = 0; i < numParticles; ++i) {
+              ParticleType &particle = *indexToParticle[i];
+              if (not particle.isOwned()) {
+                // skip Halo particles as N3 is disabled
+                continue;
+              }
+              const size_t numNeighborsI = neighborList.count(i);
+              const size_t *neighborsI = neighborList.begin(i);
+              for (size_t j = 0; j < numNeighborsI; ++j) {
+                const size_t neighbor1Idx = neighborsI[j];
+                ParticleType &neighbor1 = *indexToParticle[neighbor1Idx];
+                const size_t numNeighborsJ = neighborList.count(neighbor1Idx);
+                const size_t *neighborsJ = neighborList.begin(neighbor1Idx);
 
-                  size_t maxIntersectionSize = std::min(neighborList1.size(), neighborList.size());
-                  //  make sure the buffer has enough space
-                  intersectingNeighbors.reserve(maxIntersectionSize);
+                size_t maxIntersectionSize = std::min(numNeighborsI - j - 1, numNeighborsJ);
+                intersectingNeighbors.clear();
+                intersectingNeighbors.reserve(maxIntersectionSize);
 
-                  auto intersectionIter = neighborPtrIter1;
-                  auto intersectionEndIter =
-                      std::set_intersection(++intersectionIter, neighborList.end(), neighborList1.begin(),
-                                            neighborList1.end(), std::back_inserter(intersectingNeighbors));
+                std::set_intersection(neighborsI + j + 1, neighborsI + numNeighborsI, neighborsJ,
+                                      neighborsJ + numNeighborsJ, std::back_inserter(intersectingNeighbors));
 
-                  for (auto neighborPtrIter2 = intersectingNeighbors.begin();
-                       neighborPtrIter2 != intersectingNeighbors.end(); ++neighborPtrIter2) {
-                    ParticleType &neighbor2 = *(*neighborPtrIter2);
-                    _functor.AoSFunctor(particle, neighbor1, neighbor2, false);
-                  }
-
-                  // clear buffer for next loop-iteration
-                  intersectingNeighbors.clear();
+                for (size_t kIdx : intersectingNeighbors) {
+                  ParticleType &neighbor2 = *indexToParticle[kIdx];
+                  _functor.AoSFunctor(particle, neighbor1, neighbor2, false);
                 }
               }
             }

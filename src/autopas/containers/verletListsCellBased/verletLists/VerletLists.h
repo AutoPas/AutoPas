@@ -12,10 +12,11 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -78,7 +79,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<ParticleCellType> *>(traversal);
     if (verletTraversalInterface) {
       verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _neighborList, _particleToIndex,
-                                                         , _aosNeighborPairsLists);
+                                                         _indexToParticle, _neighborPairsList);
     } else {
       utils::ExceptionHandler::exception(
           "VerletLists::computeInteractions(): Trying to use a traversal of wrong type.");
@@ -97,13 +98,20 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   const VerletListHelpers<Particle_T>::NeighborListCRS &getNeighborList() const { return _neighborList; }
 
   /**
+   * Returns the flat CRS neighbor pairs list.
+   * Offsets and pairs are valid after the most recent updateNeighborPairsList() call.
+   * @return the CRS neighbor pairs list
+   */
+  const VerletListHelpers<Particle_T>::NeighborPairsListCRS &getNeighborPairsList() const { return _neighborPairsList; }
+
+  /**
    * Build the pair neighbor list if necessary without fully rebuilding the other neighbor lists.
    * @param traversal
    */
   void prepareForTraversal(TraversalInterface *traversal) override {
     if (traversal->getTraversalType() == TraversalOption::vl_pair_list_iteration) {
       if (not _pairListIsValid) {
-        this->updatePairVerletListsAoS3B(this->_verletBuiltNewton3);
+        this->updateNeighborPairsList(this->_verletBuiltNewton3);
       }
     }
   }
@@ -123,9 +131,39 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
-    updateNeighborLists(traversal->getUseNewton3());
+    const auto buildWithN3 = traversal->getUseNewton3();
+
+    // Check for triwise traversals
+    switch (traversal->getTraversalType()) {
+      // Standard pairwise traversal
+      case TraversalOption::vl_list_iteration: {
+        this->updateNeighborLists(buildWithN3, InteractionTypeOption::triwise);
+        break;
+      }
+      case TraversalOption::vl_list_intersection: {
+        this->updateNeighborLists(buildWithN3, InteractionTypeOption::triwise);
+
+        // sort neighbor lists for efficient intersecting
+        AUTOPAS_OPENMP(parallel for schedule(dynamic))
+        for (size_t i = 0; i < _neighborList.size(); ++i) {
+          std::ranges::sort(_neighborList.getNeighbors(i));
+        }
+        break;
+      }
+      case TraversalOption::vl_pair_list_iteration: {
+        // build 3Body Verlet lists through VLIteration traversal
+        this->updateNeighborPairsList(buildWithN3);
+        break;
+      }
+        // Default builds normal neighbor lists including halo particles.
+      default: {
+        this->updateNeighborLists(buildWithN3, InteractionTypeOption::triwise);
+      }
+    }
+
     // the neighbor list is now valid
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
+    _pairListIsValid = false;
   }
 
  private:
@@ -155,10 +193,11 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * two-pass lock-free path when multiple threads are active (eliminates false sharing and malloc contention).
    *
    * @param useNewton3  Whether the force traversal will use Newton's third law.
+   * @param interactionType  The type of interaction to consider.
    */
-  virtual void updateNeighborLists(bool useNewton3) {
+  virtual void updateNeighborLists(bool useNewton3, InteractionTypeOption interactionType) {
     const size_t N = buildParticleIndex();
-    const double interactionLength = this->getCutoff() + this->getVerletSkin();
+    const double interactionLength = this->getInteractionLength();
 
     DataLayoutOption dataLayout;
     if (_buildVerletListType == BuildVerletListType::VerletAoS) {
@@ -171,9 +210,9 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     }
 
     if (autopas_get_max_threads() == 1) {
-      updateNeighborListsSingleThread(N, interactionLength, dataLayout, useNewton3);
+      updateNeighborListsSingleThread(N, interactionLength, dataLayout, useNewton3, interactionType);
     } else {
-      updateNeighborListsMultiThread(N, interactionLength, dataLayout, useNewton3);
+      updateNeighborListsMultiThread(N, interactionLength, dataLayout, useNewton3, interactionType);
     }
   }
 
@@ -181,19 +220,21 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * Single-threaded rebuild: One traversal with VerletListGeneratorFunctor writing into per-particle
    * std::vector<size_t>, followed by a serial prefix-sum + copy into the flat CRS.
    */
-  void updateNeighborListsSingleThread(size_t N, double interactionLength, DataLayoutOption dataLayout,
-                                       bool useNewton3) {
+  void updateNeighborListsSingleThread(size_t N, double interactionLength, DataLayoutOption dataLayout, bool useNewton3,
+                                       InteractionTypeOption interactionType) {
     std::vector<std::vector<size_t>> tempLists(N);
 
     typename VerletListHelpers<Particle_T>::CRSNeighborListPolicy policy(tempLists, _particleToIndex);
 
     InteractionListGeneratorFunctor<Particle_T, typename VerletListHelpers<Particle_T>::CRSNeighborListPolicy> f(
         policy, interactionLength, useNewton3);
+
+    bool traverseHaloCells = (interactionType == InteractionTypeOption::triwise);
     auto traversal = LCC08Traversal<
         ParticleCellType,
         InteractionListGeneratorFunctor<Particle_T, typename VerletListHelpers<Particle_T>::CRSNeighborListPolicy>>(
         this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f, this->getInteractionLength(),
-        this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+        this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3, traverseHaloCells);
     this->_linkedCells.computeInteractions(&traversal);
 
     // Prefix-sum + copy:
@@ -214,61 +255,100 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
   /**
-   * Update the pair verlet lists for AoS usage
-   * @param useNewton3
+   * Rebuilds _neighborPairsList from scratch.
+   *
+   * @param useNewton3 Whether the traversal will use Newton's third law.
    */
-  void updatePairVerletListsAoS3B(bool useNewton3) {
-    updateVerletListsAoS(false, InteractionTypeOption::triwise);
-    generateAoSNeighborPairsLists();
+  void updateNeighborPairsList(bool useNewton3) {
+    updateNeighborLists(useNewton3, InteractionTypeOption::triwise);
+    const size_t N = _neighborList.size();
     const double interactionLength = this->getInteractionLength();
-    typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor f(_aosNeighborPairsLists, interactionLength);
 
-    DataLayoutOption dataLayout;
-    if (_buildVerletListType == BuildVerletListType::VerletAoS) {
-      dataLayout = DataLayoutOption::aos;
-    } else if (_buildVerletListType == BuildVerletListType::VerletSoA) {
+    DataLayoutOption dataLayout = DataLayoutOption::aos;
+    if (_buildVerletListType == BuildVerletListType::VerletSoA) {
       // there are no SoA 3-body traversals, so we print out a warning and use AoS Layout instead
       AutoPasLog(WARN, "Pair Verlet Lists can currently only be built with AoS DataLayout, using that instead!");
-      _buildVerletListType = BuildVerletListType::VerletAoS;
-      dataLayout = DataLayoutOption::aos;
-    } else {
-      utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS3B(): unsupported BuildVerletListType: {}",
-                                         static_cast<int>(_buildVerletListType));
     }
 
-    auto traversal = VLListIterationTraversal<ParticleCellType,
-                                              typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor>(
-        f, dataLayout, useNewton3);
-    this->computeInteractions(&traversal);
+    if (autopas_get_max_threads() == 1) {
+      updateNeighborPairsListSingleThread(N, interactionLength, dataLayout, useNewton3);
+    } else {
+      updateNeighborPairsListMultiThread(N, interactionLength, dataLayout, useNewton3);
+    }
     _pairListIsValid = true;
   }
 
   /**
-   * Clears and then generates the AoS neighbor lists.
-   * The Id Map is used to map the id of a particle to the actual particle.
-   * @return Number of particles in the container
+   * Single-threaded rebuild of neighbor pairs list.
    */
-  size_t generateAoSNeighborLists() {
-    size_t numParticles = 0;
-    _aosNeighborLists.clear();
-    // DON'T simply parallelize this loop!!! this needs modifications if you want to parallelize it!
-    // We have to iterate also over dummy particles here to ensure a correct size of the arrays.
-    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++numParticles) {
-      // create the verlet list entries for all particles
-      _aosNeighborLists[&(*iter)];
+  void updateNeighborPairsListSingleThread(size_t N, double interactionLength, DataLayoutOption dataLayout,
+                                           bool useNewton3) {
+    std::vector<std::vector<std::pair<size_t, size_t>>> tempLists(N);
+    typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor f(tempLists, _particleToIndex,
+                                                                             interactionLength);
+    auto traversal = VLListIterationTraversal<ParticleCellType,
+                                              typename VerletListHelpers<Particle_T>::PairVerletListGeneratorFunctor>(
+        f, dataLayout, useNewton3);
+    this->computeInteractions(&traversal);
+
+    _neighborPairsList.offsets.resize(N + 1);
+    _neighborPairsList.offsets[0] = 0;
+    for (size_t i = 0; i < N; ++i) {
+      _neighborPairsList.offsets[i + 1] = _neighborPairsList.offsets[i] + tempLists[i].size();
+    }
+    const size_t totalPairs = _neighborPairsList.offsets[N];
+    _neighborPairsList.pairs.resize(totalPairs);
+    for (size_t i = 0; i < N; ++i) {
+      std::copy(tempLists[i].begin(), tempLists[i].end(),
+                _neighborPairsList.pairs.begin() + static_cast<std::ptrdiff_t>(_neighborPairsList.offsets[i]));
     }
 
-    return numParticles;
+    AutoPasLog(DEBUG, "VerletLists::updateNeighborPairsList (1T): {} particles, {} pairs, avg {:.2f}", N, totalPairs,
+               N > 0 ? static_cast<double>(totalPairs) / static_cast<double>(N) : 0.0);
   }
 
   /**
-   * Clears and then generates the AoS neighbor pairs lists.
+   * Multi-threaded rebuild of neighbor pairs list.
    */
-  void generateAoSNeighborPairsLists() {
-    _aosNeighborPairsLists.clear();
-    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
-      // create the pair verlet list entries for all particles
-      _aosNeighborPairsLists[&(*iter)];
+  void updateNeighborPairsListMultiThread(size_t N, double interactionLength, DataLayoutOption dataLayout,
+                                          bool useNewton3) {
+    using PaddedAtomic = typename VerletListHelpers<Particle_T>::VerletListCounterFunctor::PaddedAtomic;
+
+    // Pass 1: Count neighbor pairs per particle
+    std::vector<PaddedAtomic> counts(N);
+    {
+      typename VerletListHelpers<Particle_T>::PairVerletListCounterFunctor counter(counts, _particleToIndex,
+                                                                                   interactionLength);
+      auto traversal = VLListIterationTraversal<ParticleCellType,
+                                                typename VerletListHelpers<Particle_T>::PairVerletListCounterFunctor>(
+          counter, dataLayout, useNewton3);
+      this->computeInteractions(&traversal);
+    }
+
+    // Prefix sum: counts -> CRS offsets, allocate flat pairs
+    _neighborPairsList.offsets.resize(N + 1);
+    _neighborPairsList.offsets[0] = 0;
+    for (size_t i = 0; i < N; ++i) {
+      _neighborPairsList.offsets[i + 1] =
+          _neighborPairsList.offsets[i] + counts[i].value.load(std::memory_order_relaxed);
+    }
+    const size_t totalPairs = _neighborPairsList.offsets[N];
+    _neighborPairsList.pairs.resize(totalPairs);
+
+    AutoPasLog(DEBUG, "VerletLists::updateNeighborPairsList (MT): {} particles, {} pairs, avg {:.2f}", N, totalPairs,
+               N > 0 ? static_cast<double>(totalPairs) / static_cast<double>(N) : 0.0);
+
+    // Pass 2: Fill neighbor pairs directly
+    for (size_t i = 0; i < N; ++i) {
+      counts[i].value.store(_neighborPairsList.offsets[i], std::memory_order_relaxed);
+    }
+    {
+      typename VerletListHelpers<Particle_T>::PairVerletListFillerFunctor filler(_neighborPairsList, counts,
+                                                                                 _particleToIndex, interactionLength);
+      auto traversal = VLListIterationTraversal<ParticleCellType,
+                                                typename VerletListHelpers<Particle_T>::PairVerletListFillerFunctor>(
+          filler, dataLayout, useNewton3);
+      this->computeInteractions(&traversal);
     }
   }
 
@@ -288,8 +368,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    *
    * Optimal when autopas_get_max_threads() > 1.
    */
-  void updateNeighborListsMultiThread(size_t N, double interactionLength, DataLayoutOption dataLayout,
-                                      bool useNewton3) {
+  void updateNeighborListsMultiThread(size_t N, double interactionLength, DataLayoutOption dataLayout, bool useNewton3,
+                                      InteractionTypeOption interactionType) {
     using PaddedAtomic = VerletListHelpers<Particle_T>::VerletListCounterFunctor::PaddedAtomic;
 
     // Pass 1: Count neighbors per particle
@@ -297,10 +377,11 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     {
       typename VerletListHelpers<Particle_T>::VerletListCounterFunctor counter(counts, _particleToIndex,
                                                                                interactionLength);
+      const bool traverseHaloCells = (interactionType == InteractionTypeOption::triwise);
       auto traversal =
           LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListCounterFunctor>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), counter, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3, traverseHaloCells);
       this->_linkedCells.computeInteractions(&traversal);
     }
 
@@ -324,10 +405,11 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     {
       typename VerletListHelpers<Particle_T>::VerletListFillerFunctor filler(_neighborList, counts, _particleToIndex,
                                                                              interactionLength);
+      const bool traverseHaloCells = (interactionType == InteractionTypeOption::triwise);
       auto traversal =
           LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListFillerFunctor>(
               this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), filler, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3, traverseHaloCells);
       this->_linkedCells.computeInteractions(&traversal);
     }
   }
@@ -341,11 +423,6 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   std::unordered_map<const Particle_T *, size_t> _particleToIndex;
 
   /**
-   * Neighbor Pairs Lists: Map of particle pointers to vector of pairs of particle pointers. (To find triplets.)
-   */
-  typename VerletListHelpers<Particle_T>::NeighborPairsListAoSType _aosNeighborPairsLists;
-
-  /**
    * Flat array mapping SoA index i -> pointer to particle i.
    * Built in initTraversal() in the same cell/particle iteration order as VerletLists::buildParticleIndex().
    * Used during AoS force computations to resolve CRS neighbor indices to particles.
@@ -357,6 +434,11 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * Both AoS and SoA traversal paths read from this neighbor structure.
    */
   VerletListHelpers<Particle_T>::NeighborListCRS _neighborList;
+
+  /**
+   * Flat CRS Neighbor Pairs List. (To find triplets.)
+   */
+  typename VerletListHelpers<Particle_T>::NeighborPairsListCRS _neighborPairsList;
 
   /**
    * Shows if the SoA neighbor list is currently valid.

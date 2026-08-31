@@ -188,3 +188,75 @@ TEST_F(VerletListHelpersTest, DummyParticleFiltering) {
   // Since particle 1 is a dummy, the interaction should be aborted entirely.
   EXPECT_EQ(counts[0].value.load(), 0);
 }
+
+/**
+ * Tests that PairVerletListCounterFunctor behaves safely across multiple threads without data races.
+ */
+TEST_F(VerletListHelpersTest, PairCounterFunctorThreadSafety) {
+  constexpr size_t numParticles = 50;
+  generateDenseParticles(numParticles);
+
+  std::vector<typename Helpers::VerletListCounterFunctor::PaddedAtomic> counts(numParticles);
+  Helpers::PairVerletListCounterFunctor functor(counts, particleToIndex, interactionLength);
+
+  {
+    NumThreadGuard numThreadGuard(4);
+    AUTOPAS_OPENMP(parallel for schedule(dynamic))
+    for (size_t i = 0; i < numParticles; ++i) {
+      for (size_t j = i + 1; j < numParticles; ++j) {
+        for (size_t k = j + 1; k < numParticles; ++k) {
+          functor.AoSFunctor(cell[i], cell[j], cell[k], false);
+        }
+      }
+    }
+  }
+
+  for (size_t i = 0; i < numParticles; ++i) {
+    const size_t remaining = numParticles - 1 - i;
+    const size_t expectedPairs = remaining >= 2 ? (remaining * (remaining - 1)) / 2 : 0;
+    EXPECT_EQ(counts[i].value.load(std::memory_order_seq_cst), expectedPairs)
+        << "Lost increments detected for particle " << i << " due to race condition!";
+  }
+}
+
+/**
+ * Tests that PairVerletListFillerFunctor can safely write index pairs into a pre-allocated CRS array.
+ */
+TEST_F(VerletListHelpersTest, PairFillerFunctorThreadSafety) {
+  constexpr size_t numParticles = 50;
+  generateDenseParticles(numParticles);
+
+  typename Helpers::NeighborPairsListCRS neighborPairsList;
+  neighborPairsList.offsets.resize(numParticles + 1, 0);
+  for (size_t i = 0; i < numParticles; ++i) {
+    const size_t remaining = numParticles - 1 - i;
+    const size_t count = remaining >= 2 ? (remaining * (remaining - 1)) / 2 : 0;
+    neighborPairsList.offsets[i + 1] = neighborPairsList.offsets[i] + count;
+  }
+  neighborPairsList.pairs.resize(neighborPairsList.offsets.back());
+
+  std::vector<typename Helpers::VerletListCounterFunctor::PaddedAtomic> fillPos(numParticles);
+  for (size_t i = 0; i < numParticles; ++i) {
+    fillPos[i].value.store(neighborPairsList.offsets[i], std::memory_order_relaxed);
+  }
+
+  Helpers::PairVerletListFillerFunctor filler(neighborPairsList, fillPos, particleToIndex, interactionLength);
+
+  {
+    NumThreadGuard numThreadGuard(4);
+    AUTOPAS_OPENMP(parallel for schedule(dynamic))
+    for (size_t i = 0; i < numParticles; ++i) {
+      for (size_t j = i + 1; j < numParticles; ++j) {
+        for (size_t k = j + 1; k < numParticles; ++k) {
+          filler.AoSFunctor(cell[i], cell[j], cell[k], false);
+        }
+      }
+    }
+  }
+
+  for (size_t i = 0; i < numParticles; ++i) {
+    const size_t remaining = numParticles - 1 - i;
+    const size_t expectedPairs = remaining >= 2 ? (remaining * (remaining - 1)) / 2 : 0;
+    EXPECT_EQ(neighborPairsList.count(i), expectedPairs);
+  }
+}

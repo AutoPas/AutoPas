@@ -112,8 +112,6 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     auto &neighborList = *(this->_neighborList);
     const size_t numParticles = neighborList.size();
     const auto &indexToParticle = *this->_indexToParticle;
-    auto &aosNeighborLists = *(this->_aosNeighborLists);
-    auto &soaNeighborLists = *(this->_soaNeighborLists);
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
         if (not _useNewton3) {
@@ -177,44 +175,47 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   }
 
   void traverseParticleTriplets() {
-    auto &aosNeighborLists = *(this->_aosNeighborLists);
-    auto &soaNeighborLists = *(this->_soaNeighborLists);
+    auto &neighborList = *(this->_neighborList);
+    const size_t numParticles = neighborList.size();
+    const auto &indexToParticle = *this->_indexToParticle;
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
         if (not _useNewton3) {
-          const size_t buckets = aosNeighborLists.bucket_count();
-          /// @todo find a sensible chunk size
           AUTOPAS_OPENMP(parallel for schedule(dynamic))
-          for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
-            auto endIter = aosNeighborLists.end(bucketId);
-            for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
-              ParticleType &particle = *(bucketIter->first);
-              if (not particle.isOwned()) {
-                // skip Halo particles, as N3 is disabled
-                continue;
-              }
-              auto neighborPtrIter1 = bucketIter->second.begin();
-              for (; neighborPtrIter1 != bucketIter->second.end(); ++neighborPtrIter1) {
-                auto neighborPtrIter2 = neighborPtrIter1;
-                for (++neighborPtrIter2; neighborPtrIter2 != bucketIter->second.end(); ++neighborPtrIter2) {
-                  ParticleType &neighbor1 = *(*neighborPtrIter1);
-                  ParticleType &neighbor2 = *(*neighborPtrIter2);
-                  _functor.AoSFunctor(particle, neighbor1, neighbor2, false);
-                }
+          for (size_t i = 0; i < numParticles; ++i) {
+            ParticleType &particle = *indexToParticle[i];
+            if (not particle.isOwned()) {
+              // skip Halo particles, as N3 is disabled
+              continue;
+            }
+            const size_t numNeighbors = neighborList.count(i);
+            const size_t *neighbors = neighborList.begin(i);
+            for (size_t j = 0; j < numNeighbors; ++j) {
+              ParticleType &neighbor1 = *indexToParticle[neighbors[j]];
+              for (size_t k = j + 1; k < numNeighbors; ++k) {
+                ParticleType &neighbor2 = *indexToParticle[neighbors[k]];
+                _functor.AoSFunctor(particle, neighbor1, neighbor2, false);
               }
             }
           }
         } else {
-          for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
-            ParticleType &particle = *particlePtr;
-
-            auto neighborPtrIter1 = neighborPtrList.begin();
-            for (; neighborPtrIter1 != neighborPtrList.end(); ++neighborPtrIter1) {
-              auto neighborPtrIter2 = neighborPtrIter1;
-              for (++neighborPtrIter2; neighborPtrIter2 != neighborPtrList.end(); ++neighborPtrIter2) {
-                ParticleType &neighbor1 = *(*neighborPtrIter1);
-                ParticleType &neighbor2 = *(*neighborPtrIter2);
-                _functor.AoSFunctor(particle, neighbor1, neighbor2, _useNewton3);
+          // Parallelized AoS with Newton3 using C27 coloring
+          for (int color = 0; color < 27; ++color) {
+            const auto &cellsOfColor = _colorCells[color];
+            AUTOPAS_OPENMP(parallel for schedule(dynamic))
+            for (size_t c = 0; c < cellsOfColor.size(); ++c) {
+              const auto &range = cellsOfColor[c];
+              for (size_t i = range.first; i < range.second; ++i) {
+                ParticleType &particle = *indexToParticle[i];
+                const size_t numNeighbors = neighborList.count(i);
+                const size_t *neighbors = neighborList.begin(i);
+                for (size_t j = 0; j < numNeighbors; ++j) {
+                  ParticleType &neighbor1 = *indexToParticle[neighbors[j]];
+                  for (size_t k = j + 1; k < numNeighbors; ++k) {
+                    ParticleType &neighbor2 = *indexToParticle[neighbors[k]];
+                    _functor.AoSFunctor(particle, neighbor1, neighbor2, true);
+                  }
+                }
               }
             }
           }
@@ -223,18 +224,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       }
 
       case DataLayoutOption::soa: {
-        if (not _useNewton3) {
-          /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
-          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-            _functor.SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
-          }
-        } else {
-          // iterate over SoA
-          for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
-            _functor.SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], _useNewton3);
-          }
-        }
+        utils::ExceptionHandler::exception(
+            "VLListIterationTraversal::traverseParticleTriplets(): SoA dataLayout not implemented yet for "
+            "triwise interactions.");
         return;
       }
       default: {

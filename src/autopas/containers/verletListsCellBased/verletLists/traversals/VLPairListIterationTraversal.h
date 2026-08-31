@@ -35,9 +35,7 @@ class VLPairListIterationTraversal : public TraversalInterface, public VLTravers
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_pair_list_iteration; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (not _useNewton3) and _dataLayout == DataLayoutOption::aos;
-  }
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
@@ -69,26 +67,25 @@ class VLPairListIterationTraversal : public TraversalInterface, public VLTravers
   }
 
   void traverseParticleTriplets() {
-    auto &aosNeighborPairsLists = *(this->_aosNeighborPairsLists);
+    auto &neighborPairsList = *(this->_neighborPairsList);
+    const size_t numParticles = neighborPairsList.size();
+    const auto &indexToParticle = *(this->_indexToParticle);
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
         if (not _useNewton3) {
-          const size_t buckets = aosNeighborPairsLists.bucket_count();
-          /// @todo find a sensible chunk size
           AUTOPAS_OPENMP(parallel for schedule(dynamic))
-          for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
-            auto endIter = aosNeighborPairsLists.end(bucketId);
-            for (auto bucketIter = aosNeighborPairsLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
-              ParticleType &particle = *(bucketIter->first);
-              if (not particle.isOwned()) {
-                // skip Halo particles, as N3 is disabled
-                continue;
-              }
+          for (size_t i = 0; i < numParticles; ++i) {
+            ParticleType &particle = *indexToParticle[i];
+            if (not particle.isOwned()) {
+              // skip Halo particles, as N3 is disabled
+              continue;
+            }
 
-              for (auto &neighborPairPtr : bucketIter->second) {
-                auto &[neighborPtr1, neighborPtr2] = neighborPairPtr;
-                _functor.AoSFunctor(particle, *neighborPtr1, *neighborPtr2, false);
-              }
+            const size_t numPairs = neighborPairsList.count(i);
+            const auto *pairs = neighborPairsList.begin(i);
+            for (size_t p = 0; p < numPairs; ++p) {
+              const auto &[jIdx, kIdx] = pairs[p];
+              _functor.AoSFunctor(particle, *indexToParticle[jIdx], *indexToParticle[kIdx], false);
             }
           }
         } else {

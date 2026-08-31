@@ -36,7 +36,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle_T> {
    * Helper type definition. Vector of cells, for each cell a vector of neighbors.
    * For each pair of cells, a vector of mappings from particle to its neighbor list.
    */
-  using SoAListType = typename std::vector<std::vector<std::vector<SoAPairOfParticleAndList>>>;
+  using SoAListType = std::vector<std::vector<std::vector<SoAPairOfParticleAndList>>>;
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pairwiseVerletLists; }
 

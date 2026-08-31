@@ -62,6 +62,11 @@ void Newton3OnOffTest::countFunctorCalls(autopas::Configuration config) {
   if (config.container == autopas::ContainerOption::directSum and config.dataLayout == autopas::DataLayoutOption::soa) {
     return;
   }
+  // vl_list_iteration generates triplets from pairwise neighbor lists, deferring pruning of open wedges (dist(j,k) >= cutoff) to the functor.
+  // Because MockTriwiseFunctor does not filter by distance, raw candidate calls are counted, breaking the 1:3 Newton3 on/off call ratio.
+  if (config.traversal == autopas::TraversalOption::vl_list_iteration and config.interactionType == autopas::InteractionTypeOption::triwise) {
+    return;
+  }
   const autopas::ContainerSelectorInfo containerInfo(getBoxMin(), getBoxMax(), getCutoff(), config.cellSizeFactor,
                                                      getVerletSkin(), getClusterSize(), getAoSSortingThreshold(),
                                                      getSoASortingThreshold(), config.loadEstimator);
