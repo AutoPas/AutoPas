@@ -515,7 +515,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
         double dr2 = utils::ArrayMath::dot(dr, dr);
         // Exclude halo interactions from the diff since they are the wrong way around sometimes.
         if (dr2 <= _cutoffsquare and i.getID() < numParticles and j.getID() < numHaloParticles) {
-          particlePairs.template emplace_back(i.getID(), j.getID(), dr2);
+          particlePairs.emplace_back(i.getID(), j.getID(), dr2);
         }
 
         // Do, what the LJ functor would do
