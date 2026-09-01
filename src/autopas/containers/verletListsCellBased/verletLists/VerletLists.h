@@ -137,17 +137,15 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     switch (traversal->getTraversalType()) {
       // Standard pairwise traversal
       case TraversalOption::vl_list_iteration: {
-        this->updateNeighborLists(buildWithN3, InteractionTypeOption::triwise);
+        this->updateNeighborLists(buildWithN3);
+        if (buildWithN3) {
+          this->modifyNeighborListsForTriwiseTraversal(TraversalOption::vl_list_iteration);
+        }
         break;
       }
       case TraversalOption::vl_list_intersection: {
-        this->updateNeighborLists(buildWithN3, InteractionTypeOption::triwise);
-
-        // sort neighbor lists for efficient intersecting
-        AUTOPAS_OPENMP(parallel for schedule(dynamic))
-        for (size_t i = 0; i < _neighborList.size(); ++i) {
-          std::ranges::sort(_neighborList.getNeighbors(i));
-        }
+        this->updateNeighborLists(buildWithN3);
+        this->modifyNeighborListsForTriwiseTraversal(TraversalOption::vl_list_intersection);
         break;
       }
       case TraversalOption::vl_pair_list_iteration: {
@@ -155,9 +153,9 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
         this->updateNeighborPairsList(buildWithN3);
         break;
       }
-        // Default builds normal neighbor lists including halo particles.
+      // Default builds normal neighbor lists.
       default: {
-        this->updateNeighborLists(buildWithN3, InteractionTypeOption::triwise);
+        this->updateNeighborLists(buildWithN3);
       }
     }
 
@@ -193,9 +191,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * two-pass lock-free path when multiple threads are active (eliminates false sharing and malloc contention).
    *
    * @param useNewton3  Whether the force traversal will use Newton's third law.
-   * @param interactionType  The type of interaction to consider.
    */
-  virtual void updateNeighborLists(bool useNewton3, InteractionTypeOption interactionType) {
+  virtual void updateNeighborLists(bool useNewton3) {
     const size_t N = buildParticleIndex();
     const double interactionLength = this->getInteractionLength();
 
@@ -210,9 +207,9 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     }
 
     if (autopas_get_max_threads() == 1) {
-      updateNeighborListsSingleThread(N, interactionLength, dataLayout, useNewton3, interactionType);
+      updateNeighborListsSingleThread(N, interactionLength, dataLayout, useNewton3);
     } else {
-      updateNeighborListsMultiThread(N, interactionLength, dataLayout, useNewton3, interactionType);
+      updateNeighborListsMultiThread(N, interactionLength, dataLayout, useNewton3);
     }
   }
 
@@ -220,8 +217,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    * Single-threaded rebuild: One traversal with VerletListGeneratorFunctor writing into per-particle
    * std::vector<size_t>, followed by a serial prefix-sum + copy into the flat CRS.
    */
-  void updateNeighborListsSingleThread(size_t N, double interactionLength, DataLayoutOption dataLayout, bool useNewton3,
-                                       InteractionTypeOption interactionType) {
+  void updateNeighborListsSingleThread(size_t N, double interactionLength, DataLayoutOption dataLayout,
+                                       bool useNewton3) {
     std::vector<std::vector<size_t>> tempLists(N);
 
     typename VerletListHelpers<Particle_T>::CRSNeighborListPolicy policy(tempLists, _particleToIndex);
@@ -229,12 +226,11 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     InteractionListGeneratorFunctor<Particle_T, typename VerletListHelpers<Particle_T>::CRSNeighborListPolicy> f(
         policy, interactionLength, useNewton3);
 
-    bool traverseHaloCells = (interactionType == InteractionTypeOption::triwise);
     auto traversal = LCC08Traversal<
         ParticleCellType,
         InteractionListGeneratorFunctor<Particle_T, typename VerletListHelpers<Particle_T>::CRSNeighborListPolicy>>(
         this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), f, this->getInteractionLength(),
-        this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3, traverseHaloCells);
+        this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
     this->_linkedCells.computeInteractions(&traversal);
 
     // Prefix-sum + copy:
@@ -255,12 +251,159 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
   /**
+   * Multithreaded rebuild:
+   *
+   * Pass 1 (parallel, VerletListCounterFunctor):
+   *   Count neighbors per particle into cache-line-padded atomics.
+   *   No heap allocation, no false sharing between adjacent particles.
+   *
+   * Prefix sum (serial, O(N)):
+   *   Compute CRS offsets; allocate the flat indices array.
+   *
+   * Pass 2 (parallel, VerletListFillerFunctor):
+   *   Write neighbor indices directly into the pre-allocated CRS slice
+   *   via per-particle atomic fetch-add fill cursors (also padded).
+   *
+   * Optimal when autopas_get_max_threads() > 1.
+   */
+  void updateNeighborListsMultiThread(size_t N, double interactionLength, DataLayoutOption dataLayout,
+                                      bool useNewton3) {
+    using PaddedAtomic = VerletListHelpers<Particle_T>::VerletListCounterFunctor::PaddedAtomic;
+
+    // Pass 1: Count neighbors per particle
+    std::vector<PaddedAtomic> counts(N);
+    {
+      typename VerletListHelpers<Particle_T>::VerletListCounterFunctor counter(counts, _particleToIndex,
+                                                                               interactionLength);
+      auto traversal =
+          LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListCounterFunctor>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), counter, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+      this->_linkedCells.computeInteractions(&traversal);
+    }
+
+    // Prefix sum: counts -> CRS offsets, allocate flat indices
+    _neighborList.offsets.resize(N + 1);
+    _neighborList.offsets[0] = 0;
+    for (size_t i = 0; i < N; ++i) {
+      _neighborList.offsets[i + 1] = _neighborList.offsets[i] + counts[i].value.load(std::memory_order_relaxed);
+    }
+    const size_t totalNeighbors = _neighborList.offsets[N];
+    _neighborList.indices.resize(totalNeighbors);
+
+    AutoPasLog(DEBUG, "VerletLists::updateNeighborLists (MT): {} particles, {} neighbors, avg {:.2f}", N,
+               totalNeighbors, N > 0 ? static_cast<double>(totalNeighbors) / static_cast<double>(N) : 0.0);
+
+    // Pass 2: Fill CRS indices directly
+    // Reuse the PaddedAtomic array as fill cursors, seeding each with offsets[i].
+    for (size_t i = 0; i < N; ++i) {
+      counts[i].value.store(_neighborList.offsets[i], std::memory_order_relaxed);
+    }
+    {
+      typename VerletListHelpers<Particle_T>::VerletListFillerFunctor filler(_neighborList, counts, _particleToIndex,
+                                                                             interactionLength);
+      auto traversal =
+          LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListFillerFunctor>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), filler, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+      this->_linkedCells.computeInteractions(&traversal);
+    }
+  }
+
+  /**
+   * Modifies neighbor lists for specialized triwise traversals:
+   * - vl_list_iteration (Newton3 on): Re-orients (halo -> owned) edges to (owned -> halo) edges so owned
+   *   particles own all pairwise connections to their halo neighbors, and clears halo particle neighbor lists.
+   * - vl_list_intersection: Generates halo-halo edges between halo particles that share an owned neighbor.
+   *
+   * @param traversalOption The triwise traversal type.
+   */
+  void modifyNeighborListsForTriwiseTraversal(TraversalOption traversalOption) {
+    using namespace utils::ArrayMath::literals;
+
+    const size_t N = _neighborList.size();
+    std::vector<std::vector<size_t>> tempLists(N);
+    for (size_t i = 0; i < N; ++i) {
+      tempLists[i].assign(_neighborList.begin(i), _neighborList.end(i));
+    }
+
+    if (traversalOption == TraversalOption::vl_list_iteration) {
+      // Re-orient halo -> owned edges to owned -> halo
+      for (size_t i = 0; i < N; ++i) {
+        if (not _indexToParticle[i]->isHalo()) {
+          continue;
+        }
+
+        for (const auto &neighbor : _neighborList.getNeighbors(i)) {
+          if (not _indexToParticle[neighbor]->isOwned()) {
+            // skip halo neighbors, we only want to find owned neighbors
+            continue;
+          }
+          tempLists[neighbor].push_back(i);
+        }
+        tempLists[i].clear();  // clear halo particle's list, we don't need it anymore
+      }
+    }
+
+    if (traversalOption == TraversalOption::vl_list_intersection) {
+      // Connect halo-halo pairs sharing an owned particle
+      const double interactionLength = this->getInteractionLength();
+      const double interactionLengthSquared = interactionLength * interactionLength;
+      for (size_t i = 0; i < N; ++i) {
+        if (not _indexToParticle[i]->isOwned()) {
+          continue;
+        }
+        std::vector<size_t> haloNeighbors;
+        for (const size_t neighborIdx : _neighborList.getNeighbors(i)) {
+          if (not _indexToParticle[neighborIdx]->isOwned()) {
+            haloNeighbors.push_back(neighborIdx);
+          }
+        }
+        const size_t numHalos = haloNeighbors.size();
+        for (size_t j = 0; j < numHalos; ++j) {
+          const size_t h1 = haloNeighbors[j];
+          const auto &pos1 = _indexToParticle[h1]->getR();
+          for (size_t k = j + 1; k < numHalos; ++k) {
+            const size_t h2 = haloNeighbors[k];
+            const auto &pos2 = _indexToParticle[h2]->getR();
+            const auto dist = pos1 - pos2;
+            if (utils::ArrayMath::dot(dist, dist) < interactionLengthSquared) {
+              tempLists[h1].push_back(h2);
+              tempLists[h2].push_back(h1);
+            }
+          }
+        }
+      }
+    }
+
+    // Rebuild the CRS neighbor list
+    AUTOPAS_OPENMP(parallel for schedule(dynamic))
+    for (size_t i = 0; i < N; ++i) {
+      std::ranges::sort(tempLists[i]);
+      auto [first, last] = std::ranges::unique(tempLists[i]);
+      tempLists[i].erase(first, last);
+    }
+
+    _neighborList.offsets.resize(N + 1);
+    _neighborList.offsets[0] = 0;
+    for (size_t i = 0; i < N; ++i) {
+      _neighborList.offsets[i + 1] = _neighborList.offsets[i] + tempLists[i].size();
+    }
+    _neighborList.indices.resize(_neighborList.offsets[N]);
+    for (size_t i = 0; i < N; ++i) {
+      std::copy(tempLists[i].begin(), tempLists[i].end(),
+                _neighborList.indices.begin() + static_cast<std::ptrdiff_t>(_neighborList.offsets[i]));
+    }
+  }
+
+  /**
    * Rebuilds _neighborPairsList from scratch.
    *
    * @param useNewton3 Whether the traversal will use Newton's third law.
    */
   void updateNeighborPairsList(bool useNewton3) {
-    updateNeighborLists(useNewton3, InteractionTypeOption::triwise);
+    updateNeighborLists(useNewton3);
+    // this->addSharedHaloNeighbors(useNewton3);
     const size_t N = _neighborList.size();
     const double interactionLength = this->getInteractionLength();
 
@@ -349,68 +492,6 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
                                                 typename VerletListHelpers<Particle_T>::PairVerletListFillerFunctor>(
           filler, dataLayout, useNewton3);
       this->computeInteractions(&traversal);
-    }
-  }
-
-  /**
-   * Multithreaded rebuild:
-   *
-   * Pass 1 (parallel, VerletListCounterFunctor):
-   *   Count neighbors per particle into cache-line-padded atomics.
-   *   No heap allocation, no false sharing between adjacent particles.
-   *
-   * Prefix sum (serial, O(N)):
-   *   Compute CRS offsets; allocate the flat indices array.
-   *
-   * Pass 2 (parallel, VerletListFillerFunctor):
-   *   Write neighbor indices directly into the pre-allocated CRS slice
-   *   via per-particle atomic fetch-add fill cursors (also padded).
-   *
-   * Optimal when autopas_get_max_threads() > 1.
-   */
-  void updateNeighborListsMultiThread(size_t N, double interactionLength, DataLayoutOption dataLayout, bool useNewton3,
-                                      InteractionTypeOption interactionType) {
-    using PaddedAtomic = VerletListHelpers<Particle_T>::VerletListCounterFunctor::PaddedAtomic;
-
-    // Pass 1: Count neighbors per particle
-    std::vector<PaddedAtomic> counts(N);
-    {
-      typename VerletListHelpers<Particle_T>::VerletListCounterFunctor counter(counts, _particleToIndex,
-                                                                               interactionLength);
-      const bool traverseHaloCells = (interactionType == InteractionTypeOption::triwise);
-      auto traversal =
-          LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListCounterFunctor>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), counter, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3, traverseHaloCells);
-      this->_linkedCells.computeInteractions(&traversal);
-    }
-
-    // Prefix sum: counts -> CRS offsets, allocate flat indices
-    _neighborList.offsets.resize(N + 1);
-    _neighborList.offsets[0] = 0;
-    for (size_t i = 0; i < N; ++i) {
-      _neighborList.offsets[i + 1] = _neighborList.offsets[i] + counts[i].value.load(std::memory_order_relaxed);
-    }
-    const size_t totalNeighbors = _neighborList.offsets[N];
-    _neighborList.indices.resize(totalNeighbors);
-
-    AutoPasLog(DEBUG, "VerletLists::updateNeighborLists (MT): {} particles, {} neighbors, avg {:.2f}", N,
-               totalNeighbors, N > 0 ? static_cast<double>(totalNeighbors) / static_cast<double>(N) : 0.0);
-
-    // Pass 2: Fill CRS indices directly
-    // Reuse the PaddedAtomic array as fill cursors, seeding each with offsets[i].
-    for (size_t i = 0; i < N; ++i) {
-      counts[i].value.store(_neighborList.offsets[i], std::memory_order_relaxed);
-    }
-    {
-      typename VerletListHelpers<Particle_T>::VerletListFillerFunctor filler(_neighborList, counts, _particleToIndex,
-                                                                             interactionLength);
-      const bool traverseHaloCells = (interactionType == InteractionTypeOption::triwise);
-      auto traversal =
-          LCC08Traversal<ParticleCellType, typename VerletListHelpers<Particle_T>::VerletListFillerFunctor>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), filler, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3, traverseHaloCells);
-      this->_linkedCells.computeInteractions(&traversal);
     }
   }
 

@@ -46,21 +46,17 @@ class CellFunctor {
 
   /**
    * Process the interactions inside one cell.
-   * @tparam includeHaloInteractions includes halo interactions if set to true
    * @param cell All pairwise interactions of particles inside this cell are calculated.
    */
-  template <bool includeHaloInteractions = false>
   void processCell(ParticleCell_T &cell);
 
   /**
    * Process the interactions between the particles of cell1 with particles of cell2.
-   * @tparam includeHaloInteractions includes halo interactions if set to true
    * @param cell1
    * @param cell2
    * @param sortingDirection Normalized vector connecting centers of cell1 and cell2. If no parameter or {0, 0, 0} is
    * given, sorting will be disabled.
    */
-  template <bool includeHaloInteractions = false>
   void processCellPair(ParticleCell_T &cell1, ParticleCell_T &cell2,
                        const std::array<double, 3> &sortingDirection = {0., 0., 0.});
 
@@ -228,7 +224,6 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortin
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-template <bool includeHaloInteractions>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(ParticleCell_T &cell) {
   const bool isAoS = _dataLayout == DataLayoutOption::aos;
   const bool isSoA = _dataLayout == DataLayoutOption::soa;
@@ -238,10 +233,8 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(
     return;
   }
   // Avoid force calculations if the cell contains only halo particles or if the cell is empty (=dummy)
-  if constexpr (not includeHaloInteractions) {
-    if (not cell.canHaveOwnedParticles()) {
-      return;
-    }
+  if (not cell.canHaveOwnedParticles()) {
+    return;
   }
 
   if (isAoS) {
@@ -252,7 +245,6 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-template <bool includeHaloInteractions>
 void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPair(
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
   const bool isAoS = _dataLayout == DataLayoutOption::aos;
@@ -264,18 +256,16 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
     return;
   }
 
-  if constexpr (not includeHaloInteractions) {
-    if (not cell1.canHaveOwnedParticles()) {
-      // Nothing to do if cell1 has no owned particles and we don't write to cell2 particles.
-      if constexpr (not bidirectional) {
-        if (not _useNewton3) {
-          return;
-        }
-      }
-      // Nothing to do if both cells cannot have owned particles.
-      if (not cell2.canHaveOwnedParticles()) {
+  if (not cell1.canHaveOwnedParticles()) {
+    // Nothing to do if cell1 has no owned particles and we don't write to cell2 particles.
+    if constexpr (not bidirectional) {
+      if (not _useNewton3) {
         return;
       }
+    }
+    // Nothing to do if both cells cannot have owned particles.
+    if (not cell2.canHaveOwnedParticles()) {
+      return;
     }
   }
   if (isAoS) {

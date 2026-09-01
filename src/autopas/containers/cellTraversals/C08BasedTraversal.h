@@ -32,14 +32,12 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell_T, Functor_T> 
    * @param cellLength cell length.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
-   * @param traverseHaloCells boolean whether to traverse the halo cells (e.g. for triwise neighbor list generation)
    */
   explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, Functor_T &functor,
                              const double interactionLength, const std::array<double, 3> &cellLength,
-                             DataLayoutOption dataLayout, bool useNewton3, bool traverseHaloCells = false)
+                             DataLayoutOption dataLayout, bool useNewton3)
       : ColorBasedTraversal<ParticleCell_T, Functor_T>(dims, functor, interactionLength, cellLength, dataLayout,
-                                                       useNewton3),
-        _traverseHaloCells(traverseHaloCells) {}
+                                                       useNewton3) {}
 
  protected:
   /**
@@ -50,12 +48,9 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell_T, Functor_T> 
   inline void c08Traversal(LoopBody &&loopBody) {
     using namespace autopas::utils::ArrayMath::literals;
 
-    const auto end = _traverseHaloCells ? this->_cellsPerDimension : (this->_cellsPerDimension - this->_overlap);
+    const auto end = this->_cellsPerDimension - this->_overlap;
     const auto stride = this->_overlap + 1ul;
     this->colorTraversal(std::forward<LoopBody>(loopBody), end, stride);
   }
-
- private:
-  const bool _traverseHaloCells;
 };
 }  // namespace autopas

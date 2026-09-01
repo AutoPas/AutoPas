@@ -35,16 +35,14 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, publ
    * @param cellLength cell length.
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
-   * @param traverseHaloCells boolean whether to traverse the halo cells (e.g. for triwise neighbor list generation)
    */
   explicit LCC08Traversal(const std::array<unsigned long, 3> &dims, Functor_T &functor, double interactionLength,
-                          const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3,
-                          bool traverseHaloCells = false)
+                          const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
       : C08BasedTraversal<ParticleCell_T, Functor_T>(dims, functor, interactionLength, cellLength, dataLayout,
-                                                     useNewton3, traverseHaloCells),
+                                                     useNewton3),
 
         _cellHandler(functor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap, dataLayout,
-                     useNewton3, traverseHaloCells) {}
+                     useNewton3) {}
 
   /**
    * @copydoc autopas::TraversalInterface::traverseParticles
