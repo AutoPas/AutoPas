@@ -44,7 +44,7 @@ class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, coll
    * The main traversal of the C01Traversal.
    * This provides the structure of the loops and its parallelization.
    * @tparam LoopBody
-   * @param loopBody The body of the loop as a function. Normally a lambda function, that takes as as parameters
+   * @param loopBody The body of the loop as a function. Normally a lambda function, that takes as parameters
    * (x,y,z). If you need additional input from outside, please use captures (by reference).
    */
   template <typename LoopBody>

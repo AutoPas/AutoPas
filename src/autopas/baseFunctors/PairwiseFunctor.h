@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <span>
 #include <type_traits>
 #include <vector>
 
@@ -86,19 +87,19 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
   }
 
   /**
-   * PairwiseFunctor for structure of arrays (SoA) for neighbor lists
+   * PairwiseFunctor for structure of arrays (SoA) for neighbor lists.
    *
    * This functor should calculate the forces or any other pair-wise interaction
    * between the particle in the SoA with index indexFirst and all particles with indices in the neighborList.
    * This should include a cutoff check if needed!
    *
-   * @param soa Structure of arrays
-   * @param indexFirst The index of the first particle for each interaction
-   * @param neighborList The list of neighbors
-   * @param newton3 defines whether or whether not to use newton 3
+   * @param soa          Structure of arrays
+   * @param indexFirst   Index of the particle whose neighbors are being iterated
+   * @param neighborList Span over the neighbor list belonging to 'indexFirst' neighbors
+   * @param newton3      Whether to apply Newton's third law
    */
   virtual void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) {
+                                std::span<const size_t> neighborList, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorVerlet: not implemented", this->getName());
   }
 

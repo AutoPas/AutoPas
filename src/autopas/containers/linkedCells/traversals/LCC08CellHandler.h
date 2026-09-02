@@ -166,9 +166,9 @@ inline void LCC08CellHandler<ParticleCell_T, Functor_T>::processBaseCellPairwise
     ParticleCell_T &cell2 = cells[cellIndex2];
 
     if (cellIndex1 == cellIndex2) {
-      this->_cellFunctor.processCell(cell1);
+      _cellFunctor.processCell(cell1);
     } else {
-      this->_cellFunctor.processCellPair(cell1, cell2, r);
+      _cellFunctor.processCellPair(cell1, cell2, r);
     }
   }
 }

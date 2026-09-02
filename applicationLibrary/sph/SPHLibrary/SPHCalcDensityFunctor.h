@@ -198,8 +198,7 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle_T, SPHCal
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) override {
+                        std::span<const size_t> neighborList, bool newton3) override {
     if (soa.size() == 0) return;
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();

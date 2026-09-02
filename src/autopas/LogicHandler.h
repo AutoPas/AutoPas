@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "autopas/LogicHandlerInfo.h"
-#include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
@@ -289,9 +288,6 @@ class LogicHandler {
     const auto boxLength = boxMax - boxMin;
     const auto interactionLengthInv = 1. / _currentContainer->getInteractionLength();
     initSpatialLocks(boxLength, interactionLengthInv);
-
-    // Set this flag, s.t., the container is rebuilt!
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
 
     return particlesNowOutside;
   }
@@ -1094,6 +1090,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   timerTotal.start();
   timerRebuild.start();
   functor.initTraversal();
+  _currentContainer->prepareForTraversal(&traversal);
 
   // if lists are not valid -> rebuild;
   if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
@@ -1118,9 +1115,8 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   utils::ArrayUtils::balanceVectors(_particleBuffer, cellToVec);
   utils::ArrayUtils::balanceVectors(_haloParticleBuffer, cellToVec);
 
-  // For InteractionListGeneratorFunctor or child classes thereof, initialize their neighbor
-  if constexpr (std::is_base_of_v<InteractionListGeneratorFunctor<Particle_T, false>, Functor> or
-                std::is_base_of_v<InteractionListGeneratorFunctor<Particle_T, true>, Functor>) {
+  // Mainly for NeighborIdentificationFunctor, initialize the neighbors
+  if constexpr (requires { functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo)); }) {
     functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo));
   }
 
@@ -1266,6 +1262,7 @@ void LogicHandler<Particle_T>::setCurrentContainer(
   }
 
   _currentContainer = std::move(newContainer);
+  _neighborListsAreValid.store(false, std::memory_order::relaxed);
 }
 
 template <typename Particle_T>

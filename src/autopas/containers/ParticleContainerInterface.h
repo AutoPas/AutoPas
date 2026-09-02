@@ -315,6 +315,13 @@ class ParticleContainerInterface {
   }
 
   /**
+   * Prepare the container for a specific traversal.
+   * Useful for adding additional work (like pair lists) outside the main force computation timing.
+   * @param traversal The traversal that will be used for computeInteractions.
+   */
+  virtual void prepareForTraversal(TraversalInterface *traversal) {}
+
+  /**
    * Fetch the pointer to a particle, identified via a cell and particle index.
    * These indices are only meaningful in the context of the current container at its current state.
    * The same indices might (and probably will) yield different particles for different container types or might not

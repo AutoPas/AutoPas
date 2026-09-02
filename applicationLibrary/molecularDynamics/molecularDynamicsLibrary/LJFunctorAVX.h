@@ -33,7 +33,6 @@ namespace mdLib {
  * This functor is applicable with the 1xVectorLength pattern only.
  *
  * @tparam Particle_T The type of particle.
- * @tparam ParticleCell The type of particlecell.
  * @tparam applyShift Switch for the lj potential to be truncated shifted.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
@@ -186,11 +185,9 @@ class LJFunctorAVX
    */
   inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final { SoAFunctorSingleImpl(soa); }
 
-  // clang-format off
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
    */
-  // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              const bool newton3) final {
     if (newton3) {
@@ -601,16 +598,11 @@ class LJFunctorAVX
 #endif
 
  public:
-  // clang-format off
   /**
    * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
-   * @note If you want to parallelize this by openmp, please ensure that there
-   * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */
-  // clang-format on
   inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                               const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                               bool newton3) final {
+                               std::span<const size_t> neighborList, bool newton3) final {
     if (soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
@@ -622,7 +614,7 @@ class LJFunctorAVX
  private:
   template <bool newton3>
   inline void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                   const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+                                   std::span<const size_t> neighborList) {
 #ifdef __AVX__
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
     if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
@@ -668,11 +660,12 @@ class LJFunctorAVX
     // load 4 neighbors
     size_t j = 0;
     // Loop over all neighbors as long as we can fill full vectors
-    // (until `neighborList.size() - neighborList.size() % vecLength`)
+    // (until `neighborListSize - neighborListSize % vecLength`)
     //
     // If b is a power of 2 the following holds:
     // a & ~(b - 1) == a - (a mod b)
-    for (; j < (neighborList.size() & ~(vecLength - 1)); j += vecLength) {
+    const size_t neighborListSize = neighborList.size();
+    for (; j < (neighborListSize & ~(vecLength - 1)); j += vecLength) {
       // AVX2 variant:
       // create buffer for 4 interaction particles
       // and fill buffers via gathering
@@ -713,7 +706,7 @@ class LJFunctorAVX
     // Remainder loop
     // If b is a power of 2 the following holds:
     // a & (b - 1) == a mod b
-    const auto rest = static_cast<int>(neighborList.size() & (vecLength - 1));
+    const auto rest = static_cast<int>(neighborListSize & (vecLength - 1));
     if (rest > 0) {
       // AVX2 variant:
       // create buffer for 4 interaction particles

@@ -96,6 +96,20 @@ class ContainerOption : public Option<ContainerOption> {
   }
 
   /**
+   * Set of options that are applicable for pairwise interactions.
+   * @return
+   */
+  static std::set<ContainerOption> getAllPairwiseOptions() { return getAllOptions(); }
+
+  /**
+   * Set of options that are applicable for triwise interactions.
+   * @return
+   */
+  static std::set<ContainerOption> getAllTriwiseOptions() {
+    return {Value::directSum, Value::linkedCells, Value::verletLists};
+  }
+
+  /**
    * Provides a way to iterate over the possible choices of ContainerOption.
    * @return map option -> string representation
    */

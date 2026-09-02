@@ -6,20 +6,22 @@
 
 #pragma once
 
-#include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
-#include "autopas/containers/cellTraversals/CellTraversal.h"
-#include "autopas/options/DataLayoutOption.h"
+#include <unordered_map>
+
+#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 
 namespace autopas {
 
 /**
  * This class provides the Traversal Interface for the verlet lists container.
  *
- * The container only accepts traversals in its computeInteractions() method that implement this interface.
+ * The container only accepts traversals in its computeInteractions() method that implements this interface.
  * @tparam LinkedParticleCell the type of cells
  */
 template <class LinkedParticleCell>
 class VLTraversalInterface {
+  using ParticleType = LinkedParticleCell::ParticleType;
+
  public:
   /**
    * Destructor
@@ -28,18 +30,22 @@ class VLTraversalInterface {
 
   /**
    * Sets the information the traversal needs for the iteration.
-   * @param cells The cells of the underlying LinkedCells container.
-   * @param aosNeighborLists The AoS neighbor list.
-   * @param soaNeighborLists The SoA neighbor list.
+   * @param cells              The cells of the underlying LinkedCells container.
+   * @param neighborList       The flat CRS neighbor list.
+   * @param particleToIndex    Map from particle pointers to their dense SoA index.
+   * @param indexToParticle    Vector mapping SoA indices to particle pointers.
+   * @param neighborPairsList  The flat CRS neighbor pairs list.
    */
   virtual void setCellsAndNeighborLists(
-      std::vector<LinkedParticleCell> &cells,
-      InteractionListGeneratorFunctor<typename LinkedParticleCell::ParticleType, true>::NeighborListAoSType
-          &aosNeighborLists,
-      std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &soaNeighborLists) {
+      std::vector<LinkedParticleCell> &cells, typename VerletListHelpers<ParticleType>::NeighborListCRS &neighborList,
+      const std::unordered_map<const ParticleType *, size_t> &particleToIndex,
+      const std::vector<ParticleType *> &indexToParticle,
+      typename VerletListHelpers<ParticleType>::NeighborPairsListCRS &neighborPairsList) {
     _cells = &cells;
-    _aosNeighborLists = &aosNeighborLists;
-    _soaNeighborLists = &soaNeighborLists;
+    _neighborList = &neighborList;
+    _particleToIndex = &particleToIndex;
+    _indexToParticle = &indexToParticle;
+    _neighborPairsList = &neighborPairsList;
   }
 
  protected:
@@ -47,15 +53,28 @@ class VLTraversalInterface {
    * The cells of the underlying linked cells container of the verlet lists container.
    */
   std::vector<LinkedParticleCell> *_cells = nullptr;
+
   /**
-   * The AoS neighbor list of the verlet lists container.
+   * The flat CRS neighbor list.
    */
-  InteractionListGeneratorFunctor<typename LinkedParticleCell::ParticleType, true>::NeighborListAoSType
-      *_aosNeighborLists = nullptr;
+  typename VerletListHelpers<ParticleType>::NeighborListCRS *_neighborList = nullptr;
+
   /**
-   * The SoA neighbor list of the verlet lists container.
+   * Map from particle pointers to their dense SoA index.
+   * Used by the rebuild traversal to create index-based neighbor lists.
    */
-  std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> *_soaNeighborLists = nullptr;
+  const std::unordered_map<const ParticleType *, size_t> *_particleToIndex = nullptr;
+
+  /**
+   * Vector mapping SoA indices to particle pointers.
+   * Used by the AoS traversal path to resolve indices back to particle references.
+   */
+  const std::vector<ParticleType *> *_indexToParticle = nullptr;
+
+  /**
+   * The flat CRS pair neighbor list of the verlet lists container.
+   */
+  typename VerletListHelpers<ParticleType>::NeighborPairsListCRS *_neighborPairsList = nullptr;
 };
 
 }  // namespace autopas

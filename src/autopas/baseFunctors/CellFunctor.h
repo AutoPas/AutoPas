@@ -268,7 +268,6 @@ void CellFunctor<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellP
       return;
     }
   }
-
   if (isAoS) {
     processCellPairAoSImpl(cell1, cell2, sortingDirection);
   } else if (isSoA) {
