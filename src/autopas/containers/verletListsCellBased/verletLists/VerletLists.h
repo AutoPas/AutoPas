@@ -8,8 +8,6 @@
 
 #include "VerletListHelpers.h"
 #include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
-#include "autopas/containers/CellBasedParticleContainer.h"
-#include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
@@ -124,7 +122,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   const std::unordered_map<const Particle_T *, size_t> &getParticleIndex() const { return _particleToIndex; }
 
   /**
-   * Rebuilds the neighbor lists, marks them valid and resets the internal counter.
+   * Rebuilds the neighbor lists, marks them valid, and resets the internal counter.
    * Builds the CRS directly — no separate AoS→SoA conversion pass needed.
    * @note This function will be called in computeInteractions()
    * @param traversal
@@ -149,7 +147,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
         break;
       }
       case TraversalOption::vl_pair_list_iteration: {
-        // build 3Body Verlet lists through VLIteration traversal
+        // build 3-Body Verlet lists through VLIteration traversal
         this->updateNeighborPairsList(buildWithN3);
         break;
       }
@@ -455,7 +453,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    */
   void updateNeighborPairsListMultiThread(size_t N, double interactionLength, DataLayoutOption dataLayout,
                                           bool useNewton3) {
-    using PaddedAtomic = typename VerletListHelpers<Particle_T>::VerletListCounterFunctor::PaddedAtomic;
+    using PaddedAtomic = VerletListHelpers<Particle_T>::VerletListCounterFunctor::PaddedAtomic;
 
     // Pass 1: Count neighbor pairs per particle
     std::vector<PaddedAtomic> counts(N);
@@ -519,7 +517,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Flat CRS Neighbor Pairs List. (To find triplets.)
    */
-  typename VerletListHelpers<Particle_T>::NeighborPairsListCRS _neighborPairsList;
+  VerletListHelpers<Particle_T>::NeighborPairsListCRS _neighborPairsList;
 
   /**
    * Shows if the SoA neighbor list is currently valid.

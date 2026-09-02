@@ -108,6 +108,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     }
   }
 
+  /**
+   *  Iterate over all pairs of particles.
+   */
   void traverseParticlePairs() {
     auto &neighborList = *(this->_neighborList);
     const size_t numParticles = neighborList.size();
@@ -115,7 +118,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
         if (not _useNewton3) {
-          // Each particle i owns its own list slice — no write conflict between iterations.
+          // Each particle i owns its own list slice — no write-conflict between iterations.
           AUTOPAS_OPENMP(parallel for schedule(static))
           for (size_t i = 0; i < numParticles; ++i) {
             ParticleType &particleI = *indexToParticle[i];
@@ -130,9 +133,8 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
           for (int color = 0; color < 27; ++color) {
             const auto &cellsOfColor = _colorCells[color];
             AUTOPAS_OPENMP(parallel for schedule(dynamic))
-            for (size_t c = 0; c < cellsOfColor.size(); ++c) {
-              const auto &range = cellsOfColor[c];
-              for (size_t i = range.first; i < range.second; ++i) {
+            for (const auto &[pFirst, pEnd] : cellsOfColor) {
+              for (size_t i = pFirst; i < pEnd; ++i) {
                 ParticleType &particleI = *indexToParticle[i];
                 const size_t numNeighbors = neighborList.count(i);
                 const size_t *neighborsIPtr = neighborList.begin(i);
@@ -157,9 +159,8 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
           for (int color = 0; color < 27; ++color) {
             const auto &cellsOfColor = _colorCells[color];
             AUTOPAS_OPENMP(parallel for schedule(dynamic))
-            for (size_t c = 0; c < cellsOfColor.size(); ++c) {
-              const auto &range = cellsOfColor[c];
-              for (size_t i = range.first; i < range.second; ++i) {
+            for (const auto &[pFirst, pEnd] : cellsOfColor) {
+              for (size_t i = pFirst; i < pEnd; ++i) {
                 _functor.SoAFunctorVerlet(_soa, i, neighborList.getNeighbors(i), true);
               }
             }
@@ -174,6 +175,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     }
   }
 
+  /**
+   *  Iterate over all triplets of particles.
+   */
   void traverseParticleTriplets() {
     auto &neighborList = *(this->_neighborList);
     const size_t numParticles = neighborList.size();
@@ -203,9 +207,8 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
           for (int color = 0; color < 27; ++color) {
             const auto &cellsOfColor = _colorCells[color];
             AUTOPAS_OPENMP(parallel for schedule(dynamic))
-            for (size_t c = 0; c < cellsOfColor.size(); ++c) {
-              const auto &range = cellsOfColor[c];
-              for (size_t i = range.first; i < range.second; ++i) {
+            for (const auto &[pFirst, pEnd] : cellsOfColor) {
+              for (size_t i = pFirst; i < pEnd; ++i) {
                 ParticleType &particle = *indexToParticle[i];
                 const size_t numNeighbors = neighborList.count(i);
                 const size_t *neighbors = neighborList.begin(i);

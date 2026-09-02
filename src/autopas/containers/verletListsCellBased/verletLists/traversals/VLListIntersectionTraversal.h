@@ -100,7 +100,7 @@ class VLListIntersectionTraversal : public TraversalInterface, public VLTraversa
             }
           }
         } else {
-          // list intersection does not work with the current way neighborlists are built for N3 case
+          // list intersection does not work with the current way neighbor lists are built for N3 case
           utils::ExceptionHandler::exception(
               "VLListIntersectionTraversal::traverseParticles(): VLListIntersectionTraversal does not "
               "support Newton3.");

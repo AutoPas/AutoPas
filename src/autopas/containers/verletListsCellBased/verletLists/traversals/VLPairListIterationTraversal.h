@@ -66,6 +66,9 @@ class VLPairListIterationTraversal : public TraversalInterface, public VLTravers
     }
   }
 
+  /**
+   *  Iterate over all triplets of particles.
+   */
   void traverseParticleTriplets() {
     auto &neighborPairsList = *(this->_neighborPairsList);
     const size_t numParticles = neighborPairsList.size();
