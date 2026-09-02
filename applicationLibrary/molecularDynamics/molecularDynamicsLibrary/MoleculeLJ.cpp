@@ -17,6 +17,12 @@ void MoleculeLJ::setOldF(const std::array<double, 3> &oldForce) { _oldF = oldFor
 size_t MoleculeLJ::getTypeId() const { return _typeId; }
 void MoleculeLJ::setTypeId(size_t typeId) { _typeId = typeId; }
 
+double MoleculeLJ::getSqrtEpsilon() const { return _sqrtEpsilon; }
+void MoleculeLJ::setSqrtEpsilon(double sqrtEpsilon) { _sqrtEpsilon = sqrtEpsilon; }
+
+double MoleculeLJ::getHalfSigma() const { return _halfSigma; }
+void MoleculeLJ::setHalfSigma(double halfSigma) { _halfSigma = halfSigma; }
+
 std::string MoleculeLJ::toString() const {
   using autopas::utils::ArrayUtils::operator<<;
   std::ostringstream text;
@@ -28,6 +34,8 @@ std::string MoleculeLJ::toString() const {
      << "\nForce              : " << _f
      << "\nOld Force          : " << _oldF
      << "\nType ID            : " << _typeId
+     << "\nSqrtEpsilon        : " << _sqrtEpsilon
+     << "\nHalfSigma          : " << _halfSigma
      << "\nOwnershipState     : " << _ownershipState;
   // clang-format on
   return text.str();
