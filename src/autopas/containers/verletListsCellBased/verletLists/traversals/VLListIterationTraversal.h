@@ -133,8 +133,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
           for (int color = 0; color < 27; ++color) {
             const auto &cellsOfColor = _colorCells[color];
             AUTOPAS_OPENMP(parallel for schedule(dynamic))
-            for (const auto &[pFirst, pEnd] : cellsOfColor) {
-              for (size_t i = pFirst; i < pEnd; ++i) {
+            for (size_t c = 0; c < cellsOfColor.size(); ++c) {
+              const auto &range = cellsOfColor[c];
+              for (size_t i = range.first; i < range.second; ++i) {
                 ParticleType &particleI = *indexToParticle[i];
                 const size_t numNeighbors = neighborList.count(i);
                 const size_t *neighborsIPtr = neighborList.begin(i);
@@ -159,8 +160,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
           for (int color = 0; color < 27; ++color) {
             const auto &cellsOfColor = _colorCells[color];
             AUTOPAS_OPENMP(parallel for schedule(dynamic))
-            for (const auto &[pFirst, pEnd] : cellsOfColor) {
-              for (size_t i = pFirst; i < pEnd; ++i) {
+            for (size_t c = 0; c < cellsOfColor.size(); ++c) {
+              const auto &range = cellsOfColor[c];
+              for (size_t i = range.first; i < range.second; ++i) {
                 _functor.SoAFunctorVerlet(_soa, i, neighborList.getNeighbors(i), true);
               }
             }
@@ -207,8 +209,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
           for (int color = 0; color < 27; ++color) {
             const auto &cellsOfColor = _colorCells[color];
             AUTOPAS_OPENMP(parallel for schedule(dynamic))
-            for (const auto &[pFirst, pEnd] : cellsOfColor) {
-              for (size_t i = pFirst; i < pEnd; ++i) {
+            for (size_t c = 0; c < cellsOfColor.size(); ++c) {
+              const auto &range = cellsOfColor[c];
+              for (size_t i = range.first; i < range.second; ++i) {
                 ParticleType &particle = *indexToParticle[i];
                 const size_t numNeighbors = neighborList.count(i);
                 const size_t *neighbors = neighborList.begin(i);
