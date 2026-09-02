@@ -624,10 +624,10 @@ class LJFunctor
    */
   constexpr static auto getNeededAttr(std::false_type) {
     return std::array<typename Particle_T::AttributeNames, 8>{
-        Particle_T::AttributeNames::id,      Particle_T::AttributeNames::posX,
-        Particle_T::AttributeNames::posY,    Particle_T::AttributeNames::posZ,
-        Particle_T::AttributeNames::typeId,  Particle_T::AttributeNames::sqrtEpsilon,
-        Particle_T::AttributeNames::halfSigma,   Particle_T::AttributeNames::ownershipState};
+        Particle_T::AttributeNames::id,        Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,      Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::typeId,    Particle_T::AttributeNames::sqrtEpsilon,
+        Particle_T::AttributeNames::halfSigma, Particle_T::AttributeNames::ownershipState};
   }
 
   /**
@@ -907,8 +907,8 @@ class LJFunctor
             sigmaSquareds[j] = sigma * sigma;
             epsilon24s[j] = 24. * (sqrtEpsilonptr[indexFirst] * sqrtEpsilonptr[neighborListPtr[joff + j]]);
             if constexpr (applyShift) {
-              shift6s[j] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24s[j], sigmaSquareds[j],
-                                                                                  cutoffSquared);
+              shift6s[j] =
+                  ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24s[j], sigmaSquareds[j], cutoffSquared);
             }
           }
         }
