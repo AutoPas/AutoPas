@@ -64,13 +64,12 @@ class InteractionListGeneratorFunctor
         _gatherNewton3Lists(gatherNewton3Lists) {}
 
   /**
-   *
    * @return The name of the functor
    */
   std::string getName() override { return "InteractionListGeneratorFunctor"; }
 
   /**
-   * Whether the functor is relevant for tuning. True, unless functor used internally.
+   * The InteractionListGeneratorFunctor is meant to be used internally and as such is not tuning relevant.
    * @return
    */
   bool isRelevantForTuning() override { return false; }

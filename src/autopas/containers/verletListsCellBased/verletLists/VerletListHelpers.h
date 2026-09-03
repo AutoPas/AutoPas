@@ -143,9 +143,7 @@ class VerletListHelpers {
       auto dist = i.getR() - j.getR();
       if (utils::ArrayMath::dot(dist, dist) < _interactionLengthSquared) {
         _counts[_particleToIndex.at(&i)].value.fetch_add(1, std::memory_order_relaxed);
-        if (not newton3) {
-          _counts[_particleToIndex.at(&j)].value.fetch_add(1, std::memory_order_relaxed);
-        }
+        // newton3 ignored: AoSFunctor(j, i) is also called for newton3=false.
       }
     }
 
@@ -275,9 +273,7 @@ class VerletListHelpers {
         const size_t iIdx = _particleToIndex.at(&i);
         const size_t jIdx = _particleToIndex.at(&j);
         _neighborList.indices[_fillPos[iIdx].value.fetch_add(1, std::memory_order_relaxed)] = jIdx;
-        if (not newton3) {
-          _neighborList.indices[_fillPos[jIdx].value.fetch_add(1, std::memory_order_relaxed)] = iIdx;
-        }
+        // newton3 ignored: AoSFunctor(j, i) is also called for newton3=false.
       }
     }
 

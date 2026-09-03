@@ -1135,6 +1135,8 @@ class LJFunctorHWY
       sigmaSquareds = highway::Load(tag_double, sigmas.data());
       if constexpr (applyShift) {
         shift6s = highway::Load(tag_double, shifts.data());
+      } else {
+        shift6s = highway::Zero(tag_double);
       }
     } else {
       epsilon24s = highway::Set(tag_double, _epsilon24AoS);

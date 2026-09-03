@@ -321,8 +321,8 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
   verletLists.addHaloParticle(p);
   LJFunctorType<> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
-  autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> verletTraversal(ljFunctor, autopas::DataLayoutOption::soa,
-                                                                             newton3, {1, 1, 1});
+  autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> verletTraversal(
+      ljFunctor, autopas::DataLayoutOption::soa, newton3, verletLists.getCellsPerDimension());
 
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.computeInteractions(&verletTraversal);
