@@ -91,7 +91,6 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
 
   void traverseParticles() override {
     auto &neighborList = *(this->_neighborList);
-    const size_t numParticles = neighborList.size();
     const auto &indexToParticle = *this->_indexToParticle;
 
     switch (this->_dataLayout) {
