@@ -30,6 +30,7 @@
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedC02Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedTraversal.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/traversals/VVLAsBuildTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationC27Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC01Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC08Traversal.h"
@@ -195,7 +196,12 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
     }
     // Verlet
     case TraversalOption::vl_list_iteration: {
-      traversal = std::make_unique<VLListIterationTraversal<ParticleCell_T, PairwiseFunctor_T>>(
+      traversal = std::make_unique<VLListIterationTraversal<ParticleCell_T, PairwiseFunctor_T>>(pairwiseFunctor,
+                                                                                                dataLayout, useNewton3);
+      break;
+    }
+    case TraversalOption::vl_list_iteration_c27: {
+      traversal = std::make_unique<VLListIterationC27Traversal<ParticleCell_T, PairwiseFunctor_T>>(
           pairwiseFunctor, dataLayout, useNewton3, traversalInfo.cellsPerDim);
       break;
     }

@@ -7,8 +7,8 @@
 #pragma once
 
 #include "VLTraversalInterface.h"
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -29,16 +29,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * @param pairwiseFunctor Functor to be used with this Traversal
    * @param dataLayout
    * @param useNewton3
-   * @param cellsPerDim Dimensions of the cell grid (needed for coloring)
    */
-  explicit VLListIterationTraversal(PairwiseFunctor &pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3,
-                                    const std::array<unsigned long, 3> &cellsPerDim = {0, 0, 0})
-      : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor), _cellsPerDim(cellsPerDim) {
-    if (useNewton3 and std::ranges::all_of(_cellsPerDim, [](auto x) { return x == 0; })) {
-      utils::ExceptionHandler::exception(
-          "VLListIterationTraversal: cellsPerDim must be set if newton3 is enabled to avoid race conditions.");
-    }
-  }
+  explicit VLListIterationTraversal(PairwiseFunctor &pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
+      : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }
 
@@ -50,29 +43,12 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
-
-    // Pre-compute per-cell offsets so each SoALoader call can be parallelized
-    // independently without knowing the preceding cells' sizes. Also needed for coloring.
+    // First, resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
+    // SoALoader.
     std::vector<size_t> offsets(cells.size() + 1);
-    offsets[0] = 0;
-    for (size_t c = 0; c < cells.size(); ++c) {
-      offsets[c + 1] = offsets[c] + cells[c].size();
-    }
-
-    if (_useNewton3) {
-      // Initialize/clear color cells lists
-      for (auto &colorGroup : _colorCells) {
-        colorGroup.clear();
-      }
-
-      for (size_t c = 0; c < cells.size(); ++c) {
-        if (offsets[c] < offsets[c + 1]) {
-          auto c3D = utils::ThreeDimensionalMapping::oneToThreeD(c, _cellsPerDim);
-          const size_t color = (c3D[0] % 3) + 3 * (c3D[1] % 3) + 9 * (c3D[2] % 3);
-          _colorCells[color].push_back({offsets[c], offsets[c + 1]});
-        }
-      }
-    }
+    std::inclusive_scan(
+        cells.begin(), cells.end(), offsets.begin() + 1,
+        [](const size_t &partialSum, const auto &cell) { return partialSum + cell.size(); }, 0);
 
     if (_dataLayout == DataLayoutOption::soa) {
       _soa.resizeArrays(offsets.back());
@@ -114,20 +90,13 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
             }
           }
         } else {
-          // Parallelized AoS with Newton3 using C27 coloring
-          for (int color = 0; color < 27; ++color) {
-            const auto &cellsOfColor = _colorCells[color];
-            AUTOPAS_OPENMP(parallel for schedule(dynamic))
-            for (size_t c = 0; c < cellsOfColor.size(); ++c) {
-              const auto &range = cellsOfColor[c];
-              for (size_t i = range.first; i < range.second; ++i) {
-                ParticleType &particleI = *indexToParticle[i];
-                const size_t numNeighbors = neighborList.count(i);
-                const size_t *neighborsIPtr = neighborList.begin(i);
-                for (size_t j = 0; j < numNeighbors; ++j) {
-                  _functor.AoSFunctor(particleI, *indexToParticle[neighborsIPtr[j]], true);
-                }
-              }
+          // Newton3 cannot be parallelized here
+          for (size_t i = 0; i < numParticles; ++i) {
+            ParticleType &particleI = *indexToParticle[i];
+            const size_t numNeighbors = neighborList.count(i);
+            const size_t *neighborsIPtr = neighborList.begin(i);
+            for (size_t j = 0; j < numNeighbors; ++j) {
+              _functor.AoSFunctor(particleI, *indexToParticle[neighborsIPtr[j]], true);
             }
           }
         }
@@ -141,16 +110,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
             _functor.SoAFunctorVerlet(_soa, i, neighborList.getNeighbors(i), false);
           }
         } else {
-          // Parallelized SoA with Newton3 using C27 coloring
-          for (int color = 0; color < 27; ++color) {
-            const auto &cellsOfColor = _colorCells[color];
-            AUTOPAS_OPENMP(parallel for schedule(dynamic))
-            for (size_t c = 0; c < cellsOfColor.size(); ++c) {
-              const auto &range = cellsOfColor[c];
-              for (size_t i = range.first; i < range.second; ++i) {
-                _functor.SoAFunctorVerlet(_soa, i, neighborList.getNeighbors(i), true);
-              }
-            }
+          // Newton3 cannot be parallelized here
+          for (size_t i = 0; i < numParticles; ++i) {
+            _functor.SoAFunctorVerlet(_soa, i, neighborList.getNeighbors(i), true);
           }
         }
         return;
@@ -171,16 +133,6 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * SoA buffer of verlet lists.
    */
   SoA<typename ParticleType::SoAArraysType> _soa;
-
-  /**
-   * Cell block dimensions (needed for C27 coloring).
-   */
-  std::array<unsigned long, 3> _cellsPerDim;
-
-  /**
-   * Particle indices grouped by their cell and then by the cell's C27 color.
-   */
-  std::array<std::vector<std::pair<size_t, size_t>>, 27> _colorCells;
 };
 
 }  // namespace autopas
