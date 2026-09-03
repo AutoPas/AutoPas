@@ -6,6 +6,8 @@
 
 #include "LJFunctorTestHWY.h"
 
+#include <cmath>
+
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/ParticleDefinitions.h"
@@ -162,7 +164,11 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
       if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
     }
-    if constexpr (mixing) particle.setTypeId(particle.getID() % 5);
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
+      particle.setSqrtEpsilon(std::sqrt(_PPL.getEpsilon(particle.getTypeId())));
+      particle.setHalfSigma(_PPL.getSigma(particle.getTypeId()) * 0.5);
+    }
   }
   for (auto &particle : cell2Ref) {
     if (doDeleteSomeParticles) {
@@ -170,7 +176,11 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
       if (particle.getID() == 20) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 17) autopas::internal::markParticleAsDeleted(particle);
     }
-    if constexpr (mixing) particle.setTypeId(particle.getID() % 5);
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
+      particle.setSqrtEpsilon(std::sqrt(_PPL.getEpsilon(particle.getTypeId())));
+      particle.setHalfSigma(_PPL.getSigma(particle.getTypeId()) * 0.5);
+    }
   }
 
   FMCell cell1HWY(cell1Ref), cell2HWY(cell2Ref);
@@ -252,7 +262,11 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsUseUnalignedViews(bool
       if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
     }
-    if constexpr (mixing) particle.setTypeId(particle.getID() % 5);
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
+      particle.setSqrtEpsilon(std::sqrt(_PPL.getEpsilon(particle.getTypeId())));
+      particle.setHalfSigma(_PPL.getSigma(particle.getTypeId()) * 0.5);
+    }
   }
   for (auto &particle : cell2Ref) {
     if (doDeleteSomeParticles) {
@@ -260,7 +274,11 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsUseUnalignedViews(bool
       if (particle.getID() == 20) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 17) autopas::internal::markParticleAsDeleted(particle);
     }
-    if constexpr (mixing) particle.setTypeId(particle.getID() % 5);
+    if constexpr (mixing) {
+      particle.setTypeId(particle.getID() % 5);
+      particle.setSqrtEpsilon(std::sqrt(_PPL.getEpsilon(particle.getTypeId())));
+      particle.setHalfSigma(_PPL.getSigma(particle.getTypeId()) * 0.5);
+    }
   }
 
   FMCell cell1HWY(cell1Ref), cell2HWY(cell2Ref);
@@ -338,6 +356,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
     }
     if constexpr (mixing) {
       particle.setTypeId(particle.getID() % 5);
+      particle.setSqrtEpsilon(std::sqrt(_PPL.getEpsilon(particle.getTypeId())));
+      particle.setHalfSigma(_PPL.getSigma(particle.getTypeId()) * 0.5);
     }
   }
 
@@ -422,6 +442,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
     }
     if constexpr (mixing) {
       particle.setTypeId(particle.getID() % 5);
+      particle.setSqrtEpsilon(std::sqrt(_PPL.getEpsilon(particle.getTypeId())));
+      particle.setHalfSigma(_PPL.getSigma(particle.getTypeId()) * 0.5);
     }
   }
 
@@ -515,6 +537,8 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
     }
     if constexpr (mixing) {
       particle.setTypeId(particle.getID() % 5);
+      particle.setSqrtEpsilon(std::sqrt(_PPL.getEpsilon(particle.getTypeId())));
+      particle.setHalfSigma(_PPL.getSigma(particle.getTypeId()) * 0.5);
     }
   }
 

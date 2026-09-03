@@ -6,6 +6,8 @@
 
 #include "LJFunctorTestVs.h"
 
+#include <cmath>
+
 TYPED_TEST_SUITE_P(LJFunctorTestVs);
 
 TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
@@ -24,6 +26,8 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
   size_t numParticlesPerCell = 9;
 
   Molecule defaultParticle;
+  defaultParticle.setSqrtEpsilon(std::sqrt(this->epsilon));
+  defaultParticle.setHalfSigma(this->sigma * 0.5);
   FMCell cell1NoPPL;
   FMCell cell2NoPPL;
   autopasTools::generators::UniformGenerator::fillWithParticles(cell1NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
@@ -68,6 +72,10 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLAoS) {
   FunPPL funPPL(this->cutoff, particlePropertiesLibrary);
 
   std::vector<Molecule> moleculesNoPPL = {Molecule({0, 0, 0}, {0, 0, 0}, 0, 0), Molecule({0, 0, 1}, {0, 0, 0}, 1, 0)};
+  for (auto &molecule : moleculesNoPPL) {
+    molecule.setSqrtEpsilon(std::sqrt(this->epsilon));
+    molecule.setHalfSigma(this->sigma * 0.5);
+  }
   std::vector<Molecule> moleculesPPL(moleculesNoPPL);
 
   constexpr bool newton3 = false;

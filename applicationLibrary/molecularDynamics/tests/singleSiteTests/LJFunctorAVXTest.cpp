@@ -8,6 +8,8 @@
 
 #include "LJFunctorAVXTest.h"
 
+#include <cmath>
+
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "generators/src/UniformGenerator.h"
@@ -118,6 +120,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
     }
     if constexpr (mixing) {
       particle.setTypeId(particle.getID() % 5);
+      particle.setSqrtEpsilon(std::sqrt(PPL.getEpsilon(particle.getTypeId())));
+      particle.setHalfSigma(PPL.getSigma(particle.getTypeId()) * 0.5);
     }
   }
   for (auto &particle : cell2AVX) {
@@ -128,6 +132,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
     }
     if constexpr (mixing) {
       particle.setTypeId(particle.getID() % 5);
+      particle.setSqrtEpsilon(std::sqrt(PPL.getEpsilon(particle.getTypeId())));
+      particle.setHalfSigma(PPL.getSigma(particle.getTypeId()) * 0.5);
     }
   }
 
@@ -238,6 +244,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
     }
     if constexpr (mixing) {
       particle.setTypeId(particle.getID() % 5);
+      particle.setSqrtEpsilon(std::sqrt(PPL.getEpsilon(particle.getTypeId())));
+      particle.setHalfSigma(PPL.getSigma(particle.getTypeId()) * 0.5);
     }
   }
 
@@ -335,6 +343,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
     }
     if constexpr (mixing) {
       particle.setTypeId(particle.getID() % 5);
+      particle.setSqrtEpsilon(std::sqrt(PPL.getEpsilon(particle.getTypeId())));
+      particle.setHalfSigma(PPL.getSigma(particle.getTypeId()) * 0.5);
     }
   }
 
@@ -445,6 +455,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
     }
     if constexpr (mixing) {
       particle.setTypeId(particle.getID() % 5);
+      particle.setSqrtEpsilon(std::sqrt(PPL.getEpsilon(particle.getTypeId())));
+      particle.setHalfSigma(PPL.getSigma(particle.getTypeId()) * 0.5);
     }
   }
 
