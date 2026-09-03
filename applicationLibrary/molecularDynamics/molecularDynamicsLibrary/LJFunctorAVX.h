@@ -258,16 +258,16 @@ class LJFunctorAVX
       // a & ~(b -1) == a - (a mod b)
       for (; j < (i & ~(vecLength - 1)); j += 4) {
         SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, sqrtEpsilon1, halfSigma1, sqrtEpsilonptr, halfSigmaptr, fxacc, fyacc, fzacc,
-                               &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+                               zptr, fxptr, fyptr, fzptr, sqrtEpsilon1, halfSigma1, sqrtEpsilonptr, halfSigmaptr, fxacc,
+                               fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       // If b is a power of 2 the following holds:
       // a & (b -1) == a mod b
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
         SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                              zptr, fxptr, fyptr, fzptr, sqrtEpsilon1, halfSigma1, sqrtEpsilonptr, halfSigmaptr, fxacc, fyacc, fzacc,
-                              &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
+                              zptr, fxptr, fyptr, fzptr, sqrtEpsilon1, halfSigma1, sqrtEpsilonptr, halfSigmaptr, fxacc,
+                              fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
       }
 
       // horizontally reduce fDacc to sumfD
@@ -379,14 +379,16 @@ class LJFunctorAVX
       unsigned int j = 0;
       for (; j < (soa2.size() & ~(vecLength - 1)); j += 4) {
         SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr,
-                                  fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr,
+                                  halfSigma2ptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ,
+                                  &potentialEnergySum, 0);
       }
       const int rest = (int)(soa2.size() & (vecLength - 1));
       if (rest > 0)
         SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, fxacc,
-                                 fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
+                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr,
+                                 halfSigma2ptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ,
+                                 &potentialEnergySum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -488,9 +490,9 @@ class LJFunctorAVX
       // for those lanes. This is fine: facMasked/potentialEnergyMasked below are ANDed with the same lane mask
       // again, so whatever garbage ends up here for masked-out lanes never reaches the accumulated result.
       const __m256d sqrtEpsilon2 = remainderIsMasked ? _mm256_maskload_pd(&sqrtEpsilon2ptr[j], _masks[rest - 1])
-                                                      : _mm256_loadu_pd(&sqrtEpsilon2ptr[j]);
+                                                     : _mm256_loadu_pd(&sqrtEpsilon2ptr[j]);
       const __m256d halfSigma2 = remainderIsMasked ? _mm256_maskload_pd(&halfSigma2ptr[j], _masks[rest - 1])
-                                                    : _mm256_loadu_pd(&halfSigma2ptr[j]);
+                                                   : _mm256_loadu_pd(&halfSigma2ptr[j]);
 
       epsilon24s = _mm256_mul_pd(_twentyFour, _mm256_mul_pd(sqrtEpsilon1, sqrtEpsilon2));
       const __m256d sigma = _mm256_add_pd(halfSigma1, halfSigma2);
@@ -717,8 +719,8 @@ class LJFunctorAVX
 
       SoAKernel<newton3, false>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
                                 x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
-                                sqrtEpsilon1, halfSigma1, sqrtEpsilon2tmp.data(), halfSigma2tmp.data(), fxacc, fyacc, fzacc,
-                                &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+                                sqrtEpsilon1, halfSigma1, sqrtEpsilon2tmp.data(), halfSigma2tmp.data(), fxacc, fyacc,
+                                fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
 
       if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < vecLength; ++vecIndex) {
@@ -762,8 +764,8 @@ class LJFunctorAVX
 
       SoAKernel<newton3, true>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
                                x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
-                               sqrtEpsilon1, halfSigma1, sqrtEpsilon2tmp.data(), halfSigma2tmp.data(), fxacc, fyacc, fzacc,
-                               &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
+                               sqrtEpsilon1, halfSigma1, sqrtEpsilon2tmp.data(), halfSigma2tmp.data(), fxacc, fyacc,
+                               fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
 
       if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
@@ -848,10 +850,10 @@ class LJFunctorAVX
    */
   constexpr static auto getNeededAttr(std::false_type) {
     return std::array<typename Particle_T::AttributeNames, 8>{
-        Particle_T::AttributeNames::id,      Particle_T::AttributeNames::posX,
-        Particle_T::AttributeNames::posY,    Particle_T::AttributeNames::posZ,
-        Particle_T::AttributeNames::typeId,  Particle_T::AttributeNames::sqrtEpsilon,
-        Particle_T::AttributeNames::halfSigma,   Particle_T::AttributeNames::ownershipState};
+        Particle_T::AttributeNames::id,        Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,      Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::typeId,    Particle_T::AttributeNames::sqrtEpsilon,
+        Particle_T::AttributeNames::halfSigma, Particle_T::AttributeNames::ownershipState};
   }
 
   /**
