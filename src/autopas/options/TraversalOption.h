@@ -127,6 +127,11 @@ class TraversalOption : public Option<TraversalOption> {
      * Does not support Newton3.
      */
     vl_list_iteration,
+    /**
+     * VLListIterationC27Traversal : Distribute processing of neighbor lists dynamically to threads.
+     * Uses C27 coloring to avoid race conditions when using Newton3.
+     */
+    vl_list_iteration_c27,
 
     // VerletListCells Traversals:
     /**
@@ -310,6 +315,7 @@ class TraversalOption : public Option<TraversalOption> {
 
         // VerletList Traversals:
         {TraversalOption::vl_list_iteration, "vl_list_iteration"},
+        {TraversalOption::vl_list_iteration_c27, "vl_list_iteration_c27"},
 
         // VerletListCells Traversals:
         {TraversalOption::vlc_sliced, "vlc_sliced"},
