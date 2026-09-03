@@ -17,12 +17,12 @@ namespace autopas {
 /**
  * This class provides a colored Traversal for the verlet lists container.
  *
- * @tparam ParticleCell the type of cells
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam ParticleCell_T the type of cells
+ * @tparam PairwiseFunctor_T The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
-class VLListIterationC27Traversal : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
-  using ParticleType = ParticleCell::ParticleType;
+template <class ParticleCell_T, class PairwiseFunctor_T>
+class VLListIterationC27Traversal : public TraversalInterface, public VLTraversalInterface<ParticleCell_T> {
+  using ParticleType = ParticleCell_T::ParticleType;
 
  public:
   /**
@@ -32,7 +32,7 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
    * @param useNewton3
    * @param cellsPerDim Dimensions of the cell grid (needed for coloring)
    */
-  explicit VLListIterationC27Traversal(PairwiseFunctor &pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3,
+  explicit VLListIterationC27Traversal(PairwiseFunctor_T &pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3,
                                        const std::array<unsigned long, 3> &cellsPerDim)
       : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor), _cellsPerDim(cellsPerDim) {}
 
@@ -112,7 +112,6 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
               }
             }
         }
-
         return;
       }
 
@@ -140,7 +139,7 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
   /**
    * Functor for Traversal
    */
-  PairwiseFunctor &_functor;
+  PairwiseFunctor_T &_functor;
 
   /**
    * SoA buffer of verlet lists.

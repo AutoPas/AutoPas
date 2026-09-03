@@ -16,12 +16,12 @@ namespace autopas {
 /**
  * This class provides a Traversal for the verlet lists container.
  *
- * @tparam ParticleCell the type of cells
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam ParticleCell_T the type of cells
+ * @tparam PairwiseFunctor_T The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor>
-class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
-  using ParticleType = ParticleCell::ParticleType;
+template <class ParticleCell_T, class PairwiseFunctor_T>
+class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell_T> {
+  using ParticleType = ParticleCell_T::ParticleType;
 
  public:
   /**
@@ -30,7 +30,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLListIterationTraversal(PairwiseFunctor &pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
+  explicit VLListIterationTraversal(PairwiseFunctor_T &pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }
@@ -127,7 +127,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   /**
    * Functor for Traversal
    */
-  PairwiseFunctor &_functor;
+  PairwiseFunctor_T &_functor;
 
   /**
    * SoA buffer of verlet lists.
