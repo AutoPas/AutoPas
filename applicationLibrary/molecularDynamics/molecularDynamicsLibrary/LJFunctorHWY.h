@@ -718,7 +718,7 @@ class LJFunctorHWY
          j += static_cast<std::ptrdiff_t>(jStepSize<vecPattern>())) {
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
-          fyPtr2, fzPtr2, &sqrtEpsilonPtr1[i], &halfSigmaPtr1[i], &sqrtEpsilonPtr2[j], &halfSigmaPtr2[j], fxAcc, fyAcc,
+          fyPtr2, fzPtr2, sqrtEpsilonPtr1, halfSigmaPtr1, sqrtEpsilonPtr2, halfSigmaPtr2, fxAcc, fyAcc,
           fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
     }
 
@@ -726,7 +726,7 @@ class LJFunctorHWY
     if (restJ > 0) {
       SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
-          fyPtr2, fzPtr2, &sqrtEpsilonPtr1[i], &halfSigmaPtr1[i], &sqrtEpsilonPtr2[j], &halfSigmaPtr2[j], fxAcc, fyAcc,
+          fyPtr2, fzPtr2, sqrtEpsilonPtr1, halfSigmaPtr1, sqrtEpsilonPtr2, halfSigmaPtr2, fxAcc, fyAcc,
           fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
     }
 
@@ -895,7 +895,7 @@ class LJFunctorHWY
         loadRegister<false, remainderJ, false, vecPattern>(tag_double, sqrtEpsilon2Ptr, j, restJ);
     const VectorDouble sigmaJ = loadRegister<false, remainderJ, false, vecPattern>(tag_double, halfSigma2Ptr, j, restJ);
 
-    epsilon24s = highway::Mul(epsilonI, epsilonJ);
+    epsilon24s = highway::Mul(highway::Set(tag_double, 24.), highway::Mul(epsilonI, epsilonJ));
     sigmaSquareds = highway::Add(sigmaI, sigmaJ);
     sigmaSquareds = highway::Mul(sigmaSquareds, sigmaSquareds);
 
