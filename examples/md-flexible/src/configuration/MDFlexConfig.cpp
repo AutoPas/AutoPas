@@ -464,23 +464,34 @@ std::string MDFlexConfig::to_string() const {
 
 void MDFlexConfig::calcSimulationBox() {
   const double interactionLength = cutoff.value + verletSkinRadius.value;
-  const auto preBoxMin = boxMin.value;
-  const auto preBoxMax = boxMax.value;
 
-  // helper function so that we can do the same for every object collection
-  // resizes the domain to the maximal extents of all objects
-  auto resizeToObjectLimits = [&](const auto &objectCollection) {
-    for (auto &object : objectCollection) {
-      auto objectMin = object.getBoxMin();
-      auto objectMax = object.getBoxMax();
-      auto objectSpacing = object.getParticleSpacing();
+  const bool userDefinedBox = (boxMax.value[0] > boxMin.value[0] and
+                               boxMax.value[1] > boxMin.value[1] and boxMax.value[2] > boxMin.value[2]);
 
-      for (size_t i = 0; i < 3; ++i) {
-        // pad domain such that periodic boundaries can work.
-        // This is necessary if the given min/max is not at least half the spacing away of the farthest object.
-        boxMin.value[i] = std::min(boxMin.value[i], objectMin[i] - objectSpacing / 2);
-        boxMax.value[i] = std::max(boxMax.value[i], objectMax[i] + objectSpacing / 2);
+  if (userDefinedBox) {
+    for (int i = 0; i < 3; i++) {
+      if (boxMax.value[i] - boxMin.value[i] < interactionLength) {
+        std::cerr << "WARNING: Simulation box in dimension " << i << " is shorter than interaction length ("
+                  << interactionLength << ")!" << std::endl;
       }
+    }
+    return;
+  }
+
+  std::array<double, 3> totalBoxMin{std::numeric_limits<double>::min(), std::numeric_limits<double>::min(), std::numeric_limits<double>::min()};
+  std::array<double, 3> totalBoxMax{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()};
+
+  bool hasParticleObjects = false;
+  auto resizeToObjectLimits = [&](const auto &objectCollection) {
+    for (const auto &object : objectCollection) {
+      hasParticleObjects = true;
+      const auto objectMin = object.getBoxMin();
+      const auto objectMax = object.getBoxMax();
+
+        for (size_t i = 0; i < 3; ++i) {
+          totalBoxMin[i] = std::min(totalBoxMin[i], objectMin[i]);
+          totalBoxMax[i] = std::max(totalBoxMax[i], objectMax[i]);
+        }
     }
   };
 
@@ -490,18 +501,22 @@ void MDFlexConfig::calcSimulationBox() {
   resizeToObjectLimits(sphereObjects);
   resizeToObjectLimits(cubeClosestPackedObjects);
 
-  if (boxMin.value != preBoxMin or boxMax.value != preBoxMax) {
-    std::cout << "WARNING: Simulation box increased due to particles being too close to the boundaries." << std::endl;
+  if (hasParticleObjects) {
+    boxMin.value = totalBoxMin;
+    boxMax.value = totalBoxMax;
+  } else {
+    boxMin.value = {0.0, 0.0, 0.0};
+    boxMax.value = {1.0, 1.0, 1.0};
   }
 
-  // guarantee the box is at least of size interationLength
+  // guarantee the box is at least of size interactionLength
   for (int i = 0; i < 3; i++) {
-    // needed for 2D Simulation, that BoxLength >= interactionLength for all Dimensions
     if (boxMax.value[i] - boxMin.value[i] < interactionLength) {
-      std::cout << "WARNING: Simulation box in dimension " << i
+      std::cerr << "WARNING: Simulation box in dimension " << i
                 << " is shorter than interaction length and will be increased." << std::endl;
-      boxMin.value[i] -= interactionLength / 2;
-      boxMax.value[i] += interactionLength / 2;
+      const double deficit = interactionLength - (boxMax.value[i] - boxMin.value[i]);
+      boxMin.value[i] -= deficit / 2.0;
+      boxMax.value[i] += deficit / 2.0;
     }
   }
 }

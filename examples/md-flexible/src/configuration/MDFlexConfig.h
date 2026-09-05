@@ -485,7 +485,11 @@ class MDFlexConfig {
    * boxMax
    */
   MDFlexOption<std::array<double, 3>, 0> boxMax{
-      {1, 1, 1}, "box-max", true, "Upper back right corner of the simulation box."};
+      {0, 0, 0}, "box-max", true, "Upper back right corner of the simulation box."};
+  /**
+   * Indicates whether box dimensions were set explicitly.
+   */
+  bool boxDimensionsSet{false};
 
   /**
    * loadBalancingInterval
@@ -630,6 +634,17 @@ class MDFlexConfig {
    */
   MDFlexOption<double, __LINE__> particleSpacing{1.1225 * 1, "particle-spacing", true,
                                                  "Space between two particles for the grid generator."};
+  /**
+   * particleDensity
+   */
+  MDFlexOption<double, __LINE__> particleDensity{
+      0.0, "particle-density", true, "Density of particles. This is the number of particles per unit volume."};
+  /**
+   * closestPackingStructure
+   */
+  MDFlexOption<CubeClosestPacked::Structure, __LINE__> closestPackingStructure{
+      CubeClosestPacked::Structure::fcc, "structure", true,
+      "Structure of the closest packing generator. Possible Values: (fcc hcp)"};
   /**
    * generatorOption
    */
@@ -866,12 +881,12 @@ class MDFlexConfig {
 
  private:
   /**
-   * Stores the physical properties of the particles used in the an MDFlexSimulation
+   * Stores the physical properties of the particles used in the MDFlexSimulation
    */
   std::shared_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
 
   /**
-   * Stores the physical properties of the particles used in the an MDFlexSimulation
+   * Stores the physical properties of the particles used in the MDFlexSimulation
    */
   std::set<autopas::InteractionTypeOption> _interactionTypes = {};
 
