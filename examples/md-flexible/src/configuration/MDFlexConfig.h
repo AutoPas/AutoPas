@@ -486,10 +486,6 @@ class MDFlexConfig {
    */
   MDFlexOption<std::array<double, 3>, 0> boxMax{
       {0, 0, 0}, "box-max", true, "Upper back right corner of the simulation box."};
-  /**
-   * Indicates whether box dimensions were set explicitly.
-   */
-  bool boxDimensionsSet{false};
 
   /**
    * loadBalancingInterval
@@ -645,6 +641,12 @@ class MDFlexConfig {
   MDFlexOption<CubeClosestPacked::Structure, __LINE__> closestPackingStructure{
       CubeClosestPacked::Structure::fcc, "structure", true,
       "Structure of the closest packing generator. Possible Values: (fcc hcp)"};
+  /**
+   * closestPackingCentered
+   */
+  MDFlexOption<bool, __LINE__> closestPackingCentered{
+      true, "centered", true,
+      "Alignment of the closest packing unit cell. Possible Values: (true false)"};
   /**
    * generatorOption
    */

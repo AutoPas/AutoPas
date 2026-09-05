@@ -81,7 +81,7 @@ class Object {
   [[nodiscard]] virtual std::array<double, 3> getBoxMax() const = 0;
 
   /**
-   * Returns the total amount of Particles in the Object
+   * Returns the total number of Particles in the Object
    * @return ParticlesTotal
    */
   [[nodiscard]] virtual size_t getParticlesTotal() const = 0;

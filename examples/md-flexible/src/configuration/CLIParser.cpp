@@ -83,6 +83,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.newton3Options3B,
       config.outputSuffix,
       config.particleSpacing,
+      config.particleDensity,
+      config.closestPackingStructure,
       config.particlesPerDim,
       config.particlesTotal,
       config.relativeBlacklistRange,
@@ -563,6 +565,31 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
+      case decltype(config.particleDensity)::getoptChar: {
+        try {
+          config.particleDensity.value = stod(strArg);
+          if (config.particleDensity.value <= 0) {
+            cerr << "Particle density has to be a positive (floating point) number!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing particle density: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.closestPackingStructure)::getoptChar: {
+        if (strArg == "fcc") {
+          config.closestPackingStructure.value = CubeClosestPacked::Structure::fcc;
+        } else if (strArg == "hcp") {
+          config.closestPackingStructure.value = CubeClosestPacked::Structure::hcp;
+        } else {
+          cerr << "Unknown structure for closest packing generator: " << strArg << ". Possible values: (fcc hcp)"
+               << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case decltype(config.traversalOptions)::getoptChar: {
         config.traversalOptions.value = autopas::TraversalOption::parseOptions(strArg);
         if (config.traversalOptions.value.empty()) {
@@ -779,7 +806,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case MDFlexConfig::GeneratorOption::grid: {
         CubeGrid grid(velocity, typeID,
                       {config.particlesPerDim.value, config.particlesPerDim.value, config.particlesPerDim.value},
-                      config.particleSpacing.value, bottomLeftCorner);
+                      config.particleSpacing.value, bottomLeftCorner, config.particleDensity.value);
         config.cubeGridObjects.push_back(grid);
         break;
       }
@@ -793,7 +820,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case MDFlexConfig::GeneratorOption::uniform: {
         CubeUniform cubeUniform(velocity, typeID, config.particlesTotal.value,
                                 {config.boxLength.value, config.boxLength.value, config.boxLength.value},
-                                bottomLeftCorner);
+                                bottomLeftCorner, config.particleDensity.value);
         config.cubeUniformObjects.push_back(cubeUniform);
         break;
       }
@@ -809,7 +836,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case MDFlexConfig::GeneratorOption::closestPacked: {
         CubeClosestPacked cubeClosestPacked(velocity, typeID, config.particleSpacing.value,
                                             {config.boxLength.value, config.boxLength.value, config.boxLength.value},
-                                            bottomLeftCorner);
+                                            bottomLeftCorner, config.particleDensity.value,
+                                            config.closestPackingStructure.value);
         config.cubeClosestPackedObjects.push_back(cubeClosestPacked);
         break;
       }

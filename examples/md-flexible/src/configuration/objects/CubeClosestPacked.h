@@ -11,13 +11,19 @@
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
 #include "generators/src/ClosestPackingGenerator.h"
+#include "generators/src/FCCGenerator.h"
 #include "generators/src/PseudoContainer.h"
 
 /**
- * Class describing a cube of hexagonally closest packed particles.
+ * Class describing a cube of closest packed particles (FCC or HCP).
  */
 class CubeClosestPacked : public Object {
  public:
+  /**
+   * Structure type of closest packing.
+   */
+  enum Structure { fcc, hcp };
+
   /**
    * Constructor.
    * @param velocity
@@ -25,24 +31,60 @@ class CubeClosestPacked : public Object {
    * @param particleSpacing distance between all neighboring particles
    * @param boxLength
    * @param bottomLeftCorner
+   * @param density Target particle density (optional, computed from spacing if 0).
+   * @param structure fcc (default) or hcp.
+   * @param centered If true, the cell offset moved inward by 1/4 * lattice constant.
    */
   CubeClosestPacked(const std::array<double, 3> &velocity, unsigned long typeId, double particleSpacing,
-                    const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner)
+                    const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner,
+                    double density = 0.0, Structure structure = Structure::fcc, const bool centered = true)
       : Object(velocity, typeId),
         _boxLength(boxLength),
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner),
         _topRightCorner(autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength)),
-        _xOffset(particleSpacing * 1. / 2.),
-        _yOffset(particleSpacing * sqrt(1. / 12.)) {}
+        _density(density),
+        _structure(structure),
+        _centered(centered) {
+    if (_particleSpacing <= 0.0 and _density > 0.0) {
+      _particleSpacing = std::cbrt(std::sqrt(2.0) / _density);
+    } else if (_particleSpacing > 0.0 and _density <= 0.0) {
+      _density = std::sqrt(2.0) / (_particleSpacing * _particleSpacing * _particleSpacing);
+    }
+    _xOffset = _particleSpacing * 1. / 2.;
+    _yOffset = _particleSpacing * sqrt(1. / 12.);
+  }
+
+  /**
+   * Constructor with structure specified without density.
+   * @param velocity
+   * @param typeId
+   * @param particleSpacing
+   * @param boxLength
+   * @param bottomLeftCorner
+   * @param structure
+   */
+  CubeClosestPacked(const std::array<double, 3> &velocity, unsigned long typeId, double particleSpacing,
+                    const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner,
+                    Structure structure)
+      : CubeClosestPacked(velocity, typeId, particleSpacing, boxLength, bottomLeftCorner, 0.0, structure) {}
 
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
+  [[nodiscard]] double getParticleDensity() const { return _density; }
+
+  [[nodiscard]] Structure getStructure() const { return _structure; }
+
   /**
-   * Returns the total amount of particles which will be / have been generated.
+   * Returns the total number of particles which will be / have been generated.
    * @return number of generated particles.
    */
   [[nodiscard]] size_t getParticlesTotal() const override {
+    if (_structure == Structure::fcc) {
+      return autopasTools::generators::FCCGenerator::getNumberOfParticles(_bottomLeftCorner, _topRightCorner,
+                                                                          _particleSpacing);
+    }
+
     // Number of particles in the first row.
     const size_t xNumRow = std::ceil(_boxLength[0] / _particleSpacing);
     // True if the total number of x-positions is odd.
@@ -76,7 +118,7 @@ class CubeClosestPacked : public Object {
   }
 
   /**
-   * Converts the object to a human readable string
+   * Converts the object to a human-readable string
    * @return the generated string
    */
   [[nodiscard]] std::string to_string() const override {
@@ -84,10 +126,16 @@ class CubeClosestPacked : public Object {
 
     output << std::setw(_valueOffset) << std::left << "particle-spacing"
            << ":  " << _particleSpacing << "\n";
+    output << std::setw(_valueOffset) << std::left << "particle-density"
+           << ":  " << _density << "\n";
     output << std::setw(_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << "\n";
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
            << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << "\n";
+    output << std::setw(_valueOffset) << std::left << "structure"
+           << ":  " << (_structure == Structure::fcc ? "fcc" : "hcp") << "\n";
+    output << std::setw(_valueOffset) << std::left << "centered"
+           << ":  " << std::to_string(_centered) << "\n";
     output << Object::to_string();
     return output.str();
   }
@@ -103,15 +151,20 @@ class CubeClosestPacked : public Object {
     // dummy particle used as a template with id of the first newly generated one
     const ParticleType dummyParticle = getDummyParticle(particles.size());
 
-    autopasTools::generators::ClosestPackingGenerator::fillWithParticles(
-        particlesWrapper, _bottomLeftCorner, _topRightCorner, dummyParticle, _particleSpacing);
+    if (_structure == Structure::fcc) {
+      autopasTools::generators::FCCGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
+                                                                dummyParticle, _particleSpacing);
+    } else {
+      autopasTools::generators::ClosestPackingGenerator::fillWithParticles(
+          particlesWrapper, _bottomLeftCorner, _topRightCorner, dummyParticle, _particleSpacing);
+    }
   }
 
  private:
   /**
    * The distance between the particles.
    */
-  double _particleSpacing;
+  double _particleSpacing{1.0};
 
   /**
    * Extend of the box in each dimension.
@@ -131,10 +184,25 @@ class CubeClosestPacked : public Object {
   /**
    * Shorter part of the bisectrix when split at the intersection of all bisectrices.
    */
-  double _xOffset;
+  double _xOffset{0.5};
 
   /**
    * Shorter part of the bisectrix when split at the intersection of all bisectrices.
    */
-  double _yOffset;
+  double _yOffset{0.288675};
+
+  /**
+   * Target particle density.
+   */
+  double _density{0.0};
+
+  /**
+   * Structure (fcc or hcp).
+   */
+  Structure _structure{Structure::fcc};
+
+  /**
+ * Lattice alignment (First particle at center or origin of a lattice unit cell).
+ */
+  bool _centered{true};
 };

@@ -45,11 +45,26 @@ const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig 
   const auto particlesPerDim =
       parseComplexTypeValueSequence<unsigned long, 3>(node, config.particlesPerDim.name, objectErrors);
   const auto particleSpacing =
-      parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
+      parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors, false);
+  const auto particleDensity =
+      parseComplexTypeValueSingle<double>(node, config.particleDensity.name.c_str(), objectErrors, false);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
-  const CubeGrid cubeGrid(velocity, particleType, particlesPerDim, particleSpacing, bottomLeftCorner);
+  if (particleSpacing <= 0.0 and particleDensity <= 0.0) {
+    objectErrors.push_back("Either " + config.particleSpacing.name + " or " + config.particleDensity.name +
+                           " must be specified and positive.");
+  } else if (particleSpacing > 0.0 and particleDensity > 0.0) {
+    objectErrors.push_back("Cannot specify both " + config.particleSpacing.name + " and " +
+                           config.particleDensity.name + " for the same object.");
+  }
+
+  bool centered = true;
+  try {
+    centered = node[config.closestPackingCentered.name].as<bool>();
+  } catch (const std::exception &) {}
+
+  const CubeGrid cubeGrid(velocity, particleType, particlesPerDim, particleSpacing, bottomLeftCorner, particleDensity, centered);
   return cubeGrid;
 }
 
@@ -59,12 +74,22 @@ const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexC
   const auto particleType =
       parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto numParticles =
-      parseComplexTypeValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
+      parseComplexTypeValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors, false);
+  const auto particleDensity =
+      parseComplexTypeValueSingle<double>(node, config.particleDensity.name.c_str(), objectErrors, false);
   const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
-  const CubeUniform cubeUniform(velocity, particleType, numParticles, boxLength, bottomLeftCorner);
+  if (numParticles == 0 and particleDensity <= 0.0) {
+    objectErrors.push_back("Either " + std::string(MDFlexConfig::particlesPerObjectStr) + " or " +
+                           config.particleDensity.name + " must be specified and positive.");
+  } else if (numParticles > 0 and particleDensity > 0.0) {
+    objectErrors.push_back("Cannot specify both " + std::string(MDFlexConfig::particlesPerObjectStr) + " and " +
+                           config.particleDensity.name + " for the same object.");
+  }
+
+  const CubeUniform cubeUniform(velocity, particleType, numParticles, boxLength, bottomLeftCorner, particleDensity);
   return cubeUniform;
 }
 
@@ -109,12 +134,44 @@ const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const M
   const auto particleType =
       parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto particleSpacing =
-      parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
+      parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors, false);
+  const auto particleDensity =
+      parseComplexTypeValueSingle<double>(node, config.particleDensity.name.c_str(), objectErrors, false);
   const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
-  const CubeClosestPacked cubeClosestPacked(velocity, particleType, particleSpacing, boxLength, bottomLeftCorner);
+  if (particleSpacing <= 0.0 and particleDensity <= 0.0) {
+    objectErrors.push_back("Either " + config.particleSpacing.name + " or " + config.particleDensity.name +
+                           " must be specified and positive.");
+  } else if (particleSpacing > 0.0 and particleDensity > 0.0) {
+    objectErrors.push_back("Cannot specify both " + config.particleSpacing.name + " and " +
+                           config.particleDensity.name + " for the same object.");
+  }
+
+  auto structureStr = parseComplexTypeValueSingle<std::string>(node, "structure", objectErrors, false);
+  if (structureStr.empty()) {
+    structureStr = parseComplexTypeValueSingle<std::string>(node, config.closestPackingStructure.name.c_str(),
+                                                            objectErrors, false);
+  }
+  CubeClosestPacked::Structure structure = CubeClosestPacked::Structure::fcc;
+  if (not structureStr.empty()) {
+    if (structureStr == "fcc") {
+      structure = CubeClosestPacked::Structure::fcc;
+    } else if (structureStr == "hcp") {
+      structure = CubeClosestPacked::Structure::hcp;
+    } else {
+      objectErrors.push_back("Unknown structure: " + structureStr + ". Possible values: (fcc hcp)");
+    }
+  }
+
+  bool centered = true;
+  try {
+    centered = node[config.closestPackingCentered.name].as<bool>();
+  } catch (const std::exception &) {}
+
+  const CubeClosestPacked cubeClosestPacked(velocity, particleType, particleSpacing, boxLength, bottomLeftCorner,
+                                            particleDensity, structure, centered);
 
   return cubeClosestPacked;
 }

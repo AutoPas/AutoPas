@@ -10,7 +10,7 @@
 #include "generators/src/UniformGenerator.h"
 
 /**
- * Class describing an cuboid object filled with uniformly randomly distributed particles.
+ * Class describing a cuboid object filled with uniformly randomly distributed particles.
  */
 class CubeUniform : public Object {
  public:
@@ -23,11 +23,26 @@ class CubeUniform : public Object {
    * @param bottomLeftCorner
    */
   CubeUniform(const std::array<double, 3> &velocity, unsigned long typeId, size_t numParticles,
-              const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner)
+              const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner,
+              double density = 0.0)
       : Object(velocity, typeId),
         _numParticles(numParticles),
         _boxLength(boxLength),
-        _bottomLeftCorner(bottomLeftCorner) {}
+        _bottomLeftCorner(bottomLeftCorner),
+        _density(density) {
+    const double volume = _boxLength[0] * _boxLength[1] * _boxLength[2];
+    if (_numParticles == 0 and _density > 0.0 and volume > 0.0) {
+      _numParticles = static_cast<size_t>(std::round(_density * volume));
+    } else if (_numParticles > 0 and _density <= 0.0 and volume > 0.0) {
+      _density = static_cast<double>(_numParticles) / volume;
+    }
+  }
+
+  /**
+   * Returns the particle density.
+   * @return density of particles.
+   */
+  [[nodiscard]] double getParticleDensity() const { return _density; }
 
   /**
    * Returns the total amount of particles which will be / have been generated.
@@ -59,6 +74,8 @@ class CubeUniform : public Object {
 
     output << std::setw(_valueOffset) << std::left << "numberOfParticles"
            << ":  " << _numParticles << "\n";
+    output << std::setw(_valueOffset) << std::left << "particle-density"
+           << ":  " << _density << "\n";
     output << std::setw(_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << "\n";
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
@@ -100,4 +117,9 @@ class CubeUniform : public Object {
    * The Coordinates of the bottom left front corner.
    */
   std::array<double, 3> _bottomLeftCorner;
+
+  /**
+   * Target particle density.
+   */
+  double _density{0.0};
 };
