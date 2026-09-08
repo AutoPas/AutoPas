@@ -351,6 +351,8 @@ BENCHMARK(BM_SoAFunctorPairHitrate)
 BENCHMARK(BM_SoAFunctorPairHitrate)
     ->ArgsProduct({kNValuesReduced,
                    {0, 1},
+                   // @todo VecxVec: add static_cast<int>(VectorizationPattern::pVecxVec) to this list (8 near-identical
+                   // occurrences in this file) so "all patterns" benchmark sweeps include the new pattern.
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
                     static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
                    hitrates})
@@ -429,6 +431,8 @@ BENCHMARK(BM_SoAFunctorPairSortedHitrate)
 BENCHMARK(BM_SoAFunctorPairSortedHitrate)
     ->ArgsProduct({kNValuesReduced,
                    {0, 1},
+                   // @todo VecxVec: add static_cast<int>(VectorizationPattern::pVecxVec) to this list (8 near-identical
+                   // occurrences in this file) so "all patterns" benchmark sweeps include the new pattern.
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
                     static_cast<int>(VectorizationPattern::pVecDiv2x2), static_cast<int>(VectorizationPattern::pVecx1)},
                    hitrates})
@@ -490,6 +494,7 @@ static void BM_SoAFunctorPairFace(benchmark::State &state) {
 BENCHMARK(BM_SoAFunctorPairFace)
     ->ArgsProduct({kNValues,
                    {0, 1},
+                   // @todo VecxVec: add static_cast<int>(VectorizationPattern::pVecxVec) to this list.
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
                     static_cast<int>(VectorizationPattern::pVecDiv2x2),
                     static_cast<int>(VectorizationPattern::pVecx1)}})
@@ -554,6 +559,7 @@ static void BM_SoAFunctorSortedPairFace(benchmark::State &state) {
 BENCHMARK(BM_SoAFunctorSortedPairFace)
     ->ArgsProduct({kNValues,
                    {0, 1},
+                   // @todo VecxVec: add static_cast<int>(VectorizationPattern::pVecxVec) to this list.
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
                     static_cast<int>(VectorizationPattern::pVecDiv2x2),
                     static_cast<int>(VectorizationPattern::pVecx1)}})
@@ -617,6 +623,7 @@ static void BM_SoAFunctorPairEdge(benchmark::State &state) {
 BENCHMARK(BM_SoAFunctorPairEdge)
     ->ArgsProduct({kNValues,
                    {0, 1},
+                   // @todo VecxVec: add static_cast<int>(VectorizationPattern::pVecxVec) to this list.
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
                     static_cast<int>(VectorizationPattern::pVecDiv2x2),
                     static_cast<int>(VectorizationPattern::pVecx1)}})
@@ -680,6 +687,7 @@ static void BM_SoAFunctorPairCorner(benchmark::State &state) {
 BENCHMARK(BM_SoAFunctorPairCorner)
     ->ArgsProduct({kNValues,
                    {0, 1},
+                   // @todo VecxVec: add static_cast<int>(VectorizationPattern::pVecxVec) to this list.
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
                     static_cast<int>(VectorizationPattern::pVecDiv2x2),
                     static_cast<int>(VectorizationPattern::pVecx1)}})
@@ -747,6 +755,7 @@ static void BM_SoAFunctorSortedPairEdge(benchmark::State &state) {
 BENCHMARK(BM_SoAFunctorSortedPairEdge)
     ->ArgsProduct({kNValues,
                    {0, 1},
+                   // @todo VecxVec: add static_cast<int>(VectorizationPattern::pVecxVec) to this list.
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
                     static_cast<int>(VectorizationPattern::pVecDiv2x2),
                     static_cast<int>(VectorizationPattern::pVecx1)}})
@@ -814,6 +823,7 @@ static void BM_SoAFunctorSortedPairCorner(benchmark::State &state) {
 BENCHMARK(BM_SoAFunctorSortedPairCorner)
     ->ArgsProduct({kNValues,
                    {0, 1},
+                   // @todo VecxVec: add static_cast<int>(VectorizationPattern::pVecxVec) to this list.
                    {static_cast<int>(VectorizationPattern::p1xVec), static_cast<int>(VectorizationPattern::p2xVecDiv2),
                     static_cast<int>(VectorizationPattern::pVecDiv2x2),
                     static_cast<int>(VectorizationPattern::pVecx1)}})

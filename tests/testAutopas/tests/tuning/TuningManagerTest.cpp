@@ -403,6 +403,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   //   Subtotal:                                                                                              =   4
   // Direct Sum only supports CSF 1 => Multiply by 1
   // Direct Sum supports all 4 vectorization patterns => Multiply by 4
+  // @todo VecxVec: once added, this becomes "all 5 vectorization patterns" => 16 becomes 20.
 
   configsPerContainer[autopas::ContainerOption::directSum] = 16;
   // LinkedCells:           lc_c08                      (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
@@ -419,10 +420,13 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   // Linked Cells supports all CSFs (i.e. 0.5, 1.0, 1.5) => Multiply by 3
   // * C04 traversals will almost always not support CSF 0.5, but these will be excluded later.
   // Linked Cells supports all 4 vectorization patterns => Multiply by 4
+  // @todo VecxVec: once added, this becomes "all 5 vectorization patterns" => 444 becomes 555.
   configsPerContainer[autopas::ContainerOption::linkedCells] = 444;
 
   // Linked Cells References:
   // same as linked Cells but without the squaredParticlesPerCell load estimator for sliced_balanced (-4 * 3 * 4 = -48)
+  // @todo VecxVec: the "4" (vectorization patterns) in this "-4 * 3 * 4 = -48" derivation becomes "5",
+  // i.e. "-4 * 3 * 5 = -60".
   configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
       configsPerContainer[autopas::ContainerOption::linkedCells] - 48;
 
@@ -452,6 +456,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   //   Subtotal:                                                                                              =  24
   // Verlet Cluster Lists only support CSF 1 => Multiply by 1
   // Verlet Cluster Lists supports all 4 vectorization patterns => Multiply by 4
+  // @todo VecxVec: once added, this becomes "all 5 vectorization patterns" => 96 becomes 120.
   configsPerContainer[autopas::ContainerOption::verletClusterLists] = 96;
 
   // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
@@ -476,6 +481,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   //   Subtotal:                                                                                              =   4
   // Octree only supports CSF 1 => Multiply by 1
   // Octree supports all 4 vectorization patterns => Multiply by 4
+  // @todo VecxVec: once added, this becomes "all 5 vectorization patterns" => 16 becomes 20.
   configsPerContainer[autopas::ContainerOption::octree] = 16;
 
   // --------------- Check that the manually determined values above match that automatically generated ---------------
@@ -528,6 +534,8 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   // All LC C04 traversals with CSF 0.5 are expected to not be applicable
   // => lc_c04 (4), lc_c04_combined_SoA (2), lc_c04_HCP (4) x4 vecPatterns => 40 configurations
   // Similarly for Linked Cells References => 40 more
+  // @todo VecxVec: once added, "x4 vecPatterns" becomes "x5 vecPatterns" => 40 becomes 50 (and again for Linked
+  // Cells References), so numConfigsExpectedNotApplicable becomes 100.
 
   constexpr size_t numConfigsExpectedNotApplicable{80};
 

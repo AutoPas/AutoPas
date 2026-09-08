@@ -825,7 +825,8 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
 }
 
 std::vector<VectorizationPattern> patterns{VectorizationPattern::p1xVec, VectorizationPattern::p2xVecDiv2,
-                                           VectorizationPattern::pVecDiv2x2, VectorizationPattern::pVecx1};
+                                           VectorizationPattern::pVecDiv2x2, VectorizationPattern::pVecx1,
+                                           VectorizationPattern::pVecxVec};
 
 static auto toString = [](const auto &info) {
   auto [mixing, newton3, doDeleteSomeParticle, vecPattern] = info.param;
