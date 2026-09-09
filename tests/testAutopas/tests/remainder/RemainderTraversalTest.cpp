@@ -70,6 +70,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       dataLayout,
       n3,
       autopas::InteractionTypeOption::pairwise,
+      autopas::autopas_get_max_threads(),
       autopas::VectorizationPatternOption::p1xVec,
   }});
   auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -391,7 +392,8 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, dataLayout, autopas::Newton3Option::enabled,
-        autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::p1xVec}});
+        autopas::InteractionTypeOption::pairwise, autopas::autopas_get_max_threads(),
+        autopas::VectorizationPatternOption::p1xVec}});
   auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),

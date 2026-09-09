@@ -32,6 +32,7 @@ class ConfigurationAndRankIteratorHandler {
    * @param loadEstimatorOptions
    * @param dataLayoutOptions
    * @param newton3Options
+   * @param threadCounts
    * @param interactionType
    * @param vecPatternOptions
    * @param numConfigs
@@ -41,14 +42,15 @@ class ConfigurationAndRankIteratorHandler {
       const std::set<ContainerOption> &containerOptions, const std::set<double> &cellSizeFactors,
       const std::set<TraversalOption> &traversalOptions, const std::set<LoadEstimatorOption> &loadEstimatorOptions,
       const std::set<DataLayoutOption> &dataLayoutOptions, const std::set<Newton3Option> &newton3Options,
-      const InteractionTypeOption &interactionType, std::set<VectorizationPatternOption> &vecPatternOptions,
-      const int numConfigs, const int commSize)
+      const std::set<int> &threadCounts, const InteractionTypeOption &interactionType,
+      std::set<VectorizationPatternOption> &vecPatternOptions, const int numConfigs, const int commSize)
       : _containers(containerOptions),
         _cellSizeFactors(cellSizeFactors),
         _allowedTraversalOptions(traversalOptions),
         _allowedLoadEstimatorOptions(loadEstimatorOptions),
         _dataLayoutOptions(dataLayoutOptions),
         _newton3Options(newton3Options),
+        _threadCounts(threadCounts),
         _interactionType(interactionType),
         _vecPatternOptions(vecPatternOptions) {
     reset(numConfigs, commSize);
@@ -77,6 +79,7 @@ class ConfigurationAndRankIteratorHandler {
    * @param traversalIt out
    * @param dataLayoutIt out
    * @param newton3It out
+   * @param threadCountIt out
    * @param vecPatternIt out
    */
   inline void getConfigIterators(std::set<ContainerOption>::iterator &containerIt,
@@ -84,7 +87,7 @@ class ConfigurationAndRankIteratorHandler {
                                  std::set<TraversalOption>::iterator &traversalIt,
                                  std::set<LoadEstimatorOption>::iterator &loadEstimatorIt,
                                  std::set<DataLayoutOption>::iterator &dataLayoutIt,
-                                 std::set<Newton3Option>::iterator &newton3It,
+                                 std::set<Newton3Option>::iterator &newton3It, std::set<int>::iterator &threadCountIt,
                                  std::set<VectorizationPatternOption>::iterator &vecPatternIt) {
     containerIt = _containerIt;
     cellSizeFactorIt = _cellSizeFactorIt;
@@ -92,6 +95,7 @@ class ConfigurationAndRankIteratorHandler {
     loadEstimatorIt = _loadEstimatorIt;
     dataLayoutIt = _dataLayoutIt;
     newton3It = _newton3It;
+    threadCountIt = _threadCountIt;
     vecPatternIt = _vecPatternIt;
   }
 
@@ -156,6 +160,12 @@ class ConfigurationAndRankIteratorHandler {
   [[nodiscard]] inline std::set<Newton3Option>::iterator getNewton3Iterator() const { return _newton3It; }
 
   /**
+   * Getter for the ThreadCountIterator.
+   * @return
+   */
+  [[nodiscard]] inline std::set<int>::iterator getThreadCountIterator() const { return _threadCountIt; }
+
+  /**
    * Getter for the VectorizationPatternIterator
    * @return
    */
@@ -186,6 +196,7 @@ class ConfigurationAndRankIteratorHandler {
   const std::set<LoadEstimatorOption> &_allowedLoadEstimatorOptions;
   const std::set<DataLayoutOption> &_dataLayoutOptions;
   const std::set<Newton3Option> &_newton3Options;
+  const std::set<int> &_threadCounts;
   const InteractionTypeOption &_interactionType;
   const std::set<VectorizationPatternOption> &_vecPatternOptions;
   std::set<TraversalOption> _allowedAndApplicableTraversalOptions;
@@ -196,6 +207,7 @@ class ConfigurationAndRankIteratorHandler {
   std::set<LoadEstimatorOption>::iterator _loadEstimatorIt;
   std::set<DataLayoutOption>::iterator _dataLayoutIt;
   std::set<Newton3Option>::iterator _newton3It;
+  std::set<int>::iterator _threadCountIt;
   std::set<VectorizationPatternOption>::iterator _vecPatternIt;
   int _rankIterator;
   int _remainingBlockSize;

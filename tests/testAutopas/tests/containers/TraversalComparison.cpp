@@ -11,6 +11,7 @@
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StringUtils.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "generators/src/UniformGenerator.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
 #include "testingHelpers/commonTypedefs.h"

@@ -25,10 +25,9 @@
 namespace autopas::utils::AutoPasConfigurationCommunicator {
 
 /**
- * type definition for the serialization of configurations. A serialized config is an array of 15 bytes.
- * TODO: consider aligning to 16 Byte
+ * type definition for the serialization of configurations. A serialized config is an array of 19 bytes.
  * */
-using SerializedConfiguration = std::array<std::byte, 15>;
+using SerializedConfiguration = std::array<std::byte, 7 + sizeof(double) + sizeof(int)>;
 
 /**
  * Simply a shorter way of static_casting from Option to std::byte.
@@ -51,6 +50,7 @@ inline std::byte castToByte(TOption option) {
  * @param dataLayoutOptions
  * @param newton3Options
  * @param interactionTypeOption
+ * @param threadCounts
  * @param vecPatternOptions
  * @return
  */
@@ -59,7 +59,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
                           const std::set<Newton3Option> &newton3Options,
-                          const InteractionTypeOption &interactionTypeOption,
+                          const InteractionTypeOption &interactionTypeOption, const NumberSetFinite<int> &threadCounts,
                           const std::set<VectorizationPatternOption> &vecPatternOptions);
 
 /**
@@ -72,6 +72,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
  * @param loadEstimatorOptions
  * @param dataLayoutOptions
  * @param newton3Options
+ * @param threadCounts
  * @param interactionTypeOption
  * @param vecPatternOptions
  * @param rank
@@ -81,7 +82,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              InteractionTypeOption interactionTypeOption,
+                              InteractionTypeOption interactionTypeOption, NumberSetFinite<int> &threadCounts,
                               std::set<VectorizationPatternOption> &vecPatternOptions, int rank, int commSize);
 
 /**

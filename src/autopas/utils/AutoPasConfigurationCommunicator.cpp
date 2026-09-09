@@ -19,7 +19,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
                           const std::set<Newton3Option> &newton3Options,
-                          const InteractionTypeOption &interactionTypeOption,
+                          const InteractionTypeOption &interactionTypeOption, const NumberSetFinite<int> &threadCounts,
                           const std::set<VectorizationPatternOption> &vecPatternOptions) {
   // only take into account finite sets of cellSizeFactors.
   const size_t cellSizeFactorArraySize = cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1;
@@ -39,7 +39,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
       const std::set<LoadEstimatorOption> allowedAndApplicableLoadEstimators =
           loadEstimators::getApplicableLoadEstimators(containerOption, traversalOption, loadEstimatorOptions);
       numConfigs += cellSizeFactorArraySize * allowedAndApplicableLoadEstimators.size() * dataLayoutOptions.size() *
-                    newton3Options.size() * vecPatternOptions.size();
+                    newton3Options.size() * threadCounts.size() * vecPatternOptions.size();
     }
   }
   return numConfigs;
@@ -57,6 +57,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
  * @param dataLayoutOptions inout
  * @param newton3Options inout
  * @param interactionType Handle configurations for this interaction type
+ * @param threadCounts inout
  * @param vecPatternOptions inout
  */
 void generateDistribution(const int numConfigs, const int commSize, const int rank,
@@ -64,7 +65,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
                           std::set<TraversalOption> &traversalOptions,
                           std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                          const InteractionTypeOption interactionType,
+                          const InteractionTypeOption interactionType, NumberSetFinite<int> &threadCounts,
                           std::set<VectorizationPatternOption> &vecPatternOptions) {
   // ============== setup ======================================================
 
@@ -75,6 +76,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
   auto newLoadEstimatorOptions = std::set<LoadEstimatorOption>();
   auto newDataLayoutOptions = std::set<DataLayoutOption>();
   auto newNewton3Options = std::set<Newton3Option>();
+  auto newThreadCounts = std::set<int>();
   auto newVecPatternOptions = std::set<VectorizationPatternOption>();
 
   // Distribution works only with finite sets of cellSizeFactors.
@@ -86,12 +88,13 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     // Dummy value which makes the code simpler in case the cellSizeFactors are not a finite set.
     finiteCellSizeFactors = std::set<double>{-1};
   }
+  std::set<int> threadCountsSet = threadCounts.getAll();
 
   // ============== main computation ===========================================
 
-  ConfigurationAndRankIteratorHandler iteratorHandler(containerOptions, finiteCellSizeFactors, traversalOptions,
-                                                      loadEstimatorOptions, dataLayoutOptions, newton3Options,
-                                                      interactionType, vecPatternOptions, numConfigs, commSize);
+  ConfigurationAndRankIteratorHandler iteratorHandler(
+      containerOptions, finiteCellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions,
+      newton3Options, threadCountsSet, interactionType, vecPatternOptions, numConfigs, commSize);
 
   while (iteratorHandler.getRankIterator() < rank) {
     iteratorHandler.advanceIterators(numConfigs, commSize);
@@ -109,6 +112,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
     newLoadEstimatorOptions.emplace(*iteratorHandler.getLoadEstimatorIterator());
     newDataLayoutOptions.emplace(*iteratorHandler.getDataLayoutIterator());
     newNewton3Options.emplace(*iteratorHandler.getNewton3Iterator());
+    newThreadCounts.emplace(*iteratorHandler.getThreadCountIterator());
     newVecPatternOptions.emplace(*iteratorHandler.getVecPatternIterator());
     iteratorHandler.advanceIterators(numConfigs, commSize);
   }
@@ -136,12 +140,12 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
                               std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
-                              InteractionTypeOption interactionType,
+                              InteractionTypeOption interactionType, NumberSetFinite<int> &threadCounts,
                               std::set<VectorizationPatternOption> &vecPatternOptions, const int rank,
                               const int commSize) {
-  const auto numConfigs =
-      static_cast<int>(getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                          dataLayoutOptions, newton3Options, interactionType, vecPatternOptions));
+  const auto numConfigs = static_cast<int>(getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions,
+                                                              loadEstimatorOptions, dataLayoutOptions, newton3Options,
+                                                              interactionType, threadCounts, vecPatternOptions));
 
   if (numConfigs == 0) {
     utils::ExceptionHandler::exception("Could not generate valid configurations, aborting");
@@ -151,16 +155,18 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
   // Creates a set for each option and each rank containing the serialized versions (std::byte or double) of all
   // options assigned to that rank.
   generateDistribution(numConfigs, commSize, rank, containerOptions, cellSizeFactors, traversalOptions,
-                       loadEstimatorOptions, dataLayoutOptions, newton3Options, interactionType, vecPatternOptions);
+                       loadEstimatorOptions, dataLayoutOptions, newton3Options, interactionType, threadCounts,
+                       vecPatternOptions);
 
   AutoPasLog(DEBUG,
              "After distributing: {} containers, {} cellSizeFactors, {} traversals, {} dataLayouts, {} newton3s, {} "
-             "vecPatterns"
+             "threadCounts, {} vecPatterns"
              " => {} total configs",
              containerOptions.size(), /*cellSizeFactorsSize*/ (cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1),
-             traversalOptions.size(), dataLayoutOptions.size(), newton3Options.size(), vecPatternOptions.size(),
+             traversalOptions.size(), dataLayoutOptions.size(), newton3Options.size(), threadCounts.size(),
+             vecPatternOptions.size(),
              getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                dataLayoutOptions, newton3Options, interactionType, vecPatternOptions));
+                                dataLayoutOptions, newton3Options, interactionType, threadCounts, vecPatternOptions));
 }
 
 Configuration findGloballyBestConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig,
@@ -199,6 +205,7 @@ SerializedConfiguration serializeConfiguration(Configuration configuration) {
   config[6] = castToByte(configuration.vecPattern);
   // Doubles can't be easily truncated, so store all 8 bytes via memcpy
   std::memcpy(&config[7], &configuration.cellSizeFactor, sizeof(double));
+  std::memcpy(&config[7 + sizeof(double)], &configuration.threadCount, sizeof(int));
   return config;
 }
 
@@ -218,11 +225,13 @@ std::vector<std::byte> serializeConfigurations(const std::vector<Configuration> 
 Configuration deserializeConfiguration(SerializedConfiguration config) {
   double cellSizeFactor{0.};
   std::memcpy(&cellSizeFactor, &config[7], sizeof(double));
-  return {
-      static_cast<ContainerOption::Value>(config[0]),       cellSizeFactor,
-      static_cast<TraversalOption::Value>(config[1]),       static_cast<LoadEstimatorOption::Value>(config[2]),
-      static_cast<DataLayoutOption::Value>(config[3]),      static_cast<Newton3Option::Value>(config[4]),
-      static_cast<InteractionTypeOption::Value>(config[5]), static_cast<VectorizationPatternOption::Value>(config[6])};
+  int threadCount(autopas_get_max_threads());
+  std::memcpy(&threadCount, &config[7 + sizeof(double)], sizeof(int));
+  return {static_cast<ContainerOption::Value>(config[0]),           cellSizeFactor,
+          static_cast<TraversalOption::Value>(config[1]),           static_cast<LoadEstimatorOption::Value>(config[2]),
+          static_cast<DataLayoutOption::Value>(config[3]),          static_cast<Newton3Option::Value>(config[4]),
+          static_cast<InteractionTypeOption::Value>(config[5]),     threadCount,
+          static_cast<VectorizationPatternOption::Value>(config[6])};
 }
 
 std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte> &configurationsSerialized) {
