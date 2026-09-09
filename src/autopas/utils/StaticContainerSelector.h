@@ -20,6 +20,7 @@
 #include "autopas/containers/verletListsKokkos/VerletListsKokkos.h"
 #include "autopas/containers/verletListsKokkos/VerletListsKokkosMaxNeighbors.h"
 #include "autopas/containers/verletListsKokkos/VerletListsKokkosMaxNeighborsGPURebuilding.h"
+#include "autopas/containers/verletListsKokkos/VerletListsKokkosMaxNeighborsGPURebuildingBinning.h"
 #include "autopas/containers/verletListsKokkos/VerletListsKokkosGPURebuilding.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
@@ -67,6 +68,8 @@ decltype(auto) withStaticContainerType(ParticleContainerInterface<Particle_T> &c
       return function(dynamic_cast<VerletListsKokkosGPURebuilding<Particle_T> &>(container));
     case ContainerOption::verletListsKokkosMaxNeighborsGPURebuilding:
       return function(dynamic_cast<VerletListsKokkosMaxNeighborsGPURebuilding<Particle_T> &>(container));
+    case ContainerOption::verletListsKokkosMaxNeighborsGPURebuildingBinning:
+      return function(dynamic_cast<VerletListsKokkosMaxNeighborsGPURebuildingBinning<Particle_T> &>(container));
   }
   utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                      container.getContainerType());
