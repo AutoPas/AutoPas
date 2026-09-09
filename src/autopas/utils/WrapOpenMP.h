@@ -67,6 +67,11 @@ inline int autopas_get_max_threads() { return omp_get_max_threads(); }
  */
 inline void autopas_set_num_threads(int n) { omp_set_num_threads(n); }
 
+/**
+ * Obtain a mutable reference to the tuned number of threads.
+ * This variable is initialized to the maximum number of threads on first use.
+ * @return Mutable reference to the number of tuned threads. 
+ */
 inline int &_autopas_get_tuned_num_threads_ref() {
   // Lazy initialization
   static int tunedNumThreads = autopas_get_max_threads();

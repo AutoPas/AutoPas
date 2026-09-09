@@ -53,8 +53,7 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
       autopas::InteractionTypeOption::pairwise);
   autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
 
-  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
-  //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
+  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
   autopasTools::generators::GridGenerator::fillWithParticles(logicHandler.getContainer(), {boxMax, boxMax, boxMax},
                                                              Molecule());
@@ -84,6 +83,19 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
   }
 }
 
+
+/**
+ * Tests: Setter/getter for tuned number of threads
+ */
+TEST_F(ThreadCountTuningTest, testSetGetTunedThreadCount) {
+  auto maxThreads = autopas::autopas_get_max_threads();
+  // Test with maxThreads + 1, because they are not actually used and maxThreads may be 1, which would make this test meaningless
+  for (int n = 1; n <= maxThreads + 1; n++) {
+    autopas::autopas_set_tuned_num_threads(n);
+    EXPECT_EQ(autopas::autopas_get_tuned_num_threads(), n);
+  }
+}
+
 /**
  * Tests: Only select valid options
  * excluding possible default options (1, max threads)
@@ -107,7 +119,7 @@ TEST_F(ThreadCountTuningTest, testThreadCountTuningDisabled) { testThreadCountTu
  */
 TEST_F(ThreadCountTuningTest, testThreadCountTuningRange) {
   auto maxThreads = autopas::autopas_get_max_threads();
-  for (int n = 1; n <= maxThreads; n*=2) {
+  for (int n = 1; n <= maxThreads; n *= 2) {
     testThreadCountTuningWithBoxMax(4, {n}, n);
   }
 }

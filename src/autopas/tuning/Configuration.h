@@ -35,7 +35,7 @@ class Configuration {
    * @param _newton3
    * @param _cellSizeFactor
    * @param _interactionType
-   * @param _threadCount (optional, for energy tuning, defaults to maximum number of threads)
+   * @param _threadCount (for energy tuning, defaults to maximum number of threads)
    * @param _vecPattern
    *
    * @note needs constexpr (hence inline) constructor to be a literal.
