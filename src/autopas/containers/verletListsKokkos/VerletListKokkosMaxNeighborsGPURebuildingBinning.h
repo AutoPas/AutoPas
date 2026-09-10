@@ -44,6 +44,31 @@ struct Grid{
             int iz = Kokkos::min(Kokkos::max((int)Kokkos::floor((z - zLow) * hzInv), 0), nz - 1);
             return ix + nx * (iy + ny * iz);
         }
+
+        KOKKOS_INLINE_FUNCTION
+        void neighborCells(int c, int out[27]) const {
+            const int ix = c % nx;
+            const int iy = (c / nx) % ny;
+            const int iz = c / (nx * ny);
+
+            int m = 0;
+            for (int dz = -1; dz <= 1; ++dz) {
+                int kz = iz + dz;
+                if (kz < 0) kz += nz; 
+                else if (kz >= nz) kz -= nz;
+                for (int dy = -1; dy <= 1; ++dy) {
+                    int ky = iy + dy;
+                    if (ky < 0) ky += ny; 
+                    else if (ky >= ny) ky -= ny;
+                    for (int dx = -1; dx <= 1; ++dx) {
+                        int kx = ix + dx;
+                        if (kx < 0) kx += nx; 
+                        else if (kx >= nx) kx -= nx;
+                        out[m++] = kx + nx * (ky + ny * kz);
+                    }
+                }
+            }
+        }
         // grid dimensions
         int nx, ny ,nz;
         double xLow, yLow, zLow;
@@ -674,8 +699,45 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
                 if (k == 0 || c != cellIds(k-1)) cellStart(c) = k;
             });
 
+            Kokkos::parallel_for("vl_kokkos_rebuild_cells", rangePolicy, KOKKOS_LAMBDA(const int i) {
+
+                const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+                const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+                const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+
+                int nbr[27];
+                g.neighborCells(g.cellOf(x1, y1, z1), nbr);
+
+                size_t count = 0;
+                for (int s = 0; s < 27; ++s) {
+                    const int c = nbr[s];
+                    for (int slot = cellStart(c); slot < cellStart(c + 1); ++slot) {
+                        const int k = partIds(slot);
+
+                        const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
+                        const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
+                        const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
+                        const auto dx = x1 - x2;
+                        const auto dy = y1 - y2;
+                        const auto dz = z1 - z2;
+                        const auto distSquared = dx * dx + dy * dy + dz * dz;
+
+                        if (distSquared < interactionLengthSqr) {
+                            if (count >= maxNeighbors) {
+                                Kokkos::atomic_store(&overflowFlag(), 1);
+                                break;
+                            }
+                            const size_t index = i * maxNeighbors + count;
+                            entries(index) = k;
+                            ++count;
+                        }
+                    }
+                }
+                offsets(i) = i * maxNeighbors + count;
+            });
             double endBuild = buildTimer.seconds();
             _sectionTimes._buildNL._total(endBuild-startBuild);
+            return false;
         }
         
         template <typename Traversal>
