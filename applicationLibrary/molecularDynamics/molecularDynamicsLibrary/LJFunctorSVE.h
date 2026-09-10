@@ -137,10 +137,11 @@ class LJFunctorSVE
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
-      sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
+      const double sigma = i.getHalfSigma() + j.getHalfSigma();
+      sigmaSquared = sigma * sigma;
+      epsilon24 = 24. * (i.getSqrtEpsilon() * j.getSqrtEpsilon());
       if constexpr (applyShift) {
-        shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
+        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS);
       }
     }
     auto dr = i.getR() - j.getR();
@@ -230,7 +231,8 @@ class LJFunctorSVE
     auto *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeIDptr = soa.template begin<Particle_T::AttributeNames::typeId>();
+    const auto *const __restrict sqrtEpsilonptr = soa.template begin<Particle_T::AttributeNames::sqrtEpsilon>();
+    const auto *const __restrict halfSigmaptr = soa.template begin<Particle_T::AttributeNames::halfSigma>();
 
     svfloat64_t virialSumX = svdup_f64(0.0);
     svfloat64_t virialSumY = svdup_f64(0.0);
@@ -257,6 +259,8 @@ class LJFunctorSVE
       const svfloat64_t x1 = svdup_f64(xptr[i]);
       const svfloat64_t y1 = svdup_f64(yptr[i]);
       const svfloat64_t z1 = svdup_f64(zptr[i]);
+      const svfloat64_t sqrtEpsilon1 = svdup_f64(sqrtEpsilonptr[i]);
+      const svfloat64_t halfSigma1 = svdup_f64(halfSigmaptr[i]);
 
       svbool_t pg_1, pg_2, pg_3, pg_4;
       size_t j = 0;
@@ -271,9 +275,9 @@ class LJFunctorSVE
 
         SoAKernel<true, false>(j, ownedStatePtr[i] == autopas::OwnershipState::owned,
                                reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr, zptr, fxptr,
-                               fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, virialSumX, virialSumY,
-                               virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3,
-                               svundef_u64(), pg_4, svundef_u64());
+                               fyptr, fzptr, sqrtEpsilon1, halfSigma1, sqrtEpsilonptr, halfSigmaptr, fxacc, fyacc, fzacc, virialSumX,
+                               virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(),
+                               pg_3, svundef_u64(), pg_4, svundef_u64());
       }
 
       fxptr[i] += svaddv(svptrue_b64(), fxacc);
@@ -314,8 +318,10 @@ class LJFunctorSVE
     auto *const __restrict fy2ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fz2ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeID1ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
-    const auto *const __restrict typeID2ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
+    const auto *const __restrict sqrtEpsilon1ptr = soa1.template begin<Particle_T::AttributeNames::sqrtEpsilon>();
+    const auto *const __restrict halfSigma1ptr = soa1.template begin<Particle_T::AttributeNames::halfSigma>();
+    const auto *const __restrict sqrtEpsilon2ptr = soa2.template begin<Particle_T::AttributeNames::sqrtEpsilon>();
+    const auto *const __restrict halfSigma2ptr = soa2.template begin<Particle_T::AttributeNames::halfSigma>();
 
     svfloat64_t virialSumX = svdup_f64(0.0);
     svfloat64_t virialSumY = svdup_f64(0.0);
@@ -340,6 +346,8 @@ class LJFunctorSVE
       const svfloat64_t x1 = svdup_f64(x1ptr[i]);
       const svfloat64_t y1 = svdup_f64(y1ptr[i]);
       const svfloat64_t z1 = svdup_f64(z1ptr[i]);
+      const svfloat64_t sqrtEpsilon1 = svdup_f64(sqrtEpsilon1ptr[i]);
+      const svfloat64_t halfSigma1 = svdup_f64(halfSigma1ptr[i]);
 
       svbool_t pg_1, pg_2, pg_3, pg_4;
       unsigned int j = 0;
@@ -354,9 +362,9 @@ class LJFunctorSVE
 
         SoAKernel<newton3, false>(j, ownedStatePtr1[i] == autopas::OwnershipState::owned,
                                   reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr, y2ptr, z2ptr,
-                                  fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc, virialSumX,
-                                  virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(),
-                                  pg_3, svundef_u64(), pg_4, svundef_u64());
+                                  fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, fxacc, fyacc,
+                                  fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(),
+                                  pg_2, svundef_u64(), pg_3, svundef_u64(), pg_4, svundef_u64());
       }
 
       fx1ptr[i] += svaddv_f64(svptrue_b64(), fxacc);
@@ -402,18 +410,34 @@ class LJFunctorSVE
   }
 
   template <bool indexed>
-  inline void lennardJones(const svuint64_t &index, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
-                           const svbool_t &pgC, const svfloat64_t &dr2, svfloat64_t &epsilon24s, svfloat64_t &shift6s,
-                           svfloat64_t &lj6, svfloat64_t &fac) {
-    const svuint64_t typeIds =
-        useMixing ? svmul_m(pgC, (indexed) ? svld1_gather_index(pgC, typeID2ptr, index) : svld1_u64(pgC, typeID2ptr), 3)
-                  : svundef_u64();
-    const auto mixingDataPtr = useMixing ? _PPLibrary->getLJMixingDataPtr(*typeID1ptr, 0) : nullptr;
+  inline void lennardJones(const size_t j, const svuint64_t &index, const svfloat64_t &sqrtEpsilon1,
+                           const svfloat64_t &halfSigma1, const double *const __restrict sqrtEpsilon2ptr,
+                           const double *const __restrict halfSigma2ptr, const svbool_t &pgC, const svfloat64_t &dr2,
+                           svfloat64_t &epsilon24s, svfloat64_t &shift6s, svfloat64_t &lj6, svfloat64_t &fac) {
+    svfloat64_t sigmaSquareds = svdup_f64(_sigmaSquared);
+    epsilon24s = svdup_f64(_epsilon24);
+    shift6s = svdup_f64(_shift6);
+    if constexpr (useMixing) {
+      // sqrtEpsilon2/halfSigma2 are read using the same index/j-offset already used to gather x2/y2/z2 in
+      // distCalc(), rather than doing an indexed lookup by type Id into a precomputed mixing table.
+      const svfloat64_t sqrtEpsilon2 =
+          (indexed) ? svld1_gather_index(pgC, sqrtEpsilon2ptr, index) : svld1(pgC, &sqrtEpsilon2ptr[j]);
+      const svfloat64_t halfSigma2 =
+          (indexed) ? svld1_gather_index(pgC, halfSigma2ptr, index) : svld1(pgC, &halfSigma2ptr[j]);
 
-    const svfloat64_t sigmaSquareds =
-        useMixing ? svld1_gather_index(pgC, mixingDataPtr + 1, typeIds) : svdup_f64(_sigmaSquared);
-    epsilon24s = useMixing ? svld1_gather_index(pgC, mixingDataPtr, typeIds) : svdup_f64(_epsilon24);
-    shift6s = (useMixing && applyShift) ? svld1_gather_index(pgC, mixingDataPtr + 2, typeIds) : svdup_f64(_shift6);
+      epsilon24s = svmul_x(pgC, svdup_f64(24.0), svmul_x(pgC, sqrtEpsilon1, sqrtEpsilon2));
+      const svfloat64_t sigma = svadd_x(pgC, halfSigma1, halfSigma2);
+      sigmaSquareds = svmul_x(pgC, sigma, sigma);
+      if constexpr (applyShift) {
+        // shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6^2), mirroring
+        // ParticlePropertiesLibrary::calcShift6().
+        const svfloat64_t sigmaDivCutoffPow2 = svdiv_x(pgC, sigmaSquareds, svdup_f64(_cutoffSquared));
+        const svfloat64_t sigmaDivCutoffPow6 =
+            svmul_x(pgC, sigmaDivCutoffPow2, svmul_x(pgC, sigmaDivCutoffPow2, sigmaDivCutoffPow2));
+        shift6s = svmul_x(pgC, epsilon24s,
+                          svsub_x(pgC, sigmaDivCutoffPow6, svmul_x(pgC, sigmaDivCutoffPow6, sigmaDivCutoffPow6)));
+      }
+    }
 
     svfloat64_t invdr2 = svrecpe(dr2);
     invdr2 = svmul_x(pgC, invdr2, svrecps(dr2, invdr2));
@@ -500,9 +524,10 @@ class LJFunctorSVE
       const size_t j, const bool ownedStateIisOwned, const int64_t *const __restrict ownedStatePtr2,
       const svfloat64_t &x1, const svfloat64_t &y1, const svfloat64_t &z1, const double *const __restrict x2ptr,
       const double *const __restrict y2ptr, const double *const __restrict z2ptr, double *const __restrict fx2ptr,
-      double *const __restrict fy2ptr, double *const __restrict fz2ptr, const size_t *const typeID1ptr,
-      const size_t *const typeID2ptr, svfloat64_t &fxacc, svfloat64_t &fyacc, svfloat64_t &fzacc,
-      svfloat64_t &virialSumX, svfloat64_t &virialSumY, svfloat64_t &virialSumZ, svfloat64_t &potentialEnergySum,
+      double *const __restrict fy2ptr, double *const __restrict fz2ptr, const svfloat64_t &sqrtEpsilon1,
+      const svfloat64_t &halfSigma1, const double *const __restrict sqrtEpsilon2ptr, const double *const __restrict halfSigma2ptr,
+      svfloat64_t &fxacc, svfloat64_t &fyacc, svfloat64_t &fzacc, svfloat64_t &virialSumX, svfloat64_t &virialSumY,
+      svfloat64_t &virialSumZ, svfloat64_t &potentialEnergySum,
 
       const svbool_t &pg_1, const svuint64_t &index_1, const svbool_t &pg_2, const svuint64_t &index_2,
       const svbool_t &pg_3, const svuint64_t &index_3, const svbool_t &pg_4, const svuint64_t &index_4
@@ -550,28 +575,32 @@ class LJFunctorSVE
     svfloat64_t lj6_1;
     svfloat64_t fac_1;
     if (continue_1)
-      lennardJones<indexed>(index_1, typeID1ptr, typeID2ptr, pgC_1, dr2_1, epsilon24s_1, shift6s_1, lj6_1, fac_1);
+      lennardJones<indexed>(j, index_1, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, pgC_1, dr2_1, epsilon24s_1,
+                            shift6s_1, lj6_1, fac_1);
 
     svfloat64_t epsilon24s_2;
     svfloat64_t shift6s_2;
     svfloat64_t lj6_2;
     svfloat64_t fac_2;
     if (continue_2)
-      lennardJones<indexed>(index_2, typeID1ptr, typeID2ptr, pgC_2, dr2_2, epsilon24s_2, shift6s_2, lj6_2, fac_2);
+      lennardJones<indexed>(j + svlen(x1), index_2, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, pgC_2, dr2_2,
+                            epsilon24s_2, shift6s_2, lj6_2, fac_2);
 
     svfloat64_t epsilon24s_3;
     svfloat64_t shift6s_3;
     svfloat64_t lj6_3;
     svfloat64_t fac_3;
     if (continue_3)
-      lennardJones<indexed>(index_3, typeID1ptr, typeID2ptr, pgC_3, dr2_3, epsilon24s_3, shift6s_3, lj6_3, fac_3);
+      lennardJones<indexed>(j + svlen(x1) * 2, index_3, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, pgC_3, dr2_3,
+                            epsilon24s_3, shift6s_3, lj6_3, fac_3);
 
     svfloat64_t epsilon24s_4;
     svfloat64_t shift6s_4;
     svfloat64_t lj6_4;
     svfloat64_t fac_4;
     if (continue_4)
-      lennardJones<indexed>(index_4, typeID1ptr, typeID2ptr, pgC_4, dr2_4, epsilon24s_4, shift6s_4, lj6_4, fac_4);
+      lennardJones<indexed>(j + svlen(x1) * 3, index_4, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, pgC_4, dr2_4,
+                            epsilon24s_4, shift6s_4, lj6_4, fac_4);
 
     if (continue_1)
       applyForces<newton3, indexed>(j, index_1, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
@@ -632,7 +661,8 @@ class LJFunctorSVE
     auto *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeIDptr = soa.template begin<Particle_T::AttributeNames::typeId>();
+    const auto *const __restrict sqrtEpsilonptr = soa.template begin<Particle_T::AttributeNames::sqrtEpsilon>();
+    const auto *const __restrict halfSigmaptr = soa.template begin<Particle_T::AttributeNames::halfSigma>();
 
     // accumulators
     svfloat64_t virialSumX = svdup_f64(0.0);
@@ -648,6 +678,8 @@ class LJFunctorSVE
     const auto x1 = svdup_f64(xptr[indexFirst]);
     const auto y1 = svdup_f64(yptr[indexFirst]);
     const auto z1 = svdup_f64(zptr[indexFirst]);
+    const auto sqrtEpsilon1 = svdup_f64(sqrtEpsilonptr[indexFirst]);
+    const auto halfSigma1 = svdup_f64(halfSigmaptr[indexFirst]);
 
     svbool_t pg_1;
     const auto *const ownedStatePtr2 = reinterpret_cast<const int64_t *>(ownedStatePtr);
@@ -670,7 +702,8 @@ class LJFunctorSVE
       svfloat64_t lj6_1;
       svfloat64_t fac_1;
       if (continue_1)
-        lennardJones<true>(index_1, typeIDptr, typeIDptr, pgC_1, dr2_1, epsilon24s_1, shift6s_1, lj6_1, fac_1);
+        lennardJones<true>(0, index_1, sqrtEpsilon1, halfSigma1, sqrtEpsilonptr, halfSigmaptr, pgC_1, dr2_1, epsilon24s_1, shift6s_1,
+                           lj6_1, fac_1);
 
       if (continue_1)
         applyForces<newton3, true>(0, index_1, ownedStatePtr[indexFirst] == autopas::OwnershipState::owned, fxptr,
@@ -699,25 +732,28 @@ class LJFunctorSVE
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
-                                                              Particle_T::AttributeNames::posX,
-                                                              Particle_T::AttributeNames::posY,
-                                                              Particle_T::AttributeNames::posZ,
-                                                              Particle_T::AttributeNames::forceX,
-                                                              Particle_T::AttributeNames::forceY,
-                                                              Particle_T::AttributeNames::forceZ,
-                                                              Particle_T::AttributeNames::typeId,
-                                                              Particle_T::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 11>{Particle_T::AttributeNames::id,
+                                                               Particle_T::AttributeNames::posX,
+                                                               Particle_T::AttributeNames::posY,
+                                                               Particle_T::AttributeNames::posZ,
+                                                               Particle_T::AttributeNames::forceX,
+                                                               Particle_T::AttributeNames::forceY,
+                                                               Particle_T::AttributeNames::forceZ,
+                                                               Particle_T::AttributeNames::typeId,
+                                                               Particle_T::AttributeNames::sqrtEpsilon,
+                                                               Particle_T::AttributeNames::halfSigma,
+                                                               Particle_T::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle_T::AttributeNames, 6>{
-        Particle_T::AttributeNames::id,     Particle_T::AttributeNames::posX,
-        Particle_T::AttributeNames::posY,   Particle_T::AttributeNames::posZ,
-        Particle_T::AttributeNames::typeId, Particle_T::AttributeNames::ownershipState};
+    return std::array<typename Particle_T::AttributeNames, 8>{
+        Particle_T::AttributeNames::id,      Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,    Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::typeId,  Particle_T::AttributeNames::sqrtEpsilon,
+        Particle_T::AttributeNames::halfSigma,   Particle_T::AttributeNames::ownershipState};
   }
 
   /**
@@ -891,6 +927,9 @@ class LJFunctorSVE
   const double _cutoffSquaredAoS;
   double _epsilon24AoS{0.}, _sigmaSquaredAoS{0.}, _shift6AoS{0.};
 
+  // Kept only so the useMixing constructor can require a ParticlePropertiesLibrary (for API/behavioral
+  // compatibility with other functors). The mixing math itself no longer looks anything up here: epsilon and sigma
+  // are read directly from the interacting particles/SoA columns and mixed inline.
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
