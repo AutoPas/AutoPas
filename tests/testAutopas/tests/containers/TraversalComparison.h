@@ -12,7 +12,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/tuning/Configuration.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "generators/src/UniformGenerator.h"
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 

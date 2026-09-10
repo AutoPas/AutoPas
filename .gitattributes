@@ -1,0 +1,30 @@
+# ==============================================================================
+# GitHub Linguist Configuration for Dependencies
+# ==============================================================================
+# This section configures how GitHub treats third-party dependencies in the 
+# `libs/` folder (which are tracked as git subtrees).
+#
+# By explicitly listing each dependency and applying the following flags:
+#  - `linguist-vendored`: Excludes the dependency from the repository's 
+#    overall language statistics (e.g., stops C++ stats from being skewed).
+#  - `linguist-generated`: Forces GitHub to collapse these files by default 
+#    in Pull Request diffs, saving reviewers from scrolling through third-party code.
+#
+# IMPORTANT: 
+# We specify each dependency directory individually rather than using `libs/*`. 
+# This ensures that our first-party files located inside `libs/` 
+# (such as `fake-dlclose/`, `patches/`, and `CMakeLists.txt`) are NOT collapsed 
+# or ignored, ensuring they remain fully visible and reviewable in Pull Requests.
+# ==============================================================================
+
+libs/ALL/**        linguist-vendored linguist-generated
+libs/antlr4/**     linguist-vendored linguist-generated
+libs/benchmark/**  linguist-vendored linguist-generated
+libs/eigen/**      linguist-vendored linguist-generated
+libs/googletest/** linguist-vendored linguist-generated
+libs/harmony/**    linguist-vendored linguist-generated
+libs/highway/**    linguist-vendored linguist-generated
+libs/pmt/**        linguist-vendored linguist-generated
+libs/spdlog/**     linguist-vendored linguist-generated
+libs/utfcpp/**     linguist-vendored linguist-generated
+libs/yaml-cpp/**   linguist-vendored linguist-generated

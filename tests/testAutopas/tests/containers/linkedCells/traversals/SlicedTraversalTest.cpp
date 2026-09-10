@@ -7,7 +7,7 @@
 #include "SlicedTraversalTest.h"
 
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
-#include "autopasTools/generators/GridGenerator.h"
+#include "generators/src/GridGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"

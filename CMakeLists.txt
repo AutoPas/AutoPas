@@ -97,7 +97,7 @@ include(autopas_antlr4cpp)
 
 # autopas
 add_subdirectory(src)
-# autopasTools
+# tools
 add_subdirectory(tools)
 
 # modules needing targets:

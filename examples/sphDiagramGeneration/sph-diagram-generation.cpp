@@ -9,7 +9,7 @@
 
 #include "SPHLibrary/autopassph.h"
 #include "autopas/AutoPas.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "generators/src/UniformGenerator.h"
 
 using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;

@@ -12,8 +12,8 @@
 #include "AutoPasTestBase.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopasTools/generators/GridGenerator.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "generators/src/GridGenerator.h"
+#include "generators/src/UniformGenerator.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <type_traits>
+#include <vector>
 
 #include "Functor.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -18,6 +19,19 @@ namespace autopas {
 
 template <class Particle>
 class VerletListHelpers;
+
+/**
+ * Precomputed index bounds for iterating a pre-sorted SoA pair. Produced by CellFunctor and
+ * consumed by SoAFunctorPairSorted overrides.
+ *
+ * @note Importantly SoASortingData does not hold its own storage but rather references. meaning the storage must
+ * outlive the struct.
+ */
+struct SoASortingData {
+  size_t startI;                        ///< First index in soa1 whose projection range overlaps soa2.
+  const std::vector<size_t> &maxIndex;  ///< Per-particle upper bound index into soa2 (exclusive).
+  const std::vector<size_t> &minIndex;  ///< Per-particle lower bound index into soa2 (inclusive).
+};
 
 /**
  * PairwiseFunctor class. This class describes the pairwise interactions between
@@ -101,6 +115,29 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    */
   virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
     utils::ExceptionHandler::exception("{}::SoAFunctorPair: not implemented", this->getName());
+  }
+
+  /**
+   * SoAFunctorPair on pre-sorted, pre-packed SoA views. CellFunctor handles projection, sorting, packing, and
+   * computing the index bounds; this function receives contiguous sorted views and only needs to run the kernel.
+   *
+   * Must be overridden by functors that set supportsSoASorting=true; the default throws.
+   *
+   * @param soa1 Sorted, packed view of cell 1 particles.
+   * @param soa2 Sorted, packed view of cell 2 particles.
+   * @param sortingData Precomputed start_i, maxIndex, minIndex for loop-bound pruning.
+   * @param newton3 Whether to apply Newton's third law.
+   */
+  virtual void SoAFunctorPairSorted(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2,
+                                    const SoASortingData &sortingData, bool newton3) {
+    if constexpr (not CRTP_T::supportsSoASorting) {
+      autopas::utils::ExceptionHandler::exception(
+          "SoAFunctorPairSorted() called on functor {} which has supportsSoASorting=false.", typeid(CRTP_T).name());
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Functor {} has supportsSoASorting=true but does not implement SoAFunctorPairSorted().",
+          typeid(CRTP_T).name());
+    }
   }
 
   /**

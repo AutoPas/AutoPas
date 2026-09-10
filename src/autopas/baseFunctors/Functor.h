@@ -98,6 +98,20 @@ class Functor {
   }
 
   /**
+   * Whether this functor supports the SortedSoAView optimization path (SoAFunctorPairSorted).
+   * Derived functors that set this to true must also:
+   *   1. Implement getNeededAttr() and getComputedAttr().
+   *   2. Override SoAFunctorPairSorted() — the default throws.
+   *   3. Only list numeric (arithmetic) types in getComputedAttr(), because SortedSoAView scatters them
+   *      back to the source SoA via `+=`. Non-numeric attributes cannot be accumulated this way.
+   *   4. Ensure that the semantics of every computed attribute are additive: the functor accumulates into
+   *      zero-initialized buffers, and SortedSoAView adds the results back with `+=`. Attributes whose
+   *      correct update requires assignment (e.g. `=`) rather than accumulation must not appear in
+   *      getComputedAttr().
+   */
+  static constexpr bool supportsSoASorting = false;
+
+  /**
    * Copies the AoS data of the given cell in the given soa.
    *
    * @param cell Cell from where the data is loaded.

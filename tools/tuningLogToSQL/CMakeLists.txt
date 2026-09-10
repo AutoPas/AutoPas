@@ -9,7 +9,7 @@ if(SQLite3_FOUND)
     )
     add_executable(tuningLogToSQL ${tuningLogToSQL_SRC})
     target_include_directories(tuningLogToSQL PUBLIC . ${SQLite3_INCLUDE_DIRS})
-    target_link_libraries(tuningLogToSQL PUBLIC autopas autopasTools ${SQLite3_LIBRARIES})
+    target_link_libraries(tuningLogToSQL PUBLIC autopas generators ${SQLite3_LIBRARIES})
 
 else()
     message("SQLite3 dev package not found. Try installing libsqlite3-dev.")

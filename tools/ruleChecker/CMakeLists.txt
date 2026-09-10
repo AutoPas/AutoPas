@@ -11,6 +11,6 @@ if(AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
 
     target_include_directories(ruleChecker PUBLIC .)
 
-    target_link_libraries(ruleChecker PUBLIC autopas autopasTools)
+    target_link_libraries(ruleChecker PUBLIC autopas generators)
 
 endif()

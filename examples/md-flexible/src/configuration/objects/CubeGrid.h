@@ -10,7 +10,7 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopasTools/generators/GridGenerator.h"
+#include "generators/src/GridGenerator.h"
 
 /**
  * Class describing a regular 3D particle grid object.

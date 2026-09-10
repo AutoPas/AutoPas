@@ -1,0 +1,70 @@
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  CMAKE_OPTIONS: "-DPMT_BUILD_POWERSENSOR2=ON -DPMT_BUILD_POWERSENSOR3=ON -DPMT_BUILD_RAPL=ON -DPMT_BUILD_PYTHON=ON"
+  SKIP: "include-what-you-use"
+
+stages:
+  - linting
+  - build
+  - test
+
+format:
+  stage: linting
+  image: ubuntu:22.04
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq
+       git
+       python3-pip
+       python3-pybind11
+    - pip3 install
+      clang-format==14.0.0
+      cmake-format
+      pre-commit
+  script:
+    - pre-commit run -a
+
+build-docker:
+  stage: build
+  image: ubuntu:22.04
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq
+       cmake
+       g++
+       git
+       libpython3-dev
+       python3-pybind11
+  script:
+    - cmake -S . -B build ${CMAKE_OPTIONS}
+    - make -C build install
+
+test-das6:
+  stage: test
+  tags:
+    - das6-gpu
+  before_script:
+    - module load spack/12.2.0
+    - module av    
+    - module load python/3.11.6
+    - module load py-pybind11/2.11.0
+    - module load cuda/12.2.1
+    - module list
+  script:
+    - cmake -S . -B build ${CMAKE_OPTIONS} -DPMT_BUILD_NVML=ON -DPMT_BUILD_BINARY=ON
+    - make -C build
+    - $(pwd)/build/bin/PMT --name rapl -- sleep 3
+    - $(pwd)/build/bin/PMT --name nvml -- sleep 3
+    - PYTHONPATH=$PYTHONPATH:$(pwd)/build/python/site-packages python3 ${CI_PROJECT_DIR}/python/demo.py
+
+test-das6-integration:
+  stage: test
+  tags:
+    - das6-gpu
+  before_script:
+    - module load spack/9.4.0
+    - module load cuda/12.2.1
+    - cmake -S example -B build -DPMT_BUILD_NVML=ON -DPMT_GIT_REVISION=${CI_COMMIT_SHA}
+    - make -C build
+  script:
+    - $(pwd)/build/example sleep 3

@@ -31,7 +31,7 @@ TEST_P(ParticleCounterTest, testGetNumberOfParticles) {
   constexpr double skin = _cutoff * 0.1;
 
   const auto containerInfo = autopas::ContainerSelectorInfo{
-      _boxMin, _boxMax, _cutoff, _cellSizeFactor, skin, 32, 8, autopas::LoadEstimatorOption::none};
+      _boxMin, _boxMax, _cutoff, _cellSizeFactor, skin, 32, 8, 8, autopas::LoadEstimatorOption::none};
   auto container = autopas::ContainerSelector<Molecule>::generateContainer(containerOption, containerInfo);
 
   // add owned particles

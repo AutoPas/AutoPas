@@ -40,12 +40,20 @@ class CellTraversal {
   virtual void setCellsToTraverse(std::vector<ParticleCell> &cells) { _cells = &cells; }
 
   /**
-   * Set the sorting-threshold for traversals that use the CellFunctor
+   * Set the aos-sorting-threshold for traversals that use the CellFunctor
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
-   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled
+   * @param aosSortingThreshold Sum of the number of particles in two cells from which sorting should be enabled
    */
-  virtual void setSortingThreshold(size_t sortingThreshold) = 0;
+  virtual void setAoSSortingThreshold(size_t aosSortingThreshold) = 0;
+
+  /**
+   * Set the SoA sorting-threshold for traversals that use the CellFunctor.
+   * If the sum of the SoA buffer sizes of two cells exceeds this value, the SoA path uses SoAFunctorPairSorted.
+   * Traversals that hold a CellFunctor should forward to it; others should explicitly override with an empty body.
+   * @param soaSortingThreshold Sum of the SoA buffer sizes from which SoA sorting should be enabled.
+   */
+  virtual void setSoASortingThreshold(size_t soaSortingThreshold) = 0;
 
  protected:
   /**

@@ -34,7 +34,8 @@ class Newton3OnOffTest : public AutoPasTestBase, public ::testing::WithParamInte
   static double getCutoff() { return 1.0; }
   static double getVerletSkin() { return 0.0; }
   static int getClusterSize() { return 4; }
-  static int getSortingThreshold() { return 8; }
+  static int getAoSSortingThreshold() { return 8; }
+  static int getSoASortingThreshold() { return 8; }
 
   /**
    * Count the number of Functor calls with and without newton 3 and compare.
