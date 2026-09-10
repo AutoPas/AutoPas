@@ -36,6 +36,7 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:antlr4cpp>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:pmt>
         Eigen3
+        $<$<BOOL:${AUTOPAS_ENABLE_KOKKOS}>:Kokkos::kokkos>
         hwy
     PRIVATE
         # harmony are only needed privately when building AutoPas.
@@ -55,8 +56,38 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
         $<$<BOOL:${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}>:AUTOPAS_ENABLE_DYNAMIC_CONTAINERS>
+        $<$<BOOL:${AUTOPAS_ENABLE_KOKKOS}>:AUTOPAS_ENABLE_KOKKOS>
         _USE_MATH_DEFINES
 )
+
+# Check which accelerator compilers are available
+include(CheckLanguage)
+check_language(CUDA)
+if (CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    find_package(CUDAToolkit QUIET)
+    set(CMAKE_CUDA_ARCHITECTURES "native" CACHE STRING "" FORCE)
+    if (CUDAToolkit_FOUND)
+        message(STATUS "CUDA language enabled and CUDAToolkit found")
+    else ()
+        message(WARNING "CUDA compiler available but CUDAToolkit not found")
+    endif ()
+else ()
+    message(STATUS "CUDA compiler not available with current toolchain")
+endif ()
+check_language(HIP)
+if (CMAKE_HIP_COMPILER)
+    enable_language(HIP)
+    find_package(HIP QUIET)
+    set(CMAKE_HIP_ARCHITECTURES "native" CACHE STRING "" FORCE)
+    if (HIP_FOUND)
+        message(STATUS "HIP language enabled and HIP package found")
+    else ()
+        message(WARNING "HIP compiler available but HIP package not found")
+    endif ()
+else ()
+    message(STATUS "HIP language not available with current toolchain")
+endif ()
 
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)
