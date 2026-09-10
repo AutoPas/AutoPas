@@ -617,7 +617,7 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
             spdlog::info("Number of neighbors found: {}", totalNeighbors);
 
             double startFill = bTimer.seconds();
-            Kokkos::parallel_for("vl_kokkos_rebuild_teams_countNeighbors", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
+            Kokkos::parallel_for("vl_kokkos_rebuild_teams_fillNeighbors", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
                 const int i = teamHandle.league_rank();
 
                 const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);

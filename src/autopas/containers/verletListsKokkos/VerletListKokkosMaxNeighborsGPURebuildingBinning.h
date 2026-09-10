@@ -22,6 +22,35 @@
 
 namespace autopas {
 
+struct Grid{
+        Grid(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double skin, const double cutoff){
+            double l= cutoff + skin;
+            nx = std::floor((boxMax[0]-boxMin[0])/l);
+            ny = std::floor((boxMax[1]-boxMin[1])/l);
+            nz = std::floor((boxMax[2]-boxMin[2])/l);
+            xLow = boxMin[0];
+            yLow = boxMin[1];
+            zLow = boxMin[2];
+            hxInv = nx/l;
+            hyInv = ny/l;
+            hzInv = nz/l;
+            nCells = nx*ny*nz;
+        }
+
+        KOKKOS_INLINE_FUNCTION
+        int cellOf(double x, double y, double z) const {
+            int ix = Kokkos::min(Kokkos::max((int)Kokkos::floor((x - xLow) * hxInv), 0), nx - 1);
+            int iy = Kokkos::min(Kokkos::max((int)Kokkos::floor((y - yLow) * hyInv), 0), ny - 1);
+            int iz = Kokkos::min(Kokkos::max((int)Kokkos::floor((z - zLow) * hzInv), 0), nz - 1);
+            return ix + nx * (iy + ny * iz);
+        }
+        // grid dimensions
+        int nx, ny ,nz;
+        double xLow, yLow, zLow;
+        double hxInv, hyInv,hzInv;
+        int nCells;
+};
+
 /**
  * @class VerletListsKokkosMaxNeighborsGPURebuilding
  * @brief A container for managing particles using Kokkos for parallel computation.
@@ -40,6 +69,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             }
             _ownedParticles.setLayout(dataLayout);
             _haloParticles.setLayout(dataLayout); 
+            _grid = Grid{boxMin,boxMax,skin,cutoff};
     }
     
     [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsKokkosMaxNeighborsGPURebuildingBinning; }
@@ -433,8 +463,6 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
 
             const size_t N = soa1.size();
             const size_t M = soa2.size();
-            spdlog::debug("VerletListsKokkosTraversalFlat::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
-                        soa2.size());
 
             if (N == 0 || soa2.size() == 0) {
                 spdlog::debug(
@@ -598,6 +626,56 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             }
             return overflow != 0;
         
+        }
+
+        bool buildNeighborListsBin(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
+            Kokkos::Timer buildTimer;
+            double startBuild= buildTimer.seconds();
+            const size_t N = soa1.size();
+            const size_t M = soa2.size();
+            spdlog::debug("VerletListsKokkosTraversalTeams::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
+                        soa2.size());
+
+            if (N == 0 || M == 0) {
+                spdlog::debug(
+                    "VerletListsKokkosTraversalTeams::performSoATraversal: skipping kernel launch (soa1.size()={}, "
+                    "soa2.size()={})",
+                    N, M);
+                return false;
+            }
+            const size_t maxNeighbors = _maxNeighbors;
+            const FloatPrecision interactionLength = _cutoff + this->getVerletSkin();
+            const FloatPrecision interactionLengthSqr = interactionLength * interactionLength;
+            const auto soa1Device = soa1.deviceView();
+            const auto soa2Device = soa2.deviceView();
+
+            Kokkos::View<int*> cellIds("cellIdx",N);
+            Kokkos::View<int*> partIds("particleIdx",N);
+            auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+            Grid g = _grid;
+            double startKernel = buildTimer.seconds();
+            Kokkos::parallel_for("vl_kokkos_rebuild_cellIdx", rangePolicy, KOKKOS_LAMBDA(const int i) {
+
+                const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+                const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+                const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+
+                int cellId = g.cellOf(x1,y1,z1);
+                cellIds(i)= cellId;
+                partIds(i) = i;
+            });
+            Kokkos::fence();
+
+            Kokkos::Experimental::sort_by_key(typename DeviceSpace::execution_space{}, cellIds, partIds);
+            Kokkos::View<int*> cellStart("cellStart", g.nCells+1);
+            Kokkos::deep_copy(cellStart, N); 
+            Kokkos::parallel_for("cell_bounds", N, KOKKOS_LAMBDA(const int k) {
+                const int c = cellIds(k);
+                if (k == 0 || c != cellIds(k-1)) cellStart(c) = k;
+            });
+
+            double endBuild = buildTimer.seconds();
+            _sectionTimes._buildNL._total(endBuild-startBuild);
         }
         
         template <typename Traversal>
@@ -821,11 +899,9 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
     // amortized once the value has settled.
     size_t _maxNeighbors {64};
 
-    
     bool _useTeamsRebuild {true};
     bool _useParticleSorting{false};
+    Grid _grid;
     SectionTimings _sectionTimes{};
-   
 };
-
 } 
