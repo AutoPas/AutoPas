@@ -402,21 +402,14 @@ class LJFunctorHWY
     }
   }
 
-  static void rotate1LaneRight(VectorDouble& vec) {
+  static void rotate1LaneRight(VectorDouble &vec) {
     VectorDouble tmp = vec;
     vec = highway::Slide1Up(tag_double, vec);
     tmp = highway::SlideDownLanes(tag_double, tmp, _vecLengthDouble - 1);
     vec = highway::Or(vec, tmp);
   }
 
-  static void rotate1LaneLeft(VectorDouble& vec) {
-    VectorDouble tmp = vec;
-    vec = highway::Slide1Down(tag_double, vec);
-    tmp = highway::SlideUpLanes(tag_double, tmp, _vecLengthDouble - 1);
-    vec = highway::Or(vec, tmp);
-  }
-
-  static void rotate1LaneRight(MaskDouble& mask) {
+  static void rotate1LaneRight(MaskDouble &mask) {
     MaskDouble tmp = mask;
     mask = highway::SlideMask1Up(tag_double, mask);
     tmp = highway::SlideMaskDownLanes(tag_double, tmp, _vecLengthDouble - 1);
@@ -425,8 +418,8 @@ class LJFunctorHWY
 
   /**
    * Depending on the vectorization pattern, loads/broadcasts one scalar array (positions, ownership state, or mixing
-   * properties) into a full vector register. This is the shared primitive behind fillIRegisters, fillJRegisters and
-   * fillPhysicsRegisters: every VectorizationPattern reduces, per side, to one of two idioms - a "paired" idiom
+   * properties) into a full vector register. This is the shared primitive behind fillIRegisters and fillJRegisters:
+   * every VectorizationPattern reduces, per side, to one of two idioms - a "paired" idiom
    * (broadcast the current element, and, unless in the remainder case, its neighbor, then combine both halves) or a
    * "contiguous" idiom (load a run of elements, self-combining to fill the register if it is only a half-load).
    * Which idiom applies to which side is fixed by vecPattern: e.g. for p2xVecDiv2 the i-side is paired (2 wide) and
@@ -506,7 +499,8 @@ class LJFunctorHWY
    */
   template <bool isISide, bool remainder, bool reversed, VectorizationPattern vecPattern>
   static MaskDouble loadOwnedMask(const int64_t *const __restrict basePtr, const size_t idx, const size_t rest) {
-    const VectorLong ownedStateLong = loadRegister<isISide, remainder, reversed, vecPattern>(tag_long, basePtr, idx, rest);
+    const VectorLong ownedStateLong =
+        loadRegister<isISide, remainder, reversed, vecPattern>(tag_long, basePtr, idx, rest);
     const MaskLong ownedMaskLong = highway::Ne(ownedStateLong, highway::Zero(tag_long));
     // convert to a double mask since we perform logical operations with other double masks in the kernel.
     return highway::RebindMask(tag_double, ownedMaskLong);
@@ -538,8 +532,8 @@ class LJFunctorHWY
     x1 = loadRegister<true, remainder, reversed, vecPattern>(tag_double, xPtr, i, restI);
     y1 = loadRegister<true, remainder, reversed, vecPattern>(tag_double, yPtr, i, restI);
     z1 = loadRegister<true, remainder, reversed, vecPattern>(tag_double, zPtr, i, restI);
-    ownedMaskI = loadOwnedMask<true, remainder, reversed, vecPattern>(
-        reinterpret_cast<const int64_t *>(ownedStatePtr), i, restI);
+    ownedMaskI = loadOwnedMask<true, remainder, reversed, vecPattern>(reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                                                      i, restI);
   }
 
   template <bool remainder, VectorizationPattern vecPattern>
@@ -612,33 +606,56 @@ class LJFunctorHWY
       fx2Ptr[j] -= highway::ReduceSum(tag_double, fx);
       fy2Ptr[j] -= highway::ReduceSum(tag_double, fy);
       fz2Ptr[j] -= highway::ReduceSum(tag_double, fz);
-    } else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
-      // fx/fy/fz are rotated relative to the start of j's _vecLengthDouble-wide block; once un-rotated below,
-      // lane l again corresponds to particle j0 + l, so the force array must be addressed at j0, not j.
-      const size_t j0 = j - (j % _vecLengthDouble);
-      const VectorDouble fx2 =
-          remainder ? highway::LoadN(tag_double, &fx2Ptr[j0], rest) : highway::LoadU(tag_double, &fx2Ptr[j0]);
-      const VectorDouble fy2 =
-          remainder ? highway::LoadN(tag_double, &fy2Ptr[j0], rest) : highway::LoadU(tag_double, &fy2Ptr[j0]);
-      const VectorDouble fz2 =
-          remainder ? highway::LoadN(tag_double, &fz2Ptr[j0], rest) : highway::LoadU(tag_double, &fz2Ptr[j0]);
-
-      for (size_t k = 0; k < j % _vecLengthDouble; ++k) {
-        rotate1LaneLeft(fx);
-        rotate1LaneLeft(fy);
-        rotate1LaneLeft(fz);
-      }
-      const VectorDouble fx2New = highway::Sub(fx2, fx);
-      const VectorDouble fy2New = highway::Sub(fy2, fy);
-      const VectorDouble fz2New = highway::Sub(fz2, fz);
-
-      remainder ? highway::StoreN(fx2New, tag_double, &fx2Ptr[j0], rest)
-                : highway::StoreU(fx2New, tag_double, &fx2Ptr[j0]);
-      remainder ? highway::StoreN(fy2New, tag_double, &fy2Ptr[j0], rest)
-                : highway::StoreU(fy2New, tag_double, &fy2Ptr[j0]);
-      remainder ? highway::StoreN(fz2New, tag_double, &fz2Ptr[j0], rest)
-                : highway::StoreU(fz2New, tag_double, &fz2Ptr[j0]);
     }
+    // pVecxVec's Newton3 reduction does not go through here: see accumulatePVecxVecNewton3() and
+    // flushPVecxVecNewton3Block() below.
+  }
+
+  /**
+   * pVecxVec-specific Newton3 reduction step. fx/fy/fz are rotated relative to the start of the
+   * current _vecLengthDouble-wide j-block (see handleILoopBody's rotation scheme). Rather than
+   * un-rotating fx/fy/fz back to natural per-particle order and doing a full load/subtract/store of
+   * the j-force block on every one of the _vecLengthDouble rotation steps (which costs O(vecLen^2)
+   * rotations and O(vecLen) redundant memory traffic per block), this accumulates the contribution
+   * into a running accumulator kept in lockstep with fx/fy/fz's rotated frame: rotating the
+   * accumulator by one lane before adding the new contribution reproduces exactly the same running
+   * sum you'd get from un-rotating fx/fy/fz every step, but at O(1) cost per step instead of O(k).
+   * Call this once per rotation step, then flushPVecxVecNewton3Block() once per full block.
+   */
+  static void accumulatePVecxVecNewton3(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
+                                        VectorDouble &fx2Acc, VectorDouble &fy2Acc, VectorDouble &fz2Acc) {
+    rotate1LaneRight(fx2Acc);
+    rotate1LaneRight(fy2Acc);
+    rotate1LaneRight(fz2Acc);
+    fx2Acc = highway::Add(fx2Acc, fx);
+    fy2Acc = highway::Add(fy2Acc, fy);
+    fz2Acc = highway::Add(fz2Acc, fz);
+  }
+
+  /**
+   * Flushes a pVecxVec Newton3 accumulator built up over one full _vecLengthDouble-wide j-block to
+   * memory. After _vecLengthDouble calls to accumulatePVecxVecNewton3(), the accumulator's frame
+   * lags the natural per-particle frame by exactly one rotation, so a single final rotation aligns
+   * it before the one load/subtract/store needed for the whole block. Only called for full blocks
+   * (the trailing partial block is handled without rotation, see handleILoopBody), so an unaligned
+   * full-width load/store is always safe here.
+   *
+   * @param j0 Start index (a multiple of _vecLengthDouble) of the block to flush.
+   */
+  static void flushPVecxVecNewton3Block(const size_t j0, double *const __restrict fx2Ptr,
+                                        double *const __restrict fy2Ptr, double *const __restrict fz2Ptr,
+                                        VectorDouble &fx2Acc, VectorDouble &fy2Acc, VectorDouble &fz2Acc) {
+    rotate1LaneRight(fx2Acc);
+    rotate1LaneRight(fy2Acc);
+    rotate1LaneRight(fz2Acc);
+
+    const VectorDouble fx2 = highway::LoadU(tag_double, &fx2Ptr[j0]);
+    const VectorDouble fy2 = highway::LoadU(tag_double, &fy2Ptr[j0]);
+    const VectorDouble fz2 = highway::LoadU(tag_double, &fz2Ptr[j0]);
+
+    highway::StoreU(highway::Sub(fx2, fx2Acc), tag_double, &fx2Ptr[j0]);
+    highway::StoreU(highway::Sub(fy2, fy2Acc), tag_double, &fy2Ptr[j0]);
+    highway::StoreU(highway::Sub(fz2, fz2Acc), tag_double, &fz2Ptr[j0]);
   }
 
   template <bool reversed, bool remainder, VectorizationPattern vecPattern>
@@ -776,12 +793,22 @@ class LJFunctorHWY
     VectorDouble fyAcc = highway::Zero(tag_double);
     VectorDouble fzAcc = highway::Zero(tag_double);
 
+    // pVecxVec-only running Newton3 accumulator for the j-side force (see accumulatePVecxVecNewton3()
+    // and flushPVecxVecNewton3Block()); passed through to SoAKernel unconditionally but ignored for
+    // every other vecPattern.
+    VectorDouble fx2Acc = highway::Zero(tag_double);
+    VectorDouble fy2Acc = highway::Zero(tag_double);
+    VectorDouble fz2Acc = highway::Zero(tag_double);
+    [[maybe_unused]] size_t pendingBlockJ0 = 0;
+    [[maybe_unused]] bool hasPendingBlock = false;
+
     MaskDouble ownedMaskI;
 
     VectorDouble x1 = highway::Zero(tag_double);
     VectorDouble y1 = highway::Zero(tag_double);
     VectorDouble z1 = highway::Zero(tag_double);
-    VectorDouble sqrtEpsilon1 = loadRegister<true, remainderI, reversed, vecPattern>(tag_double, sqrtEpsilonPtr1, i, restI);
+    VectorDouble sqrtEpsilon1 =
+        loadRegister<true, remainderI, reversed, vecPattern>(tag_double, sqrtEpsilonPtr1, i, restI);
     VectorDouble sigmaHalf1 = loadRegister<true, remainderI, reversed, vecPattern>(tag_double, halfSigmaPtr1, i, restI);
 
     fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI,
@@ -795,7 +822,23 @@ class LJFunctorHWY
     MaskDouble ownedMaskJ;
     for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j);
          j += static_cast<std::ptrdiff_t>(jStepSize<vecPattern>())) {
-      fillJRegisters<false, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2, y2, z2, ownedMaskJ, 0);
+      if constexpr (vecPattern == VectorizationPattern::pVecxVec && newton3) {
+        // The main loop only ever advances through full _vecLengthDouble-wide blocks (see
+        // checkSecondLoopCondition), so this check exactly identifies the start of a new block.
+        if (static_cast<size_t>(j) % _vecLengthDouble == 0) {
+          if (hasPendingBlock) {
+            flushPVecxVecNewton3Block(pendingBlockJ0, fxPtr2, fyPtr2, fzPtr2, fx2Acc, fy2Acc, fz2Acc);
+          }
+          fx2Acc = highway::Zero(tag_double);
+          fy2Acc = highway::Zero(tag_double);
+          fz2Acc = highway::Zero(tag_double);
+          pendingBlockJ0 = static_cast<size_t>(j);
+          hasPendingBlock = true;
+        }
+      }
+
+      fillJRegisters<false, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2,
+                                        y2, z2, ownedMaskJ, 0);
       if (vecPattern != VectorizationPattern::pVecxVec || j % _vecLengthDouble == 0) {
         sqrtEpsilon2 = loadRegister<false, false, reversed, vecPattern>(tag_double, sqrtEpsilonPtr2, j, 0);
         sigmaHalf2 = loadRegister<false, false, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, 0);
@@ -805,43 +848,47 @@ class LJFunctorHWY
       }
 
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
-          i, j, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fxPtr2,
-          fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1, sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc,
-          fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
+          i, j, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
+          sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, fx2Acc, fy2Acc, fz2Acc, virialSumX, virialSumY, virialSumZ,
+          uPotSum, restI, 0);
+    }
+
+    if constexpr (vecPattern == VectorizationPattern::pVecxVec && newton3) {
+      if (hasPendingBlock) {
+        flushPVecxVecNewton3Block(pendingBlockJ0, fxPtr2, fyPtr2, fzPtr2, fx2Acc, fy2Acc, fz2Acc);
+      }
     }
 
     if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
       // The main loop above only processes full _vecLengthDouble-wide rotation blocks (checkSecondLoopCondition
-      // floors to that width). If jVecEnd isn't block-aligned, the trailing block still needs a full rotation
-      // cycle so every i-lane pairs with every valid j in it; only the first step actually touches memory
-      // (a masked load of the restJ valid elements), the rest just rotate the already-loaded registers.
+      // floors to that width). A non-block-aligned tail of restJ valid j's is handled like pVecx1 instead of
+      // running a full _vecLengthDouble-step rotation cycle: broadcasting each remaining j against the whole
+      // i-vector in one O(1) step is cheaper than a diagonal rotation cycle in which most of the vecLen steps
+      // would be entirely masked out (only restJ of the vecLen i-lanes' pairings are ever valid per step).
       const size_t restJ = jVecEnd % _vecLengthDouble;
-      if (restJ > 0) {
-        for (size_t m = 0; m < _vecLengthDouble; ++m, ++j) {
-          fillJRegisters<true, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2, y2, z2, ownedMaskJ, restJ);
-          if (j % _vecLengthDouble == 0) {
-            sqrtEpsilon2 = loadRegister<false, true, reversed, vecPattern>(tag_double, sqrtEpsilonPtr2, j, restJ);
-            sigmaHalf2 = loadRegister<false, true, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, restJ);
-          } else {
-            rotate1LaneRight(sqrtEpsilon2);
-            rotate1LaneRight(sigmaHalf2);
-          }
-          SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
-              i, j, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fxPtr2,
-              fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1, sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc,
-              fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
-        }
+      for (size_t m = 0; m < restJ; ++m, ++j) {
+        fillJRegisters<false, VectorizationPattern::pVecx1>(
+            j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2, y2, z2, ownedMaskJ, 0);
+        sqrtEpsilon2 =
+            loadRegister<false, false, reversed, VectorizationPattern::pVecx1>(tag_double, sqrtEpsilonPtr2, j, 0);
+        sigmaHalf2 =
+            loadRegister<false, false, reversed, VectorizationPattern::pVecx1>(tag_double, halfSigmaPtr2, j, 0);
+        SoAKernel<newton3, remainderI, false, reversed, VectorizationPattern::pVecx1>(
+            i, j, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
+            sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, fx2Acc, fy2Acc, fz2Acc, virialSumX, virialSumY, virialSumZ,
+            uPotSum, restI, 0);
       }
     } else {
       const size_t restJ = jVecEnd & (jStepSize<vecPattern>() - 1);
       if (restJ > 0) {
-        fillJRegisters<true, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2, y2, z2, ownedMaskJ, restJ);
+        fillJRegisters<true, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2,
+                                         y2, z2, ownedMaskJ, restJ);
         sqrtEpsilon2 = loadRegister<false, true, reversed, vecPattern>(tag_double, sqrtEpsilonPtr2, j, restJ);
         sigmaHalf2 = loadRegister<false, true, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, restJ);
         SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
-            i, j, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fxPtr2,
-            fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1, sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc,
-            fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
+            i, j, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
+            sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, fx2Acc, fy2Acc, fz2Acc, virialSumX, virialSumY, virialSumZ,
+            uPotSum, restI, restJ);
       }
     }
 
@@ -1009,23 +1056,6 @@ class LJFunctorHWY
     ownedMaskJ = loadOwnedMask<false, remainder, false, vecPattern>(ownedStatePtr2, j, rest);
   }
 
-  template <bool remainderI, bool remainderJ, bool reversed, VectorizationPattern vecPattern>
-  inline void fillPhysicsRegisters(const double *const sqrtEpsilon1Ptr, const double *const halfSigma1Ptr,
-                                   const double *const sqrtEpsilon2Ptr, const double *const halfSigma2Ptr,
-                                   const size_t i, const size_t j, VectorDouble &epsilon24s,
-                                   VectorDouble &sigmaSquareds, VectorDouble &shift6s, const size_t restI,
-                                   const size_t restJ) const {
-    // TODO: VecxVec pattern needs to be applied correctly
-    const VectorDouble epsilonI =
-        loadRegister<true, remainderI, reversed, vecPattern>(tag_double, sqrtEpsilon1Ptr, i, restI);
-    const VectorDouble sigmaI = loadRegister<true, remainderI, reversed, vecPattern>(tag_double, halfSigma1Ptr, i, restI);
-    const VectorDouble epsilonJ =
-        loadRegister<false, remainderJ, false, vecPattern>(tag_double, sqrtEpsilon2Ptr, j, restJ);
-    const VectorDouble sigmaJ = loadRegister<false, remainderJ, false, vecPattern>(tag_double, halfSigma2Ptr, j, restJ);
-
-
-  }
-
   /**
    * Actual inner kernel of the SoAFunctors
    *
@@ -1054,6 +1084,10 @@ class LJFunctorHWY
    * @param fxAcc
    * @param fyAcc
    * @param fzAcc
+   * @param fx2Acc pVecxVec-only running Newton3 accumulator for the j-side force; see
+   * accumulatePVecxVecNewton3(). Ignored for every other vecPattern.
+   * @param fy2Acc pVecxVec-only, see fx2Acc.
+   * @param fz2Acc pVecxVec-only, see fx2Acc.
    * @param virialSumX
    * @param virialSumY
    * @param virialSumZ
@@ -1062,15 +1096,14 @@ class LJFunctorHWY
    * @param restJ
    */
   template <bool newton3, bool remainderI, bool remainderJ, bool reversed, VectorizationPattern vecPattern>
-  inline void SoAKernel(const size_t i, const size_t j, const MaskDouble &ownedMaskI,
-                        const MaskDouble &ownedMaskJ, const VectorDouble &x1, const VectorDouble &y1,
-                        const VectorDouble &z1, const VectorDouble &x2, const VectorDouble &y2,
-                        const VectorDouble &z2,
-                        double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
-                        double *const __restrict fz2Ptr, const VectorDouble& sqrtEpsilon1,
-                        const VectorDouble& sigmaHalf1, const VectorDouble& sqrtEpsilon2,
-                        const VectorDouble& sigmaHalf2, VectorDouble &fxAcc, VectorDouble &fyAcc,
-                        VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
+  inline void SoAKernel(const size_t i, const size_t j, const MaskDouble &ownedMaskI, const MaskDouble &ownedMaskJ,
+                        const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1, const VectorDouble &x2,
+                        const VectorDouble &y2, const VectorDouble &z2, double *const __restrict fx2Ptr,
+                        double *const __restrict fy2Ptr, double *const __restrict fz2Ptr,
+                        const VectorDouble &sqrtEpsilon1, const VectorDouble &sigmaHalf1,
+                        const VectorDouble &sqrtEpsilon2, const VectorDouble &sigmaHalf2, VectorDouble &fxAcc,
+                        VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &fx2Acc, VectorDouble &fy2Acc,
+                        VectorDouble &fz2Acc, VectorDouble &virialSumX, VectorDouble &virialSumY,
                         VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t restJ) {
     VectorDouble epsilon24s = highway::Undefined(tag_double);
     VectorDouble sigmaSquareds = highway::Undefined(tag_double);
@@ -1114,6 +1147,14 @@ class LJFunctorHWY
     const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, cutoffSquared);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
+      // pVecxVec's Newton3 accumulator must be rotated exactly once per step to stay in lockstep
+      // with fx/fy/fz's rotation frame (see accumulatePVecxVecNewton3()); skipping that rotation
+      // on an all-masked step - as this early-out otherwise would - desyncs the accumulator from
+      // the step counter and corrupts every later step's target lane for the rest of the block.
+      if constexpr (newton3 && vecPattern == VectorizationPattern::pVecxVec) {
+        const VectorDouble zero = highway::Zero(tag_double);
+        accumulatePVecxVecNewton3(zero, zero, zero, fx2Acc, fy2Acc, fz2Acc);
+      }
       return;
     }
 
@@ -1159,7 +1200,11 @@ class LJFunctorHWY
     }
 
     if constexpr (newton3) {
-      handleNewton3Reduction<remainderJ, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
+      if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+        accumulatePVecxVecNewton3(fx, fy, fz, fx2Acc, fy2Acc, fz2Acc);
+      } else {
+        handleNewton3Reduction<remainderJ, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
+      }
     }
   }
 
@@ -1209,6 +1254,10 @@ class LJFunctorHWY
     VectorDouble fxAcc = highway::Zero(tag_double);
     VectorDouble fyAcc = highway::Zero(tag_double);
     VectorDouble fzAcc = highway::Zero(tag_double);
+    // Unused by the p1xVec pattern used here; only pVecxVec's Newton3 reduction reads these.
+    VectorDouble fx2Acc = highway::Zero(tag_double);
+    VectorDouble fy2Acc = highway::Zero(tag_double);
+    VectorDouble fz2Acc = highway::Zero(tag_double);
 
     const VectorDouble x1 = highway::Set(tag_double, xPtr[indexFirst]);
     const VectorDouble y1 = highway::Set(tag_double, yPtr[indexFirst]);
@@ -1258,13 +1307,16 @@ class LJFunctorHWY
         const auto ownedState = ownedStatePtr[neighborList[j + vecIndex]];
         ownedStates2Tmp[vecIndex] = static_cast<int64_t>(ownedState);
       }
-      fillJRegisters<false, VectorizationPattern::p1xVec>(0, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), ownedStates2Tmp.data(), x2, y2, z2, ownedMaskJ, 0);
-      sqrtEpsilon2 = loadRegister<false, false, false, VectorizationPattern::p1xVec>(tag_double, sqrtEpsilon2Tmp.data(), 0, 0);
-      sigmaHalf2 = loadRegister<false, false, false, VectorizationPattern::p1xVec>(tag_double, halfSigma2Tmp.data(), 0, 0);
+      fillJRegisters<false, VectorizationPattern::p1xVec>(0, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(),
+                                                          ownedStates2Tmp.data(), x2, y2, z2, ownedMaskJ, 0);
+      sqrtEpsilon2 =
+          loadRegister<false, false, false, VectorizationPattern::p1xVec>(tag_double, sqrtEpsilon2Tmp.data(), 0, 0);
+      sigmaHalf2 =
+          loadRegister<false, false, false, VectorizationPattern::p1xVec>(tag_double, halfSigma2Tmp.data(), 0, 0);
       SoAKernel<newton3, false, false, false, VectorizationPattern::p1xVec>(
-          0, 0, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fx2Tmp.data(),
-          fy2Tmp.data(), fz2Tmp.data(), sqrtEpsilon1, sigmaHalf1, sqrtEpsilon2, sigmaHalf2,
-          fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0);
+          0, 0, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
+          sqrtEpsilon1, sigmaHalf1, sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, fx2Acc, fy2Acc, fz2Acc, virialSumX,
+          virialSumY, virialSumZ, uPotSum, 0, 0);
 
       if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
@@ -1292,13 +1344,16 @@ class LJFunctorHWY
         const auto ownedState = ownedStatePtr[neighborList[j + vecIndex]];
         ownedStates2Tmp[vecIndex] = static_cast<int64_t>(ownedState);
       }
-      fillJRegisters<true, VectorizationPattern::p1xVec>(0, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), ownedStates2Tmp.data(), x2, y2, z2, ownedMaskJ, rest);
-      sqrtEpsilon2 = loadRegister<false, true, false, VectorizationPattern::p1xVec>(tag_double, sqrtEpsilon2Tmp.data(), 0, rest);
-      sigmaHalf2 = loadRegister<false, true, false, VectorizationPattern::p1xVec>(tag_double, halfSigma2Tmp.data(), 0, rest);
+      fillJRegisters<true, VectorizationPattern::p1xVec>(0, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(),
+                                                         ownedStates2Tmp.data(), x2, y2, z2, ownedMaskJ, rest);
+      sqrtEpsilon2 =
+          loadRegister<false, true, false, VectorizationPattern::p1xVec>(tag_double, sqrtEpsilon2Tmp.data(), 0, rest);
+      sigmaHalf2 =
+          loadRegister<false, true, false, VectorizationPattern::p1xVec>(tag_double, halfSigma2Tmp.data(), 0, rest);
       SoAKernel<newton3, false, true, false, VectorizationPattern::p1xVec>(
-          0, 0, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fx2Tmp.data(),
-          fy2Tmp.data(), fz2Tmp.data(), sqrtEpsilon1, sigmaHalf1, sqrtEpsilon2, sigmaHalf2,
-          fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0, rest);
+          0, 0, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
+          sqrtEpsilon1, sigmaHalf1, sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, fx2Acc, fy2Acc, fz2Acc, virialSumX,
+          virialSumY, virialSumZ, uPotSum, 0, rest);
 
       if constexpr (newton3) {
         for (long vecIndex = 0; vecIndex < _vecLengthDouble && vecIndex < rest; ++vecIndex) {
