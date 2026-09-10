@@ -737,7 +737,9 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             });
             double endBuild = buildTimer.seconds();
             _sectionTimes._buildNL._total(endBuild-startBuild);
-            return false;
+            int overflow = 0;
+            Kokkos::deep_copy(overflow, overflowFlag);
+            return overFlow!=0;
         }
         
         template <typename Traversal>
