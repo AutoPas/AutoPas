@@ -653,7 +653,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
         
         }
 
-        bool buildNeighborListsBin(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
+        bool buildNeighborListsBinFlat(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
             Kokkos::Timer buildTimer;
             double startBuild= buildTimer.seconds();
             const size_t N = soa1.size();
@@ -673,6 +673,10 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             const FloatPrecision interactionLengthSqr = interactionLength * interactionLength;
             const auto soa1Device = soa1.deviceView();
             const auto soa2Device = soa2.deviceView();
+
+            // Device-side overflow flag
+            Kokkos::View<int, DeviceSpace> overflowFlag("overflowFlag");
+            Kokkos::deep_copy(overflowFlag, 0);
 
             Kokkos::View<int*> cellIds("cellIdx",N);
             Kokkos::View<int*> partIds("particleIdx",N);
@@ -739,7 +743,118 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             _sectionTimes._buildNL._total(endBuild-startBuild);
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
-            return overFlow!=0;
+            return overflow!=0;
+        }
+
+        bool buildNeighborListsBinTeams(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
+            Kokkos::Timer buildTimer;
+            double startBuild= buildTimer.seconds();
+            const size_t N = soa1.size();
+            const size_t M = soa2.size();
+            spdlog::debug("VerletListsKokkosTraversalTeams::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
+                        soa2.size());
+
+            if (N == 0 || M == 0) {
+                spdlog::debug(
+                    "VerletListsKokkosTraversalTeams::performSoATraversal: skipping kernel launch (soa1.size()={}, "
+                    "soa2.size()={})",
+                    N, M);
+                return false;
+            }
+            const size_t maxNeighbors = _maxNeighbors;
+            const FloatPrecision interactionLength = _cutoff + this->getVerletSkin();
+            const FloatPrecision interactionLengthSqr = interactionLength * interactionLength;
+            const auto soa1Device = soa1.deviceView();
+            const auto soa2Device = soa2.deviceView();
+            // Device-side overflow flag
+            Kokkos::View<int, DeviceSpace> overflowFlag("overflowFlag");
+            Kokkos::deep_copy(overflowFlag, 0);
+
+            Kokkos::View<int*> cellIds("cellIdx",N);
+            Kokkos::View<int*> partIds("particleIdx",N);
+            auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+            Grid g = _grid;
+            double startKernel = buildTimer.seconds();
+            Kokkos::parallel_for("vl_kokkos_rebuild_cellIdx", rangePolicy, KOKKOS_LAMBDA(const int i) {
+
+                const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+                const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+                const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+
+                int cellId = g.cellOf(x1,y1,z1);
+                cellIds(i)= cellId;
+                partIds(i) = i;
+            });
+            Kokkos::fence();
+
+            Kokkos::Experimental::sort_by_key(typename DeviceSpace::execution_space{}, cellIds, partIds);
+            Kokkos::View<int*> cellStart("cellStart", g.nCells+1);
+            Kokkos::deep_copy(cellStart, N); 
+            Kokkos::parallel_for("cell_bounds", N, KOKKOS_LAMBDA(const int k) {
+                const int c = cellIds(k);
+                if (k == 0 || c != cellIds(k-1)) cellStart(c) = k;
+            });
+
+            using ExecSpace = typename DeviceSpace::execution_space;
+            using MemberType = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
+            using CounterView = Kokkos::View<size_t*, typename ExecSpace::scratch_memory_space,
+                                            Kokkos::MemoryUnmanaged>;
+            const size_t scratchBytes = CounterView::shmem_size(1);
+            Kokkos::View<int, DeviceSpace> overflowFlag("overflowFlag");
+
+            auto teamPolicy = Kokkos::TeamPolicy<ExecSpace>(N, Kokkos::AUTO)
+                                  .set_scratch_size(0, Kokkos::PerTeam(scratchBytes));
+            
+            Kokkos::parallel_for("vl_kokkos_rebuild_teams", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
+                const int i = teamHandle.league_rank();
+
+                const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
+                const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
+                const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+
+                int nbr[27];
+                g.neighborCells(g.cellOf(x1, y1, z1), nbr);
+
+                CounterView count(teamHandle.team_scratch(0), 1);
+                Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() { count(0) = 0; });
+                teamHandle.team_barrier();
+                for (int s = 0; s < 27; ++s) {
+                    const int c = nbr[s];
+                    Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, cellStart(c+1)-cellStart(c)), [&](const size_t k) {
+                        const int j = partIds(cellStart(c)+k);
+
+                        const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(j);
+                        const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(j);
+                        const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(j);
+                        const auto dx = x1 - x2;
+                        const auto dy = y1 - y2;
+                        const auto dz = z1 - z2;
+                        const auto distSquared = dx * dx + dy * dy + dz * dz;
+
+                        if (distSquared < interactionLengthSqr) {
+                            const size_t slot = Kokkos::atomic_fetch_add(&count(0), size_t(1));
+                            if (slot >= maxNeighbors) {
+                                Kokkos::atomic_store(&overflowFlag(), 1);
+                            } else {
+                                entries(i * maxNeighbors + slot) = j;
+                            }
+                        }
+                    });
+                    teamHandle.team_barrier();
+                }
+                teamHandle.team_barrier();
+
+                Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
+                    const size_t finalCount = count(0) < maxNeighbors ? count(0) : maxNeighbors;
+                    offsets(i) = i * maxNeighbors + finalCount;
+                });
+            });
+            Kokkos::fence();
+            double endBuild = buildTimer.seconds();
+            _sectionTimes._buildNL._total(endBuild-startBuild);
+            int overflow = 0;
+            Kokkos::deep_copy(overflow, overflowFlag);
+            return overflow!=0;
         }
         
         template <typename Traversal>
