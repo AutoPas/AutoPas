@@ -654,6 +654,29 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
         
         }
 
+        void buildCellList(Kokkos::View<int*> cellIds, Kokkos::View<int*> partIds, Kokkos::View<int*> cellStart, const Particle_T::KokkosSoAArraysType::deviceView& soa){
+            Grid g = _grid;
+            Kokkos::parallel_for("vl_kokkos_rebuild_cellIdx", rangePolicy, KOKKOS_LAMBDA(const int i) {
+
+                const auto x1 = soa.template operator()<Particle_T::AttributeNames::posX, true>(i);
+                const auto y1 = soa.template operator()<Particle_T::AttributeNames::posY, true>(i);
+                const auto z1 = soa.template operator()<Particle_T::AttributeNames::posZ, true>(i);
+
+                int cellId = g.cellOf(x1,y1,z1);
+                cellIds(i)= cellId;
+                partIds(i) = i;
+            });
+            Kokkos::fence();
+
+            Kokkos::Experimental::sort_by_key(typename DeviceSpace::execution_space{}, cellIds, partIds);
+            Kokkos::deep_copy(cellStart, N); 
+            Kokkos::parallel_for("cell_bounds", N, KOKKOS_LAMBDA(const int k) {
+                const int c = cellIds(k);
+                if (k == 0 || c != cellIds(k-1)) cellStart(c) = k;
+            });
+            Kokkos::fence();
+        }
+
         bool buildNeighborListsBinFlat(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
             Kokkos::Timer buildTimer;
             double startBuild= buildTimer.seconds();
@@ -684,25 +707,8 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
             Grid g = _grid;
             double startKernel = buildTimer.seconds();
-            Kokkos::parallel_for("vl_kokkos_rebuild_cellIdx", rangePolicy, KOKKOS_LAMBDA(const int i) {
-
-                const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
-                const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
-                const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
-
-                int cellId = g.cellOf(x1,y1,z1);
-                cellIds(i)= cellId;
-                partIds(i) = i;
-            });
-            Kokkos::fence();
-
-            Kokkos::Experimental::sort_by_key(typename DeviceSpace::execution_space{}, cellIds, partIds);
             Kokkos::View<int*> cellStart("cellStart", g.nCells+1);
-            Kokkos::deep_copy(cellStart, N); 
-            Kokkos::parallel_for("cell_bounds", N, KOKKOS_LAMBDA(const int k) {
-                const int c = cellIds(k);
-                if (k == 0 || c != cellIds(k-1)) cellStart(c) = k;
-            });
+            buildCellList(cellIds,partIds,cellStart,soa1Device);
 
             Kokkos::parallel_for("vl_kokkos_rebuild_cells", rangePolicy, KOKKOS_LAMBDA(const int i) {
 
@@ -775,26 +781,8 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             Kokkos::View<int*> partIds("particleIdx",N);
             auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
             Grid g = _grid;
-            double startKernel = buildTimer.seconds();
-            Kokkos::parallel_for("vl_kokkos_rebuild_cellIdx", rangePolicy, KOKKOS_LAMBDA(const int i) {
-
-                const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
-                const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
-                const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
-
-                int cellId = g.cellOf(x1,y1,z1);
-                cellIds(i)= cellId;
-                partIds(i) = i;
-            });
-            Kokkos::fence();
-
-            Kokkos::Experimental::sort_by_key(typename DeviceSpace::execution_space{}, cellIds, partIds);
             Kokkos::View<int*> cellStart("cellStart", g.nCells+1);
-            Kokkos::deep_copy(cellStart, N); 
-            Kokkos::parallel_for("cell_bounds", N, KOKKOS_LAMBDA(const int k) {
-                const int c = cellIds(k);
-                if (k == 0 || c != cellIds(k-1)) cellStart(c) = k;
-            });
+            buildCellList(cellIds,partIds,cellStart,soa1Device);
 
             using ExecSpace = typename DeviceSpace::execution_space;
             using MemberType = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
