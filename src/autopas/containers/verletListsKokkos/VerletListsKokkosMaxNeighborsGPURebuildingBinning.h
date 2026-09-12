@@ -12,6 +12,7 @@
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
+#include <Kokkos_Sort.hpp>
 
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/utils/KokkosAoS.h"
@@ -85,7 +86,7 @@ template <class Particle_T>
 class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContainerInterface<Particle_T> {
     public:
     VerletListsKokkosMaxNeighborsGPURebuildingBinning(DataLayoutOption dataLayout, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double skin, const double cutoff)
-        : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin), _dataLayout(dataLayout), _cutoff(cutoff) {
+        : ParticleContainerInterface<Particle_T>(boxMin, boxMax, skin), _dataLayout(dataLayout), _cutoff(cutoff), _grid(boxMin,boxMax,skin,cutoff) {
             if (dataLayout == DataLayoutOption::aos) {
                 _aosUpToDate = true;
             }
@@ -94,7 +95,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             }
             _ownedParticles.setLayout(dataLayout);
             _haloParticles.setLayout(dataLayout); 
-            _grid = Grid{boxMin,boxMax,skin,cutoff};
+           
     }
     
     [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletListsKokkosMaxNeighborsGPURebuildingBinning; }
@@ -227,13 +228,13 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             }
             double endAlloc = rebuildTimer.seconds();
             const bool ownedOverflow = _useTeamsRebuild
-                ? buildNeighborListsTeams(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view)
-                : buildNeighborListsFlat(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view);
+                ? buildNeighborListsBinTeams(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view)
+                : buildNeighborListsBinFlat(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view);
 
             
             const bool haloOverflow = haloSoA.size()> 0 ? (_useTeamsRebuild
-                ? buildNeighborListsTeams(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view)
-                : buildNeighborListsFlat(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view)):false;
+                ? buildNeighborListsBinTeams(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view)
+                : buildNeighborListsBinFlat(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view)):false;
             if (!ownedOverflow && !haloOverflow) {
                 _sectionTimes._allocation.addTiming(endAlloc-startAlloc);
                 break;
@@ -740,7 +741,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
                 offsets(i) = i * maxNeighbors + count;
             });
             double endBuild = buildTimer.seconds();
-            _sectionTimes._buildNL._total(endBuild-startBuild);
+            _sectionTimes._buildNL._total.addTiming(endBuild-startBuild);
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
             return overflow!=0;
@@ -800,7 +801,6 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             using CounterView = Kokkos::View<size_t*, typename ExecSpace::scratch_memory_space,
                                             Kokkos::MemoryUnmanaged>;
             const size_t scratchBytes = CounterView::shmem_size(1);
-            Kokkos::View<int, DeviceSpace> overflowFlag("overflowFlag");
 
             auto teamPolicy = Kokkos::TeamPolicy<ExecSpace>(N, Kokkos::AUTO)
                                   .set_scratch_size(0, Kokkos::PerTeam(scratchBytes));
@@ -851,7 +851,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             });
             Kokkos::fence();
             double endBuild = buildTimer.seconds();
-            _sectionTimes._buildNL._total(endBuild-startBuild);
+            _sectionTimes._buildNL._total.addTiming(endBuild-startBuild);
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
             return overflow!=0;

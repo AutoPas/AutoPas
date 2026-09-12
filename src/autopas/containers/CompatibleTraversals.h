@@ -241,6 +241,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         case ContainerOption::verletListsKokkosMaxNeighborsGPURebuilding: {
           return allKokkosVLCompatibleTraversals();
         }
+	case ContainerOption::verletListsKokkosMaxNeighborsGPURebuildingBinning: {
+          return allKokkosVLCompatibleTraversals();
+        }							  
         case ContainerOption::verletListsCells: {
           return allVLCCompatibleTraversals();
         }

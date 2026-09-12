@@ -546,7 +546,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
             double endPrep = buildTimer.seconds();
             double startKernel = buildTimer.seconds();
             
-            Kokkos::parallel_for("vl_kokkos_rebuild_teams", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
+            auto rebuildKernel = KOKKOS_LAMBDA(const MemberType& teamHandle) {
                 const int i = teamHandle.league_rank();
 
                 const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
@@ -582,7 +582,9 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                     const size_t finalCount = count(0) < maxNeighbors ? count(0) : maxNeighbors;
                     offsets(i) = i * maxNeighbors + finalCount;
                 });
-            });
+            };
+	    spdlog::info("team size {}", teamPolicy.team_size_recommended(rebuildKernel, Kokkos::ParallelForTag()));
+            Kokkos::parallel_for("vl_kokkos_rebuild_teams", teamPolicy, rebuildKernel);
             Kokkos::fence();
             double endKernel = buildTimer.seconds();
             spdlog::info("Team kernel launch complete, checking for overflow...");

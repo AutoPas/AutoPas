@@ -873,7 +873,7 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
 
     SectionTimings _sectionTimes{};
 
-    bool _useTeamsRebuild {false};  
+    bool _useTeamsRebuild {true};  
 };
 
 } 
