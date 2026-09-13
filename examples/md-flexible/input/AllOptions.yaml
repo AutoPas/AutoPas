@@ -74,6 +74,8 @@ Objects:
     0:
       particles-per-dimension        :  [10, 10, 10]
       particle-spacing               :  1.1225
+      # Alternatively to particle-spacing, particle-density can be specified:
+      # particle-density             :  0.7071
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
       # For single-site simulations, particle-type-id fills the object with single-site LJ molecules with the LJ parameters
@@ -93,15 +95,21 @@ Objects:
   CubeUniform:
     0:
       numberOfParticles              :  100
+      # Alternatively to numberOfParticles, particle-density can be specified:
+      # particle-density             :  0.1
       box-length                     :  [10, 10, 10]
       bottomLeftCorner               :  [15, 0, 0]
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
   CubeClosestPacked:
     0:
+      # structure can be either 'fcc' (face-centered cubic, default) or 'hcp' (hexagonal closest packing)
+      structure                      :  fcc
       box-length                     :  [4, 4, 4]
       bottomLeftCorner               :  [0, 0, 15]
       particle-spacing               :  1.1225
+      # Alternatively to particle-spacing, particle-density can be specified:
+      # particle-density             :  1.0
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
   Sphere:

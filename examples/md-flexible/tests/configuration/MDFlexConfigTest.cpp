@@ -17,8 +17,8 @@ TEST_F(MDFlexConfigTest, GridBoxMinMax) {
 
   MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = {0, 0, 0};
-  std::array<double, 3> expectedBoxMax = {9.75, 9.75, 9.75};
+  std::array<double, 3> expectedBoxMin = {5, 5, 5};
+  std::array<double, 3> expectedBoxMax = {10, 10, 10};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
@@ -31,8 +31,8 @@ TEST_F(MDFlexConfigTest, SphereBoxMinMax) {
 
   MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = {-10.75, -25.75, -15.75};
-  std::array<double, 3> expectedBoxMax = {20.75, 5.75, 15.75};
+  std::array<double, 3> expectedBoxMin = {-10, -25, -15};
+  std::array<double, 3> expectedBoxMax = {20, 5, 15};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
@@ -46,7 +46,7 @@ TEST_F(MDFlexConfigTest, GaussBoxMinMax) {
 
   MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = {0.0, 0.0, 0.0};
+  std::array<double, 3> expectedBoxMin = {15.0, 0.0, 5.0};
   std::array<double, 3> expectedBoxMax = {23.0, 8.0, 13.0};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
@@ -62,7 +62,7 @@ TEST_F(MDFlexConfigTest, UniformBoxMinMax) {
   MDFlexConfig configuration(3, argv);
 
   std::array<double, 3> expectedBoxMin = {0, 0, -15};
-  std::array<double, 3> expectedBoxMax = {10, 10, 1};
+  std::array<double, 3> expectedBoxMax = {10, 10, -5};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
@@ -76,8 +76,8 @@ TEST_F(MDFlexConfigTest, ClosestPackedBoxMinMax) {
 
   MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = {-0.5, -0.5, 0.};
-  std::array<double, 3> expectedBoxMax = {7., 7.5, 27.5};
+  std::array<double, 3> expectedBoxMin = {0., 0., 20.};
+  std::array<double, 3> expectedBoxMax = {6.5, 7., 27.};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
@@ -91,9 +91,9 @@ TEST_F(MDFlexConfigTest, calcAutoPasBox) {
 
   MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = {-10.75, -25.75, -15.75};
+  std::array<double, 3> expectedBoxMin = {-10, -25, -15};
   EXPECT_EQ(configuration.boxMin.value, expectedBoxMin);
-  std::array<double, 3> expectedBoxMax = {23, 10, 27.5};
+  std::array<double, 3> expectedBoxMax = {23, 10, 27};
   EXPECT_EQ(configuration.boxMax.value, expectedBoxMax);
 }
 
@@ -225,4 +225,20 @@ TEST_F(MDFlexConfigTest, correctMolParsing) {
   for (int i = 0; i < 3; i++) {
     EXPECT_EQ(expectedMoI1[i], momentOfInertia1[i]);
   }
+}
+
+TEST_F(MDFlexConfigTest, UserSpecifiedBoxMinMaxPreserved) {
+  MDFlexConfig config;
+  config.boxMin.value = {0.0, 0.0, 0.0};
+  config.boxMax.value = {10.0, 10.0, 10.0};
+
+  const CubeGrid grid({0., 0., 0.}, 0, {10, 10, 10}, 1.0, {0., 0., 0.});
+  config.cubeGridObjects.push_back(grid);
+
+  config.calcSimulationBox();
+
+  const std::array<double, 3> expectedBoxMin = {0.0, 0.0, 0.0};
+  const std::array<double, 3> expectedBoxMax = {10.0, 10.0, 10.0};
+  EXPECT_EQ(config.boxMin.value, expectedBoxMin);
+  EXPECT_EQ(config.boxMax.value, expectedBoxMax);
 }

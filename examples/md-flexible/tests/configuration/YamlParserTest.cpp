@@ -68,3 +68,223 @@ TEST_F(YamlParserTest, loadBalancerAllParsedAsALL) {
   ASSERT_EQ(parsedOptions.size(), 1);
   EXPECT_EQ(*parsedOptions.begin(), LoadBalancerOption::all);
 }
+
+/**
+ * Tests parsing CubeGrid with particle-density, particle-spacing, and mutual exclusivity.
+ */
+TEST_F(YamlParserTest, parseCubeGridSpacingAndDensity) {
+  MDFlexConfig config;
+
+  // Valid spacing
+  {
+    const auto node = YAML::Load(
+        "particles-per-dimension: [2, 2, 2]\n"
+        "particle-spacing: 1.5\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    const auto obj = MDFlexParser::YamlParser::parseCubeGridObject(config, node, errors);
+    EXPECT_TRUE(errors.empty());
+    EXPECT_DOUBLE_EQ(obj.getParticleSpacing(), 1.5);
+    EXPECT_DOUBLE_EQ(obj.getParticleDensity(), 1.0 / (1.5 * 1.5 * 1.5));
+  }
+
+  // Valid density
+  {
+    const auto node = YAML::Load(
+        "particles-per-dimension: [2, 2, 2]\n"
+        "particle-density: 8.0\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    const auto obj = MDFlexParser::YamlParser::parseCubeGridObject(config, node, errors);
+    EXPECT_TRUE(errors.empty());
+    EXPECT_DOUBLE_EQ(obj.getParticleSpacing(), 0.5);
+    EXPECT_DOUBLE_EQ(obj.getParticleDensity(), 8.0);
+  }
+
+  // Both spacing and density specified -> error
+  {
+    const auto node = YAML::Load(
+        "particles-per-dimension: [2, 2, 2]\n"
+        "particle-spacing: 1.0\n"
+        "particle-density: 1.0\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    MDFlexParser::YamlParser::parseCubeGridObject(config, node, errors);
+    EXPECT_FALSE(errors.empty());
+  }
+
+  // Neither spacing nor density specified -> error
+  {
+    const auto node = YAML::Load(
+        "particles-per-dimension: [2, 2, 2]\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    MDFlexParser::YamlParser::parseCubeGridObject(config, node, errors);
+    EXPECT_FALSE(errors.empty());
+  }
+}
+
+/**
+ * Tests parsing CubeUniform with numberOfParticles, particle-density, and mutual exclusivity.
+ */
+TEST_F(YamlParserTest, parseCubeUniformCountAndDensity) {
+  MDFlexConfig config;
+
+  // Valid numberOfParticles
+  {
+    const auto node = YAML::Load(
+        "numberOfParticles: 100\n"
+        "box-length: [2, 2, 2]\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    const auto obj = MDFlexParser::YamlParser::parseCubeUniformObject(config, node, errors);
+    EXPECT_TRUE(errors.empty());
+    EXPECT_EQ(obj.getParticlesTotal(), 100);
+    EXPECT_DOUBLE_EQ(obj.getParticleDensity(), 100.0 / 8.0);
+  }
+
+  // Valid density
+  {
+    const auto node = YAML::Load(
+        "particle-density: 2.5\n"
+        "box-length: [2, 2, 2]\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    const auto obj = MDFlexParser::YamlParser::parseCubeUniformObject(config, node, errors);
+    EXPECT_TRUE(errors.empty());
+    EXPECT_EQ(obj.getParticlesTotal(), 20);  // 2.5 * 8 = 20
+    EXPECT_DOUBLE_EQ(obj.getParticleDensity(), 2.5);
+  }
+
+  // Both count and density specified -> error
+  {
+    const auto node = YAML::Load(
+        "numberOfParticles: 100\n"
+        "particle-density: 2.5\n"
+        "box-length: [2, 2, 2]\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    MDFlexParser::YamlParser::parseCubeUniformObject(config, node, errors);
+    EXPECT_FALSE(errors.empty());
+  }
+
+  // Neither count nor density specified -> error
+  {
+    const auto node = YAML::Load(
+        "box-length: [2, 2, 2]\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    MDFlexParser::YamlParser::parseCubeUniformObject(config, node, errors);
+    EXPECT_FALSE(errors.empty());
+  }
+}
+
+/**
+ * Tests parsing CubeClosestPacked with structure, particle-density, particle-spacing, and mutual exclusivity.
+ */
+TEST_F(YamlParserTest, parseCubeClosestPackedStructureAndDensity) {
+  MDFlexConfig config;
+
+  // Default structure is FCC, with spacing
+  {
+    const auto node = YAML::Load(
+        "box-length: [4, 4, 4]\n"
+        "particle-spacing: 1.0\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    const auto obj = MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
+    EXPECT_TRUE(errors.empty());
+    EXPECT_EQ(obj.getStructure(), CubeClosestPacked::Structure::fcc);
+    EXPECT_DOUBLE_EQ(obj.getParticleSpacing(), 1.0);
+  }
+
+  // Explicit HCP structure
+  {
+    const auto node = YAML::Load(
+        "structure: hcp\n"
+        "box-length: [4, 4, 4]\n"
+        "particle-spacing: 1.0\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    const auto obj = MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
+    EXPECT_TRUE(errors.empty());
+    EXPECT_EQ(obj.getStructure(), CubeClosestPacked::Structure::hcp);
+  }
+
+  // Invalid structure -> error
+  {
+    const auto node = YAML::Load(
+        "structure: invalid_struct\n"
+        "box-length: [4, 4, 4]\n"
+        "particle-spacing: 1.0\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
+    EXPECT_FALSE(errors.empty());
+  }
+
+  // Valid density
+  {
+    const auto node = YAML::Load(
+        "structure: fcc\n"
+        "box-length: [4, 4, 4]\n"
+        "particle-density: 1.0\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    const auto obj = MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
+    EXPECT_TRUE(errors.empty());
+    EXPECT_EQ(obj.getStructure(), CubeClosestPacked::Structure::fcc);
+    EXPECT_DOUBLE_EQ(obj.getParticleDensity(), 1.0);
+    EXPECT_DOUBLE_EQ(obj.getParticleSpacing(), std::cbrt(std::sqrt(2.0)));
+  }
+
+  // Both spacing and density -> error
+  {
+    const auto node = YAML::Load(
+        "box-length: [4, 4, 4]\n"
+        "particle-spacing: 1.0\n"
+        "particle-density: 1.0\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
+    EXPECT_FALSE(errors.empty());
+  }
+
+  // Neither spacing nor density -> error
+  {
+    const auto node = YAML::Load(
+        "box-length: [4, 4, 4]\n"
+        "bottomLeftCorner: [0, 0, 0]\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
+    EXPECT_FALSE(errors.empty());
+  }
+}

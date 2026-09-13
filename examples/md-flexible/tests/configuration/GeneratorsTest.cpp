@@ -10,6 +10,9 @@
 #include "generators/src/GridGenerator.h"
 #include "generators/src/UniformGenerator.h"
 #include "src/configuration/YamlParser.h"
+#include "src/configuration/objects/CubeClosestPacked.h"
+#include "src/configuration/objects/CubeGrid.h"
+#include "src/configuration/objects/CubeUniform.h"
 #include "testingHelpers/commonTypedefs.h"
 
 TEST_F(GeneratorsTest, GridFillwithBoxMin) {
@@ -103,4 +106,113 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
     ids.insert(particleId);
   }
   EXPECT_EQ(ids.size(), configuration.particles.size());
+}
+
+TEST_F(GeneratorsTest, CubeClosestPackedFCC) {
+  const std::array<double, 3> velocity = {0., 0., 0.};
+  const unsigned long typeId = 0;
+  const double spacing = 1.0;
+  const std::array<double, 3> boxLength = {4.0, 4.0, 4.0};
+  const std::array<double, 3> bottomLeft = {0., 0., 0.};
+
+  CubeClosestPacked cube(velocity, typeId, spacing, boxLength, bottomLeft, CubeClosestPacked::Structure::fcc);
+  EXPECT_EQ(cube.getStructure(), CubeClosestPacked::Structure::fcc);
+
+  std::vector<ParticleType> particles;
+  cube.generate(particles);
+
+  EXPECT_EQ(particles.size(), cube.getParticlesTotal());
+  EXPECT_GT(particles.size(), 0);
+
+  // Verify all particles are inside bounds
+  for (const auto &p : particles) {
+    for (size_t d = 0; d < 3; ++d) {
+      EXPECT_GE(p.getR()[d], bottomLeft[d]);
+      EXPECT_LT(p.getR()[d], bottomLeft[d] + boxLength[d]);
+    }
+  }
+
+  // Check nearest-neighbor distance among first few particles
+  double minDistance = std::numeric_limits<double>::max();
+  for (size_t i = 0; i < std::min<size_t>(particles.size(), 30); ++i) {
+    for (size_t j = i + 1; j < std::min<size_t>(particles.size(), 30); ++j) {
+      const auto diff = autopas::utils::ArrayMath::sub(particles[i].getR(), particles[j].getR());
+      const double dist = autopas::utils::ArrayMath::dot(diff, diff);
+      minDistance = std::min(minDistance, std::sqrt(dist));
+    }
+  }
+  EXPECT_NEAR(minDistance, spacing, 1e-5);
+}
+
+TEST_F(GeneratorsTest, CubeClosestPackedHCP) {
+  const std::array<double, 3> velocity = {0., 0., 0.};
+  const unsigned long typeId = 0;
+  const double spacing = 1.0;
+  const std::array<double, 3> boxLength = {4.0, 4.0, 4.0};
+  const std::array<double, 3> bottomLeft = {0., 0., 0.};
+
+  CubeClosestPacked cube(velocity, typeId, spacing, boxLength, bottomLeft, CubeClosestPacked::Structure::hcp);
+  EXPECT_EQ(cube.getStructure(), CubeClosestPacked::Structure::hcp);
+
+  std::vector<ParticleType> particles;
+  cube.generate(particles);
+
+  EXPECT_EQ(particles.size(), cube.getParticlesTotal());
+  EXPECT_GT(particles.size(), 0);
+
+  for (const auto &p : particles) {
+    for (size_t d = 0; d < 3; ++d) {
+      EXPECT_GE(p.getR()[d], bottomLeft[d]);
+      EXPECT_LT(p.getR()[d], bottomLeft[d] + boxLength[d]);
+    }
+  }
+}
+
+TEST_F(GeneratorsTest, CubeClosestPackedDensity) {
+  const std::array<double, 3> velocity = {0., 0., 0.};
+  const unsigned long typeId = 0;
+  const double density = 1.0;
+  const std::array<double, 3> boxLength = {4.0, 4.0, 4.0};
+  const std::array<double, 3> bottomLeft = {0., 0., 0.};
+
+  CubeClosestPacked cube(velocity, typeId, 0.0, boxLength, bottomLeft, density, CubeClosestPacked::Structure::fcc);
+  EXPECT_DOUBLE_EQ(cube.getParticleDensity(), density);
+  EXPECT_DOUBLE_EQ(cube.getParticleSpacing(), std::cbrt(std::sqrt(2.0) / density));
+
+  std::vector<ParticleType> particles;
+  cube.generate(particles);
+  EXPECT_EQ(particles.size(), cube.getParticlesTotal());
+}
+
+TEST_F(GeneratorsTest, CubeGridDensity) {
+  const std::array<double, 3> velocity = {0., 0., 0.};
+  const unsigned long typeId = 0;
+  const std::array<size_t, 3> particlesPerDim = {2, 2, 2};
+  const std::array<double, 3> bottomLeft = {0., 0., 0.};
+  const double density = 8.0;
+
+  CubeGrid grid(velocity, typeId, particlesPerDim, 0.0, bottomLeft, density);
+  EXPECT_DOUBLE_EQ(grid.getParticleDensity(), 8.0);
+  EXPECT_DOUBLE_EQ(grid.getParticleSpacing(), 0.5);
+
+  const std::array<double, 3> expectedBoxMax = {1.0, 1.0, 1.0};
+  for (size_t d = 0; d < 3; ++d) {
+    EXPECT_NEAR(grid.getBoxMax()[d], expectedBoxMax[d], 1e-10);
+  }
+}
+
+TEST_F(GeneratorsTest, CubeUniformDensity) {
+  const std::array<double, 3> velocity = {0., 0., 0.};
+  const unsigned long typeId = 0;
+  const std::array<double, 3> boxLength = {2.0, 2.0, 2.0};
+  const std::array<double, 3> bottomLeft = {0., 0., 0.};
+  const double density = 2.5;
+
+  CubeUniform uniform(velocity, typeId, 0, boxLength, bottomLeft, density);
+  EXPECT_DOUBLE_EQ(uniform.getParticleDensity(), 2.5);
+  EXPECT_EQ(uniform.getParticlesTotal(), 20);
+
+  std::vector<ParticleType> particles;
+  uniform.generate(particles);
+  EXPECT_EQ(particles.size(), 20);
 }

@@ -478,8 +478,8 @@ void MDFlexConfig::calcSimulationBox() {
     return;
   }
 
-  std::array<double, 3> totalBoxMin{std::numeric_limits<double>::min(), std::numeric_limits<double>::min(), std::numeric_limits<double>::min()};
-  std::array<double, 3> totalBoxMax{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()};
+  std::array<double, 3> totalBoxMin{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()};
+  std::array<double, 3> totalBoxMax{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest()};
 
   bool hasParticleObjects = false;
   auto resizeToObjectLimits = [&](const auto &objectCollection) {
