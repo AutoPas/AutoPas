@@ -480,12 +480,19 @@ class MDFlexConfig {
    * boxMin
    */
   MDFlexOption<std::array<double, 3>, 0> boxMin{
-      {0, 0, 0}, "box-min", true, "Lower front left corner of the simulation box."};
+      {std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()},
+      "box-min",
+      true,
+      "Lower front left corner of the simulation box."};
   /**
    * boxMax
    */
   MDFlexOption<std::array<double, 3>, 0> boxMax{
-      {0, 0, 0}, "box-max", true, "Upper back right corner of the simulation box."};
+      {std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
+       std::numeric_limits<double>::lowest()},
+      "box-max",
+      true,
+      "Upper back right corner of the simulation box."};
 
   /**
    * loadBalancingInterval

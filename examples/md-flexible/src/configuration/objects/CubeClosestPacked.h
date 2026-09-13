@@ -143,7 +143,7 @@ class CubeClosestPacked : public Object {
     output << std::setw(_valueOffset) << std::left << "structure"
            << ":  " << (_structure == FCC ? "fcc" : "hcp") << "\n";
     output << std::setw(_valueOffset) << std::left << "centered"
-           << ":  " << std::to_string(_centered) << "\n";
+           << ":  " << (_centered ? "true" : "false") << "\n";
     output << Object::to_string();
     return output.str();
   }

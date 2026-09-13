@@ -815,7 +815,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
             velocity, typeID,
             std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
                                   config.particlesPerDim.value},
-            bottomLeftCorner, config.particleDensity.value);
+            config.particleSpacing.value, bottomLeftCorner);
         break;
       }
       case MDFlexConfig::GeneratorOption::gaussian: {
