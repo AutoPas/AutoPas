@@ -117,7 +117,7 @@ TEST_F(GeneratorsTest, CubeClosestPackedFCC) {
 
   const CubeClosestPacked cube(velocity, typeId, spacing, boxLength, bottomLeft,
                                CubeClosestPacked::LatticeStructure::FCC);
-  EXPECT_EQ(cube.getStructure(), CubeClosestPacked::LatticeStructure::FCC);
+  EXPECT_EQ(cube.getLatticeStructure(), CubeClosestPacked::LatticeStructure::FCC);
 
   std::vector<ParticleType> particles;
   cube.generate(particles);
@@ -154,7 +154,7 @@ TEST_F(GeneratorsTest, CubeClosestPackedHCP) {
 
   const CubeClosestPacked cube(velocity, typeId, spacing, boxLength, bottomLeft,
                                CubeClosestPacked::LatticeStructure::HCP);
-  EXPECT_EQ(cube.getStructure(), CubeClosestPacked::LatticeStructure::HCP);
+  EXPECT_EQ(cube.getLatticeStructure(), CubeClosestPacked::LatticeStructure::HCP);
 
   std::vector<ParticleType> particles;
   cube.generate(particles);

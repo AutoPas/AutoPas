@@ -69,9 +69,17 @@ class CubeClosestPacked : public Object {
 
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
+  /**
+   * Returns the particle density.
+   * @return density of particles.
+   */
   [[nodiscard]] double getParticleDensity() const { return _density; }
 
-  [[nodiscard]] LatticeStructure getStructure() const { return _structure; }
+  /**
+   * Returns the lattice structure of the closest packing generator.
+   * @return the lattice structure of the closest packing generator.
+   */
+  [[nodiscard]] LatticeStructure getLatticeStructure() const { return _structure; }
 
   /**
    * Returns the total number of particles which will be / have been generated.
