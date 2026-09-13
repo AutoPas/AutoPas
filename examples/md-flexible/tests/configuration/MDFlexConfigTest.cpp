@@ -15,10 +15,10 @@ TEST_F(MDFlexConfigTest, GridBoxMinMax) {
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
-  MDFlexConfig configuration(3, argv);
+  const MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = {5, 5, 5};
-  std::array<double, 3> expectedBoxMax = {10, 10, 10};
+  constexpr std::array<double, 3> expectedBoxMin = {5, 5, 5};
+  constexpr std::array<double, 3> expectedBoxMax = {10, 10, 10};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
@@ -29,10 +29,10 @@ TEST_F(MDFlexConfigTest, SphereBoxMinMax) {
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
-  MDFlexConfig configuration(3, argv);
+  const MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = {-10, -25, -15};
-  std::array<double, 3> expectedBoxMax = {20, 5, 15};
+  constexpr std::array<double, 3> expectedBoxMin = {-10, -25, -15};
+  constexpr std::array<double, 3> expectedBoxMax = {20, 5, 15};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
@@ -44,10 +44,10 @@ TEST_F(MDFlexConfigTest, GaussBoxMinMax) {
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
-  MDFlexConfig configuration(3, argv);
+  const MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = {15.0, 0.0, 5.0};
-  std::array<double, 3> expectedBoxMax = {23.0, 8.0, 13.0};
+  constexpr std::array<double, 3> expectedBoxMin = {15.0, 0.0, 5.0};
+  constexpr std::array<double, 3> expectedBoxMax = {23.0, 8.0, 13.0};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
@@ -59,10 +59,10 @@ TEST_F(MDFlexConfigTest, UniformBoxMinMax) {
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
-  MDFlexConfig configuration(3, argv);
+  const MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = {0, 0, -15};
-  std::array<double, 3> expectedBoxMax = {10, 10, -5};
+  constexpr std::array<double, 3> expectedBoxMin = {0, 0, -15};
+  constexpr std::array<double, 3> expectedBoxMax = {10, 10, -5};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
@@ -74,10 +74,10 @@ TEST_F(MDFlexConfigTest, ClosestPackedBoxMinMax) {
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
-  MDFlexConfig configuration(3, argv);
+  const MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = {0., 0., 20.};
-  std::array<double, 3> expectedBoxMax = {6.5, 7., 27.};
+  constexpr std::array<double, 3> expectedBoxMin = {0., 0., 20.};
+  constexpr std::array<double, 3> expectedBoxMax = {6.5, 7., 27.};
 
   EXPECT_THAT(configuration.boxMin.value, expectedBoxMin);
   EXPECT_THAT(configuration.boxMax.value, expectedBoxMax);
@@ -89,11 +89,11 @@ TEST_F(MDFlexConfigTest, calcAutoPasBox) {
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
-  MDFlexConfig configuration(3, argv);
+  const MDFlexConfig configuration(3, argv);
 
-  std::array<double, 3> expectedBoxMin = {-10, -25, -15};
+  constexpr std::array<double, 3> expectedBoxMin = {-10, -25, -15};
   EXPECT_EQ(configuration.boxMin.value, expectedBoxMin);
-  std::array<double, 3> expectedBoxMax = {23, 10, 27};
+  constexpr std::array<double, 3> expectedBoxMax = {23, 10, 27};
   EXPECT_EQ(configuration.boxMax.value, expectedBoxMax);
 }
 
@@ -103,7 +103,7 @@ TEST_F(MDFlexConfigTest, wrongTypeParsingInput) {
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
-  // If an invalid YAML-file is used, exceptions are catched by YamlParser, MDFlexConfig will then exit with
+  // If an invalid YAML-file is used, exceptions are caught by YamlParser, MDFlexConfig will then exit with
   // EXIT_FAILURE and write "Error when parsing configuration file." to cerr. YAML-file for this test is in
   // examples/md-flexible/tests/yamlTestFiles/incorrectParsingFile.yaml
   ASSERT_EXIT(MDFlexConfig(3, argv), testing::ExitedWithCode(1), "Error when parsing configuration file.");
@@ -115,7 +115,7 @@ TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
-  MDFlexConfig configuration(3, argv);
+  const MDFlexConfig configuration(3, argv);
 
   ASSERT_EQ(configuration.cubeGridObjects.size(), 2);
   ASSERT_EQ(configuration.cubeGridObjects.at(0).getTypeId(), 0);
@@ -129,7 +129,7 @@ TEST_F(MDFlexConfigTest, vtkRelatedProperties) {
 
   char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
 
-  MDFlexConfig configuration(3, argv);
+  const MDFlexConfig configuration(3, argv);
 
   EXPECT_THAT(configuration.vtkOutputFolder.value, "fancyFolderName");
   EXPECT_THAT(configuration.vtkFileName.value, "fancyFileName");
@@ -237,8 +237,8 @@ TEST_F(MDFlexConfigTest, UserSpecifiedBoxMinMaxPreserved) {
 
   config.calcSimulationBox();
 
-  const std::array<double, 3> expectedBoxMin = {0.0, 0.0, 0.0};
-  const std::array<double, 3> expectedBoxMax = {10.0, 10.0, 10.0};
+  constexpr std::array<double, 3> expectedBoxMin = {0.0, 0.0, 0.0};
+  constexpr std::array<double, 3> expectedBoxMax = {10.0, 10.0, 10.0};
   EXPECT_EQ(config.boxMin.value, expectedBoxMin);
   EXPECT_EQ(config.boxMax.value, expectedBoxMax);
 }

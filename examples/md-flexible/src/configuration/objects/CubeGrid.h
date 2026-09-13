@@ -18,29 +18,35 @@
 class CubeGrid : public Object {
  public:
   /**
-   * Constructor.
+   * Constructor based on the desired particle spacing.
    * @param velocity
    * @param typeId
    * @param particlesPerDim
    * @param particleSpacing
    * @param bottomLeftCorner
-   * @param density Target particle density (optional, computed from spacing if 0).
    * @param centered If true, the cell offset moved inward by 1/2 * spacing.
    */
-  CubeGrid(const std::array<double, 3> &velocity, unsigned long typeId, const std::array<size_t, 3> &particlesPerDim,
-           double particleSpacing, const std::array<double, 3> &bottomLeftCorner, const double density = 0.0,
-           const bool centered = true)
-      : Object(velocity, typeId),
-        _particlesPerDim(particlesPerDim),
-        _particleSpacing(particleSpacing),
-        _bottomLeftCorner(bottomLeftCorner),
-        _density(density),
-        _centered(centered) {
-    if (_particleSpacing <= 0.0 and _density > 0.0) {
-      _particleSpacing = std::cbrt(1.0 / _density);
-    } else if (_particleSpacing > 0.0 and _density <= 0.0) {
-      _density = 1.0 / (_particleSpacing * _particleSpacing * _particleSpacing);
-    }
+  CubeGrid(const std::array<double, 3> &velocity, const size_t typeId, const std::array<size_t, 3> &particlesPerDim,
+           const double particleSpacing, const std::array<double, 3> &bottomLeftCorner, const bool centered = true)
+      : CubeGrid(velocity, typeId, particlesPerDim, bottomLeftCorner, centered) {
+    _particleSpacing = particleSpacing;
+    _density = 1.0 / (_particleSpacing * _particleSpacing * _particleSpacing);
+  }
+
+  /**
+   * Constructor based on a target particle density. The particle spacing is computed from the density.
+   * @param velocity
+   * @param typeId
+   * @param particlesPerDim
+   * @param bottomLeftCorner
+   * @param density Target particle density.
+   * @param centered If true, the cell offset moved inward by 1/2 * spacing.
+   */
+  CubeGrid(const std::array<double, 3> &velocity, const size_t typeId, const std::array<size_t, 3> &particlesPerDim,
+           const std::array<double, 3> &bottomLeftCorner, const double density, const bool centered = true)
+      : CubeGrid(velocity, typeId, particlesPerDim, bottomLeftCorner, centered) {
+    _density = density;
+    _particleSpacing = std::cbrt(1.0 / _density);
   }
 
   /**
@@ -66,7 +72,7 @@ class CubeGrid : public Object {
    * @return number of generated particles.
    */
   [[nodiscard]] size_t getParticlesTotal() const override {
-    return std::accumulate(std::begin(_particlesPerDim), std::end(_particlesPerDim), 1, std::multiplies<double>());
+    return std::accumulate(std::begin(_particlesPerDim), std::end(_particlesPerDim), 1ul, std::multiplies<>());
   }
 
   /**
@@ -133,14 +139,24 @@ class CubeGrid : public Object {
 
  private:
   /**
+   * Internal constructor.
+   * @param velocity
+   * @param typeId
+   * @param particlesPerDim
+   * @param bottomLeftCorner
+   * @param centered If true, the cell offset moved inward by 1/2 * spacing.
+   */
+  CubeGrid(const std::array<double, 3> &velocity, const size_t typeId, const std::array<size_t, 3> &particlesPerDim,
+           const std::array<double, 3> &bottomLeftCorner, const bool centered = true)
+      : Object(velocity, typeId),
+        _particlesPerDim(particlesPerDim),
+        _bottomLeftCorner(bottomLeftCorner),
+        _centered(centered) {}
+
+  /**
    * Defines how many particles will be created in each dimension.
    */
   std::array<size_t, 3> _particlesPerDim;
-
-  /**
-   * Defines the amount of space between particles.
-   */
-  double _particleSpacing;
 
   /**
    * Stores the coordinates of the bottom left front corner.
@@ -148,12 +164,17 @@ class CubeGrid : public Object {
   std::array<double, 3> _bottomLeftCorner;
 
   /**
-   * Target particle density.
+   * Defines the amount of space between particles.
    */
-  double _density{0.0};
+  double _particleSpacing{};
 
   /**
-   *
+   * Target particle density.
+   */
+  double _density{};
+
+  /**
+   * If true, the cell offset moved inward by 1/2 * spacing.
    */
   bool _centered{true};
 };

@@ -6,18 +6,17 @@
 
 #pragma once
 
+#include <array>
 #include <cmath>
-#include <vector>
 
 #include "autopas/utils/ParticleTypeTrait.h"
-#include "autopas/utils/ThreeDimensionalMapping.h"
 
 /**
- * Generator for grids of particles.
+ * Generator for an hexagonally closest packed particle grid.
  */
 namespace autopasTools::generators::HCPGenerator {
 /**
- * Fills any container (also AutoPas object) with a hexagonally closest packed particles.
+ * Fills any container (also AutoPas object) with hexagonally closest packed particles.
  * Particle properties will be used from the default particle. Particle IDs start from the default particle.
  * @tparam Container Arbitrary container class that needs to support addParticle().
  * @param container
@@ -33,7 +32,7 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
                        const double spacing = 1.) {
   // Spacing in y direction when only moving 60° on the unit circle. Or the height in an equilateral triangle.
   const double spacingRow = spacing * sqrt(3. / 4.);
-  // Spacing in z direction. Height in an equilateral tetraeder.
+  // Spacing in z direction. Height in an equilateral tetrahedron.
   const double spacingLayer = spacing * sqrt(2. / 3.);
   // Shorter part of the bisectrix when split at the intersection of all bisectrices.
   const double xOffset = spacing * 1. / 2.;
@@ -45,11 +44,11 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
 
   size_t id = defaultParticle.getID();
   for (double z = boxMin[2]; z < boxMax[2]; z += spacingLayer) {
-    double starty = evenLayer ? boxMin[1] : boxMin[1] + yOffset;
+    const double startY = evenLayer ? boxMin[1] : boxMin[1] + yOffset;
     bool evenRow = evenLayer;  // To ensure layers are alternating as for hexagonal close packed.
-    for (double y = starty; y < boxMax[1]; y += spacingRow) {
-      double startx = evenRow ? boxMin[0] : boxMin[0] + xOffset;
-      for (double x = startx; x < boxMax[0]; x += spacing) {
+    for (double y = startY; y < boxMax[1]; y += spacingRow) {
+      const double startX = evenRow ? boxMin[0] : boxMin[0] + xOffset;
+      for (double x = startX; x < boxMax[0]; x += spacing) {
         auto p = defaultParticle;
         p.setR({x, y, z});
         p.setID(id++);

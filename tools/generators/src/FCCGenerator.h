@@ -8,10 +8,12 @@
 
 #include <array>
 #include <cmath>
-#include <vector>
 
 #include "autopas/utils/ParticleTypeTrait.h"
 
+/**
+ * Generator for an face-centered cubic (FCC) particle grid.
+ */
 namespace autopasTools::generators::FCCGenerator {
 
 /**
@@ -26,6 +28,7 @@ inline constexpr std::array<std::array<double, 3>, 4> fccBasis = {{
 
 /**
  * Calculates the number of particles generated in an FCC lattice within [boxMin, boxMax).
+ * Particle IDs start from the default particle.
  * @param boxMin
  * @param boxMax
  * @param spacing Nearest-neighbor distance d.
@@ -72,7 +75,7 @@ inline size_t getNumberOfParticles(const std::array<double, 3> &boxMin, const st
 }
 
 /**
- * Fills any container with particles arranged in a conventional cubic Face-Centered Cubic (FCC) lattice.
+ * Fills any container with particles arranged in a conventional Face-Centered Cubic (FCC) lattice.
  * @tparam Container Arbitrary container class that supports addParticle().
  * @param container
  * @param boxMin

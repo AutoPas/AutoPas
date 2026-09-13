@@ -98,10 +98,10 @@ class MDFlexConfig {
      * @param requiresArgument Indicate whether this option is a flag or takes arguments.
      * @param newDescription String describing this option. This is displayed when md-flexible is invoked with --help.
      */
-    MDFlexOption(T value, std::string newName, bool requiresArgument, std::string newDescription)
-        : requiresArgument(requiresArgument),
+    MDFlexOption(T value, std::string newName, const bool requiresArgument, std::string newDescription)
+        : value(std::move(value)),
+          requiresArgument(requiresArgument),
           name(std::move(newName)),
-          value(std::move(value)),
           description(std::move(newDescription)) {}
 
     /**
@@ -137,7 +137,7 @@ class MDFlexConfig {
    * Returns the used interaction types as deducted from the used functor(s).
    * @return set of used interaction types.
    */
-  std::set<autopas::InteractionTypeOption> getInteractionTypes() const { return _interactionTypes; }
+  [[nodiscard]] std::set<autopas::InteractionTypeOption> getInteractionTypes() const { return _interactionTypes; }
 
   /**
    * Add interaction type after recognizing a certain functor.
@@ -338,7 +338,7 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
-   * enerySensorOption
+   * energySensorOption
    */
   MDFlexOption<autopas::EnergySensorOption, __LINE__> energySensorOption{
       autopas::EnergySensorOption::rapl, "energy-sensor", true,
@@ -638,8 +638,8 @@ class MDFlexConfig {
   /**
    * closestPackingStructure
    */
-  MDFlexOption<CubeClosestPacked::Structure, __LINE__> closestPackingStructure{
-      CubeClosestPacked::Structure::fcc, "structure", true,
+  MDFlexOption<CubeClosestPacked::LatticeStructure, __LINE__> closestPackingStructure{
+      CubeClosestPacked::LatticeStructure::FCC, "structure", true,
       "Structure of the closest packing generator. Possible Values: (fcc hcp)"};
   /**
    * closestPackingCentered

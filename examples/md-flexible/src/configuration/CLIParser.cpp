@@ -150,7 +150,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
        (cliOption = getopt_long(argc, argv, "", long_options.data(), &cliOptionIndex)) != -1;) {
     string strArg;
     if (optarg != nullptr) strArg = optarg;
-    transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
+    ranges::transform(strArg, strArg.begin(), ::tolower);
     switch (cliOption) {
       case decltype(config.newton3Options)::getoptChar: {
         config.newton3Options.value = autopas::Newton3Option::parseOptions(strArg);
@@ -274,7 +274,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.tuningMaxEvidence)::getoptChar: {
         try {
-          config.tuningMaxEvidence.value = (unsigned int)stoul(strArg);
+          config.tuningMaxEvidence.value = static_cast<unsigned int>(stoul(strArg));
           if (config.tuningMaxEvidence.value < 1) {
             cerr << "Tuning max evidence has to be a positive integer!" << endl;
             displayHelp = true;
@@ -298,7 +298,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.evidenceFirstPrediction)::getoptChar: {
         try {
-          config.evidenceFirstPrediction.value = (unsigned int)stoul(strArg);
+          config.evidenceFirstPrediction.value = static_cast<unsigned int>(stoul(strArg));
           if (config.evidenceFirstPrediction.value < 2) {
             cerr << "The number of evidence for the first prediction has to be at least two!" << endl;
             displayHelp = true;
@@ -388,7 +388,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.tuningInterval)::getoptChar: {
         try {
-          config.tuningInterval.value = (unsigned int)stoul(strArg);
+          config.tuningInterval.value = static_cast<unsigned int>(stoul(strArg));
           if (config.tuningInterval.value < 1) {
             cerr << "Tuning interval has to be a positive integer!" << endl;
             displayHelp = true;
@@ -453,7 +453,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.maxTuningPhasesWithoutTest)::getoptChar: {
         try {
-          config.maxTuningPhasesWithoutTest.value = (unsigned int)stoul(strArg);
+          config.maxTuningPhasesWithoutTest.value = static_cast<unsigned int>(stoul(strArg));
           if (config.maxTuningPhasesWithoutTest.value < 1) {
             cerr << "Max tuning phases without test has to be positive!" << endl;
             displayHelp = true;
@@ -519,7 +519,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.verletClusterSize)::getoptChar: {
         try {
-          config.verletClusterSize.value = (unsigned int)stoul(strArg);
+          config.verletClusterSize.value = static_cast<unsigned int>(stoul(strArg));
         } catch (const exception &) {
           cerr << "Error parsing verlet cluster size: " << optarg << endl;
           displayHelp = true;
@@ -541,7 +541,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.tuningSamples)::getoptChar: {
         try {
-          config.tuningSamples.value = (unsigned int)stoul(strArg);
+          config.tuningSamples.value = static_cast<unsigned int>(stoul(strArg));
           if (config.tuningSamples.value < 1) {
             cerr << "Tuning samples has to be a positive integer!" << endl;
             displayHelp = true;
@@ -580,9 +580,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.closestPackingStructure)::getoptChar: {
         if (strArg == "fcc") {
-          config.closestPackingStructure.value = CubeClosestPacked::Structure::fcc;
+          config.closestPackingStructure.value = CubeClosestPacked::LatticeStructure::FCC;
         } else if (strArg == "hcp") {
-          config.closestPackingStructure.value = CubeClosestPacked::Structure::hcp;
+          config.closestPackingStructure.value = CubeClosestPacked::LatticeStructure::HCP;
         } else {
           cerr << "Unknown structure for closest packing generator: " << strArg << ". Possible values: (fcc hcp)"
                << endl;
@@ -679,7 +679,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.verletRebuildFrequency)::getoptChar: {
         try {
-          config.verletRebuildFrequency.value = (unsigned int)stoul(strArg);
+          config.verletRebuildFrequency.value = static_cast<unsigned int>(stoul(strArg));
         } catch (const exception &) {
           cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
           displayHelp = true;
@@ -783,7 +783,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.loadBalancingInterval)::getoptChar: {
-        config.loadBalancingInterval.value = (unsigned int)stoul(strArg);
+        config.loadBalancingInterval.value = static_cast<unsigned int>(stoul(strArg));
         break;
       }
 
@@ -804,10 +804,18 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
 
     switch (config.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::grid: {
-        CubeGrid grid(velocity, typeID,
-                      {config.particlesPerDim.value, config.particlesPerDim.value, config.particlesPerDim.value},
-                      config.particleSpacing.value, bottomLeftCorner, config.particleDensity.value);
-        config.cubeGridObjects.push_back(grid);
+        if (config.particleDensity.value > 0) {
+          config.cubeGridObjects.emplace_back(
+              velocity, typeID,
+              std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
+                                    config.particlesPerDim.value},
+              bottomLeftCorner, config.particleDensity.value);
+        }
+        config.cubeGridObjects.emplace_back(
+            velocity, typeID,
+            std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
+                                  config.particlesPerDim.value},
+            bottomLeftCorner, config.particleDensity.value);
         break;
       }
       case MDFlexConfig::GeneratorOption::gaussian: {
@@ -818,10 +826,16 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case MDFlexConfig::GeneratorOption::uniform: {
-        CubeUniform cubeUniform(velocity, typeID, config.particlesTotal.value,
-                                {config.boxLength.value, config.boxLength.value, config.boxLength.value},
-                                bottomLeftCorner, config.particleDensity.value);
-        config.cubeUniformObjects.push_back(cubeUniform);
+        if (config.particleDensity.value > 0) {
+          config.cubeUniformObjects.emplace_back(
+              velocity, typeID,
+              std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
+              bottomLeftCorner, config.particleDensity.value);
+        }
+        config.cubeUniformObjects.emplace_back(
+            velocity, typeID, config.particlesTotal.value,
+            std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
+            bottomLeftCorner);
         break;
       }
       case MDFlexConfig::GeneratorOption::sphere: {
@@ -834,11 +848,16 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case MDFlexConfig::GeneratorOption::closestPacked: {
-        CubeClosestPacked cubeClosestPacked(velocity, typeID, config.particleSpacing.value,
-                                            {config.boxLength.value, config.boxLength.value, config.boxLength.value},
-                                            bottomLeftCorner, config.particleDensity.value,
-                                            config.closestPackingStructure.value);
-        config.cubeClosestPackedObjects.push_back(cubeClosestPacked);
+        if (config.particleDensity.value > 0) {
+          config.cubeClosestPackedObjects.emplace_back(
+              velocity, typeID,
+              std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
+              bottomLeftCorner, config.particleDensity.value, config.closestPackingStructure.value);
+        }
+        config.cubeClosestPackedObjects.emplace_back(
+            velocity, typeID, config.particleSpacing.value,
+            std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
+            bottomLeftCorner, config.closestPackingStructure.value);
         break;
       }
     }

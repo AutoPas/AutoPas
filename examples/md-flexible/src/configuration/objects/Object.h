@@ -24,7 +24,7 @@ class Object {
    * @param velocity
    * @param typeId
    */
-  Object(const std::array<double, 3> &velocity, unsigned long typeId) : _velocity(velocity), _typeId(typeId) {}
+  Object(const std::array<double, 3> &velocity, const size_t typeId) : _velocity(velocity), _typeId(typeId) {}
 
   virtual ~Object() = default;
 
@@ -66,7 +66,7 @@ class Object {
    * Getter for typeId of Particles in Objet
    * @return typeId
    */
-  [[nodiscard]] unsigned long getTypeId() const { return _typeId; }
+  [[nodiscard]] size_t getTypeId() const { return _typeId; }
 
   /**
    * Getter for the smallest x,y,z coordinates for Object
@@ -126,7 +126,7 @@ class Object {
    * Type of every particle in the object. For single-site simulations, this refers directly to the siteId. For
    * multi-site simulations, this refers to the molId.
    */
-  unsigned long _typeId;
+  size_t _typeId;
   /**
    * valueOffset of MDFlexConfig - expected indent
    */

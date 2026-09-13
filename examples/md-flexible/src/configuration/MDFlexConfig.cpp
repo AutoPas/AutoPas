@@ -9,7 +9,6 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include <list>
 #include <string>
 #include <vector>
 
@@ -56,7 +55,7 @@ void findWord(std::ifstream &file, const std::string &word) {
   std::string currentWord;
   while (not file.eof() and currentWord != word) {
     char currentChar = file.get();
-    if (std::find(separators.begin(), separators.end(), currentChar) != separators.end()) {
+    if (std::ranges::find(separators, currentChar) != separators.end()) {
       currentWord = "";
     } else {
       currentWord += currentChar;
@@ -250,7 +249,7 @@ std::string MDFlexConfig::to_string() const {
 
   // helper function to check if any options of a given list is in the tuningStrategyOptions.
   auto tuningStrategyOptionsContainAnyOf = [&](const std::vector<autopas::TuningStrategyOption> &needles) {
-    return std::any_of(tuningStrategyOptions.value.begin(), tuningStrategyOptions.value.end(), [&](const auto &lhs) {
+    return ranges::any_of(tuningStrategyOptions.value, [&](const auto &lhs) {
       return std::any_of(needles.begin(), needles.end(), [&](const auto &rhs) { return lhs == rhs; });
     });
   };
@@ -293,8 +292,7 @@ std::string MDFlexConfig::to_string() const {
     printOption(fuzzyRuleFilename);
   }
 
-  // TODO: C++20 Use contains instead of count
-  if (getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
+  if (getInteractionTypes().contains(autopas::InteractionTypeOption::pairwise)) {
     os << setw(valueOffset) << left << "PairwiseInteraction:" << endl;
     constexpr int indentWidth = 2;
     const auto indent = std::string(indentWidth, ' ');
@@ -332,8 +330,7 @@ std::string MDFlexConfig::to_string() const {
 
   printOption(vecPatternOptions);
 
-  // TODO c++20: use contains instead of count
-  if (getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
+  if (getInteractionTypes().contains(autopas::InteractionTypeOption::triwise)) {
     os << setw(valueOffset) << left << "ThreeBodyInteraction:" << endl;
     constexpr int indentWidth = 2;
     const auto indent = std::string(indentWidth, ' ');
@@ -399,7 +396,7 @@ std::string MDFlexConfig::to_string() const {
 
   os << setw(valueOffset) << left << "Objects:" << endl;
 
-  auto printObjectCollection = [](auto objectCollection, auto name, auto &os) {
+  auto printObjectCollection = [](const auto &objectCollection, auto name, auto &os) {
     int objectId = 0;
     for (const auto &object : objectCollection) {
       os << "  " << name << ":" << endl;
@@ -471,7 +468,7 @@ void MDFlexConfig::calcSimulationBox() {
   if (userDefinedBox) {
     for (int i = 0; i < 3; i++) {
       if (boxMax.value[i] - boxMin.value[i] < interactionLength) {
-        std::cerr << "WARNING: Simulation box in dimension " << i << " is shorter than interaction length ("
+        std::cout << "WARNING: Simulation box in dimension " << i << " is shorter than interaction length ("
                   << interactionLength << ")!" << std::endl;
       }
     }
@@ -514,7 +511,7 @@ void MDFlexConfig::calcSimulationBox() {
   // guarantee the box is at least of size interactionLength
   for (int i = 0; i < 3; i++) {
     if (boxMax.value[i] - boxMin.value[i] < interactionLength) {
-      std::cerr << "WARNING: Simulation box in dimension " << i
+      std::cout << "WARNING: Simulation box in dimension " << i
                 << " is shorter than interaction length and will be increased." << std::endl;
       const double deficit = interactionLength - (boxMax.value[i] - boxMin.value[i]);
       boxMin.value[i] -= deficit / 2.0;

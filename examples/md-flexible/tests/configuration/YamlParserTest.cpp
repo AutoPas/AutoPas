@@ -212,7 +212,7 @@ TEST_F(YamlParserTest, parseCubeClosestPackedStructureAndDensity) {
     std::vector<std::string> errors;
     const auto obj = MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
     EXPECT_TRUE(errors.empty());
-    EXPECT_EQ(obj.getStructure(), CubeClosestPacked::Structure::fcc);
+    EXPECT_EQ(obj.getStructure(), CubeClosestPacked::LatticeStructure::FCC);
     EXPECT_DOUBLE_EQ(obj.getParticleSpacing(), 1.0);
   }
 
@@ -228,7 +228,7 @@ TEST_F(YamlParserTest, parseCubeClosestPackedStructureAndDensity) {
     std::vector<std::string> errors;
     const auto obj = MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
     EXPECT_TRUE(errors.empty());
-    EXPECT_EQ(obj.getStructure(), CubeClosestPacked::Structure::hcp);
+    EXPECT_EQ(obj.getStructure(), CubeClosestPacked::LatticeStructure::HCP);
   }
 
   // Invalid structure -> error
@@ -250,16 +250,16 @@ TEST_F(YamlParserTest, parseCubeClosestPackedStructureAndDensity) {
     const auto node = YAML::Load(
         "structure: fcc\n"
         "box-length: [4, 4, 4]\n"
-        "particle-density: 1.0\n"
+        "particle-density: 0.984375\n"
         "bottomLeftCorner: [0, 0, 0]\n"
         "particle-type-id: 0\n"
         "velocity: [0, 0, 0]\n");
     std::vector<std::string> errors;
     const auto obj = MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
     EXPECT_TRUE(errors.empty());
-    EXPECT_EQ(obj.getStructure(), CubeClosestPacked::Structure::fcc);
-    EXPECT_DOUBLE_EQ(obj.getParticleDensity(), 1.0);
-    EXPECT_DOUBLE_EQ(obj.getParticleSpacing(), std::cbrt(std::sqrt(2.0)));
+    EXPECT_EQ(obj.getStructure(), CubeClosestPacked::LatticeStructure::FCC);
+    EXPECT_DOUBLE_EQ(obj.getParticleDensity(), 0.984375);
+    EXPECT_DOUBLE_EQ(obj.getParticleSpacing(), std::cbrt(std::sqrt(2.0) / 0.984375));
   }
 
   // Both spacing and density -> error
