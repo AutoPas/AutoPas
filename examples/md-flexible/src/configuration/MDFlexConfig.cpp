@@ -465,8 +465,8 @@ std::string MDFlexConfig::to_string() const {
 void MDFlexConfig::calcSimulationBox() {
   const double interactionLength = cutoff.value + verletSkinRadius.value;
 
-  const bool userDefinedBox = (boxMax.value[0] > boxMin.value[0] and
-                               boxMax.value[1] > boxMin.value[1] and boxMax.value[2] > boxMin.value[2]);
+  const bool userDefinedBox =
+      (boxMax.value[0] > boxMin.value[0] and boxMax.value[1] > boxMin.value[1] and boxMax.value[2] > boxMin.value[2]);
 
   if (userDefinedBox) {
     for (int i = 0; i < 3; i++) {
@@ -478,8 +478,10 @@ void MDFlexConfig::calcSimulationBox() {
     return;
   }
 
-  std::array<double, 3> totalBoxMin{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()};
-  std::array<double, 3> totalBoxMax{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest()};
+  std::array<double, 3> totalBoxMin{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                                    std::numeric_limits<double>::max()};
+  std::array<double, 3> totalBoxMax{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
+                                    std::numeric_limits<double>::lowest()};
 
   bool hasParticleObjects = false;
   auto resizeToObjectLimits = [&](const auto &objectCollection) {
@@ -488,10 +490,10 @@ void MDFlexConfig::calcSimulationBox() {
       const auto objectMin = object.getBoxMin();
       const auto objectMax = object.getBoxMax();
 
-        for (size_t i = 0; i < 3; ++i) {
-          totalBoxMin[i] = std::min(totalBoxMin[i], objectMin[i]);
-          totalBoxMax[i] = std::max(totalBoxMax[i], objectMax[i]);
-        }
+      for (size_t i = 0; i < 3; ++i) {
+        totalBoxMin[i] = std::min(totalBoxMin[i], objectMin[i]);
+        totalBoxMax[i] = std::max(totalBoxMax[i], objectMax[i]);
+      }
     }
   };
 

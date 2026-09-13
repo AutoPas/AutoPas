@@ -1,5 +1,5 @@
 /**
- * @file ClosestPackingGenerator.h
+ * @file HCPGenerator.h
  * @author F. Gratl
  * @date 21.08.20
  */
@@ -15,7 +15,7 @@
 /**
  * Generator for grids of particles.
  */
-namespace autopasTools::generators::ClosestPackingGenerator {
+namespace autopasTools::generators::HCPGenerator {
 /**
  * Fills any container (also AutoPas object) with a hexagonally closest packed particles.
  * Particle properties will be used from the default particle. Particle IDs start from the default particle.
@@ -60,4 +60,4 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
     evenLayer = not evenLayer;
   }
 };
-};  // namespace autopasTools::generators::ClosestPackingGenerator
+};  // namespace autopasTools::generators::HCPGenerator

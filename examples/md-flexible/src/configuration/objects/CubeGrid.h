@@ -35,7 +35,7 @@ class CubeGrid : public Object {
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner),
         _density(density),
-      _centered(centered) {
+        _centered(centered) {
     if (_particleSpacing <= 0.0 and _density > 0.0) {
       _particleSpacing = std::cbrt(1.0 / _density);
     } else if (_particleSpacing > 0.0 and _density <= 0.0) {
@@ -155,5 +155,5 @@ class CubeGrid : public Object {
   /**
    *
    */
-bool _centered{true};
+  bool _centered{true};
 };

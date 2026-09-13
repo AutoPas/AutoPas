@@ -97,7 +97,6 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
   const size_t numCellsY = std::max<size_t>(1, std::ceil((boxMax[1] - boxMin[1]) / a));
   const size_t numCellsZ = std::max<size_t>(1, std::ceil((boxMax[2] - boxMin[2]) / a));
 
-
   size_t id = defaultParticle.getID();
   for (size_t z = 0; z < numCellsZ; ++z) {
     for (size_t y = 0; y < numCellsY; ++y) {

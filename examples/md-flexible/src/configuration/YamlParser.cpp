@@ -62,9 +62,11 @@ const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig 
   bool centered = true;
   try {
     centered = node[config.closestPackingCentered.name].as<bool>();
-  } catch (const std::exception &) {}
+  } catch (const std::exception &) {
+  }
 
-  const CubeGrid cubeGrid(velocity, particleType, particlesPerDim, particleSpacing, bottomLeftCorner, particleDensity, centered);
+  const CubeGrid cubeGrid(velocity, particleType, particlesPerDim, particleSpacing, bottomLeftCorner, particleDensity,
+                          centered);
   return cubeGrid;
 }
 
@@ -168,7 +170,8 @@ const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const M
   bool centered = true;
   try {
     centered = node[config.closestPackingCentered.name].as<bool>();
-  } catch (const std::exception &) {}
+  } catch (const std::exception &) {
+  }
 
   const CubeClosestPacked cubeClosestPacked(velocity, particleType, particleSpacing, boxLength, bottomLeftCorner,
                                             particleDensity, structure, centered);

@@ -645,8 +645,7 @@ class MDFlexConfig {
    * closestPackingCentered
    */
   MDFlexOption<bool, __LINE__> closestPackingCentered{
-      true, "centered", true,
-      "Alignment of the closest packing unit cell. Possible Values: (true false)"};
+      true, "centered", true, "Alignment of the closest packing unit cell. Possible Values: (true false)"};
   /**
    * generatorOption
    */

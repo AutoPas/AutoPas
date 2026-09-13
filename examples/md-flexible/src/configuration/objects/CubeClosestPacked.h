@@ -10,8 +10,8 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
-#include "generators/src/ClosestPackingGenerator.h"
 #include "generators/src/FCCGenerator.h"
+#include "generators/src/HCPGenerator.h"
 #include "generators/src/PseudoContainer.h"
 
 /**
@@ -155,8 +155,8 @@ class CubeClosestPacked : public Object {
       autopasTools::generators::FCCGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
                                                                 dummyParticle, _particleSpacing);
     } else {
-      autopasTools::generators::ClosestPackingGenerator::fillWithParticles(
-          particlesWrapper, _bottomLeftCorner, _topRightCorner, dummyParticle, _particleSpacing);
+      autopasTools::generators::HCPGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
+                                                                dummyParticle, _particleSpacing);
     }
   }
 
@@ -202,7 +202,7 @@ class CubeClosestPacked : public Object {
   Structure _structure{Structure::fcc};
 
   /**
- * Lattice alignment (First particle at center or origin of a lattice unit cell).
- */
+   * Lattice alignment (First particle at center or origin of a lattice unit cell).
+   */
   bool _centered{true};
 };
