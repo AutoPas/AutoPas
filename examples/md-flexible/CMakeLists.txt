@@ -16,7 +16,13 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
 # Kokkos (and its CUDA headers) do not build against libc++, so Clang-based Kokkos builds have to
 # link explicitly against libstdc++ and libm.
-target_link_libraries(md-flexible PUBLIC autopas generators molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX> PRIVATE $<$<AND:$<BOOL:${AUTOPAS_ENABLE_KOKKOS}>,$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>>:stdc++;m>)
+target_link_libraries(md-flexible PUBLIC autopas generators molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
+
+# Kokkos (and its CUDA headers) do not build against libc++, so Clang-based Kokkos builds have to
+# link explicitly against libstdc++ and libm.
+if (AUTOPAS_ENABLE_KOKKOS AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
+    target_link_libraries(md-flexible PRIVATE stdc++ m)
+endif ()
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor." OFF)

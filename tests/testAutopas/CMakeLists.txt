@@ -19,11 +19,13 @@ target_link_libraries(
         gmock # gmock includes the gtest target, so we don't need it here.
         Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony> # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
-        PRIVATE
-        # Kokkos (and its CUDA headers) do not build against libc++, so Clang-based Kokkos builds
-        # have to link explicitly against libstdc++ and libm.
-        $<$<AND:$<BOOL:${AUTOPAS_ENABLE_KOKKOS}>,$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>>:stdc++;m>
 )
+
+# Kokkos (and its CUDA headers) do not build against libc++, so Clang-based Kokkos builds have to
+# link explicitly against libstdc++ and libm.
+if (AUTOPAS_ENABLE_KOKKOS AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
+    target_link_libraries(runTests PRIVATE stdc++ m)
+endif ()
 
 include(GoogleTest)
 # queries the compiled executable for tests, this requires the executable to be runnable. if you are
