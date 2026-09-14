@@ -141,7 +141,8 @@ class VerletListHelpers {
     bool allowsNonNewton3() override { return true; }
 
     /**
-     * @copydoc autopas::PairwiseFunctor::AoSFunctor()
+     * @param i the first particle
+     * @param j the neighbor particle
      */
     void AoSFunctor(Particle_T &i, Particle_T &j, bool /*newton3*/) override {
       using namespace autopas::utils::ArrayMath::literals;
@@ -280,7 +281,8 @@ class VerletListHelpers {
     bool allowsNonNewton3() override { return true; }
 
     /**
-     * @copydoc autopas::PairwiseFunctor::AoSFunctor()
+     * @param i the first particle
+     * @param j the neighbor particle
      */
     void AoSFunctor(Particle_T &i, Particle_T &j, bool /*newton3*/) override {
       using namespace autopas::utils::ArrayMath::literals;
