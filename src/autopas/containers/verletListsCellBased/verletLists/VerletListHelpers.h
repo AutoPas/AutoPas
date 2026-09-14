@@ -98,6 +98,12 @@ class VerletListHelpers {
    * Thread safety: each counter is a std::atomic<size_t> padded to a full cache line (64 bytes) so that adjacent
    * particles never share a cache line. This eliminates false-sharing stalls that would otherwise dominate on
    * multi-socket / many-core systems.
+   *
+   * @note In contrast to other functors, newton3 is deliberately ignored in AoSFunctor() and SoAFunctorPair().
+   * Used with a newton3 traversal, it will lead to "half" neighbor lists, where each particle only has the other
+   * particle in its list if it is the "first" particle of the pair. Used with a non-newton3 traversal, it will lead to
+   * "full" neighbor lists, where each particle has the other particle in its list for every interacting pair,
+   * regardless of whether newton3 is enabled or not.
    */
   class VerletListCounterFunctor : public PairwiseFunctor<Particle_T, VerletListCounterFunctor> {
    public:
@@ -137,7 +143,7 @@ class VerletListHelpers {
     /**
      * @copydoc autopas::PairwiseFunctor::AoSFunctor()
      */
-    void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
+    void AoSFunctor(Particle_T &i, Particle_T &j, bool /*newton3*/) override {
       using namespace autopas::utils::ArrayMath::literals;
       if (i.isDummy() or j.isDummy()) return;
       const auto displacement = i.getR() - j.getR();
@@ -150,7 +156,7 @@ class VerletListHelpers {
     /**
      * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
      */
-    void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+    void SoAFunctorSingle(SoAView<SoAArraysType> soa, const bool newton3) override {
       if (soa.size() == 0) return;
       auto **const __restrict ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
       const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
@@ -161,7 +167,9 @@ class VerletListHelpers {
         const size_t iIdx = _particleToIndex.at(ptrptr[i]);
         size_t localCount = 0;
         for (size_t j = i + 1; j < n; ++j) {
-          const double dx = xptr[i] - xptr[j], dy = yptr[i] - yptr[j], dz = zptr[i] - zptr[j];
+          const double dx = xptr[i] - xptr[j];
+          const double dy = yptr[i] - yptr[j];
+          const double dz = zptr[i] - zptr[j];
           if (dx * dx + dy * dy + dz * dz < _interactionLengthSquared) {
             ++localCount;
             if (not newton3) {
@@ -193,8 +201,12 @@ class VerletListHelpers {
         const size_t iIdx = _particleToIndex.at(ptr1ptr[i]);
         size_t localCount = 0;
         for (size_t j = 0; j < n2; ++j) {
-          const double dx = x1ptr[i] - x2ptr[j], dy = y1ptr[i] - y2ptr[j], dz = z1ptr[i] - z2ptr[j];
-          if (dx * dx + dy * dy + dz * dz < _interactionLengthSquared) ++localCount;
+          const double dx = x1ptr[i] - x2ptr[j];
+          const double dy = y1ptr[i] - y2ptr[j];
+          const double dz = z1ptr[i] - z2ptr[j];
+          if (dx * dx + dy * dy + dz * dz < _interactionLengthSquared) {
+            ++localCount;
+          }
         }
         _counts[iIdx].value.fetch_add(localCount, std::memory_order_relaxed);
       }
@@ -228,6 +240,12 @@ class VerletListHelpers {
    *
    * The fill cursors reuse the same cache-line-padded PaddedAtomic array as the counter pass (reset to the CRS start
    * offset before this pass runs).
+   *
+   * @note In contrast to other functors, newton3 is deliberately ignored in AoSFunctor() and SoAFunctorPair().
+   * Used with a newton3 traversal, it will lead to "half" neighbor lists, where each particle only has the other
+   * particle in its list if it is the "first" particle of the pair. Used with a non-newton3 traversal, it will lead to
+   * "full" neighbor lists, where each particle has the other particle in its list for every interacting pair,
+   * regardless of whether newton3 is enabled or not.
    */
   class VerletListFillerFunctor : public PairwiseFunctor<Particle_T, VerletListFillerFunctor> {
    public:
@@ -241,8 +259,7 @@ class VerletListHelpers {
     using PaddedAtomic = typename VerletListCounterFunctor::PaddedAtomic;
 
     /**
-     * @param neighborList    The CRS structure with offsets already filled and
-     *                        indices pre-allocated.
+     * @param neighborList    The CRS structure with offsets already filled and indices pre-allocated.
      * @param fillPos         Per-particle fill cursors, initialized to
      *                        neighborList.offsets[i] before this pass starts.
      * @param particleToIndex Map from particle pointer to its dense SoA index.
@@ -265,7 +282,7 @@ class VerletListHelpers {
     /**
      * @copydoc autopas::PairwiseFunctor::AoSFunctor()
      */
-    void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
+    void AoSFunctor(Particle_T &i, Particle_T &j, bool /*newton3*/) override {
       using namespace autopas::utils::ArrayMath::literals;
       if (i.isDummy() or j.isDummy()) return;
       const auto displacement = i.getR() - j.getR();
@@ -280,7 +297,7 @@ class VerletListHelpers {
     /**
      * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
      */
-    void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+    void SoAFunctorSingle(SoAView<SoAArraysType> soa, const bool newton3) override {
       if (soa.size() == 0) return;
       auto **const __restrict ptrptr = soa.template begin<Particle_T::AttributeNames::ptr>();
       const double *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
@@ -290,7 +307,9 @@ class VerletListHelpers {
       for (size_t i = 0; i < n; ++i) {
         const size_t iIdx = _particleToIndex.at(ptrptr[i]);
         for (size_t j = i + 1; j < n; ++j) {
-          const double dx = xptr[i] - xptr[j], dy = yptr[i] - yptr[j], dz = zptr[i] - zptr[j];
+          const double dx = xptr[i] - xptr[j];
+          const double dy = yptr[i] - yptr[j];
+          const double dz = zptr[i] - zptr[j];
           if (dx * dx + dy * dy + dz * dz < _interactionLengthSquared) {
             const size_t jIdx = _particleToIndex.at(ptrptr[j]);
             _neighborList.indices[_fillPos[iIdx].value.fetch_add(1, std::memory_order_relaxed)] = jIdx;
@@ -321,7 +340,9 @@ class VerletListHelpers {
       for (size_t i = 0; i < n1; ++i) {
         const size_t iIdx = _particleToIndex.at(ptr1ptr[i]);
         for (size_t j = 0; j < n2; ++j) {
-          const double dx = x1ptr[i] - x2ptr[j], dy = y1ptr[i] - y2ptr[j], dz = z1ptr[i] - z2ptr[j];
+          const double dx = x1ptr[i] - x2ptr[j];
+          const double dy = y1ptr[i] - y2ptr[j];
+          const double dz = z1ptr[i] - z2ptr[j];
           if (dx * dx + dy * dy + dz * dz < _interactionLengthSquared) {
             _neighborList.indices[_fillPos[iIdx].value.fetch_add(1, std::memory_order_relaxed)] =
                 _particleToIndex.at(ptr2ptr[j]);

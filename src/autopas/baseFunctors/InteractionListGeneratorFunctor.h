@@ -28,7 +28,8 @@ concept NeighborListPolicyConcept = requires(Policy_T policy, size_t numParticle
  * This functor generates lists of particles within interactionLength of each other: can be used internally for Verlet
  * list generation and provides a base for a public-facing externally used version, provided in the applicationLibrary.
  *
- * @details The functor passes valid pairs of particles to the neighbor list policy via policy.add(p1, p2). The policy itself can then determine how to build up the neighbor lists from the particle pointer pairs.
+ * @details The functor passes valid pairs of particles to the neighbor list policy via policy.add(p1, p2). The policy
+ * itself can then determine how to build up the neighbor lists from the particle pointer pairs.
  *
  * @tparam Particle_T The type of Particle class used.
  * @tparam NeighborListPolicy_T Policy that defines how particle pointers are added to a neighbor list.
@@ -106,12 +107,13 @@ class InteractionListGeneratorFunctor
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    auto dist = i.getR() - j.getR();
+    auto displacement = i.getR() - j.getR();
 
-    double distSquared = utils::ArrayMath::dot(dist, dist);
+    double distSquared = utils::ArrayMath::dot(displacement, displacement);
     if (distSquared < _interactionLengthSquared) {
-      // Assuming this functor is used like any other functor, this is generally thread safe due to how AutoPas traversals are designed.
-      // However, the neighbor list policy and the underlying data structure must be suitable as well. (e.g. no unwanted resizing during the traversal)
+      // Assuming this functor is used like any other functor, this is generally thread safe due to how AutoPas
+      // traversals are designed. However, the neighbor list policy and the underlying data structure must be suitable
+      // as well. (e.g. no unwanted resizing during the traversal)
 
       // - If newton3=false & gatherNewton3Lists=false, we only need to add the i->j interaction to i's list as the j->i
       // interaction is handled in another call.
