@@ -28,8 +28,20 @@
 namespace {
 
 using autopas::OwnershipState;
-using InteractionListGenFunc = autopas::InteractionListGeneratorFunctor<Molecule>;
-using InteractionListTypeAoS = InteractionListGenFunc::NeighborListAoSType;
+using InteractionListTypeAoS = std::unordered_map<Molecule *, std::vector<Molecule *>>;
+
+struct TestNeighborListPolicy {
+  InteractionListTypeAoS &map;
+
+  void initialize(size_t numParticles) const {
+    map.clear();
+    map.reserve(numParticles);
+  }
+
+  void add(Molecule *i, Molecule *j) { map[i].push_back(j); }
+};
+
+using InteractionListGenFunc = autopas::InteractionListGeneratorFunctor<Molecule, TestNeighborListPolicy>;
 using VerletListTypeSoA = std::vector<size_t, autopas::AlignedAllocator<size_t>>;
 
 /**
@@ -414,7 +426,8 @@ TEST_P(InteractionListGeneratorFunctorListGenTest, AoSFunctor) {
   InteractionListTypeAoS map;
   initMap(map, cell);
 
-  InteractionListGenFunc functor(map, cutoffLength, params.n3Mode.gatherN3Lists);
+  TestNeighborListPolicy policy{map};
+  InteractionListGenFunc functor(policy, cutoffLength, params.n3Mode.gatherN3Lists);
   applyAoSOverAllPairs(functor, cell, params.n3Mode.n3Used);
 
   if (params.n3Mode.gatherN3Lists) {
@@ -436,7 +449,8 @@ TEST_F(InteractionListGeneratorFunctorTest, AoSSingleCallDirectionality) {
     fillCell(cell, {{0., 0., 0.}, {1., 0., 0.}}, std::vector<OwnershipState>(2, OwnershipState::owned));
     InteractionListTypeAoS map;
     initMap(map, cell);
-    InteractionListGenFunc functor(map, cutoffLength, gatherN3Lists);
+    TestNeighborListPolicy policy{map};
+    InteractionListGenFunc functor(policy, cutoffLength, gatherN3Lists);
     functor.AoSFunctor(cell[0], cell[1], newton3);
     if (gatherN3Lists) {
       // Sort such that higher ID particles are in the lists of lower ID particles with N3 lists, to avoid any
@@ -468,7 +482,8 @@ TEST_P(InteractionListGeneratorFunctorListGenTest, SoAFunctorSingle) {
   InteractionListTypeAoS map;
   initMap(map, cell);
 
-  InteractionListGenFunc functor(map, cutoffLength, params.n3Mode.gatherN3Lists);
+  TestNeighborListPolicy policy{map};
+  InteractionListGenFunc functor(policy, cutoffLength, params.n3Mode.gatherN3Lists);
   functor.SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize*/ false);
   functor.SoAFunctorSingle(cell._particleSoABuffer, params.n3Mode.n3Used);
 
@@ -494,7 +509,8 @@ TEST_P(InteractionListGeneratorFunctorSoAPairTest, NeighborLists) {
   initMap(map, cell1);
   initMap(map, cell2);
 
-  InteractionListGenFunc functor(map, cutoffLength, params.n3Mode.gatherN3Lists);
+  TestNeighborListPolicy policy{map};
+  InteractionListGenFunc functor(policy, cutoffLength, params.n3Mode.gatherN3Lists);
   functor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
   functor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
   functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, params.n3Mode.n3Used);
@@ -523,7 +539,8 @@ TEST_P(InteractionListGeneratorFunctorListGenTest, SoAFunctorVerlet) {
   InteractionListTypeAoS map;
   initMap(map, cell);
 
-  InteractionListGenFunc functor(map, cutoffLength, params.n3Mode.gatherN3Lists);
+  TestNeighborListPolicy policy{map};
+  InteractionListGenFunc functor(policy, cutoffLength, params.n3Mode.gatherN3Lists);
   functor.SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize*/ false);
   for (size_t i = 0; i < cell.size(); ++i) {
     functor.SoAFunctorVerlet(cell._particleSoABuffer, i,
@@ -560,7 +577,8 @@ TEST_F(InteractionListGeneratorFunctorTest, N3ListsWithoutN3Throws) {
   initMap(map, cell1);
   initMap(map, cell2);
 
-  InteractionListGenFunc functor(map, cutoffLength, /*gatherNewton3Lists*/ true);
+  TestNeighborListPolicy policy{map};
+  InteractionListGenFunc functor(policy, cutoffLength, /*gatherNewton3Lists*/ true);
   functor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
   functor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
@@ -578,8 +596,9 @@ TEST_F(InteractionListGeneratorFunctorTest, N3ListsWithoutN3Throws) {
  */
 TEST_F(InteractionListGeneratorFunctorTest, AllowsNonNewton3DependsOnGatherN3Lists) {
   InteractionListTypeAoS map;
-  InteractionListGenFunc noN3ListsFunctor(map, cutoffLength, /*gatherNewton3Lists*/ false);
-  InteractionListGenFunc n3ListsFunctor(map, cutoffLength, /*gatherNewton3Lists*/ true);
+  TestNeighborListPolicy policy{map};
+  InteractionListGenFunc noN3ListsFunctor(policy, cutoffLength, /*gatherNewton3Lists*/ false);
+  InteractionListGenFunc n3ListsFunctor(policy, cutoffLength, /*gatherNewton3Lists*/ true);
 
   EXPECT_TRUE(noN3ListsFunctor.allowsNewton3());
   EXPECT_TRUE(noN3ListsFunctor.allowsNonNewton3());
@@ -609,7 +628,8 @@ TEST_P(IntListGenFuncThreadSafeTest, AoSFunctor) {
                                                              {0., 0., 0.});
   InteractionListTypeAoS referenceMap;
   initMap(referenceMap, referenceCell);
-  InteractionListGenFunc referenceFunctor(referenceMap, cutoffLength, mode.gatherN3Lists);
+  TestNeighborListPolicy referencePolicy{referenceMap};
+  InteractionListGenFunc referenceFunctor(referencePolicy, cutoffLength, mode.gatherN3Lists);
   for (size_t i = 0; i < referenceCell.size(); ++i) {
     for (size_t j = 0; j < referenceCell.size(); ++j) {
       if (mode.n3Used ? i < j : i != j) {
@@ -624,7 +644,8 @@ TEST_P(IntListGenFuncThreadSafeTest, AoSFunctor) {
                                                              {0., 0., 0.});
   InteractionListTypeAoS map;
   initMap(map, cell);
-  InteractionListGenFunc functor(map, cutoffLength, mode.gatherN3Lists);
+  TestNeighborListPolicy policy{map};
+  InteractionListGenFunc functor(policy, cutoffLength, mode.gatherN3Lists);
   {
     const NumThreadGuard numThreadGuard(numThreads);
     if (mode.n3Used) {
@@ -663,7 +684,8 @@ TEST_P(IntListGenFuncThreadSafeTest, SoAFunctorSingle) {
   for (auto &referenceCell : referenceCells) {
     initMap(referenceMap, referenceCell);
   }
-  InteractionListGenFunc referenceFunctor(referenceMap, cutoffLength, mode.gatherN3Lists);
+  TestNeighborListPolicy referencePolicy{referenceMap};
+  InteractionListGenFunc referenceFunctor(referencePolicy, cutoffLength, mode.gatherN3Lists);
   for (auto &referenceCell : referenceCells) {
     referenceFunctor.SoALoader(referenceCell, referenceCell._particleSoABuffer, 0, /*skipSoAResize*/ false);
     referenceFunctor.SoAFunctorSingle(referenceCell._particleSoABuffer, mode.n3Used);
@@ -675,7 +697,8 @@ TEST_P(IntListGenFuncThreadSafeTest, SoAFunctorSingle) {
   for (auto &cell : cells) {
     initMap(map, cell);
   }
-  InteractionListGenFunc functor(map, cutoffLength, mode.gatherN3Lists);
+  TestNeighborListPolicy policy{map};
+  InteractionListGenFunc functor(policy, cutoffLength, mode.gatherN3Lists);
   for (auto &cell : cells) {
     functor.SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
@@ -708,7 +731,8 @@ TEST_P(IntListGenFuncThreadSafeTest, SoAFunctorPair) {
   for (auto &referenceCell : referenceCells) {
     initMap(referenceMap, referenceCell);
   }
-  InteractionListGenFunc referenceFunctor(referenceMap, cutoffLength, mode.gatherN3Lists);
+  TestNeighborListPolicy referencePolicy{referenceMap};
+  InteractionListGenFunc referenceFunctor(referencePolicy, cutoffLength, mode.gatherN3Lists);
   for (auto &referenceCell : referenceCells) {
     referenceFunctor.SoALoader(referenceCell, referenceCell._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
@@ -727,7 +751,8 @@ TEST_P(IntListGenFuncThreadSafeTest, SoAFunctorPair) {
   for (auto &cell : cells) {
     initMap(map, cell);
   }
-  InteractionListGenFunc functor(map, cutoffLength, mode.gatherN3Lists);
+  TestNeighborListPolicy policy{map};
+  InteractionListGenFunc functor(policy, cutoffLength, mode.gatherN3Lists);
   for (auto &cell : cells) {
     functor.SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
@@ -804,7 +829,8 @@ TEST_P(IntListGenFuncThreadSafeTest, SoAFunctorVerletPairwiseLists) {
   }
   InteractionListTypeAoS referenceMap;
   initMap(referenceMap, referenceCell);
-  InteractionListGenFunc referenceFunctor(referenceMap, cutoffLength, mode.gatherN3Lists);
+  TestNeighborListPolicy referencePolicy{referenceMap};
+  InteractionListGenFunc referenceFunctor(referencePolicy, cutoffLength, mode.gatherN3Lists);
   referenceFunctor.SoALoader(referenceCell, referenceCell._particleSoABuffer, 0, /*skipSoAResize*/ false);
   for (size_t c1 = 0; c1 < numCells; ++c1) {
     for (size_t c2 = 0; c2 < numCells; ++c2) {
@@ -827,7 +853,8 @@ TEST_P(IntListGenFuncThreadSafeTest, SoAFunctorVerletPairwiseLists) {
   }
   InteractionListTypeAoS map;
   initMap(map, cell);
-  InteractionListGenFunc functor(map, cutoffLength, mode.gatherN3Lists);
+  TestNeighborListPolicy policy{map};
+  InteractionListGenFunc functor(policy, cutoffLength, mode.gatherN3Lists);
   functor.SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize*/ false);
   {
     const NumThreadGuard numThreadGuard(numThreads);
@@ -899,7 +926,8 @@ TEST_F(InteractionListGeneratorFunctorTest, ThreadSafeSoAFunctorVerlet) {
                                                                {0., 0., 0.});
     InteractionListTypeAoS referenceMap;
     initMap(referenceMap, referenceCell);
-    InteractionListGenFunc referenceFunctor(referenceMap, cutoffLength, gatherN3Lists);
+    TestNeighborListPolicy referencePolicy{referenceMap};
+    InteractionListGenFunc referenceFunctor(referencePolicy, cutoffLength, gatherN3Lists);
     referenceFunctor.SoALoader(referenceCell, referenceCell._particleSoABuffer, 0, /*skipSoAResize*/ false);
     for (size_t i = 0; i < referenceCell.size(); ++i) {
       referenceFunctor.SoAFunctorVerlet(referenceCell._particleSoABuffer, i, verletLists[i], /*newton3*/ gatherN3Lists);
@@ -911,7 +939,8 @@ TEST_F(InteractionListGeneratorFunctorTest, ThreadSafeSoAFunctorVerlet) {
                                                                {0., 0., 0.});
     InteractionListTypeAoS map;
     initMap(map, cell);
-    InteractionListGenFunc functor(map, cutoffLength, gatherN3Lists);
+    TestNeighborListPolicy policy{map};
+    InteractionListGenFunc functor(policy, cutoffLength, gatherN3Lists);
     functor.SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize*/ false);
     {
       const NumThreadGuard numThreadGuard(numThreads);
@@ -922,57 +951,6 @@ TEST_F(InteractionListGeneratorFunctorTest, ThreadSafeSoAFunctorVerlet) {
     }
 
     expectListsMatch(map, cell, referenceMap, referenceCell);
-  }
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Neighbor List initialization test
-// ---------------------------------------------------------------------------------------------------------------------
-
-/**
- * Tests that InteractionListGeneratorFunctor::initializeNeighborList initializes the map with one empty list per
- * particle, keyed on the particle's address, and repeated calls clear previous contents.
- */
-TEST_F(InteractionListGeneratorFunctorTest, InitializeNeighborListSeedsAndClearsMap) {
-  autopas::AutoPas<Molecule> autoPas;
-  autoPas.setBoxMin({0., 0., 0.});
-  autoPas.setBoxMax({10., 10., 10.});
-  autoPas.setCutoff(1.0);
-  autoPas.setVerletSkin(0.2);
-  autoPas.init();
-
-  autoPas.addParticle(Molecule({1., 1., 1.}, {0., 0., 0.}, 0));
-  autoPas.addParticle(Molecule({2., 1., 1.}, {0., 0., 0.}, 1));
-  autoPas.addParticle(Molecule({3., 1., 1.}, {0., 0., 0.}, 2));
-
-  InteractionListTypeAoS neighborLists;
-  InteractionListGenFunc functor(neighborLists, cutoffLength, /*gatherNewton3Lists*/ false);
-
-  functor.initializeNeighborList(autoPas.begin());
-
-  // One empty list per particle, keyed on the particle's address.
-  size_t numParticles = 0;
-  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-    EXPECT_EQ(neighborLists.count(&(*iter)), 1u)
-        << "Particle with ID " << (*iter).getID() << " should have exactly one entry in the map, but found "
-        << neighborLists.count(&(*iter)) << ".";
-    EXPECT_TRUE(neighborLists.at(&(*iter)).empty());
-    ++numParticles;
-  }
-  EXPECT_EQ(numParticles, 3u);
-  EXPECT_EQ(neighborLists.size(), numParticles);
-
-  // Populate a list and insert a stale key, then reinitialize: the second call must clear both.
-  Molecule staleParticle({0., 0., 0.}, {0., 0., 0.}, 99);
-  neighborLists[&staleParticle];
-  neighborLists.at(&(*autoPas.begin())).push_back(&staleParticle);
-
-  functor.initializeNeighborList(autoPas.begin());
-
-  EXPECT_EQ(neighborLists.count(&staleParticle), 0u);
-  EXPECT_EQ(neighborLists.size(), numParticles);
-  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-    EXPECT_TRUE(neighborLists.at(&(*iter)).empty());
   }
 }
 
@@ -1006,7 +984,8 @@ TEST_P(InteractionListGeneratorFunctorFullFlowTest, ForcesMatchDirectLJApplicati
   // Generate the interaction lists.
   InteractionListTypeAoS map;
   initMap(map, cell);
-  InteractionListGenFunc listGenFunctor(map, cutoffLength, mode.gatherN3Lists);
+  TestNeighborListPolicy listGenPolicy{map};
+  InteractionListGenFunc listGenFunctor(listGenPolicy, cutoffLength, mode.gatherN3Lists);
   applyAoSOverAllPairs(listGenFunctor, cell, mode.n3Used);
 
   LJFunctorType<> ljFunctor(cutoffLength);
@@ -1048,73 +1027,3 @@ TEST_P(InteractionListGeneratorFunctorFullFlowTest, ForcesMatchDirectLJApplicati
 INSTANTIATE_TEST_SUITE_P(Generated, InteractionListGeneratorFunctorFullFlowTest,
                          ::testing::Combine(::testing::ValuesIn(n3Modes), ::testing::ValuesIn(ownershipVariants)),
                          ParamNameGenerator());
-
-// ---------------------------------------------------------------------------------------------------------------------
-// End-to-end test: Actual compilation and correct usage with AutoPas
-// ---------------------------------------------------------------------------------------------------------------------
-
-/**
- * End-to-end test that AutoPas compiles and runs with the InteractionListGeneratorFunctor and that
- * computeInteractions() automatically initializes the functor's neighbor list map for the current particles, so the
- * caller does not have to seed it.
- *
- * This also acts as a regression test for a problem which arose during the development of the functor: between the
- * seeding of the map and the actual application of the functor, no particle is allowed to be moved in memory, or
- * the seeding becomes invalid. Originally, the balancing of the buffer vectors violated this, which had to be
- * corrected, hence why this test adds to the buffer.
- */
-TEST_F(InteractionListGeneratorFunctorTest, ComputeInteractionsInitializesMap) {
-  // Two threads => two per-thread buffers that get balanced.
-  const NumThreadGuard numThreadGuard(2);
-
-  autopas::AutoPas<Molecule> autoPas;
-  autoPas.setBoxMin({0., 0., 0.});
-  autoPas.setBoxMax({10., 10., 10.});
-  autoPas.setCutoff(1.0);
-  autoPas.setVerletSkin(0.2);
-  autoPas.init();
-
-  InteractionListTypeAoS neighborLists;
-  InteractionListGenFunc functor(neighborLists, /*interactionLength*/ 1.0, /*gatherNewton3Lists*/ false);
-
-  // Two particles added into the container.
-  autoPas.addParticle(Molecule({1.0, 1.0, 1.0}, {0., 0., 0.}, 0));
-  autoPas.addParticle(Molecule({1.5, 1.0, 1.0}, {0., 0., 0.}, 1));
-
-  // Test compute interactions
-  autoPas.computeInteractions(&functor);
-
-  // The two container particles must each have ended up in the other's list.
-  {
-    std::vector<Molecule *> particlePtrs;
-    for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-      particlePtrs.push_back(&(*iter));
-    }
-    ASSERT_EQ(particlePtrs.size(), 2u);
-    ASSERT_EQ(neighborLists.size(), 2u);
-    const auto &list0 = neighborLists.at(particlePtrs[0]);
-    const auto &list1 = neighborLists.at(particlePtrs[1]);
-    EXPECT_NE(std::ranges::find(list0, particlePtrs[1]), list0.end());
-    EXPECT_NE(std::ranges::find(list1, particlePtrs[0]), list1.end());
-  }
-
-  // Two further owned particles (inside the box) and two halo particles (outside the box) now land in the buffers.
-  // Specifically, they get added to the thread 0 buffer.
-  autoPas.addParticle(Molecule({8.0, 8.0, 8.0}, {0., 0., 0.}, 2));
-  autoPas.addParticle(Molecule({8.5, 8.0, 8.0}, {0., 0., 0.}, 3));
-  autoPas.addHaloParticle(Molecule({-0.5, 1.0, 1.0}, {0., 0., 0.}, 4));
-  autoPas.addHaloParticle(Molecule({10.5, 8.0, 8.0}, {0., 0., 0.}, 5));
-
-  // Second pass balances the buffers (relocating buffer particles) and re-initializes the map. Must not crash, throw,
-  // or leave dangling references.
-  autoPas.computeInteractions(&functor);
-
-  // Every current particle (container + buffers, owned + halo) must have an entry in the freshly initialized map.
-  size_t numParticles = 0;
-  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
-    EXPECT_EQ(neighborLists.count(&(*iter)), 1u) << "Particle missing from the initialized neighbor list map.";
-    ++numParticles;
-  }
-  EXPECT_EQ(numParticles, 6u);
-  EXPECT_EQ(neighborLists.size(), 6u);
-}
