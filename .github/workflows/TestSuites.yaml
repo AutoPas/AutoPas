@@ -187,7 +187,7 @@ jobs:
           [ "${{ matrix.config.cc }}" = 'mpicc' ] && UseMPI=ON || UseMPI=OFF          
           mkdir build && cd build
           
-          export CFLAGS="-march=x86-64"
+          export CFLAGS="-march=x86-64-v3"
           # CUDA 13 moved the CCCL headers (thrust, libcudacxx, libcu++) to a separate include directory.
           # CUDA_PATH is exported by the cuda-toolkit action and points to the CUDA installation.
           CUDA_INCLUDE=""
@@ -205,8 +205,6 @@ jobs:
           fi
           if [ "${{ matrix.config.cuda }}" = "ON" ]; then
             KOKKOS_OPTS="${KOKKOS_OPTS} -DKokkos_ENABLE_CUDA=ON -DKokkos_ARCH_AMPERE80=ON"
-            else
-            KOKKOS_OPTS="${KOKKOS_OPTS} -DKokkos_ARCH_NATIVE=ON"   # or no ARCH at all
           fi
           
           CC=${{ matrix.config.cc }} CXX=${{ matrix.config.cxx }} cmake \
