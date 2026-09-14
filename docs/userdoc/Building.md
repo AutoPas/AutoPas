@@ -48,20 +48,20 @@ are provided.
 
 The Kokkos support can be enabled via the CMake option:
 ```bash
-cmake -DAUTOPAS_ENABLE_KOKKOS=ON
+cmake -DAUTOPAS_ENABLE_KOKKOS=ON ..
 ```
 
 AutoPas looks for a suitable Kokkos backend automatically, depending on which accelerator compilers
 are available (CUDA, HIP, SYCL or OpenMP as fallback). The selection can be overridden explicitly,
 e.g. with:
 ```bash
-cmake -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=OFF
+cmake -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=OFF ..
 ```
 
 If you have a local Kokkos installation (version 5.1.1 or later), CMake will use it if it finds it.
 Otherwise you might need to point to the local Kokkos installation directory explicitly with:
 ```bash
-cmake -DKokkos_DIR={/path/to/your/kokkos/installation}/lib/cmake/Kokkos
+cmake -DKokkos_DIR={/path/to/your/kokkos/installation}/lib/cmake/Kokkos ..
 ```
 
 If CMake cannot find a local Kokkos installation, it automatically fetches version 5.1.1 from GitHub
@@ -71,7 +71,7 @@ cluster), the architecture has to be specified manually, e.g. with `-DKokkos_ARC
 
 When using Clang together with Kokkos, md-flexible currently requires:
 ```bash
-cmake -DAUTOPAS_USE_AUTOVEC=OFF
+cmake -DAUTOPAS_USE_AUTOVEC=OFF ..
 ```
 
 ### Enabling Rules-Based Tuning and Fuzzy Tuning
