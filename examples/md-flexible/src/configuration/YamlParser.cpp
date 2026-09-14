@@ -61,8 +61,9 @@ CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig &confi
 
   bool centered = true;
   try {
-    centered = node[config.closestPackingCentered.name].as<bool>();
+    centered = node[config.gridAlignmentCentered.name].as<bool>();
   } catch (const std::exception &) {
+    objectErrors.push_back("Could not parse " + config.gridAlignmentCentered.name + " for the object.");
   }
 
   if (particleDensity > 0.0) {
@@ -170,8 +171,9 @@ CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const MDFlexC
 
   bool centered = true;
   try {
-    centered = node[config.closestPackingCentered.name].as<bool>();
+    centered = node[config.gridAlignmentCentered.name].as<bool>();
   } catch (const std::exception &) {
+    objectErrors.push_back("Could not parse " + config.gridAlignmentCentered.name + " for the object.");
   }
 
   if (particleDensity > 0.0) {
@@ -691,6 +693,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         int siteID = 0;
         std::vector<std::string> siteErrors;
 
+        auto pushSiteError = [&](const std::string &error) {
+          std::stringstream ss;
+          ss << "YamlParser: Error parsing site with ID " << siteID << "." << std::endl
+             << "Message: " << error << std::endl
+             << "See AllOptions.yaml for examples." << std::endl;
+          errors.push_back(ss.str());
+        };
+
         for (const auto &siteNode : node[MDFlexConfig::siteStr]) {
           siteErrors.clear();
 
@@ -707,8 +717,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           // Check Axilrod-Teller-Muto parameter
           const auto nu = parseComplexTypeValueSingle<double>(siteNode.second, config.nuMap.name, siteErrors, false);
           config.addATParametersToSite(siteID, nu);
+
           ++siteID;
         }
+        std::ranges::for_each(siteErrors, pushSiteError);
+
       } else if (key == MDFlexConfig::moleculesStr) {
         // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion
         // update)
@@ -792,6 +805,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
               config.cubeGridObjects.emplace_back(cubeGrid);
               std::ranges::for_each(objectErrors, pushObjectError);
+              ++objID;
             }
           } else if (objectNode.first.as<std::string>() == MDFlexConfig::cubeGaussObjectsStr) {
             generatorName = MDFlexConfig::cubeGaussObjectsStr;
@@ -801,6 +815,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
               config.cubeGaussObjects.emplace_back(cubeGauss);
               std::ranges::for_each(objectErrors, pushObjectError);
+              ++objID;
             }
           } else if (objectNode.first.as<std::string>() == MDFlexConfig::cubeUniformObjectsStr) {
             generatorName = MDFlexConfig::cubeUniformObjectsStr;
@@ -810,6 +825,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
               config.cubeUniformObjects.emplace_back(cubeUniform);
               std::ranges::for_each(objectErrors, pushObjectError);
+              ++objID;
             }
           } else if (objectNode.first.as<std::string>() == MDFlexConfig::sphereObjectsStr) {
             generatorName = MDFlexConfig::sphereObjectsStr;
@@ -819,6 +835,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
               config.sphereObjects.emplace_back(sphere);
               std::ranges::for_each(objectErrors, pushObjectError);
+              ++objID;
             }
           } else if (objectNode.first.as<std::string>() == MDFlexConfig::cubeClosestPackedObjectsStr) {
             generatorName = MDFlexConfig::cubeClosestPackedObjectsStr;
@@ -828,6 +845,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
               config.cubeClosestPackedObjects.emplace_back(cubeClosestPacked);
               std::ranges::for_each(objectErrors, pushObjectError);
+              ++objID;
             }
           } else {
             std::stringstream ss;
@@ -835,7 +853,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                << std::endl;
             errors.push_back(ss.str());
           }
-          ++objID;
         }
       } else if (key == config.useThermostat.name) {
         expected = "See AllOptions.yaml for examples.";

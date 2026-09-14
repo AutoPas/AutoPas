@@ -810,12 +810,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
               std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
                                     config.particlesPerDim.value},
               bottomLeftCorner, config.particleDensity.value);
+        } else {
+          config.cubeGridObjects.emplace_back(
+              velocity, typeID,
+              std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
+                                    config.particlesPerDim.value},
+              config.particleSpacing.value, bottomLeftCorner);
         }
-        config.cubeGridObjects.emplace_back(
-            velocity, typeID,
-            std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
-                                  config.particlesPerDim.value},
-            config.particleSpacing.value, bottomLeftCorner);
         break;
       }
       case MDFlexConfig::GeneratorOption::gaussian: {
@@ -831,11 +832,12 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
               velocity, typeID,
               std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
               bottomLeftCorner, config.particleDensity.value);
+        } else {
+          config.cubeUniformObjects.emplace_back(
+              velocity, typeID, config.particlesTotal.value,
+              std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
+              bottomLeftCorner);
         }
-        config.cubeUniformObjects.emplace_back(
-            velocity, typeID, config.particlesTotal.value,
-            std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
-            bottomLeftCorner);
         break;
       }
       case MDFlexConfig::GeneratorOption::sphere: {
@@ -853,11 +855,12 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
               velocity, typeID,
               std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
               bottomLeftCorner, config.particleDensity.value, config.closestPackingStructure.value);
+        } else {
+          config.cubeClosestPackedObjects.emplace_back(
+              velocity, typeID, config.particleSpacing.value,
+              std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
+              bottomLeftCorner, config.closestPackingStructure.value);
         }
-        config.cubeClosestPackedObjects.emplace_back(
-            velocity, typeID, config.particleSpacing.value,
-            std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
-            bottomLeftCorner, config.closestPackingStructure.value);
         break;
       }
     }

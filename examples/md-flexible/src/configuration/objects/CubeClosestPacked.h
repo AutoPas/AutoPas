@@ -39,7 +39,8 @@ class CubeClosestPacked : public Object {
                     const LatticeStructure structure = FCC, const bool centered = true)
       : CubeClosestPacked(velocity, typeId, boxLength, bottomLeftCorner, structure, centered) {
     _particleSpacing = particleSpacing;
-    _density = std::sqrt(2.0) / (particleSpacing * particleSpacing * particleSpacing);
+    _density =
+        static_cast<double>(CubeClosestPacked::getParticlesTotal()) / (boxLength[0] * boxLength[1] * boxLength[2]);
   }
 
   /**
@@ -88,7 +89,7 @@ class CubeClosestPacked : public Object {
   [[nodiscard]] size_t getParticlesTotal() const override {
     if (_structure == FCC) {
       return autopasTools::generators::FCCGenerator::getNumberOfParticles(_bottomLeftCorner, _topRightCorner,
-                                                                          _particleSpacing);
+                                                                          _particleSpacing, _centered);
     }
 
     // Number of particles in the first row.
@@ -161,7 +162,7 @@ class CubeClosestPacked : public Object {
 
     if (_structure == FCC) {
       autopasTools::generators::FCCGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
-                                                                dummyParticle, _particleSpacing);
+                                                                dummyParticle, _particleSpacing, _centered);
     } else {
       autopasTools::generators::HCPGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
                                                                 dummyParticle, _particleSpacing);

@@ -649,10 +649,10 @@ class MDFlexConfig {
       CubeClosestPacked::LatticeStructure::FCC, "structure", true,
       "Structure of the closest packing generator. Possible Values: (fcc hcp)"};
   /**
-   * closestPackingCentered
+   * gridAlignmentCentered
    */
-  MDFlexOption<bool, __LINE__> closestPackingCentered{
-      true, "centered", true, "Alignment of the closest packing unit cell. Possible Values: (true false)"};
+  MDFlexOption<bool, __LINE__> gridAlignmentCentered{
+      true, "centered", true, "Alignment of the lattice unit cell. Possible Values: (true false)"};
   /**
    * generatorOption
    */
