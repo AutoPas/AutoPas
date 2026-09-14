@@ -140,6 +140,7 @@ jobs:
       CCACHE_SLOPPINESS: "include_file_ctime,time_macros"
       CCACHE_COMPILERCHECK: "content"
       CCACHE_MAXSIZE: "500M"
+      CUDA_VERSION: "13.2.0"
 
     defaults:
       run:
@@ -157,8 +158,9 @@ jobs:
           key: ccache-${{ matrix.config.name }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.config.name }}-
 
-      # Claude's suggestion...
+      # The cuda-toolkit action uses sudo to install the toolkit inside the container.
       - name: Install sudo (needed by cuda-toolkit action)
+        if: ${{ matrix.config.cuda == 'ON' }}
         run: |
           apt-get update
           apt-get install -y sudo
@@ -168,7 +170,7 @@ jobs:
         if: ${{ matrix.config.cuda == 'ON' }}
         uses: Jimver/cuda-toolkit@v0.2.35
         with:
-          cuda: '13.2.0'
+          cuda: ${{ env.CUDA_VERSION }}
 
       - name: Install Clang 22
         run: |
@@ -187,9 +189,25 @@ jobs:
           
           # -march=x86-64-v3 covers Haswell (2013) and newer. Safe for all GHA runners.
           export CFLAGS="-march=x86-64-v3"
+          # CUDA 13 moved the CCCL headers (thrust, libcudacxx, libcu++) to a separate include directory.
+          # CUDA_PATH is exported by the cuda-toolkit action and points to the CUDA installation.
           CUDA_INCLUDE=""
-          [ "${{ matrix.config.cuda }}" = "ON" ] && CUDA_INCLUDE="-I/usr/local/cuda-13.2/include/cccl"
+          [ "${{ matrix.config.cuda }}" = "ON" ] && CUDA_INCLUDE="-I${CUDA_PATH}/include/cccl"
+          # -Wno-ignored-attributes and -Wno-deprecated-attributes silence warnings from HWY and CUDA headers,
+          # which spam the build log otherwise.
+          # HWY_COMPILE_ONLY_STATIC is needed since the dynamically dispatched HWY targets do not compile with clang-22,
+          # so HWY functors only use the best static target.
           export CXXFLAGS="${CUDA_INCLUDE} -march=x86-64-v3 -Wno-ignored-attributes -Wno-deprecated-attributes -DHWY_COMPILE_ONLY_STATIC"
+          
+          # Kokkos-specific CMake options, only relevant for Kokkos builds.
+          KOKKOS_OPTS=""
+          if [ "${{ matrix.config.kokkos }}" = "ON" ]; then
+            KOKKOS_OPTS="-DKokkos_ENABLE_OPENMP=ON"
+            [ "${{ matrix.config.cuda }}" = "ON" ] && KOKKOS_OPTS="${KOKKOS_OPTS} -DKokkos_ENABLE_CUDA=ON"
+            # GitHub runners have no GPU, so the native architecture detection of Kokkos would fail.
+            # Compile for Ampere80 (A100) as a fixed, widely available target; the binary is never executed on these jobs.
+            KOKKOS_OPTS="${KOKKOS_OPTS} -DKokkos_ARCH_AMPERE80=ON"
+          fi
           
           CC=${{ matrix.config.cc }} CXX=${{ matrix.config.cxx }} cmake \
             -G "${{ matrix.config.builder }}" \
@@ -201,9 +219,7 @@ jobs:
             -DAUTOPAS_MIN_LOG_LVL:STRING=TRACE \
             -DAUTOPAS_OPENMP=${{ matrix.config.omp }} \
             -DAUTOPAS_ENABLE_KOKKOS=${{ matrix.config.kokkos }} \
-            -DKokkos_ENABLE_OPENMP=ON \
-            -DKokkos_ENABLE_CUDA=${{ matrix.config.cuda }} \
-            -DKokkos_ARCH_AMPERE80=ON \
+            ${KOKKOS_OPTS} \
             -DAUTOPAS_ENABLE_ADDRESS_SANITIZER=${{ matrix.config.asan }} \
             -DAUTOPAS_ENABLE_THREAD_SANITIZER=${{ matrix.config.tsan }} \
             -DAUTOPAS_INTERNODE_TUNING=${UseMPI} \
@@ -258,6 +274,7 @@ jobs:
             part: 3
           - config: { cc: "mpicc" }
             part: 4
+          # CUDA builds can only be compiled, not tested, since GitHub runners have no GPU.
           - config: { cuda: "ON" }
 
     name: Run tests ${{ matrix.config.name }} (${{ matrix.part }}/4)

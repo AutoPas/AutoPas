@@ -39,28 +39,39 @@ cmake --build . --target md-flexible --parallel 12
 ```
 
 ### Enabling Kokkos Support
-AutoPas provides Kokkos-based GPU support for selected containers and traversals.
+AutoPas is being extended with Kokkos-based GPU support for selected containers and traversals.
+
+**Note**: The Kokkos support is still experimental and work in progress; the Kokkos-based containers
+and traversals themselves are not yet available. Currently, only the build system integration and
+the initialization wrappers `autopas::AutoPas_Kokkos_Init()` and `autopas::AutoPas_Kokkos_Finalize()`
+are provided.
 
 The Kokkos support can be enabled via the CMake option:
 ```bash
 cmake -DAUTOPAS_ENABLE_KOKKOS=ON
 ```
 
-If you have a local Kokkos installation, you might need to point to the local Kokkos installation directory explicitly with:
+AutoPas looks for a suitable Kokkos backend automatically, depending on which accelerator compilers
+are available (CUDA, HIP, SYCL or OpenMP as fallback). The selection can be overridden explicitly,
+e.g. with:
+```bash
+cmake -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=OFF
+```
+
+If you have a local Kokkos installation (version 5.1.1 or later), CMake will use it if it finds it.
+Otherwise you might need to point to the local Kokkos installation directory explicitly with:
 ```bash
 cmake -DKokkos_DIR={/path/to/your/kokkos/installation}/lib/cmake/Kokkos
 ```
 
-If CMake cannot find a local Kokkos installation on your device, it fetches version 5.1.1 from GitHub. In this case, you will have to configure the Kokkos backends manually.
-By default, the Kokkos backends for OpenMP, Cuda, etc. are disabled.
+If CMake cannot find a local Kokkos installation, it automatically fetches version 5.1.1 from GitHub
+and builds it together with AutoPas. By default, Kokkos is then built for the machine it is compiled
+on (`Kokkos_ARCH_NATIVE`). If no GPU is available during compilation (e.g. on a login node of a
+cluster), the architecture has to be specified manually, e.g. with `-DKokkos_ARCH_AMPERE80=ON`.
 
+When using Clang together with Kokkos, md-flexible currently requires:
 ```bash
-cmake -DKokkos_ENABLE_OPENMP=ON/OFF -DKokkos_ENABLE_CUDA=ON/OFF
-```
-
-The md-flexible target only compiles and links with Clang with the following additional CMake settings:
-```bash
-cmake -DAUTOPAS_USE_AUTOVEC=OFF #more requirements to come eventually
+cmake -DAUTOPAS_USE_AUTOVEC=OFF
 ```
 
 ### Enabling Rules-Based Tuning and Fuzzy Tuning

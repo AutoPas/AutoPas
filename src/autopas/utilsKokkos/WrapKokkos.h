@@ -13,7 +13,11 @@
 namespace autopas {
 
 /**
- * Wrapper for Kokkos::initialize()
+ * Wrapper for Kokkos::initialize().
+ *
+ * Should be called once at the beginning of the program, before any Kokkos-based container or
+ * traversal is used. If AutoPas was compiled without Kokkos support, this is a no-op.
+ *
  * @param argc: reference to number of arguments
  * @param argv: argument vector
  */
@@ -24,7 +28,10 @@ inline void AutoPas_Kokkos_Init([[maybe_unused]] int &argc, [[maybe_unused]] cha
 }
 
 /**
- * Wrapper for Kokkos::finalize()
+ * Wrapper for Kokkos::finalize().
+ *
+ * Should be called exactly once at the end of the program, after all Kokkos work has finished.
+ * If AutoPas was compiled without Kokkos support, this is a no-op.
  */
 inline void AutoPas_Kokkos_Finalize() {
 #ifdef AUTOPAS_ENABLE_KOKKOS

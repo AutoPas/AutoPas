@@ -20,7 +20,9 @@ target_link_libraries(
         Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony> # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
         PRIVATE
-        $<$<CXX_COMPILER_ID:Clang>:stdc++;m>
+        # Kokkos (and its CUDA headers) do not build against libc++, so Clang-based Kokkos builds
+        # have to link explicitly against libstdc++ and libm.
+        $<$<AND:$<BOOL:${AUTOPAS_ENABLE_KOKKOS}>,$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>>:stdc++;m>
 )
 
 include(GoogleTest)
