@@ -11,8 +11,10 @@
 #include "generators/src/UniformGenerator.h"
 #include "src/configuration/YamlParser.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
+#include "src/configuration/objects/CubeGauss.h"
 #include "src/configuration/objects/CubeGrid.h"
 #include "src/configuration/objects/CubeUniform.h"
+#include "src/configuration/objects/Sphere.h"
 #include "testingHelpers/commonTypedefs.h"
 
 TEST_F(GeneratorsTest, GridFillwithBoxMin) {
@@ -218,4 +220,245 @@ TEST_F(GeneratorsTest, CubeUniformDensity) {
   std::vector<ParticleType> particles;
   uniform.generate(particles);
   EXPECT_EQ(particles.size(), 20);
+}
+
+TEST_F(GeneratorsTest, CubeClosestPackedAlignment) {
+  constexpr std::array<double, 3> velocity = {0., 0., 0.};
+  constexpr unsigned long typeId = 0;
+  constexpr double spacing = 1.0;
+  constexpr std::array<double, 3> bottomLeft = {1.0, 2.0, 3.0};
+  constexpr std::array<double, 3> boxLength = {4.0, 4.0, 4.0};
+
+  // 1. FCC uncentered: first particle is at bottomLeft
+  {
+    const CubeClosestPacked fccUncentered(velocity, typeId, spacing, boxLength, bottomLeft,
+                                          CubeClosestPacked::LatticeStructure::FCC, false);
+    std::vector<ParticleType> particles;
+    fccUncentered.generate(particles);
+    ASSERT_GT(particles.size(), 0);
+    EXPECT_EQ(particles.size(), fccUncentered.getParticlesTotal());
+    EXPECT_NEAR(particles[0].getR()[0], bottomLeft[0], 1e-10);
+    EXPECT_NEAR(particles[0].getR()[1], bottomLeft[1], 1e-10);
+    EXPECT_NEAR(particles[0].getR()[2], bottomLeft[2], 1e-10);
+  }
+
+  // 2. FCC centered: standoff is a / 4.0 in each dimension
+  {
+    const CubeClosestPacked fccCentered(velocity, typeId, spacing, boxLength, bottomLeft,
+                                        CubeClosestPacked::LatticeStructure::FCC, true);
+    std::vector<ParticleType> particles;
+    fccCentered.generate(particles);
+    ASSERT_GT(particles.size(), 0);
+    EXPECT_EQ(particles.size(), fccCentered.getParticlesTotal());
+    const double a = std::sqrt(2.0) * spacing;
+    EXPECT_NEAR(particles[0].getR()[0], bottomLeft[0] + a / 4.0, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[1], bottomLeft[1] + a / 4.0, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[2], bottomLeft[2] + a / 4.0, 1e-10);
+  }
+
+  // 3. HCP uncentered: first particle is at bottomLeft
+  {
+    const CubeClosestPacked hcpUncentered(velocity, typeId, spacing, boxLength, bottomLeft,
+                                          CubeClosestPacked::LatticeStructure::HCP, false);
+    std::vector<ParticleType> particles;
+    hcpUncentered.generate(particles);
+    ASSERT_GT(particles.size(), 0);
+    EXPECT_EQ(particles.size(), hcpUncentered.getParticlesTotal());
+    EXPECT_NEAR(particles[0].getR()[0], bottomLeft[0], 1e-10);
+    EXPECT_NEAR(particles[0].getR()[1], bottomLeft[1], 1e-10);
+    EXPECT_NEAR(particles[0].getR()[2], bottomLeft[2], 1e-10);
+  }
+
+  // 4. HCP centered: standoff is (s / 4.0, yOffset, spacingLayer / 2.0)
+  {
+    const CubeClosestPacked hcpCentered(velocity, typeId, spacing, boxLength, bottomLeft,
+                                        CubeClosestPacked::LatticeStructure::HCP, true);
+    std::vector<ParticleType> particles;
+    hcpCentered.generate(particles);
+    ASSERT_GT(particles.size(), 0);
+    EXPECT_EQ(particles.size(), hcpCentered.getParticlesTotal());
+    const double yOffset = spacing * std::sqrt(1. / 12.);
+    const double spacingLayer = spacing * std::sqrt(2. / 3.);
+    EXPECT_NEAR(particles[0].getR()[0], bottomLeft[0] + spacing / 4.0, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[1], bottomLeft[1] + yOffset, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[2], bottomLeft[2] + spacingLayer / 2.0, 1e-10);
+  }
+}
+
+TEST_F(GeneratorsTest, CubeClosestPackedHCPDensity) {
+  constexpr std::array<double, 3> velocity = {0., 0., 0.};
+  constexpr unsigned long typeId = 0;
+  constexpr double density = 1.0;
+  constexpr std::array<double, 3> boxLength = {4.0, 4.0, 4.0};
+  constexpr std::array<double, 3> bottomLeft = {0., 0., 0.};
+
+  const CubeClosestPacked cube(velocity, typeId, boxLength, bottomLeft, density,
+                               CubeClosestPacked::LatticeStructure::HCP);
+  EXPECT_DOUBLE_EQ(cube.getParticleDensity(), static_cast<double>(cube.getParticlesTotal()) / (4.0 * 4.0 * 4.0));
+  EXPECT_DOUBLE_EQ(cube.getParticleSpacing(), std::cbrt(std::sqrt(2.0) / density));
+
+  std::vector<ParticleType> particles;
+  cube.generate(particles);
+  EXPECT_EQ(particles.size(), cube.getParticlesTotal());
+  EXPECT_GT(particles.size(), 0);
+}
+
+TEST_F(GeneratorsTest, CubeGridAlignmentAndGenerate) {
+  constexpr std::array<double, 3> velocity = {0., 0., 0.};
+  constexpr unsigned long typeId = 0;
+  constexpr std::array<size_t, 3> particlesPerDim = {3, 3, 3};
+  constexpr double spacing = 1.2;
+  constexpr std::array<double, 3> bottomLeft = {1.0, 2.0, 3.0};
+
+  // 1. Uncentered: first particle at bottomLeft
+  {
+    const CubeGrid gridUncentered(velocity, typeId, particlesPerDim, spacing, bottomLeft, false);
+    std::vector<ParticleType> particles;
+    gridUncentered.generate(particles);
+    ASSERT_EQ(particles.size(), 27);
+    EXPECT_EQ(particles.size(), gridUncentered.getParticlesTotal());
+    EXPECT_NEAR(particles[0].getR()[0], bottomLeft[0], 1e-10);
+    EXPECT_NEAR(particles[0].getR()[1], bottomLeft[1], 1e-10);
+    EXPECT_NEAR(particles[0].getR()[2], bottomLeft[2], 1e-10);
+  }
+
+  // 2. Centered: first particle at bottomLeft + 0.5 * spacing
+  {
+    const CubeGrid gridCentered(velocity, typeId, particlesPerDim, spacing, bottomLeft, true);
+    std::vector<ParticleType> particles;
+    gridCentered.generate(particles);
+    ASSERT_EQ(particles.size(), 27);
+    EXPECT_EQ(particles.size(), gridCentered.getParticlesTotal());
+    EXPECT_NEAR(particles[0].getR()[0], bottomLeft[0] + 0.5 * spacing, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[1], bottomLeft[1] + 0.5 * spacing, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[2], bottomLeft[2] + 0.5 * spacing, 1e-10);
+
+    // Verify periodic distance across a periodic box: box length = particlesPerDim * spacing
+    const std::array<double, 3> boxLength = {3 * spacing, 3 * spacing, 3 * spacing};
+    for (size_t i = 0; i < particles.size(); ++i) {
+      for (size_t j = i + 1; j < particles.size(); ++j) {
+        std::array<double, 3> diff = autopas::utils::ArrayMath::sub(particles[i].getR(), particles[j].getR());
+        for (size_t d = 0; d < 3; ++d) {
+          diff[d] -= boxLength[d] * std::round(diff[d] / boxLength[d]);
+        }
+        const double dist = std::sqrt(autopas::utils::ArrayMath::dot(diff, diff));
+        EXPECT_GE(dist, spacing - 1e-10);
+      }
+    }
+  }
+}
+
+TEST_F(GeneratorsTest, SphereGenerate) {
+  constexpr std::array<double, 3> velocity = {0., 0., 0.};
+  constexpr unsigned long typeId = 0;
+  constexpr std::array<double, 3> center = {5.0, 5.0, 5.0};
+  constexpr int radius = 3;
+  constexpr double spacing = 1.0;
+
+  const Sphere sphere(velocity, typeId, center, radius, spacing);
+  EXPECT_EQ(sphere.getRadius(), radius);
+  EXPECT_DOUBLE_EQ(sphere.getParticleSpacing(), spacing);
+  EXPECT_EQ(sphere.getCenter(), center);
+
+  const auto boxMin = sphere.getBoxMin();
+  const auto boxMax = sphere.getBoxMax();
+  EXPECT_NEAR(boxMin[0], center[0] - radius * spacing, 1e-10);
+  EXPECT_NEAR(boxMax[0], center[0] + radius * spacing, 1e-10);
+
+  std::vector<ParticleType> particles;
+  sphere.generate(particles);
+  EXPECT_EQ(particles.size(), sphere.getParticlesTotal());
+  EXPECT_GT(particles.size(), 0);
+
+  // Check that every particle is within the sphere's bounding box and radial cutoff
+  const double maxRadius = (radius + 1) * spacing;
+  for (const auto &p : particles) {
+    const auto diff = autopas::utils::ArrayMath::sub(p.getR(), center);
+    const double dist = std::sqrt(autopas::utils::ArrayMath::dot(diff, diff));
+    EXPECT_LE(dist, maxRadius + 1e-10);
+
+    for (size_t d = 0; d < 3; ++d) {
+      EXPECT_GE(p.getR()[d], boxMin[d] - 1e-10);
+      EXPECT_LE(p.getR()[d], boxMax[d] + 1e-10);
+    }
+  }
+}
+
+TEST_F(GeneratorsTest, CubeGaussGenerate) {
+  constexpr std::array<double, 3> velocity = {0., 0., 0.};
+  constexpr unsigned long typeId = 0;
+  constexpr size_t numParticles = 50;
+  constexpr std::array<double, 3> boxLength = {10.0, 10.0, 10.0};
+  constexpr std::array<double, 3> mean = {5.0, 5.0, 5.0};
+  constexpr std::array<double, 3> stdDev = {1.0, 1.0, 1.0};
+  constexpr std::array<double, 3> bottomLeft = {0.0, 0.0, 0.0};
+
+  const CubeGauss gauss(velocity, typeId, numParticles, boxLength, mean, stdDev, bottomLeft);
+  EXPECT_EQ(gauss.getParticlesTotal(), numParticles);
+  EXPECT_EQ(gauss.getDistributionMean(), mean);
+  EXPECT_EQ(gauss.getDistributionStdDev(), stdDev);
+
+  std::vector<ParticleType> particles;
+  gauss.generate(particles);
+  EXPECT_EQ(particles.size(), numParticles);
+
+  for (const auto &p : particles) {
+    for (size_t d = 0; d < 3; ++d) {
+      EXPECT_GE(p.getR()[d], bottomLeft[d]);
+      EXPECT_LT(p.getR()[d], bottomLeft[d] + boxLength[d]);
+    }
+  }
+}
+
+TEST_F(GeneratorsTest, IDContinuity) {
+  constexpr std::array<double, 3> velocity = {0., 0., 0.};
+  constexpr unsigned long typeId = 0;
+
+  std::vector<ParticleType> particles;
+
+  // Generate a CubeGrid
+  const CubeGrid grid(velocity, typeId, {2, 2, 2}, 1.0, {0.0, 0.0, 0.0});
+  grid.generate(particles);
+  EXPECT_EQ(particles.size(), 8);
+
+  // Generate a CubeClosestPacked into the same vector
+  const CubeClosestPacked ccp(velocity, typeId, 1.0, {3.0, 3.0, 3.0}, {10.0, 10.0, 10.0});
+  const size_t ccpCount = ccp.getParticlesTotal();
+  ccp.generate(particles);
+  EXPECT_EQ(particles.size(), 8 + ccpCount);
+
+  // Generate a Sphere into the same vector
+  const Sphere sphere(velocity, typeId, {30.0, 30.0, 30.0}, 2, 1.0);
+  const size_t sphereCount = sphere.getParticlesTotal();
+  sphere.generate(particles);
+  EXPECT_EQ(particles.size(), 8 + ccpCount + sphereCount);
+
+  // Check that IDs are strictly 0, 1, 2, ..., N - 1
+  for (size_t i = 0; i < particles.size(); ++i) {
+    EXPECT_EQ(particles[i].getID(), i);
+  }
+}
+
+TEST_F(GeneratorsTest, DegenerateInputs) {
+  constexpr std::array<double, 3> velocity = {0., 0., 0.};
+  constexpr unsigned long typeId = 0;
+
+  // Zero spacing
+  const CubeClosestPacked zeroSpacing(velocity, typeId, 0.0, {4.0, 4.0, 4.0}, {0.0, 0.0, 0.0});
+  EXPECT_EQ(zeroSpacing.getParticlesTotal(), 0);
+  std::vector<ParticleType> particles;
+  zeroSpacing.generate(particles);
+  EXPECT_EQ(particles.size(), 0);
+
+  // Negative spacing
+  const CubeClosestPacked negSpacing(velocity, typeId, -1.0, {4.0, 4.0, 4.0}, {0.0, 0.0, 0.0});
+  EXPECT_EQ(negSpacing.getParticlesTotal(), 0);
+  negSpacing.generate(particles);
+  EXPECT_EQ(particles.size(), 0);
+
+  // Degenerate box length (negative)
+  const CubeClosestPacked negBox(velocity, typeId, 1.0, {-1.0, 4.0, 4.0}, {0.0, 0.0, 0.0});
+  EXPECT_EQ(negBox.getParticlesTotal(), 0);
+  negBox.generate(particles);
+  EXPECT_EQ(particles.size(), 0);
 }

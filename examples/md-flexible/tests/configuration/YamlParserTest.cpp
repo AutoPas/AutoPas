@@ -10,6 +10,7 @@
 
 #include "src/configuration/YamlParser.h"
 #include "src/domainDecomposition/LoadBalancerOption.h"
+#include "testingHelpers/commonTypedefs.h"
 
 using MDFlexParser::YamlParser::parseSequenceOneElementExpected;
 
@@ -286,5 +287,92 @@ TEST_F(YamlParserTest, parseCubeClosestPackedStructureAndDensity) {
     std::vector<std::string> errors;
     MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
     EXPECT_FALSE(errors.empty());
+  }
+
+  // Centered: false
+  {
+    const auto node = YAML::Load(
+        "structure: fcc\n"
+        "box-length: [4, 4, 4]\n"
+        "particle-spacing: 1.0\n"
+        "bottomLeftCorner: [1, 2, 3]\n"
+        "centered: false\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    const auto obj = MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
+    EXPECT_TRUE(errors.empty());
+    std::vector<ParticleType> particles;
+    obj.generate(particles);
+    ASSERT_GT(particles.size(), 0);
+    EXPECT_NEAR(particles[0].getR()[0], 1.0, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[1], 2.0, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[2], 3.0, 1e-10);
+  }
+
+  // Centered: true
+  {
+    const auto node = YAML::Load(
+        "structure: fcc\n"
+        "box-length: [4, 4, 4]\n"
+        "particle-spacing: 1.0\n"
+        "bottomLeftCorner: [1, 2, 3]\n"
+        "centered: true\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    const auto obj = MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
+    EXPECT_TRUE(errors.empty());
+    std::vector<ParticleType> particles;
+    obj.generate(particles);
+    ASSERT_GT(particles.size(), 0);
+    const double a = std::sqrt(2.0) * 1.0;
+    EXPECT_NEAR(particles[0].getR()[0], 1.0 + a / 4.0, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[1], 2.0 + a / 4.0, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[2], 3.0 + a / 4.0, 1e-10);
+  }
+}
+
+TEST_F(YamlParserTest, parseCubeGridAlignment) {
+  MDFlexConfig config;
+
+  // centered: false
+  {
+    const auto node = YAML::Load(
+        "particles-per-dimension: [2, 2, 2]\n"
+        "particle-spacing: 1.0\n"
+        "bottomLeftCorner: [1, 2, 3]\n"
+        "centered: false\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    const auto obj = MDFlexParser::YamlParser::parseCubeGridObject(config, node, errors);
+    EXPECT_TRUE(errors.empty());
+    std::vector<ParticleType> particles;
+    obj.generate(particles);
+    ASSERT_EQ(particles.size(), 8);
+    EXPECT_NEAR(particles[0].getR()[0], 1.0, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[1], 2.0, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[2], 3.0, 1e-10);
+  }
+
+  // centered: true
+  {
+    const auto node = YAML::Load(
+        "particles-per-dimension: [2, 2, 2]\n"
+        "particle-spacing: 1.0\n"
+        "bottomLeftCorner: [1, 2, 3]\n"
+        "centered: true\n"
+        "particle-type-id: 0\n"
+        "velocity: [0, 0, 0]\n");
+    std::vector<std::string> errors;
+    const auto obj = MDFlexParser::YamlParser::parseCubeGridObject(config, node, errors);
+    EXPECT_TRUE(errors.empty());
+    std::vector<ParticleType> particles;
+    obj.generate(particles);
+    ASSERT_EQ(particles.size(), 8);
+    EXPECT_NEAR(particles[0].getR()[0], 1.5, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[1], 2.5, 1e-10);
+    EXPECT_NEAR(particles[0].getR()[2], 3.5, 1e-10);
   }
 }
