@@ -92,31 +92,8 @@ class CubeClosestPacked : public Object {
                                                                           _particleSpacing, _centered);
     }
 
-    // Number of particles in the first row.
-    const size_t xNumRow = std::ceil(_boxLength[0] / _particleSpacing);
-    // True if the total number of x-positions is odd.
-    const double xOffset = _particleSpacing * 1. / 2.;
-    const bool xOdd = static_cast<int>(std::ceil(_boxLength[0] / xOffset)) % 2 == 1;
-
-    // Distance between layers and rows
-    const auto spacingLayer = _particleSpacing * sqrt(2. / 3.);
-    const auto spacingRow = _particleSpacing * sqrt(3. / 4.);
-
-    // Number of rows in an even layer.
-    const size_t yNumEven = std::ceil(_boxLength[1] / spacingRow);
-    // Number of rows in an odd layer.
-    const double yOffset = _particleSpacing * sqrt(1. / 12.);
-    const size_t yNumOdd = std::ceil((_boxLength[1] - yOffset) / spacingRow);
-
-    // Number of particles in an even layer.
-    const size_t evenLayer = xNumRow * yNumEven - std::floor(xOdd * yNumEven * 0.5);
-    // Number of particles in an odd layer.
-    const size_t oddLayer = xNumRow * yNumOdd - std::ceil(xOdd * yNumOdd * 0.5);
-
-    // Total number of layers.
-    const double numLayers = std::ceil(_boxLength[2] / spacingLayer);
-    // Add up all even and odd layers.
-    return evenLayer * std::ceil(numLayers / 2.) + oddLayer * std::floor(numLayers / 2.);
+    return autopasTools::generators::HCPGenerator::getNumberOfParticles(_bottomLeftCorner, _topRightCorner,
+                                                                        _particleSpacing, _centered);
   }
 
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
@@ -165,7 +142,7 @@ class CubeClosestPacked : public Object {
                                                                 dummyParticle, _particleSpacing, _centered);
     } else {
       autopasTools::generators::HCPGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
-                                                                dummyParticle, _particleSpacing);
+                                                                dummyParticle, _particleSpacing, _centered);
     }
   }
 

@@ -28,7 +28,6 @@ inline constexpr std::array<std::array<double, 3>, 4> fccBasis = {{
 
 /**
  * Calculates the number of particles generated in an FCC lattice within [boxMin, boxMax).
- * Particle IDs start from the default particle.
  * @param boxMin
  * @param boxMax
  * @param spacing Nearest-neighbor distance d.
@@ -37,6 +36,15 @@ inline constexpr std::array<std::array<double, 3>, 4> fccBasis = {{
  */
 inline size_t getNumberOfParticles(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                    const double spacing = 1.0, const bool centeredAlignment = true) {
+  if (spacing <= 0.0) {
+    return 0;
+  }
+  for (size_t d = 0; d < 3; ++d) {
+    if (boxMax[d] <= boxMin[d]) {
+      return 0;
+    }
+  }
+
   const double a = std::sqrt(2.0) * spacing;
 
   std::array<double, 3> offset = {0.0, 0.0, 0.0};
@@ -76,6 +84,7 @@ inline size_t getNumberOfParticles(const std::array<double, 3> &boxMin, const st
 
 /**
  * Fills any container with particles arranged in a conventional Face-Centered Cubic (FCC) lattice.
+ * Particle IDs start from the default particle.
  * @tparam Container Arbitrary container class that supports addParticle().
  * @param container
  * @param boxMin
@@ -89,6 +98,15 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
                        const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle =
                            typename autopas::utils::ParticleTypeTrait<Container>::value(),
                        const double spacing = 1.0, const bool centeredAlignment = true) {
+  if (spacing <= 0.0) {
+    return;
+  }
+  for (size_t d = 0; d < 3; ++d) {
+    if (boxMax[d] <= boxMin[d]) {
+      return;
+    }
+  }
+
   const double a = std::sqrt(2.0) * spacing;
 
   std::array<double, 3> offset = {0.0, 0.0, 0.0};

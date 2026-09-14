@@ -60,10 +60,12 @@ CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig &confi
   }
 
   bool centered = true;
-  try {
-    centered = node[config.gridAlignmentCentered.name].as<bool>();
-  } catch (const std::exception &) {
-    objectErrors.push_back("Could not parse " + config.gridAlignmentCentered.name + " for the object.");
+  if (node[config.gridAlignmentCentered.name]) {
+    try {
+      centered = node[config.gridAlignmentCentered.name].as<bool>();
+    } catch (const std::exception &) {
+      objectErrors.push_back("Could not parse " + config.gridAlignmentCentered.name + " for the object.");
+    }
   }
 
   if (particleDensity > 0.0) {
@@ -170,10 +172,12 @@ CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const MDFlexC
   }
 
   bool centered = true;
-  try {
-    centered = node[config.gridAlignmentCentered.name].as<bool>();
-  } catch (const std::exception &) {
-    objectErrors.push_back("Could not parse " + config.gridAlignmentCentered.name + " for the object.");
+  if (node[config.gridAlignmentCentered.name]) {
+    try {
+      centered = node[config.gridAlignmentCentered.name].as<bool>();
+    } catch (const std::exception &) {
+      objectErrors.push_back("Could not parse " + config.gridAlignmentCentered.name + " for the object.");
+    }
   }
 
   if (particleDensity > 0.0) {
