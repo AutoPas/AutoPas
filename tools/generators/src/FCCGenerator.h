@@ -71,8 +71,8 @@ inline size_t getNumberOfParticles(const std::array<double, 3> &boxMin, const st
               cellOrigin[1] + b[1] * a,
               cellOrigin[2] + b[2] * a,
           };
-          if (pos[0] >= boxMin[0] and pos[0] < boxMax[0] - 1e-10 and pos[1] >= boxMin[1] and
-              pos[1] < boxMax[1] - 1e-10 and pos[2] >= boxMin[2] and pos[2] < boxMax[2] - 1e-10) {
+          if (pos[0] >= boxMin[0] and pos[0] < boxMax[0] - offset[0] and pos[1] >= boxMin[1] and
+              pos[1] < boxMax[1] - offset[1] and pos[2] >= boxMin[2] and pos[2] < boxMax[2] - offset[2]) {
             ++count;
           }
         }
@@ -133,8 +133,8 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
               cellOrigin[1] + basis[1] * a,
               cellOrigin[2] + basis[2] * a,
           };
-          if (pos[0] >= boxMin[0] and pos[0] < boxMax[0] - 1e-10 and pos[1] >= boxMin[1] and
-              pos[1] < boxMax[1] - 1e-10 and pos[2] >= boxMin[2] and pos[2] < boxMax[2] - 1e-10) {
+          if (pos[0] >= boxMin[0] and pos[0] < boxMax[0] - offset[0] and pos[1] >= boxMin[1] and
+              pos[1] < boxMax[1] - offset[1] and pos[2] >= boxMin[2] and pos[2] < boxMax[2] - offset[2]) {
             auto p = defaultParticle;
             p.setR(pos);
             p.setID(id++);

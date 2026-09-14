@@ -83,6 +83,8 @@ Objects:
       # parameters given above for Molecule-0. See particleTypeStr in the documentation for MDFlexConfig.h for more
       # information.
       particle-type-id               :  0
+      # If true, the first particle is placed at 1/2 particle-spacing from the bottomLeftCorner, otherwise the first particle is placed at the bottomLeftCorner.
+      centered                        :  true
   CubeGauss:
     0:
       distribution-mean              :  [17, 17, 17]
@@ -112,6 +114,8 @@ Objects:
       # particle-density             :  1.0
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
+      # If true, the first particle is placed at 1/2 the lattice unit cell from the bottomLeftCorner, otherwise the first particle is placed at the bottomLeftCorner.
+      centered                        :  true
   Sphere:
     0:
       center                         :  [4, 16, 4]
