@@ -16,11 +16,11 @@ namespace autopas {
 
 /**
  * Concept defining the requirements for a NeighborListPolicy used by the InteractionListGeneratorFunctor.
- * @tparam Policy The policy type to check.
+ * @tparam Policy_T The policy type to check.
  * @tparam Particle_T The particle type the policy operates on.
  */
-template <class Policy, class Particle_T>
-concept NeighborListPolicyConcept = requires(Policy policy, size_t numParticles, Particle_T *p1, Particle_T *p2) {
+template <class Policy_T, class Particle_T>
+concept NeighborListPolicyConcept = requires(Policy_T policy, size_t numParticles, Particle_T *p1, Particle_T *p2) {
   { policy.add(p1, p2) } -> std::same_as<void>;
 };
 
@@ -28,9 +28,7 @@ concept NeighborListPolicyConcept = requires(Policy policy, size_t numParticles,
  * This functor generates lists of particles within interactionLength of each other: can be used internally for Verlet
  * list generation and provides a base for a public-facing externally used version, provided in the applicationLibrary.
  *
- * @details After applying AutoPas's computeInteractions function with this functor, a std::vector<std::vector<size_t>>
- * is filled, mapping from each particle index to a vector of indices belonging to all particles within
- * interactionLength of the first.
+ * @details The functor passes valid pairs of particles to the neighbor list policy via policy.add(p1, p2). The policy itself can then determine how to build up the neighbor lists from the particle pointer pairs.
  *
  * @tparam Particle_T The type of Particle class used.
  * @tparam NeighborListPolicy_T Policy that defines how particle pointers are added to a neighbor list.
@@ -112,12 +110,8 @@ class InteractionListGeneratorFunctor
 
     double distSquared = utils::ArrayMath::dot(dist, dist);
     if (distSquared < _interactionLengthSquared) {
-      // Assuming this functor is used like any other functor, this is thread safe: _neighborLists is a vector of
-      // vectors, meaning we can push_back to particle i's list with the same thread safety as for writing to it force
-      // buffer in e.g. a LJ functor.
-
-      // This is only thread-safe if a vector (neighbor list) exists for all particles and their corresponding indices.
-      // These indices as stored in _particleToIndex must not exceed the total number of particles.
+      // Assuming this functor is used like any other functor, this is generally thread safe due to how AutoPas traversals are designed.
+      // However, the neighbor list policy and the underlying data structure must be suitable as well. (e.g. no unwanted resizing during the traversal)
 
       // - If newton3=false & gatherNewton3Lists=false, we only need to add the i->j interaction to i's list as the j->i
       // interaction is handled in another call.

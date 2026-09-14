@@ -140,8 +140,8 @@ class VerletListHelpers {
     void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
       using namespace autopas::utils::ArrayMath::literals;
       if (i.isDummy() or j.isDummy()) return;
-      auto dist = i.getR() - j.getR();
-      if (utils::ArrayMath::dot(dist, dist) < _interactionLengthSquared) {
+      const auto displacement = i.getR() - j.getR();
+      if (utils::ArrayMath::dot(displacement, displacement) < _interactionLengthSquared) {
         _counts[_particleToIndex.at(&i)].value.fetch_add(1, std::memory_order_relaxed);
         // newton3 ignored: AoSFunctor(j, i) is also called for newton3=false.
       }
@@ -268,8 +268,8 @@ class VerletListHelpers {
     void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) override {
       using namespace autopas::utils::ArrayMath::literals;
       if (i.isDummy() or j.isDummy()) return;
-      auto dist = i.getR() - j.getR();
-      if (utils::ArrayMath::dot(dist, dist) < _interactionLengthSquared) {
+      const auto displacement = i.getR() - j.getR();
+      if (utils::ArrayMath::dot(displacement, displacement) < _interactionLengthSquared) {
         const size_t iIdx = _particleToIndex.at(&i);
         const size_t jIdx = _particleToIndex.at(&j);
         _neighborList.indices[_fillPos[iIdx].value.fetch_add(1, std::memory_order_relaxed)] = jIdx;
@@ -349,84 +349,5 @@ class VerletListHelpers {
     const std::unordered_map<const Particle_T *, size_t> &_particleToIndex;
     double _interactionLengthSquared;
   };
-
-  /**
-   * This functor checks the validity of neighborhood lists.
-   * If a pair of particles has a distance of less than the cutoff radius it
-   * checks whether the pair is represented in the CRS neighbor list.
-   * If the pair is not present in the list the neighborhood lists are invalid
-   * and neighborlistsAreValid() will return false.
-   */
-  class VerletListValidityCheckerFunctor : public PairwiseFunctor<Particle_T, VerletListValidityCheckerFunctor> {
-   public:
-    /**
-     * Structure of the SoAs defined by the particle.
-     */
-    using SoAArraysType = typename Particle_T::SoAArraysType;
-
-    /**
-     * Constructor
-     * @param neighborList  The CRS neighbor list to validate.
-     * @param particleIndex Map from particle pointer to its dense SoA index.
-     * @param cutoff        The cutoff radius (pairs within this are expected to be listed).
-     */
-    VerletListValidityCheckerFunctor(const NeighborListCRS &neighborList,
-                                     const std::unordered_map<const Particle_T *, size_t> &particleIndex, double cutoff)
-        : PairwiseFunctor<Particle_T, VerletListValidityCheckerFunctor>(cutoff),
-          _neighborList(neighborList),
-          _particleIndex(particleIndex),
-          _cutoffsquared(cutoff * cutoff),
-          _valid(true) {}
-
-    std::string getName() override { return "VerletListValidityCheckerFunctor"; }
-
-    bool isRelevantForTuning() override { return false; }
-
-    bool allowsNewton3() override {
-      utils::ExceptionHandler::exception(
-          "VLCAllCellsGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
-      return true;
-    }
-
-    bool allowsNonNewton3() override {
-      utils::ExceptionHandler::exception(
-          "VLCAllCellsGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
-      return true;
-    }
-
-    void AoSFunctor(Particle_T &i, Particle_T &j, bool /*newton3*/) override {
-      using namespace autopas::utils::ArrayMath::literals;
-
-      auto dist = i.getR() - j.getR();
-      double distSquared = utils::ArrayMath::dot(dist, dist);
-      if (distSquared < _cutoffsquared) {
-        // Thread-safe: reads only from the immutable CRS structure and stack variables.
-        const size_t iIdx = _particleIndex.at(&i);
-        const size_t jIdx = _particleIndex.at(&j);
-        const size_t *beg = _neighborList.begin(iIdx);
-        const size_t *end = beg + _neighborList.count(iIdx);
-        if (std::find(beg, end, jIdx) == end) {
-          // this is thread safe, as _valid is atomic
-          _valid = false;
-        }
-      }
-    }
-
-    /**
-     * Returns whether the neighbour list are valid.
-     * Call this after performing the pairwise traversal
-     * @return
-     */
-    bool neighborlistsAreValid() { return _valid; }
-
-   private:
-    const NeighborListCRS &_neighborList;
-    const std::unordered_map<const Particle_T *, size_t> &_particleIndex;
-    double _cutoffsquared;
-
-    // needs to be thread safe
-    std::atomic<bool> _valid;
-  };
-
 };  // class VerletListHelpers
 }  // namespace autopas
