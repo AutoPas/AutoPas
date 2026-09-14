@@ -30,8 +30,15 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLListIterationTraversal(PairwiseFunctor_T &pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor) {}
+  explicit VLListIterationTraversal(PairwiseFunctor_T &pairwiseFunctor, const DataLayoutOption dataLayout,
+                                    const bool useNewton3)
+      : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor) {
+    if (useNewton3) {
+      AutoPasLog(WARN,
+                 "VLListIterationTraversal: This traversal is not parallelized for newton3 enabled and will utilize "
+                 "only one thread.");
+    }
+  }
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }
 
