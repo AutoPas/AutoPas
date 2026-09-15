@@ -659,7 +659,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
 
         void buildCellList(Kokkos::View<int*> cellIds, Kokkos::View<int*> partIds, Kokkos::View<int*> cellStart, const auto& soa,const int n){
             Grid g = _grid;
-	    auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, n);
+	        auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, n);
             Kokkos::parallel_for("vl_kokkos_rebuild_cellIdx", rangePolicy, KOKKOS_LAMBDA(const int i) {
 
                 const auto x1 = soa.template operator()<Particle_T::AttributeNames::posX, true>(i);
@@ -678,8 +678,8 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
                 const int c = cellIds(k);
                 if (k == 0 || c != cellIds(k-1)) cellStart(c) = k;
             });
-	    // serial-on-device backward pass; nCells is small
-	    Kokkos::parallel_for("cell_fill", 1, KOKKOS_LAMBDA(const int) {
+	        // serial-on-device backward pass; nCells is small
+	        Kokkos::parallel_for("cell_fill", 1, KOKKOS_LAMBDA(const int) {
   	    	for (int c = g.nCells - 1; c >= 0; --c)
         		if (cellStart(c) > cellStart(c + 1)) cellStart(c) = cellStart(c + 1);
 	    	});
@@ -714,14 +714,14 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             Kokkos::View<int*> cellIds("cellIdx",N);
             Kokkos::View<int*> partIds("particleIdx",N);
 
-	    auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+	        auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
 
             
             Grid g = _grid;
             double startKernel = buildTimer.seconds();
             Kokkos::View<int*> cellStart("cellStart", g.nCells+1);
             buildCellList(cellIds,partIds,cellStart,soa1Device,N);
-	    double endCellListBuild = buildTimer.seconds();
+	        double endCellListBuild = buildTimer.seconds();
             spdlog::info("Cell List Build Time:{} ",endCellListBuild-startBuild);
 
             Kokkos::parallel_for("vl_kokkos_rebuild_cells", rangePolicy, KOKKOS_LAMBDA(const int i) {
@@ -761,7 +761,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
                 offsets(i) = i * maxNeighbors + count;
             });
             double endBuild = buildTimer.seconds();
-	    spdlog::info("flat neighborlist building Kernel: {}",endBuild-endCellListBuild);
+	        spdlog::info("flat neighborlist building Kernel: {}",endBuild-endCellListBuild);
             _sectionTimes._buildNL._total.addTiming(endBuild-startBuild);
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
@@ -798,10 +798,10 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             Grid g = _grid;
             Kokkos::View<int*> cellStart("cellStart", g.nCells+1);
             buildCellList(cellIds,partIds,cellStart,soa1Device,N);
-	    double endCellListBuild = buildTimer.seconds();
+	        double endCellListBuild = buildTimer.seconds();
             spdlog::info("Cell List Build Time:{} ",endCellListBuild-startBuild);
 
-	    auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+	        auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
 
 
             using ExecSpace = typename DeviceSpace::execution_space;
@@ -859,7 +859,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             });
             Kokkos::fence();
             double endBuild = buildTimer.seconds();
-	    spdlog::info("nl teams building: {}",endBuild-endCellListBuild);
+	        spdlog::info("nl teams building: {}",endBuild-endCellListBuild);
             _sectionTimes._buildNL._total.addTiming(endBuild-startBuild);
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
