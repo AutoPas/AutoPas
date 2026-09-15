@@ -6,6 +6,9 @@
 
 #include "AutoPasConfigurationCommunicator.h"
 
+#include <cstring>
+#include <tuple>
+
 #include "ThreeDimensionalMapping.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
@@ -187,18 +190,21 @@ Configuration findGloballyBestConfiguration(AutoPas_MPI_Comm comm, Configuration
   return deserializedConfig;
 }
 
-SerializedConfiguration serializeConfiguration(Configuration configuration) {
+SerializedConfiguration serializeConfiguration(const Configuration &configuration) {
   // @todo maybe consider endianness for different processors
-  SerializedConfiguration config;
-  config[0] = castToByte(configuration.container);
-  config[1] = castToByte(configuration.traversal);
-  config[2] = castToByte(configuration.loadEstimator);
-  config[3] = castToByte(configuration.dataLayout);
-  config[4] = castToByte(configuration.newton3);
-  config[5] = castToByte(configuration.interactionType);
-  config[6] = castToByte(configuration.vecPattern);
-  // Doubles can't be easily truncated, so store all 8 bytes via memcpy
-  std::memcpy(&config[7], &configuration.cellSizeFactor, sizeof(double));
+  // Copy every member verbatim, in the order given by Configuration::tie(). In theory, this can be done more compactly,
+  // as options can be represented typically with only a handful of values, and in the past enums were cast to single
+  // bytes. As this code is largely unused and probably not a performance bottleneck even when used, maintainability
+  // is prefered for now.
+  // If compactness is desired in the future, there are probably more efficient methods than what was done before.
+
+  SerializedConfiguration config{};
+  size_t offset = 0;
+  std::apply(
+      [&](const auto &...members) {
+        ((std::memcpy(config.data() + offset, &members, sizeof(members)), offset += sizeof(members)), ...);
+      },
+      configuration.tie());
   return config;
 }
 
@@ -215,14 +221,16 @@ std::vector<std::byte> serializeConfigurations(const std::vector<Configuration> 
   return confsSerialized;
 }
 
-Configuration deserializeConfiguration(SerializedConfiguration config) {
-  double cellSizeFactor{0.};
-  std::memcpy(&cellSizeFactor, &config[7], sizeof(double));
-  return {
-      static_cast<ContainerOption::Value>(config[0]),       cellSizeFactor,
-      static_cast<TraversalOption::Value>(config[1]),       static_cast<LoadEstimatorOption::Value>(config[2]),
-      static_cast<DataLayoutOption::Value>(config[3]),      static_cast<Newton3Option::Value>(config[4]),
-      static_cast<InteractionTypeOption::Value>(config[5]), static_cast<VectorizationPatternOption::Value>(config[6])};
+Configuration deserializeConfiguration(const SerializedConfiguration &config) {
+  // Inverse of serializeConfiguration(): read every member back in the order given by Configuration::tie().
+  Configuration configuration{};
+  size_t offset = 0;
+  std::apply(
+      [&](auto &...members) {
+        ((std::memcpy(&members, config.data() + offset, sizeof(members)), offset += sizeof(members)), ...);
+      },
+      configuration.tie());
+  return configuration;
 }
 
 std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte> &configurationsSerialized) {

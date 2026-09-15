@@ -25,21 +25,9 @@
 namespace autopas::utils::AutoPasConfigurationCommunicator {
 
 /**
- * type definition for the serialization of configurations. A serialized config is an array of 15 bytes.
- * TODO: consider aligning to 16 Byte
+ * Type definition for the serialization of configurations.
  * */
-using SerializedConfiguration = std::array<std::byte, 15>;
-
-/**
- * Simply a shorter way of static_casting from Option to std::byte.
- * @tparam TOption
- * @param option
- * @return
- */
-template <typename TOption>
-inline std::byte castToByte(TOption option) {
-  return static_cast<std::byte>(static_cast<typename TOption::Value>(option));
-}
+using SerializedConfiguration = std::array<std::byte, serializedConfigurationSize>;
 
 /**
  * Calculates the maximum number of valid configs from several sets of options.
@@ -109,7 +97,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, d
  * @param configuration: the configuration to be sent.
  * @return The serialization
  */
-SerializedConfiguration serializeConfiguration(Configuration configuration);
+SerializedConfiguration serializeConfiguration(const Configuration &configuration);
 
 /**
  * Serialize a vector of configuration objects into a vector of bytes via serializeConfiguration().
@@ -123,7 +111,7 @@ std::vector<std::byte> serializeConfigurations(const std::vector<Configuration> 
  * @param config: The SerializedConfiguration objects returned by _serializeConfiguration.
  * @return The deserialized Configuration object.
  */
-Configuration deserializeConfiguration(SerializedConfiguration config);
+Configuration deserializeConfiguration(const SerializedConfiguration &config);
 
 /**
  * Deserialize a vector of bytes into a vector of configurations.
