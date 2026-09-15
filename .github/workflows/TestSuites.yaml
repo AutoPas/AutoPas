@@ -314,21 +314,6 @@ jobs:
       - name: Extract Build Folder
         run: tar -xzf build.tar.gz
 
-      - name: Diagnose Kokkos startup
-        run: |
-          lscpu | grep -E 'Model name|avx2|avx512|flags' | head
-          echo "--- direct list ---"
-          ./build/tests/testAutopas/runTests --gtest_list_tests || echo "exit=$?"
-          echo "--- Kokkos config ---"
-          grep -R "Kokkos_ARCH" build/_deps/kokkos-src/build_types 2>/dev/null || true
-          
-
-      - name: Find AVX-512 instructions in binary
-        run: |
-          objdump -d ./build/tests/testAutopas/runTests \
-            | grep -m5 -E 'zmm|k[0-7]%|vfmadd[0-9]*ps.*zmm|avx512' \
-            || echo "no AVX-512 found in disassembly"
-
       - name: Run tests
         run: |
           cd build
