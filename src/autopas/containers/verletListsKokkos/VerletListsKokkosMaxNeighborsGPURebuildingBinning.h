@@ -654,8 +654,9 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
         
         }
 
-        void buildCellList(Kokkos::View<int*> cellIds, Kokkos::View<int*> partIds, Kokkos::View<int*> cellStart, const Particle_T::KokkosSoAArraysType::deviceView& soa){
+        void buildCellList(Kokkos::View<int*> cellIds, Kokkos::View<int*> partIds, Kokkos::View<int*> cellStart, const auto& soa,const int n){
             Grid g = _grid;
+	    auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, n);
             Kokkos::parallel_for("vl_kokkos_rebuild_cellIdx", rangePolicy, KOKKOS_LAMBDA(const int i) {
 
                 const auto x1 = soa.template operator()<Particle_T::AttributeNames::posX, true>(i);
@@ -669,8 +670,8 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             Kokkos::fence();
 
             Kokkos::Experimental::sort_by_key(typename DeviceSpace::execution_space{}, cellIds, partIds);
-            Kokkos::deep_copy(cellStart, N); 
-            Kokkos::parallel_for("cell_bounds", N, KOKKOS_LAMBDA(const int k) {
+            Kokkos::deep_copy(cellStart, n); 
+            Kokkos::parallel_for("cell_bounds", n, KOKKOS_LAMBDA(const int k) {
                 const int c = cellIds(k);
                 if (k == 0 || c != cellIds(k-1)) cellStart(c) = k;
             });
@@ -704,11 +705,14 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
 
             Kokkos::View<int*> cellIds("cellIdx",N);
             Kokkos::View<int*> partIds("particleIdx",N);
-            auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+
+	    auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+
+            
             Grid g = _grid;
             double startKernel = buildTimer.seconds();
             Kokkos::View<int*> cellStart("cellStart", g.nCells+1);
-            buildCellList(cellIds,partIds,cellStart,soa1Device);
+            buildCellList(cellIds,partIds,cellStart,soa1Device,N);
 
             Kokkos::parallel_for("vl_kokkos_rebuild_cells", rangePolicy, KOKKOS_LAMBDA(const int i) {
 
@@ -779,10 +783,13 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
 
             Kokkos::View<int*> cellIds("cellIdx",N);
             Kokkos::View<int*> partIds("particleIdx",N);
-            auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+           
             Grid g = _grid;
             Kokkos::View<int*> cellStart("cellStart", g.nCells+1);
-            buildCellList(cellIds,partIds,cellStart,soa1Device);
+            buildCellList(cellIds,partIds,cellStart,soa1Device,N);
+
+	    auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
+
 
             using ExecSpace = typename DeviceSpace::execution_space;
             using MemberType = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
