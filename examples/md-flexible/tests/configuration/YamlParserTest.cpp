@@ -333,6 +333,9 @@ TEST_F(YamlParserTest, parseCubeClosestPackedStructureAndDensity) {
   }
 }
 
+/**
+ * Tests parsing CubeGrid with centered and uncentered configurations.
+ */
 TEST_F(YamlParserTest, parseCubeGridAlignment) {
   MDFlexConfig config;
 

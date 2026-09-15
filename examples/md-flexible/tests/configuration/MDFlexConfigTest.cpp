@@ -227,6 +227,9 @@ TEST_F(MDFlexConfigTest, correctMolParsing) {
   }
 }
 
+/**
+ * Test that user-specified boxMin and boxMax values are preserved after calling calcSimulationBox().
+ */
 TEST_F(MDFlexConfigTest, UserSpecifiedBoxMinMaxPreserved) {
   MDFlexConfig config;
   config.boxMin.value = {0.0, 0.0, 0.0};

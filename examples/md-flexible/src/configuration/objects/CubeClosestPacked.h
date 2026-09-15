@@ -87,13 +87,18 @@ class CubeClosestPacked : public Object {
    * @return number of generated particles.
    */
   [[nodiscard]] size_t getParticlesTotal() const override {
-    if (_structure == FCC) {
-      return autopasTools::generators::FCCGenerator::getNumberOfParticles(_bottomLeftCorner, _topRightCorner,
-                                                                          _particleSpacing, _centered);
+    switch (_structure) {
+      case FCC:
+        return autopasTools::generators::FCCGenerator::getNumberOfParticles(_bottomLeftCorner, _topRightCorner,
+                                                                            _particleSpacing, _centered);
+      case HCP:
+        return autopasTools::generators::HCPGenerator::getNumberOfParticles(_bottomLeftCorner, _topRightCorner,
+                                                                            _particleSpacing, _centered);
+      default:
+        autopas::utils::ExceptionHandler::exception(
+            "CubeClosestPacked: Unknown lattice structure. Possible values: (fcc hcp)");
     }
-
-    return autopasTools::generators::HCPGenerator::getNumberOfParticles(_bottomLeftCorner, _topRightCorner,
-                                                                        _particleSpacing, _centered);
+    return 0;
   }
 
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
@@ -137,12 +142,18 @@ class CubeClosestPacked : public Object {
     // dummy particle used as a template with id of the first newly generated one
     const ParticleType dummyParticle = getDummyParticle(particles.size());
 
-    if (_structure == FCC) {
-      autopasTools::generators::FCCGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
-                                                                dummyParticle, _particleSpacing, _centered);
-    } else {
-      autopasTools::generators::HCPGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
-                                                                dummyParticle, _particleSpacing, _centered);
+    switch (_structure) {
+      case FCC:
+        autopasTools::generators::FCCGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
+                                                                  dummyParticle, _particleSpacing, _centered);
+        break;
+      case HCP:
+        autopasTools::generators::HCPGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
+                                                                  dummyParticle, _particleSpacing, _centered);
+        break;
+      default:
+        autopas::utils::ExceptionHandler::exception(
+            "CubeClosestPacked: Unknown lattice structure. Possible values: (fcc hcp)");
     }
   }
 

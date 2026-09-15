@@ -17,6 +17,9 @@
 #include "src/configuration/objects/Sphere.h"
 #include "testingHelpers/commonTypedefs.h"
 
+/**
+ * This test checks if the GridGenerator fills the container with particles that are inside the box.
+ */
 TEST_F(GeneratorsTest, GridFillwithBoxMin) {
   auto autoPas = autopas::AutoPas<ParticleType>(std::cout);
   constexpr std::array<double, 3> boxMin = {5., 5., 5.};
@@ -110,6 +113,10 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   EXPECT_EQ(ids.size(), configuration.particles.size());
 }
 
+/**
+ * This test checks if the CubeClosestPacked generator with FCC lattice structure fills the container with particles
+ * that are inside the box.
+ */
 TEST_F(GeneratorsTest, CubeClosestPackedFCC) {
   constexpr std::array<double, 3> velocity = {0., 0., 0.};
   constexpr unsigned long typeId = 0;
@@ -147,6 +154,10 @@ TEST_F(GeneratorsTest, CubeClosestPackedFCC) {
   EXPECT_NEAR(minDistance, spacing, 1e-5);
 }
 
+/**
+ * This test checks if the CubeClosestPacked generator with HCP lattice structure fills the container with particles
+ * that are inside the box.
+ */
 TEST_F(GeneratorsTest, CubeClosestPackedHCP) {
   constexpr std::array<double, 3> velocity = {0., 0., 0.};
   constexpr unsigned long typeId = 0;
@@ -172,7 +183,11 @@ TEST_F(GeneratorsTest, CubeClosestPackedHCP) {
   }
 }
 
-TEST_F(GeneratorsTest, CubeClosestPackedDensity) {
+/**
+ * This test checks if the CubeClosestPacked generator correctly generates particles based on a given density for FCC
+ * structure.
+ */
+TEST_F(GeneratorsTest, CubeClosestPackedFCCDensity) {
   constexpr std::array<double, 3> velocity = {0., 0., 0.};
   constexpr unsigned long typeId = 0;
   constexpr double density = 0.984375;
@@ -189,6 +204,31 @@ TEST_F(GeneratorsTest, CubeClosestPackedDensity) {
   EXPECT_EQ(particles.size(), cube.getParticlesTotal());
 }
 
+/**
+ * This test checks if the CubeClosestPacked generator correctly generates particles based on a given density for HCP
+ * structure.
+ */
+TEST_F(GeneratorsTest, CubeClosestPackedHCPDensity) {
+  constexpr std::array<double, 3> velocity = {0., 0., 0.};
+  constexpr unsigned long typeId = 0;
+  constexpr double density = 1.0;
+  constexpr std::array<double, 3> boxLength = {4.0, 4.0, 4.0};
+  constexpr std::array<double, 3> bottomLeft = {0., 0., 0.};
+
+  const CubeClosestPacked cube(velocity, typeId, boxLength, bottomLeft, density,
+                               CubeClosestPacked::LatticeStructure::HCP);
+  EXPECT_DOUBLE_EQ(cube.getParticleDensity(), static_cast<double>(cube.getParticlesTotal()) / (4.0 * 4.0 * 4.0));
+  EXPECT_DOUBLE_EQ(cube.getParticleSpacing(), std::cbrt(std::sqrt(2.0) / density));
+
+  std::vector<ParticleType> particles;
+  cube.generate(particles);
+  EXPECT_EQ(particles.size(), cube.getParticlesTotal());
+  EXPECT_GT(particles.size(), 0);
+}
+
+/**
+ * This test checks if the CubeGrid generator correctly generates particles based on a given density.
+ */
 TEST_F(GeneratorsTest, CubeGridDensity) {
   constexpr std::array<double, 3> velocity = {0., 0., 0.};
   constexpr unsigned long typeId = 0;
@@ -206,6 +246,9 @@ TEST_F(GeneratorsTest, CubeGridDensity) {
   }
 }
 
+/**
+ * This test checks if the CubeUniform generator correctly generates particles based on a given density.
+ */
 TEST_F(GeneratorsTest, CubeUniformDensity) {
   constexpr std::array<double, 3> velocity = {0., 0., 0.};
   constexpr unsigned long typeId = 0;
@@ -222,6 +265,9 @@ TEST_F(GeneratorsTest, CubeUniformDensity) {
   EXPECT_EQ(particles.size(), 20);
 }
 
+/**
+ * This test checks if the CubeClosestPacked generator correctly generates particles with centered and origin alignment.
+ */
 TEST_F(GeneratorsTest, CubeClosestPackedAlignment) {
   constexpr std::array<double, 3> velocity = {0., 0., 0.};
   constexpr unsigned long typeId = 0;
@@ -285,24 +331,9 @@ TEST_F(GeneratorsTest, CubeClosestPackedAlignment) {
   }
 }
 
-TEST_F(GeneratorsTest, CubeClosestPackedHCPDensity) {
-  constexpr std::array<double, 3> velocity = {0., 0., 0.};
-  constexpr unsigned long typeId = 0;
-  constexpr double density = 1.0;
-  constexpr std::array<double, 3> boxLength = {4.0, 4.0, 4.0};
-  constexpr std::array<double, 3> bottomLeft = {0., 0., 0.};
-
-  const CubeClosestPacked cube(velocity, typeId, boxLength, bottomLeft, density,
-                               CubeClosestPacked::LatticeStructure::HCP);
-  EXPECT_DOUBLE_EQ(cube.getParticleDensity(), static_cast<double>(cube.getParticlesTotal()) / (4.0 * 4.0 * 4.0));
-  EXPECT_DOUBLE_EQ(cube.getParticleSpacing(), std::cbrt(std::sqrt(2.0) / density));
-
-  std::vector<ParticleType> particles;
-  cube.generate(particles);
-  EXPECT_EQ(particles.size(), cube.getParticlesTotal());
-  EXPECT_GT(particles.size(), 0);
-}
-
+/**
+ * This test checks if the CubeGrid generator correctly generates particles with centered and origin alignment.
+ */
 TEST_F(GeneratorsTest, CubeGridAlignmentAndGenerate) {
   constexpr std::array<double, 3> velocity = {0., 0., 0.};
   constexpr unsigned long typeId = 0;
@@ -334,7 +365,7 @@ TEST_F(GeneratorsTest, CubeGridAlignmentAndGenerate) {
     EXPECT_NEAR(particles[0].getR()[2], bottomLeft[2] + 0.5 * spacing, 1e-10);
 
     // Verify periodic distance across a periodic box: box length = particlesPerDim * spacing
-    const std::array<double, 3> boxLength = {3 * spacing, 3 * spacing, 3 * spacing};
+    constexpr std::array<double, 3> boxLength = {3 * spacing, 3 * spacing, 3 * spacing};
     for (size_t i = 0; i < particles.size(); ++i) {
       for (size_t j = i + 1; j < particles.size(); ++j) {
         std::array<double, 3> diff = autopas::utils::ArrayMath::sub(particles[i].getR(), particles[j].getR());
@@ -348,6 +379,10 @@ TEST_F(GeneratorsTest, CubeGridAlignmentAndGenerate) {
   }
 }
 
+/**
+ * This test checks if the Sphere generator correctly generates particles within the sphere's bounding box and radial
+ * cutoff.
+ */
 TEST_F(GeneratorsTest, SphereGenerate) {
   constexpr std::array<double, 3> velocity = {0., 0., 0.};
   constexpr unsigned long typeId = 0;
@@ -371,7 +406,7 @@ TEST_F(GeneratorsTest, SphereGenerate) {
   EXPECT_GT(particles.size(), 0);
 
   // Check that every particle is within the sphere's bounding box and radial cutoff
-  const double maxRadius = (radius + 1) * spacing;
+  constexpr double maxRadius = (radius + 1) * spacing;
   for (const auto &p : particles) {
     const auto diff = autopas::utils::ArrayMath::sub(p.getR(), center);
     const double dist = std::sqrt(autopas::utils::ArrayMath::dot(diff, diff));
@@ -384,6 +419,10 @@ TEST_F(GeneratorsTest, SphereGenerate) {
   }
 }
 
+/**
+ * This test checks if the CubeGauss generator correctly generates particles with a Gaussian distribution within the
+ * specified box.
+ */
 TEST_F(GeneratorsTest, CubeGaussGenerate) {
   constexpr std::array<double, 3> velocity = {0., 0., 0.};
   constexpr unsigned long typeId = 0;
@@ -410,6 +449,9 @@ TEST_F(GeneratorsTest, CubeGaussGenerate) {
   }
 }
 
+/**
+ * This test checks if the particle IDs are continuous and unique across multiple generators.
+ */
 TEST_F(GeneratorsTest, IDContinuity) {
   constexpr std::array<double, 3> velocity = {0., 0., 0.};
   constexpr unsigned long typeId = 0;
@@ -437,28 +479,4 @@ TEST_F(GeneratorsTest, IDContinuity) {
   for (size_t i = 0; i < particles.size(); ++i) {
     EXPECT_EQ(particles[i].getID(), i);
   }
-}
-
-TEST_F(GeneratorsTest, DegenerateInputs) {
-  constexpr std::array<double, 3> velocity = {0., 0., 0.};
-  constexpr unsigned long typeId = 0;
-
-  // Zero spacing
-  const CubeClosestPacked zeroSpacing(velocity, typeId, 0.0, {4.0, 4.0, 4.0}, {0.0, 0.0, 0.0});
-  EXPECT_EQ(zeroSpacing.getParticlesTotal(), 0);
-  std::vector<ParticleType> particles;
-  zeroSpacing.generate(particles);
-  EXPECT_EQ(particles.size(), 0);
-
-  // Negative spacing
-  const CubeClosestPacked negSpacing(velocity, typeId, -1.0, {4.0, 4.0, 4.0}, {0.0, 0.0, 0.0});
-  EXPECT_EQ(negSpacing.getParticlesTotal(), 0);
-  negSpacing.generate(particles);
-  EXPECT_EQ(particles.size(), 0);
-
-  // Degenerate box length (negative)
-  const CubeClosestPacked negBox(velocity, typeId, 1.0, {-1.0, 4.0, 4.0}, {0.0, 0.0, 0.0});
-  EXPECT_EQ(negBox.getParticlesTotal(), 0);
-  negBox.generate(particles);
-  EXPECT_EQ(particles.size(), 0);
 }

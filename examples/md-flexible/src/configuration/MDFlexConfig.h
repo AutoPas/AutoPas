@@ -640,8 +640,9 @@ class MDFlexConfig {
   /**
    * particleDensity
    */
-  MDFlexOption<double, __LINE__> particleDensity{
-      0.0, "particle-density", true, "Density of particles. This is the number of particles per unit volume."};
+  MDFlexOption<double, __LINE__> particleDensity{0.0, "particle-density", true,
+                                                 "Density of particles. This is the number of particles per unit "
+                                                 "volume. Can be used instead of --particle-spacing."};
   /**
    * closestPackingStructure
    */

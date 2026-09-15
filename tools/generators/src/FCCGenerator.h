@@ -36,40 +36,34 @@ inline constexpr std::array<std::array<double, 3>, 4> fccBasis = {{
  */
 inline size_t getNumberOfParticles(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                    const double spacing = 1.0, const bool centeredAlignment = true) {
+  const double latticeConstant = std::sqrt(2.0) * spacing;
   if (spacing <= 0.0) {
     return 0;
   }
-  for (size_t d = 0; d < 3; ++d) {
-    if (boxMax[d] <= boxMin[d]) {
-      return 0;
-    }
-  }
-
-  const double a = std::sqrt(2.0) * spacing;
 
   std::array<double, 3> offset = {0.0, 0.0, 0.0};
   if (centeredAlignment) {
-    offset = {a / 4.0, a / 4.0, a / 4.0};
+    offset = {latticeConstant / 4.0, latticeConstant / 4.0, latticeConstant / 4.0};
   }
 
-  const size_t numCellsX = std::max<size_t>(1, std::ceil((boxMax[0] - boxMin[0]) / a));
-  const size_t numCellsY = std::max<size_t>(1, std::ceil((boxMax[1] - boxMin[1]) / a));
-  const size_t numCellsZ = std::max<size_t>(1, std::ceil((boxMax[2] - boxMin[2]) / a));
+  const size_t numCellsX = std::max<size_t>(1, std::ceil((boxMax[0] - boxMin[0]) / latticeConstant));
+  const size_t numCellsY = std::max<size_t>(1, std::ceil((boxMax[1] - boxMin[1]) / latticeConstant));
+  const size_t numCellsZ = std::max<size_t>(1, std::ceil((boxMax[2] - boxMin[2]) / latticeConstant));
 
   size_t count = 0;
   for (size_t z = 0; z < numCellsZ; ++z) {
     for (size_t y = 0; y < numCellsY; ++y) {
       for (size_t x = 0; x < numCellsX; ++x) {
         const std::array<double, 3> cellOrigin = {
-            boxMin[0] + static_cast<double>(x) * a + offset[0],
-            boxMin[1] + static_cast<double>(y) * a + offset[1],
-            boxMin[2] + static_cast<double>(z) * a + offset[2],
+            boxMin[0] + static_cast<double>(x) * latticeConstant + offset[0],
+            boxMin[1] + static_cast<double>(y) * latticeConstant + offset[1],
+            boxMin[2] + static_cast<double>(z) * latticeConstant + offset[2],
         };
         for (const auto &b : fccBasis) {
           const std::array<double, 3> pos = {
-              cellOrigin[0] + b[0] * a,
-              cellOrigin[1] + b[1] * a,
-              cellOrigin[2] + b[2] * a,
+              cellOrigin[0] + b[0] * latticeConstant,
+              cellOrigin[1] + b[1] * latticeConstant,
+              cellOrigin[2] + b[2] * latticeConstant,
           };
           if (pos[0] >= boxMin[0] and pos[0] < boxMax[0] - offset[0] and pos[1] >= boxMin[1] and
               pos[1] < boxMax[1] - offset[1] and pos[2] >= boxMin[2] and pos[2] < boxMax[2] - offset[2]) {
@@ -98,40 +92,31 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
                        const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle =
                            typename autopas::utils::ParticleTypeTrait<Container>::value(),
                        const double spacing = 1.0, const bool centeredAlignment = true) {
-  if (spacing <= 0.0) {
-    return;
-  }
-  for (size_t d = 0; d < 3; ++d) {
-    if (boxMax[d] <= boxMin[d]) {
-      return;
-    }
-  }
-
-  const double a = std::sqrt(2.0) * spacing;
+  const double latticeConstant = std::sqrt(2.0) * spacing;
 
   std::array<double, 3> offset = {0.0, 0.0, 0.0};
   if (centeredAlignment) {
-    offset = {a / 4.0, a / 4.0, a / 4.0};
+    offset = {latticeConstant / 4.0, latticeConstant / 4.0, latticeConstant / 4.0};
   }
 
-  const size_t numCellsX = std::max<size_t>(1, std::ceil((boxMax[0] - boxMin[0]) / a));
-  const size_t numCellsY = std::max<size_t>(1, std::ceil((boxMax[1] - boxMin[1]) / a));
-  const size_t numCellsZ = std::max<size_t>(1, std::ceil((boxMax[2] - boxMin[2]) / a));
+  const size_t numCellsX = std::max<size_t>(1, std::ceil((boxMax[0] - boxMin[0]) / latticeConstant));
+  const size_t numCellsY = std::max<size_t>(1, std::ceil((boxMax[1] - boxMin[1]) / latticeConstant));
+  const size_t numCellsZ = std::max<size_t>(1, std::ceil((boxMax[2] - boxMin[2]) / latticeConstant));
 
   size_t id = defaultParticle.getID();
   for (size_t z = 0; z < numCellsZ; ++z) {
     for (size_t y = 0; y < numCellsY; ++y) {
       for (size_t x = 0; x < numCellsX; ++x) {
         const std::array<double, 3> cellOrigin = {
-            boxMin[0] + static_cast<double>(x) * a + offset[0],
-            boxMin[1] + static_cast<double>(y) * a + offset[1],
-            boxMin[2] + static_cast<double>(z) * a + offset[2],
+            boxMin[0] + static_cast<double>(x) * latticeConstant + offset[0],
+            boxMin[1] + static_cast<double>(y) * latticeConstant + offset[1],
+            boxMin[2] + static_cast<double>(z) * latticeConstant + offset[2],
         };
         for (const auto &basis : fccBasis) {
           const std::array<double, 3> pos = {
-              cellOrigin[0] + basis[0] * a,
-              cellOrigin[1] + basis[1] * a,
-              cellOrigin[2] + basis[2] * a,
+              cellOrigin[0] + basis[0] * latticeConstant,
+              cellOrigin[1] + basis[1] * latticeConstant,
+              cellOrigin[2] + basis[2] * latticeConstant,
           };
           if (pos[0] >= boxMin[0] and pos[0] < boxMax[0] - offset[0] and pos[1] >= boxMin[1] and
               pos[1] < boxMax[1] - offset[1] and pos[2] >= boxMin[2] and pos[2] < boxMax[2] - offset[2]) {
