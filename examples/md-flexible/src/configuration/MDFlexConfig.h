@@ -98,10 +98,10 @@ class MDFlexConfig {
      * @param requiresArgument Indicate whether this option is a flag or takes arguments.
      * @param newDescription String describing this option. This is displayed when md-flexible is invoked with --help.
      */
-    MDFlexOption(T value, std::string newName, bool requiresArgument, std::string newDescription)
-        : requiresArgument(requiresArgument),
+    MDFlexOption(T value, std::string newName, const bool requiresArgument, std::string newDescription)
+        : value(std::move(value)),
+          requiresArgument(requiresArgument),
           name(std::move(newName)),
-          value(std::move(value)),
           description(std::move(newDescription)) {}
 
     /**
@@ -137,7 +137,7 @@ class MDFlexConfig {
    * Returns the used interaction types as deducted from the used functor(s).
    * @return set of used interaction types.
    */
-  std::set<autopas::InteractionTypeOption> getInteractionTypes() const { return _interactionTypes; }
+  [[nodiscard]] std::set<autopas::InteractionTypeOption> getInteractionTypes() const { return _interactionTypes; }
 
   /**
    * Add interaction type after recognizing a certain functor.
@@ -201,6 +201,22 @@ class MDFlexConfig {
    * @param numRanks: The size of the MPI communicator used for the simulation.
    */
   void loadParticlesFromCheckpoint(const size_t &rank, const size_t &numRanks);
+
+  /**
+   * Returns a vector of pointers to objects of the specified type.
+   * @tparam TargetType  e.g. CubeUniform, CubeClosestPacked, Sphere, etc.
+   * @return
+   */
+  template <typename TargetType>
+  [[nodiscard]] std::vector<const TargetType *> getObjectsByType() const {
+    std::vector<const TargetType *> filtered;
+    for (const auto &obj : particleObjects) {
+      if (auto casted = dynamic_cast<const TargetType *>(obj.get())) {
+        filtered.push_back(casted);
+      }
+    }
+    return filtered;
+  }
 
   /**
    * Choice of the pairwise functor
@@ -338,7 +354,7 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
 
   /**
-   * enerySensorOption
+   * energySensorOption
    */
   MDFlexOption<autopas::EnergySensorOption, __LINE__> energySensorOption{
       autopas::EnergySensorOption::rapl, "energy-sensor", true,
@@ -480,12 +496,20 @@ class MDFlexConfig {
    * boxMin
    */
   MDFlexOption<std::array<double, 3>, 0> boxMin{
-      {0, 0, 0}, "box-min", true, "Lower front left corner of the simulation box."};
+      {std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN(),
+       std::numeric_limits<double>::quiet_NaN()},
+      "box-min",
+      true,
+      "Lower front left corner of the simulation box."};
   /**
    * boxMax
    */
   MDFlexOption<std::array<double, 3>, 0> boxMax{
-      {1, 1, 1}, "box-max", true, "Upper back right corner of the simulation box."};
+      {std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN(),
+       std::numeric_limits<double>::quiet_NaN()},
+      "box-max",
+      true,
+      "Upper back right corner of the simulation box."};
 
   /**
    * loadBalancingInterval
@@ -642,6 +666,23 @@ class MDFlexConfig {
   MDFlexOption<double, __LINE__> particleSpacing{1.1225 * 1, "particle-spacing", true,
                                                  "Space between two particles for the grid generator."};
   /**
+   * particleDensity
+   */
+  MDFlexOption<double, __LINE__> particleDensity{0.0, "particle-density", true,
+                                                 "Density of particles. This is the number of particles per unit "
+                                                 "volume. Can be used instead of --particle-spacing."};
+  /**
+   * closestPackingStructure
+   */
+  MDFlexOption<CubeClosestPacked::LatticeStructure, __LINE__> closestPackingStructure{
+      CubeClosestPacked::LatticeStructure::HCP, "structure", true,
+      "Structure of the closest packing generator. Possible Values: (hcp fcc) Default: hcp"};
+  /**
+   * gridAlignmentCentered
+   */
+  MDFlexOption<bool, __LINE__> gridAlignmentCentered{
+      true, "centered", true, "Alignment of the lattice unit cell. Possible Values: (true false)"};
+  /**
    * generatorOption
    */
   MDFlexOption<GeneratorOption, __LINE__> generatorOption{
@@ -731,25 +772,13 @@ class MDFlexConfig {
    */
   static inline const char *const cubeGridObjectsStr{"CubeGrid"};
   /**
-   * cubeGridObjects
-   */
-  std::vector<CubeGrid> cubeGridObjects{};
-  /**
    * cubeGaussObjectsStr
    */
   static inline const char *const cubeGaussObjectsStr{"CubeGauss"};
   /**
-   * cubeGaussObjects
-   */
-  std::vector<CubeGauss> cubeGaussObjects{};
-  /**
    * cubeUniformObjectsStr
    */
   static inline const char *const cubeUniformObjectsStr{"CubeUniform"};
-  /**
-   * cubeUniformObjects
-   */
-  std::vector<CubeUniform> cubeUniformObjects{};
   /**
    * sphereObjectsStr
    */
@@ -763,17 +792,13 @@ class MDFlexConfig {
    */
   static inline const char *const sphereRadiusStr{"radius"};
   /**
-   * sphereObjects
-   */
-  std::vector<Sphere> sphereObjects{};
-  /**
-   * cubeClosestPackedObjects
-   */
-  std::vector<CubeClosestPacked> cubeClosestPackedObjects{};
-  /**
    * cubeClosestPackedObjectsStr
    */
   static inline const char *const cubeClosestPackedObjectsStr{"CubeClosestPacked"};
+  /**
+   * Stores the objects generated based on the provided configuration file.
+   */
+  std::vector<std::shared_ptr<Object>> particleObjects{};
 
   // Thermostat Options
   /**
@@ -877,12 +902,12 @@ class MDFlexConfig {
 
  private:
   /**
-   * Stores the physical properties of the particles used in the an MDFlexSimulation
+   * Stores the physical properties of the particles used in the MDFlexSimulation
    */
   std::shared_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
 
   /**
-   * Stores the physical properties of the particles used in the an MDFlexSimulation
+   * Stores the physical properties of the particles used in the MDFlexSimulation
    */
   std::set<autopas::InteractionTypeOption> _interactionTypes = {};
 

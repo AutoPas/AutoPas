@@ -84,6 +84,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.newton3Options3B,
       config.outputSuffix,
       config.particleSpacing,
+      config.particleDensity,
+      config.closestPackingStructure,
       config.particlesPerDim,
       config.particlesTotal,
       config.relativeBlacklistRange,
@@ -149,7 +151,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
        (cliOption = getopt_long(argc, argv, "", long_options.data(), &cliOptionIndex)) != -1;) {
     string strArg;
     if (optarg != nullptr) strArg = optarg;
-    transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
+    ranges::transform(strArg, strArg.begin(), ::tolower);
     switch (cliOption) {
       case decltype(config.newton3Options)::getoptChar: {
         config.newton3Options.value = autopas::Newton3Option::parseOptions(strArg);
@@ -282,7 +284,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.tuningMaxEvidence)::getoptChar: {
         try {
-          config.tuningMaxEvidence.value = (unsigned int)stoul(strArg);
+          config.tuningMaxEvidence.value = static_cast<unsigned int>(stoul(strArg));
           if (config.tuningMaxEvidence.value < 1) {
             cerr << "Tuning max evidence has to be a positive integer!" << endl;
             displayHelp = true;
@@ -306,7 +308,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.evidenceFirstPrediction)::getoptChar: {
         try {
-          config.evidenceFirstPrediction.value = (unsigned int)stoul(strArg);
+          config.evidenceFirstPrediction.value = static_cast<unsigned int>(stoul(strArg));
           if (config.evidenceFirstPrediction.value < 2) {
             cerr << "The number of evidence for the first prediction has to be at least two!" << endl;
             displayHelp = true;
@@ -396,7 +398,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.tuningInterval)::getoptChar: {
         try {
-          config.tuningInterval.value = (unsigned int)stoul(strArg);
+          config.tuningInterval.value = static_cast<unsigned int>(stoul(strArg));
           if (config.tuningInterval.value < 1) {
             cerr << "Tuning interval has to be a positive integer!" << endl;
             displayHelp = true;
@@ -461,7 +463,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.maxTuningPhasesWithoutTest)::getoptChar: {
         try {
-          config.maxTuningPhasesWithoutTest.value = (unsigned int)stoul(strArg);
+          config.maxTuningPhasesWithoutTest.value = static_cast<unsigned int>(stoul(strArg));
           if (config.maxTuningPhasesWithoutTest.value < 1) {
             cerr << "Max tuning phases without test has to be positive!" << endl;
             displayHelp = true;
@@ -527,7 +529,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.verletClusterSize)::getoptChar: {
         try {
-          config.verletClusterSize.value = (unsigned int)stoul(strArg);
+          config.verletClusterSize.value = static_cast<unsigned int>(stoul(strArg));
         } catch (const exception &) {
           cerr << "Error parsing verlet cluster size: " << optarg << endl;
           displayHelp = true;
@@ -549,7 +551,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.tuningSamples)::getoptChar: {
         try {
-          config.tuningSamples.value = (unsigned int)stoul(strArg);
+          config.tuningSamples.value = static_cast<unsigned int>(stoul(strArg));
           if (config.tuningSamples.value < 1) {
             cerr << "Tuning samples has to be a positive integer!" << endl;
             displayHelp = true;
@@ -569,6 +571,31 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.particleSpacing.value = stod(strArg);
         } catch (const exception &) {
           cerr << "Error parsing separation of particles: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.particleDensity)::getoptChar: {
+        try {
+          config.particleDensity.value = stod(strArg);
+          if (config.particleDensity.value <= 0) {
+            cerr << "Particle density has to be a positive (floating point) number!" << endl;
+            displayHelp = true;
+          }
+        } catch (const exception &) {
+          cerr << "Error parsing particle density: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.closestPackingStructure)::getoptChar: {
+        if (strArg == "fcc") {
+          config.closestPackingStructure.value = CubeClosestPacked::LatticeStructure::FCC;
+        } else if (strArg == "hcp") {
+          config.closestPackingStructure.value = CubeClosestPacked::LatticeStructure::HCP;
+        } else {
+          cerr << "Unknown structure for closest packing generator: " << strArg << ". Possible values: (hcp fcc)"
+               << endl;
           displayHelp = true;
         }
         break;
@@ -662,7 +689,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.verletRebuildFrequency)::getoptChar: {
         try {
-          config.verletRebuildFrequency.value = (unsigned int)stoul(strArg);
+          config.verletRebuildFrequency.value = static_cast<unsigned int>(stoul(strArg));
         } catch (const exception &) {
           cerr << "Error parsing verlet-rebuild-frequency: " << optarg << endl;
           displayHelp = true;
@@ -766,7 +793,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.loadBalancingInterval)::getoptChar: {
-        config.loadBalancingInterval.value = (unsigned int)stoul(strArg);
+        config.loadBalancingInterval.value = static_cast<unsigned int>(stoul(strArg));
         break;
       }
 
@@ -778,8 +805,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   }
 
   // only create objects if nothing was set by a yaml file and there was no checkpoint
-  if (config.checkpointfile.value.empty() and config.cubeGaussObjects.empty() and config.cubeGridObjects.empty() and
-      config.cubeUniformObjects.empty() and config.sphereObjects.empty() and config.cubeClosestPackedObjects.empty()) {
+  if (config.checkpointfile.value.empty() and config.particleObjects.empty()) {
     // common settings for any object type:
     unsigned int typeID = 0;
     std::array<double, 3> bottomLeftCorner = {0, 0, 0};
@@ -787,40 +813,61 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
 
     switch (config.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::grid: {
-        CubeGrid grid(velocity, typeID,
-                      {config.particlesPerDim.value, config.particlesPerDim.value, config.particlesPerDim.value},
-                      config.particleSpacing.value, bottomLeftCorner);
-        config.cubeGridObjects.push_back(grid);
+        if (config.particleDensity.value > 0) {
+          config.particleObjects.push_back(std::make_shared<CubeGrid>(
+              velocity, typeID,
+              std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
+                                    config.particlesPerDim.value},
+              bottomLeftCorner, config.particleDensity.value));
+        } else {
+          config.particleObjects.push_back(std::make_shared<CubeGrid>(
+              velocity, typeID,
+              std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
+                                    config.particlesPerDim.value},
+              config.particleSpacing.value, bottomLeftCorner));
+        }
         break;
       }
       case MDFlexConfig::GeneratorOption::gaussian: {
-        CubeGauss cubeGauss(velocity, typeID, config.particlesTotal.value,
-                            {config.boxLength.value, config.boxLength.value, config.boxLength.value},
-                            config.distributionMean.value, config.distributionStdDev.value, bottomLeftCorner);
-        config.cubeGaussObjects.push_back(cubeGauss);
+        config.particleObjects.push_back(std::make_shared<CubeGauss>(
+            velocity, typeID, config.particlesTotal.value,
+            std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
+            config.distributionMean.value, config.distributionStdDev.value, bottomLeftCorner));
         break;
       }
       case MDFlexConfig::GeneratorOption::uniform: {
-        CubeUniform cubeUniform(velocity, typeID, config.particlesTotal.value,
-                                {config.boxLength.value, config.boxLength.value, config.boxLength.value},
-                                bottomLeftCorner);
-        config.cubeUniformObjects.push_back(cubeUniform);
+        if (config.particleDensity.value > 0) {
+          config.particleObjects.push_back(std::make_shared<CubeUniform>(
+              velocity, typeID,
+              std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
+              bottomLeftCorner, config.particleDensity.value));
+        } else {
+          config.particleObjects.push_back(std::make_shared<CubeUniform>(
+              velocity, typeID, config.particlesTotal.value,
+              std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
+              bottomLeftCorner));
+        }
         break;
       }
       case MDFlexConfig::GeneratorOption::sphere: {
         auto centerOfBox = config.particlesPerDim.value / 2.;
-        Sphere sphere(
-            velocity, typeID,
-            {static_cast<double>(centerOfBox), static_cast<double>(centerOfBox), static_cast<double>(centerOfBox)},
-            static_cast<int>(centerOfBox), config.particleSpacing.value);
-        config.sphereObjects.push_back(sphere);
+        config.particleObjects.push_back(
+            std::make_shared<Sphere>(velocity, typeID, std::array<double, 3>{centerOfBox, centerOfBox, centerOfBox},
+                                     static_cast<int>(centerOfBox), config.particleSpacing.value));
         break;
       }
       case MDFlexConfig::GeneratorOption::closestPacked: {
-        CubeClosestPacked cubeClosestPacked(velocity, typeID, config.particleSpacing.value,
-                                            {config.boxLength.value, config.boxLength.value, config.boxLength.value},
-                                            bottomLeftCorner);
-        config.cubeClosestPackedObjects.push_back(cubeClosestPacked);
+        if (config.particleDensity.value > 0) {
+          config.particleObjects.push_back(std::make_shared<CubeClosestPacked>(
+              velocity, typeID,
+              std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
+              bottomLeftCorner, config.particleDensity.value, config.closestPackingStructure.value));
+        } else {
+          config.particleObjects.push_back(std::make_shared<CubeClosestPacked>(
+              velocity, typeID, config.particleSpacing.value,
+              std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
+              bottomLeftCorner, config.closestPackingStructure.value));
+        }
         break;
       }
     }

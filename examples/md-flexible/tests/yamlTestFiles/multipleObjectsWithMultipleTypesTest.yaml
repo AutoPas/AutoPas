@@ -1,4 +1,4 @@
-#yaml input for multiple Object generetion with different particle types/properties
+#yaml input for multiple Object generation with different particle types/properties
 #used in:
 #GeneratorsTest.MultipleObjectGeneration
 #ParticlePropertiesTests.ParticlePropertiesInitialization
