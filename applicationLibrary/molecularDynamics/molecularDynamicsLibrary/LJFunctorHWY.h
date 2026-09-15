@@ -747,6 +747,11 @@ class LJFunctorHWY
 
     const std::ptrdiff_t startI =
         sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().startI) : 0;
+    // endI bounds the outer loop from above, mirroring startI: i-particles from endI onwards cannot interact
+    // with any j-particle, so the loop stops there instead of running to n1 and relying on the per-block
+    // jVecStart >= jVecEnd skip below.
+    const std::ptrdiff_t endI = sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().endI)
+                                                                  : static_cast<std::ptrdiff_t>(n1);
 
     VectorDouble virialSumX = highway::Zero(tag_double);
     VectorDouble virialSumY = highway::Zero(tag_double);
@@ -757,8 +762,7 @@ class LJFunctorHWY
     const size_t jStep = jStepSize<vecPattern>();
 
     std::ptrdiff_t i = startI;
-    for (; i + static_cast<std::ptrdiff_t>(iStep) <= static_cast<std::ptrdiff_t>(n1);
-         i += static_cast<std::ptrdiff_t>(iStep)) {
+    for (; i + static_cast<std::ptrdiff_t>(iStep) <= endI; i += static_cast<std::ptrdiff_t>(iStep)) {
       size_t jVecEnd{};
       size_t jVecStart = 0;
       if constexpr (sorted) {
@@ -791,8 +795,9 @@ class LJFunctorHWY
           fy2Ptr, fz2Ptr, typeID1Ptr, typeID2Ptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, jVecStart, jVecEnd);
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
-      // Rest I can't occur in 1xVec case
-      const size_t restI = n1 - i;
+      // Rest I can't occur in 1xVec case. Bounded by endI, not n1: i-particles from endI onwards cannot
+      // interact with any j-particle and are skipped entirely rather than processed as a no-op remainder.
+      const std::ptrdiff_t restI = endI - i;
       if (restI > 0) {
         // Remainder block covers [i, i + restI - 1]. Same monotonicity argument as above.
         size_t jVecEnd = n2;
@@ -810,10 +815,10 @@ class LJFunctorHWY
         // If this check is false it means there are no particles in soa2 that can interact with particles in soa1
         // I.e. the hitrate in this case is 0%.
         if (jVecStart < jVecEnd) {
-          handleILoopBody<false, newton3, true, vecPattern>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr,
-                                                            ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr, fy2Ptr,
-                                                            fz2Ptr, typeID1Ptr, typeID2Ptr, virialSumX, virialSumY,
-                                                            virialSumZ, uPotSum, restI, jVecStart, jVecEnd);
+          handleILoopBody<false, newton3, true, vecPattern>(
+              i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr,
+              fx2Ptr, fy2Ptr, fz2Ptr, typeID1Ptr, typeID2Ptr, virialSumX, virialSumY, virialSumZ, uPotSum,
+              static_cast<size_t>(restI), jVecStart, jVecEnd);
         }
       }
     }

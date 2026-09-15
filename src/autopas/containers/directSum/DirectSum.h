@@ -61,13 +61,15 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    * @param boxMax
    * @param cutoff
    * @param skin
-   * @param aosSortingThreshold Sum of the number of particles in two cells from which AoS sorting should be enabled.
-   * @param soaSortingThreshold Sum of the SoA buffer sizes of two cells from which SoA sorting should be enabled.
+   * @param aosSortingThresholdFallback Sum of the number of particles in two cells from which AoS sorting should be
+   * enabled.
+   * @param soaSortingThresholdFallback Sum of the SoA buffer sizes of two cells from which SoA sorting should be
+   * enabled.
    */
   DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double skin,
-            const size_t aosSortingThreshold, const size_t soaSortingThreshold)
-      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThreshold,
-                                                     soaSortingThreshold),
+            const size_t aosSortingThresholdFallback, const size_t soaSortingThresholdFallback)
+      : CellBasedParticleContainer<ParticleCellType>(boxMin, boxMax, cutoff, skin, aosSortingThresholdFallback,
+                                                     soaSortingThresholdFallback),
         _cellBorderFlagManager() {
     using namespace autopas::utils::ArrayMath::literals;
     // 1 owned and 6 halo cells
@@ -504,8 +506,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     auto *dsTraversal = dynamic_cast<DSTraversalInterface *>(traversal);
     auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCellType> *>(traversal);
     if (dsTraversal && cellTraversal) {
-      cellTraversal->setAoSSortingThreshold(this->_aosSortingThreshold);
-      cellTraversal->setSoASortingThreshold(this->_soaSortingThreshold);
+      cellTraversal->setAoSSortingThresholds(*this->_aosSortingThresholds);
+      cellTraversal->setSoASortingThresholds(*this->_soaSortingThresholds);
       cellTraversal->setCellsToTraverse(this->_cells);
     } else {
       utils::ExceptionHandler::exception(

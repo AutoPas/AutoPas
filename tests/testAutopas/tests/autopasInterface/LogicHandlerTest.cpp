@@ -36,8 +36,9 @@ void LogicHandlerTest::initLogicHandler() {
   _tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
-  _logicHandler =
-      std::make_unique<autopas::LogicHandler<Molecule>>(_tuningManager, logicHandlerInfo, verletRebuildFrequency, "");
+  _logicHandler = std::make_unique<autopas::LogicHandler<Molecule>>(
+      _tuningManager, logicHandlerInfo, verletRebuildFrequency, "", autoTunerInfo.aosSortingThreshold,
+      autoTunerInfo.soaSortingThreshold);
 }
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
