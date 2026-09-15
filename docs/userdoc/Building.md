@@ -17,6 +17,10 @@ See [libs/](/libs) for a complete list.
 By default, AutoPas prefers a version provided by a parent project or installed on your system over the bundled copy.
 To always use the bundled copy of one library, set `<LIBNAME>_ForceBundled=ON`, or set `AUTOPAS_FORCE_ALL_BUNDLED=ON` to do so for all of them.
 
+The one exception is [ALL](https://gitlab.jsc.fz-juelich.de/SLMS/loadbalancing), an optional load balancer for
+md-flexible that is not bundled. If you enable it with `MD_FLEXIBLE_ENABLE_ALLLBL=ON` and do not have it
+installed, CMake downloads it at configure time, which requires network access.
+
 ## Build Instructions
 Create a build directory and run the default CMake-based build workflow:
 ```bash

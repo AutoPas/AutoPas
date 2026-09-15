@@ -140,6 +140,12 @@ to be set through a YAML file.
 MD-Flexible allows users to select between two load balancers: The Inverted Pressure method and ALL's Tensor method.
 The load balancer can be selected using the 'load-balancer' configuration option.
 
+The Inverted Pressure method is built in. ALL is an external library that is not shipped with AutoPas, so
+it has to be enabled explicitly via `-DMD_FLEXIBLE_ENABLE_ALLLBL=ON`. Unless a version of it is already
+installed on your system, CMake then downloads it from
+[upstream](https://gitlab.jsc.fz-juelich.de/SLMS/loadbalancing) at configure time, which requires network
+access on the configuring machine.
+
 ### Command line Completions
 
 md-flexible can generate a shell completions file with its latest options.
