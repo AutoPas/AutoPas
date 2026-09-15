@@ -6,7 +6,7 @@
 
 #pragma once
 
-namespace autopasTools {
+namespace autopas::generators {
 /**
  * Wrapper class for things like std::vector to be used in templated methods that take an AutoPas or ParticleContainer.
  *
@@ -46,4 +46,4 @@ class PseudoContainer {
    */
   ActualT *actualContainer;
 };
-}  // namespace autopasTools
+}  // namespace autopas::generators

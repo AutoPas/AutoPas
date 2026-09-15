@@ -10,9 +10,9 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
-#include "generators/src/FCCGenerator.h"
-#include "generators/src/HCPGenerator.h"
-#include "generators/src/PseudoContainer.h"
+#include "autopas/utils/generators/FCCGenerator.h"
+#include "autopas/utils/generators/HCPGenerator.h"
+#include "autopas/utils/generators/PseudoContainer.h"
 
 /**
  * Class describing a cube of closest packed particles (FCC or HCP).
@@ -139,18 +139,18 @@ class CubeClosestPacked : public Object {
    */
   void generate(std::vector<ParticleType> &particles) const override {
     // Wrapper so that std::vector can be used as an AutoPas::ParticleContainer
-    auto particlesWrapper = autopasTools::PseudoContainer(particles);
+    auto particlesWrapper = autopas::generators::PseudoContainer(particles);
 
     // dummy particle used as a template with id of the first newly generated one
     const ParticleType dummyParticle = getDummyParticle(particles.size());
 
     switch (_structure) {
       case FCC:
-        autopasTools::generators::FCCGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
+        autopas::generators::FCCGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
                                                                   dummyParticle, _particleSpacing, _centered);
         break;
       case HCP:
-        autopasTools::generators::HCPGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
+        autopas::generators::HCPGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
                                                                   dummyParticle, _particleSpacing, _centered);
         break;
       default:

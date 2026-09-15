@@ -7,8 +7,8 @@
 #include "GeneratorsTest.h"
 
 #include "autopas/utils/WrapOpenMP.h"
-#include "generators/src/GridGenerator.h"
-#include "generators/src/UniformGenerator.h"
+#include "autopas/utils/generators/GridGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "src/configuration/YamlParser.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
 #include "src/configuration/objects/CubeGauss.h"
@@ -29,7 +29,7 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
   const ParticleType dummy;
 
   autoPas.init();
-  autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, dummy, {1, 1, 1}, boxMin);
+  autopas::generators::GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, dummy, {1, 1, 1}, boxMin);
   AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     EXPECT_TRUE(autopas::utils::inBox(iter->getR(), boxMin, boxMax));

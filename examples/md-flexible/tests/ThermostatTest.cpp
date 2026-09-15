@@ -6,7 +6,7 @@
 
 #include "ThermostatTest.h"
 
-#include "generators/src/GridGenerator.h"
+#include "autopas/utils/generators/GridGenerator.h"
 #include "src/Thermostat.h"
 
 void ThermostatTest::initContainer(AutoPasType &autopas, const ParticleType &dummy,
@@ -24,7 +24,7 @@ void ThermostatTest::initContainer(AutoPasType &autopas, const ParticleType &dum
   autopas.setCutoff(cutoff);
   autopas.init();
   // place particles grid in the middle of the domain
-  autopasTools::generators::GridGenerator::fillWithParticles(
+  autopas::generators::GridGenerator::fillWithParticles(
       autopas, particlesPerDim, dummy, {particleSpacing, particleSpacing, particleSpacing},
       {particleSpacing / 2, particleSpacing / 2, particleSpacing / 2});
 }
@@ -99,12 +99,12 @@ TEST_F(ThermostatTest, MultiComponentTest) {
   initContainer(_autopas, dummyMolecule, {25, 25, 25});
   // add some type 1 particles
   dummyMolecule.setTypeId(1);
-  autopasTools::generators::GridGenerator::fillWithParticles(_autopas, {25, 25, 25}, dummyMolecule);
+  autopas::generators::GridGenerator::fillWithParticles(_autopas, {25, 25, 25}, dummyMolecule);
 #if MD_FLEXIBLE_MODE == MULTISITE
   // add some type 2 particles. This is to test the case that number of molecule types > number of site types so not
   // relevant for single-site.
   dummyMolecule.setTypeId(2);
-  autopasTools::generators::GridGenerator::fillWithParticles(_autopas, {25, 25, 25}, dummyMolecule);
+  autopas::generators::GridGenerator::fillWithParticles(_autopas, {25, 25, 25}, dummyMolecule);
 #endif
 
   // init system with brownian motion and test for the given temperature
