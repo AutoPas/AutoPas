@@ -196,7 +196,11 @@ jobs:
           # which spam the build log otherwise.
           # HWY_COMPILE_ONLY_STATIC is needed since the dynamically dispatched HWY targets do not compile with clang-22,
           # so HWY functors only use the best static target.
-          export CXXFLAGS="${CUDA_INCLUDE} -march=x86-64-v3 -Wno-ignored-attributes -Wno-deprecated-attributes -DHWY_COMPILE_ONLY_STATIC"
+          NOAVX512=""
+          if [ "${{ matrix.config.kokkos }}" = "ON" ]; then
+          NOAVX512="-mno-avx512f -mno-avx512dq -mno-avx512bw -mno-avx512vl"
+          fi
+          export CXXFLAGS="${CUDA_INCLUDE} -march=x86-64-v3 ${NOAVX512} -Wno-ignored-attributes -Wno-deprecated-attributes -DHWY_COMPILE_ONLY_STATIC"
           
           # Kokkos-specific CMake options, only relevant for Kokkos builds.
           KOKKOS_OPTS=""
