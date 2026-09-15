@@ -12,7 +12,6 @@
 #include <set>
 #include <utility>
 
-#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/EnergySensorOption.h"
@@ -501,15 +500,6 @@ class MDFlexConfig {
       "subdivide-dimension",
       true,
       "Indicates in which dimensions the global domain can be subdivided by the MPI decomposition"};
-
-  /**
-   * acquisitionFunctionOption
-   */
-  MDFlexOption<autopas::AcquisitionFunctionOption, __LINE__> acquisitionFunctionOption{
-      autopas::AcquisitionFunctionOption::upperConfidenceBound, "tuning-acquisition-function", true,
-      "For Bayesian based tuning strategies: Function to determine the predicted knowledge gain when testing a given "
-      "configuration. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), " ", {"(", ")"})};
 
   // Simulation Options:
   /**

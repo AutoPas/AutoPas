@@ -45,7 +45,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   // therefore workaround with make_tuple and auto
   static const auto relevantOptions{std::make_tuple(
       // clang-format off
-      config.acquisitionFunctionOption,
       config.boundaryOption,
       config.boxLength,
       config.cellSizeFactors,
@@ -169,17 +168,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.checkpointfile)::getoptChar: {
         // already parsed in CLIParser::inputFilesPresent
-        break;
-      }
-      case decltype(config.acquisitionFunctionOption)::getoptChar: {
-        auto parsedOptions = autopas::AcquisitionFunctionOption::parseOptions(strArg);
-        if (parsedOptions.size() != 1) {
-          cerr << "Pass exactly one tuning acquisition function." << endl
-               << "Passed: " << strArg << endl
-               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
-          displayHelp = true;
-        }
-        config.acquisitionFunctionOption.value = *parsedOptions.begin();
         break;
       }
       case decltype(config.cellSizeFactors)::getoptChar: {
