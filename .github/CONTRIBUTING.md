@@ -171,15 +171,11 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 
 ### Making an Option tunable
 * If not already done, add a new setter to [`src/autopas/AutoPasDecl.h`](/src/autopas/AutoPasDecl.h).
-* Add your option to [`Configuration`](/src/autopas/tuning/Configuration.h) and adjust constructors, comparison operators and ConfigHash function accordingly.
+* Add your option to [`Configuration`](/src/autopas/tuning/Configuration.h): declare the member, adjust the constructors, and add it to `Configuration::tie()`. 
 * Adjust the individual tuning strategies accordingly; the exact implementation will depend on the purpose of your option, but some general advice is:
   * Depending on your new option, it might make sense for some tuning strategies to merge it with another option to avoid sparse dimensions.
   * Make sure it is added to the search spaces that is passed to the [`AutoTuner`](/src/autopas/tuning/AutoTuner.cpp) in `AutoPas::init()`
-  * For Bayesian based tuning strategies your option will also have to be integrated into [`FeatureVector`](/src/autopas/tuning/utils/FeatureVector.h) and [`FeatureVectorEncoder`](/src/autopas/tuning/utils/FeatureVectorEncoder.h).
-  * Extend [`FeatureVectorEncoder`](/src/autopas/tuning/utils/FeatureVectorEncoder.h) by modifying `setAllowedOptions()`, `convertToTunable()` and `convertFromTunable()`. If the new option wasn't merged with another one you may have to add a new index to `DiscreteIndices` or `ContinuousIndices`
-  * Make sure to declare your option by calling `configureTuningParameter()` in [`ActiveHarmony::resetHarmony()`](/src/autopas/tuning/tuningStrategy/ActiveHarmony.cpp).
 * In [`AutoPasConfigurationCommunicator`](/src/autopas/utils/AutoPasConfigurationCommunicator.h):
-  * Change the size and (de-)serialization of SerializedConfiguration
   * Add the new option to all appropriate functions and adjust their functioning respectively.
 * In [`ConfigurationAndRankIteratorHandler`](/src/autopas/utils/ConfigurationAndRankIteratorHandler.h):
   * Add the new option wherever appropriate.
@@ -187,7 +183,6 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Adjust any tests that are affected by these changes. The following tests will definitely require changes:
   * [`AutoPasInterfaceTest`](/tests/testAutopas/tests/autopasInterface/AutoPasInterfaceTest.cpp)
   * [`AutoTunerTest`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp)
-  * [`FeatureVectorTest`](/tests/testAutopas/tests/tuning/utils/FeatureVectorTest.cpp)
   * Tests for the individual tuning strategies. See files in [`tests/testAutopas/tests/tuning/tuningStrategy/`](/tests/testAutopas/tests/tuning/tuningStrategy/).
 
 ### Rule Based Tuning and Antlr
@@ -221,7 +216,6 @@ The table below lists the dependencies. The **Path** column currently reflects t
 | benchmark  | [`libs/benchmark-1.9.4.zip`](/libs/benchmark-1.9.4.zip) | https://github.com/google/benchmark                 | tag `v1.9.4`           | —                                          |
 | eigen      | [`libs/eigen`](/libs/eigen)                             | https://gitlab.com/libeigen/eigen                   | tag `5.0.1`            | —                                          |
 | googletest | [`libs/googletest`](/libs/googletest)                   | https://github.com/google/googletest                | tag `v1.17.0`          | —                                          |
-| harmony    | [`libs/harmony.zip`](/libs/harmony.zip)                 | https://github.com/ActiveHarmony/harmony            | branch `hotfix-v4.6.0` | `example/` pruned                          |
 | highway    | [`libs/highway`](/libs/highway)                         | https://github.com/google/highway                   | tag `1.4.0`            | —                                          |
 | pmt        | [`libs/pmt`](/libs/pmt)                                 | https://git.astron.nl/RD/pmt                        | commit `7a56fa3a`      | AutoPas-specific patch (in `libs/patches`) |
 | spdlog     | [`libs/spdlog`](/libs/spdlog)                           | https://github.com/gabime/spdlog                    | tag `v1.17.0`          | —                                          |

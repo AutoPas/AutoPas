@@ -473,14 +473,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.MPITuningWeightForMaxDensity.description;
 
         config.MPITuningWeightForMaxDensity.value = node[key].as<double>();
-      } else if (key == config.acquisitionFunctionOption.name) {
-        expected = "Exactly one acquisition function option out of the possible values.";
-        description = config.acquisitionFunctionOption.description;
-
-        const auto parsedOptions = autopas::AcquisitionFunctionOption::parseOptions(
-            parseSequenceOneElementExpected(node[key], "Pass Exactly one acquisition function option!"));
-
-        config.acquisitionFunctionOption.value = *parsedOptions.begin();
       } else if (key == config.logLevel.name) {
         expected = "Log level out of the possible values.";
         description = config.logLevel.description;
