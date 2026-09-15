@@ -32,9 +32,9 @@ struct Grid{
             xLow = boxMin[0];
             yLow = boxMin[1];
             zLow = boxMin[2];
-            hxInv = nx/l;
-            hyInv = ny/l;
-            hzInv = nz/l;
+            hxInv = nx/(boxMax[0]-boxMin[0]);
+            hyInv = ny/(boxMax[1]-boxMin[1]);
+            hzInv = nz/(boxMax[2]-boxMin[2]);
             nCells = nx*ny*nz;
         }
 
@@ -599,6 +599,8 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
                                   .set_scratch_size(0, Kokkos::PerTeam(scratchBytes));
             double endPrep = buildTimer.seconds();
             double startKernel = buildTimer.seconds();
+          
+
             
             Kokkos::parallel_for("vl_kokkos_rebuild_teams", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
                 const int i = teamHandle.league_rank();
@@ -639,6 +641,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             });
             Kokkos::fence();
             double endKernel = buildTimer.seconds();
+
             spdlog::info("Team kernel launch complete, checking for overflow...");
             double startCleanup= buildTimer.seconds();
             int overflow = 0;
@@ -675,6 +678,11 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
                 const int c = cellIds(k);
                 if (k == 0 || c != cellIds(k-1)) cellStart(c) = k;
             });
+	    // serial-on-device backward pass; nCells is small
+	    Kokkos::parallel_for("cell_fill", 1, KOKKOS_LAMBDA(const int) {
+  	    	for (int c = g.nCells - 1; c >= 0; --c)
+        		if (cellStart(c) > cellStart(c + 1)) cellStart(c) = cellStart(c + 1);
+	    	});
             Kokkos::fence();
         }
 
@@ -713,6 +721,8 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             double startKernel = buildTimer.seconds();
             Kokkos::View<int*> cellStart("cellStart", g.nCells+1);
             buildCellList(cellIds,partIds,cellStart,soa1Device,N);
+	    double endCellListBuild = buildTimer.seconds();
+            spdlog::info("Cell List Build Time:{} ",endCellListBuild-startBuild);
 
             Kokkos::parallel_for("vl_kokkos_rebuild_cells", rangePolicy, KOKKOS_LAMBDA(const int i) {
 
@@ -751,6 +761,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
                 offsets(i) = i * maxNeighbors + count;
             });
             double endBuild = buildTimer.seconds();
+	    spdlog::info("flat neighborlist building Kernel: {}",endBuild-endCellListBuild);
             _sectionTimes._buildNL._total.addTiming(endBuild-startBuild);
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
@@ -787,6 +798,8 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             Grid g = _grid;
             Kokkos::View<int*> cellStart("cellStart", g.nCells+1);
             buildCellList(cellIds,partIds,cellStart,soa1Device,N);
+	    double endCellListBuild = buildTimer.seconds();
+            spdlog::info("Cell List Build Time:{} ",endCellListBuild-startBuild);
 
 	    auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
 
@@ -846,6 +859,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             });
             Kokkos::fence();
             double endBuild = buildTimer.seconds();
+	    spdlog::info("nl teams building: {}",endBuild-endCellListBuild);
             _sectionTimes._buildNL._total.addTiming(endBuild-startBuild);
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
@@ -1073,7 +1087,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
     // amortized once the value has settled.
     size_t _maxNeighbors {64};
 
-    bool _useTeamsRebuild {true};
+    bool _useTeamsRebuild {false};
     bool _useParticleSorting{false};
     Grid _grid;
     SectionTimings _sectionTimes{};
