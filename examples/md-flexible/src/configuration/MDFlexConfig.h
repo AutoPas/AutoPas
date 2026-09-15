@@ -787,7 +787,7 @@ class MDFlexConfig {
   /**
    * Stores the objects generated based on the provided configuration file.
    */
-  std::vector<std::unique_ptr<Object>> particleObjects{};
+  std::vector<std::shared_ptr<Object>> particleObjects{};
 
   // Thermostat Options
   /**

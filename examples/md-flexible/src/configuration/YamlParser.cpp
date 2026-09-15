@@ -803,7 +803,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               objectErrors.clear();
               const auto cubeGrid = parseCubeGridObject(config, it->second, objectErrors);
 
-              config.particleObjects.emplace_back(std::make_unique<CubeGrid>(cubeGrid));
+              config.particleObjects.push_back(std::make_shared<CubeGrid>(cubeGrid));
               std::ranges::for_each(objectErrors, pushObjectError);
               ++objID;
             }
@@ -813,7 +813,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               objectErrors.clear();
               const auto cubeGauss = parseCubeGaussObject(config, it->second, objectErrors);
 
-              config.particleObjects.emplace_back(std::make_unique<CubeGauss>(cubeGauss));
+              config.particleObjects.push_back(std::make_shared<CubeGauss>(cubeGauss));
               std::ranges::for_each(objectErrors, pushObjectError);
               ++objID;
             }
@@ -823,7 +823,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               objectErrors.clear();
               const auto cubeUniform = parseCubeUniformObject(config, it->second, objectErrors);
 
-              config.particleObjects.emplace_back(std::make_unique<CubeUniform>(cubeUniform));
+              config.particleObjects.push_back(std::make_shared<CubeUniform>(cubeUniform));
               std::ranges::for_each(objectErrors, pushObjectError);
               ++objID;
             }
@@ -833,7 +833,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               objectErrors.clear();
               const auto sphere = parseSphereObject(config, it->second, objectErrors);
 
-              config.particleObjects.emplace_back(std::make_unique<Sphere>(sphere));
+              config.particleObjects.push_back(std::make_shared<Sphere>(sphere));
               std::ranges::for_each(objectErrors, pushObjectError);
               ++objID;
             }
@@ -843,7 +843,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               objectErrors.clear();
               const auto cubeClosestPacked = parseCubeClosestPacked(config, it->second, objectErrors);
 
-              config.particleObjects.emplace_back(std::make_unique<CubeClosestPacked>(cubeClosestPacked));
+              config.particleObjects.push_back(std::make_shared<CubeClosestPacked>(cubeClosestPacked));
               std::ranges::for_each(objectErrors, pushObjectError);
               ++objID;
             }

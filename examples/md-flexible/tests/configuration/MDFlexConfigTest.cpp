@@ -236,7 +236,7 @@ TEST_F(MDFlexConfigTest, UserSpecifiedBoxMinMaxPreserved) {
   config.boxMax.value = {10.0, 10.0, 10.0};
 
   const CubeGrid grid({0., 0., 0.}, 0, {10, 10, 10}, 1.0, {0., 0., 0.});
-  config.particleObjects.push_back(std::make_unique<CubeGrid>(grid));
+  config.particleObjects.push_back(std::make_shared<CubeGrid>(grid));
 
   config.calcSimulationBox();
 

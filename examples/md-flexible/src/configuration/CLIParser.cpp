@@ -804,13 +804,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
     switch (config.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::grid: {
         if (config.particleDensity.value > 0) {
-          config.particleObjects.push_back(std::make_unique<CubeGrid>(
+          config.particleObjects.push_back(std::make_shared<CubeGrid>(
               velocity, typeID,
               std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
                                     config.particlesPerDim.value},
               bottomLeftCorner, config.particleDensity.value));
         } else {
-          config.particleObjects.push_back(std::make_unique<CubeGrid>(
+          config.particleObjects.push_back(std::make_shared<CubeGrid>(
               velocity, typeID,
               std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
                                     config.particlesPerDim.value},
@@ -819,7 +819,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case MDFlexConfig::GeneratorOption::gaussian: {
-        config.particleObjects.push_back(std::make_unique<CubeGauss>(
+        config.particleObjects.push_back(std::make_shared<CubeGauss>(
             velocity, typeID, config.particlesTotal.value,
             std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
             config.distributionMean.value, config.distributionStdDev.value, bottomLeftCorner));
@@ -827,12 +827,12 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case MDFlexConfig::GeneratorOption::uniform: {
         if (config.particleDensity.value > 0) {
-          config.particleObjects.push_back(std::make_unique<CubeUniform>(
+          config.particleObjects.push_back(std::make_shared<CubeUniform>(
               velocity, typeID,
               std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
               bottomLeftCorner, config.particleDensity.value));
         } else {
-          config.particleObjects.push_back(std::make_unique<CubeUniform>(
+          config.particleObjects.push_back(std::make_shared<CubeUniform>(
               velocity, typeID, config.particlesTotal.value,
               std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
               bottomLeftCorner));
@@ -842,18 +842,18 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case MDFlexConfig::GeneratorOption::sphere: {
         auto centerOfBox = config.particlesPerDim.value / 2.;
         config.particleObjects.push_back(
-            std::make_unique<Sphere>(velocity, typeID, std::array<double, 3>{centerOfBox, centerOfBox, centerOfBox},
+            std::make_shared<Sphere>(velocity, typeID, std::array<double, 3>{centerOfBox, centerOfBox, centerOfBox},
                                      static_cast<int>(centerOfBox), config.particleSpacing.value));
         break;
       }
       case MDFlexConfig::GeneratorOption::closestPacked: {
         if (config.particleDensity.value > 0) {
-          config.particleObjects.emplace_back(std::make_unique<CubeClosestPacked>(
+          config.particleObjects.push_back(std::make_shared<CubeClosestPacked>(
               velocity, typeID,
               std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
               bottomLeftCorner, config.particleDensity.value, config.closestPackingStructure.value));
         } else {
-          config.particleObjects.emplace_back(std::make_unique<CubeClosestPacked>(
+          config.particleObjects.push_back(std::make_shared<CubeClosestPacked>(
               velocity, typeID, config.particleSpacing.value,
               std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
               bottomLeftCorner, config.closestPackingStructure.value));
