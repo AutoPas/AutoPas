@@ -11,6 +11,7 @@ target_compile_definitions(runTests PRIVATE)
 
 target_link_libraries(
         runTests
+        PUBLIC
         $<$<BOOL:${AUTOPAS_ENABLE_COVERAGE}>:gcov>
         autopas
         generators
@@ -19,6 +20,12 @@ target_link_libraries(
         Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony> # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
 )
+
+# Kokkos (and its CUDA headers) do not build against libc++, so Clang-based Kokkos builds have to
+# link explicitly against libstdc++ and libm.
+if (AUTOPAS_ENABLE_KOKKOS AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
+    target_link_libraries(runTests PRIVATE stdc++ m)
+endif ()
 
 include(GoogleTest)
 # queries the compiled executable for tests, this requires the executable to be runnable. if you are

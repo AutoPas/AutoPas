@@ -36,6 +36,7 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:antlr4cpp>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:pmt>
         Eigen3
+        $<$<BOOL:${AUTOPAS_ENABLE_KOKKOS}>:Kokkos::kokkos>
         hwy
     PRIVATE
         # harmony are only needed privately when building AutoPas.
@@ -55,6 +56,7 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
         $<$<BOOL:${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}>:AUTOPAS_ENABLE_DYNAMIC_CONTAINERS>
+        $<$<BOOL:${AUTOPAS_ENABLE_KOKKOS}>:AUTOPAS_ENABLE_KOKKOS>
         _USE_MATH_DEFINES
 )
 
