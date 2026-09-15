@@ -79,12 +79,16 @@ class CubeGrid : public Object {
 
   /**
    * Returns the coordinates of the bottom left front corner.
+   * If the grid is centered, this returns the coordinates of the first particle minus half the spacing.
+   * If the grid is not centered, this returns the coordinates of the first particle.
    * @return bottom left front corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   /**
    * Returns the coordinates of the top right back corner.
+   * If the grid is centered, this returns the coordinates of the last particle plus half the spacing.
+   * If the grid is not centered, this returns the coordinates of the last particle.
    * @return top right back corner.
    */
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {

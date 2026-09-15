@@ -584,7 +584,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         } else if (strArg == "hcp") {
           config.closestPackingStructure.value = CubeClosestPacked::LatticeStructure::HCP;
         } else {
-          cerr << "Unknown structure for closest packing generator: " << strArg << ". Possible values: (fcc hcp)"
+          cerr << "Unknown structure for closest packing generator: " << strArg << ". Possible values: (hcp fcc)"
                << endl;
           displayHelp = true;
         }

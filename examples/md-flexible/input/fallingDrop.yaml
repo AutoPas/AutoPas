@@ -42,6 +42,7 @@ Objects:
       box-length                 :  [49.5, 29.5, 10]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
+      structure                   :  fcc
   Sphere:
     0:  
       center                     :  [18, 15, 30]

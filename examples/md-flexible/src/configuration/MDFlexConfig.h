@@ -664,8 +664,8 @@ class MDFlexConfig {
    * closestPackingStructure
    */
   MDFlexOption<CubeClosestPacked::LatticeStructure, __LINE__> closestPackingStructure{
-      CubeClosestPacked::LatticeStructure::FCC, "structure", true,
-      "Structure of the closest packing generator. Possible Values: (fcc hcp)"};
+      CubeClosestPacked::LatticeStructure::HCP, "structure", true,
+      "Structure of the closest packing generator. Possible Values: (hcp fcc) Default: hcp"};
   /**
    * gridAlignmentCentered
    */

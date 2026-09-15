@@ -160,14 +160,14 @@ CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const MDFlexC
     structureStr =
         parseComplexTypeValueSingle<std::string>(node, config.closestPackingStructure.name, objectErrors, false);
   }
-  CubeClosestPacked::LatticeStructure structure = CubeClosestPacked::LatticeStructure::FCC;
+  CubeClosestPacked::LatticeStructure structure = CubeClosestPacked::LatticeStructure::HCP;
   if (not structureStr.empty()) {
     if (structureStr == "fcc") {
       structure = CubeClosestPacked::LatticeStructure::FCC;
     } else if (structureStr == "hcp") {
       structure = CubeClosestPacked::LatticeStructure::HCP;
     } else {
-      objectErrors.push_back("Unknown structure: " + structureStr + ". Possible values: (fcc hcp)");
+      objectErrors.push_back("Unknown structure: " + structureStr + ". Possible values: (hcp fcc)");
     }
   }
 
