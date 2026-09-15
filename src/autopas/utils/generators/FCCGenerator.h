@@ -14,7 +14,7 @@
 /**
  * Generator for an face-centered cubic (FCC) particle grid.
  */
-namespace autopasTools::generators::FCCGenerator {
+namespace autopas::generators::FCCGenerator {
 
 /**
  * Basis coordinates for conventional cubic FCC unit cell normalized by lattice constant a.
@@ -131,4 +131,4 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
   }
 }
 
-}  // namespace autopasTools::generators::FCCGenerator
+}  // namespace autopas::generators::FCCGenerator

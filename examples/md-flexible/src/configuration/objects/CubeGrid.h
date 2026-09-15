@@ -141,8 +141,8 @@ class CubeGrid : public Object {
     }
 
     autopas::generators::GridGenerator::fillWithParticles(particlesWrapper, _particlesPerDim, dummyParticle,
-                                                               {_particleSpacing, _particleSpacing, _particleSpacing},
-                                                               offset);
+                                                          {_particleSpacing, _particleSpacing, _particleSpacing},
+                                                          offset);
   }
 
  private:

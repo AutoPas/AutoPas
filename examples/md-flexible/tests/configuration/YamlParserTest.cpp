@@ -213,7 +213,7 @@ TEST_F(YamlParserTest, parseCubeClosestPackedStructureAndDensity) {
     std::vector<std::string> errors;
     const auto obj = MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
     EXPECT_TRUE(errors.empty());
-    EXPECT_EQ(obj.getLatticeStructure(), CubeClosestPacked::LatticeStructure::FCC);
+    EXPECT_EQ(obj.getLatticeStructure(), CubeClosestPacked::LatticeStructure::HCP);  // Default is HCP
     EXPECT_DOUBLE_EQ(obj.getParticleSpacing(), 1.0);
   }
 

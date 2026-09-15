@@ -91,11 +91,11 @@ class CubeClosestPacked : public Object {
   [[nodiscard]] size_t getParticlesTotal() const override {
     switch (_structure) {
       case FCC:
-        return autopasTools::generators::FCCGenerator::getNumberOfParticles(_bottomLeftCorner, _topRightCorner,
-                                                                            _particleSpacing, _centered);
+        return autopas::generators::FCCGenerator::getNumberOfParticles(_bottomLeftCorner, _topRightCorner,
+                                                                       _particleSpacing, _centered);
       case HCP:
-        return autopasTools::generators::HCPGenerator::getNumberOfParticles(_bottomLeftCorner, _topRightCorner,
-                                                                            _particleSpacing, _centered);
+        return autopas::generators::HCPGenerator::getNumberOfParticles(_bottomLeftCorner, _topRightCorner,
+                                                                       _particleSpacing, _centered);
       default:
         autopas::utils::ExceptionHandler::exception(
             "CubeClosestPacked: Unknown lattice structure. Possible values: (fcc hcp)");
@@ -147,11 +147,11 @@ class CubeClosestPacked : public Object {
     switch (_structure) {
       case FCC:
         autopas::generators::FCCGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
-                                                                  dummyParticle, _particleSpacing, _centered);
+                                                             dummyParticle, _particleSpacing, _centered);
         break;
       case HCP:
         autopas::generators::HCPGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
-                                                                  dummyParticle, _particleSpacing, _centered);
+                                                             dummyParticle, _particleSpacing, _centered);
         break;
       default:
         autopas::utils::ExceptionHandler::exception(

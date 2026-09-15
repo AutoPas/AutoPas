@@ -14,7 +14,7 @@
 /**
  * Generator for an hexagonally closest packed particle grid.
  */
-namespace autopasTools::generators::HCPGenerator {
+namespace autopas::generators::HCPGenerator {
 
 /**
  * Calculates the number of particles generated in an HCP lattice within [boxMin, boxMax).
@@ -108,4 +108,4 @@ void fillWithParticles(Container &container, const std::array<double, 3> &boxMin
     evenLayer = not evenLayer;
   }
 };
-};  // namespace autopasTools::generators::HCPGenerator
+};  // namespace autopas::generators::HCPGenerator
