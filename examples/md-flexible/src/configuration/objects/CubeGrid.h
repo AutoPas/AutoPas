@@ -88,7 +88,9 @@ class CubeGrid : public Object {
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     using namespace autopas::utils::ArrayMath::literals;
 
-    const auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_copy_array<double>(_particlesPerDim);
+    auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_copy_array<double>(_particlesPerDim);
+    // If the grid is not centered, the first particle is at the bottom left corner.
+    particlesPerDimDouble = _centered ? particlesPerDimDouble : particlesPerDimDouble - 1.;
     const auto totalLengthRelative = particlesPerDimDouble * _particleSpacing;
     return _bottomLeftCorner + totalLengthRelative;
   }

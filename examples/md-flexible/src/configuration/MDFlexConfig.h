@@ -480,7 +480,8 @@ class MDFlexConfig {
    * boxMin
    */
   MDFlexOption<std::array<double, 3>, 0> boxMin{
-      {std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()},
+      {std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN(),
+       std::numeric_limits<double>::quiet_NaN()},
       "box-min",
       true,
       "Lower front left corner of the simulation box."};
@@ -488,8 +489,8 @@ class MDFlexConfig {
    * boxMax
    */
   MDFlexOption<std::array<double, 3>, 0> boxMax{
-      {std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
-       std::numeric_limits<double>::lowest()},
+      {std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN(),
+       std::numeric_limits<double>::quiet_NaN()},
       "box-max",
       true,
       "Upper back right corner of the simulation box."};

@@ -462,18 +462,9 @@ std::string MDFlexConfig::to_string() const {
 void MDFlexConfig::calcSimulationBox() {
   const double interactionLength = cutoff.value + verletSkinRadius.value;
 
+  const auto isNotNan = [](const double x) { return not std::isnan(x); };
   const bool userDefinedBox =
-      (boxMax.value[0] > boxMin.value[0] and boxMax.value[1] > boxMin.value[1] and boxMax.value[2] > boxMin.value[2]);
-
-  if (userDefinedBox) {
-    for (int i = 0; i < 3; i++) {
-      if (boxMax.value[i] - boxMin.value[i] < interactionLength) {
-        std::cout << "WARNING: Simulation box in dimension " << i << " is shorter than interaction length ("
-                  << interactionLength << ")!" << std::endl;
-      }
-    }
-    return;
-  }
+      std::ranges::any_of(boxMin.value, isNotNan) or std::ranges::any_of(boxMax.value, isNotNan);
 
   std::array<double, 3> totalBoxMin{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
                                     std::numeric_limits<double>::max()};
@@ -484,13 +475,8 @@ void MDFlexConfig::calcSimulationBox() {
   auto resizeToObjectLimits = [&](const auto &objectCollection) {
     for (const auto &object : objectCollection) {
       hasParticleObjects = true;
-      const auto objectMin = object.getBoxMin();
-      const auto objectMax = object.getBoxMax();
-
-      for (size_t i = 0; i < 3; ++i) {
-        totalBoxMin[i] = std::min(totalBoxMin[i], objectMin[i]);
-        totalBoxMax[i] = std::max(totalBoxMax[i], objectMax[i]);
-      }
+      totalBoxMin = autopas::utils::ArrayMath::min(totalBoxMin, object.getBoxMin());
+      totalBoxMax = autopas::utils::ArrayMath::max(totalBoxMax, object.getBoxMax());
     }
   };
 
@@ -500,22 +486,33 @@ void MDFlexConfig::calcSimulationBox() {
   resizeToObjectLimits(sphereObjects);
   resizeToObjectLimits(cubeClosestPackedObjects);
 
-  if (hasParticleObjects) {
-    boxMin.value = totalBoxMin;
-    boxMax.value = totalBoxMax;
-  } else {
-    boxMin.value = {0.0, 0.0, 0.0};
-    boxMax.value = {1.0, 1.0, 1.0};
+  if (userDefinedBox) {
+    for (int i = 0; i < 3; i++) {
+      if (boxMax.value[i] - boxMin.value[i] < interactionLength) {
+        std::cout << "WARNING: Simulation box in dimension " << i << " is shorter than interaction length ("
+                  << interactionLength << ")!" << std::endl;
+      }
+      if (boxMax.value[i] < totalBoxMax[i] or boxMin.value[i] > totalBoxMin[i]) {
+        std::cout << "WARNING: Simulation box in dimension " << i
+                  << " is shorter than required by the defined particle objects" << std::endl;
+      }
+    }
+    // user defined box takes precedence over particle objects
+    return;
   }
+
+  boxMin.value = hasParticleObjects ? totalBoxMin : std::array<double, 3>{0.0, 0.0, 0.0};
+  boxMax.value = hasParticleObjects ? totalBoxMax : std::array<double, 3>{1.0, 1.0, 1.0};
 
   // guarantee the box is at least of size interactionLength
   for (int i = 0; i < 3; i++) {
-    if (boxMax.value[i] - boxMin.value[i] < interactionLength) {
+    const double boxLength = boxMax.value[i] - boxMin.value[i];
+    if (boxLength < interactionLength) {
       std::cout << "WARNING: Simulation box in dimension " << i
                 << " is shorter than interaction length and will be increased." << std::endl;
-      const double deficit = interactionLength - (boxMax.value[i] - boxMin.value[i]);
-      boxMin.value[i] -= deficit / 2.0;
-      boxMax.value[i] += deficit / 2.0;
+      const double deficit = (interactionLength - boxLength) / 2.0;
+      boxMin.value[i] -= deficit;
+      boxMax.value[i] += deficit;
     }
   }
 }
