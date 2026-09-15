@@ -117,10 +117,10 @@ TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
 
   const MDFlexConfig configuration(3, argv);
 
-  ASSERT_EQ(configuration.cubeGridObjects.size(), 2);
-  ASSERT_EQ(configuration.cubeGridObjects.at(0).getTypeId(), 0);
-  ASSERT_EQ(configuration.cubeGridObjects.at(0).getParticleSpacing(), 0.5);
-  ASSERT_EQ(configuration.cubeGridObjects.at(1).getTypeId(), 1);
+  ASSERT_EQ(configuration.getObjectsByType<CubeGrid>().size(), 2);
+  ASSERT_EQ(configuration.getObjectsByType<CubeGrid>().at(0)->getTypeId(), 0);
+  ASSERT_EQ(configuration.getObjectsByType<CubeGrid>().at(0)->getParticleSpacing(), 0.5);
+  ASSERT_EQ(configuration.getObjectsByType<CubeGrid>().at(1)->getTypeId(), 1);
 }
 
 TEST_F(MDFlexConfigTest, vtkRelatedProperties) {
@@ -236,7 +236,7 @@ TEST_F(MDFlexConfigTest, UserSpecifiedBoxMinMaxPreserved) {
   config.boxMax.value = {10.0, 10.0, 10.0};
 
   const CubeGrid grid({0., 0., 0.}, 0, {10, 10, 10}, 1.0, {0., 0., 0.});
-  config.cubeGridObjects.push_back(grid);
+  config.particleObjects.push_back(std::make_unique<CubeGrid>(grid));
 
   config.calcSimulationBox();
 

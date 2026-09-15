@@ -795,8 +795,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   }
 
   // only create objects if nothing was set by a yaml file and there was no checkpoint
-  if (config.checkpointfile.value.empty() and config.cubeGaussObjects.empty() and config.cubeGridObjects.empty() and
-      config.cubeUniformObjects.empty() and config.sphereObjects.empty() and config.cubeClosestPackedObjects.empty()) {
+  if (config.checkpointfile.value.empty() and config.particleObjects.empty()) {
     // common settings for any object type:
     unsigned int typeID = 0;
     std::array<double, 3> bottomLeftCorner = {0, 0, 0};
@@ -805,61 +804,59 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
     switch (config.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::grid: {
         if (config.particleDensity.value > 0) {
-          config.cubeGridObjects.emplace_back(
+          config.particleObjects.push_back(std::make_unique<CubeGrid>(
               velocity, typeID,
               std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
                                     config.particlesPerDim.value},
-              bottomLeftCorner, config.particleDensity.value);
+              bottomLeftCorner, config.particleDensity.value));
         } else {
-          config.cubeGridObjects.emplace_back(
+          config.particleObjects.push_back(std::make_unique<CubeGrid>(
               velocity, typeID,
               std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
                                     config.particlesPerDim.value},
-              config.particleSpacing.value, bottomLeftCorner);
+              config.particleSpacing.value, bottomLeftCorner));
         }
         break;
       }
       case MDFlexConfig::GeneratorOption::gaussian: {
-        CubeGauss cubeGauss(velocity, typeID, config.particlesTotal.value,
-                            {config.boxLength.value, config.boxLength.value, config.boxLength.value},
-                            config.distributionMean.value, config.distributionStdDev.value, bottomLeftCorner);
-        config.cubeGaussObjects.push_back(cubeGauss);
+        config.particleObjects.push_back(std::make_unique<CubeGauss>(
+            velocity, typeID, config.particlesTotal.value,
+            std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
+            config.distributionMean.value, config.distributionStdDev.value, bottomLeftCorner));
         break;
       }
       case MDFlexConfig::GeneratorOption::uniform: {
         if (config.particleDensity.value > 0) {
-          config.cubeUniformObjects.emplace_back(
+          config.particleObjects.push_back(std::make_unique<CubeUniform>(
               velocity, typeID,
               std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
-              bottomLeftCorner, config.particleDensity.value);
+              bottomLeftCorner, config.particleDensity.value));
         } else {
-          config.cubeUniformObjects.emplace_back(
+          config.particleObjects.push_back(std::make_unique<CubeUniform>(
               velocity, typeID, config.particlesTotal.value,
               std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
-              bottomLeftCorner);
+              bottomLeftCorner));
         }
         break;
       }
       case MDFlexConfig::GeneratorOption::sphere: {
         auto centerOfBox = config.particlesPerDim.value / 2.;
-        Sphere sphere(
-            velocity, typeID,
-            {static_cast<double>(centerOfBox), static_cast<double>(centerOfBox), static_cast<double>(centerOfBox)},
-            static_cast<int>(centerOfBox), config.particleSpacing.value);
-        config.sphereObjects.push_back(sphere);
+        config.particleObjects.push_back(
+            std::make_unique<Sphere>(velocity, typeID, std::array<double, 3>{centerOfBox, centerOfBox, centerOfBox},
+                                     static_cast<int>(centerOfBox), config.particleSpacing.value));
         break;
       }
       case MDFlexConfig::GeneratorOption::closestPacked: {
         if (config.particleDensity.value > 0) {
-          config.cubeClosestPackedObjects.emplace_back(
+          config.particleObjects.emplace_back(std::make_unique<CubeClosestPacked>(
               velocity, typeID,
               std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
-              bottomLeftCorner, config.particleDensity.value, config.closestPackingStructure.value);
+              bottomLeftCorner, config.particleDensity.value, config.closestPackingStructure.value));
         } else {
-          config.cubeClosestPackedObjects.emplace_back(
+          config.particleObjects.emplace_back(std::make_unique<CubeClosestPacked>(
               velocity, typeID, config.particleSpacing.value,
               std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
-              bottomLeftCorner, config.closestPackingStructure.value);
+              bottomLeftCorner, config.closestPackingStructure.value));
         }
         break;
       }

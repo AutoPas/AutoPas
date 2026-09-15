@@ -94,6 +94,12 @@ class Object {
   [[nodiscard]] virtual double getParticleSpacing() const { return 0; }
 
   /**
+   * Getter for the type of the object.
+   * @return string with the type of the object.
+   */
+  [[nodiscard]] virtual std::string getObjectType() const = 0;
+
+  /**
    * String description string of the object.
    * @return multiline std::string
    */

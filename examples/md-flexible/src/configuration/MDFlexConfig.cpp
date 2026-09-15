@@ -401,7 +401,7 @@ std::string MDFlexConfig::to_string() const {
     for (const auto &object : objectCollection) {
       os << "  " << name << ":" << endl;
       os << "    " << objectId << ":  " << endl;
-      auto objectStr = object.to_string();
+      auto objectStr = object->to_string();
       // indent all lines of object
       objectStr = std::regex_replace(objectStr, std::regex("(^|\n)(.)"), "$1      $2");
       os << objectStr;  // no endl needed here because objectStr ends a line
@@ -409,11 +409,11 @@ std::string MDFlexConfig::to_string() const {
     }
   };
 
-  printObjectCollection(cubeGridObjects, cubeGridObjectsStr, os);
-  printObjectCollection(cubeGaussObjects, cubeGaussObjectsStr, os);
-  printObjectCollection(cubeUniformObjects, cubeUniformObjectsStr, os);
-  printObjectCollection(cubeClosestPackedObjects, cubeClosestPackedObjectsStr, os);
-  printObjectCollection(sphereObjects, sphereObjectsStr, os);
+  printObjectCollection(getObjectsByType<CubeGrid>(), cubeGridObjectsStr, os);
+  printObjectCollection(getObjectsByType<CubeGauss>(), cubeGaussObjectsStr, os);
+  printObjectCollection(getObjectsByType<CubeUniform>(), cubeUniformObjectsStr, os);
+  printObjectCollection(getObjectsByType<CubeClosestPacked>(), cubeClosestPackedObjectsStr, os);
+  printObjectCollection(getObjectsByType<Sphere>(), sphereObjectsStr, os);
 
   if (not globalForceIsZero()) {
     printOption(globalForce);
@@ -471,20 +471,10 @@ void MDFlexConfig::calcSimulationBox() {
   std::array<double, 3> totalBoxMax{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
                                     std::numeric_limits<double>::lowest()};
 
-  bool hasParticleObjects = false;
-  auto resizeToObjectLimits = [&](const auto &objectCollection) {
-    for (const auto &object : objectCollection) {
-      hasParticleObjects = true;
-      totalBoxMin = autopas::utils::ArrayMath::min(totalBoxMin, object.getBoxMin());
-      totalBoxMax = autopas::utils::ArrayMath::max(totalBoxMax, object.getBoxMax());
-    }
-  };
-
-  resizeToObjectLimits(cubeGaussObjects);
-  resizeToObjectLimits(cubeGridObjects);
-  resizeToObjectLimits(cubeUniformObjects);
-  resizeToObjectLimits(sphereObjects);
-  resizeToObjectLimits(cubeClosestPackedObjects);
+  for (const auto &object : particleObjects) {
+    totalBoxMin = autopas::utils::ArrayMath::min(totalBoxMin, object->getBoxMin());
+    totalBoxMax = autopas::utils::ArrayMath::max(totalBoxMax, object->getBoxMax());
+  }
 
   if (userDefinedBox) {
     for (int i = 0; i < 3; i++) {
@@ -501,6 +491,7 @@ void MDFlexConfig::calcSimulationBox() {
     return;
   }
 
+  const bool hasParticleObjects = not particleObjects.empty();
   boxMin.value = hasParticleObjects ? totalBoxMin : std::array<double, 3>{0.0, 0.0, 0.0};
   boxMax.value = hasParticleObjects ? totalBoxMax : std::array<double, 3>{1.0, 1.0, 1.0};
 
@@ -639,20 +630,8 @@ void MDFlexConfig::initializeObjects() {
   int myRank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
   if (myRank == 0) {
-    for (const auto &object : cubeGridObjects) {
-      object.generate(particles);
-    }
-    for (const auto &object : cubeGaussObjects) {
-      object.generate(particles);
-    }
-    for (const auto &object : cubeUniformObjects) {
-      object.generate(particles);
-    }
-    for (const auto &object : sphereObjects) {
-      object.generate(particles);
-    }
-    for (const auto &object : cubeClosestPackedObjects) {
-      object.generate(particles);
+    for (const auto &object : particleObjects) {
+      object->generate(particles);
     }
   }
 }

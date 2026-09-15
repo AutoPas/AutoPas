@@ -55,11 +55,11 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
 
   MDFlexConfig configuration(3, argv);
 
-  EXPECT_THAT(configuration.cubeGridObjects, ::testing::SizeIs(1));
-  EXPECT_THAT(configuration.cubeGaussObjects, ::testing::SizeIs(1));
-  EXPECT_THAT(configuration.cubeUniformObjects, ::testing::SizeIs(1));
-  EXPECT_THAT(configuration.sphereObjects, ::testing::SizeIs(1));
-  EXPECT_THAT(configuration.cubeClosestPackedObjects, ::testing::SizeIs(1));
+  EXPECT_THAT(configuration.getObjectsByType<CubeGrid>(), ::testing::SizeIs(1));
+  EXPECT_THAT(configuration.getObjectsByType<CubeGauss>(), ::testing::SizeIs(1));
+  EXPECT_THAT(configuration.getObjectsByType<CubeUniform>(), ::testing::SizeIs(1));
+  EXPECT_THAT(configuration.getObjectsByType<Sphere>(), ::testing::SizeIs(1));
+  EXPECT_THAT(configuration.getObjectsByType<CubeClosestPacked>(), ::testing::SizeIs(1));
 
   // counters to checks if all particles types are well initialized for different Objects:
   int gridCounter = 0;
@@ -98,11 +98,11 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
     }
   }
 
-  EXPECT_EQ(gridCounter, configuration.cubeGridObjects.at(0).getParticlesTotal());
-  EXPECT_EQ(gaussCounter, configuration.cubeGaussObjects.at(0).getParticlesTotal());
-  EXPECT_EQ(uniformCounter, configuration.cubeUniformObjects.at(0).getParticlesTotal());
-  EXPECT_EQ(sphereCounter, configuration.sphereObjects.at(0).getParticlesTotal());
-  EXPECT_EQ(closestCounter, configuration.cubeClosestPackedObjects.at(0).getParticlesTotal());
+  EXPECT_EQ(gridCounter, configuration.getObjectsByType<CubeGrid>().at(0)->getParticlesTotal());
+  EXPECT_EQ(gaussCounter, configuration.getObjectsByType<CubeGauss>().at(0)->getParticlesTotal());
+  EXPECT_EQ(uniformCounter, configuration.getObjectsByType<CubeUniform>().at(0)->getParticlesTotal());
+  EXPECT_EQ(sphereCounter, configuration.getObjectsByType<Sphere>().at(0)->getParticlesTotal());
+  EXPECT_EQ(closestCounter, configuration.getObjectsByType<CubeClosestPacked>().at(0)->getParticlesTotal());
   // check if during initialization, not 2 Particles were initialized with same id
   std::set<size_t> ids;
   for (auto &particle : configuration.particles) {

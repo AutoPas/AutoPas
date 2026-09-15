@@ -49,6 +49,8 @@ class CubeGrid : public Object {
     _particleSpacing = std::cbrt(1.0 / _density);
   }
 
+  [[nodiscard]] std::string getObjectType() const override { return "CubeGrid"; }
+
   /**
    * Returns the particle spacing.
    * @return spacing between particles.

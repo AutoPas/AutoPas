@@ -203,6 +203,22 @@ class MDFlexConfig {
   void loadParticlesFromCheckpoint(const size_t &rank, const size_t &numRanks);
 
   /**
+   * Returns a vector of pointers to objects of the specified type.
+   * @tparam TargetType  e.g. CubeUniform, CubeClosestPacked, Sphere, etc.
+   * @return
+   */
+  template <typename TargetType>
+  [[nodiscard]] std::vector<const TargetType *> getObjectsByType() const {
+    std::vector<const TargetType *> filtered;
+    for (const auto &obj : particleObjects) {
+      if (auto casted = dynamic_cast<const TargetType *>(obj.get())) {
+        filtered.push_back(casted);
+      }
+    }
+    return filtered;
+  }
+
+  /**
    * Choice of the pairwise functor
    */
   enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_HWY };
@@ -745,25 +761,13 @@ class MDFlexConfig {
    */
   static inline const char *const cubeGridObjectsStr{"CubeGrid"};
   /**
-   * cubeGridObjects
-   */
-  std::vector<CubeGrid> cubeGridObjects{};
-  /**
    * cubeGaussObjectsStr
    */
   static inline const char *const cubeGaussObjectsStr{"CubeGauss"};
   /**
-   * cubeGaussObjects
-   */
-  std::vector<CubeGauss> cubeGaussObjects{};
-  /**
    * cubeUniformObjectsStr
    */
   static inline const char *const cubeUniformObjectsStr{"CubeUniform"};
-  /**
-   * cubeUniformObjects
-   */
-  std::vector<CubeUniform> cubeUniformObjects{};
   /**
    * sphereObjectsStr
    */
@@ -777,17 +781,13 @@ class MDFlexConfig {
    */
   static inline const char *const sphereRadiusStr{"radius"};
   /**
-   * sphereObjects
-   */
-  std::vector<Sphere> sphereObjects{};
-  /**
-   * cubeClosestPackedObjects
-   */
-  std::vector<CubeClosestPacked> cubeClosestPackedObjects{};
-  /**
    * cubeClosestPackedObjectsStr
    */
   static inline const char *const cubeClosestPackedObjectsStr{"CubeClosestPacked"};
+  /**
+   * Stores the objects generated based on the provided configuration file.
+   */
+  std::vector<std::unique_ptr<Object>> particleObjects{};
 
   // Thermostat Options
   /**

@@ -51,6 +51,8 @@ class CubeUniform : public Object {
     }
   }
 
+  [[nodiscard]] std::string getObjectType() const override { return "CubeUniform"; }
+
   /**
    * Returns the particle density.
    * @return density of particles.

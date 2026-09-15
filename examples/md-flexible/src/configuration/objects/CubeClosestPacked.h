@@ -68,6 +68,8 @@ class CubeClosestPacked : public Object {
     }
   }
 
+  [[nodiscard]] std::string getObjectType() const override { return "CubeClosestPacked"; }
+
   [[nodiscard]] double getParticleSpacing() const override { return _particleSpacing; }
 
   /**
