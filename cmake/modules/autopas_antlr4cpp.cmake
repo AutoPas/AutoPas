@@ -6,8 +6,9 @@ set(AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
         )
 
 if (AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
-    message(STATUS "Rules-Based Tuning Enabled")
+    message(STATUS "(Fuzzy) Rules-Based Tuning Enabled")
     message(STATUS "antlr4cpp - using bundled version")
+    message(WARNING "(Fuzzy) Rules-Based Tuning is not actively maintained, and may require modification. See CONTRIBUTING.md.")
 
     # Set ANTLR build options to disable building tests, shared libraries, and demos, and to disable warnings.
     set(ANTLR_BUILD_CPP_TESTS OFF CACHE INTERNAL "")
