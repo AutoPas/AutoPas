@@ -27,7 +27,7 @@ inline constexpr std::array<std::array<double, 3>, 4> fccBasis = {{
 }};
 
 /**
- * Calculates the number of particles generated in an FCC lattice within [boxMin, boxMax).
+ * Calculates the number of particles generated in an FCC lattice within [boxMin, boxMax) in O(1) time.
  * @param boxMin
  * @param boxMax
  * @param spacing Nearest-neighbor distance d.
@@ -36,44 +36,36 @@ inline constexpr std::array<std::array<double, 3>, 4> fccBasis = {{
  */
 inline size_t getNumberOfParticles(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                    const double spacing = 1.0, const bool centeredAlignment = true) {
-  const double latticeConstant = std::sqrt(2.0) * spacing;
   if (spacing <= 0.0) {
     return 0;
   }
 
+  const double latticeConstant = std::sqrt(2.0) * spacing;
   std::array<double, 3> offset = {0.0, 0.0, 0.0};
   if (centeredAlignment) {
     offset = {latticeConstant / 4.0, latticeConstant / 4.0, latticeConstant / 4.0};
   }
 
-  const size_t numCellsX = std::max<size_t>(1, std::ceil((boxMax[0] - boxMin[0]) / latticeConstant));
-  const size_t numCellsY = std::max<size_t>(1, std::ceil((boxMax[1] - boxMin[1]) / latticeConstant));
-  const size_t numCellsZ = std::max<size_t>(1, std::ceil((boxMax[2] - boxMin[2]) / latticeConstant));
-
-  size_t count = 0;
-  for (size_t z = 0; z < numCellsZ; ++z) {
-    for (size_t y = 0; y < numCellsY; ++y) {
-      for (size_t x = 0; x < numCellsX; ++x) {
-        const std::array<double, 3> cellOrigin = {
-            boxMin[0] + static_cast<double>(x) * latticeConstant + offset[0],
-            boxMin[1] + static_cast<double>(y) * latticeConstant + offset[1],
-            boxMin[2] + static_cast<double>(z) * latticeConstant + offset[2],
-        };
-        for (const auto &b : fccBasis) {
-          const std::array<double, 3> pos = {
-              cellOrigin[0] + b[0] * latticeConstant,
-              cellOrigin[1] + b[1] * latticeConstant,
-              cellOrigin[2] + b[2] * latticeConstant,
-          };
-          if (pos[0] >= boxMin[0] and pos[0] < boxMax[0] and pos[1] >= boxMin[1] and pos[1] < boxMax[1] and
-              pos[2] >= boxMin[2] and pos[2] < boxMax[2]) {
-            ++count;
-          }
-        }
-      }
+  auto countIndices = [&](const double bMin, const double bMax, const double offsetVal,
+                          const double basisVal) -> size_t {
+    const double startPos = bMin + offsetVal + basisVal * latticeConstant;
+    if (startPos >= bMax) {
+      return 0;
     }
+    const double remaining = bMax - startPos;
+    const auto count = static_cast<size_t>(std::ceil(remaining / latticeConstant));
+    return count;
+  };
+
+  size_t totalCount = 0;
+  for (const auto &basis : fccBasis) {
+    size_t basisCount = 1;
+    for (size_t d = 0; d < 3; ++d) {
+      basisCount *= countIndices(boxMin[d], boxMax[d], offset[d], basis[d]);
+    }
+    totalCount += basisCount;
   }
-  return count;
+  return totalCount;
 }
 
 /**

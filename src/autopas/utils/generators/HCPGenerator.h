@@ -17,7 +17,7 @@
 namespace autopas::generators::HCPGenerator {
 
 /**
- * Calculates the number of particles generated in an HCP lattice within [boxMin, boxMax).
+ * Calculates the number of particles generated in an HCP lattice within [boxMin, boxMax) in O(1) time.
  * @param boxMin
  * @param boxMax
  * @param spacing Nearest-neighbor distance d.
@@ -40,21 +40,42 @@ inline size_t getNumberOfParticles(const std::array<double, 3> &boxMin, const st
     offset = {spacing / 4.0, yOffset, spacingLayer / 2.0};
   }
 
-  size_t count = 0;
-  bool evenLayer = true;
-  for (double z = boxMin[2] + offset[2]; z < boxMax[2]; z += spacingLayer) {
-    const double startY = (evenLayer ? boxMin[1] : boxMin[1] + yOffset) + offset[1];
-    bool evenRow = evenLayer;
-    for (double y = startY; y < boxMax[1]; y += spacingRow) {
-      const double startX = (evenRow ? boxMin[0] : boxMin[0] + xOffset) + offset[0];
-      for (double x = startX; x < boxMax[0]; x += spacing) {
-        ++count;
-      }
-      evenRow = not evenRow;
+  auto countSteps = [](const double start, const double stop, const double step) -> size_t {
+    if (stop <= start or step <= 0.0) {
+      return 0;
     }
-    evenLayer = not evenLayer;
+    const auto count = static_cast<size_t>(std::ceil((stop - start) / step));
+    return count;
+  };
+
+  const size_t numLayersZ = countSteps(boxMin[2] + offset[2], boxMax[2], spacingLayer);
+  if (numLayersZ == 0) {
+    return 0;
   }
-  return count;
+  const size_t numEvenLayers = (numLayersZ + 1) / 2;
+  const size_t numOddLayers = numLayersZ / 2;
+
+  const double startYEven = boxMin[1] + offset[1];
+  const size_t nyEvenLayer = countSteps(startYEven, boxMax[1], spacingRow);
+
+  const double startYOdd = boxMin[1] + yOffset + offset[1];
+  const size_t nyOddLayer = countSteps(startYOdd, boxMax[1], spacingRow);
+
+  const double startXEvenRow = boxMin[0] + offset[0];
+  const size_t nxEvenRow = countSteps(startXEvenRow, boxMax[0], spacing);
+
+  const double startXOddRow = boxMin[0] + xOffset + offset[0];
+  const size_t nxOddRow = countSteps(startXOddRow, boxMax[0], spacing);
+
+  const size_t nyEvenLayerEvenRows = (nyEvenLayer + 1) / 2;
+  const size_t nyEvenLayerOddRows = nyEvenLayer / 2;
+  const size_t particlesPerEvenLayer = nyEvenLayerEvenRows * nxEvenRow + nyEvenLayerOddRows * nxOddRow;
+
+  const size_t nyOddLayerOddRows = (nyOddLayer + 1) / 2;
+  const size_t nyOddLayerEvenRows = nyOddLayer / 2;
+  const size_t particlesPerOddLayer = nyOddLayerOddRows * nxOddRow + nyOddLayerEvenRows * nxEvenRow;
+
+  return numEvenLayers * particlesPerEvenLayer + numOddLayers * particlesPerOddLayer;
 }
 
 /**
