@@ -600,6 +600,18 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
+      case decltype(config.gridAlignmentCentered)::getoptChar: {
+        if (strArg == "true") {
+          config.gridAlignmentCentered.value = true;
+        } else if (strArg == "false") {
+          config.gridAlignmentCentered.value = false;
+        } else {
+          cerr << "Error parsing 'centered' for lattice alignment "
+               << ". Possible values: (true (default) false)" << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case decltype(config.traversalOptions)::getoptChar: {
         config.traversalOptions.value = autopas::TraversalOption::parseOptions(strArg);
         if (config.traversalOptions.value.empty()) {
@@ -818,13 +830,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
               velocity, typeID,
               std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
                                     config.particlesPerDim.value},
-              bottomLeftCorner, config.particleDensity.value));
+              bottomLeftCorner, config.particleDensity.value, config.gridAlignmentCentered.value));
         } else {
           config.particleObjects.push_back(std::make_shared<CubeGrid>(
               velocity, typeID,
               std::array<size_t, 3>{config.particlesPerDim.value, config.particlesPerDim.value,
                                     config.particlesPerDim.value},
-              config.particleSpacing.value, bottomLeftCorner));
+              config.particleSpacing.value, bottomLeftCorner, config.gridAlignmentCentered.value));
         }
         break;
       }
@@ -861,12 +873,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.particleObjects.push_back(std::make_shared<CubeClosestPacked>(
               velocity, typeID,
               std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
-              bottomLeftCorner, config.particleDensity.value, config.closestPackingStructure.value));
+              bottomLeftCorner, config.particleDensity.value, config.closestPackingStructure.value,
+              config.gridAlignmentCentered.value));
         } else {
           config.particleObjects.push_back(std::make_shared<CubeClosestPacked>(
               velocity, typeID, config.particleSpacing.value,
               std::array<double, 3>{config.boxLength.value, config.boxLength.value, config.boxLength.value},
-              bottomLeftCorner, config.closestPackingStructure.value));
+              bottomLeftCorner, config.closestPackingStructure.value, config.gridAlignmentCentered.value));
         }
         break;
       }
