@@ -167,7 +167,7 @@ if (AUTOPAS_BUILD_TESTS)
 
     target_link_libraries(
             neighborIdentificationLibTests PUBLIC
-            autopas neighborIdentificationLibrary gmock
+            autopas generators molecularDynamicsLibrary neighborIdentificationLibrary gmock
     )
 
     # this cmake module was only introduced in 3.10

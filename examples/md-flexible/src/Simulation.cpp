@@ -25,8 +25,8 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeSVE *);
 #endif
-#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
-extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
+#if defined(MD_FLEXIBLE_FUNCTOR_ATM_AUTOVEC)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATMFunctor *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeHWY *);

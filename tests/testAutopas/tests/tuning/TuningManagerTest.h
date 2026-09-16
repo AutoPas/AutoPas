@@ -52,6 +52,14 @@ class TuningManagerTest : public AutoPasTestBase {
       autopas::TraversalOption::lc_c01,         autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,           autopas::Newton3Option::disabled,
       autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::p1xVec};
+  const autopas::Configuration _confVl_list_iteration{autopas::ContainerOption::verletLists,
+                                                      _cellSizeFactor,
+                                                      autopas::TraversalOption::vl_list_iteration,
+                                                      autopas::LoadEstimatorOption::none,
+                                                      autopas::DataLayoutOption::aos,
+                                                      autopas::Newton3Option::disabled,
+                                                      autopas::InteractionTypeOption::pairwise,
+                                                      autopas::VectorizationPatternOption::p1xVec};
 
   // Triwise configs:
   const autopas::Configuration _confLc_c01_3b_noN3{
@@ -64,4 +72,20 @@ class TuningManagerTest : public AutoPasTestBase {
       autopas::TraversalOption::ds_sequential, autopas::LoadEstimatorOption::none,
       autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
       autopas::InteractionTypeOption::triwise, autopas::VectorizationPatternOption::p1xVec};
+  const autopas::Configuration _confVl_list_iteration_3b{autopas::ContainerOption::verletLists,
+                                                         _cellSizeFactor,
+                                                         autopas::TraversalOption::vl_list_iteration,
+                                                         autopas::LoadEstimatorOption::none,
+                                                         autopas::DataLayoutOption::aos,
+                                                         autopas::Newton3Option::disabled,
+                                                         autopas::InteractionTypeOption::triwise,
+                                                         autopas::VectorizationPatternOption::p1xVec};
+  const autopas::Configuration _confVl_pair_list_iteration_3b{autopas::ContainerOption::verletLists,
+                                                              _cellSizeFactor,
+                                                              autopas::TraversalOption::vl_pair_list_iteration,
+                                                              autopas::LoadEstimatorOption::none,
+                                                              autopas::DataLayoutOption::aos,
+                                                              autopas::Newton3Option::disabled,
+                                                              autopas::InteractionTypeOption::triwise,
+                                                              autopas::VectorizationPatternOption::p1xVec};
 };
