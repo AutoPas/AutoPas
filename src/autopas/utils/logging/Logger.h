@@ -18,8 +18,7 @@
  * @name Per-level building blocks of AutoPasLog
  * These mirror spdlog's own SPDLOG_LOGGER_<LEVEL> wrappers, but are gated on AUTOPAS_ACTIVE_LEVEL. Levels
  * below the configured one expand to (void)0, so they cost nothing at run time.
- * The purpose of this is to allow for a consumer to keep AutoPas's log level above that of their own spdlog, so they
- * get e.g. their own trace/debug logs without getting ours.
+ * The purpose of this is to allow for a consumer to keep AutoPas's log level independent of that of their own spdlog.
  * @{
  */
 #if AUTOPAS_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
