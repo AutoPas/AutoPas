@@ -36,7 +36,7 @@ class CubeClosestPacked : public Object {
    */
   CubeClosestPacked(const std::array<double, 3> &velocity, const size_t typeId, const double particleSpacing,
                     const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner,
-                    const LatticeStructure structure = HCP, const bool centered = true)
+                    const LatticeStructure structure = HCP, const bool centered = false)
       : CubeClosestPacked(velocity, typeId, boxLength, bottomLeftCorner, structure, centered) {
     _particleSpacing = particleSpacing;
     _density =
@@ -56,7 +56,7 @@ class CubeClosestPacked : public Object {
    */
   CubeClosestPacked(const std::array<double, 3> &velocity, const size_t typeId, const std::array<double, 3> &boxLength,
                     const std::array<double, 3> &bottomLeftCorner, const double density,
-                    const LatticeStructure structure = HCP, const bool centered = true)
+                    const LatticeStructure structure = HCP, const bool centered = false)
       : CubeClosestPacked(velocity, typeId, boxLength, bottomLeftCorner, structure, centered) {
     _particleSpacing = optimizeSpacingForDensity(_bottomLeftCorner, _topRightCorner, density, structure, centered);
     const auto newDensity =
@@ -161,7 +161,7 @@ class CubeClosestPacked : public Object {
    */
   CubeClosestPacked(const std::array<double, 3> &velocity, const size_t typeId, const std::array<double, 3> &boxLength,
                     const std::array<double, 3> &bottomLeftCorner, const LatticeStructure structure = FCC,
-                    const bool centered = true)
+                    const bool centered = false)
       : Object(velocity, typeId),
         _boxLength(boxLength),
         _bottomLeftCorner(bottomLeftCorner),
@@ -295,5 +295,5 @@ class CubeClosestPacked : public Object {
   /**
    * Lattice alignment (First particle at center or origin of a lattice unit cell).
    */
-  bool _centered{true};
+  bool _centered{false};
 };

@@ -27,7 +27,7 @@ class CubeGrid : public Object {
    * @param centered If true, the cell offset moved inward by 1/2 * spacing.
    */
   CubeGrid(const std::array<double, 3> &velocity, const size_t typeId, const std::array<size_t, 3> &particlesPerDim,
-           const double particleSpacing, const std::array<double, 3> &bottomLeftCorner, const bool centered = true)
+           const double particleSpacing, const std::array<double, 3> &bottomLeftCorner, const bool centered = false)
       : CubeGrid(velocity, typeId, particlesPerDim, bottomLeftCorner, centered) {
     _particleSpacing = particleSpacing;
     _density = 1.0 / (_particleSpacing * _particleSpacing * _particleSpacing);
@@ -43,7 +43,7 @@ class CubeGrid : public Object {
    * @param centered If true, the cell offset moved inward by 1/2 * spacing.
    */
   CubeGrid(const std::array<double, 3> &velocity, const size_t typeId, const std::array<size_t, 3> &particlesPerDim,
-           const std::array<double, 3> &bottomLeftCorner, const double density, const bool centered = true)
+           const std::array<double, 3> &bottomLeftCorner, const double density, const bool centered = false)
       : CubeGrid(velocity, typeId, particlesPerDim, bottomLeftCorner, centered) {
     _density = density;
     _particleSpacing = std::cbrt(1.0 / _density);
@@ -155,7 +155,7 @@ class CubeGrid : public Object {
    * @param centered If true, the cell offset moved inward by 1/2 * spacing.
    */
   CubeGrid(const std::array<double, 3> &velocity, const size_t typeId, const std::array<size_t, 3> &particlesPerDim,
-           const std::array<double, 3> &bottomLeftCorner, const bool centered = true)
+           const std::array<double, 3> &bottomLeftCorner, const bool centered = false)
       : Object(velocity, typeId),
         _particlesPerDim(particlesPerDim),
         _bottomLeftCorner(bottomLeftCorner),
@@ -184,5 +184,5 @@ class CubeGrid : public Object {
   /**
    * If true, the cell offset moved inward by 1/2 * spacing.
    */
-  bool _centered{true};
+  bool _centered{false};
 };

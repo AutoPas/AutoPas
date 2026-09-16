@@ -254,7 +254,8 @@ TEST_F(YamlParserTest, parseCubeClosestPackedStructureAndDensity) {
         "particle-density: 0.984375\n"
         "bottomLeftCorner: [0, 0, 0]\n"
         "particle-type-id: 0\n"
-        "velocity: [0, 0, 0]\n");
+        "velocity: [0, 0, 0]\n"
+        "centered: true\n");
     std::vector<std::string> errors;
     const auto obj = MDFlexParser::YamlParser::parseCubeClosestPacked(config, node, errors);
     EXPECT_TRUE(errors.empty());

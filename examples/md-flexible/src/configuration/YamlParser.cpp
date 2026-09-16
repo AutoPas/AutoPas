@@ -59,13 +59,18 @@ CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig &confi
                            config.particleDensity.name + " for the same object.");
   }
 
-  bool centered = true;
+  bool centered = false;
   if (node[config.gridAlignmentCentered.name]) {
     try {
       centered = node[config.gridAlignmentCentered.name].as<bool>();
     } catch (const std::exception &) {
       objectErrors.push_back("Could not parse " + config.gridAlignmentCentered.name + " for the object.");
     }
+  } else {
+    std::cout << "Warning: The default alignment for CubeClosestPacked lattices will change in AutoPas version 3 to "
+                 "keep space between particles and the bounding box. Use centered : false to explicitly align the "
+                 "first particle on the box origin."
+              << std::endl;
   }
 
   if (particleDensity > 0.0) {
@@ -169,15 +174,24 @@ CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const MDFlexC
     } else {
       objectErrors.push_back("Unknown structure: " + structureStr + ". Possible values: (hcp fcc)");
     }
+  } else {
+    std::cout << "Warning: The default structure for CubeClosestPacked will change from HCP to FCC with the release of "
+                 "AutoPas version 3."
+              << std::endl;
   }
 
-  bool centered = true;
+  bool centered = false;
   if (node[config.gridAlignmentCentered.name]) {
     try {
       centered = node[config.gridAlignmentCentered.name].as<bool>();
     } catch (const std::exception &) {
       objectErrors.push_back("Could not parse " + config.gridAlignmentCentered.name + " for the object.");
     }
+  } else {
+    std::cout << "Warning: The default alignment for CubeClosestPacked lattices will change in AutoPas version 3 to "
+                 "keep space between particles and the bounding box. Use centered : false to explicitly align the "
+                 "first particle on the box origin."
+              << std::endl;
   }
 
   if (particleDensity > 0.0) {

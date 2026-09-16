@@ -43,6 +43,7 @@ Objects:
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
       structure                   :  fcc
+      centered                    :  true
   Sphere:
     0:  
       center                     :  [18, 15, 30]
