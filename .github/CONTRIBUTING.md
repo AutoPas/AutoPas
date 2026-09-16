@@ -182,11 +182,16 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * Tests for the individual tuning strategies. See files in [`tests/testAutopas/tests/tuning/tuningStrategy/`](/tests/testAutopas/tests/tuning/tuningStrategy/).
 
 ### Rule Based Tuning and Antlr
-Whenever any option is added that is part of the tuning procedure, it has to be added to the Antlr parsing logic and grammar.
-To update the grammar, simply run [`generateRuleLanguage.sh`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/generateRuleLanguage.sh) and overwrite the old [`RuleLangugage.g4`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleLangugage.g4) file.
-To update the parser, the easiest way to do this is via the CLion plugin for Antlr4. Just right-click the g4 file -> 'Configure ANTLR' (Output directory, input grammar file, namespace `AutopasGeneratedRuleSyntax`, language) and then right click the g4 again -> 'Generate ANTLR Recognizer'. Don't forget to apply clang-format afterward.
+The (Fuzzy) rule based tuning strategies rely on an Antlr parsing logic and grammar, that must be generated anew
+whenever an option is added to the tuning procedure.
+We do not actively maintain these parsing logic and grammars and so they may be outdated.
+However, if you wish to use them, update them as follows:
+* [`RuleLanguage.g4`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleLanguage.g4) hardcodes every option value as a literal token, so it **must** be regenerated when an option changes. Run [`generateRuleLanguage.sh`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/generateRuleLanguage.sh), which rebuilds it from the current `Option.h` files.
+* ([`FuzzyLanguage.g4`](/src/autopas/tuning/tuningStrategy/fuzzyTuning/FuzzyLanguage.g4) is purely structural (`IDENTIFIER '=' STRING`) and is written by hand. It needs **no** change when an option is added — only when the fuzzy language syntax itself changes.)
+* After changing a grammar, regenerate its parser with the `antlr4` CLI. The exact command is documented next to the grammar it belongs to, in [`ruleBasedTuning/README.md`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/README.md) and [`fuzzyTuning/README.md`](/src/autopas/tuning/tuningStrategy/fuzzyTuning/README.md). The output goes into the `autopas_generated_*_rule_syntax/` subdirectory of `parser_generated/` and is committed to the repository. Don't forget to apply clang-format afterward.
+* Note that `parser_generated/` also holds hand-written glue that the `antlr4` CLI does **not** overwrite, such as `TranslationVisitor.cpp`. Its `knownProperties` list enumerates the accepted configuration properties by name and must be extended when an option is added.
 
-**WARNING** The CLion plugin and Antlr version must match!. For example for Antlr version 4.9.1 the plugin version 1.16 is needed, otherwise incompatible parser code is generated. See [Antlr plugin's GitHub page](https://github.com/antlr/intellij-plugin-v4/releases) for what is compatible and get the plugin's binary from the [jetbrains plugin webpage](https://plugins.jetbrains.com/plugin/7358-antlr-v4/versions).
+We welcome pull requests that simply update this.
 
 ## Dependencies
 
