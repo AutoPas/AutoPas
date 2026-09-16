@@ -11,8 +11,7 @@ set(AUTOPAS_MIN_LOG_LVL
 set_property(CACHE AUTOPAS_MIN_LOG_LVL PROPERTY STRINGS "TRACE;DEBUG;INFO;WARN;ERROR;CRITICAL;OFF")
 
 if (NOT spdlog_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
-    # Path 1: reuse a spdlog target a parent project already defined. AUTOPAS_MIN_LOG_LVL is not applied
-    # here, as the target belongs to the parent project, which decides how its spdlog is compiled.
+    # Path 1: reuse a spdlog target a parent project already defined.
     if (TARGET spdlog::spdlog OR TARGET spdlog)
         message(STATUS "AutoPas: Reusing spdlog provided by parent project")
         autopas_alias_dependency(spdlog spdlog::spdlog)

@@ -27,6 +27,8 @@ add_library(autopas STATIC ${MY_SRC})
 # collision-safe target name and use `if (NOT TARGET AutoPas::autopas)` guards
 add_library(AutoPas::autopas ALIAS autopas)
 
+target_compile_definitions(autopas PUBLIC AUTOPAS_ACTIVE_LEVEL=SPDLOG_LEVEL_${AUTOPAS_MIN_LOG_LVL})
+
 target_link_libraries(
     autopas
     PUBLIC

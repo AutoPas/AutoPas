@@ -15,13 +15,59 @@
 #include <iostream>
 
 /**
+ * @name Per-level building blocks of AutoPasLog
+ * These mirror spdlog's own SPDLOG_LOGGER_<LEVEL> wrappers, but are gated on AUTOPAS_ACTIVE_LEVEL. Levels
+ * below the configured one expand to (void)0, so they cost nothing at run time.
+ * The purpose of this is to allow for a consumer to keep AutoPas's log level above that of their own spdlog, so they
+ * get e.g. their own trace/debug logs without getting ours.
+ * @{
+ */
+#if AUTOPAS_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#define AutoPasLog_TRACE(...) SPDLOG_LOGGER_CALL(autopas::Logger::get(), spdlog::level::trace, __VA_ARGS__)
+#else
+#define AutoPasLog_TRACE(...) (void)0
+#endif
+
+#if AUTOPAS_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG
+#define AutoPasLog_DEBUG(...) SPDLOG_LOGGER_CALL(autopas::Logger::get(), spdlog::level::debug, __VA_ARGS__)
+#else
+#define AutoPasLog_DEBUG(...) (void)0
+#endif
+
+#if AUTOPAS_ACTIVE_LEVEL <= SPDLOG_LEVEL_INFO
+#define AutoPasLog_INFO(...) SPDLOG_LOGGER_CALL(autopas::Logger::get(), spdlog::level::info, __VA_ARGS__)
+#else
+#define AutoPasLog_INFO(...) (void)0
+#endif
+
+#if AUTOPAS_ACTIVE_LEVEL <= SPDLOG_LEVEL_WARN
+#define AutoPasLog_WARN(...) SPDLOG_LOGGER_CALL(autopas::Logger::get(), spdlog::level::warn, __VA_ARGS__)
+#else
+#define AutoPasLog_WARN(...) (void)0
+#endif
+
+#if AUTOPAS_ACTIVE_LEVEL <= SPDLOG_LEVEL_ERROR
+#define AutoPasLog_ERROR(...) SPDLOG_LOGGER_CALL(autopas::Logger::get(), spdlog::level::err, __VA_ARGS__)
+#else
+#define AutoPasLog_ERROR(...) (void)0
+#endif
+
+#if AUTOPAS_ACTIVE_LEVEL <= SPDLOG_LEVEL_CRITICAL
+#define AutoPasLog_CRITICAL(...) \
+  SPDLOG_LOGGER_CALL(autopas::Logger::get(), spdlog::level::critical, __VA_ARGS__)
+#else
+#define AutoPasLog_CRITICAL(...) (void)0
+#endif
+/** @} */
+
+/**
  * Macro for logging providing common meta information without filename.
- * @param lvl Possible levels: trace, debug, info, warn, error, critical.
+ * @param lvl Possible levels: TRACE, DEBUG, INFO, WARN, ERROR, CRITICAL.
  * @param fmt Message with formatting tokens
  * @param ... Formatting arguments
  * @note A ';' is enforced at the end of the macro.
  */
-#define AutoPasLog(lvl, fmt, ...) SPDLOG_LOGGER_##lvl(autopas::Logger::get(), fmt, ##__VA_ARGS__)
+#define AutoPasLog(lvl, fmt, ...) AutoPasLog_##lvl(fmt, ##__VA_ARGS__)
 
 namespace autopas {
 /**

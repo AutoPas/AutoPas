@@ -19,7 +19,7 @@ TEST_F(TraceTimerTest, TestStartStop) {
 
   long elapsed = _timer.stop();
 
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if AUTOPAS_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   // We expect the timer to actually measure time.
   EXPECT_GT(elapsed, 0) << "Timer should return > 0 ns when Trace is active.";
   EXPECT_GT(_timer.getTotalTime(), 0) << "Total time should be updated.";
@@ -37,7 +37,7 @@ TEST_F(TraceTimerTest, TestReset) {
   _timer.stop();
 
   // Verify we have time (if active)
-#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+#if AUTOPAS_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   ASSERT_GT(_timer.getTotalTime(), 0);
 #endif
 
