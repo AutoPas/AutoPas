@@ -6,36 +6,8 @@
 
 #include "Configuration.h"
 
-#include <tuple>
-#include <type_traits>
-#include <utility>
-
 #include "autopas/containers/CompatibleCellSizeFactors.h"
-#include "autopas/utils/Math.h"
 #include "autopas/utils/StringUtils.h"
-
-namespace {
-
-/**
- * Compare one pair of Configuration components.
- *
- * Floating point components are compared within an absolute tolerance, all others, e.g. the Options, and potential
- * future discrete components are compared exactly.
- *
- * @param lhs
- * @param rhs
- * @param epsilon Maximal allowed absolute difference, only used for floating point components.
- * @return True if the components are considered equal.
- */
-bool componentEquals(const auto &lhs, const auto &rhs, double epsilon) {
-  if constexpr (std::is_floating_point_v<std::remove_cvref_t<decltype(lhs)>>) {
-    return autopas::utils::Math::isNearAbs(lhs, rhs, epsilon);
-  } else {
-    return lhs == rhs;
-  }
-}
-
-}  // namespace
 
 std::string autopas::Configuration::toString() const {
   return "{Interaction Type: " + interactionType.to_string() + " , Container: " + container.to_string() +
@@ -142,15 +114,7 @@ std::ostream &autopas::operator<<(std::ostream &os, const autopas::Configuration
 }
 
 bool autopas::operator==(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
-  constexpr double epsilon = 1e-12;
-
-  const auto lhsTie = lhs.tie();
-  const auto rhsTie = rhs.tie();
-
-  return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-    return (componentEquals(std::get<Is>(lhsTie), std::get<Is>(rhsTie), epsilon) and ...);
-  }
-  (std::make_index_sequence<std::tuple_size_v<ConfigurationTie>>{});
+  return lhs.tie() == rhs.tie();
 }
 
 bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
