@@ -56,14 +56,11 @@ void gatherContainerParticles(const std::array<double, 3> &bBoxMin, const std::a
  * It initializes a searchspace of two configs and swaps between the first and second config back and forth.
  */
 TEST_P(ContainerSwapTest, testContainerConversion) {
-  const auto &[config1, config2] = GetParam();
+  const auto &[containerConfig1, containerConfig2] = GetParam();
 
-  constexpr autopas::DataLayoutOption dataLayout = autopas::DataLayoutOption::aos;
-  constexpr autopas::Newton3Option newton3 = autopas::Newton3Option::disabled;
-  auto config1TraversalOptions = autopas::compatibleTraversals::allCompatibleTraversals(
-      config1.container, autopas::InteractionTypeOption::pairwise);
-  auto config2TraversalOptions = autopas::compatibleTraversals::allCompatibleTraversals(
-      config2.container, autopas::InteractionTypeOption::pairwise);
+  // Generate a valid arbitrary full configuration for each container configuration under test.
+  const auto config1 = containerConfig1.generateFullConfig(autopas::InteractionTypeOption::pairwise);
+  const auto config2 = containerConfig2.generateFullConfig(autopas::InteractionTypeOption::pairwise);
 
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{bBoxMin},
@@ -180,54 +177,20 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
   EXPECT_THAT(after2ListHaloOutsideCutoff, UnorderedPointwise(ParticleEq(), afterListHaloOutsideCutoff));
 }
 
-std::vector<autopas::Configuration> containerConfigs = {
-    {autopas::ContainerOption::directSum, 1, autopas::TraversalOption::ds_sequential,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::linkedCells, 1, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
-     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::linkedCellsReferences, 1, autopas::TraversalOption::lc_c01,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::verletLists, 1, autopas::TraversalOption::vl_list_iteration,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::varVerletListsAsBuild, 1, autopas::TraversalOption::vvl_as_built,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::verletClusterLists, 1, autopas::TraversalOption::vcl_cluster_iteration,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::verletListsCells, 1, autopas::TraversalOption::vlc_c01,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::pairwiseVerletLists, 1, autopas::TraversalOption::vlp_c01,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::octree, 1, autopas::TraversalOption::ot_c01, autopas::LoadEstimatorOption::none,
-     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise}};
+const std::set<ContainerConfiguration> containerConfigs = generateAllValidContainerConfigurations();
 
 // Generates all unique pairs of configurations, order does not matter and no pairs of the same configuration.
-std::vector<std::pair<autopas::Configuration, autopas::Configuration>> GenerateUniquePairs(
-    const std::vector<autopas::Configuration> &configs) {
-  // Check that all container options are covered.
-  std::set<autopas::ContainerOption> givenConfigs;
-  for (const auto &config : configs) {
-    givenConfigs.insert(config.container);
-  }
-  if (givenConfigs != autopas::ContainerOption::getAllOptions()) {
-    throw std::runtime_error("ContainerSwapTest: Given configurations do not cover all container options!");
-  }
-
+std::set<std::pair<ContainerConfiguration, ContainerConfiguration>> generateUniquePairs(
+    const std::set<ContainerConfiguration> &configs) {
   // Generate all unique pairs.
-  std::vector<std::pair<autopas::Configuration, autopas::Configuration>> pairs;
-  for (size_t i = 0; i < configs.size(); ++i) {
-    for (size_t j = i + 1; j < configs.size(); ++j) {
-      pairs.emplace_back(configs[i], configs[j]);
+  std::set<std::pair<ContainerConfiguration, ContainerConfiguration>> pairs;
+  for (auto config1 = configs.begin(); config1 != configs.end(); ++config1) {
+    for (auto config2 = std::next(config1); config2 != configs.end(); ++config2) {
+      pairs.emplace(*config1, *config2);
     }
   }
   return pairs;
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, ContainerSwapTest, ValuesIn(GenerateUniquePairs(containerConfigs)),
+INSTANTIATE_TEST_SUITE_P(Generated, ContainerSwapTest, ValuesIn(generateUniquePairs(containerConfigs)),
                          ContainerSwapTest::twoParamToString());

@@ -8,6 +8,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
 
 enum ParticleStorage {
   container,
@@ -16,8 +17,9 @@ enum ParticleStorage {
   bufferHalo,
 };
 
-class RemainderTraversalTest : public AutoPasTestBase,
-                               public ::testing::WithParamInterface<std::tuple<ParticleStorage, ParticleStorage>> {
+class RemainderTraversalTest
+    : public AutoPasTestBase,
+      public ::testing::WithParamInterface<std::tuple<ParticleStorage, ParticleStorage, ContainerConfiguration>> {
  public:
   RemainderTraversalTest() : numBuffers(autopas::autopas_get_max_threads()){};
   ~RemainderTraversalTest() override = default;
@@ -27,7 +29,7 @@ class RemainderTraversalTest : public AutoPasTestBase,
   struct twoParamToString {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
-      const auto &[choiceA, choiceB] = static_cast<ParamType>(info.param);
+      const auto &[choiceA, choiceB, containerConfig] = static_cast<ParamType>(info.param);
       auto enumToString = [](const auto &e) -> std::string {
         switch (e) {
           case ParticleStorage::container:
@@ -42,7 +44,7 @@ class RemainderTraversalTest : public AutoPasTestBase,
             return "unknown";
         }
       };
-      return enumToString(choiceA) + "_" + enumToString(choiceB);
+      return enumToString(choiceA) + "_" + enumToString(choiceB) + "_" + containerConfig.toShortString();
     }
   };
 };
