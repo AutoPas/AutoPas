@@ -862,3 +862,52 @@ TEST_F(GeneratorsTest, IDContinuity) {
     EXPECT_EQ(particles[i].getID(), i);
   }
 }
+
+/**
+ * This test checks if the HCP generator's particle count matches the previous implementation of getParticlesTotal()
+ * when centeredAlignment was false. This ensures that the new implementation is consistent with the legacy behavior.
+ */
+TEST_F(GeneratorsTest, testRegressionPreviousHCPImplementation) {
+  // Previous implementation of getParticlesTotal() when centeredAlignment was false
+  auto legacyGetParticlesTotal = [](const std::array<double, 3> &boxLength, const double particleSpacing) -> size_t {
+    const double xOffset = particleSpacing * 0.5;
+    const size_t xNumRow = std::ceil(boxLength[0] / particleSpacing);
+    const bool xOdd = static_cast<int>(std::ceil(boxLength[0] / xOffset)) % 2 == 1;
+
+    const auto spacingLayer = particleSpacing * std::sqrt(2. / 3.);
+    const auto spacingRow = particleSpacing * std::sqrt(3. / 4.);
+
+    const size_t yNumEven = std::ceil(boxLength[1] / spacingRow);
+    const auto yOffset = particleSpacing * std::sqrt(1. / 12.);
+    const size_t yNumOdd = std::ceil((boxLength[1] - yOffset) / spacingRow);
+
+    const size_t evenLayer = xNumRow * yNumEven - std::floor(xOdd * yNumEven * 0.5);
+    const size_t oddLayer = xNumRow * yNumOdd - std::ceil(xOdd * yNumOdd * 0.5);
+
+    const double numLayers = std::ceil(boxLength[2] / spacingLayer);
+    return evenLayer * std::ceil(numLayers / 2.) + oddLayer * std::floor(numLayers / 2.);
+  };
+
+  for (const double spacing : {0.5, 1.0, 1.25, 2.3}) {
+    const double spacingRow = spacing * std::sqrt(3. / 4.);
+    const double spacingLayer = spacing * std::sqrt(2. / 3.);
+
+    // Test a variety of integer and non-integer grid multiples
+    for (const double fx : {0.0, 0.5, 1.0, 1.3, 2.0, 3.7, 4.0}) {
+      for (const double fy : {0.0, 0.5, 1.0, 1.5, 2.0, 3.2, 5.0}) {
+        for (const double fz : {0.0, 0.5, 1.0, 1.8, 2.0, 3.4, 4.0}) {
+          const std::array<double, 3> boxLength = {fx * spacing, fy * spacingRow, fz * spacingLayer};
+          const size_t expectedLegacy = (boxLength[0] <= 0.0 or boxLength[1] <= 0.0 or boxLength[2] <= 0.0)
+                                            ? 0
+                                            : legacyGetParticlesTotal(boxLength, spacing);
+
+          const std::array<double, 3> boxMin = {0.0, 0.0, 0.0};
+          const size_t actual =
+              autopas::generators::HCPGenerator::getNumberOfParticles(boxMin, boxLength, spacing, false);
+          EXPECT_EQ(actual, expectedLegacy) << "Mismatch with spacing=" << spacing << ", boxLength=[" << boxLength[0]
+                                            << ", " << boxLength[1] << ", " << boxLength[2] << "]";
+        }
+      }
+    }
+  }
+}

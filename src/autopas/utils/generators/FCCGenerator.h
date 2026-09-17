@@ -35,7 +35,7 @@ inline constexpr std::array<std::array<double, 3>, 4> fccBasis = {{
  * @return Number of particles.
  */
 inline size_t getNumberOfParticles(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                   const double spacing = 1.0, const bool centeredAlignment = true) {
+                                   const double spacing = 1.0, const bool centeredAlignment = false) {
   if (spacing <= 0.0) {
     return 0;
   }
@@ -83,7 +83,7 @@ template <class Container>
 void fillWithParticles(Container &container, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                        const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle =
                            typename autopas::utils::ParticleTypeTrait<Container>::value(),
-                       const double spacing = 1.0, const bool centeredAlignment = true) {
+                       const double spacing = 1.0, const bool centeredAlignment = false) {
   const double latticeConstant = std::sqrt(2.0) * spacing;
 
   std::array<double, 3> offset = {0.0, 0.0, 0.0};
