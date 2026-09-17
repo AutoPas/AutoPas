@@ -57,7 +57,9 @@ if (AUTOPAS_ENABLE_ENERGY_MEASUREMENTS)
             PMT_BUILD_BINARY
     )
 
-    target_compile_options(pmt PUBLIC -w -DCMAKE_INSTALL_PREFIX="./build")
     target_include_directories(pmt SYSTEM PUBLIC "${AUTOPAS_SOURCE_DIR}/libs/pmt")
+
+    get_target_property(pmtIncludes pmt INTERFACE_INCLUDE_DIRECTORIES)
+    target_include_directories(pmt SYSTEM PUBLIC "${pmtIncludes}")
 
 endif ()
