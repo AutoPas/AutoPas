@@ -152,10 +152,25 @@ class Functor {
   /**
    * Specifies whether the functor is capable of using the specified Vectorization Pattern in the SoA functor.
    *
+   * @note This is only relevant for SoA configurations. AoS configurations always use the not-applicable (N/A)
+   * vectorization pattern, so this is never queried for AoS.
    * @param vecPattern
    * @return whether the functor is capable of using the specified Vectorization Pattern
    */
-  virtual bool isVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) = 0;
+  virtual bool isSoAVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) = 0;
+
+  /**
+   * Specifies whether the functor is capable of using the specified Vectorization Pattern in the SoA functor.
+   *
+   * @deprecated Use isSoAVecPatternAllowed instead. This will be removed in AutoPas v3.
+   * @param vecPattern
+   * @return whether the functor is capable of using the specified Vectorization Pattern
+   */
+  [[deprecated(
+      "isVecPatternAllowed is deprecated and will be removed in AutoPas v3. Use isSoAVecPatternAllowed instead.")]] bool
+  isVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) {
+    return isSoAVecPatternAllowed(vecPattern);
+  }
 
   /**
    * Specifies whether the functor should be considered for the auto-tuning process.

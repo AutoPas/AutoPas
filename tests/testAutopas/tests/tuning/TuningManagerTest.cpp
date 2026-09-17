@@ -55,7 +55,7 @@ TEST_F(TuningManagerTest, testTuningIntervalIsFixed) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   constexpr size_t numIterations = 5 * tuningInterval;
   bool lastWasTuningInteration = false;
@@ -117,8 +117,8 @@ TEST_F(TuningManagerTest, testMultipleTuners) {
   EXPECT_CALL(triFunctor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(pairFunctor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(triFunctor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(pairFunctor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(triFunctor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(pairFunctor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(triFunctor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   // Add three particles into one (linked cells) cell
   logicHandler.getContainer().addParticle((Molecule{{0.1, 0.1, 0.1}, {0., 0., 0.}, 0, 0}));
@@ -194,7 +194,7 @@ TEST_F(TuningManagerTest, testTuningPhaseLongerThanTuningInterval) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   constexpr size_t iterationsToDo = 35;
   size_t iterationsDone = 0;
@@ -253,7 +253,7 @@ TEST_F(TuningManagerTest, testForceRetuneBetweenPhases) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   size_t iteration = 0;
   // 1. Expect a full tuning phase
@@ -328,7 +328,7 @@ TEST_F(TuningManagerTest, testForceRetuneInPhase) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   // Do part of the tuning phase. After the loop we should be in the middle of sampling the second configuration.
   ASSERT_GT(autoTunerInfo.maxSamples, 1);
@@ -381,7 +381,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
   // Need to resize cells during loading, otherwise we get exceptions in SoAFunctors
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Molecule> &>(_), _, _, _))
       .Times(testing::AtLeast(1))
@@ -611,7 +611,7 @@ TEST_F(TuningManagerTest, testWillRebuildDL) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   size_t iteration = 0;
   // Intended false positive
@@ -682,7 +682,7 @@ TEST_F(TuningManagerTest, testWillRebuildDDL) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   // updateContainer increments the logic handler's iteration counters for this time step and checks the rebuild
   // conditions afterwards.
@@ -768,7 +768,7 @@ TEST_F(TuningManagerTest, testWillRebuildDDLOneConfigKicked) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
-  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   size_t iteration = 0;
   logicHandler.updateContainer();
@@ -834,7 +834,7 @@ TEST_F(TuningManagerTest, testOneConfig) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   size_t numSamples = 0;
   for (int i = 0; i < 5; ++i) {
@@ -876,7 +876,7 @@ TEST_F(TuningManagerTest, testConfigSecondInvalid) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
-  EXPECT_CALL(functor, isVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
 
   logicHandler.updateContainer();
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
