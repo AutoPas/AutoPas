@@ -119,7 +119,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::Configuration config) {
                .Times(testing::AtLeast(1));
       // Verlet based containers resize the SoA before they call SoALoader, so no need for the testing::Invoke here
       if (std::set{autopas::ContainerOption::varVerletListsAsBuild, autopas::ContainerOption::pairwiseVerletLists,
-                   autopas::ContainerOption::verletListsCells}
+                   autopas::ContainerOption::verletListsCells, autopas::ContainerOption::verletLists}
               .count(container->getContainerType()) == 0) {
         expectation->WillRepeatedly(
             testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
@@ -197,7 +197,8 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::Configuration
   switch (config.dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // some containers actually use different SoA functor calls so expect them instead of the regular ones
-      if (container.getContainerType() == autopas::ContainerOption::varVerletListsAsBuild ||
+      if (container.getContainerType() == autopas::ContainerOption::verletLists ||
+          container.getContainerType() == autopas::ContainerOption::varVerletListsAsBuild ||
           container.getContainerType() == autopas::ContainerOption::pairwiseVerletLists ||
           container.getContainerType() == autopas::ContainerOption::verletListsCells) {
         EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, useNewton3))
@@ -207,7 +208,6 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::Configuration
 
         // non useNewton3 variant should not happen
         EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, not useNewton3)).Times(0);
-
       } else {
         // single cell
         EXPECT_CALL(mockFunctor, SoAFunctorSingle(_, useNewton3))
