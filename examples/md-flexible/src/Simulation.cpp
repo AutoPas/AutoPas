@@ -186,7 +186,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
   _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
   _autoPasContainer->setDeltaT(_configuration.deltaT.value);
-  _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setAoSSortingThreshold(_configuration.aosSortingThreshold.value);
   _autoPasContainer->setSoASortingThreshold(_configuration.soaSortingThreshold.value);
@@ -356,11 +355,8 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
   if (_configuration.tuningPhases.value > 0) {
     const size_t configsTestedPerTuningPhase = [&]() {
       if (std::any_of(_configuration.tuningStrategyOptions.value.begin(),
-                      _configuration.tuningStrategyOptions.value.end(), [](const auto &stratOpt) {
-                        return stratOpt == autopas::TuningStrategyOption::bayesianSearch or
-                               stratOpt == autopas::TuningStrategyOption::bayesianClusterSearch or
-                               stratOpt == autopas::TuningStrategyOption::randomSearch;
-                      })) {
+                      _configuration.tuningStrategyOptions.value.end(),
+                      [](const auto &stratOpt) { return stratOpt == autopas::TuningStrategyOption::randomSearch; })) {
         return static_cast<size_t>(_configuration.tuningMaxEvidence.value);
       } else {
         // @TODO: this can be improved by considering the tuning strategy

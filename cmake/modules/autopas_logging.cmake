@@ -5,13 +5,6 @@ if (AUTOPAS_COLORED_LOGGING)
     message(STATUS "Colored log messages enabled.")
 endif ()
 
-# option for GaussianClusterLogger
-option(AUTOPAS_LOG_GAUSSIANCLUSTER "Generate a csv file about the gaussian cluster model that can be used for plotting." OFF)
-if (AUTOPAS_LOG_GAUSSIANCLUSTER OR AUTOPAS_LOG_ALL)
-    target_compile_definitions(autopas PUBLIC AUTOPAS_LOG_GAUSSIANCLUSTER)
-    message(STATUS "GaussianClusterLogger enabled.")
-endif ()
-
 # option for PredictionsLogger
 option(AUTOPAS_LOG_PREDICTIONS "Generate a csv file about the predictive tuning strategy that can be used for plotting." OFF)
 if (AUTOPAS_LOG_PREDICTIONS OR AUTOPAS_LOG_ALL)

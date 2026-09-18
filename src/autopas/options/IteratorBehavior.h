@@ -107,7 +107,7 @@ class IteratorBehavior : public Option<IteratorBehavior> {
   }
 
   /**
-   * Provides a way to iterate over the possible choices of AcquisitionFunction.
+   * Provides a way to iterate over the possible choices of IteratorBehavior.
    * @return map option -> string representation
    */
   static std::map<IteratorBehavior, std::string> getOptionNames() {

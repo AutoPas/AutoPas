@@ -255,12 +255,6 @@ std::string MDFlexConfig::to_string() const {
     });
   };
 
-  if (tuningStrategyOptionsContainAnyOf({
-          autopas::TuningStrategyOption::bayesianSearch,
-          autopas::TuningStrategyOption::bayesianClusterSearch,
-      })) {
-    printOption(acquisitionFunctionOption);
-  }
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::mpiDivideAndConquer})) {
     printOption(MPITuningMaxDifferenceForBucket);
     printOption(MPITuningWeightForMaxDensity);
@@ -270,11 +264,7 @@ std::string MDFlexConfig::to_string() const {
   printOption(tuningSamples);
   printOption(earlyStoppingFactor);
   printOption(useLOESSSmoothening);
-  if (tuningStrategyOptionsContainAnyOf({
-          autopas::TuningStrategyOption::randomSearch,
-          autopas::TuningStrategyOption::bayesianSearch,
-          autopas::TuningStrategyOption::bayesianClusterSearch,
-      })) {
+  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::randomSearch})) {
     printOption(tuningMaxEvidence);
   }
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::predictiveTuning})) {
