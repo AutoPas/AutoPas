@@ -300,8 +300,7 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionSingle) {
             ATMFunctor.initTraversal();
 
             CellFunctorType cellFunctor(ATMFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
-            cellFunctor.setAoSSortingThreshold(aosSortingThreshold);
-
+            cellFunctor.setAoSSortingThresholds(autopas::SortingThresholdInfoSingle(aosSortingThreshold));
             const auto &[forceParticle1, forceParticle2, forceParticle3] = doSingleCellInteraction<CellFunctorType>(
                 cellFunctor, ownershipParticle1, ownershipParticle2, ownershipParticle3, ownershipCell1,
                 cellFunctor.getDataLayout(), ATMFunctor);
@@ -393,7 +392,7 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionPair) {
                 ATMFunctor.initTraversal();
 
                 CellFunctorType cellFunctor(ATMFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
-                cellFunctor.setAoSSortingThreshold(aosSortingThreshold);
+                cellFunctor.setAoSSortingThresholds(autopas::SortingThresholdInfoSingle(aosSortingThreshold));
 
                 const auto &[forceParticle1, forceParticle2, forceParticle3] = doPairCellInteraction<CellFunctorType>(
                     cellFunctor, ownershipParticle1, ownershipParticle2, ownershipParticle3, ownershipCell1,
@@ -491,7 +490,7 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionTriple) {
                 ATMFunctor.initTraversal();
 
                 CellFunctorType cellFunctor(ATMFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
-                cellFunctor.setAoSSortingThreshold(aosSortingThreshold);
+                cellFunctor.setAoSSortingThresholds(autopas::SortingThresholdInfoSingle(aosSortingThreshold));
 
                 const auto &[forceParticle1, forceParticle2, forceParticle3] = doTripleCellInteraction<CellFunctorType>(
                     cellFunctor, ownershipParticle1, ownershipParticle2, ownershipParticle3, ownershipCell1,

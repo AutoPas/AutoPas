@@ -21,7 +21,7 @@
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "generators/src/GridGenerator.h"
+#include "autopas/utils/generators/GridGenerator.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -113,8 +113,8 @@ std::vector<FMCell> makeGridCells() {
     const size_t cellsX = cellID / 2;
     const size_t cellsY = cellID % 2;
     const std::array<double, 3> offset{static_cast<double>(3 * cellsX), static_cast<double>(3 * cellsY), 0.};
-    autopasTools::generators::GridGenerator::fillWithParticles(cells[cellID], particlesPerDim, defaultParticle,
-                                                               {1., 1., 1.}, offset);
+    autopas::generators::GridGenerator::fillWithParticles(cells[cellID], particlesPerDim, defaultParticle, {1., 1., 1.},
+                                                          offset);
   }
   return cells;
 }
@@ -605,8 +605,8 @@ TEST_P(IntListGenFuncThreadSafeTest, AoSFunctor) {
 
   // Serial reference.
   FMCell referenceCell;
-  autopasTools::generators::GridGenerator::fillWithParticles(referenceCell, particlesPerDim, Molecule{}, {1., 1., 1.},
-                                                             {0., 0., 0.});
+  autopas::generators::GridGenerator::fillWithParticles(referenceCell, particlesPerDim, Molecule{}, {1., 1., 1.},
+                                                        {0., 0., 0.});
   InteractionListTypeAoS referenceMap;
   initMap(referenceMap, referenceCell);
   InteractionListGenFunc referenceFunctor(referenceMap, cutoffLength, mode.gatherN3Lists);
@@ -620,8 +620,7 @@ TEST_P(IntListGenFuncThreadSafeTest, AoSFunctor) {
 
   // Parallel application.
   FMCell cell;
-  autopasTools::generators::GridGenerator::fillWithParticles(cell, particlesPerDim, Molecule{}, {1., 1., 1.},
-                                                             {0., 0., 0.});
+  autopas::generators::GridGenerator::fillWithParticles(cell, particlesPerDim, Molecule{}, {1., 1., 1.}, {0., 0., 0.});
   InteractionListTypeAoS map;
   initMap(map, cell);
   InteractionListGenFunc functor(map, cutoffLength, mode.gatherN3Lists);
@@ -798,7 +797,7 @@ TEST_P(IntListGenFuncThreadSafeTest, SoAFunctorVerletPairwiseLists) {
     const Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, cellID * particlesPerCell);
     const size_t cellsX = cellID / 2;
     const size_t cellsY = cellID % 2;
-    autopasTools::generators::GridGenerator::fillWithParticles(
+    autopas::generators::GridGenerator::fillWithParticles(
         referenceCell, particlesPerDim, defaultParticle, {1., 1., 1.},
         {static_cast<double>(3 * cellsX), static_cast<double>(3 * cellsY), 0.});
   }
@@ -821,7 +820,7 @@ TEST_P(IntListGenFuncThreadSafeTest, SoAFunctorVerletPairwiseLists) {
     const Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, cellID * particlesPerCell);
     const size_t cellsX = cellID / 2;
     const size_t cellsY = cellID % 2;
-    autopasTools::generators::GridGenerator::fillWithParticles(
+    autopas::generators::GridGenerator::fillWithParticles(
         cell, particlesPerDim, defaultParticle, {1., 1., 1.},
         {static_cast<double>(3 * cellsX), static_cast<double>(3 * cellsY), 0.});
   }
@@ -895,8 +894,8 @@ TEST_F(InteractionListGeneratorFunctorTest, ThreadSafeSoAFunctorVerlet) {
 
     // Serial reference.
     FMCell referenceCell;
-    autopasTools::generators::GridGenerator::fillWithParticles(referenceCell, particlesPerDim, Molecule{}, {1., 1., 1.},
-                                                               {0., 0., 0.});
+    autopas::generators::GridGenerator::fillWithParticles(referenceCell, particlesPerDim, Molecule{}, {1., 1., 1.},
+                                                          {0., 0., 0.});
     InteractionListTypeAoS referenceMap;
     initMap(referenceMap, referenceCell);
     InteractionListGenFunc referenceFunctor(referenceMap, cutoffLength, gatherN3Lists);
@@ -907,8 +906,8 @@ TEST_F(InteractionListGeneratorFunctorTest, ThreadSafeSoAFunctorVerlet) {
 
     // Parallel application.
     FMCell cell;
-    autopasTools::generators::GridGenerator::fillWithParticles(cell, particlesPerDim, Molecule{}, {1., 1., 1.},
-                                                               {0., 0., 0.});
+    autopas::generators::GridGenerator::fillWithParticles(cell, particlesPerDim, Molecule{}, {1., 1., 1.},
+                                                          {0., 0., 0.});
     InteractionListTypeAoS map;
     initMap(map, cell);
     InteractionListGenFunc functor(map, cutoffLength, gatherN3Lists);
@@ -996,8 +995,8 @@ TEST_P(InteractionListGeneratorFunctorFullFlowTest, ForcesMatchDirectLJApplicati
 
   FMCell cell, referenceCell;
   for (FMCell *cellPtr : {&cell, &referenceCell}) {
-    autopasTools::generators::GridGenerator::fillWithParticles(*cellPtr, particlesPerDim, Molecule{}, {1., 1., 1.},
-                                                               {0., 0., 0.});
+    autopas::generators::GridGenerator::fillWithParticles(*cellPtr, particlesPerDim, Molecule{}, {1., 1., 1.},
+                                                          {0., 0., 0.});
     for (size_t i = 0; i < cellPtr->size(); ++i) {
       (*cellPtr)[i].setOwnershipState(ownerships[i]);
     }

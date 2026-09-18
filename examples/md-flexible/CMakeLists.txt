@@ -14,9 +14,7 @@ include(autopas_all)
 
 option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
-# Kokkos (and its CUDA headers) do not build against libc++, so Clang-based Kokkos builds have to
-# link explicitly against libstdc++ and libm.
-target_link_libraries(md-flexible PUBLIC autopas generators molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
+target_link_libraries(md-flexible PUBLIC autopas molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
 # Kokkos (and its CUDA headers) do not build against libc++, so Clang-based Kokkos builds have to
 # link explicitly against libstdc++ and libm.

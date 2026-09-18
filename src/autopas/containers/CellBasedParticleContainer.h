@@ -8,9 +8,12 @@
 
 #include <algorithm>
 #include <array>
+#include <memory>
 
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/TraversalInterface.h"
+#include "autopas/utils/SortingThresholdInfoInterface.h"
+#include "autopas/utils/SortingThresholdInfoSingle.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -33,20 +36,22 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @param boxMax
    * @param cutoff
    * @param skin
-   * @param aosSortingThreshold Sum of the number of particles in two cells from which AoS sorting should be enabled.
-   * @param soaSortingThreshold Sum of the SoA buffer sizes of two cells from which SoA sorting should be enabled.
+   * @param aosSortingThresholdFallback Sum of the number of particles in two cells from which AoS sorting should be
+   * enabled, used to seed the container until it is overwritten with a benchmarked threshold.
+   * @param soaSortingThresholdFallback Sum of the SoA buffer sizes of two cells from which SoA sorting should be
+   * enabled, used to seed the container until it is overwritten with a benchmarked threshold.
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                             const double cutoff, const double skin, const size_t aosSortingThreshold,
-                             const size_t soaSortingThreshold)
+                             const double cutoff, const double skin, const size_t aosSortingThresholdFallback,
+                             const size_t soaSortingThresholdFallback)
       : ParticleContainerInterface<ParticleType>(skin),
         _cells(),
         _boxMin(boxMin),
         _boxMax(boxMax),
         _cutoff(cutoff),
         _skin(skin),
-        _aosSortingThreshold(aosSortingThreshold),
-        _soaSortingThreshold(soaSortingThreshold) {}
+        _aosSortingThresholds(std::make_shared<const SortingThresholdInfoSingle>(aosSortingThresholdFallback)),
+        _soaSortingThresholds(std::make_shared<const SortingThresholdInfoSingle>(soaSortingThresholdFallback)) {}
 
   /**
    * Destructor of CellBasedParticleContainer.
@@ -153,6 +158,20 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   [[nodiscard]] const std::vector<ParticleCellType> &getCells() const { return _cells; }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setAoSSortingThresholds()
+   */
+  void setAoSSortingThresholds(std::shared_ptr<const SortingThresholdInfoInterface> aosSortingThresholds) override {
+    _aosSortingThresholds = std::move(aosSortingThresholds);
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(std::shared_ptr<const SortingThresholdInfoInterface> soaSortingThresholds) override {
+    _soaSortingThresholds = std::move(soaSortingThresholds);
+  }
+
  protected:
   /**
    * Vector of particle cells.
@@ -161,14 +180,16 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   std::vector<ParticleCellType> _cells;
   /**
-   * If the number of particles in a cell or cell pair exceeds this threshold, the particles will be sorted.
-   * To be forwarded to cell traversals.
+   * Current AoS pair-sorting threshold, forwarded to freshly generated traversals in prepareTraversal().
+   * Owned as a shared_ptr to the interface so the container can hold whichever concrete shape it was given (a uniform
+   * SortingThresholdInfoSingle at construction, or e.g. a SortingThresholdInfo2B via setAoSSortingThresholds()
+   * later) without needing to know that shape itself.
    */
-  size_t _aosSortingThreshold;
+  std::shared_ptr<const SortingThresholdInfoInterface> _aosSortingThresholds;
   /**
-   * If the sum of the SoA buffer sizes of two cells exceeds this threshold, SoAFunctorPairSorted is used.
+   * @copydoc _aosSortingThresholds
    */
-  size_t _soaSortingThreshold;
+  std::shared_ptr<const SortingThresholdInfoInterface> _soaSortingThresholds;
 
  private:
   std::array<double, 3> _boxMin;
