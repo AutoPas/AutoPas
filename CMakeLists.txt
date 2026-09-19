@@ -86,6 +86,7 @@ include(autopas_OpenMP)
 include(autopas_clang-sanitizers)
 include(autopas_clang-tidy)
 include(autopas_mpi)
+include(autopas_boost)
 
 include(version.cmake)
 
