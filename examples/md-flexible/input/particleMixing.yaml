@@ -45,12 +45,16 @@ Objects:
       particle-spacing           :  1.122
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
+      structure                  :  hcp
+      centered                   :  false
     1:
       particle-type-id           :  0
       box-length                 :  [60, 60, 30]
       particle-spacing           :  0.6
       bottomLeftCorner           :  [0, 0, 30.1]
       velocity                   :  [0, 0, 0]
+      structure                  :  hcp
+      centered                   :  false
 thermostat:
   initialTemperature             :  40
   targetTemperature              :  40
