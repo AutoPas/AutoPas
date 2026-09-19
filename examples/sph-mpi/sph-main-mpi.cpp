@@ -195,23 +195,23 @@ void waitSend(MPI_Request &sendRequest) { MPI_Wait(&sendRequest, MPI_STATUS_IGNO
  * @param globalBoxMin
  * @param globalBoxMax
  */
-void getSendHalo(double boxMin, double boxMax, int diff, double &sendMin, double &sendMax, double cutoff, double &shift,
-                 const double globalBoxMin, const double globalBoxMax) {
+void getSendHalo(double boxMin, double boxMax, int diff, double &sendMin, double &sendMax, double cutoff, double skin,
+                 double &shift, const double globalBoxMin, const double globalBoxMax) {
   if (diff == 0) {
-    sendMin = boxMin;
-    sendMax = boxMax;
+    sendMin = boxMin - skin;
+    sendMax = boxMax + skin;
     shift = 0;
   } else if (diff == -1) {
-    sendMin = boxMin;
-    sendMax = boxMin + cutoff;
+    sendMin = boxMin - skin;
+    sendMax = boxMin + cutoff + skin;
     if (boxMin == globalBoxMin) {
       shift = globalBoxMax - globalBoxMin;
     } else {
       shift = 0;
     }
   } else if (diff == 1) {
-    sendMin = boxMax - cutoff;
-    sendMax = boxMax;
+    sendMin = boxMax - cutoff - skin;
+    sendMax = boxMax + skin;
     if (boxMax == globalBoxMax) {
       shift = globalBoxMin - globalBoxMax;
     } else {
@@ -235,7 +235,7 @@ void getSendHalo(double boxMin, double boxMax, int diff, double &sendMin, double
  * @param globalBoxMax
  */
 void getSendLeaving(double boxMin, double boxMax, int diff, double &sendMin, double &sendMax, double cutoff,
-                    double &shift, const double globalBoxMin, const double globalBoxMax) {
+                    double skin, double &shift, const double globalBoxMin, const double globalBoxMax) {
   if (diff == 0) {
     sendMin = boxMin;
     sendMax = boxMax;
@@ -288,7 +288,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
         }
         // figure out which particles we send
         for (int i = 0; i < 3; ++i) {
-          getSendHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, shift[i],
+          getSendHalo(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, skin, shift[i],
                       globalBoxMin[i], globalBoxMax[i]);
         }
 
@@ -318,6 +318,7 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const s
                             std::array<double, 3> globalBoxMin, std::array<double, 3> globalBoxMax) {
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
+  auto skin = sphSystem.getVerletSkin();
   std::array<double, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
   std::array<int, 3> diff{0, 0, 0};
   std::array<double, 3> shift{0, 0, 0};
@@ -334,7 +335,7 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const s
         }
         // figure out which particles we send
         for (int i = 0; i < 3; ++i) {
-          getSendLeaving(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, shift[i],
+          getSendLeaving(boxMin[i], boxMax[i], diff[i], requiredHaloMin[i], requiredHaloMax[i], cutoff, skin, shift[i],
                          globalBoxMin[i], globalBoxMax[i]);
         }
         for (const auto &p : invalidParticles) {
