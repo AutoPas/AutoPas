@@ -9,8 +9,10 @@
 #include <string>
 
 #include "autopas/options/AcquisitionFunctionOption.h"
+#include "autopas/options/ExplorationMethodOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/InteractionTypeOption.h"
+#include "autopas/options/ReinforcementModelOption.h"
 #include "autopas/utils/WrapMPI.h"
 
 namespace autopas {
@@ -54,6 +56,56 @@ struct TuningStrategyFactoryInfo {
    * Function used to predict informational gain.
    */
   AcquisitionFunctionOption acquisitionFunctionOption{AcquisitionFunctionOption::upperConfidenceBound};
+
+  // Deep Reinforcement Learning Options
+  /**
+   * The method used for selecting the exploration samples in the deep reinforcement learning tuning strategy.
+   */
+  ExplorationMethodOption drlExplorationMethod{ExplorationMethodOption::polynomial};
+  /**
+   * The number of configurations to explore during the exploration phase.
+   */
+  unsigned int drlRetrainingIterations{34};
+  /**
+   * The learning rate for the neural network update in the deep reinforcement learning tuning strategy.
+   */
+  double drlLearningRate{1.771665733218049020e-09};
+  /**
+   * The number of configurations to explore during the exploration phase.
+   */
+  unsigned int drlNumExplorationSamples{4};
+  /**
+   * The number of configurations to explore during the exploitation phase.
+   */
+  unsigned int drlNumExploitationSamples{1};
+  /**
+   * The scaling factor used for the priority of the age of a data in polynomial exploration in the deep reinforcement
+   * learning tuning strategy.
+   */
+  double drlPhaseScale{1.162197398643888948e-05};
+  /**
+   * The weight used for updating the neural network in the reinforcement learning process in the deep reinforcement
+   * learning tuning strategy.
+   */
+  double drlUpdateWeight{0.5};
+
+  // Reinforcement Learning Options
+  /**
+   * Learning rate for the reinforcement learning algorithm.
+   */
+  double rlLearningRate{0.8};
+  /**
+   * Discount factor for the reinforcement learning algorithm.
+   */
+  double rlDiscountFactor{0.8};
+  /**
+   * Number of configurations to explore during the exploration phase.
+   */
+  unsigned int rlExplorationSamples{4};
+  /**
+   * The model used for the reinforcement learning algorithm.
+   */
+  ReinforcementModelOption rlModel{ReinforcementModelOption::Value::SARSA};
 
   // Rule Based Tuning Options
   /**
