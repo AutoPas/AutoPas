@@ -25,8 +25,9 @@ add_library(autopas STATIC ${MY_SRC})
 
 # Namespaced alias so consumers (e.g. via FetchContent / add_subdirectory) can link a stable,
 # collision-safe target name and use `if (NOT TARGET AutoPas::autopas)` guards
-add_library(AutoPas::autopas ALIAS autopas)
-
+if (NOT TARGET AutoPas::autopas)
+    add_library(AutoPas::autopas ALIAS autopas)
+endif ()
 target_compile_definitions(autopas PUBLIC AUTOPAS_ACTIVE_LEVEL=SPDLOG_LEVEL_${AUTOPAS_MIN_LOG_LVL})
 
 target_link_libraries(
