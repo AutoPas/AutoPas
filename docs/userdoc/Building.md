@@ -1,7 +1,7 @@
 # Building AutoPas
 
 ## Requirements
-* CMake 3.14 or newer
+* CMake 3.18 or newer
 * a CMake generator target (`make` is tested)
 * a C++20 compiler (gcc13, clang17, and ~~icpc 2019~~ are tested)
 * OpenMP (comes with GCC, for Clang you need `libomp`)
