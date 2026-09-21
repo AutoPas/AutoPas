@@ -1,10 +1,7 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(AutoPas)
 
-# CMAKE policies, etc.
-cmake_policy(SET CMP0054 NEW) # from version 3.1
-cmake_policy(SET CMP0057 NEW) # from version 3.3
-cmake_policy(SET CMP0079 NEW) # from version 3.13
+# CMAKE policies, etc. 
 if (${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.24)
     cmake_policy(SET CMP0135 NEW)
 endif ()
@@ -28,15 +25,6 @@ option_conditional(AUTOPAS_STANDALONE_BUILD
         "Add options and targets which are only relevant for developers of AutoPas"
         "AUTOPAS_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR"
 )
-
-# starting with cmake 3.17 this is set using target_compile_features.
-if (CMAKE_VERSION VERSION_LESS 3.17)
-    message(
-            STATUS
-            "Setting CMAKE_CXX_STANDARD globally because cmake < 3.17 is used."
-    )
-    set(CMAKE_CXX_STANDARD 20)
-endif ()
 
 if (NOT CYGWIN)
     set(CMAKE_CXX_EXTENSIONS OFF)
