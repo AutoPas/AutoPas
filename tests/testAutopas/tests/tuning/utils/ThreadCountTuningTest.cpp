@@ -83,17 +83,18 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
   }
 }
 
-
 /**
  * Tests: Setter/getter for tuned number of threads
  */
 TEST_F(ThreadCountTuningTest, testSetGetTunedThreadCount) {
+  const int previousTunedThreads = autopas::autopas_get_tuned_num_threads();
   auto maxThreads = autopas::autopas_get_max_threads();
-  // Test with maxThreads + 1, because they are not actually used and maxThreads may be 1, which would make this test meaningless
+  // Use maxThreads + 1, since this is not actually used and maxThreads may be 1, which would make this test meaningless
   for (int n = 1; n <= maxThreads + 1; n++) {
     autopas::autopas_set_tuned_num_threads(n);
     EXPECT_EQ(autopas::autopas_get_tuned_num_threads(), n);
   }
+  autopas::autopas_set_tuned_num_threads(previousTunedThreads);
 }
 
 /**
