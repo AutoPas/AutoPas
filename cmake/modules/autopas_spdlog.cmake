@@ -25,8 +25,6 @@ if (NOT spdlog_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
         autopas_promote_global(spdlog)
         autopas_promote_global(spdlog::spdlog)
         autopas_alias_dependency(spdlog spdlog::spdlog)
-        # System targets can only take INTERFACE options, and are already treated as SYSTEM headers by CMake
-        target_compile_options(spdlog INTERFACE -DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${AUTOPAS_MIN_LOG_LVL})
         return()
     endif ()
     message(STATUS "spdlog - no system version >= ${expectedVersion} found; using bundled copy")
@@ -54,8 +52,6 @@ endforeach()
 
 # Disable warnings
 target_compile_options(spdlog PRIVATE -w)
-# Set the finest compiled log level on the cmake target. Everything that includes this target will be affected!
-target_compile_options(spdlog PUBLIC -DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${AUTOPAS_MIN_LOG_LVL})
 
 # Treat spdlog headers as system headers to suppress compiler warnings originating from them
 get_target_property(propval spdlog INTERFACE_INCLUDE_DIRECTORIES)
