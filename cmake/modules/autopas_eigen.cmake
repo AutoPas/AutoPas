@@ -15,10 +15,10 @@ set(AUTOPAS_EIGEN_MIN_VERSION 5.0.1)
 if (NOT Eigen3_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
     # Path 1: reuse an Eigen target a parent project already defined, avoiding a second copy of Eigen in
     # one binary (two copies with differing versions/config macros violate the One Definition Rule (ODR)).
-    # We assume the provided target's version, is compatible, as it is hard to check here, and we assume the developer
-    # of the parent project will check compatibility. If AutoPas is not compatible, please create an issue.
+    # Its version is checked where it can be determined, but only warned about: the parent project decides.
     if (TARGET Eigen3::Eigen OR TARGET Eigen3)
         message(STATUS "AutoPas: Reusing Eigen provided by parent project")
+        autopas_warn_if_parent_version_too_old(Eigen3 Eigen3 ${AUTOPAS_EIGEN_MIN_VERSION} Eigen3::Eigen Eigen3)
         autopas_alias_dependency(Eigen3 Eigen3::Eigen)
         return()
     endif ()

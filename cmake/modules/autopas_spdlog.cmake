@@ -11,14 +11,15 @@ set(AUTOPAS_MIN_LOG_LVL
 set_property(CACHE AUTOPAS_MIN_LOG_LVL PROPERTY STRINGS "TRACE;DEBUG;INFO;WARN;ERROR;CRITICAL;OFF")
 
 if (NOT spdlog_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
+    set(expectedVersion 1.17.0)
     # Path 1: reuse a spdlog target a parent project already defined.
     if (TARGET spdlog::spdlog OR TARGET spdlog)
         message(STATUS "AutoPas: Reusing spdlog provided by parent project")
+        autopas_warn_if_parent_version_too_old(spdlog spdlog ${expectedVersion} spdlog::spdlog spdlog)
         autopas_alias_dependency(spdlog spdlog::spdlog)
         return()
     endif ()
     # Path 2: installed version
-    set(expectedVersion 1.17.0)
     find_package(spdlog ${expectedVersion} QUIET)
     if (spdlog_FOUND)
         message(STATUS "spdlog - using installed system version ${spdlog_VERSION}")

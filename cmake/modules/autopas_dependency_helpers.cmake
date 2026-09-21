@@ -49,6 +49,47 @@ function(autopas_alias_dependency plain namespaced)
     endif ()
 endfunction()
 
+# Warn if the copy of `dependency` a parent project provides is older than `minVersion`, print message if this cannot
+# be determined. AutoPas reuses such a target as it is, whereas an installed version has the minimum enforced by 
+# find_package. Targets carry no standard
+# version, so it is taken from `<package>_VERSION`, which a parent's find_package leaves visible in AutoPas' scope,
+# or else, for a parent that vendors the dependency, from the VERSION property upstream sets on its library target,
+# looked up on the target names passed after the first three arguments. If neither is available, the version cannot
+# be checked, which is only reported as a status message.
+function(autopas_warn_if_parent_version_too_old dependency package minVersion)
+    # Option 1: The target provides a `<package>_VERSION`
+    set(version "${${package}_VERSION}")
+    # Option 2: Get it from the target property
+    if (NOT version)
+        foreach (target IN LISTS ARGN)
+            if (TARGET ${target})
+                get_target_property(type ${target} TYPE)
+                # Reading VERSION from an INTERFACE library is a configure error before CMake 3.19
+                if (NOT type STREQUAL "INTERFACE_LIBRARY")
+                    get_target_property(version ${target} VERSION)
+                    if (version)
+                        break()
+                    endif ()
+                endif ()
+            endif ()
+        endforeach ()
+    endif ()
+
+    if (NOT version)
+        message(STATUS "${dependency} - cannot determine the version of the parent project's copy, so it is not "
+                       "checked against AutoPas' minimum of ${minVersion}")
+    elseif (version VERSION_LESS minVersion)
+        message(
+            WARNING
+                "${dependency} - the parent project provides version ${version}, but AutoPas requires at least "
+                "${minVersion}. AutoPas reuses it regardless, so it may fail to compile or misbehave; if so, upgrade "
+                "the parent project's ${dependency}."
+        )
+    else ()
+        message(STATUS "${dependency} - parent project provides version ${version}")
+    endif ()
+endfunction()
+
 # To avoid violating the one defintion rule, error if forcing bundled where a parent project provides their own version
 # of the dependency.
 function(autopas_error_if_forced_bundled_collides dependency forceOption)

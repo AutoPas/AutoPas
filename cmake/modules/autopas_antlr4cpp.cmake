@@ -18,15 +18,17 @@ option(antlr4cpp_ForceBundled "Ignore any provided/installed antlr4cpp and alway
 mark_as_advanced(antlr4cpp_ForceBundled)
 
 if (NOT antlr4cpp_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
+    set(expectedVersion 4.13.2)
     # Path 1: reuse an antlr4 runtime a parent project already defined, under either AutoPas's link name
     # or one of the names upstream uses.
     if (TARGET antlr4cpp OR TARGET antlr4_shared OR TARGET antlr4_static)
         message(STATUS "AutoPas: Reusing antlr4cpp provided by parent project")
+        autopas_warn_if_parent_version_too_old(
+            antlr4cpp antlr4-runtime ${expectedVersion} antlr4cpp antlr4_static antlr4_shared)
         set(antlr4cppResolved TRUE)
     else ()
         # Path 2: installed version; the runtime installs a CMake package `antlr4-runtime` which defines
         # the imported targets. The version arg enforces our minimum.
-        set(expectedVersion 4.13.2)
         find_package(antlr4-runtime ${expectedVersion} QUIET)
         if (antlr4-runtime_FOUND)
             message(STATUS "antlr4cpp - using installed version ${ANTLR_VERSION}")

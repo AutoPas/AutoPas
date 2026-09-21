@@ -5,10 +5,12 @@ option(googletest_ForceBundled "Ignore any provided/installed googletest and alw
 mark_as_advanced(googletest_ForceBundled)
 
 if (NOT googletest_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
+    set(expectedVersion 1.17.0)
     # Path 1: reuse a googletest a parent project already defined.
     # AutoPas's tests link gmock, which pulls in gtest, so gmock is what has to be there.
     if (TARGET gmock OR TARGET GTest::gmock)
         message(STATUS "AutoPas: Reusing googletest provided by parent project")
+        autopas_warn_if_parent_version_too_old(googletest GTest ${expectedVersion} gmock GTest::gmock)
         set(googletestResolved TRUE)
     elseif (TARGET gtest OR TARGET GTest::gtest)
         # A parent project provides gtest but not gmock. We cannot use an installed or bundled googletest to add gmock
@@ -19,7 +21,6 @@ if (NOT googletest_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
         )
     else ()
         # Path 2: installed version
-        set(expectedVersion 1.17.0)
         find_package(GTest ${expectedVersion} QUIET)
         if (GTest_FOUND)
             message(STATUS "gtest - using installed version ${GTest_VERSION}")

@@ -4,16 +4,17 @@ option(yaml-cpp_ForceBundled "Ignore any provided/installed yaml-cpp and always 
 mark_as_advanced(yaml-cpp_ForceBundled)
 
 if (NOT yaml-cpp_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
+    set(expectedVersion 0.9.0)
     # Path 1: reuse a yaml-cpp target a parent project already defined.
     if (TARGET yaml-cpp OR TARGET yaml-cpp::yaml-cpp)
         message(STATUS "AutoPas: Reusing yaml-cpp provided by parent project")
+        autopas_warn_if_parent_version_too_old(yaml-cpp yaml-cpp ${expectedVersion} yaml-cpp yaml-cpp::yaml-cpp)
         autopas_alias_dependency(yaml-cpp yaml-cpp::yaml-cpp)
         return()
     endif ()
     # Path 2: installed version; the version arg enforces our minimum. Use whatever compatible version
     # find_package returns - it creates a target either way, so rejecting it here would leave a
     # `yaml-cpp::yaml-cpp` that collides with the bundled copy's own alias below.
-    set(expectedVersion 0.9.0)
     find_package(yaml-cpp ${expectedVersion} QUIET)
     if (yaml-cpp_FOUND)
         message(STATUS "yaml-cpp - using installed system version ${yaml-cpp_VERSION}")

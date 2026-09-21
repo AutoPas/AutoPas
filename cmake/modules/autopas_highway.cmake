@@ -4,14 +4,15 @@ option(highway_ForceBundled "Ignore any provided/installed Highway and always us
 mark_as_advanced(highway_ForceBundled)
 
 if (NOT highway_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
+    set(expectedVersion 1.4.0)
     # Path 1: reuse a Highway target a parent project already defined.
     if (TARGET hwy OR TARGET hwy::hwy)
         message(STATUS "AutoPas: Reusing Google Highway provided by parent project")
+        autopas_warn_if_parent_version_too_old(Highway hwy ${expectedVersion} hwy hwy::hwy)
         autopas_alias_dependency(hwy hwy::hwy)
         return()
     endif ()
     # Path 2: installed version; the version arg enforces our minimum.
-    set(expectedVersion 1.4.0)
     find_package(hwy ${expectedVersion} QUIET)
     if (hwy_FOUND)
         message(STATUS "Highway - using installed version ${hwy_VERSION}")
