@@ -30,6 +30,8 @@ if (NOT googletest_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
             message(STATUS "gtest - no installed version >= ${expectedVersion} found; using bundled copy")
         endif ()
     endif ()
+else ()
+    autopas_error_if_forced_bundled_collides(googletest googletest_ForceBundled gmock GTest::gmock gtest GTest::gtest)
 endif ()
 
 if (NOT googletestResolved)

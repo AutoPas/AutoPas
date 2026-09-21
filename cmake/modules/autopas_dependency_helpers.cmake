@@ -48,3 +48,19 @@ function(autopas_alias_dependency plain namespaced)
         target_link_libraries(${plain} INTERFACE ${namespaced})
     endif ()
 endfunction()
+
+# To avoid violating the one defintion rule, error if forcing bundled where a parent project provides their own version
+# of the dependency.
+function(autopas_error_if_forced_bundled_collides dependency forceOption)
+    foreach (target IN LISTS ARGN)
+        if (TARGET ${target})
+            message(
+                FATAL_ERROR
+                    "${dependency} - the bundled copy is forced (${forceOption} or AUTOPAS_FORCE_ALL_BUNDLED), but a "
+                    "parent project already provides ${dependency} as the target '${target}', and AutoPas cannot "
+                    "build its own copy alongside it. Unset the option to reuse the parent's ${dependency}; if its "
+                    "version is incompatible with AutoPas, align the versions instead."
+            )
+        endif ()
+    endforeach ()
+endfunction()

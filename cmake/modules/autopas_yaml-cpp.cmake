@@ -23,6 +23,8 @@ if (NOT yaml-cpp_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
         return()
     endif ()
     message(STATUS "yaml-cpp - no system version >= ${expectedVersion} found; using bundled copy")
+else ()
+    autopas_error_if_forced_bundled_collides(yaml-cpp yaml-cpp_ForceBundled yaml-cpp yaml-cpp::yaml-cpp)
 endif ()
 
 # system version not found -> install bundled version

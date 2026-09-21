@@ -28,6 +28,8 @@ if (NOT spdlog_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
         return()
     endif ()
     message(STATUS "spdlog - no system version >= ${expectedVersion} found; using bundled copy")
+else ()
+    autopas_error_if_forced_bundled_collides(spdlog spdlog_ForceBundled spdlog::spdlog spdlog)
 endif ()
 
 # Path 3 + fallback: bundled version.

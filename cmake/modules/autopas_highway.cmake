@@ -21,6 +21,8 @@ if (NOT highway_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
         return()
     endif ()
     message(STATUS "Highway - no installed version >= ${expectedVersion} found; using bundled copy")
+else ()
+    autopas_error_if_forced_bundled_collides(Highway highway_ForceBundled hwy hwy::hwy)
 endif ()
 
 # Path 3 + fallback: bundled version.

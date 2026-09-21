@@ -37,6 +37,8 @@ if (NOT antlr4cpp_ForceBundled AND NOT AUTOPAS_FORCE_ALL_BUNDLED)
             message(STATUS "antlr4cpp - no installed version >= ${expectedVersion} found; using bundled copy")
         endif ()
     endif ()
+else ()
+    autopas_error_if_forced_bundled_collides(antlr4cpp antlr4cpp_ForceBundled antlr4cpp antlr4_shared antlr4_static)
 endif ()
 
 if (NOT antlr4cppResolved)
