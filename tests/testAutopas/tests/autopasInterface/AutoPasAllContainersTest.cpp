@@ -7,7 +7,7 @@
 #include "AutoPasAllContainersTest.h"
 
 #include "autopas/AutoPasImpl.h"
-#include "generators/src/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
@@ -41,7 +41,7 @@ TEST_P(AutoPasAllContainersTest, addParticlesTest) {
   mols.reserve(numMols);
   std::mt19937 generator(42);
   for (size_t i = 0; i < numMols; ++i) {
-    mols.emplace_back(autopasTools::generators::UniformGenerator::randomPosition(generator, boxMin, boxMax),
+    mols.emplace_back(autopas::generators::UniformGenerator::randomPosition(generator, boxMin, boxMax),
                       std::array<double, 3>{0., 0., 0.}, i, 0);
   }
 

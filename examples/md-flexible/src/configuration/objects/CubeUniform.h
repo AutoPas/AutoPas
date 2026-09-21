@@ -7,7 +7,7 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
-#include "generators/src/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 
 /**
  * Class describing an cuboid object filled with uniformly randomly distributed particles.
@@ -73,7 +73,7 @@ class CubeUniform : public Object {
    */
   void generate(std::vector<ParticleType> &particles) const override {
     // Wrapper so that std::vector can be used as an AutoPas::ParticleContainer
-    auto particlesWrapper = autopasTools::PseudoContainer(particles);
+    auto particlesWrapper = autopas::generators::PseudoContainer(particles);
 
     using namespace autopas::utils::ArrayMath::literals;
     const auto boxMax = _bottomLeftCorner + _boxLength;
@@ -81,8 +81,8 @@ class CubeUniform : public Object {
     // dummy particle used as a template with id of the first newly generated one
     const ParticleType dummyParticle = getDummyParticle(particles.size());
 
-    autopasTools::generators::UniformGenerator::fillWithParticles(particlesWrapper, dummyParticle, _bottomLeftCorner,
-                                                                  boxMax, _numParticles);
+    autopas::generators::UniformGenerator::fillWithParticles(particlesWrapper, dummyParticle, _bottomLeftCorner, boxMax,
+                                                             _numParticles);
   }
 
  private:
