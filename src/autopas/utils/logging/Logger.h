@@ -52,8 +52,7 @@
 #endif
 
 #if AUTOPAS_ACTIVE_LEVEL <= SPDLOG_LEVEL_CRITICAL
-#define AutoPasLog_CRITICAL(...) \
-  SPDLOG_LOGGER_CALL(autopas::Logger::get(), spdlog::level::critical, __VA_ARGS__)
+#define AutoPasLog_CRITICAL(...) SPDLOG_LOGGER_CALL(autopas::Logger::get(), spdlog::level::critical, __VA_ARGS__)
 #else
 #define AutoPasLog_CRITICAL(...) (void)0
 #endif
