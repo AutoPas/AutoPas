@@ -263,11 +263,8 @@ jobs:
                # Run tests split in 4
                ctest --output-on-failure -I ${{ matrix.part }},,4 -j $(nproc)
           
-               cd applicationLibrary
-               ctest --output-on-failure -I ${{ matrix.part }},,4 -j $(nproc)
-          
-               cd ../examples
-               ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,4 -j $(nproc)
+               cd examples
+               ctest --output-on-failure --build-config checkExamples --label-regex checkExamples -I ${{ matrix.part }},,4 -j $(nproc)
           
             # MPI: Run all tests
             else
