@@ -20,15 +20,15 @@ class Newton3Option : public Option<Newton3Option> {
   /**
    * Possible choices for the Newton3 optimization. Values consistent with bool.
    */
-  enum Value {
+  enum Value : size_t {
     /**
      * Calculate F_{ij} and F_{ji} individually.
      */
-    disabled,
+    disabled = 0,
     /**
      * Use F_{ij} = -F_{ji}.
      */
-    enabled
+    enabled = 1
   };
 
   /**

@@ -591,10 +591,21 @@ class MDFlexConfig {
    * Default comes from the LJFunctorHWY Benchmarks.
    */
   MDFlexOption<size_t, __LINE__> soaSortingThreshold{
-      50, "soa-sorting-threshold", true,
+      100, "soa-sorting-threshold", true,
       "Threshold for the SoA functor pair path to start sorting. If the sum of the SoA buffer sizes of two cells is "
       "greater or equal to that value, particles are sorted by their projection onto the cell-pair direction vector "
       "before computing interactions."};
+  /**
+   * useSortingThresholdBenchmark
+   * If true, AutoPas runs a micro-benchmark to determine the optimal AoS/SoA pair-sorting threshold per cell layout
+   * (Face, Edge, Corner) instead of the fixed aos/soa-sorting-threshold. SoA Thresholds are only determined for
+   * functors that support SoA sorting.
+   */
+  MDFlexOption<bool, __LINE__> useSortingThresholdBenchmark{
+      false, "use-sorting-threshold-benchmark", true,
+      "If true, AutoPas runs a micro-benchmark to determine the optimal AoS/SoA pair-sorting threshold per cell layout "
+      "(Face, Edge, Corner) instead of the fixed aos/soa-sorting-threshold. SoA Thresholds are only determined for "
+      "functors that support SoA sorting."};
 
   // Options for additional Object Generation on command line
   /**
