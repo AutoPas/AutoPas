@@ -59,8 +59,8 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
   const auto &[containerConfig1, containerConfig2] = GetParam();
 
   // Generate a valid arbitrary full configuration for each container configuration under test.
-  const auto config1 = containerConfig1.generateFullConfig(autopas::InteractionTypeOption::pairwise);
-  const auto config2 = containerConfig2.generateFullConfig(autopas::InteractionTypeOption::pairwise);
+  const auto config1 = containerConfig1.generateFullConfig(autopas::InteractionTypeOption::pairwise).value();
+  const auto config2 = containerConfig2.generateFullConfig(autopas::InteractionTypeOption::pairwise).value();
 
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{bBoxMin},

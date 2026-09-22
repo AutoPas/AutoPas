@@ -35,6 +35,7 @@
  * @param allowedNewton3Options By default, all options.
  * @param allowedCellSizeFactors By default, {0.5, 1.0, 1.5}
  * @param allowedVectorPatterns By default, all options.
+ * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return an empty set.
  * @return
  */
 inline std::set<autopas::Configuration> generateAllValidConfigurations(
@@ -47,21 +48,26 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     const std::set<autopas::Newton3Option> &allowedNewton3Options = autopas::Newton3Option::getAllOptions(),
     const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
     const std::set<autopas::VectorizationPatternOption> &allowedVectorPatterns =
-        autopas::VectorizationPatternOption::getAllOptions()) {
+        autopas::VectorizationPatternOption::getAllOptions(),
+    bool throwIfNone = true) {
   const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);
   if (interactionType == autopas::InteractionTypeOption::all) {
     std::set<autopas::Configuration> allConfigs;
     for (auto iType : autopas::InteractionTypeOption::getMostOptions()) {
+      // Do not throw for individual interaction types, as only the union has to be non-empty.
       const auto configs = autopas::SearchSpaceGenerators::cartesianProduct(
           allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-          allowedNewton3Options, &csfs, allowedVectorPatterns, iType);
+          allowedNewton3Options, &csfs, allowedVectorPatterns, iType, /*throwIfNone*/ false);
       allConfigs.insert(configs.begin(), configs.end());
+    }
+    if (throwIfNone and allConfigs.empty()) {
+      autopas::utils::ExceptionHandler::exception("generateAllValidConfigurations: No valid configuration exists.");
     }
     return allConfigs;
   } else {
     return autopas::SearchSpaceGenerators::cartesianProduct(
         allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-        allowedNewton3Options, &csfs, allowedVectorPatterns, interactionType);
+        allowedNewton3Options, &csfs, allowedVectorPatterns, interactionType, throwIfNone);
   }
 }
 
@@ -77,9 +83,11 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
  * @param newton3Option If provided, restrict to this Newton 3 option, otherwise consider all options.
  * @param cellSizeFactor If provided, restrict to this cell size factor, otherwise consider {0.5, 1.0, 1.5}.
  * @param vectorPattern If provided, restrict to this vectorization pattern, otherwise consider all options.
- * @return An arbitrary valid configuration matching the given constraints.
+ * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return std::nullopt
+ * instead.
+ * @return An arbitrary valid configuration matching the given constraints, or std::nullopt if none exists.
  */
-inline autopas::Configuration getArbitraryConfiguration(
+inline std::optional<autopas::Configuration> getArbitraryConfiguration(
     std::optional<autopas::InteractionTypeOption> interactionType = std::nullopt,
     std::optional<autopas::ContainerOption> containerOption = std::nullopt,
     std::optional<autopas::TraversalOption> traversalOption = std::nullopt,
@@ -87,7 +95,7 @@ inline autopas::Configuration getArbitraryConfiguration(
     std::optional<autopas::DataLayoutOption> dataLayoutOption = std::nullopt,
     std::optional<autopas::Newton3Option> newton3Option = std::nullopt,
     std::optional<double> cellSizeFactor = std::nullopt,
-    std::optional<autopas::VectorizationPatternOption> vectorPattern = std::nullopt) {
+    std::optional<autopas::VectorizationPatternOption> vectorPattern = std::nullopt, bool throwIfNone = true) {
   const auto configurations = generateAllValidConfigurations(
       interactionType.value_or(autopas::InteractionTypeOption::all),
       containerOption.has_value() ? std::set<autopas::ContainerOption>{*containerOption}
@@ -102,11 +110,16 @@ inline autopas::Configuration getArbitraryConfiguration(
                                 : autopas::Newton3Option::getAllOptions(),
       cellSizeFactor.has_value() ? std::set<double>{*cellSizeFactor} : std::set<double>{0.5, 1.0, 1.5},
       vectorPattern.has_value() ? std::set<autopas::VectorizationPatternOption>{*vectorPattern}
-                                : autopas::VectorizationPatternOption::getAllOptions());
+                                : autopas::VectorizationPatternOption::getAllOptions(),
+      /*throwIfNone -> false so that we use the error message below which is clearer for users of this function*/
+      false);
 
   if (configurations.empty()) {
-    autopas::utils::ExceptionHandler::exception(
-        "getArbitraryConfiguration: No valid configuration exists for the given constraints.");
+    if (throwIfNone) {
+      autopas::utils::ExceptionHandler::exception(
+          "getArbitraryConfiguration: No valid configuration exists for the given constraints.");
+    }
+    return std::nullopt;
   }
   return *configurations.begin();
 }
@@ -174,12 +187,14 @@ struct ContainerConfiguration {
    * Generates an arbitrary valid full configuration using this container and cell size factor.
    *
    * @param interactionType If provided, restrict to this interaction type, otherwise consider all interaction types.
-   * @return An arbitrary valid full configuration using this container and cell size factor.
+   * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return std::nullopt.
+   * @return An arbitrary valid full configuration using this container and cell size factor, or std::nullopt if none
+   * exists..
    */
-  [[nodiscard]] autopas::Configuration generateFullConfig(
-      std::optional<autopas::InteractionTypeOption> interactionType = std::nullopt) const {
+  [[nodiscard]] std::optional<autopas::Configuration> generateFullConfig(
+      std::optional<autopas::InteractionTypeOption> interactionType = std::nullopt, bool throwIfNone = true) const {
     return getArbitraryConfiguration(interactionType, container, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
-                                     cellSizeFactor);
+                                     cellSizeFactor, std::nullopt, throwIfNone);
   }
 };
 
@@ -207,44 +222,10 @@ inline std::set<ContainerConfiguration> generateAllValidContainerConfigurations(
   std::set<ContainerConfiguration> containerConfigs;
   for (const auto &containerOption : allowedContainerOptions) {
     for (const auto csf : allowedCellSizeFactors) {
-      // Create a dummy configuration to check validity
-      // We use pairwise interaction as default, since it should not matter for container/csf compatibility.
-      // We also use the first valid traversal for this container.
-      const auto interactionType = autopas::InteractionTypeOption(autopas::InteractionTypeOption::pairwise);
-      const auto traversals = autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType);
-      if (traversals.empty()) {
-        autopas::utils::ExceptionHandler::exception(
-            "{} has no compatible traversals with interaction type {}! This "
-            "suggests that either that something is incorrect with this "
-            "container or that generateAllValidContainerConfigurations's "
-            "assumption that all containers have at least one {} compatible "
-            "traversal no longer holds!",
-            containerOption.to_string(), interactionType.to_string(), interactionType.to_string());
-        continue;
-      }
-      const auto &traversalOption = *traversals.begin();
-      const auto loadEstimators = autopas::loadEstimators::getApplicableLoadEstimators(
-          containerOption, traversalOption, autopas::LoadEstimatorOption::getAllOptions());
-      if (loadEstimators.empty()) {
-        autopas::utils::ExceptionHandler::exception(
-            "{} with traversal {} has no applicable load estimators! Either "
-            "something is incorrect or generateAllValidContainerConfigurations's "
-            "assumption that there is always an applicable load estimator (even "
-            "if 'none') no longer holds.");
-        continue;
-      }
-      const auto &loadEstimatorOption = *loadEstimators.begin();
-
-      const autopas::Configuration configuration{containerOption,
-                                                 csf,
-                                                 traversalOption,
-                                                 loadEstimatorOption,
-                                                 autopas::DataLayoutOption::aos,
-                                                 autopas::Newton3Option::enabled,
-                                                 interactionType,
-                                                 autopas::VectorizationPatternOption::NA};
-      if (configuration.hasCompatibleValues()) {
-        containerConfigs.insert({containerOption, csf});
+      const ContainerConfiguration containerConfig{containerOption, csf};
+      // Keep this container configuration only if at least one valid full configuration exists for it.
+      if (containerConfig.generateFullConfig(std::nullopt, /*throwIfNone*/ false).has_value()) {
+        containerConfigs.insert(containerConfig);
       }
     }
   }
