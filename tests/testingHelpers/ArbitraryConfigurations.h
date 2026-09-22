@@ -27,40 +27,67 @@
 namespace arbitraryConfigurations {
 
 // Pairwise configurations:
+/**
+ * Arbitrary pairwise configuration.
+ */
 inline constexpr autopas::Configuration _arbitrary_config_2B_0 = autopas::Configuration(
     autopas::ContainerOption::directSum, 1.0, autopas::TraversalOption::ds_sequential,
     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
     autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
+/**
+ * Arbitrary pairwise configuration.
+ */
 inline constexpr autopas::Configuration _arbitrary_config_2B_1 = autopas::Configuration(
     autopas::ContainerOption::directSum, 1.0, autopas::TraversalOption::ds_sequential,
     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
     autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
+/**
+ * Arbitrary pairwise configuration.
+ */
 inline constexpr autopas::Configuration _arbitrary_config_2B_2 = autopas::Configuration(
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
     autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise,
     autopas::VectorizationPatternOption::NA);
+/**
+ * Arbitrary pairwise configuration.
+ */
 inline constexpr autopas::Configuration _arbitrary_config_2B_3 = autopas::Configuration(
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
     autopas::VectorizationPatternOption::NA);
+/**
+ * Arbitrary pairwise configuration.
+ */
 inline constexpr autopas::Configuration _arbitrary_config_2B_4 = autopas::Configuration(
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c18, autopas::LoadEstimatorOption::none,
     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
     autopas::VectorizationPatternOption::NA);
+/**
+ * Arbitrary pairwise configuration.
+ */
 inline constexpr autopas::Configuration _arbitrary_config_2B_5 = autopas::Configuration(
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c18, autopas::LoadEstimatorOption::none,
     autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise,
     autopas::VectorizationPatternOption::NA);
+/**
+ * Arbitrary pairwise configuration.
+ */
 inline constexpr autopas::Configuration _arbitrary_config_2B_6 = autopas::Configuration(
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
     autopas::VectorizationPatternOption::NA);
 
 // Triwise (three-body) configurations:
+/**
+ * Arbitrary triwise configuration.
+ */
 inline constexpr autopas::Configuration _arbitrary_config_3B_0 = autopas::Configuration(
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::triwise,
     autopas::VectorizationPatternOption::NA);
+/**
+ * Arbitrary triwise configuration.
+ */
 inline constexpr autopas::Configuration _arbitrary_config_3B_1 = autopas::Configuration(
     autopas::ContainerOption::directSum, 1.0, autopas::TraversalOption::ds_sequential,
     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,

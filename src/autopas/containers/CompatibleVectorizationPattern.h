@@ -32,16 +32,16 @@ static std::set<VectorizationPatternOption> allCompatibleVectorizationPattern(co
       return std::set<VectorizationPatternOption>{VectorizationPatternOption::NA};
     case DataLayoutOption::soa:
       switch (container) {
-      case ContainerOption::verletLists:
-      case ContainerOption::verletListsCells:
-      case ContainerOption::pairwiseVerletLists:
-      case ContainerOption::varVerletListsAsBuild:
-      case ContainerOption::directSum: {
-        return std::set<VectorizationPatternOption>{VectorizationPatternOption::p1xVec};
-      }
-      default: {
-        return std::set<VectorizationPatternOption>{VectorizationPatternOption::getAllApplicablePatterns()};
-      }
+        case ContainerOption::verletLists:
+        case ContainerOption::verletListsCells:
+        case ContainerOption::pairwiseVerletLists:
+        case ContainerOption::varVerletListsAsBuild:
+        case ContainerOption::directSum: {
+          return std::set<VectorizationPatternOption>{VectorizationPatternOption::p1xVec};
+        }
+        default: {
+          return std::set<VectorizationPatternOption>{VectorizationPatternOption::getAllApplicablePatterns()};
+        }
       }
     default:
       utils::ExceptionHandler::exception("Unknown data layout {}.", dataLayout.to_string());

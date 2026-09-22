@@ -26,7 +26,8 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
                                                               autopas::DataLayoutOption::soa};
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1, 1.5};
-  const std::set<autopas::VectorizationPatternOption> vecPatternOptions{autopas::VectorizationPatternOption::p1xVec, autopas::VectorizationPatternOption::NA};
+  const std::set<autopas::VectorizationPatternOption> vecPatternOptions{autopas::VectorizationPatternOption::p1xVec,
+                                                                        autopas::VectorizationPatternOption::NA};
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
@@ -255,7 +256,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
                                                         autopas::Newton3Option::enabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
   const std::set<autopas::VectorizationPatternOption> vecPatternOptions{autopas::VectorizationPatternOption::p1xVec,
-  autopas::VectorizationPatternOption::NA};
+                                                                        autopas::VectorizationPatternOption::NA};
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,

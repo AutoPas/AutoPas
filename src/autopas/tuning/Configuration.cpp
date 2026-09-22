@@ -102,7 +102,8 @@ bool autopas::Configuration::hasCompatibleValues() const {
 
   // Check if the container supports the VectorizationPattern, and filter out actual patterns in the AoS case or the
   // N/A option in the SoA case.
-  const auto allowedVecPatterns = compatibleVectorizationPattern::allCompatibleVectorizationPattern(container, dataLayout);
+  const auto allowedVecPatterns =
+      compatibleVectorizationPattern::allCompatibleVectorizationPattern(container, dataLayout);
   if (allowedVecPatterns.find(vecPattern) == allowedVecPatterns.end()) {
     return false;
   }

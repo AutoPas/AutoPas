@@ -163,7 +163,7 @@ if (AUTOPAS_BUILD_TESTS)
 
     target_include_directories(
             neighborIdentificationLibTests PUBLIC
-            ${PROJECT_SOURCE_DIR}/tests/testAutopas
+            ${PROJECT_SOURCE_DIR}/tests ${PROJECT_SOURCE_DIR}/tests/testAutopas
     )
 
     target_link_libraries(
