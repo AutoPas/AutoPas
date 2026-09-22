@@ -124,7 +124,7 @@ class LJFunctorHWY
    * @param vecPattern
    * @return whether the functor is capable of using the specified Vectorization Pattern
    */
-  bool isVecPatternAllowed(const VectorizationPattern vecPattern) final {
+  bool isSoAVecPatternAllowed(const VectorizationPattern vecPattern) final {
     return std::ranges::find(_vecPatternsAllowed, vecPattern) != _vecPatternsAllowed.end();
   }
 

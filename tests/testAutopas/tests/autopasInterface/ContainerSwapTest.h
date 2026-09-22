@@ -10,10 +10,11 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/LogicHandler.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
 
 class ContainerSwapTest
     : public AutoPasTestBase,
-      public ::testing::WithParamInterface<std::pair<autopas::Configuration, autopas::Configuration>> {
+      public ::testing::WithParamInterface<std::pair<ContainerConfiguration, ContainerConfiguration>> {
  public:
   ContainerSwapTest() = default;
   ~ContainerSwapTest() override = default;
@@ -21,9 +22,9 @@ class ContainerSwapTest
   struct twoParamToString {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
-      // tuple of Configuration objects
+      // pair of ContainerConfiguration objects
       const auto &[from, to] = static_cast<ParamType>(info.param);
-      return "from" + from.container.to_string() + "To" + to.container.to_string();
+      return "from" + from.toShortString() + "To" + to.toShortString();
     }
   };
 

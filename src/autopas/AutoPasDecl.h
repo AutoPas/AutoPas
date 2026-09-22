@@ -1216,8 +1216,9 @@ class AutoPas {
   std::unordered_map<InteractionTypeOption::Value, std::set<VectorizationPatternOption>> _allowedVecPatternsOptions{
       {InteractionTypeOption::pairwise, VectorizationPatternOption::getMostOptions()},
       // Note: Currently Vectorization Patterns are not implemented for threebody interactions. p1xVec is used as
-      // default.
-      {InteractionTypeOption::triwise, std::set<VectorizationPatternOption>{VectorizationPatternOption::p1xVec}}};
+      // default for SoA, while AoS always uses the not-applicable (N/A) pattern.
+      {InteractionTypeOption::triwise,
+       std::set<VectorizationPatternOption>{VectorizationPatternOption::NA, VectorizationPatternOption::p1xVec}}};
   /**
    * What kind of interactions AutoPas should expect.
    * By default AutoPas is configured to only use pairwise interactions.

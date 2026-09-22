@@ -39,9 +39,6 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setNumSamples(3);
 
-  autoPas.setAllowedVecPatterns({autopas::options::VectorizationPatternOption::p1xVec},
-                                autopas::InteractionTypeOption::pairwise);
-
   // init autopas
   autoPas.init();
 }
@@ -62,8 +59,6 @@ void defaultInit(AutoPasT &autoPas1, AutoPasT &autoPas2, size_t direction) {
     aP->setVerletSkin(skin);
     aP->setVerletRebuildFrequency(2);
     aP->setNumSamples(2);
-    aP->setAllowedVecPatterns({autopas::options::VectorizationPatternOption::p1xVec},
-                              autopas::InteractionTypeOption::pairwise);
     // init autopas
     aP->init();
   }
@@ -297,6 +292,7 @@ void setFromConfig(const autopas::Configuration &conf, autopas::AutoPas<Molecule
   autoPas.setAllowedDataLayouts({conf.dataLayout});
   autoPas.setAllowedNewton3Options({conf.newton3});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({conf.cellSizeFactor})));
+  autoPas.setAllowedVecPatterns({conf.vecPattern});
 }
 
 void testSimulationLoop(const autopas::Configuration &conf) {
