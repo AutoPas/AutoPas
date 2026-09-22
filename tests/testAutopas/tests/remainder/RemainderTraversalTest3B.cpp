@@ -78,7 +78,8 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::triwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   // create a functor that calculates globals!
   mdLib::AxilrodTellerMutoFunctor<Molecule, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
@@ -382,7 +383,8 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::triwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   mdLib::AxilrodTellerMutoFunctor<Molecule> functor(logicHandlerInfo.cutoff);
   functor.setParticleProperties(1.);

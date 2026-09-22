@@ -10,7 +10,7 @@
 #include "testingHelpers/commonTypedefs.h"
 
 TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
-  autopas::ContainerSelectorInfo containerInfo(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin, 64, 8,
+  autopas::ContainerSelectorInfo containerInfo(bBoxMin, bBoxMax, cutoff, cellSizeFactor, verletSkin, 64, 8, 8,
                                                autopas::LoadEstimatorOption::none);
 
   // test all individual options

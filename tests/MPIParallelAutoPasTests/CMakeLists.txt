@@ -22,7 +22,6 @@ target_include_directories(runMPITests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_link_libraries(
     runMPITests
     autopas
-    autopasTools
     gmock
     MPI::MPI_CXX
 )

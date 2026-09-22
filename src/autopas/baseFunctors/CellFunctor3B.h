@@ -9,7 +9,8 @@
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
-
+#include "autopas/utils/SortingThresholdInfoInterface.h"
+#include "autopas/utils/SortingThresholdInfoSingle.h"
 namespace autopas::internal {
 /**
  * A cell functor. This functor is built from the normal Functor of the template
@@ -83,12 +84,20 @@ class CellFunctor3B {
   [[nodiscard]] bool getBidirectional() const { return bidirectional; }
 
   /**
-   * Set the sorting-threshold
+   * Set the aos-sorting-threshold for AoS traversals.
    * If the sum of the number of particles in three cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
-   * @param sortingThreshold Sum of the number of particles in three cells from which sorting should be enabled.
+   * @param aosSortingThreshold SortingThresholdInfoSingle wrapping the sum of the number of particles in three cells
+   * from which sorting should be enabled.
    */
-  void setSortingThreshold(size_t sortingThreshold);
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold);
+
+  /**
+   * Set the SoA sorting-threshold.
+   * Stored for interface consistency with CellFunctor; CellFunctor3B does not currently apply SoA-level sorting.
+   * @param soaSortingThreshold SortingThresholdInfoSingle wrapping the threshold value.
+   */
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold);
 
  private:
   /**
@@ -98,8 +107,22 @@ class CellFunctor3B {
    * @return whether the AoSFunctor should use the SortedCellView.
    */
   [[nodiscard]] bool shouldUseSorting(size_t particleCount, const std::array<double, 3> &sortingDirection) const {
-    return particleCount >= _sortingThreshold and
+    return particleCount >= _aosSortingThreshold and
            (sortingDirection[0] != 0.0 or sortingDirection[1] != 0.0 or sortingDirection[2] != 0.0);
+  }
+
+  /**
+   * Resolves a SortingThresholdInfoInterface into the scalar threshold value CellFunctor3B expects.
+   * CellFunctor3B only supports SortingThresholdInfoSingle.
+   * @param info
+   * @return The scalar threshold value.
+   */
+  [[nodiscard]] static size_t resolveThreshold(const SortingThresholdInfoInterface &info) {
+    if (const auto *infoSingle = dynamic_cast<const SortingThresholdInfoSingle *>(&info)) {
+      return infoSingle->threshold;
+    }
+    throw utils::ExceptionHandler::AutoPasException(
+        "CellFunctor3b was called with wrong SortingThresholdInfo Type. (Supported is single)");
   }
 
   /**
@@ -156,11 +179,18 @@ class CellFunctor3B {
   const double _sortingCutoff;
 
   /**
-   * Min. number of particles to start sorting. This is the sum of the number of particles of all involved cells.
+   * Min. number of particles to start AoS sorting. This is the sum of the number of particles of all involved cells.
    * The default threshold is (blindly) taken from CellFunctor.h. For some more details see:
    * https://github.com/AutoPas/AutoPas/pull/619
    */
-  size_t _sortingThreshold{8};
+  size_t _aosSortingThreshold{8};
+
+  /**
+   * Min. number of particles in two SoA buffers to start SoA-level sorting.
+   * Currently unused by CellFunctor3B (stored for interface consistency with CellFunctor).
+   * Default comes from the LJFunctorHWY Benchmarks.
+   */
+  size_t _soaSortingThreshold{100};
 
   const DataLayoutOption::Value _dataLayout;
 
@@ -168,14 +198,21 @@ class CellFunctor3B {
 };
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
-void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSortingThreshold(size_t sortingThreshold) {
-  _sortingThreshold = sortingThreshold;
+void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setAoSSortingThresholds(
+    const SortingThresholdInfoInterface &aosSortingThreshold) {
+  _aosSortingThreshold = resolveThreshold(aosSortingThreshold);
+}
+
+template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
+void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::setSoASortingThresholds(
+    const SortingThresholdInfoInterface &soaSortingThreshold) {
+  _soaSortingThreshold = resolveThreshold(soaSortingThreshold);
 }
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCell(ParticleCell_T &cell) {
-  const bool isAoS = _dataLayout == DataLayoutOption::aos ? true : false;
-  const bool isSoA = _dataLayout == DataLayoutOption::soa ? true : false;
+  const bool isAoS = _dataLayout == DataLayoutOption::aos;
+  const bool isSoA = _dataLayout == DataLayoutOption::soa;
 
   // Return early if the cell is empty.
   if ((isSoA and cell._particleSoABuffer.size() == 0) or (isAoS and cell.isEmpty())) {
@@ -195,10 +232,9 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellPair(
-
     ParticleCell_T &cell1, ParticleCell_T &cell2, const std::array<double, 3> &sortingDirection) {
-  const bool isAoS = _dataLayout == DataLayoutOption::aos ? true : false;
-  const bool isSoA = _dataLayout == DataLayoutOption::soa ? true : false;
+  const bool isAoS = _dataLayout == DataLayoutOption::aos;
+  const bool isSoA = _dataLayout == DataLayoutOption::soa;
 
   // Return early if a cell is empty.
   if ((isSoA and (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0)) or
@@ -228,11 +264,10 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
 
 template <class ParticleCell_T, class ParticleFunctor_T, bool bidirectional>
 void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCellTriple(
-
     ParticleCell_T &cell1, ParticleCell_T &cell2, ParticleCell_T &cell3,
     const std::array<double, 3> &sortingDirection) {
-  const bool isAoS = _dataLayout == DataLayoutOption::aos ? true : false;
-  const bool isSoA = _dataLayout == DataLayoutOption::soa ? true : false;
+  const bool isAoS = _dataLayout == DataLayoutOption::aos;
+  const bool isSoA = _dataLayout == DataLayoutOption::soa;
 
   // Return early if a cell is empty.
   if ((isSoA and (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0 or
@@ -272,7 +307,7 @@ void CellFunctor3B<ParticleCell_T, ParticleFunctor_T, bidirectional>::processCel
     }
   };
 
-  if (cell.size() >= _sortingThreshold) {
+  if (cell.size() >= _aosSortingThreshold) {
     SortedCellView<ParticleCell_T> cellSorted(cell, utils::ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
     for (auto cellIter1 = cellSorted._particles.begin(); cellIter1 != cellSorted._particles.end(); ++cellIter1) {

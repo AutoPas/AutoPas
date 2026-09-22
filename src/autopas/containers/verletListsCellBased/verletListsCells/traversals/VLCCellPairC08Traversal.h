@@ -52,10 +52,14 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlp_c08; }
 
   /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
-  void setSortingThreshold(size_t sortingThreshold) override {}
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) override {}
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold) override {}
 
  private:
   PairwiseFunctor &_functor;

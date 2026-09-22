@@ -1,20 +1,7 @@
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 426b10f..68b5eba 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -13,7 +13,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
- endif()
- 
- # Set CXX Standard
--set(CMAKE_CXX_STANDARD 20)
-+set(CMAKE_CXX_STANDARD 17)
- set(CMAKE_CXX_STANDARD_REQUIRED ON)
- set(CMAKE_CXX_EXTENSIONS OFF)
- 
-diff --git a/common/PMT.cpp b/common/PMT.cpp
-index 5b8a6ab..3368d11 100644
---- a/common/PMT.cpp
-+++ b/common/PMT.cpp
+diff --git a/libs/pmt/common/PMT.cpp b/libs/pmt/common/PMT.cpp
+index 5b8a6abc9c..3368d111ac 100644
+--- a/libs/pmt/common/PMT.cpp
++++ b/libs/pmt/common/PMT.cpp
 @@ -24,8 +24,6 @@ bool isNumber(const std::string &s) {
  namespace pmt {
  
@@ -80,10 +67,10 @@ index 5b8a6ab..3368d11 100644
    return state_latest_;
  }
  
-diff --git a/common/PMT.h b/common/PMT.h
-index 269d549..19028b8 100644
---- a/common/PMT.h
-+++ b/common/PMT.h
+diff --git a/libs/pmt/common/PMT.h b/libs/pmt/common/PMT.h
+index 269d54931b..19028b8860 100644
+--- a/libs/pmt/common/PMT.h
++++ b/libs/pmt/common/PMT.h
 @@ -85,20 +85,11 @@ class PMT {
    Timestamp GetTime();
  
@@ -106,70 +93,27 @@ index 269d549..19028b8 100644
    void DumpHeader(const State &state);
  
   protected:
-diff --git a/common/io.h b/common/io.h
-index 2794e2a..10696de 100644
---- a/common/io.h
-+++ b/common/io.h
-@@ -2,7 +2,6 @@
- #define PMT_COMMON_IO_H_
- 
- #include <memory>
--#include <span>
- #include <sstream>
- 
- #include <sys/types.h>
-@@ -74,16 +73,14 @@ inline file_descriptor openat(int dirfd, const std::string& filename) {
-   }
- }
- 
--inline size_t pread(int fd, const std::span<std::byte>& byte,
--                    std::int64_t offset) {
-+inline size_t pread(int fd, void* buffer, std::size_t size, std::int64_t offset) {
-   while (true) {
-     const ::ssize_t data_read =
--        ::pread(fd, static_cast<void*>(byte.data()), byte.size(),
--                static_cast<::off_t>(offset));
-+        ::pread(fd, buffer, size, static_cast<::off_t>(offset));
+diff --git a/libs/pmt/common/io.h b/libs/pmt/common/io.h
+index 2794e2a019..2a6702a9c4 100644
+--- a/libs/pmt/common/io.h
++++ b/libs/pmt/common/io.h
+@@ -82,7 +82,7 @@ inline size_t pread(int fd, const std::span<std::byte>& byte,
+                 static_cast<::off_t>(offset));
      if (data_read < 0) {
--      const int errcode = take_and_reset_errno();
+       const int errcode = take_and_reset_errno();
 -      if (errno == EINTR) {
--        // interrupted system call
-+      const int errcode = errno; // Capture the error code
 +      if (errcode == EINTR) {
-+        // interrupted system call, retry
+         // interrupted system call
          continue;
        }
-       throw std::system_error(
-diff --git a/rapl/RaplImpl.cpp b/rapl/RaplImpl.cpp
-index 369502c..ff000e4 100644
---- a/rapl/RaplImpl.cpp
-+++ b/rapl/RaplImpl.cpp
-@@ -52,7 +52,7 @@ std::string GetBasename(int package_id) {
- std::string read_string(int fd) {
-   std::string result;
-   std::array<std::byte, 256> buffer;
--  const std::size_t read_size = os::pread(fd, buffer, 0);
-+  const std::size_t read_size = os::pread(fd, buffer.data(), buffer.size(), 0);
-   result.reserve(read_size);
-   for (std::size_t i = 0; i < read_size; ++i) {
-     const char c = static_cast<char>(buffer[i]);
-@@ -67,7 +67,7 @@ template <typename Numeric>
- Numeric read_numerical_value(int fd) {
-   Numeric value = 0;
-   std::array<std::byte, 256> buffer;
--  const std::size_t read_size = os::pread(fd, buffer, 0);
-+  const std::size_t read_size = os::pread(fd, buffer.data(), buffer.size(), 0);
-   std::from_chars_result res = std::from_chars(
-       static_cast<const char*>(static_cast<void*>(buffer.data())),
-       static_cast<const char*>(static_cast<void*>(buffer.data() + read_size)),
-@@ -113,8 +113,9 @@ void RaplImpl::Init() {
-         message << "OS error: " << e.what();
-         std::cerr << message.str() << std::endl;
+diff --git a/libs/pmt/rapl/RaplImpl.cpp b/libs/pmt/rapl/RaplImpl.cpp
+index 369502c103..4f9970e694 100644
+--- a/libs/pmt/rapl/RaplImpl.cpp
++++ b/libs/pmt/rapl/RaplImpl.cpp
+@@ -115,6 +115,7 @@ void RaplImpl::Init() {
          if (e.code().value() == EACCES) {
--          std::cerr << "Please check the permission or try to run as 'root'"
--                    << std::endl;
-+          std::cerr<< "Please check the permission or try to run as 'root'"
-+                   << std::endl;
+           std::cerr << "Please check the permission or try to run as 'root'"
+                     << std::endl;
 +          std::abort();
          }
        }
@@ -187,10 +131,10 @@ index 369502c..ff000e4 100644
    }
  }
  
-diff --git a/rapl/RaplImpl.h b/rapl/RaplImpl.h
-index a13e32d..fb0bf25 100644
---- a/rapl/RaplImpl.h
-+++ b/rapl/RaplImpl.h
+diff --git a/libs/pmt/rapl/RaplImpl.h b/libs/pmt/rapl/RaplImpl.h
+index a13e32d03f..fb0bf256f2 100644
+--- a/libs/pmt/rapl/RaplImpl.h
++++ b/libs/pmt/rapl/RaplImpl.h
 @@ -5,6 +5,7 @@
  #include <mutex>
  #include <string>

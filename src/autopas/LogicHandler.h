@@ -26,6 +26,7 @@
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/NumParticlesEstimator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -54,9 +55,15 @@ class LogicHandler {
    * @param logicHandlerInfo
    * @param rebuildFrequency
    * @param outputSuffix
+   * @param aosSortingThresholdFallback Default AoS sorting threshold used to seed newly generated containers.
+   * Mirrors AutoTunerInfo::aosSortingThreshold, which independently seeds each AutoTuner's
+   * SortingThresholdBenchmark. Passed here explicitly since LogicHandler has no other access to AutoTunerInfo.
+   * @param soaSortingThresholdFallback Default SoA sorting threshold used to seed newly generated containers.
+   * @see AutoTunerInfo::aosSortingThreshold, AutoTunerInfo::soaSortingThreshold
    */
   LogicHandler(const std::shared_ptr<TuningManager> &tunerManager, const LogicHandlerInfo &logicHandlerInfo,
-               unsigned int rebuildFrequency, const std::string &outputSuffix)
+               unsigned int rebuildFrequency, const std::string &outputSuffix, size_t aosSortingThresholdFallback,
+               size_t soaSortingThresholdFallback)
       : _tuningManager(tunerManager),
         _logicHandlerInfo(logicHandlerInfo),
         _neighborListRebuildFrequency{rebuildFrequency},
@@ -65,7 +72,8 @@ class LogicHandler {
         _remainderPairwiseInteractionHandler(_spatialLocks),
         _remainderTriwiseInteractionHandler(_spatialLocks),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
-        _sortingThreshold(logicHandlerInfo.sortingThreshold),
+        _aosSortingThresholdFallback(aosSortingThresholdFallback),
+        _soaSortingThresholdFallback(soaSortingThresholdFallback),
         _iterationLogger(outputSuffix,
                          std::any_of(tunerManager->getAutoTuners().begin(), tunerManager->getAutoTuners().end(),
                                      [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
@@ -78,14 +86,10 @@ class LogicHandler {
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
-      _currentContainerSelectorInfo = ContainerSelectorInfo{_logicHandlerInfo.boxMin,
-                                                            _logicHandlerInfo.boxMax,
-                                                            _logicHandlerInfo.cutoff,
-                                                            configuration.cellSizeFactor,
-                                                            _logicHandlerInfo.verletSkin,
-                                                            _verletClusterSize,
-                                                            _sortingThreshold,
-                                                            configuration.loadEstimator};
+      _currentContainerSelectorInfo = ContainerSelectorInfo{
+          _logicHandlerInfo.boxMin,     _logicHandlerInfo.boxMax,     _logicHandlerInfo.cutoff,
+          configuration.cellSizeFactor, _logicHandlerInfo.verletSkin, _verletClusterSize,
+          _aosSortingThresholdFallback, _soaSortingThresholdFallback, configuration.loadEstimator};
       _currentContainer =
           ContainerSelector<Particle_T>::generateContainer(configuration.container, _currentContainerSelectorInfo);
       checkMinimalSize();
@@ -834,20 +838,26 @@ class LogicHandler {
   unsigned int _verletClusterSize;
 
   /**
-   * This is used to store the total number of neighbour lists rebuild.
+   * Default AoS sorting threshold used to seed newly generated containers, passed in at construction (mirrors
+   * AutoTunerInfo::aosSortingThreshold; see the constructor for why LogicHandler needs its own copy).
+   */
+  size_t _aosSortingThresholdFallback;
+
+  /**
+   * Default SoA sorting threshold used to seed newly generated containers. @see _aosSortingThresholdFallback
+   */
+  size_t _soaSortingThresholdFallback;
+
+  /**
+   * This is used to store the total number of neighbor lists rebuild.
    */
   size_t _numRebuilds{0};
 
   /**
-   * This is used to store the total number of neighbour lists rebuilds in the non-tuning phase.
+   * This is used to store the total number of neighbor lists rebuilds in the non-tuning phase.
    * This is reset at the start of a new tuning phase.
    */
   size_t _numRebuildsInNonTuningPhase{0};
-
-  /**
-   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
-   */
-  size_t _sortingThreshold;
 
   std::shared_ptr<TuningManager> _tuningManager;
 
@@ -955,7 +965,7 @@ template <typename Particle_T>
 void LogicHandler<Particle_T>::updateRebuildPositions() {
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
-  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
+  // e.g. neighbor list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
   AUTOPAS_OPENMP(parallel)
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
@@ -1003,7 +1013,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
-  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
+  // e.g. neighbor list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
   AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
@@ -1108,6 +1118,16 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   }
   timerRebuild.stop();
   std::tie(std::ignore, std::ignore, std::ignore, energyTotalRebuild) = autoTuner.sampleEnergy();
+
+  // Balance buffer vectors
+  const auto cellToVec = [](auto &cell) -> std::vector<Particle_T> & { return cell._particles; };
+  utils::ArrayUtils::balanceVectors(_particleBuffer, cellToVec);
+  utils::ArrayUtils::balanceVectors(_haloParticleBuffer, cellToVec);
+
+  // Mainly for NeighborIdentificationFunctor, initialize the neighbors
+  if constexpr (requires { functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo)); }) {
+    functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo));
+  }
 
   timerComputeInteractions.start();
   _currentContainer->computeInteractions(&traversal);
@@ -1270,6 +1290,41 @@ bool LogicHandler<Particle_T>::computeInteractionsPipeline(Functor *functor,
   tuningTimer.stop();
   _tuningManager->logTuningResult(tuningTimer.getTotalTime(), _iteration, interactionType);
 
+  // Run SortingThresholdBenchmark lazily on the first iteration for which an owned particle is available, and
+  // apply its result to the active container. Retrying on the next iteration if the edge case that no Particle is
+  // available occurs. SortingThresholdBenchmark is pairwise-only. Within pairwise functors, AoS benchmarking runs for
+  // any of them. SoA benchmarking additionally requires Functor::supportsSoASorting.
+  auto &sortingThresholdBenchmark = _tuningManager->getAutoTuners()[interactionType]->getSortingThresholdBenchmark();
+
+  if (_logicHandlerInfo.useSortingThresholdBenchmark) {
+    if constexpr (utils::isPairwiseFunctor<Functor>()) {
+      const bool needsAoSRun = not sortingThresholdBenchmark.hasRunAoS();
+      const bool needsSoARun = Functor::supportsSoASorting and not sortingThresholdBenchmark.hasRunSoA();
+      if (needsAoSRun or needsSoARun) {
+        // Sample an existing particle from the container to use as the template for the particles generated by the
+        // benchmark and to use it to copy construct new Particles.
+        // Because AutoPas doesn't make any assumptions about the Particle apart from it being copy-constructible.
+        auto particleIter = begin(IteratorBehavior::owned);
+        if (particleIter.isValid()) {
+          const Particle_T defaultParticle = *particleIter;
+          if (needsAoSRun) {
+            sortingThresholdBenchmark.runAoSBenchmark<Functor, Particle_T>(*functor, defaultParticle);
+          }
+          if constexpr (Functor::supportsSoASorting) {
+            if (needsSoARun) {
+              sortingThresholdBenchmark.runSoABenchmark<Functor, Particle_T>(*functor, defaultParticle);
+            }
+          }
+        }
+      }
+    }
+  }
+  // Each interaction type has its own AutoTuner and thus its own SortingThresholdBenchmark. Before any benchmark run,
+  // getAoSThreshold()/getSoAThreshold() return the uniform default it was seeded with, so this is safe to apply
+  // unconditionally, regardless of useSortingThresholdBenchmark, interaction type, or functor kind.
+  _currentContainer->setAoSSortingThresholds(sortingThresholdBenchmark.getAoSThreshold());
+  _currentContainer->setSoASortingThresholds(sortingThresholdBenchmark.getSoAThreshold());
+
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
   const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
 
@@ -1362,10 +1417,10 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   }
 
   std::unique_ptr<ParticleContainerInterface<Particle_T>> containerPtr{nullptr};
-  auto containerInfo =
-      ContainerSelectorInfo(_currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
-                            _currentContainer->getCutoff(), config.cellSizeFactor, _currentContainer->getVerletSkin(),
-                            _verletClusterSize, _sortingThreshold, config.loadEstimator);
+  auto containerInfo = ContainerSelectorInfo(
+      _currentContainer->getBoxMin(), _currentContainer->getBoxMax(), _currentContainer->getCutoff(),
+      config.cellSizeFactor, _currentContainer->getVerletSkin(), _verletClusterSize, _aosSortingThresholdFallback,
+      _soaSortingThresholdFallback, config.loadEstimator);
 
   // If we have no current container or needs to be updated to the new config.container, we need to generate a new
   // container.

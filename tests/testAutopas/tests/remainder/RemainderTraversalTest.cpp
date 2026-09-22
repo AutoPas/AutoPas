@@ -77,7 +77,8 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
-  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   // create a functor that calculates globals!
   LJFunctorType</*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
@@ -324,7 +325,8 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
-  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   LJFunctorType<> functor(logicHandlerInfo.cutoff);
   functor.setParticleProperties(24, 1);

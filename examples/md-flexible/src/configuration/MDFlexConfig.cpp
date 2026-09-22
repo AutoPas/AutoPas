@@ -363,7 +363,9 @@ std::string MDFlexConfig::to_string() const {
   printOption(cellSizeFactors);
   printOption(deltaT);
   printOption(pauseSimulationDuringTuning);
-  printOption(sortingThreshold);
+  printOption(aosSortingThreshold);
+  printOption(soaSortingThreshold);
+  printOption(useSortingThresholdBenchmark);
   // simulation length is either dictated by tuning phases or iterations
   if (tuningPhases.value > 0) {
     printOption(tuningPhases);

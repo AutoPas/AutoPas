@@ -11,7 +11,7 @@
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StringUtils.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -140,16 +140,24 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   // Construct container
   constexpr double skin = _cutoff * 0.1;
   constexpr unsigned int rebuildFrequency = 1;
-  const size_t sortingThreshold = useSorting ? 5 : std::numeric_limits<size_t>::max();
-  const auto containerInfo = autopas::ContainerSelectorInfo{_boxMin, boxMax, _cutoff,          config.cellSizeFactor,
-                                                            skin,    32,     sortingThreshold, config.loadEstimator};
+  const size_t aosSortingThreshold = useSorting ? 5 : std::numeric_limits<size_t>::max();
+  const size_t soaSortingThreshold = useSorting ? 5 : std::numeric_limits<size_t>::max();
+  const auto containerInfo = autopas::ContainerSelectorInfo{_boxMin,
+                                                            boxMax,
+                                                            _cutoff,
+                                                            config.cellSizeFactor,
+                                                            skin,
+                                                            32,
+                                                            aosSortingThreshold,
+                                                            soaSortingThreshold,
+                                                            config.loadEstimator};
   auto container = autopas::ContainerSelector<Molecule>::generateContainer(config.container, containerInfo);
 
-  autopasTools::generators::UniformGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
-                                                                container->getBoxMin(), container->getBoxMax(),
-                                                                numParticles);
+  autopas::generators::UniformGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
+                                                           container->getBoxMin(), container->getBoxMax(),
+                                                           numParticles);
   EXPECT_EQ(container->size(), numParticles) << "Wrong number of molecules inserted!";
-  autopasTools::generators::UniformGenerator::fillWithHaloParticles(
+  autopas::generators::UniformGenerator::fillWithHaloParticles(
       *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numParticles /*initial ID*/), container->getCutoff(),
       numHaloParticles);
   EXPECT_EQ(container->size(), numParticles + numHaloParticles) << "Wrong number of halo molecules inserted!";

@@ -37,7 +37,6 @@ target_link_libraries(
   mdFlexTests
   PUBLIC
     autopas
-    autopasTools
     molecularDynamicsLibrary
     gmock
     yaml-cpp
