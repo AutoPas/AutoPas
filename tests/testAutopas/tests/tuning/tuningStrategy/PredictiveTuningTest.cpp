@@ -8,6 +8,8 @@
 
 #include <gmock/gmock-more-matchers.h>
 
+#include <set>
+
 #include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/tuningStrategy/PredictiveTuning.h"
@@ -72,44 +74,37 @@ void PredictiveTuningTest::checkPredictions(autopas::ExtrapolationMethodOption e
  */
 TEST_P(PredictiveTuningTest, testPredictions) {
   auto extrapolationOption = GetParam();
+  // Evidence is added in the order in which the configurations are visited. To make this test independent of the
+  // configs and how they are ordered, we determine the order here.
+  const std::set<autopas::Configuration> configsInVisitingOrder{arbitraryConfigurations::_arbitrary_config_2B_0,
+                                                                arbitraryConfigurations::_arbitrary_config_2B_1,
+                                                                arbitraryConfigurations::_arbitrary_config_2B_2};
+  auto configIter = configsInVisitingOrder.begin();
+  const auto firstVisitedConfig = *configIter++;
+  const auto secondVisitedConfig = *configIter++;
+  const auto thirdVisitedConfig = *configIter;
   // we do the generation + switch case here to ensure a test is generated for every method.
   switch (extrapolationOption) {
     case autopas::ExtrapolationMethodOption::linePrediction: {
       checkPredictions(extrapolationOption,
                        {
-                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 94},
-                            {arbitraryConfigurations::_arbitrary_config_2B_1, 109},
-                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
-                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 97},
-                            {arbitraryConfigurations::_arbitrary_config_2B_1, 103},
-                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
+                           {{firstVisitedConfig, 94}, {secondVisitedConfig, 109}, {thirdVisitedConfig, 101}},
+                           {{firstVisitedConfig, 97}, {secondVisitedConfig, 103}, {thirdVisitedConfig, 101}},
                        },
                        // all predictions are evaluated for the seventh iteration (iteration==6)
-                       0,
-                       {{arbitraryConfigurations::_arbitrary_config_2B_0, 100},
-                        {arbitraryConfigurations::_arbitrary_config_2B_1, 99},
-                        {arbitraryConfigurations::_arbitrary_config_2B_2, 101}});
+                       0, {{firstVisitedConfig, 100}, {secondVisitedConfig, 99}, {thirdVisitedConfig, 101}});
       break;
     }
     case autopas::ExtrapolationMethodOption::newton: {
       checkPredictions(extrapolationOption,
                        {
-                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 79},
-                            {arbitraryConfigurations::_arbitrary_config_2B_1, 115},
-                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
-                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 90},
-                            {arbitraryConfigurations::_arbitrary_config_2B_1, 109},
-                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
-                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 97},
-                            {arbitraryConfigurations::_arbitrary_config_2B_1, 103},
-                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
+                           {{firstVisitedConfig, 79}, {secondVisitedConfig, 115}, {thirdVisitedConfig, 101}},
+                           {{firstVisitedConfig, 90}, {secondVisitedConfig, 109}, {thirdVisitedConfig, 101}},
+                           {{firstVisitedConfig, 97}, {secondVisitedConfig, 103}, {thirdVisitedConfig, 101}},
                        },
                        // all predictions are evaluated for the tenth iteration (iteration==9)
-                       // for arbitraryConfigurations::_arbitrary_config_2B_1 we actually expect 99.33
-                       0,
-                       {{arbitraryConfigurations::_arbitrary_config_2B_0, 100},
-                        {arbitraryConfigurations::_arbitrary_config_2B_1, 99},
-                        {arbitraryConfigurations::_arbitrary_config_2B_2, 101}});
+                       // for secondVisitedConfig we actually expect 99.33
+                       0, {{firstVisitedConfig, 100}, {secondVisitedConfig, 99}, {thirdVisitedConfig, 101}});
       break;
     }
     case autopas::ExtrapolationMethodOption::linearRegression: {
@@ -117,38 +112,22 @@ TEST_P(PredictiveTuningTest, testPredictions) {
           extrapolationOption,
           {
               // values along the desired line offset so that the regression should still return the same line
-              {{arbitraryConfigurations::_arbitrary_config_2B_0, 91 + 1},
-               {arbitraryConfigurations::_arbitrary_config_2B_1, 115 - 1},
-               {arbitraryConfigurations::_arbitrary_config_2B_2, 101 - 2}},
-              {{arbitraryConfigurations::_arbitrary_config_2B_0, 94 - 2},
-               {arbitraryConfigurations::_arbitrary_config_2B_1, 109 + 2},
-               {arbitraryConfigurations::_arbitrary_config_2B_2, 101 + 4}},
-              {{arbitraryConfigurations::_arbitrary_config_2B_0, 97 + 1},
-               {arbitraryConfigurations::_arbitrary_config_2B_1, 103 - 1},
-               {arbitraryConfigurations::_arbitrary_config_2B_2, 101 - 2}},
+              {{firstVisitedConfig, 91 + 1}, {secondVisitedConfig, 115 - 1}, {thirdVisitedConfig, 101 - 2}},
+              {{firstVisitedConfig, 94 - 2}, {secondVisitedConfig, 109 + 2}, {thirdVisitedConfig, 101 + 4}},
+              {{firstVisitedConfig, 97 + 1}, {secondVisitedConfig, 103 - 1}, {thirdVisitedConfig, 101 - 2}},
           },
           // all predictions are evaluated for the tenth iteration (iteration==9)
-          0,
-          {{arbitraryConfigurations::_arbitrary_config_2B_0, 100},
-           {arbitraryConfigurations::_arbitrary_config_2B_1, 99},
-           {arbitraryConfigurations::_arbitrary_config_2B_2, 101}});
+          0, {{firstVisitedConfig, 100}, {secondVisitedConfig, 99}, {thirdVisitedConfig, 101}});
       break;
     }
     case autopas::ExtrapolationMethodOption::lastResult: {
       checkPredictions(extrapolationOption,
                        {
-                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 94},
-                            {arbitraryConfigurations::_arbitrary_config_2B_1, 109},
-                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
-                           {{arbitraryConfigurations::_arbitrary_config_2B_0, 97},
-                            {arbitraryConfigurations::_arbitrary_config_2B_1, 103},
-                            {arbitraryConfigurations::_arbitrary_config_2B_2, 101}},
+                           {{firstVisitedConfig, 94}, {secondVisitedConfig, 109}, {thirdVisitedConfig, 101}},
+                           {{firstVisitedConfig, 97}, {secondVisitedConfig, 103}, {thirdVisitedConfig, 101}},
                        },
                        // all predictions are evaluated for the seventh iteration (iteration==6)
-                       0,
-                       {{arbitraryConfigurations::_arbitrary_config_2B_0, 97},
-                        {arbitraryConfigurations::_arbitrary_config_2B_1, 103},
-                        {arbitraryConfigurations::_arbitrary_config_2B_2, 101}});
+                       0, {{firstVisitedConfig, 97}, {secondVisitedConfig, 103}, {thirdVisitedConfig, 101}});
       break;
     }
     default:

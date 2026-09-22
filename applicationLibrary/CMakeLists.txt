@@ -88,6 +88,7 @@ if (AUTOPAS_BUILD_TESTS)
             ${TEST_EXE_NAME}
             PUBLIC
             "${PROJECT_SOURCE_DIR}/tests"
+            "${PROJECT_SOURCE_DIR}/tests/testAutopas"
             "molecularDynamics"
     )
 
