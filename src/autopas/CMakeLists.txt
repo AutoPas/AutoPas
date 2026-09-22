@@ -23,6 +23,13 @@ endif ()
 
 add_library(autopas STATIC ${MY_SRC})
 
+# Namespaced alias so consumers (e.g. via FetchContent / add_subdirectory) can link a stable,
+# collision-safe target name and use `if (NOT TARGET AutoPas::autopas)` guards
+if (NOT TARGET AutoPas::autopas)
+    add_library(AutoPas::autopas ALIAS autopas)
+endif ()
+target_compile_definitions(autopas PUBLIC AUTOPAS_ACTIVE_LEVEL=SPDLOG_LEVEL_${AUTOPAS_MIN_LOG_LVL})
+
 target_link_libraries(
     autopas
     PUBLIC
@@ -43,7 +50,7 @@ target_link_libraries(
 )
 
 # OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
-# target. this can be resolved by upgrading to CMake 3.13 and enforcing CMP0079.
+# target.
 target_compile_definitions(
     autopas
     PUBLIC

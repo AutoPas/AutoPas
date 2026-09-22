@@ -216,7 +216,6 @@ The table below lists the dependencies. The **Path** column currently reflects t
 
 | Dep        | Path                                                    | Upstream                                            | Pinned ref             | Post-import commits                        |
 |------------|---------------------------------------------------------|-----------------------------------------------------|------------------------|--------------------------------------------|
-| ALL        | [`libs/ALL-0.9.3.zip`](/libs/ALL-0.9.3.zip)             | https://gitlab.jsc.fz-juelich.de/SLMS/loadbalancing | tag `v0.9.3`           | —                                          |
 | antlr4     | [`libs/antlr4`](/libs/antlr4)                           | https://github.com/antlr/antlr4                     | tag `4.13.2`           | non-Cpp runtimes pruned                    |
 | benchmark  | [`libs/benchmark-1.9.4.zip`](/libs/benchmark-1.9.4.zip) | https://github.com/google/benchmark                 | tag `v1.9.4`           | —                                          |
 | eigen      | [`libs/eigen`](/libs/eigen)                             | https://gitlab.com/libeigen/eigen                   | tag `5.0.1`            | —                                          |
@@ -226,6 +225,12 @@ The table below lists the dependencies. The **Path** column currently reflects t
 | pmt        | [`libs/pmt`](/libs/pmt)                                 | https://git.astron.nl/RD/pmt                        | commit `7a56fa3a`      | AutoPas-specific patch (in `libs/patches`) |
 | spdlog     | [`libs/spdlog`](/libs/spdlog)                           | https://github.com/gabime/spdlog                    | tag `v1.17.0`          | —                                          |
 | yaml-cpp   | [`libs/yaml-cpp`](/libs/yaml-cpp)                       | https://github.com/jbeder/yaml-cpp                  | tag `yaml-cpp-0.9.0`   | —                                          |
+
+Not in the table, because it is not shipped with AutoPas: **ALL**
+(https://gitlab.jsc.fz-juelich.de/SLMS/loadbalancing, tag `v0.9.4`) is an optional load balancer for
+md-flexible. [`cmake/modules/autopas_all.cmake`](/cmake/modules/autopas_all.cmake) downloads it at configure
+time when `MD_FLEXIBLE_ENABLE_ALLLBL=ON`, so enabling it requires network access. To update it, bump the
+`GIT_TAG` and the `expectedVersion` in that module.
 
 ### Updating a dependency
 

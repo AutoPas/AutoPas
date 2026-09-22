@@ -65,9 +65,10 @@ TEST_F(CellFunctorSortingDataTest, testMaxIndex) {
   auto projJ = makeProjIdx({6.0, 7.0, 11.0});
   std::vector<size_t> maxIdx, minIdx;
 
-  _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
+  const auto data = _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
 
-  // startI = 1 (projI[0]=0 <= threshold=3 so skipped)
+  // threshold = 6 - 3 = 3, and projI[0] = 0 lies below it, so the first i particle is skipped.
+  EXPECT_EQ(data.startI, 1u);
   EXPECT_EQ(maxIdx[1], 2u);
   EXPECT_EQ(maxIdx[2], 3u);
 }
@@ -84,8 +85,10 @@ TEST_F(CellFunctorSortingDataTest, testMaxIndexBoundaryInclusive) {
   auto projJ = makeProjIdx({3.0, 3.5});
   std::vector<size_t> maxIdx, minIdx;
 
-  _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
+  const auto data = _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
 
+  // threshold = 3 - 3 = 0, which projI[0] sits exactly on, so no i particle is skipped.
+  EXPECT_EQ(data.startI, 0u);
   EXPECT_EQ(maxIdx[0], 1u);
 }
 
@@ -100,8 +103,10 @@ TEST_F(CellFunctorSortingDataTest, testMinIndex) {
   auto projJ = makeProjIdx({6.0, 7.0, 11.0});
   std::vector<size_t> maxIdx, minIdx;
 
-  _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
+  const auto data = _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
 
+  // threshold = 6 - 3 = 3, and projI[0] = 0 lies below it, so i = 0 is skipped and minIdx[0] never written.
+  EXPECT_EQ(data.startI, 1u);
   EXPECT_EQ(minIdx[1], 0u);
   EXPECT_EQ(minIdx[2], 1u);
 }
@@ -118,8 +123,10 @@ TEST_F(CellFunctorSortingDataTest, testMinIndexBoundaryInclusive) {
   auto projJ = makeProjIdx({1.5, 2.0});
   std::vector<size_t> maxIdx, minIdx;
 
-  _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
+  const auto data = _cf.computeSortingData(projI, projJ, maxIdx, minIdx);
 
+  // threshold = 1.5 - 3 = -1.5, below projI[0] = 5, so no i particle is skipped.
+  EXPECT_EQ(data.startI, 0u);
   EXPECT_EQ(minIdx[0], 1u);
 }
 
