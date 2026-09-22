@@ -45,11 +45,13 @@ class EnergySensor {
 
   /**
    * Move constructor.
+   * @param other Sensor to move from.
    */
   EnergySensor(EnergySensor &&other);
 
   /**
    * Move assignment operator.
+   * @param other Sensor to move from.
    * @return Reference to this.
    */
   EnergySensor &operator=(EnergySensor &&other);
