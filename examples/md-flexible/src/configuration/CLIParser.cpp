@@ -623,13 +623,15 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         config.energySensorOption.value = *parsedOptions.begin();
+        break;
       }
       case decltype(config.threadCounts)::getoptChar: {
         const auto needles = autopas::utils::StringUtils::tokenize(strArg, autopas::utils::StringUtils::delimiters);
         std::set<int> threadCounts;
         for (const auto str : needles) {
           try {
-            const int threadCount = std::stoi(str);
+            int threadCount = std::stoi(str);
+            if (threadCount == 0) threadCount = autopas::autopas_get_max_threads();
             threadCounts.insert(threadCount);
           } catch (const exception &) {
             cerr << "Error parsing thread count options: " << strArg << endl;

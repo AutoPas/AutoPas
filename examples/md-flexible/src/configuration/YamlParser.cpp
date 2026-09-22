@@ -464,7 +464,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "List of thread count (int) options.";
         description = config.threadCounts.description;
         std::vector<std::string> threadCountErrors;
-        const auto threadCounts = parseComplexTypeValueSequence<int>(node, key, threadCountErrors);
+        auto threadCounts = parseComplexTypeValueSequence<int>(node, key, threadCountErrors);
         for (const auto error : threadCountErrors) {
           std::stringstream ss;
           ss << "YamlParser: Error parsing thread count." << std::endl
@@ -472,6 +472,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
              << "See AllOptions.yaml for examples." << std::endl;
           errors.push_back(ss.str());
         }
+        std::sort(threadCounts.begin(), threadCounts.end());
+        if (threadCounts[0] == 0) threadCounts[0] = autopas::autopas_get_max_threads();
         const std::set<int> threadCountsSet(threadCounts.begin(), threadCounts.end());
         if (threadCountErrors.empty() and not threadCounts.empty()) {
           (*config.threadCounts.value) = {threadCountsSet};

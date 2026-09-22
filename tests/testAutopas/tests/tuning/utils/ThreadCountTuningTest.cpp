@@ -12,7 +12,7 @@
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
-#include "generators/src/GridGenerator.h"
+#include "autopas/utils/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
@@ -51,21 +51,23 @@ void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
   tunerManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
-  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
-  autopasTools::generators::GridGenerator::fillWithParticles(logicHandler.getContainer(), {boxMax, boxMax, boxMax},
-                                                             Molecule());
+  autopas::generators::GridGenerator::fillWithParticles(logicHandler.getContainer(), {boxMax, boxMax, boxMax},
+                                                        Molecule());
   const size_t numInsertedMolecules = logicHandler.getContainer().size();
 
   int iterationsAfterTuning = 0;
-  while (stillTuning and iterationsAfterTuning < 1) {
+  for (int i = 0; i < 100 and iterationsAfterTuning < 1; i++) {
     // Should not have any leaving molecules in this test
     auto dummyMoleculesVec = logicHandler.updateContainer();
     stillTuning = logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
     if (not stillTuning) iterationsAfterTuning++;
   }
+  EXPECT_FALSE(stillTuning);
 
   EXPECT_EQ(numInsertedMolecules,
             logicHandler.getContainer().size());  // Should not have any leaving molecules in this test
