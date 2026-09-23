@@ -86,6 +86,9 @@ void AutoPas<Particle_T>::init() {
   _tuningManager = std::make_shared<TuningManager>(_autoTunerInfo);
   // Create autotuners for each interaction type
   for (const auto &interactionType : _allowedInteractionTypeOptions) {
+    // Every AoS configuration uses the not-applicable (N/A) vectorization pattern, so it is implicitly allowed. If it
+    // is already allowed, this does nothing.
+    _allowedVecPatternsOptions[interactionType].insert(VectorizationPatternOption::NA);
     const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
         _allowedContainers, _allowedTraversals[interactionType], _allowedLoadEstimators,
         _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors,
