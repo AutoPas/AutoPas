@@ -554,7 +554,7 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
             _sectionTimes._countingKernel._preparation.addTiming(endPrep-startBuild);
             
             double startCounting = bTimer.seconds();
-            Kokkos::parallel_for("vl_kokkos_rebuild_teams_countNeighbors", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
+            auto countKernel = KOKKOS_LAMBDA(const MemberType& teamHandle) {
                 const int i = teamHandle.league_rank();
 
                 const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
@@ -588,7 +588,9 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
                 Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
                     offsets(i) = count(0);
                 });
-            });
+            };
+            spdlog::info("counting team size {}", teamPolicy.team_size_recommended(countKernel, Kokkos::ParallelForTag()));
+            Kokkos::parallel_for("vl_kokkos_rebuild_teams_countNeighbors", teamPolicy, countKernel);
             Kokkos::fence();
             double endCounting = bTimer.seconds();
             _sectionTimes._countingKernel._kernel.addTiming(endCounting-startCounting);
@@ -617,7 +619,7 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
             spdlog::info("Number of neighbors found: {}", totalNeighbors);
 
             double startFill = bTimer.seconds();
-            Kokkos::parallel_for("vl_kokkos_rebuild_teams_fillNeighbors", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
+            auto fillKernel = KOKKOS_LAMBDA(const MemberType& teamHandle) {
                 const int i = teamHandle.league_rank();
 
                 const auto x1 = soa1Device.template operator()<Particle_T::AttributeNames::posX, true>(i);
@@ -646,7 +648,9 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
                         }
                     }
                 });
-            });
+            };
+            spdlog::info("filling team size {}", teamPolicy.team_size_recommended(fillKernel, Kokkos::ParallelForTag()));
+            Kokkos::parallel_for("vl_kokkos_rebuild_teams_countNeighbors", teamPolicy, fillKernel);
             Kokkos::fence();
             double endFill = bTimer.seconds();
             offsetsDual.modify_device();
@@ -873,6 +877,7 @@ class VerletListsKokkosGPURebuilding : public ParticleContainerInterface<Particl
 
     SectionTimings _sectionTimes{};
 
+    bool _useTeamsRebuild {true};  
     bool _useTeamsRebuild {true};  
 };
 

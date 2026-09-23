@@ -545,7 +545,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                                   .set_scratch_size(0, Kokkos::PerTeam(scratchBytes));
             double endPrep = buildTimer.seconds();
             double startKernel = buildTimer.seconds();
-            
+
             auto rebuildKernel = KOKKOS_LAMBDA(const MemberType& teamHandle) {
                 const int i = teamHandle.league_rank();
 
@@ -583,7 +583,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                     offsets(i) = i * maxNeighbors + finalCount;
                 });
             };
-	    spdlog::info("team size {}", teamPolicy.team_size_recommended(rebuildKernel, Kokkos::ParallelForTag()));
+            spdlog::info("team size {}", teamPolicy.team_size_recommended(rebuildKernel, Kokkos::ParallelForTag()));
             Kokkos::parallel_for("vl_kokkos_rebuild_teams", teamPolicy, rebuildKernel);
             Kokkos::fence();
             double endKernel = buildTimer.seconds();
@@ -830,3 +830,4 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
 };
 
 } 
+

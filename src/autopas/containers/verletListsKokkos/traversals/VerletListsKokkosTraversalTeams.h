@@ -158,6 +158,7 @@ private:
     const auto soa2Device = soa2.deviceView();
 
     auto teamPolicy = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>(N, _teamSize, Kokkos::AUTO);
+    spdlog::info("team size {}", teamPolicy.team_size());
     using MemberType = Kokkos::TeamPolicy<typename DeviceSpace::execution_space>::member_type;
     Kokkos::parallel_for("traversal", teamPolicy, KOKKOS_LAMBDA(const MemberType& teamHandle) {
       const int i = teamHandle.league_rank();
