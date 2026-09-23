@@ -31,7 +31,7 @@ class VCLClusterIterationTraversal : public TraversalInterface,
    * @param dataLayout The data layout to use. Currently, only AoS is supported.
    * @param useNewton3 If newton 3 should be used. Currently, only false is supported.
    */
-  explicit VCLClusterIterationTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize,
+  explicit VCLClusterIterationTraversal(PairwiseFunctor &pairwiseFunctor, size_t clusterSize,
                                         DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3),
         _functor(pairwiseFunctor),
@@ -39,9 +39,11 @@ class VCLClusterIterationTraversal : public TraversalInterface,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_cluster_iteration; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (_dataLayout == DataLayoutOption::aos or _dataLayout == DataLayoutOption::soa) and not _useNewton3;
-  }
+  /**
+   * VCL Cluster Iteration is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     if (_dataLayout == DataLayoutOption::soa) {
@@ -66,7 +68,7 @@ class VCLClusterIterationTraversal : public TraversalInterface,
   }
 
  private:
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
   internal::VCLClusterFunctor<ParticleType, PairwiseFunctor> _clusterFunctor;
 };
 }  // namespace autopas

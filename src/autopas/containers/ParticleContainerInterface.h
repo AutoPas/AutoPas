@@ -8,6 +8,7 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <vector>
 
 #include "autopas/cells/ParticleCell.h"
@@ -19,6 +20,7 @@
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/OpenMPConfigurator.h"
+#include "autopas/utils/SortingThresholdInfoInterface.h"
 #include "autopas/utils/inBox.h"
 #include "autopas/utils/optRef.h"
 
@@ -253,6 +255,24 @@ class ParticleContainerInterface {
   virtual void computeInteractions(TraversalInterface *traversal) = 0;
 
   /**
+   * Set the aos-sorting-threshold for traversals that use the CellFunctor.
+   * Cell-based containers store this shared_ptr as-is (agnostic to the concrete shape it points to) and forward it
+   * to freshly generated traversals in prepareTraversal(). Containers without a CellFunctor should explicitly
+   * override with an empty body.
+   * @param aosSortingThresholds
+   */
+  virtual void setAoSSortingThresholds(std::shared_ptr<const SortingThresholdInfoInterface> aosSortingThresholds) = 0;
+
+  /**
+   * Set the SoA sorting-threshold for traversals that use the CellFunctor.
+   * Cell-based containers store this shared_ptr as-is (agnostic to the concrete shape it points to) and forward it
+   * to freshly generated traversals in prepareTraversal(). Containers without a CellFunctor should explicitly
+   * override with an empty body.
+   * @param soaSortingThresholds
+   */
+  virtual void setSoASortingThresholds(std::shared_ptr<const SortingThresholdInfoInterface> soaSortingThresholds) = 0;
+
+  /**
    * Get the upper corner of the container without halo.
    * @return Upper corner of the container.
    */
@@ -281,22 +301,6 @@ class ParticleContainerInterface {
    * @return verletSkin
    */
   [[nodiscard]] virtual double getVerletSkin() const = 0;
-
-  /**
-   * Return the number of time-steps since last neighbor list rebuild
-   * @note: The value has to be set by setStepsSinceLastRebuild() from outside the container. Otherwise this will always
-   * return 0
-   * @return steps since last rebuild
-   */
-  [[nodiscard]] virtual size_t getStepsSinceLastRebuild() const { return _stepsSinceLastRebuild; }
-
-  /**
-   * Set the number of time-steps since last neighbor list rebuild
-   * @param stepsSinceLastRebuild steps since last neighbor list rebuild
-   */
-  virtual void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) {
-    _stepsSinceLastRebuild = stepsSinceLastRebuild;
-  }
 
   /**
    * Return the interaction length (cutoff+skin) of the container.
@@ -421,13 +425,6 @@ class ParticleContainerInterface {
   virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
 
  protected:
-  /**
-   * Stores the number of time-steps since last neighbor list rebuild
-   * @note: The value has to be set by setStepsSinceLastRebuild() from outside the container. Otherwise this will always
-   * be 0
-   */
-  size_t _stepsSinceLastRebuild{0};
-
   /**
    * Skin distance a particle is allowed to move in one time-step.
    */

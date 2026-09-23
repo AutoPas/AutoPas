@@ -36,6 +36,8 @@ class TuningDataLogger {
 
   /**
    * Log the result of a tuning phase.
+   * @note In the case of multiple AutoTuners, the reducedValue is not necessarily the decisive one.
+   * (see https://github.com/AutoPas/AutoPas/issues/1141)
    * @param configuration
    * @param samplesRebuildingNeighborLists
    * @param samplesTraverseInteractions

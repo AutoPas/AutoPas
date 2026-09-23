@@ -29,7 +29,7 @@ class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalIn
    * @param dataLayout The data layout to use.
    * @param useNewton3 If newton 3 should be used. Only false is supported.
    */
-  explicit VCLC01BalancedTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize, DataLayoutOption dataLayout,
+  explicit VCLC01BalancedTraversal(PairwiseFunctor &pairwiseFunctor, size_t clusterSize, DataLayoutOption dataLayout,
                                    bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3),
         _functor(pairwiseFunctor),
@@ -37,9 +37,11 @@ class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalIn
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c01_balanced; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (_dataLayout == DataLayoutOption::aos or _dataLayout == DataLayoutOption::soa) and not _useNewton3;
-  }
+  /**
+   * VCL C01 Balanced is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     if (_dataLayout != DataLayoutOption::soa) return;
@@ -90,7 +92,7 @@ class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalIn
   bool needsStaticClusterThreadPartition() override { return true; }
 
  private:
-  PairwiseFunctor *_functor;
+  PairwiseFunctor &_functor;
   internal::VCLClusterFunctor<Particle_T, PairwiseFunctor> _clusterFunctor;
 };
 }  // namespace autopas

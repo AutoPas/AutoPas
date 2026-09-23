@@ -11,7 +11,6 @@
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
-#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/EnergySensorOption.h"
@@ -22,8 +21,10 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/OpenMPConfigurator.h"
@@ -579,7 +580,7 @@ class AutoPas {
    * get the bool value indicating if the search space is trivial (not more than one configuration to test).
    * @return bool indicating if search space is trivial.
    */
-  [[nodiscard]] bool searchSpaceIsTrivial();
+  [[nodiscard]] bool searchSpaceIsTrivial() const;
 
   /**
    * Set coordinates of the lower corner of the domain.
@@ -796,24 +797,6 @@ class AutoPas {
   }
 
   /**
-   * Get acquisition function used for tuning
-   * @return
-   */
-  [[nodiscard]] AcquisitionFunctionOption getAcquisitionFunction() const {
-    return _tuningStrategyFactoryInfo.acquisitionFunctionOption;
-  }
-
-  /**
-   * Set acquisition function for tuning.
-   * For possible acquisition function choices see options::AcquisitionFunctionOption::Value.
-   * @note This function is only relevant for the bayesian based searches.
-   * @param acqFun acquisition function
-   */
-  void setAcquisitionFunction(AcquisitionFunctionOption acqFun) {
-    _tuningStrategyFactoryInfo.acquisitionFunctionOption = acqFun;
-  }
-
-  /**
    * Get extrapolation method for the prediction of the configuration performance.
    * @return
    */
@@ -960,13 +943,13 @@ class AutoPas {
       _allowedNewton3Options[interactionType] = allowedNewton3Options;
     }
   }
-  
+
   /**
    * Set allowed OpenMP chunk sizes.
    * @param allowedChunkSizes A set of allowed OpenMP chunk sizes. If 1 is not included, some traversals which must
    * use static, 1 scheduling will never be selected.
    */
-  void setAllowedOpenMPChunkSizes(const NumberSet<size_t> &allowedChunkSizes ) {
+  void setAllowedOpenMPChunkSizes(const NumberSet<size_t> &allowedChunkSizes) {
     _allowedOpenMPChunkSizes = std::move(allowedChunkSizes.clone());
   }
 
@@ -975,7 +958,38 @@ class AutoPas {
    * @param allowedKinds A set of allowed OpenMP Scheduler kinds. If static is not included, some traversals which must
    * use static, 1 scheduling will never be selected. (It is highly recommended to not include only static.)
    */
-  void setAllowedOpenMPScheduleKinds(const std::set<OpenMPKindOption> &allowedKinds) { _allowedOpenMPKinds = allowedKinds; }
+  void setAllowedOpenMPScheduleKinds(const std::set<OpenMPKindOption> &allowedKinds) {
+    _allowedOpenMPKinds = allowedKinds;
+  }
+
+  /**
+   * Get the list of allowed vectorization pattern options.
+   * @param interactionType Get allowed vectorization pattern options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
+   * @return
+   */
+  [[nodiscard]] const std::set<VectorizationPatternOption> &getAllowedVecPatternOptions(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedVecPatternsOptions.at(interactionType);
+  }
+
+  /**
+   * Set the list of allowed vectorization pattern options
+   * For possible options, see options::VectorizationOption::Value
+   * @param allowedVecPatterns
+   * @param interactionType Set allowed vectorization pattern options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise
+   */
+  void setAllowedVecPatterns(const std::set<VectorizationPatternOption> &allowedVecPatterns,
+                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
+        _allowedVecPatternsOptions[iType] = allowedVecPatterns;
+      }
+    } else {
+      _allowedVecPatternsOptions[interactionType] = allowedVecPatterns;
+    }
+  }
 
   /**
    * Set the list of allowed interaction types.
@@ -994,9 +1008,9 @@ class AutoPas {
   [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>>
   getCurrentConfigs() const {
     std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>> currentConfigs;
-    currentConfigs.reserve(_autoTuners.size());
+    currentConfigs.reserve(_tuningManager->getAutoTuners().size());
 
-    for (const auto &[type, tuner] : _autoTuners) {
+    for (const auto &[type, tuner] : _tuningManager->getAutoTuners()) {
       currentConfigs.emplace(type, std::cref(tuner->getCurrentConfig()));
     }
     return currentConfigs;
@@ -1123,18 +1137,42 @@ class AutoPas {
   const std::string &getRuleFileName() const { return _tuningStrategyFactoryInfo.ruleFileName; }
 
   /**
-   * Set the sorting-threshold for traversals that use the CellFunctor
+   * Set the aos-sorting-threshold for traversals that use the CellFunctor
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
-   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
+   * @param aosSortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
-  void setSortingThreshold(size_t sortingThreshold) { _sortingThreshold = sortingThreshold; }
+  void setAoSSortingThreshold(size_t aosSortingThreshold) { _autoTunerInfo.aosSortingThreshold = aosSortingThreshold; }
 
   /**
-   * Get the sorting-threshold for traversals that use the CellFunctor.
-   * @return sorting-threshold
+   * Get the aos-sorting-threshold for traversals that use the CellFunctor.
+   * @return aos-sorting-threshold
    */
-  size_t getSortingThreshold() const { return _sortingThreshold; }
+  size_t getAoSSortingThreshold() const { return _autoTunerInfo.aosSortingThreshold; }
+
+  /**
+   * Set the SoA sorting-threshold.
+   * If the sum of the SoA buffer sizes of two cells exceeds this value, the SoA path uses SoAFunctorPairSorted.
+   * @param soaSortingThreshold Sum of the SoA buffer sizes from which SoA sorting should be enabled.
+   */
+  void setSoASortingThreshold(size_t soaSortingThreshold) { _autoTunerInfo.soaSortingThreshold = soaSortingThreshold; }
+
+  /**
+   * Get the SoA sorting-threshold.
+   * @return SoA sorting-threshold
+   */
+  size_t getSoASortingThreshold() const { return _autoTunerInfo.soaSortingThreshold; }
+
+  /**
+   * Enable or disable benchmark-based AoS/SoA pair-sorting threshold selection.
+   * When enabled, AutoPas runs a micro-benchmark (once per interaction type) to determine per-direction-type
+   * thresholds. SoA thresholds are only benchmarked for functors that support SoA sorting; otherwise the fixed fallback
+   * remains.
+   * @param useSortingThresholdBenchmark
+   */
+  void setUseSortingThresholdBenchmark(bool useSortingThresholdBenchmark) {
+    _logicHandlerInfo.useSortingThresholdBenchmark = useSortingThresholdBenchmark;
+  }
 
  private:
   autopas::ParticleContainerInterface<Particle_T> &getContainer();
@@ -1192,6 +1230,15 @@ class AutoPas {
       {InteractionTypeOption::pairwise, Newton3Option::getMostOptions()},
       {InteractionTypeOption::triwise, Newton3Option::getMostOptions()}};
   /**
+   * Vector Interaction Patterns
+   */
+  std::unordered_map<InteractionTypeOption::Value, std::set<VectorizationPatternOption>> _allowedVecPatternsOptions{
+      {InteractionTypeOption::pairwise, VectorizationPatternOption::getMostOptions()},
+      // Note: Currently Vectorization Patterns are not implemented for threebody interactions. p1xVec is used as
+      // default for SoA, while AoS always uses the not-applicable (N/A) pattern.
+      {InteractionTypeOption::triwise,
+       std::set<VectorizationPatternOption>{VectorizationPatternOption::NA, VectorizationPatternOption::p1xVec}}};
+  /**
    * What kind of interactions AutoPas should expect.
    * By default AutoPas is configured to only use pairwise interactions.
    */
@@ -1212,22 +1259,19 @@ class AutoPas {
    */
   std::set<OpenMPKindOption> _allowedOpenMPKinds{OpenMPKindOption::getAllOptions()};
   /**
-   * Allowed OpenMP chunks sizes. 
+   * Allowed OpenMP chunks sizes.
    */
   std::unique_ptr<NumberSet<size_t>> _allowedOpenMPChunkSizes{
-      std::make_unique<NumberSetFinite<size_t>>(std::set<size_t>({1}))
-  };
+      std::make_unique<NumberSetFinite<size_t>>(std::set<size_t>({1}))};
   /**
    * LogicHandler of autopas.
    */
-  std::unique_ptr<autopas::LogicHandler<Particle_T>> _logicHandler;
+  std::unique_ptr<LogicHandler<Particle_T>> _logicHandler;
 
   /**
-   * All AutoTuners used in this instance of AutoPas.
-   * There can be up to one per interaction type.
+   * TuningManager which contains all the AutoTuner objects and coordinates them.
    */
-  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> _autoTuners;
-
+  std::shared_ptr<TuningManager> _tuningManager;
   /**
    * Stores whether the mpi communicator was provided externally or not
    */
@@ -1237,10 +1281,6 @@ class AutoPas {
    * This is useful when multiple instances of AutoPas exist, especially in an MPI context.
    */
   std::string _outputSuffix{""};
-  /**
-   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
-   */
-  size_t _sortingThreshold{8};
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.
    * Triggers reserve() and provides a parallel loop with deliberate scheduling.

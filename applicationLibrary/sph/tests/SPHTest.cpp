@@ -8,6 +8,7 @@
 
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 
 using DensityFunctorType = sphLib::SPHCalcDensityFunctor<sphLib::SPHParticle>;
 
@@ -221,10 +222,10 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
   autopas::FullParticleCell<sphLib::SPHParticle> cellUsingAoS;
   {
     sphLib::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
-    autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingSoA, defaultSphParticle, {0., 0., 0.},
-                                                                  {1., 1., 1.}, 30);
-    autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingAoS, defaultSphParticle, {0., 0., 0.},
-                                                                  {1., 1., 1.}, 30);
+    autopas::generators::UniformGenerator::fillWithParticles(cellUsingSoA, defaultSphParticle, {0., 0., 0.},
+                                                             {1., 1., 1.}, 30);
+    autopas::generators::UniformGenerator::fillWithParticles(cellUsingAoS, defaultSphParticle, {0., 0., 0.},
+                                                             {1., 1., 1.}, 30);
   }
 
   // declare functor
@@ -270,10 +271,10 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
   autopas::FullParticleCell<sphLib::SPHParticle> cellUsingAoS;
   {
     sphLib::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
-    autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingSoA, defaultSphParticle, {0., 0., 0.},
-                                                                  {1., 1., 1.}, 30);
-    autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingAoS, defaultSphParticle, {0., 0., 0.},
-                                                                  {1., 1., 1.}, 30);
+    autopas::generators::UniformGenerator::fillWithParticles(cellUsingSoA, defaultSphParticle, {0., 0., 0.},
+                                                             {1., 1., 1.}, 30);
+    autopas::generators::UniformGenerator::fillWithParticles(cellUsingAoS, defaultSphParticle, {0., 0., 0.},
+                                                             {1., 1., 1.}, 30);
   }
 
   // simulate density functor call by setting density to sth. between 0 and 1
@@ -343,14 +344,14 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
   autopas::FullParticleCell<sphLib::SPHParticle> cellUsingAoS2;
   {
     sphLib::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
-    autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingSoA1, defaultSphParticle, {0., 0., 0.},
-                                                                  {.5, 1., 1.}, 30);
-    autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingAoS1, defaultSphParticle, {0., 0., 0.},
-                                                                  {.5, 1., 1.}, 30);
-    autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingAoS2, defaultSphParticle, {0.5, 0., 0.},
-                                                                  {1., 1., 1.}, 20);
-    autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingSoA2, defaultSphParticle, {0.5, 0., 0.},
-                                                                  {1., 1., 1.}, 20);
+    autopas::generators::UniformGenerator::fillWithParticles(cellUsingSoA1, defaultSphParticle, {0., 0., 0.},
+                                                             {.5, 1., 1.}, 30);
+    autopas::generators::UniformGenerator::fillWithParticles(cellUsingAoS1, defaultSphParticle, {0., 0., 0.},
+                                                             {.5, 1., 1.}, 30);
+    autopas::generators::UniformGenerator::fillWithParticles(cellUsingAoS2, defaultSphParticle, {0.5, 0., 0.},
+                                                             {1., 1., 1.}, 20);
+    autopas::generators::UniformGenerator::fillWithParticles(cellUsingSoA2, defaultSphParticle, {0.5, 0., 0.},
+                                                             {1., 1., 1.}, 20);
   }
 
   // declare functor
@@ -406,14 +407,14 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
   autopas::FullParticleCell<sphLib::SPHParticle> cellUsingAoS2;
   {
     sphLib::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
-    autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingSoA1, defaultSphParticle, {0., 0., 0.},
-                                                                  {.5, 1., 1.}, 30);
-    autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingAoS1, defaultSphParticle, {0., 0., 0.},
-                                                                  {.5, 1., 1.}, 30);
-    autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingSoA2, defaultSphParticle, {0.5, 0., 0.},
-                                                                  {1., 1., 1.}, 20);
-    autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingAoS2, defaultSphParticle, {0.5, 0., 0.},
-                                                                  {1., 1., 1.}, 20);
+    autopas::generators::UniformGenerator::fillWithParticles(cellUsingSoA1, defaultSphParticle, {0., 0., 0.},
+                                                             {.5, 1., 1.}, 30);
+    autopas::generators::UniformGenerator::fillWithParticles(cellUsingAoS1, defaultSphParticle, {0., 0., 0.},
+                                                             {.5, 1., 1.}, 30);
+    autopas::generators::UniformGenerator::fillWithParticles(cellUsingSoA2, defaultSphParticle, {0.5, 0., 0.},
+                                                             {1., 1., 1.}, 20);
+    autopas::generators::UniformGenerator::fillWithParticles(cellUsingAoS2, defaultSphParticle, {0.5, 0., 0.},
+                                                             {1., 1., 1.}, 20);
   }
 
   // simulate density functor call by setting density to sth. between 0 and 1
@@ -702,8 +703,8 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
 
   sphLib::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5,
                                          cutoff / sphLib::SPHKernels::getKernelSupportRadius(), 0.6);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
-      verletLists, defaultSPHParticle, verletLists.getBoxMin(), verletLists.getBoxMax(), numMolecules);
+  autopas::generators::UniformGenerator::fillWithParticles(verletLists, defaultSPHParticle, verletLists.getBoxMin(),
+                                                           verletLists.getBoxMax(), numMolecules);
 
   // init particles in verlet list container
   init(verletLists);
@@ -715,21 +716,21 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
 
   if (dataLayoutOption == autopas::DataLayoutOption::aos) {
     autopas::LCC08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJ(
-        linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr, linkedCells.getInteractionLength(),
+        linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), fnctr, linkedCells.getInteractionLength(),
         linkedCells.getCellBlock().getCellLength(), autopas::DataLayoutOption::aos, true);
 
     autopas::VLListIterationTraversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJVerlet(
-        &fnctr, autopas::DataLayoutOption::aos, true);
+        fnctr, autopas::DataLayoutOption::aos, true);
 
     verletLists.rebuildNeighborLists(&traversalLJVerlet);
     verletLists.computeInteractions(&traversalLJVerlet);
     linkedCells.computeInteractions(&traversalLJ);
   } else {
     autopas::LCC08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJ(
-        linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr, linkedCells.getInteractionLength(),
+        linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), fnctr, linkedCells.getInteractionLength(),
         linkedCells.getCellBlock().getCellLength(), autopas::DataLayoutOption::soa, true);
     autopas::VLListIterationTraversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJVerlet(
-        &fnctr, autopas::DataLayoutOption::soa, true);
+        fnctr, autopas::DataLayoutOption::soa, true);
 
     verletLists.rebuildNeighborLists(&traversalLJVerlet);
     verletLists.computeInteractions(&traversalLJVerlet);

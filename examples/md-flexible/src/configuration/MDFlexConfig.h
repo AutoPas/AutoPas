@@ -12,7 +12,6 @@
 #include <set>
 #include <utility>
 
-#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/EnergySensorOption.h"
@@ -23,6 +22,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
@@ -204,7 +204,7 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_HWY };
 
   /**
    * Choice of the Triwise functor
@@ -289,6 +289,12 @@ class MDFlexConfig {
       "List of newton3 options to use for the triwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
   /**
+   * vectorizationPattern
+   */
+  MDFlexOption<std::set<autopas::VectorizationPatternOption>, __LINE__> vecPatternOptions{
+      autopas::VectorizationPatternOption::getMostOptions(), "vectorization-pattern", true,
+      "Vectorization Pattern for HWY Functor."};
+  /**
    * cellSizeFactors
    */
   MDFlexOption<std::shared_ptr<autopas::NumberSet<double>>, __LINE__> cellSizeFactors{
@@ -300,13 +306,13 @@ class MDFlexConfig {
   MDFlexOption<std::set<autopas::OpenMPKindOption>, __LINE__> openMPKindOptions{
       autopas::OpenMPKindOption::getMostOptions(), "openmp-schedule-kinds", true,
       "List of OpenMP Scheduling Kind options to use. Possible Values: " +
-      autopas::utils::ArrayUtils::to_string(autopas::OpenMPKindOption::getAllOptions(), " ", {"(", ")"})};
+          autopas::utils::ArrayUtils::to_string(autopas::OpenMPKindOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * openMPChunkSizes
    */
   MDFlexOption<std::shared_ptr<autopas::NumberSet<size_t>>, __LINE__> openMPChunkSizes{
-    std::make_shared<autopas::NumberSetFinite<size_t>>(std::set<size_t>{1}), "openmp-chunk-sizes", true,
-    "Chunk Sizes that can be used for OpenMP Scheduling."};
+      std::make_shared<autopas::NumberSetFinite<size_t>>(std::set<size_t>{1}), "openmp-chunk-sizes", true,
+      "Chunk Sizes that can be used for OpenMP Scheduling."};
   /**
    * logFileName
    */
@@ -508,15 +514,6 @@ class MDFlexConfig {
       true,
       "Indicates in which dimensions the global domain can be subdivided by the MPI decomposition"};
 
-  /**
-   * acquisitionFunctionOption
-   */
-  MDFlexOption<autopas::AcquisitionFunctionOption, __LINE__> acquisitionFunctionOption{
-      autopas::AcquisitionFunctionOption::upperConfidenceBound, "tuning-acquisition-function", true,
-      "For Bayesian based tuning strategies: Function to determine the predicted knowledge gain when testing a given "
-      "configuration. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), " ", {"(", ")"})};
-
   // Simulation Options:
   /**
    * cutoff
@@ -528,7 +525,7 @@ class MDFlexConfig {
   MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
                                                       FunctorOption::none, "functor", true,
                                                       "Pairwise force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
+                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-highway)"};
   /**
    * functorOption3B
    */
@@ -579,16 +576,39 @@ class MDFlexConfig {
   MDFlexOption<bool, __LINE__> pauseSimulationDuringTuning{false, "pause-simulation-during-tuning", false,
                                                            "Pauses the update of the simulation during tuning phases."};
   /**
-   * sortingThreshold
+   * aosSortingThreshold
    * This value is used in traversal that use the CellFunctor. If the sum of the number of particles in two cells is
    * greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid unnecessary
    * distance checks.
+   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
-  MDFlexOption<size_t, __LINE__> sortingThreshold{
-      8, "sorting-threshold", true,
+  MDFlexOption<size_t, __LINE__> aosSortingThreshold{
+      8, "aos-sorting-threshold", true,
       "Threshold for traversals that use the CellFunctor to start sorting. If the sum of the number of particles in "
       "two cells is greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid "
       "unnecessary distance checks."};
+  /**
+   * soaSortingThreshold
+   * If the sum of the SoA buffer sizes of two cells is greater or equal to this value, the SoA functor pair path
+   * sorts particles by their projection onto the cell-pair direction vector before computing interactions.
+   * Default comes from the LJFunctorHWY Benchmarks.
+   */
+  MDFlexOption<size_t, __LINE__> soaSortingThreshold{
+      100, "soa-sorting-threshold", true,
+      "Threshold for the SoA functor pair path to start sorting. If the sum of the SoA buffer sizes of two cells is "
+      "greater or equal to that value, particles are sorted by their projection onto the cell-pair direction vector "
+      "before computing interactions."};
+  /**
+   * useSortingThresholdBenchmark
+   * If true, AutoPas runs a micro-benchmark to determine the optimal AoS/SoA pair-sorting threshold per cell layout
+   * (Face, Edge, Corner) instead of the fixed aos/soa-sorting-threshold. SoA Thresholds are only determined for
+   * functors that support SoA sorting.
+   */
+  MDFlexOption<bool, __LINE__> useSortingThresholdBenchmark{
+      false, "use-sorting-threshold-benchmark", true,
+      "If true, AutoPas runs a micro-benchmark to determine the optimal AoS/SoA pair-sorting threshold per cell layout "
+      "(Face, Edge, Corner) instead of the fixed aos/soa-sorting-threshold. SoA Thresholds are only determined for "
+      "functors that support SoA sorting."};
 
   // Options for additional Object Generation on command line
   /**

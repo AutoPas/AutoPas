@@ -6,7 +6,6 @@
 
 #include "OptionTest.h"
 
-#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
@@ -87,9 +86,6 @@ TEST(OptionTest, parseSelectorOptionsTest) {
 
 TEST(OptionTest, parseTuningStrategyOptionsTest) {
   std::map<autopas::TuningStrategyOption, std::string> mapEnumString = {
-      {autopas::TuningStrategyOption::activeHarmony, "harmony"},
-      {autopas::TuningStrategyOption::bayesianSearch, "bayesian"},
-      {autopas::TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster"},
       {autopas::TuningStrategyOption::fullSearch, "full"},
       {autopas::TuningStrategyOption::mpiDivideAndConquer, "divide&conquer"},
       {autopas::TuningStrategyOption::predictiveTuning, "predictive"},
@@ -102,21 +98,6 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TuningStrategyOption::getOptionNames().size());
-
-  testParseOptionsIndividually(mapEnumString);
-  testParseOptionsCombined(mapEnumString);
-}
-
-TEST(OptionTest, parseAcquisitionFunctionOptionsTest) {
-  std::map<autopas::AcquisitionFunctionOption, std::string> mapEnumString = {
-      {autopas::AcquisitionFunctionOption::upperConfidenceBound, "upperconfbound"},
-      {autopas::AcquisitionFunctionOption::expectedImprovement, "expimprv"},
-      {autopas::AcquisitionFunctionOption::mean, "mean"},
-      {autopas::AcquisitionFunctionOption::probabilityOfImprovement, "probofimprv"},
-      {autopas::AcquisitionFunctionOption::variance, "varianz"},
-  };
-
-  EXPECT_EQ(mapEnumString.size(), autopas::AcquisitionFunctionOption::getOptionNames().size());
 
   testParseOptionsIndividually(mapEnumString);
   testParseOptionsCombined(mapEnumString);
@@ -210,8 +191,7 @@ TYPED_TEST_P(OptionTest, to_stringTest) {
 REGISTER_TYPED_TEST_SUITE_P(OptionTest, parseExactOptionsTest, to_stringTest);
 
 // instantiate tests for all option types
-using OptionTypes =
-    ::testing::Types<autopas::AcquisitionFunctionOption, autopas::ContainerOption, autopas::DataLayoutOption,
-                     autopas::Newton3Option, autopas::SelectorStrategyOption, autopas::TraversalOption,
-                     autopas::TuningStrategyOption, autopas::OpenMPKindOption>;
+using OptionTypes = ::testing::Types<autopas::ContainerOption, autopas::DataLayoutOption, autopas::Newton3Option,
+                                     autopas::OpenMPKindOption, autopas::SelectorStrategyOption,
+                                     autopas::TraversalOption, autopas::TuningStrategyOption>;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, OptionTest, OptionTypes);

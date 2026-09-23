@@ -239,9 +239,40 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
 
   /**
    * Set of options that are very unlikely to be interesting.
+   *
+   * These are Auto4OMP's automated selection methods, and LB4OMP's scheduling techniques that Auto4OMP does not use.
+   * Several of the latter need data that LB4OMP only has after a profiling run (see KMP_PROFILE_DATA), and abort
+   * inside the runtime otherwise. These have not been tested with AutoPas, although are not expected to perform well.
+   * Auto4OMP's selection methods pick a scheduling technique themselves, which overlaps with what AutoPas' tuning
+   * does and are currently broken, so they are not useful as tunable options here.
+   *
    * @return
    */
-  static std::set<OpenMPKindOption> getDiscouragedOptions() { return {}; }
+  static std::set<OpenMPKindOption> getDiscouragedOptions() {
+    return {
+        OpenMPKindOption::auto4omp_randomsel,
+        OpenMPKindOption::auto4omp_exhaustivesel,
+        OpenMPKindOption::auto4omp_binarySearch,
+        OpenMPKindOption::auto4omp_expertsel,
+#ifdef AUTOPAS_USE_LB4OMP
+        OpenMPKindOption::lb4omp_profiling,
+        OpenMPKindOption::lb4omp_fsc,
+        OpenMPKindOption::lb4omp_mfsc,
+        OpenMPKindOption::lb4omp_tap,
+        OpenMPKindOption::lb4omp_fac,
+        OpenMPKindOption::lb4omp_faca,
+        OpenMPKindOption::lb4omp_bold,
+        OpenMPKindOption::lb4omp_fac2,
+        OpenMPKindOption::lb4omp_wf,
+        OpenMPKindOption::lb4omp_af,
+        OpenMPKindOption::lb4omp_awf,
+        OpenMPKindOption::lb4omp_tfss,
+        OpenMPKindOption::lb4omp_fiss,
+        OpenMPKindOption::lb4omp_viss,
+        OpenMPKindOption::lb4omp_rnd,
+#endif
+    };
+  }
 
   /**
    * Provides a way to iterate over the possible choices of OpenMPKindOption.

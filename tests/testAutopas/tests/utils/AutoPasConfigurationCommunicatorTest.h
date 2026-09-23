@@ -29,9 +29,11 @@ class AutoPasConfigurationCommunicatorTest : public AutoPasTestBase {
   const std::set<autopas::DataLayoutOption> dataLayoutOptions = autopas::DataLayoutOption::getMostOptions();
   const std::set<autopas::Newton3Option> newton3Options = autopas::Newton3Option::getMostOptions();
   const autopas::NumberSetFinite<double> cellSizeFactors = {0.5, 1.0, 1.5};
-  const std::set<autopas::OpenMPKindOption> ompKindOptions = autopas::OpenMPKindOption::getAllOptions();
+  const std::set<autopas::OpenMPKindOption> ompKindOptions = autopas::OpenMPKindOption::getMostOptions();
   const autopas::NumberSetFinite<size_t> ompChunkSizes = {1, 2, 250};
   const std::set<autopas::TraversalOption> pairwiseTraversalOptions =
       autopas::TraversalOption::getMostPairwiseOptions();
   const std::set<autopas::TraversalOption> triwiseTraversalOptions = autopas::TraversalOption::getMostTriwiseOptions();
+  const std::set<autopas::VectorizationPatternOption> vecPatternOptions =
+      autopas::VectorizationPatternOption::getMostOptions();
 };

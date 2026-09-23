@@ -8,10 +8,11 @@
 
 #include <gmock/gmock.h>
 
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ReferenceParticleCell.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 
 template <class Particle_T>
 class MockPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, MockPairwiseFunctor<Particle_T>> {
@@ -30,11 +31,10 @@ class MockPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, MockPair
                autopas::SoAView<typename Particle_T::SoAArraysType> soa2, bool newton3),
               (override));
 
-  // virtual void SoAFunctorVerlet(SoAView &soa, const std::vector, (override)<std::vector<size_t,
-  // AlignedAllocator<size_t>>> &neighborList, size_t iFrom, size_t iTo, bool newton3)
+  // virtual void SoAFunctorVerlet(SoAView &soa, size_t indexFirst, std::span<const size_t> neighborList, bool newton3)
   MOCK_METHOD(void, SoAFunctorVerlet,
-              (autopas::SoAView<typename Particle_T::SoAArraysType> soa, size_t indexFirst,
-               (const std::vector<size_t, autopas::AlignedAllocator<size_t>> &), bool newton3),
+              (autopas::SoAView<typename Particle_T::SoAArraysType> soa, const size_t indexFirst,
+               std::span<const size_t> neighborList, bool newton3),
               (override));
 
   MOCK_METHOD(void, SoALoader,
@@ -59,9 +59,12 @@ class MockPairwiseFunctor : public autopas::PairwiseFunctor<Particle_T, MockPair
   // virtual bool allowsNonNewton3() { return false; }
   MOCK_METHOD(bool, allowsNonNewton3, (), (override));
 
-  //  bool isRelevantForTuning() { return true; }
+  // bool isRelevantForTuning() { return true; }
   MOCK_METHOD(bool, isRelevantForTuning, (), (override));
 
-  //  std::string getName() { return "functorName"; }
+  // std::string getName() { return "functorName"; }
   MOCK_METHOD(std::string, getName, (), (override));
+
+  // bool isSoAVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) { return true; }
+  MOCK_METHOD(bool, isSoAVecPatternAllowed, (const autopas::VectorizationPatternOption::Value), (override));
 };

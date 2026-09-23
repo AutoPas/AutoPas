@@ -170,6 +170,18 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     traversal->endTraversal();
   }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setAoSSortingThresholds()
+   * This container does not use a CellFunctor, so the function has no effect here.
+   */
+  void setAoSSortingThresholds(std::shared_ptr<const SortingThresholdInfoInterface> aosSortingThresholds) override {}
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::setSoASortingThresholds()
+   * This container does not use a CellFunctor, so the function has no effect here.
+   */
+  void setSoASortingThresholds(std::shared_ptr<const SortingThresholdInfoInterface> soaSortingThresholds) override {}
+
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     const auto particlesPerTower = (numParticles + numParticlesHaloEstimate) / _towerBlock.size();
     for (auto &tower : _towerBlock) {
@@ -891,7 +903,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @param functor The functor to use for loading the particles into the SoA.
    */
   template <class Functor>
-  void loadParticlesIntoSoAs(Functor *functor) {
+  void loadParticlesIntoSoAs(Functor &functor) {
     const auto numTowers = _towerBlock.size();
 
     // ToDo -> How much impact does this loop make?
@@ -907,7 +919,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @param functor The functor to use for extracting the SoAs into the particles..
    */
   template <class Functor>
-  void extractParticlesFromSoAs(Functor *functor) {
+  void extractParticlesFromSoAs(Functor &functor) {
     const auto numTowers = _towerBlock.size();
 
     // ToDo -> How much impact does this loop make?

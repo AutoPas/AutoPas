@@ -8,7 +8,6 @@
 
 #include <string>
 
-#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/InteractionTypeOption.h"
 #include "autopas/utils/WrapMPI.h"
@@ -48,12 +47,6 @@ struct TuningStrategyFactoryInfo {
    * Any configuration that is slower than the fastest times this factor will be blacklisted.
    */
   double relativeBlacklistRange{3};
-
-  // Bayesian Strategies Options
-  /**
-   * Function used to predict informational gain.
-   */
-  AcquisitionFunctionOption acquisitionFunctionOption{AcquisitionFunctionOption::upperConfidenceBound};
 
   // Rule Based Tuning Options
   /**

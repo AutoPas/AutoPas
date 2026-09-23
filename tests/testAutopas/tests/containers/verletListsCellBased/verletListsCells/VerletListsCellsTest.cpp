@@ -12,7 +12,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
 #include "autopas/particles/ParticleDefinitions.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -38,7 +38,7 @@ void applyFunctor(MockPairwiseFunctor<ParticleFP64> &functor, const double cellS
   verletLists.addParticle(p2);
 
   autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCAllCellsNeighborList<ParticleFP64>> traversal(
-      verletLists.getCellsPerDimension(), &functor, verletLists.getInteractionLength(), verletLists.getCellLength(),
+      verletLists.getCellsPerDimension(), functor, verletLists.getInteractionLength(), verletLists.getCellLength(),
       autopas::DataLayoutOption::aos, true, autopas::ContainerOption::verletListsCells);
 
   verletLists.rebuildNeighborLists(&traversal);
@@ -79,19 +79,19 @@ void soaTest(const double cellSizeFactor, autopas::VerletListsCellsHelpers::VLCB
       min, max, cutoff, 0.01, cellSizeFactor, loadEstimator, buildType);
 
   Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),
-                                                                verletLists1.getBoxMax(), 100);
-  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
-                                                                verletLists2.getBoxMax(), 100);
+  autopas::generators::UniformGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),
+                                                           verletLists1.getBoxMax(), 100);
+  autopas::generators::UniformGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
+                                                           verletLists2.getBoxMax(), 100);
   LJFunctorType<> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
 
   autopas::VLCC18Traversal<FMCell, LJFunctorType<>, autopas::VLCCellPairNeighborList<Molecule>> verletTraversal1(
-      verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
-      verletLists1.getCellLength(), autopas::DataLayoutOption::aos, true, autopas::ContainerOption::verletListsCells);
+      verletLists1.getCellsPerDimension(), ljFunctor, verletLists1.getInteractionLength(), verletLists1.getCellLength(),
+      autopas::DataLayoutOption::aos, true, autopas::ContainerOption::verletListsCells);
   autopas::VLCC18Traversal<FMCell, LJFunctorType<>, autopas::VLCCellPairNeighborList<Molecule>> soaTraversal(
-      verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
-      verletLists2.getCellLength(), autopas::DataLayoutOption::soa, true, autopas::ContainerOption::verletListsCells);
+      verletLists2.getCellsPerDimension(), ljFunctor, verletLists2.getInteractionLength(), verletLists2.getCellLength(),
+      autopas::DataLayoutOption::soa, true, autopas::ContainerOption::verletListsCells);
 
   verletLists1.rebuildNeighborLists(&verletTraversal1);
   verletLists2.rebuildNeighborLists(&soaTraversal);

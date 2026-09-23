@@ -56,14 +56,11 @@ void gatherContainerParticles(const std::array<double, 3> &bBoxMin, const std::a
  * It initializes a searchspace of two configs and swaps between the first and second config back and forth.
  */
 TEST_P(ContainerSwapTest, testContainerConversion) {
-  const auto &[config1, config2] = GetParam();
+  const auto &[containerConfig1, containerConfig2] = GetParam();
 
-  constexpr autopas::DataLayoutOption dataLayout = autopas::DataLayoutOption::aos;
-  constexpr autopas::Newton3Option newton3 = autopas::Newton3Option::disabled;
-  auto config1TraversalOptions = autopas::compatibleTraversals::allCompatibleTraversals(
-      config1.container, autopas::InteractionTypeOption::pairwise);
-  auto config2TraversalOptions = autopas::compatibleTraversals::allCompatibleTraversals(
-      config2.container, autopas::InteractionTypeOption::pairwise);
+  // Generate a valid arbitrary full configuration for each container configuration under test.
+  const auto config1 = containerConfig1.generateFullConfig(autopas::InteractionTypeOption::pairwise).value();
+  const auto config2 = containerConfig2.generateFullConfig(autopas::InteractionTypeOption::pairwise).value();
 
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{bBoxMin},
@@ -78,11 +75,13 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
 
   const std::set searchSpace({config1, config2});
 
-  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(
-      autopas::InteractionTypeOption::pairwise,
-      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
-  autopas::LogicHandler<ParticleFP64> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
+  auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tunerManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
+  autopas::LogicHandler<ParticleFP64> logicHandler(tunerManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                                   autoTunerInfo.aosSortingThreshold,
+                                                   autoTunerInfo.soaSortingThreshold);
 
   // Helper to add particles to the container.
   auto addParticlesToContainer = [&](auto &containerToFill) {
@@ -109,18 +108,20 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
     }
   };
 
+  auto emigrants = logicHandler.updateContainer();
   // The first computeInteractions run to initialize the 'from' container.
   MockPairwiseFunctor<ParticleFP64> functor{};
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, isSoAVecPatternAllowed(::testing::_)).WillRepeatedly(::testing::Return(true));
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
   const auto firstContainerType = logicHandler.getContainer().getContainerType();
   const auto secondContainerType =
       logicHandler.getContainer().getContainerType() == config1.container ? config2.container : config1.container;
 
   // Start the second iteration which should swap the container to the secondContainerType configuration.
-  auto emigrants = logicHandler.updateContainer();
+  emigrants = logicHandler.updateContainer();
   ASSERT_TRUE(emigrants.empty()) << "There should be no emigrating particles in this test.";
   addParticlesToContainer(logicHandler.getContainer());
 
@@ -151,7 +152,7 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
   EXPECT_THAT(afterListHaloOutsideCutoff, UnorderedPointwise(ParticleEq(), beforeListHaloOutsideCutoff));
 
   // Reset tuning, so third iteration should swap back to firstContainerType
-  tunerMap[autopas::InteractionTypeOption::pairwise]->forceRetune();
+  tunerManager->forceRetune();
   emigrants = logicHandler.updateContainer();
   ASSERT_TRUE(emigrants.empty()) << "There should be no emigrating particles in this test.";
 
@@ -178,54 +179,20 @@ TEST_P(ContainerSwapTest, testContainerConversion) {
   EXPECT_THAT(after2ListHaloOutsideCutoff, UnorderedPointwise(ParticleEq(), afterListHaloOutsideCutoff));
 }
 
-std::vector<autopas::Configuration> containerConfigs = {
-    {autopas::ContainerOption::directSum, 1, autopas::TraversalOption::ds_sequential,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-      autopas::OpenMPKindOption::omp_static, 1, autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::linkedCells, 1, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
-     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_dynamic, 1, autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::linkedCellsReferences, 1, autopas::TraversalOption::lc_c01,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::OpenMPKindOption::omp_dynamic, 1, autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::verletLists, 1, autopas::TraversalOption::vl_list_iteration,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::OpenMPKindOption::omp_dynamic, 1, autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::varVerletListsAsBuild, 1, autopas::TraversalOption::vvl_as_built,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::OpenMPKindOption::omp_static, 1, autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::verletClusterLists, 1, autopas::TraversalOption::vcl_cluster_iteration,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::OpenMPKindOption::omp_dynamic, 1, autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::verletListsCells, 1, autopas::TraversalOption::vlc_c01,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::OpenMPKindOption::omp_dynamic, 1, autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::pairwiseVerletLists, 1, autopas::TraversalOption::vlp_c01,
-     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-     autopas::OpenMPKindOption::omp_dynamic, 1, autopas::InteractionTypeOption::pairwise},
-    {autopas::ContainerOption::octree, 1, autopas::TraversalOption::ot_c01, autopas::LoadEstimatorOption::none,
-     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_dynamic, 1, autopas::InteractionTypeOption::pairwise}};
+const std::set<ContainerConfiguration> containerConfigs = generateAllValidContainerConfigurations();
 
 // Generates all unique pairs of configurations, order does not matter and no pairs of the same configuration.
-std::vector<std::pair<autopas::Configuration, autopas::Configuration>> GenerateUniquePairs(
-    const std::vector<autopas::Configuration> &configs) {
-  // Check that all container options are covered.
-  std::set<autopas::ContainerOption> givenConfigs;
-  for (const auto &config : configs) {
-    givenConfigs.insert(config.container);
-  }
-  if (givenConfigs != autopas::ContainerOption::getAllOptions()) {
-    throw std::runtime_error("ContainerSwapTest: Given configurations do not cover all container options!");
-  }
-
+std::set<std::pair<ContainerConfiguration, ContainerConfiguration>> generateUniquePairs(
+    const std::set<ContainerConfiguration> &configs) {
   // Generate all unique pairs.
-  std::vector<std::pair<autopas::Configuration, autopas::Configuration>> pairs;
-  for (size_t i = 0; i < configs.size(); ++i) {
-    for (size_t j = i + 1; j < configs.size(); ++j) {
-      pairs.emplace_back(configs[i], configs[j]);
+  std::set<std::pair<ContainerConfiguration, ContainerConfiguration>> pairs;
+  for (auto config1 = configs.begin(); config1 != configs.end(); ++config1) {
+    for (auto config2 = std::next(config1); config2 != configs.end(); ++config2) {
+      pairs.emplace(*config1, *config2);
     }
   }
   return pairs;
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, ContainerSwapTest, ValuesIn(GenerateUniquePairs(containerConfigs)),
+INSTANTIATE_TEST_SUITE_P(Generated, ContainerSwapTest, ValuesIn(generateUniquePairs(containerConfigs)),
                          ContainerSwapTest::twoParamToString());

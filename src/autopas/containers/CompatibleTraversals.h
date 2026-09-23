@@ -142,13 +142,13 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyNewton3Disabled() {
   return {TraversalOption::lc_c01,
           TraversalOption::lc_c01_combined_SoA,
+          TraversalOption::vl_list_iteration,
           TraversalOption::ot_c01,
           TraversalOption::vcl_c01_balanced,
           TraversalOption::vcl_cluster_iteration,
-          TraversalOption::vl_list_iteration,
           TraversalOption::vlc_c01,
           TraversalOption::vlp_c01};
-};
+}
 /**
  * Provides a set of all traversals that only support Newton3 mode enabled.
  * @return
@@ -183,17 +183,15 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
  * @return
  */
 static std::set<TraversalOption> allTraversalsSupportingOnlyStatic1Scheduling() {
-  return {
-    TraversalOption::ds_sequential, // todo, this is an ugly way to handle sequential only traversals
-    TraversalOption::lc_sliced_balanced,
-    TraversalOption::ot_c01, // Todo: Similar
-    TraversalOption::ot_c18, // Todo: Similar
-    TraversalOption::vcl_sliced_balanced,
-    TraversalOption::vcl_c01_balanced,
-    TraversalOption::vvl_as_built,
-    TraversalOption::vlc_sliced_balanced,
-    TraversalOption::vlp_sliced_balanced
-  };
+  return {TraversalOption::ds_sequential,  // todo, this is an ugly way to handle sequential only traversals
+          TraversalOption::lc_sliced_balanced,
+          TraversalOption::ot_c01,  // Todo: Similar
+          TraversalOption::ot_c18,  // Todo: Similar
+          TraversalOption::vcl_sliced_balanced,
+          TraversalOption::vcl_c01_balanced,
+          TraversalOption::vvl_as_built,
+          TraversalOption::vlc_sliced_balanced,
+          TraversalOption::vlp_sliced_balanced};
 }
 
 /**

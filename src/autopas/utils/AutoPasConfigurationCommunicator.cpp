@@ -6,12 +6,13 @@
 
 #include "AutoPasConfigurationCommunicator.h"
 
+#include <cstring>
+#include <tuple>
+
 #include "ThreeDimensionalMapping.h"
-#include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/utils/logging/Logger.h"
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
-
 
 Configuration findGloballyBestConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig,
                                             long localOptimalTime) {
@@ -37,21 +38,21 @@ Configuration findGloballyBestConfiguration(AutoPas_MPI_Comm comm, Configuration
   return deserializedConfig;
 }
 
-SerializedConfiguration serializeConfiguration(Configuration configuration) {
+SerializedConfiguration serializeConfiguration(const Configuration &configuration) {
   // @todo maybe consider endianness for different processors
-  SerializedConfiguration config;
-  config[0] = castToByte(configuration.container);
-  config[1] = castToByte(configuration.traversal);
-  config[2] = castToByte(configuration.loadEstimator);
-  config[3] = castToByte(configuration.dataLayout);
-  config[4] = castToByte(configuration.newton3);
-  config[5] = castToByte(configuration.ompKind);
-  config[6] = castToByte(configuration.interactionType);
-  // Doubles can't be easily truncated, so store all 8 bytes via memcpy
-  std::memcpy(&config[7], &configuration.cellSizeFactor, sizeof(double));
-  // Convert size_t chunk size into smaller unsigned short int
-  const auto unsignedShortChunkSize = static_cast<unsigned short int>(configuration.ompChunkSize);
-  std::memcpy(&config[15], &unsignedShortChunkSize, sizeof(unsigned short int));
+  // Copy every member verbatim, in the order given by Configuration::tie(). In theory, this can be done more compactly,
+  // as options can be represented typically with only a handful of values, and in the past enums were cast to single
+  // bytes. As this code is largely unused and probably not a performance bottleneck even when used, maintainability
+  // is prefered for now.
+  // If compactness is desired in the future, there are probably more efficient methods than what was done before.
+
+  SerializedConfiguration config{};
+  size_t offset = 0;
+  std::apply(
+      [&](const auto &...members) {
+        ((std::memcpy(config.data() + offset, &members, sizeof(members)), offset += sizeof(members)), ...);
+      },
+      configuration.tie());
   return config;
 }
 
@@ -68,18 +69,16 @@ std::vector<std::byte> serializeConfigurations(const std::vector<Configuration> 
   return confsSerialized;
 }
 
-Configuration deserializeConfiguration(SerializedConfiguration config) {
-  double cellSizeFactor{0.};
-  std::memcpy(&cellSizeFactor, &config[7], sizeof(double));
-  unsigned short int unsignedShortChunkSize{};
-  std::memcpy(&unsignedShortChunkSize, &config[15], sizeof(unsigned short int));
-  return {
-      static_cast<ContainerOption::Value>(config[0]),       cellSizeFactor,
-      static_cast<TraversalOption::Value>(config[1]),       static_cast<LoadEstimatorOption::Value>(config[2]),
-      static_cast<DataLayoutOption::Value>(config[3]),      static_cast<Newton3Option::Value>(config[4]),
-      static_cast<OpenMPKindOption::Value>(config[5]),      static_cast<size_t>(unsignedShortChunkSize),
-      static_cast<InteractionTypeOption::Value>(config[6]),
-  };
+Configuration deserializeConfiguration(const SerializedConfiguration &config) {
+  // Inverse of serializeConfiguration(): read every member back in the order given by Configuration::tie().
+  Configuration configuration{};
+  size_t offset = 0;
+  std::apply(
+      [&](auto &...members) {
+        ((std::memcpy(&members, config.data() + offset, sizeof(members)), offset += sizeof(members)), ...);
+      },
+      configuration.tie());
+  return configuration;
 }
 
 std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte> &configurationsSerialized) {
@@ -91,8 +90,7 @@ std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte
   for (size_t i = 0; i < configurationsSerialized.size(); i += serializedConfSize) {
     // copy the bytes of one configuration into a dedicated buffer
     SerializedConfiguration serializedConfig{};
-    std::copy_n(configurationsSerialized.begin() + i, serializedConfSize,
-              serializedConfig.begin());
+    std::copy_n(configurationsSerialized.begin() + i, serializedConfSize, serializedConfig.begin());
     // turn the byte buffer into a config and store it in the return vector
     configurations.push_back(deserializeConfiguration(serializedConfig));
   }

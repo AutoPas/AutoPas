@@ -7,17 +7,19 @@ file(
 
 add_executable(runTests ${MY_SRC})
 
+# Shared testing helpers live in tests/testingHelpers, so add the parent tests/ dir to the include path
+# (headers are included as "testingHelpers/...").
+target_include_directories(runTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
 target_compile_definitions(runTests PRIVATE)
 
 target_link_libraries(
         runTests
         $<$<BOOL:${AUTOPAS_ENABLE_COVERAGE}>:gcov>
         autopas
-        autopasTools
         molecularDynamicsLibrary
         gmock # gmock includes the gtest target, so we don't need it here.
         Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
-        $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony> # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
 )
 
 include(GoogleTest)
@@ -25,6 +27,10 @@ include(GoogleTest)
 # cross compiling, make sure to properly set CMAKE_CROSSCOMPILING_EMULATOR.
 gtest_discover_tests(
         runTests TEST_PREFIX "testAutopas/"
+        # Use PRE_TEST discovery mode to avoid running MPI executable during build
+        # This prevents SIGPIPE errors in CI when MPI and sanitizers are enabled (this is needed still, even with these
+        # non-MPI tests)
+        DISCOVERY_MODE PRE_TEST
         # increase the discovery timeout for `runTests --gtest_list_tests`
         DISCOVERY_TIMEOUT 60
 )

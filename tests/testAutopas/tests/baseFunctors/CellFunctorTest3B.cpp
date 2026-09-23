@@ -14,50 +14,50 @@
 struct CellFunctor_AoS_NoN3_NoBi
     : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
                                               mdLib::AxilrodTellerMutoFunctor<Molecule>, false> {
-  CellFunctor_AoS_NoN3_NoBi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
+  CellFunctor_AoS_NoN3_NoBi(mdLib::AxilrodTellerMutoFunctor<Molecule> &f, const double sortingCutoff)
       : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::aos, false) {}
 };
 struct CellFunctor_AoS_NoN3_Bi
     : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
                                               mdLib::AxilrodTellerMutoFunctor<Molecule>, true> {
-  CellFunctor_AoS_NoN3_Bi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
+  CellFunctor_AoS_NoN3_Bi(mdLib::AxilrodTellerMutoFunctor<Molecule> &f, const double sortingCutoff)
       : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::aos, false) {}
 };
 struct CellFunctor_AoS_N3_NoBi
     : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
                                               mdLib::AxilrodTellerMutoFunctor<Molecule>, false> {
-  CellFunctor_AoS_N3_NoBi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
+  CellFunctor_AoS_N3_NoBi(mdLib::AxilrodTellerMutoFunctor<Molecule> &f, const double sortingCutoff)
       : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::aos, true) {}
 };
 struct CellFunctor_AoS_N3_Bi
     : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
                                               mdLib::AxilrodTellerMutoFunctor<Molecule>, true> {
-  CellFunctor_AoS_N3_Bi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
+  CellFunctor_AoS_N3_Bi(mdLib::AxilrodTellerMutoFunctor<Molecule> &f, const double sortingCutoff)
       : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::aos, true) {}
 };
 
 struct CellFunctor_SoA_NoN3_NoBi
     : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
                                               mdLib::AxilrodTellerMutoFunctor<Molecule>, false> {
-  CellFunctor_SoA_NoN3_NoBi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
+  CellFunctor_SoA_NoN3_NoBi(mdLib::AxilrodTellerMutoFunctor<Molecule> &f, const double sortingCutoff)
       : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::soa, false) {}
 };
 struct CellFunctor_SoA_NoN3_Bi
     : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
                                               mdLib::AxilrodTellerMutoFunctor<Molecule>, true> {
-  CellFunctor_SoA_NoN3_Bi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
+  CellFunctor_SoA_NoN3_Bi(mdLib::AxilrodTellerMutoFunctor<Molecule> &f, const double sortingCutoff)
       : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::soa, false) {}
 };
 struct CellFunctor_SoA_N3_NoBi
     : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
                                               mdLib::AxilrodTellerMutoFunctor<Molecule>, false> {
-  CellFunctor_SoA_N3_NoBi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
+  CellFunctor_SoA_N3_NoBi(mdLib::AxilrodTellerMutoFunctor<Molecule> &f, const double sortingCutoff)
       : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::soa, true) {}
 };
 struct CellFunctor_SoA_N3_Bi
     : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
                                               mdLib::AxilrodTellerMutoFunctor<Molecule>, true> {
-  CellFunctor_SoA_N3_Bi(mdLib::AxilrodTellerMutoFunctor<Molecule> *f, const double sortingCutoff)
+  CellFunctor_SoA_N3_Bi(mdLib::AxilrodTellerMutoFunctor<Molecule> &f, const double sortingCutoff)
       : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::soa, true) {}
 };
 
@@ -280,7 +280,7 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionSingle) {
   };
 
   // Test with and without sorting
-  for (const auto sortingThreshold : {0, 100}) {
+  for (const auto aosSortingThreshold : {0, 100}) {
     // Test all reasonable combinations of owned / halo particles and cells
     for (const auto ownershipParticle1 : {owned, halo}) {
       for (const auto ownershipParticle2 : {owned, halo}) {
@@ -299,9 +299,8 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionSingle) {
 
             ATMFunctor.initTraversal();
 
-            CellFunctorType cellFunctor(&ATMFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
-            cellFunctor.setSortingThreshold(sortingThreshold);
-
+            CellFunctorType cellFunctor(ATMFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
+            cellFunctor.setAoSSortingThresholds(autopas::SortingThresholdInfoSingle(aosSortingThreshold));
             const auto &[forceParticle1, forceParticle2, forceParticle3] = doSingleCellInteraction<CellFunctorType>(
                 cellFunctor, ownershipParticle1, ownershipParticle2, ownershipParticle3, ownershipCell1,
                 cellFunctor.getDataLayout(), ATMFunctor);
@@ -366,7 +365,7 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionPair) {
   };
 
   // Test with and without sorting
-  for (const auto sortingThreshold : {0, 100}) {
+  for (const auto aosSortingThreshold : {0, 100}) {
     // Test all reasonable combinations of owned / halo particles and cells
     for (const auto ownershipParticle1 : {owned, halo}) {
       for (const auto ownershipParticle2 : {owned, halo}) {
@@ -392,8 +391,8 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionPair) {
 
                 ATMFunctor.initTraversal();
 
-                CellFunctorType cellFunctor(&ATMFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
-                cellFunctor.setSortingThreshold(sortingThreshold);
+                CellFunctorType cellFunctor(ATMFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
+                cellFunctor.setAoSSortingThresholds(autopas::SortingThresholdInfoSingle(aosSortingThreshold));
 
                 const auto &[forceParticle1, forceParticle2, forceParticle3] = doPairCellInteraction<CellFunctorType>(
                     cellFunctor, ownershipParticle1, ownershipParticle2, ownershipParticle3, ownershipCell1,
@@ -477,7 +476,7 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionTriple) {
   };
 
   // Test with and without sorting
-  for (const auto sortingThreshold : {0, 100}) {
+  for (const auto aosSortingThreshold : {0, 100}) {
     // Test all reasonable combinations of owned / halo particles and cells
     for (const auto ownershipParticle1 : {owned, halo}) {
       for (const auto ownershipParticle2 : {owned, halo}) {
@@ -490,8 +489,8 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionTriple) {
 
                 ATMFunctor.initTraversal();
 
-                CellFunctorType cellFunctor(&ATMFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
-                cellFunctor.setSortingThreshold(sortingThreshold);
+                CellFunctorType cellFunctor(ATMFunctor, CellFunctorTest3B<CellFunctorType>::cutoff);
+                cellFunctor.setAoSSortingThresholds(autopas::SortingThresholdInfoSingle(aosSortingThreshold));
 
                 const auto &[forceParticle1, forceParticle2, forceParticle3] = doTripleCellInteraction<CellFunctorType>(
                     cellFunctor, ownershipParticle1, ownershipParticle2, ownershipParticle3, ownershipCell1,

@@ -45,7 +45,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   // therefore workaround with make_tuple and auto
   static const auto relevantOptions{std::make_tuple(
       // clang-format off
-      config.acquisitionFunctionOption,
       config.boundaryOption,
       config.boxLength,
       config.cellSizeFactors,
@@ -56,7 +55,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.dataLayoutOptions,
       config.dataLayoutOptions3B,
       config.deltaT,
-      config.sortingThreshold,
+      config.aosSortingThreshold,
+      config.soaSortingThreshold,
+      config.useSortingThresholdBenchmark,
       config.distributionMean,
       config.distributionStdDev,
       config.dontCreateEndConfig,
@@ -65,6 +66,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.extrapolationMethodOption,
       config.energySensorOption,
       config.functorOption,
+      config.vecPatternOptions,
       config.functorOption3B,
       config.generatorOption,
       config.globalForce,
@@ -170,17 +172,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         // already parsed in CLIParser::inputFilesPresent
         break;
       }
-      case decltype(config.acquisitionFunctionOption)::getoptChar: {
-        auto parsedOptions = autopas::AcquisitionFunctionOption::parseOptions(strArg);
-        if (parsedOptions.size() != 1) {
-          cerr << "Pass exactly one tuning acquisition function." << endl
-               << "Passed: " << strArg << endl
-               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
-          displayHelp = true;
-        }
-        config.acquisitionFunctionOption.value = *parsedOptions.begin();
-        break;
-      }
       case decltype(config.cellSizeFactors)::getoptChar: {
         config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet<double>(strArg);
         if (config.cellSizeFactors.value->isEmpty()) {
@@ -228,11 +219,29 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.sortingThreshold)::getoptChar: {
+      case decltype(config.aosSortingThreshold)::getoptChar: {
         try {
-          config.sortingThreshold.value = stoul(strArg);
+          config.aosSortingThreshold.value = stoul(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing value for sorting-threshold: " << optarg << endl;
+          cerr << "Error parsing value for aos-sorting-threshold: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.soaSortingThreshold)::getoptChar: {
+        try {
+          config.soaSortingThreshold.value = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing value for soa-sorting-threshold: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.useSortingThresholdBenchmark)::getoptChar: {
+        try {
+          config.useSortingThresholdBenchmark.value = autopas::utils::StringUtils::parseBoolOption(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing 'use-sorting-threshold-benchmark': " << optarg << endl;
           displayHelp = true;
         }
         break;
@@ -303,6 +312,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("sve") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
+        } else if (strArg.find("hwy") != string::npos or strArg.find("highway")) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
         } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
@@ -323,6 +334,14 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         config.addInteractionType(autopas::InteractionTypeOption::triwise);
+        break;
+      }
+      case decltype(config.vecPatternOptions)::getoptChar: {
+        config.vecPatternOptions.value = autopas::VectorizationPatternOption::parseOptions(strArg);
+        if (config.vecPatternOptions.value.empty()) {
+          cerr << "Unknown Pattern: " << strArg << endl;
+          displayHelp = true;
+        }
         break;
       }
       case decltype(config.generatorOption)::getoptChar: {

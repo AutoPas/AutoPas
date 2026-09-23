@@ -1,3 +1,2 @@
-add_subdirectory(autopasTools)
 add_subdirectory(ruleChecker)
 add_subdirectory(tuningLogToSQL)

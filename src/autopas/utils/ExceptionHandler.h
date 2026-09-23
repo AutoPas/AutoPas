@@ -10,6 +10,7 @@
 #include <functional>
 #include <mutex>
 #include <string>
+#include <utility>
 
 #include "autopas/utils/logging/Logger.h"
 
@@ -84,7 +85,7 @@ class ExceptionHandler {
    * @note this is a variadic function, and can thus incorporate an arbitrary amount of arguments
    */
   template <typename First, typename... Args>
-  static void exception(std::string exceptionString, First first, Args... args);  // recursive variadic function
+  static void exception(fmt::format_string<First, Args...> exceptionString, First &&first, Args &&...args);
 
   /**
    * Rethrows the current exception or prints it.
@@ -154,8 +155,8 @@ template <>
 void ExceptionHandler::exception(const char *const e);  // NOLINT
 
 template <typename First, typename... Args>
-void ExceptionHandler::exception(std::string exceptionString, First first, Args... args) {
-  std::string s = fmt::format(fmt::runtime(exceptionString), first, args...);
+void ExceptionHandler::exception(fmt::format_string<First, Args...> exceptionString, First &&first, Args &&...args) {
+  std::string s = fmt::format(exceptionString, std::forward<First>(first), std::forward<Args>(args)...);
   exception(s);
 }
 

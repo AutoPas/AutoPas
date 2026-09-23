@@ -71,4 +71,7 @@ class MockTriwiseFunctor : public autopas::TriwiseFunctor<Particle_T, MockTriwis
 
   //  std::string getName() { return "functorName"; }
   MOCK_METHOD(std::string, getName, (), (override));
+
+  // bool isSoAVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) { return true; }
+  MOCK_METHOD(bool, isSoAVecPatternAllowed, (const autopas::VectorizationPatternOption::Value), (override));
 };

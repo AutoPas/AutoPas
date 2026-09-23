@@ -20,9 +20,12 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
     const NumberSet<double> *allowedCellSizeFactors, const std::set<OpenMPKindOption> &allowedOpenMPKindOptions,
-    const NumberSet<size_t> *allowedOpenMPChunkSizes, const InteractionTypeOption &interactionType) {
+    const NumberSet<size_t> *allowedOpenMPChunkSizes,
+    const std::set<VectorizationPatternOption> &allowedVecPatternOptions, const InteractionTypeOption &interactionType,
+    bool throwIfNone) {
   if (allowedCellSizeFactors->isInterval() or allowedOpenMPChunkSizes->isInterval()) {
-    utils::ExceptionHandler::exception("Cross product does not work with number intervals!");
+    utils::ExceptionHandler::exception(
+        "Cross product does not work with continuous cell size factors or OpenMP chunk sizes!");
   }
   const auto cellSizeFactors = allowedCellSizeFactors->getAll();
   const auto ompChunkSizes = allowedOpenMPChunkSizes->getAll();
@@ -48,10 +51,13 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
             for (const auto &newton3Option : allowedNewton3Options) {
               for (const auto &ompKind : allowedOpenMPKindOptions) {
                 for (const auto &ompChunkSize : ompChunkSizes) {
-                  const Configuration configuration{containerOption,  csf,           traversalOption, loadEstimatorOption,
-                                  dataLayoutOption, newton3Option, ompKind, ompChunkSize, interactionType};
-                  if (configuration.hasCompatibleValues()) {
-                    searchSet.insert(configuration);
+                  for (const auto &vecPatternOption : allowedVecPatternOptions) {
+                    const Configuration configuration{
+                        containerOption, csf,     traversalOption, loadEstimatorOption, dataLayoutOption,
+                        newton3Option,   ompKind, ompChunkSize,    interactionType,     vecPatternOption};
+                    if (configuration.hasCompatibleValues()) {
+                      searchSet.insert(configuration);
+                    }
                   }
                 }
               }
@@ -62,26 +68,10 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     }
   }
 
-  if (searchSet.empty()) {
+  if (throwIfNone and searchSet.empty()) {
     utils::ExceptionHandler::exception("No valid configurations could be created.");
   }
   return searchSet;
-}
-
-SearchSpaceGenerators::OptionSpace SearchSpaceGenerators::inferOptionDimensions(
-    const std::set<Configuration> &searchSet) {
-  OptionSpace optionSpace;
-  for (const auto &[container, traversal, loadEst, dataLayout, newton3, csf, ompKind, ompChunkSize, interactT] : searchSet) {
-    optionSpace.containerOptions.insert(container);
-    optionSpace.traversalOptions.insert(traversal);
-    optionSpace.loadEstimatorOptions.insert(loadEst);
-    optionSpace.dataLayoutOptions.insert(dataLayout);
-    optionSpace.newton3Options.insert(newton3);
-    optionSpace.openMPKindOptions.insert(ompKind);
-    optionSpace.openMPChunkSizes.insert(ompChunkSize);
-    optionSpace.cellSizeFactors.insert(csf);
-  }
-  return optionSpace;
 }
 
 std::set<double> SearchSpaceGenerators::calculateRelevantCsfs(const NumberInterval<double> &numberInterval,
@@ -106,8 +96,4 @@ std::set<double> SearchSpaceGenerators::calculateRelevantCsfs(const NumberInterv
 
   return relevantCsfs;
 }
-
-SearchSpaceGenerators::OptionSpace::OptionSpace() = default;
-
-SearchSpaceGenerators::OptionSpace::~OptionSpace() noexcept = default;
 }  // namespace autopas

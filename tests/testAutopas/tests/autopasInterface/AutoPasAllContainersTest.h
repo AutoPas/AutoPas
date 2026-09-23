@@ -10,7 +10,8 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/options/ContainerOption.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
 
-using ParamType = autopas::options::ContainerOption;
+using ParamType = ContainerConfiguration;
 
 class AutoPasAllContainersTest : public AutoPasTestBase, public ::testing::WithParamInterface<ParamType> {};

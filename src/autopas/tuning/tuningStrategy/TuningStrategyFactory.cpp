@@ -7,9 +7,6 @@
 #include "TuningStrategyFactory.h"
 
 #include "autopas/options/TuningStrategyOption.h"
-#include "autopas/tuning/tuningStrategy/ActiveHarmony.h"
-#include "autopas/tuning/tuningStrategy/BayesianClusterSearch.h"
-#include "autopas/tuning/tuningStrategy/BayesianSearch.h"
 #include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
 #include "autopas/tuning/tuningStrategy/PredictiveTuning.h"
 #include "autopas/tuning/tuningStrategy/RandomSearch.h"
@@ -22,22 +19,6 @@
 #include "autopas/utils/NumberSetFinite.h"
 
 namespace autopas::TuningStrategyFactory {
-
-/**
- * Wraps SearchSpaceGenerators::inferOptionDimensions() and adds a warning about its usage.
- *
- * This function acts as a workaround for old and complex tuning strategies that rely on the search space to
- * be represented as a set of vectors of available options.
- *
- * @param searchSpace
- * @return
- */
-SearchSpaceGenerators::OptionSpace inferOptionDimensions(const std::set<Configuration> &searchSpace) {
-  AutoPasLog(WARN,
-             "Inferring the dimensions of the search space from the given set of configurations."
-             "This only works reliably if the set was created from a cross product of option vectors.");
-  return SearchSpaceGenerators::inferOptionDimensions(searchSpace);
-}
 
 std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<Configuration> &searchSpace,
                                                                 const TuningStrategyOption tuningStrategyOption,
@@ -54,45 +35,6 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
     case TuningStrategyOption::fullSearch: {
       utils::ExceptionHandler::exception(
           "Full Search is no tuning strategy anymore! If you want this behavior don't select any tuning strategy.");
-      break;
-    }
-
-    case TuningStrategyOption::bayesianSearch: {
-      const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
-      tuningStrategy = std::make_unique<BayesianSearch>(
-          interactionType, searchSpaceDimensions.containerOptions,
-          NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
-          searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
-          searchSpaceDimensions.newton3Options, searchSpaceDimensions.openMPKindOptions,
-          NumberSetFinite<size_t>{searchSpaceDimensions.openMPChunkSizes}, info.maxEvidence, info.acquisitionFunctionOption);
-      break;
-    }
-
-    case TuningStrategyOption::bayesianClusterSearch: {
-      const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
-      tuningStrategy = std::make_unique<BayesianClusterSearch>(
-          interactionType, searchSpaceDimensions.containerOptions,
-          NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
-          searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
-          searchSpaceDimensions.newton3Options, searchSpaceDimensions.openMPKindOptions,
-          NumberSetFinite<size_t>{searchSpaceDimensions.openMPChunkSizes}, info.maxEvidence, info.acquisitionFunctionOption, outputSuffix);
-      break;
-    }
-
-    case TuningStrategyOption::activeHarmony: {
-      // If a AH-server is provided, but MPI is disallowed, we have to ignore the server.
-      if (std::getenv("HARMONY_HOST") != nullptr and not info.mpiDivideAndConquer) {
-        unsetenv("HARMONY_HOST");
-        AutoPasLog(WARN,
-                   "HARMONY_HOST is set to a value, but the MPI strategy option is set to noMPI. "
-                   "HARMONY_HOST will be unset to enforce a local tuning session");
-      }
-      const auto searchSpaceDimensions = inferOptionDimensions(searchSpace);
-      tuningStrategy = std::make_unique<ActiveHarmony>(
-          interactionType, searchSpaceDimensions.containerOptions,
-          NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors}, searchSpaceDimensions.traversalOptions,
-          searchSpaceDimensions.loadEstimatorOptions, searchSpaceDimensions.dataLayoutOptions,
-          searchSpaceDimensions.newton3Options, info.mpiDivideAndConquer, info.autopasMpiCommunicator);
       break;
     }
 

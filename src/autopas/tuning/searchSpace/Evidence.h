@@ -23,9 +23,18 @@ class Evidence {
    */
   size_t tuningPhase;
   /**
-   * Value of the measurement (time, energy, ...).
+   * Value of the effective measurement (time, energy, ...) combining rebuild and traversal, given the current rebuild
+   * frequency.
    */
-  long value;
+  long effectiveValue;
+  /**
+   * Value of the measurement for only the rebuilding step.
+   */
+  long rebuildValue;
+  /**
+   * Value of the measurement for the actual traversal (without potential rebuild).
+   */
+  long traversalValue;
 
   /**
    * Equality operator.

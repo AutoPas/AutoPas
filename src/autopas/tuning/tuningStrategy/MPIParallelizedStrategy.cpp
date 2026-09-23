@@ -36,8 +36,8 @@ bool MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &co
   // All ranks should stay in tuning mode equally long so that none settles on an optimum
   // before the other's data is there.
   const auto [myBestConf, myBestEvidence] = evidenceCollection.getLatestOptimalConfiguration();
-  const auto globallyBestConfig =
-      utils::AutoPasConfigurationCommunicator::findGloballyBestConfiguration(_bucket, myBestConf, myBestEvidence.value);
+  const auto globallyBestConfig = utils::AutoPasConfigurationCommunicator::findGloballyBestConfiguration(
+      _bucket, myBestConf, myBestEvidence.effectiveValue);
 
   const auto myQueueSize = static_cast<unsigned int>(configQueue.size());
   unsigned int globallyLongestQueueSize{};
@@ -77,7 +77,8 @@ Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::se
                                Newton3Option::disabled,
                                OpenMPKindOption::omp_dynamic,
                                1,
-                               interactionType};
+                               interactionType,
+                               VectorizationPatternOption::NA};
 
   if (interactionType == InteractionTypeOption::triwise) {
     fallBackConfig.traversal = TraversalOption::lc_c01;
@@ -89,6 +90,7 @@ Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::se
   for (const auto &conf : searchSpace) {
     if (not foundSoA and conf.dataLayout == DataLayoutOption::soa) {
       fallBackConfig.dataLayout = DataLayoutOption::soa;
+      fallBackConfig.vecPattern = VectorizationPatternOption::p1xVec;
       foundSoA = true;
     }
     if (not foundN3Enabled and conf.newton3 == Newton3Option::enabled) {

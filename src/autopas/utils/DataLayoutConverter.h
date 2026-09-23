@@ -24,7 +24,7 @@ class DataLayoutConverter {
    * @param functor responsible for the conversion
    * @param dataLayout The data layout to be used.
    */
-  explicit DataLayoutConverter(FunctorSoaWrapper *functor, DataLayoutOption dataLayout)
+  explicit DataLayoutConverter(FunctorSoaWrapper &functor, DataLayoutOption dataLayout)
       : _functor(functor), _dataLayout(dataLayout) {}
 
   /**
@@ -40,7 +40,7 @@ class DataLayoutConverter {
         return;
       }
       case DataLayoutOption::soa: {
-        _functor->SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize*/ false);
+        _functor.SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize*/ false);
         return;
       }
     }
@@ -59,7 +59,7 @@ class DataLayoutConverter {
         return;
       }
       case DataLayoutOption::soa: {
-        _functor->SoAExtractor(cell, cell._particleSoABuffer, 0);
+        _functor.SoAExtractor(cell, cell._particleSoABuffer, 0);
         return;
       }
     }
@@ -69,7 +69,7 @@ class DataLayoutConverter {
   /**
    *  Functor to convert cells
    */
-  FunctorSoaWrapper *_functor;
+  FunctorSoaWrapper &_functor;
 
   DataLayoutOption _dataLayout;
 };

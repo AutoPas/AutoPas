@@ -139,6 +139,12 @@ class ParticleCell {
   [[nodiscard]] virtual std::array<double, 3> getCellLength() const = 0;
 
   /**
+   * Returns whether the cell can have owned particles based on its ownership state.
+   * @return true, if the cell can contain owned particles.
+   */
+  bool canHaveOwnedParticles() const { return static_cast<bool>(_ownershipState & autopas::OwnershipState::owned); }
+
+  /**
    * Get the type of particles contained in this cell. Possible values:
    * dummy: this cell is empty
    * owned: this cell can ONLY contain owned particles

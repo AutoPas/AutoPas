@@ -15,6 +15,7 @@
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
+#include "autopas/utils/AutoPasConfigurationCommunicator.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapMPI.h"
 
@@ -22,9 +23,6 @@ namespace autopas {
 
 /**
  * This strategy spreads the configuration queue in a round robin fashion over all ranks (with similar domain).
- *
- * The actual splitting of the search space and details of the communication logic is not currently handled by
- * this class, but by AutoPasConfigurationCommunicator.
  */
 class MPIParallelizedStrategy : public TuningStrategyInterface {
  public:

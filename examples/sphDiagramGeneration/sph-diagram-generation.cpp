@@ -9,7 +9,7 @@
 
 #include "SPHLibrary/autopassph.h"
 #include "autopas/AutoPas.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 
 using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
@@ -26,8 +26,8 @@ void addParticles(AutoPasContainer &sph_system, int numParticles) {
 
   for (int i = 0; i < numParticles; ++i) {
     auto id = static_cast<unsigned long>(i);
-    Particle particle(autopasTools::generators::UniformGenerator::randomPosition(generator, boxMin, boxMax),
-                      {0., 0., 0.}, id, 0.75, 0.012, 0.);
+    Particle particle(autopas::generators::UniformGenerator::randomPosition(generator, boxMin, boxMax), {0., 0., 0.},
+                      id, 0.75, 0.012, 0.);
     sph_system.addParticle(particle);
   }
 
@@ -112,6 +112,7 @@ int main(int argc, char *argv[]) {
   autoPas.setAllowedContainers(containerOptions);
   autoPas.setAllowedNewton3Options({useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled});
   autoPas.setAllowedDataLayouts({autopas::DataLayoutOption::aos});  // currently aos only!
+  autoPas.setAllowedVecPatterns({autopas::VectorizationPatternOption::p1xVec});
 
   autopas::TraversalOption traversalType;
   switch (*containerOptions.begin()) {
