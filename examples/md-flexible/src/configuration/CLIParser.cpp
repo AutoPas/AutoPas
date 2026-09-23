@@ -476,6 +476,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           cerr << "Unknown OpenMP Schedule Kind: " << strArg << endl;
           displayHelp = true;
         }
+        break;
       }
       case decltype(config.particlesPerDim)::getoptChar: {
         try {
