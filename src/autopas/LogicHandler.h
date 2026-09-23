@@ -1410,7 +1410,7 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
 
   // Check if the VectorizationPattern is supported by the functor. Only SoA configurations use a vectorization pattern;
   // AoS configurations always use the not-applicable (N/A) pattern, which every functor supports.
-  if (config.dataLayout == DataLayoutOption::soa and not functor.isSoAVecPatternAllowed(config.vecPattern)) {
+  if (config.dataLayout == DataLayoutOption::soa and not functor.isVecPatternAllowed(config.vecPattern)) {
     AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support the SoA Vectorization Pattern {}!",
                config.vecPattern);
     return {nullptr, /*rejectIndefinitely*/ true};
