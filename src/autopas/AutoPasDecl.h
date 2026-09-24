@@ -11,7 +11,6 @@
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
-#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/EnergySensorOption.h"
@@ -28,6 +27,7 @@
 #include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
 
@@ -797,24 +797,6 @@ class AutoPas {
   }
 
   /**
-   * Get acquisition function used for tuning
-   * @return
-   */
-  [[nodiscard]] AcquisitionFunctionOption getAcquisitionFunction() const {
-    return _tuningStrategyFactoryInfo.acquisitionFunctionOption;
-  }
-
-  /**
-   * Set acquisition function for tuning.
-   * For possible acquisition function choices see options::AcquisitionFunctionOption::Value.
-   * @note This function is only relevant for the bayesian based searches.
-   * @param acqFun acquisition function
-   */
-  void setAcquisitionFunction(AcquisitionFunctionOption acqFun) {
-    _tuningStrategyFactoryInfo.acquisitionFunctionOption = acqFun;
-  }
-
-  /**
    * Get extrapolation method for the prediction of the configuration performance.
    * @return
    */
@@ -960,6 +942,24 @@ class AutoPas {
     } else {
       _allowedNewton3Options[interactionType] = allowedNewton3Options;
     }
+  }
+
+  /**
+   * Set allowed OpenMP chunk sizes.
+   * @param allowedChunkSizes A set of allowed OpenMP chunk sizes. If 1 is not included, some traversals which must
+   * use static, 1 scheduling will never be selected.
+   */
+  void setAllowedOpenMPChunkSizes(const NumberSet<size_t> &allowedChunkSizes) {
+    _allowedOpenMPChunkSizes = std::move(allowedChunkSizes.clone());
+  }
+
+  /**
+   * Set allowed OpenMP scheduling kind.
+   * @param allowedKinds A set of allowed OpenMP Scheduler kinds. If static is not included, some traversals which must
+   * use static, 1 scheduling will never be selected. (It is highly recommended to not include only static.)
+   */
+  void setAllowedOpenMPScheduleKinds(const std::set<OpenMPKindOption> &allowedKinds) {
+    _allowedOpenMPKinds = allowedKinds;
   }
 
   /**
@@ -1235,8 +1235,9 @@ class AutoPas {
   std::unordered_map<InteractionTypeOption::Value, std::set<VectorizationPatternOption>> _allowedVecPatternsOptions{
       {InteractionTypeOption::pairwise, VectorizationPatternOption::getMostOptions()},
       // Note: Currently Vectorization Patterns are not implemented for threebody interactions. p1xVec is used as
-      // default.
-      {InteractionTypeOption::triwise, std::set<VectorizationPatternOption>{VectorizationPatternOption::p1xVec}}};
+      // default for SoA, while AoS always uses the not-applicable (N/A) pattern.
+      {InteractionTypeOption::triwise,
+       std::set<VectorizationPatternOption>{VectorizationPatternOption::NA, VectorizationPatternOption::p1xVec}}};
   /**
    * What kind of interactions AutoPas should expect.
    * By default AutoPas is configured to only use pairwise interactions.
@@ -1252,6 +1253,16 @@ class AutoPas {
    * VLCSlicedBalancedTraversal).
    */
   std::set<LoadEstimatorOption> _allowedLoadEstimators{LoadEstimatorOption::getAllOptions()};
+  /**
+   * Allowed OpenMP Schedule Kind options. May include options that may not be usable with a given version of OpenMP.
+   * These should be filtered out as invalid configurations during tuning.
+   */
+  std::set<OpenMPKindOption> _allowedOpenMPKinds{OpenMPKindOption::getAllOptions()};
+  /**
+   * Allowed OpenMP chunks sizes.
+   */
+  std::unique_ptr<NumberSet<size_t>> _allowedOpenMPChunkSizes{
+      std::make_unique<NumberSetFinite<size_t>>(std::set<size_t>({1}))};
   /**
    * LogicHandler of autopas.
    */

@@ -13,7 +13,9 @@ std::string autopas::Configuration::toString() const {
   return "{Interaction Type: " + interactionType.to_string() + " , Container: " + container.to_string() +
          " , CellSizeFactor: " + std::to_string(cellSizeFactor) + " , Traversal: " + traversal.to_string() +
          " , Load Estimator: " + loadEstimator.to_string() + " , Data Layout: " + dataLayout.to_string() +
-         " , Newton 3: " + newton3.to_string() + " , VectorizationPattern: " + vecPattern.to_string() + "}";
+         " , Newton 3: " + newton3.to_string() + " , OpenMP Schedule Kind: " + ompKind.to_string() +
+         " , OpenMPChunkSize: " + std::to_string(ompChunkSize) + " , VectorizationPattern: " + vecPattern.to_string() +
+         "}";
 }
 
 std::string autopas::Configuration::getCSVHeader() const { return getCSVRepresentation(true); }
@@ -89,6 +91,12 @@ bool autopas::Configuration::hasCompatibleValues() const {
       return false;
     }
   }
+  if (ompKind != OpenMPKindOption::omp_static or ompChunkSize != 1) {
+    const auto static1OnlyTraversals = compatibleTraversals::allTraversalsSupportingOnlyStatic1Scheduling();
+    if (static1OnlyTraversals.contains(traversal)) {
+      return false;
+    }
+  }
 
   const auto allContainersSupportingSuper1CSF = compatibleCSFs::allContainersSupportingSuper1CSF();
   if ((not allContainersSupportingSuper1CSF.contains(container)) and cellSizeFactor > 1.0) {
@@ -100,8 +108,10 @@ bool autopas::Configuration::hasCompatibleValues() const {
     return false;
   }
 
-  // Check if the container supports the VectorizationPattern
-  const auto allowedVecPatterns = compatibleVectorizationPattern::allCompatibleVectorizationPattern(container);
+  // Check if the container supports the VectorizationPattern, and filter out actual patterns in the AoS case or the
+  // N/A option in the SoA case.
+  const auto allowedVecPatterns =
+      compatibleVectorizationPattern::allCompatibleVectorizationPattern(container, dataLayout);
   if (allowedVecPatterns.find(vecPattern) == allowedVecPatterns.end()) {
     return false;
   }
@@ -113,18 +123,8 @@ std::ostream &autopas::operator<<(std::ostream &os, const autopas::Configuration
   return os << configuration.toString();
 }
 
-bool autopas::Configuration::equalsDiscreteOptions(const autopas::Configuration &rhs) const {
-  return container == rhs.container and traversal == rhs.traversal and loadEstimator == rhs.loadEstimator and
-         dataLayout == rhs.dataLayout and newton3 == rhs.newton3 and interactionType == rhs.interactionType and
-         vecPattern == rhs.vecPattern;
-}
-
-bool autopas::Configuration::equalsContinuousOptions(const autopas::Configuration &rhs, double epsilon) const {
-  return std::abs(cellSizeFactor - rhs.cellSizeFactor) < epsilon;
-}
-
 bool autopas::operator==(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
-  return lhs.equalsContinuousOptions(rhs) and lhs.equalsDiscreteOptions(rhs);
+  return lhs.tie() == rhs.tie();
 }
 
 bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
@@ -132,10 +132,7 @@ bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Confi
 }
 
 bool autopas::operator<(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
-  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3,
-                  lhs.interactionType, lhs.vecPattern) < std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal,
-                                                                  rhs.loadEstimator, rhs.dataLayout, rhs.newton3,
-                                                                  rhs.interactionType, rhs.vecPattern);
+  return lhs.tie() < rhs.tie();
 }
 
 std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &configuration) {
@@ -154,6 +151,10 @@ std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &conf
   in >> configuration.dataLayout;
   in.ignore(max, ':');
   in >> configuration.newton3;
+  in.ignore(max, ':');
+  in >> configuration.ompKind;
+  in.ignore(max, ':');
+  in >> configuration.ompChunkSize;
   in.ignore(max, ':');
   in >> configuration.vecPattern;
   return in;

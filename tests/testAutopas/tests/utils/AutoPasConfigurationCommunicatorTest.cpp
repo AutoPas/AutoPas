@@ -35,22 +35,14 @@ TEST_F(AutoPasConfigurationCommunicatorTest, SerializationTest) {
   // Test pairwise configurations
   const auto pairwiseSearchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, pairwiseTraversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
-      &cellSizeFactors, vecPatternOptions, autopas::InteractionTypeOption::pairwise);
-  auto maxSearchSpaceSize = autopas::utils::AutoPasConfigurationCommunicator::getSearchSpaceSize(
-      containerOptions, cellSizeFactors, pairwiseTraversalOptions, loadEstimatorOptions, dataLayoutOptions,
-      newton3Options, autopas::InteractionTypeOption::pairwise, vecPatternOptions);
+      &cellSizeFactors, ompKindOptions, &ompChunkSizes, vecPatternOptions, autopas::InteractionTypeOption::pairwise);
 
-  EXPECT_GE(maxSearchSpaceSize, pairwiseSearchSpace.size());
   testConfigsCommunication(pairwiseSearchSpace);
 
   // Test triwise configurations
   const auto triwiseSearchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, triwiseTraversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
-      &cellSizeFactors, vecPatternOptions, autopas::InteractionTypeOption::triwise);
-  maxSearchSpaceSize = autopas::utils::AutoPasConfigurationCommunicator::getSearchSpaceSize(
-      containerOptions, cellSizeFactors, triwiseTraversalOptions, loadEstimatorOptions, dataLayoutOptions,
-      newton3Options, autopas::InteractionTypeOption::triwise, vecPatternOptions);
+      &cellSizeFactors, ompKindOptions, &ompChunkSizes, vecPatternOptions, autopas::InteractionTypeOption::triwise);
 
-  EXPECT_GE(maxSearchSpaceSize, triwiseSearchSpace.size());
   testConfigsCommunication(triwiseSearchSpace);
 }

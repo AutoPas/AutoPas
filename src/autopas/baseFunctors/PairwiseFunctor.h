@@ -168,7 +168,7 @@ class PairwiseFunctor : public Functor<Particle_T, CRTP_T> {
    * @param vecPattern
    * @return whether the functor is capable of using the specified Vectorization Pattern
    */
-  bool isVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) override {
+  bool isSoAVecPatternAllowed(const VectorizationPatternOption::Value vecPattern) override {
     return vecPattern == VectorizationPatternOption::p1xVec;
   }
 };

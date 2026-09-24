@@ -19,6 +19,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 #include "autopas/utils/SortingThresholdInfoInterface.h"
 #include "autopas/utils/inBox.h"
 #include "autopas/utils/optRef.h"
@@ -428,6 +429,18 @@ class ParticleContainerInterface {
    * Skin distance a particle is allowed to move in one time-step.
    */
   double _skin;
+
+  /**
+   * The OpenMP configurator. ToDo, swap this out for something nicer
+   */
+  OpenMPConfigurator *_ompConfig = nullptr;
+
+ public:
+  /**
+   * OpenMP configurator setter. The ompConfig member is meant to reference the TraversalInterface's OMP configurator.
+   * @param ompConfig the OpenMP configurator to set for the container
+   */
+  virtual void setOmpConfig(OpenMPConfigurator &ompConfig) { _ompConfig = &ompConfig; }
 };
 
 }  // namespace autopas

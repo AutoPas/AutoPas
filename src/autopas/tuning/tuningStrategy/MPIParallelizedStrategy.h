@@ -12,28 +12,17 @@
 #include <vector>
 
 #include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/options/ContainerOption.h"
-#include "autopas/options/DataLayoutOption.h"
-#include "autopas/options/LoadEstimatorOption.h"
-#include "autopas/options/Newton3Option.h"
-#include "autopas/options/TraversalOption.h"
-#include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
-#include "autopas/utils/ConfigurationAndRankIteratorHandler.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/NumberSet.h"
 #include "autopas/utils/WrapMPI.h"
 
 namespace autopas {
 
 /**
  * This strategy spreads the configuration queue in a round robin fashion over all ranks (with similar domain).
- *
- * The actual splitting of the search space and details of the communication logic is not currently handled by
- * this class, but by AutoPasConfigurationCommunicator.
  */
 class MPIParallelizedStrategy : public TuningStrategyInterface {
  public:

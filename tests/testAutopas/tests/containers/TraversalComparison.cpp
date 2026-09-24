@@ -218,13 +218,15 @@ void TraversalComparison::generateReference(mykey_t key) {
       constexpr auto referenceConfig =
           autopas::Configuration(autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08,
                                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                 autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise);
+                                 autopas::Newton3Option::enabled, autopas::OpenMPKindOption::omp_dynamic, 1,
+                                 autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
       std::tie(calculatedForces, calculatedGlobals) = calculateForces<globals>(referenceConfig, key, false);
     } else if (interactionType == autopas::InteractionTypeOption::triwise) {
       constexpr auto referenceConfig =
           autopas::Configuration(autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01,
                                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                 autopas::Newton3Option::disabled, autopas::InteractionTypeOption::triwise);
+                                 autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_dynamic, 1,
+                                 autopas::InteractionTypeOption::triwise, autopas::VectorizationPatternOption::NA);
       std::tie(calculatedForces, calculatedGlobals) = calculateForces<globals>(referenceConfig, key, false);
     }
     _forcesReference[key] = calculatedForces;

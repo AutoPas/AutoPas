@@ -98,7 +98,7 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
         // Parallelized AoS with Newton3 using C27 coloring
         for (int color = 0; color < 27; ++color) {
           const auto &cellsOfColor = _colorCells[color];
-            AUTOPAS_OPENMP(parallel for schedule(dynamic))
+            AUTOPAS_OPENMP(parallel for schedule(runtime))
             for (size_t c = 0; c < cellsOfColor.size(); ++c) {
               const auto &range = cellsOfColor[c];
               for (size_t i = range.first; i < range.second; ++i) {
@@ -118,7 +118,7 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
         // Parallelized SoA with Newton3 using C27 coloring
         for (int color = 0; color < 27; ++color) {
           const auto &cellsOfColor = _colorCells[color];
-            AUTOPAS_OPENMP(parallel for schedule(dynamic))
+            AUTOPAS_OPENMP(parallel for schedule(runtime))
             for (size_t c = 0; c < cellsOfColor.size(); ++c) {
               const auto &range = cellsOfColor[c];
               for (size_t i = range.first; i < range.second; ++i) {

@@ -87,7 +87,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       case DataLayoutOption::aos: {
         if (not _useNewton3) {
           // Each particle i owns its own list slice — no write conflict between iterations.
-          AUTOPAS_OPENMP(parallel for schedule(dynamic))
+          AUTOPAS_OPENMP(parallel for schedule(runtime))
           for (size_t i = 0; i < numParticles; ++i) {
             ParticleType &particleI = *indexToParticle[i];
             const size_t numNeighbors = neighborList.count(i);
@@ -112,7 +112,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 
       case DataLayoutOption::soa: {
         if (not _useNewton3) {
-          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(numParticles / (autopas::autopas_get_max_threads() * 10), 1ul)))
+          AUTOPAS_OPENMP(parallel for schedule(runtime))
           for (size_t i = 0; i < numParticles; ++i) {
             _functor.SoAFunctorVerlet(_soa, i, neighborList.getNeighbors(i), false);
           }

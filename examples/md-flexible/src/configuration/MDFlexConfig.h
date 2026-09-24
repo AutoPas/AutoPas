@@ -12,7 +12,6 @@
 #include <set>
 #include <utility>
 
-#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/EnergySensorOption.h"
@@ -302,6 +301,19 @@ class MDFlexConfig {
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.}), "cell-size", true,
       "Factor for the interaction length to determine the cell size."};
   /**
+   * openMPKindOptions
+   */
+  MDFlexOption<std::set<autopas::OpenMPKindOption>, __LINE__> openMPKindOptions{
+      autopas::OpenMPKindOption::getMostOptions(), "openmp-schedule-kinds", true,
+      "List of OpenMP Scheduling Kind options to use. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::OpenMPKindOption::getAllOptions(), " ", {"(", ")"})};
+  /**
+   * openMPChunkSizes
+   */
+  MDFlexOption<std::shared_ptr<autopas::NumberSet<size_t>>, __LINE__> openMPChunkSizes{
+      std::make_shared<autopas::NumberSetFinite<size_t>>(std::set<size_t>{1}), "openmp-chunk-sizes", true,
+      "Chunk Sizes that can be used for OpenMP Scheduling."};
+  /**
    * logFileName
    */
   MDFlexOption<std::string, __LINE__> logFileName{"", "log-file", true,
@@ -501,15 +513,6 @@ class MDFlexConfig {
       "subdivide-dimension",
       true,
       "Indicates in which dimensions the global domain can be subdivided by the MPI decomposition"};
-
-  /**
-   * acquisitionFunctionOption
-   */
-  MDFlexOption<autopas::AcquisitionFunctionOption, __LINE__> acquisitionFunctionOption{
-      autopas::AcquisitionFunctionOption::upperConfidenceBound, "tuning-acquisition-function", true,
-      "For Bayesian based tuning strategies: Function to determine the predicted knowledge gain when testing a given "
-      "configuration. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), " ", {"(", ")"})};
 
   // Simulation Options:
   /**

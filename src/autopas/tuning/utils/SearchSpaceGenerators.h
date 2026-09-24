@@ -17,52 +17,6 @@
 namespace autopas::SearchSpaceGenerators {
 
 /**
- * Helper struct for all dimensions of a full cartesian product search space.
- */
-struct OptionSpace {
-  /**
-   * Constructor to suppress warnings about failed inlining.
-   */
-  OptionSpace();
-
-  /**
-   * Destructor to suppress warnings about failed inlining.
-   */
-  ~OptionSpace() noexcept;
-
-  /**
-   * Available container options.
-   */
-  std::set<ContainerOption> containerOptions;
-  /**
-   * Available traversal options.
-   */
-  std::set<TraversalOption> traversalOptions;
-
-  /**
-   * Available Vectorization Pattern options
-   */
-  std::set<VectorizationPatternOption> vecPatternOptions;
-
-  /**
-   * Available loadEstimator options.
-   */
-  std::set<LoadEstimatorOption> loadEstimatorOptions;
-  /**
-   * Available dataLayout options.
-   */
-  std::set<DataLayoutOption> dataLayoutOptions;
-  /**
-   * Available newton3 options.
-   */
-  std::set<Newton3Option> newton3Options;
-  /**
-   * Available discrete cellSizeFactors options.
-   */
-  std::set<double> cellSizeFactors;
-};
-
-/**
  * Fills the search space with the cartesian product of the given options (minus invalid combinations).
  * In other words, generate every valid combination of the given options.
  * @param allowedContainerOptions
@@ -71,8 +25,11 @@ struct OptionSpace {
  * @param allowedDataLayoutOptions
  * @param allowedNewton3Options
  * @param allowedCellSizeFactors
- * @param interactionType
+ * @param allowedOpenMPKindOptions
+ * @param allowedOpenMPChunkSizes
  * @param allowedVecPatternOptions
+ * @param interactionType
+ * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return an empty set.
  * @return A set containing all valid configurations.
  */
 std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowedContainerOptions,
@@ -81,18 +38,10 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
+                                         const std::set<OpenMPKindOption> &allowedOpenMPKindOptions,
+                                         const NumberSet<size_t> *allowedOpenMPChunkSizes,
                                          const std::set<VectorizationPatternOption> &allowedVecPatternOptions,
-                                         const InteractionTypeOption &interactionType);
-
-/**
- * Crudely trying to reconstruct the dimensions of the search space from a given set of options.
- *
- * @note It is assumed that searchSet is a complete cartesian product of all contained options.
- *
- * @param searchSet
- * @return
- */
-OptionSpace inferOptionDimensions(const std::set<Configuration> &searchSet);
+                                         const InteractionTypeOption &interactionType, bool throwIfNone = true);
 
 /**
  * For a given domain parametrization, calculate which cell size factors (csf) in an interval actually are useful to

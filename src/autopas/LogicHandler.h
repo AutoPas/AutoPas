@@ -1141,6 +1141,8 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 
   functor.endTraversal(newton3);
 
+  // ToDo: We need to reset the OMP config
+
   const auto [energyWatts, energyJoules, energyDeltaT, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
 
@@ -1408,9 +1410,10 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     return {nullptr, /*rejectIndefinitely*/ true};
   }
 
-  // Check if the VectorizationPattern is supported by the functor
-  if (not functor.isVecPatternAllowed(config.vecPattern)) {
-    AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support the Vectorization Pattern {}!",
+  // Check if the VectorizationPattern is supported by the functor. Only SoA configurations use a vectorization pattern;
+  // AoS configurations always use the not-applicable (N/A) pattern, which every functor supports.
+  if (config.dataLayout == DataLayoutOption::soa and not functor.isSoAVecPatternAllowed(config.vecPattern)) {
+    AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support the SoA Vectorization Pattern {}!",
                config.vecPattern);
     return {nullptr, /*rejectIndefinitely*/ true};
   }
@@ -1447,6 +1450,11 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     _currentContainerSelectorInfo = containerInfo;
     setCurrentContainer(std::move(containerPtr));
   }
+
+  // Set OMP Configuration - todo, this is maybe over complicated -> we maybe want to handle this inside AUTOPAS_OPENMP
+  // wrapper
+  const OpenMPConfigurator ompConfig(config.ompKind, config.ompChunkSize);
+  autopas_set_schedule(ompConfig);
 
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};
 }

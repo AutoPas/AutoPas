@@ -11,6 +11,7 @@
 #include "autopas/tuning/Configuration.h"
 #include "options/DataLayoutOption.h"
 #include "options/Newton3Option.h"
+#include "options/OpenMPKindOption.h"
 #include "utils/AutoPasConfigurationCommunicator.h"
 #include "utils/WrapMPI.h"
 
@@ -74,8 +75,10 @@ Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::se
                                LoadEstimatorOption::none,
                                DataLayoutOption::aos,
                                Newton3Option::disabled,
+                               OpenMPKindOption::omp_dynamic,
+                               1,
                                interactionType,
-                               VectorizationPatternOption::p1xVec};
+                               VectorizationPatternOption::NA};
 
   if (interactionType == InteractionTypeOption::triwise) {
     fallBackConfig.traversal = TraversalOption::lc_c01;
@@ -87,6 +90,7 @@ Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::se
   for (const auto &conf : searchSpace) {
     if (not foundSoA and conf.dataLayout == DataLayoutOption::soa) {
       fallBackConfig.dataLayout = DataLayoutOption::soa;
+      fallBackConfig.vecPattern = VectorizationPatternOption::p1xVec;
       foundSoA = true;
     }
     if (not foundN3Enabled and conf.newton3 == Newton3Option::enabled) {
