@@ -35,8 +35,8 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @param typeId Id of the type of the particle. Used in conjunction with ParticlePropertiesLibrary to access
    * molecular information such as site types and relative site positions.
    */
-  MultisiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
-                      std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0);
+  MultisiteMoleculeLJ(std::array<float, 3> r, std::array<float, 3> v, std::array<float, 4> q,
+                      std::array<float, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0);
 
   /**
    * Destructor of the MultisiteMoleculeLJ class.
@@ -255,55 +255,55 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * Get the quaternion defining rotation
    * @return quaternion defining rotation
    */
-  [[nodiscard]] const std::array<double, 4> &getQuaternion() const;
+  [[nodiscard]] const std::array<float, 4> &getQuaternion() const;
 
   /**
    * Set the quaternion defining rotation
    * @param q quaternion defining rotation
    */
-  void setQuaternion(const std::array<double, 4> &q);
+  void setQuaternion(const std::array<float, 4> &q);
 
   /**
    * Get the angular velocity
    * @return angular velocity
    */
-  [[nodiscard]] const std::array<double, 3> &getAngularVel() const;
+  [[nodiscard]] const std::array<float, 3> &getAngularVel() const;
 
   /**
    * Set the angular velocity
    * @param angularVel
    */
-  void setAngularVel(const std::array<double, 3> &angularVel);
+  void setAngularVel(const std::array<float, 3> &angularVel);
 
   /**
    * Adds given angular velocity to the particle's angular velocity.
    * @param angularVel angular velocity to be added
    */
-  void addAngularVel(const std::array<double, 3> &angularVel);
+  void addAngularVel(const std::array<float, 3> &angularVel);
 
   /**
    * Get the torque.
    * @return torque
    */
-  [[nodiscard]] const std::array<double, 3> &getTorque() const;
+  [[nodiscard]] const std::array<float, 3> &getTorque() const;
 
   /**
    * Set the torque.
    * @param torque
    */
-  void setTorque(const std::array<double, 3> &torque);
+  void setTorque(const std::array<float, 3> &torque);
 
   /**
    * Adds given torque to the particle's torque.
    * @param torque torque to be added
    */
-  void addTorque(const std::array<double, 3> &torque);
+  void addTorque(const std::array<float, 3> &torque);
 
   /**
    * Subracts given torque to the particle's torque.
    * @param torque torque to be subtracted
    */
-  void subTorque(const std::array<double, 3> &torque);
+  void subTorque(const std::array<float, 3> &torque);
 
   /**
    * Creates a string containing all data of the particle.
@@ -315,17 +315,17 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
   /**
    * Rotational direction of particle as quaternion.
    */
-  std::array<double, 4> _q{};
+  std::array<float, 4> _q{};
 
   /**
    * Angular velocity of the particle
    */
-  std::array<double, 3> _angularVel{};
+  std::array<float, 3> _angularVel{};
 
   /**
    * Torque applied to particle.
    */
-  std::array<double, 3> _torque{};
+  std::array<float, 3> _torque{};
 };
 
 }  // namespace mdLib
