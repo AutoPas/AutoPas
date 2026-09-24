@@ -12,6 +12,7 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/generators/UniformGenerator.h"
+#include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -99,8 +100,9 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   Globals calculatedGlobals;
 
   if (interactionType == autopas::InteractionTypeOption::pairwise) {
-    mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                     globals /*calculateGlobals*/>
+    // The HWY functor is used, because it supports all vectorization patterns.
+    mdLib::LJFunctorHWY<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+                        globals /*calculateGlobals*/>
         functor{_cutoff};
     functor.setParticleProperties(_eps * 24, _sig * _sig);
     std::tie(calculatedForces, calculatedGlobals) =
@@ -162,6 +164,8 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
       numHaloParticles);
   EXPECT_EQ(container->size(), numParticles + numHaloParticles) << "Wrong number of halo molecules inserted!";
 
+  // As in the LogicHandler, the functor has to be told which vectorization pattern to use.
+  functor.setVecPattern(config.vecPattern);
   auto traversal = autopas::TraversalSelector::generateTraversalFromConfig<Molecule, decltype(functor)>(
       config, functor, container->getTraversalSelectorInfo());
 
@@ -234,7 +238,6 @@ void TraversalComparison::generateReference(mykey_t key) {
 
 /**
  * This tests all valid configurations against a reference configuration.
- * All configurations are tested in one test, so the reference is only calculated once, and not once per test process.
  */
 TEST_P(TraversalComparison, traversalTest) {
   auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals, interactionType] =
