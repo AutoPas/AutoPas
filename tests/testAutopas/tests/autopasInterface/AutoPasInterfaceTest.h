@@ -27,17 +27,7 @@ class AutoPasInterfaceTest : public AutoPasTestBase, public ::testing::WithParam
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
       auto conf = static_cast<ParamType>(info.param);
-      std::string str;
-      str += conf.container.to_string() + "_";
-      str += conf.traversal.to_string() + "_";
-      str += conf.loadEstimator.to_string() + "_";
-      str += conf.dataLayout.to_string() + "_";
-      str += conf.vecPattern.to_string() + "_";
-      str += "N3" + conf.newton3.to_string() + "_";
-      str += std::string{"cellSizeFactor"} + std::to_string(conf.cellSizeFactor);
-      std::replace(str.begin(), str.end(), '-', '_');
-      std::replace(str.begin(), str.end(), '.', '_');
-      return str;
+      return conf.toShortString(false, true);
     }
   };
 };

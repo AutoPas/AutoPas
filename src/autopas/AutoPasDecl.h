@@ -945,18 +945,27 @@ class AutoPas {
 
   /**
    * Get the list of allowed vectorization pattern options.
+   *
+   * @note This is only relevant for SoA. The not-applicable (N/A) pattern, which every AoS configuration uses, is
+   * always allowed implicitly and therefore never part of the returned set.
    * @param interactionType Get allowed vectorization pattern options for this interaction type. Defaults to
    * InteractionTypeOption::pairwise.
    * @return
    */
-  [[nodiscard]] const std::set<VectorizationPatternOption> &getAllowedVecPatternOptions(
+  [[nodiscard]] std::set<VectorizationPatternOption> getAllowedVecPatternOptions(
       const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
-    return _allowedVecPatternsOptions.at(interactionType);
+    auto allowedVecPatterns = _allowedVecPatternsOptions.at(interactionType);
+    allowedVecPatterns.erase(VectorizationPatternOption::NA);
+    return allowedVecPatterns;
   }
 
   /**
    * Set the list of allowed vectorization pattern options
    * For possible options, see options::VectorizationOption::Value
+   *
+   * @note This is only relevant for SoA. The not-applicable (N/A) pattern, which every AoS configuration uses, is
+   * always added implicitly in init(), so it does not need to be part of the given set. To allow SoA configurations,
+   * at least one applicable pattern (see VectorizationPatternOption::getAllApplicablePatterns()) must be given.
    * @param allowedVecPatterns
    * @param interactionType Set allowed vectorization pattern options for this interaction type. Defaults to
    * InteractionTypeOption::pairwise

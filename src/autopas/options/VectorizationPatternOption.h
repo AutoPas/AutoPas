@@ -30,6 +30,11 @@ class VectorizationPatternOption : public Option<VectorizationPatternOption> {
    */
   enum Value {
     /**
+     * Not Applicable. Used primarily for AoS.
+     */
+    NA,
+
+    /**
      * Interact one particle from the first list with the full vector length from the second list
      *
      * ---------------------------------
@@ -95,11 +100,22 @@ class VectorizationPatternOption : public Option<VectorizationPatternOption> {
   static std::set<VectorizationPatternOption> getDiscouragedOptions() { return {}; }
 
   /**
+   * Set of all options, excluding NA (not applicable).
+   * @return
+   */
+  static std::set<VectorizationPatternOption> getAllApplicablePatterns() {
+    auto s = getAllOptions();
+    s.erase(NA);
+    return s;
+  }
+
+  /**
    * Provides a way to iterate over the possible choices of Vectorization Patterns
    * @return map option -> string representation
    */
   static std::map<VectorizationPatternOption, std::string> getOptionNames() {
     return {
+        {NA, "N/A"},
         {p1xVec, "1xVectorLength"},
         {p2xVecDiv2, "2xVectorLengthDiv2"},
         {pVecDiv2x2, "VectorLengthDiv2x2"},

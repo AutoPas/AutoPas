@@ -20,8 +20,8 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
     const NumberSet<double> *allowedCellSizeFactors,
-    const std::set<VectorizationPatternOption> &allowedVecPatternOptions,
-    const InteractionTypeOption &interactionType) {
+    const std::set<VectorizationPatternOption> &allowedVecPatternOptions, const InteractionTypeOption &interactionType,
+    bool throwIfNone) {
   if (allowedCellSizeFactors->isInterval()) {
     utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
   }
@@ -60,7 +60,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     }
   }
 
-  if (searchSet.empty()) {
+  if (throwIfNone and searchSet.empty()) {
     utils::ExceptionHandler::exception("No valid configurations could be created.");
   }
   return searchSet;

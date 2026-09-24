@@ -18,85 +18,87 @@ TEST_F(C01TraversalTest, testHasCompatibleValues) {
 
   /// Pairwise traversal tests
   Configuration c01T_N3off(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01, LoadEstimatorOption::none,
-                           DataLayoutOption::soa, Newton3Option::disabled, InteractionTypeOption::pairwise);
+                           DataLayoutOption::soa, Newton3Option::disabled, InteractionTypeOption::pairwise,
+                           VectorizationPatternOption::p1xVec);
   EXPECT_EQ(c01T_N3off.hasCompatibleValues(), true);
 
   Configuration c01T_N3off_AoS(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01,
                                LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::disabled,
-                               InteractionTypeOption::pairwise);
+                               InteractionTypeOption::pairwise, VectorizationPatternOption::NA);
   EXPECT_EQ(c01T_N3off_AoS.hasCompatibleValues(), true);
 
   Configuration c01T_N3on(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01, LoadEstimatorOption::none,
-                          DataLayoutOption::soa, Newton3Option::enabled, InteractionTypeOption::pairwise);
+                          DataLayoutOption::soa, Newton3Option::enabled, InteractionTypeOption::pairwise,
+                          VectorizationPatternOption::p1xVec);
   EXPECT_EQ(c01T_N3on.hasCompatibleValues(), false);
 
   Configuration c01T_N3on_AoS(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01,
                               LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::enabled,
-                              InteractionTypeOption::pairwise);
+                              InteractionTypeOption::pairwise, VectorizationPatternOption::NA);
   EXPECT_EQ(c01T_N3on_AoS.hasCompatibleValues(), false);
 
   // Combined SoA Tests
 
   Configuration c01T_N3off_combineSoA(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA,
                                       LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::disabled,
-                                      InteractionTypeOption::pairwise);
+                                      InteractionTypeOption::pairwise, VectorizationPatternOption::p1xVec);
   EXPECT_EQ(c01T_N3off_combineSoA.hasCompatibleValues(), true);
 
   Configuration c01T_N3off_combineSoA_AoS(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA,
                                           LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::disabled,
-                                          InteractionTypeOption::pairwise);
+                                          InteractionTypeOption::pairwise, VectorizationPatternOption::NA);
   EXPECT_EQ(c01T_N3off_combineSoA_AoS.hasCompatibleValues(), false);
 
   Configuration c01T_N3on_combineSoA(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA,
                                      LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::enabled,
-                                     InteractionTypeOption::pairwise);
+                                     InteractionTypeOption::pairwise, VectorizationPatternOption::p1xVec);
   EXPECT_EQ(c01T_N3on_combineSoA.hasCompatibleValues(), false);
 
   Configuration c01T_N3on_combineSoA_AoS(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA,
                                          LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::enabled,
-                                         InteractionTypeOption::pairwise);
+                                         InteractionTypeOption::pairwise, VectorizationPatternOption::NA);
   EXPECT_EQ(c01T_N3on_combineSoA_AoS.hasCompatibleValues(), false);
 
   /// Triwise traversal tests
   Configuration c01T_N3off_3B(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01,
                               LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::disabled,
-                              InteractionTypeOption::triwise);
+                              InteractionTypeOption::triwise, VectorizationPatternOption::p1xVec);
   EXPECT_EQ(c01T_N3off_3B.hasCompatibleValues(), true);
 
   Configuration c01T_N3off_AoS_3B(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01,
                                   LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::disabled,
-                                  InteractionTypeOption::triwise);
+                                  InteractionTypeOption::triwise, VectorizationPatternOption::NA);
   EXPECT_EQ(c01T_N3off_AoS_3B.hasCompatibleValues(), true);
 
   Configuration c01T_N3on_3B(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01,
                              LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::enabled,
-                             InteractionTypeOption::triwise);
+                             InteractionTypeOption::triwise, VectorizationPatternOption::p1xVec);
   EXPECT_EQ(c01T_N3on_3B.hasCompatibleValues(), false);
 
   Configuration c01T_N3on_AoS_3B(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01,
                                  LoadEstimatorOption::none, DataLayoutOption::aos, Newton3Option::enabled,
-                                 InteractionTypeOption::triwise);
+                                 InteractionTypeOption::triwise, VectorizationPatternOption::NA);
   EXPECT_EQ(c01T_N3on_AoS_3B.hasCompatibleValues(), false);
 
   // Combined SoA Tests
 
   Configuration c01T_N3off_combineSoA_3B(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA,
                                          LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::disabled,
-                                         InteractionTypeOption::triwise);
+                                         InteractionTypeOption::triwise, VectorizationPatternOption::p1xVec);
   EXPECT_EQ(c01T_N3off_combineSoA_3B.hasCompatibleValues(), false);
 
   Configuration c01T_N3off_combineSoA_AoS_3B(
       ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA, LoadEstimatorOption::none,
-      DataLayoutOption::aos, Newton3Option::disabled, InteractionTypeOption::triwise);
+      DataLayoutOption::aos, Newton3Option::disabled, InteractionTypeOption::triwise, VectorizationPatternOption::NA);
   EXPECT_EQ(c01T_N3off_combineSoA_AoS_3B.hasCompatibleValues(), false);
 
   Configuration c01T_N3on_combineSoA_3B(ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA,
                                         LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::enabled,
-                                        InteractionTypeOption::triwise);
+                                        InteractionTypeOption::triwise, VectorizationPatternOption::p1xVec);
   EXPECT_EQ(c01T_N3on_combineSoA_3B.hasCompatibleValues(), false);
 
   Configuration c01T_N3on_combineSoA_AoS_3B(
       ContainerOption::Value::linkedCells, 1., TraversalOption::lc_c01_combined_SoA, LoadEstimatorOption::none,
-      DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::triwise);
+      DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::triwise, VectorizationPatternOption::NA);
   EXPECT_EQ(c01T_N3on_combineSoA_AoS_3B.hasCompatibleValues(), false);
 }
