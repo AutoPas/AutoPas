@@ -26,12 +26,14 @@ enum DeletionPosition {
 };
 
 using TestingTuple =
-    std::tuple<autopas::Configuration, size_t /*numParticles*/, size_t /*numHaloParticles*/,
-               std::array<double, 3> /*boxMaxVec*/, bool /*doSlightShift*/,
-               DeletionPosition /*particleDeletionPosition*/, bool /*globals*/, autopas::InteractionTypeOption>;
+    std::tuple<size_t /*numParticles*/, size_t /*numHaloParticles*/, std::array<double, 3> /*boxMaxVec*/,
+               bool /*doSlightShift*/, DeletionPosition /*particleDeletionPosition*/, bool /*globals*/,
+               autopas::InteractionTypeOption>;
 
 /**
  * The tests in this class compare the calculated forces from all aos and soa traversals with a reference result.
+ * Each test covers one simulation setup and loops over all valid configurations, so the reference is only calculated
+ * once per test.
  */
 class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamInterface<TestingTuple> {
  public:
