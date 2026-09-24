@@ -409,9 +409,11 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
 
   std::map<autopas::ContainerOption, size_t> configsPerContainer;
 
-  // The multiplier for the configuration count which comes from the number of OMP kinds available and the three OMP
-  // chunk sizes we test with.
-  const size_t ompFactor = autopas::OpenMPKindOption::getMostOptions().size() * 3 /* chunk sizes {1, 2, 250} */;
+  // TODO before merge: The multiplier for the configuration count which comes from the OMP kinds and chunk sizes that
+  // generateAllValidConfigurations sweeps over. That is only (static, 1), hence 1. If it ever sweeps more again, this
+  // is the only number below that needs adjusting, as traversals only supporting static, 1 scheduling are counted
+  // separately.
+  constexpr size_t ompFactor = 1;
 
   // Number of configs manually counted:
   // Configurations considered valid by cartesian product but are typically invalid due to

@@ -240,11 +240,13 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
   /**
    * Set of options that are very unlikely to be interesting.
    *
-   * These are Auto4OMP's automated selection methods, and LB4OMP's scheduling techniques that Auto4OMP does not use.
-   * Several of the latter need data that LB4OMP only has after a profiling run (see KMP_PROFILE_DATA), and abort
-   * inside the runtime otherwise. These have not been tested with AutoPas, although are not expected to perform well.
-   * Auto4OMP's selection methods pick a scheduling technique themselves, which overlaps with what AutoPas' tuning
-   * does and are currently broken, so they are not useful as tunable options here.
+   * These are all kinds that are not tested with AutoPas, leaving static, dynamic, guided, trapezoidal and fac2a.
+   * Among the untested ones:
+   * - Auto4OMP's selection methods pick a scheduling technique themselves, which overlaps with what AutoPas' tuning
+   *   does, and are currently broken.
+   * - Several of LB4OMP's techniques need data that LB4OMP only has after a profiling run (see KMP_PROFILE_DATA), and
+   *   abort inside the runtime otherwise.
+   * - omp_runtime takes its kind from the OMP_SCHEDULE environment variable, which AutoPas overwrites anyway.
    *
    * @return
    */
@@ -270,6 +272,11 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         OpenMPKindOption::lb4omp_fiss,
         OpenMPKindOption::lb4omp_viss,
         OpenMPKindOption::lb4omp_rnd,
+        OpenMPKindOption::lb4omp_awf_b,
+        OpenMPKindOption::lb4omp_awf_c,
+        OpenMPKindOption::lb4omp_awf_d,
+        OpenMPKindOption::lb4omp_awf_e,
+        OpenMPKindOption::lb4omp_af_a,
 #endif
     };
   }

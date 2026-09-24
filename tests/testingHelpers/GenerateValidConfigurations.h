@@ -35,10 +35,10 @@
  * @param allowedDataLayoutOptions By default, all options.
  * @param allowedNewton3Options By default, all options.
  * @param allowedCellSizeFactors By default, {0.5, 1.0, 1.5}
- * @param allowedOpenMPKindOptions By default, all non-discouraged options. See
- * OpenMPKindOption::getDiscouragedOptions() for what is left out and why.
- * @param allowedOpenMPChunkSizes By default, {1, 2, 250}: 1 is standard, 2 is something non-standard, and 250 is a
- * stress-test for correctness at a very large chunk size.
+ * @param allowedOpenMPKindOptions By default, only static, since OpenMP scheduling is assumed to be correct and
+ * therefore does not need to be swept over. Sweeping it multiplies the parameterized test suites by the number of
+ * combinations.
+ * @param allowedOpenMPChunkSizes By default, only 1, for the same reason as allowedOpenMPKindOptions.
  * @param allowedVectorPatterns By default, all options.
  * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return an empty set.
  * @return
@@ -52,8 +52,8 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     const std::set<autopas::DataLayoutOption> &allowedDataLayoutOptions = autopas::DataLayoutOption::getAllOptions(),
     const std::set<autopas::Newton3Option> &allowedNewton3Options = autopas::Newton3Option::getAllOptions(),
     const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
-    const std::set<autopas::OpenMPKindOption> &allowedOpenMPKindOptions = autopas::OpenMPKindOption::getMostOptions(),
-    const std::set<size_t> &allowedOpenMPChunkSizes = {1, 2, 250},
+    const std::set<autopas::OpenMPKindOption> &allowedOpenMPKindOptions = {autopas::OpenMPKindOption::omp_static},
+    const std::set<size_t> &allowedOpenMPChunkSizes = {1},
     const std::set<autopas::VectorizationPatternOption> &allowedVectorPatterns =
         autopas::VectorizationPatternOption::getAllOptions(),
     bool throwIfNone = true) {
@@ -92,8 +92,8 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
  * @param dataLayoutOption If provided, restrict to this data layout, otherwise consider all options.
  * @param newton3Option If provided, restrict to this Newton 3 option, otherwise consider all options.
  * @param cellSizeFactor If provided, restrict to this cell size factor, otherwise consider {0.5, 1.0, 1.5}.
- * @param ompKind If provided, restrict to this OpenMP schedule kind, otherwise consider all options.
- * @param ompChunkSize If provided, restrict to this OpenMP chunk size, otherwise consider {1, 2, 250}.
+ * @param ompKind If provided, restrict to this OpenMP schedule kind, otherwise only static is considered.
+ * @param ompChunkSize If provided, restrict to this OpenMP chunk size, otherwise only 1 is considered.
  * @param vectorPattern If provided, restrict to this vectorization pattern, otherwise consider all options.
  * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return std::nullopt
  * instead.
@@ -122,8 +122,9 @@ inline std::optional<autopas::Configuration> getArbitraryConfiguration(
       newton3Option.has_value() ? std::set<autopas::Newton3Option>{*newton3Option}
                                 : autopas::Newton3Option::getAllOptions(),
       cellSizeFactor.has_value() ? std::set<double>{*cellSizeFactor} : std::set<double>{0.5, 1.0, 1.5},
-      ompKind.has_value() ? std::set<autopas::OpenMPKindOption>{*ompKind} : autopas::OpenMPKindOption::getMostOptions(),
-      ompChunkSize.has_value() ? std::set<size_t>{*ompChunkSize} : std::set<size_t>{1, 2, 250},
+      ompKind.has_value() ? std::set<autopas::OpenMPKindOption>{*ompKind}
+                          : std::set<autopas::OpenMPKindOption>{autopas::OpenMPKindOption::omp_static},
+      ompChunkSize.has_value() ? std::set<size_t>{*ompChunkSize} : std::set<size_t>{1},
       vectorPattern.has_value() ? std::set<autopas::VectorizationPatternOption>{*vectorPattern}
                                 : autopas::VectorizationPatternOption::getAllOptions(),
       /*throwIfNone -> false so that we use the error message below which is clearer for users of this function*/

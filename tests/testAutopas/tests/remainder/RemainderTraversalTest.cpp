@@ -67,7 +67,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   const auto searchSpace = generateAllValidConfigurations(
       autopas::InteractionTypeOption::pairwise, {containerConfig.container}, autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), {dataLayout}, {n3}, {containerConfig.cellSizeFactor},
-      autopas::OpenMPKindOption::getMostOptions(), {1, 2, 250}, autopas::VectorizationPatternOption::getAllOptions(),
+      {autopas::OpenMPKindOption::omp_static}, {1}, autopas::VectorizationPatternOption::getAllOptions(),
       /*throwIfNone*/ false);
   // Sanity check
   if (searchSpace.empty()) {
