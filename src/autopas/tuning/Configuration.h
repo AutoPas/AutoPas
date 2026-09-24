@@ -6,7 +6,10 @@
 
 #pragma once
 
+#include <cstddef>
 #include <tuple>
+#include <type_traits>
+#include <utility>
 
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
@@ -17,6 +20,7 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/VectorizationPatternOption.h"
+#include "autopas/utils/HashCombine.h"
 
 namespace autopas {
 
@@ -114,19 +118,28 @@ class Configuration {
   [[nodiscard]] bool hasCompatibleValues() const;
 
   /**
-   * Check if all discrete options of the given configuration are equal to this'.
-   * @param rhs
-   * @return
+   * A tuple (std::tie) of references to all members, in a fixed order.
+   *
+   * Useful for treating the configuration as a tuple and applying it in variadic templates, or in tuple comparison
+   * operators, which improves the maintainability of configuration ordering, comparison, hashing, and
+   * (de)serialization, as these features do not need to be modified when new configuration components are added, only
+   * this tie operator.
+   *
+   * @return Tuple of const references to all members.
    */
-  bool equalsDiscreteOptions(const Configuration &rhs) const;
+  [[nodiscard]] auto tie() const {
+    return std::tie(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType,
+                    vecPattern);
+  }
 
   /**
-   * Check if all continuous options of the given configuration are equal to this configuration.
-   * @param rhs configuration compared against.
-   * @param epsilon Maximal allowed absolute difference between two continuous values to be considered equal.
-   * @return
+   * Non-const overload of tie()
+   * @return Tuple of mutable references to all members.
    */
-  bool equalsContinuousOptions(const autopas::Configuration &rhs, double epsilon = 1e-12) const;
+  [[nodiscard]] auto tie() {
+    return std::tie(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType,
+                    vecPattern);
+  }
 
   /**
    * Container option.
@@ -190,7 +203,7 @@ std::istream &operator>>(std::istream &in, Configuration &configuration);
  * Equals operator for Configuration objects.
  * @param lhs
  * @param rhs
- * @return true iff all members are equal.
+ * @return true iff all components are equal.
  */
 bool operator==(const Configuration &lhs, const Configuration &rhs);
 
@@ -198,7 +211,7 @@ bool operator==(const Configuration &lhs, const Configuration &rhs);
  * Not-Equals operator for Configuration objects.
  * @param lhs
  * @param rhs
- * @return true iff at least one member is different.
+ * @return true iff at least one component is different.
  */
 bool operator!=(const Configuration &lhs, const Configuration &rhs);
 
@@ -224,17 +237,35 @@ struct ConfigHash {
    * @param configuration
    * @return
    */
-  std::size_t operator()(Configuration configuration) const {
-    std::size_t enumHash = static_cast<std::size_t>(configuration.interactionType) +
-                           static_cast<std::size_t>(configuration.newton3) * 10 +
-                           static_cast<std::size_t>(configuration.dataLayout) * 100 +
-                           static_cast<std::size_t>(configuration.loadEstimator) * 1000 +
-                           static_cast<std::size_t>(configuration.traversal) * 10000 +
-                           static_cast<std::size_t>(configuration.container) * 100000;
-    std::size_t doubleHash = std::hash<double>{}(configuration.cellSizeFactor);
-
-    return enumHash ^ doubleHash;
+  std::size_t operator()(const Configuration &configuration) const {
+    return std::apply([](const auto &...members) { return utils::hashCombine(members...); }, configuration.tie());
   }
 };
+
+namespace internal {
+/**
+ * Sum of the sizes of all members referenced by a Configuration::tie() tuple.
+ * @tparam Tuple_T Type of the tie tuple.
+ * @tparam Is Index sequence over the tuple elements.
+ * @return Sum of sizeof over all referenced members.
+ */
+template <class Tuple_T, std::size_t... Is>
+constexpr std::size_t sumOfMemberSizes(std::index_sequence<Is...>) {
+  return (sizeof(std::remove_reference_t<std::tuple_element_t<Is, Tuple_T>>) + ...);
+}
+}  // namespace internal
+
+/**
+ * Type of the tuple returned by Configuration::tie().
+ */
+using ConfigurationTie = decltype(std::declval<const Configuration &>().tie());
+
+/**
+ * Number of bytes a Configuration occupies when every member is serialized by value.
+ *
+ * Derived from Configuration::tie(), so it cannot drift out of sync with the members.
+ */
+inline constexpr std::size_t serializedConfigurationSize =
+    internal::sumOfMemberSizes<ConfigurationTie>(std::make_index_sequence<std::tuple_size_v<ConfigurationTie>>{});
 
 }  // namespace autopas
