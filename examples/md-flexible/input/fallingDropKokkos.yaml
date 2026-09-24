@@ -1,10 +1,10 @@
-container                        :  [VerletListsKokkosMaxNeighborsGPURebuilding]
+container                        :  [VerletListsKokkosMaxNeighborsGPURebuildingBinning]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [SoA]
-traversal                        :  [vl_kokkos_traversal_teams]
+traversal                        :  [vl_kokkos_traversal_flat]
 tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3
@@ -55,6 +55,6 @@ Objects:
 #   addBrownianMotion              :  false
 vtk-filename                     :  fallingDrop
 vtk-write-frequency              :  1000
-vtk-output-folder                :  /home/franziska/Documents/AutoPasOutputs
+vtk-output-folder                :  /u/home/go34tis/out
 no-end-config                    :  true
 log-level                        :  info

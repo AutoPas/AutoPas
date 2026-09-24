@@ -1,4 +1,4 @@
-container                        :  [VerletListsKokkosGPURebuilding]
+container                        :  [VerletListsKokkosMaxNeighborsGPURebuilding]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
@@ -48,6 +48,6 @@ Objects:
 #   addBrownianMotion              :  false
 vtk-filename                     :  basicScenarioVerlet
 vtk-write-frequency              :  10000
-vtk-output-folder                :  /home/franziska/Documents/AutoPasOutputs
+vtk-output-folder                :  /u/home/go34tis/AutoPasOutputs
 no-end-config                    :  true
 log-level                        :  info
