@@ -11,6 +11,7 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "configuration/OpenMP.h"
 
 // Declare the main AutoPas class and the computeInteractions() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
@@ -120,6 +121,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
   _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
   _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
+  _autoPasContainer->setAllowedThreadCounts(*_configuration.threadCounts.value);
   _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
 
   if (_configuration.getInteractionTypes().empty()) {
@@ -375,7 +377,8 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
                       _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
-                      _configuration.vecPatternOptions.value, autopas::InteractionTypeOption::pairwise)
+                      _configuration.threadCounts.value.get(), _configuration.vecPatternOptions.value,
+                      autopas::InteractionTypeOption::pairwise)
                       .size();
 
         const size_t searchSpaceSizeTriwise =
@@ -385,7 +388,8 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                      _configuration.vecPatternOptions.value, autopas::InteractionTypeOption::triwise)
+                      _configuration.threadCounts.value.get(), _configuration.vecPatternOptions.value,
+                      autopas::InteractionTypeOption::triwise)
                       .size();
 
         return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
@@ -579,7 +583,7 @@ bool Simulation::calculateTriwiseForces() {
 }
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
-  AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
+  AUTOPAS_OPENMP(parallel shared(_autoPasContainer) MD_FLEXIBLE_NUM_THREADS)
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
   }

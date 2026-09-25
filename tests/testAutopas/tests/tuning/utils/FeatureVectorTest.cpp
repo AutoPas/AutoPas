@@ -47,7 +47,7 @@ TEST_F(FeatureVectorTest, lhsSampleFeature) {
 
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
                                autopas::NumberInterval<double>(1., 2.), InteractionTypeOption::pairwise,
-                               allVecPatterns);
+                               {autopas_get_max_threads()}, allVecPatterns);
   auto vecList = encoder.lhsSampleFeatures(n, rand);
 
   EXPECT_EQ(vecList.size(), n);
@@ -63,25 +63,26 @@ TEST_F(FeatureVectorTest, lhsSampleFeatureCluster) {
 
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
                                autopas::NumberInterval<double>(1., 2.), InteractionTypeOption::pairwise,
-                               allVecPatterns);
+                               {autopas_get_max_threads()}, allVecPatterns);
   auto vecList = encoder.lhsSampleFeatureCluster(n, rand, iteration);
 
   EXPECT_EQ(vecList.size(), n);
 }
 
 TEST_F(FeatureVectorTest, distanceTest) {
+  const int threadCount = autopas_get_max_threads();
   autopas::FeatureVector f1(ContainerOption::linkedCells, 1., TraversalOption::lc_c01, LoadEstimatorOption::none,
-                            DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise,
+                            DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise, threadCount,
                             VectorizationPatternOption::p1xVec);
   autopas::FeatureVector f2(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
-                            DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise,
+                            DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise, threadCount,
                             VectorizationPatternOption::p1xVec);
   autopas::FeatureVector f3(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
-                            DataLayoutOption::soa, Newton3Option::enabled, InteractionTypeOption::pairwise,
+                            DataLayoutOption::soa, Newton3Option::enabled, InteractionTypeOption::pairwise, threadCount,
                             VectorizationPatternOption::p1xVec);
   autopas::FeatureVector f4(ContainerOption::linkedCells, 1., TraversalOption::lc_c08, LoadEstimatorOption::none,
                             DataLayoutOption::soa, Newton3Option::disabled, InteractionTypeOption::pairwise,
-                            VectorizationPatternOption::p1xVec);
+                            threadCount, VectorizationPatternOption::p1xVec);
 
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f1 - f1).squaredNorm(), 0);
   EXPECT_EQ(static_cast<Eigen::VectorXd>(f2 - f2).squaredNorm(), 0);
@@ -110,7 +111,8 @@ TEST_F(FeatureVectorTest, distanceTest) {
 TEST_F(FeatureVectorTest, onehot) {
   autopas::Random rand;
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, allDataLayouts, allNewton3,
-                               NumberInterval<double>(0., 1.), InteractionTypeOption::pairwise, allVecPatterns);
+                               NumberInterval<double>(0., 1.), InteractionTypeOption::pairwise,
+                               {autopas_get_max_threads()}, allVecPatterns);
   auto vecList = encoder.lhsSampleFeatures(100, rand);
 
   for (auto fv : vecList) {
@@ -139,9 +141,10 @@ TEST_F(FeatureVectorTest, clusterEncode) {
   std::vector<DataLayoutOption> dataLayoutsVec(dataLayouts.begin(), dataLayouts.end());
   std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
 
+  const int threadCount = autopas_get_max_threads();
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, dataLayoutsVec, newtonsVec,
                                NumberSetFinite<double>({cellSizeFactor}), InteractionTypeOption::pairwise,
-                               allVecPatterns);
+                               {threadCount}, allVecPatterns);
 
   // generate all possible combinations
   std::vector<FeatureVector> vecList;
@@ -150,7 +153,7 @@ TEST_F(FeatureVectorTest, clusterEncode) {
       for (const auto &newton3 : newtons) {
         for (const auto &pattern : patterns) {
           vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3,
-                               InteractionTypeOption::pairwise, pattern);
+                               InteractionTypeOption::pairwise, threadCount, pattern);
         }
       }
     }
@@ -183,9 +186,10 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
   std::vector<DataLayoutOption> dataLayoutsVec(dataLayouts.begin(), dataLayouts.end());
   std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
 
+  const int threadCount = autopas_get_max_threads();
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, dataLayoutsVec, newtonsVec,
                                NumberSetFinite<double>({cellSizeFactor}), InteractionTypeOption::pairwise,
-                               allVecPatterns);
+                               {threadCount}, allVecPatterns);
 
   std::vector<int> dimRestriction = {static_cast<int>(allCompatibleContainerTraversalEstimators.size()),
                                      static_cast<int>(dataLayouts.size()), static_cast<int>(newtons.size())};
@@ -197,7 +201,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
       for (auto newton3 : newtons) {
         for (auto pattern : patterns) {
           vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3,
-                               InteractionTypeOption::pairwise, pattern);
+                               InteractionTypeOption::pairwise, threadCount, pattern);
         }
       }
     }
@@ -235,9 +239,10 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
   std::vector<DataLayoutOption> dataLayoutsVec(dataLayouts.begin(), dataLayouts.end());
   std::vector<Newton3Option> newtonsVec(newtons.begin(), newtons.end());
 
+  const int threadCount = autopas_get_max_threads();
   FeatureVectorEncoder encoder(allCompatibleContainerTraversalEstimators, dataLayoutsVec, newtonsVec,
                                NumberSetFinite<double>({cellSizeFactor}), InteractionTypeOption::pairwise,
-                               allVecPatterns);
+                               {threadCount}, allVecPatterns);
 
   std::vector<int> dimRestriction = {static_cast<int>(allCompatibleContainerTraversalEstimators.size()),
                                      static_cast<int>(dataLayouts.size()), static_cast<int>(newtons.size())};
@@ -249,7 +254,7 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
       for (auto newton3 : newtons) {
         for (auto pattern : patterns) {
           vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3,
-                               InteractionTypeOption::pairwise, pattern);
+                               InteractionTypeOption::pairwise, threadCount, pattern);
         }
       }
     }

@@ -34,7 +34,8 @@ class AutoPasInterfaceTest : public AutoPasTestBase, public ::testing::WithParam
       str += conf.dataLayout.to_string() + "_";
       str += conf.vecPattern.to_string() + "_";
       str += "N3" + conf.newton3.to_string() + "_";
-      str += std::string{"cellSizeFactor"} + std::to_string(conf.cellSizeFactor);
+      str += std::string{"cellSizeFactor"} + std::to_string(conf.cellSizeFactor) + "_";
+      str += std::string{"threadCount"} + std::to_string(conf.threadCount);
       std::replace(str.begin(), str.end(), '-', '_');
       std::replace(str.begin(), str.end(), '.', '_');
       return str;
