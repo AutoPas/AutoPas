@@ -11,6 +11,7 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "configuration/OpenMP.h"
 
 // Declare the main AutoPas class and the computeInteractions() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
@@ -582,7 +583,7 @@ bool Simulation::calculateTriwiseForces() {
 }
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
-  AUTOPAS_OPENMP(parallel shared(_autoPasContainer) num_threads(autopas::autopas_get_tuned_num_threads()))
+  AUTOPAS_OPENMP(parallel shared(_autoPasContainer) MD_FLEXIBLE_NUM_THREADS)
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
   }
