@@ -17,9 +17,8 @@
 
 using ::testing::_;
 
-void ThreadCountTuningTest::testThreadCountTuningWithBoxMax(const size_t boxMax,
-                                                            const std::set<int> &threadCountOptions,
-                                                            int expectedSelectedThreadCount) const {
+void ThreadCountTuningTest::testThreadCountTuning(const size_t boxMax, const std::set<int> &threadCountOptions,
+                                                  int expectedSelectedThreadCount) const {
   const std::set<autopas::ContainerOption> containerOptions({autopas::ContainerOption::linkedCells});
   const std::set<autopas::TraversalOption> traversalOptions({autopas::TraversalOption::lc_c01});
   const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions({autopas::LoadEstimatorOption::none});
@@ -109,13 +108,13 @@ TEST_F(ThreadCountTuningTest, testThreadCountTuningOptions) {
     GTEST_SKIP() << "Too few physical threads";
   }
   std::set<int> threadCountOptions{2, maxThreads - 1};
-  testThreadCountTuningWithBoxMax(2, threadCountOptions);
+  testThreadCountTuning(2, threadCountOptions);
 }
 
 /**
  * Tests: Tuning disabled -> use all threads
  */
-TEST_F(ThreadCountTuningTest, testThreadCountTuningDisabled) { testThreadCountTuningWithBoxMax(2, {0}, 0); }
+TEST_F(ThreadCountTuningTest, testThreadCountTuningDisabled) { testThreadCountTuning(2, {0}, 0); }
 
 /**
  * Tests: Set requested number of threads
@@ -123,32 +122,6 @@ TEST_F(ThreadCountTuningTest, testThreadCountTuningDisabled) { testThreadCountTu
 TEST_F(ThreadCountTuningTest, testThreadCountTuningRange) {
   auto maxThreads = autopas::autopas_get_max_threads();
   for (int n = 1; n <= maxThreads; n *= 2) {
-    testThreadCountTuningWithBoxMax(4, {n}, n);
+    testThreadCountTuning(4, {n}, n);
   }
-}
-
-/**
- * Tests: * very small scenario (8 particles) -> lowest number of threads
- *  Sensitive to shared CPU usage! (Skipped in CI.)
- * To run the test explicitly, use:
- *   ./build/tests/testAutopas/runTests \
- *     --gtest_filter=ThreadCountTuningTest.DISABLED_testThreadCountTuningSmall \
- *     --gtest_also_run_disabled_tests
- */
-TEST_F(ThreadCountTuningTest, DISABLED_testThreadCountTuningSmall) {
-  const int maxThreads = std::min(autopas::autopas_get_max_threads(), 4);
-  testThreadCountTuningWithBoxMax(2, {1, maxThreads}, 1);
-}
-
-/**
- * Tests: larger scenario (33k particles)   -> highest number of threads
- * Sensitive to shared CPU usage! (Skipped in CI.)
- * To run the test explicitly, use:
- *   ./build/tests/testAutopas/runTests \
- *     --gtest_filter=ThreadCountTuningTest.DISABLED_testThreadCountTuningLarge \
- *     --gtest_also_run_disabled_tests
- */
-TEST_F(ThreadCountTuningTest, DISABLED_testThreadCountTuningLarge) {
-  const int maxThreads = std::min(autopas::autopas_get_max_threads(), 4);
-  testThreadCountTuningWithBoxMax(32, {1, maxThreads}, maxThreads);
 }
