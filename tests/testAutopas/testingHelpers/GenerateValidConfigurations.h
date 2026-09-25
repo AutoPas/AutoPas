@@ -129,13 +129,13 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
  * why.
  * @param allowedContainerOptions By default, all options.
  * @param allowedCellSizeFactors By default, {0.5, 1.0, 1.5}
- * @param allowedThreadCounts By default, {max_threads}
+ * @param allowedThreadCounts By default, {1, max_threads}
  * @return
  */
 inline std::set<ContainerConfiguration> generateAllValidContainerConfigurations(
     const std::set<autopas::ContainerOption> &allowedContainerOptions = autopas::ContainerOption::getAllOptions(),
     const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
-    const std::set<int> &allowedThreadCounts = {autopas::autopas_get_max_threads()}) {
+    const std::set<int> &allowedThreadCounts = {1, autopas::autopas_get_max_threads()}) {
   std::set<ContainerConfiguration> containerConfigs;
   for (const auto &containerOption : allowedContainerOptions) {
     for (const auto csf : allowedCellSizeFactors) {
