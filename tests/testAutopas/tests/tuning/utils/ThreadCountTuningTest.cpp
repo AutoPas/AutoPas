@@ -18,7 +18,7 @@
 using ::testing::_;
 
 void ThreadCountTuningTest::testThreadCountTuning(const size_t boxMax, const std::set<int> &threadCountOptions,
-                                                  int expectedSelectedThreadCount) const {
+                                                  std::optional<int> expectedSelectedThreadCount) const {
   const std::set<autopas::ContainerOption> containerOptions({autopas::ContainerOption::linkedCells});
   const std::set<autopas::TraversalOption> traversalOptions({autopas::TraversalOption::lc_c01});
   const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions({autopas::LoadEstimatorOption::none});
@@ -79,7 +79,7 @@ void ThreadCountTuningTest::testThreadCountTuning(const size_t boxMax, const std
     EXPECT_TRUE(threadCountOptions.contains(selectedThreadCount));
   }
   // Check the actual number of threads to be used as set by the current configuration
-  if (expectedSelectedThreadCount > 0) {
+  if (expectedSelectedThreadCount.value_or(-1) > 0) {
     EXPECT_EQ(expectedSelectedThreadCount, selectedThreadCount);
   }
 }

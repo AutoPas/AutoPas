@@ -20,5 +20,5 @@ class ThreadCountTuningTest : public AutoPasTestBase {
    * completed (0 = max threads)
    */
   void testThreadCountTuning(const size_t boxMax, const std::set<int> &threadCountOptions,
-                             int expectedSelectedThreadCount = -1) const;
+                             std::optional<int> expectedSelectedThreadCount = std::nullopt) const;
 };
