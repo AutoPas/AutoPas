@@ -864,8 +864,9 @@ TEST_F(GeneratorsTest, IDContinuity) {
 }
 
 /**
- * This test checks if the HCP generator's particle count matches the previous implementation of getParticlesTotal()
- * when centeredAlignment was false. This ensures that the new implementation is consistent with the legacy behavior.
+ * This test checks if the HCP generator's particle count and generated particle positions match the previous
+ * implementation of getParticlesTotal() and generation when centeredAlignment was false. This ensures that the new
+ * implementation is consistent with the legacy behavior.
  */
 TEST_F(GeneratorsTest, testRegressionPreviousHCPImplementation) {
   // Previous implementation of getParticlesTotal() when centeredAlignment was false
@@ -888,6 +889,39 @@ TEST_F(GeneratorsTest, testRegressionPreviousHCPImplementation) {
     return evenLayer * std::ceil(numLayers / 2.) + oddLayer * std::floor(numLayers / 2.);
   };
 
+  // Previous implementation of particle generation when centeredAlignment was false
+  auto legacyGeneratePositions = [](const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+                                    const double particleSpacing) {
+    std::vector<std::array<double, 3>> positions;
+    if (particleSpacing <= 0.0) {
+      return positions;
+    }
+    for (size_t d = 0; d < 3; ++d) {
+      if (boxMax[d] <= boxMin[d]) {
+        return positions;
+      }
+    }
+    const double spacingRow = particleSpacing * std::sqrt(3. / 4.);
+    const double spacingLayer = particleSpacing * std::sqrt(2. / 3.);
+    const double xOffset = particleSpacing * 0.5;
+    const double yOffset = particleSpacing * std::sqrt(1. / 12.);
+
+    bool evenLayer = true;
+    for (double z = boxMin[2]; z < boxMax[2]; z += spacingLayer) {
+      const double startY = evenLayer ? boxMin[1] : boxMin[1] + yOffset;
+      bool evenRow = evenLayer;
+      for (double y = startY; y < boxMax[1]; y += spacingRow) {
+        const double startX = evenRow ? boxMin[0] : boxMin[0] + xOffset;
+        for (double x = startX; x < boxMax[0]; x += particleSpacing) {
+          positions.push_back({x, y, z});
+        }
+        evenRow = not evenRow;
+      }
+      evenLayer = not evenLayer;
+    }
+    return positions;
+  };
+
   for (const double spacing : {0.5, 1.0, 1.25, 2.3}) {
     const double spacingRow = spacing * std::sqrt(3. / 4.);
     const double spacingLayer = spacing * std::sqrt(2. / 3.);
@@ -906,6 +940,26 @@ TEST_F(GeneratorsTest, testRegressionPreviousHCPImplementation) {
               autopas::generators::HCPGenerator::getNumberOfParticles(boxMin, boxLength, spacing, false);
           EXPECT_EQ(actual, expectedLegacy) << "Mismatch with spacing=" << spacing << ", boxLength=[" << boxLength[0]
                                             << ", " << boxLength[1] << ", " << boxLength[2] << "]";
+
+          // Verify particle positions against previous generation implementation
+          const auto expectedPositions = legacyGeneratePositions(boxMin, boxLength, spacing);
+          std::vector<ParticleType> actualParticles;
+          autopas::generators::PseudoContainer container(actualParticles);
+          autopas::generators::HCPGenerator::fillWithParticles(container, boxMin, boxLength, ParticleType{}, spacing,
+                                                               false);
+
+          ASSERT_EQ(actualParticles.size(), expectedPositions.size())
+              << "Particle count mismatch with spacing=" << spacing << ", boxLength=[" << boxLength[0] << ", "
+              << boxLength[1] << ", " << boxLength[2] << "]";
+          EXPECT_EQ(actualParticles.size(), actual);
+
+          for (size_t i = 0; i < actualParticles.size(); ++i) {
+            for (size_t d = 0; d < 3; ++d) {
+              EXPECT_DOUBLE_EQ(actualParticles[i].getR()[d], expectedPositions[i][d])
+                  << "Position mismatch at particle " << i << " dimension " << d << " with spacing=" << spacing
+                  << ", boxLength=[" << boxLength[0] << ", " << boxLength[1] << ", " << boxLength[2] << "]";
+            }
+          }
         }
       }
     }
