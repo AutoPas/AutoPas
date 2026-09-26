@@ -9,7 +9,6 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include <list>
 #include <string>
 #include <vector>
 
@@ -56,7 +55,7 @@ void findWord(std::ifstream &file, const std::string &word) {
   std::string currentWord;
   while (not file.eof() and currentWord != word) {
     char currentChar = file.get();
-    if (std::find(separators.begin(), separators.end(), currentChar) != separators.end()) {
+    if (std::ranges::find(separators, currentChar) != separators.end()) {
       currentWord = "";
     } else {
       currentWord += currentChar;
@@ -250,7 +249,7 @@ std::string MDFlexConfig::to_string() const {
 
   // helper function to check if any options of a given list is in the tuningStrategyOptions.
   auto tuningStrategyOptionsContainAnyOf = [&](const std::vector<autopas::TuningStrategyOption> &needles) {
-    return std::any_of(tuningStrategyOptions.value.begin(), tuningStrategyOptions.value.end(), [&](const auto &lhs) {
+    return ranges::any_of(tuningStrategyOptions.value, [&](const auto &lhs) {
       return std::any_of(needles.begin(), needles.end(), [&](const auto &rhs) { return lhs == rhs; });
     });
   };
@@ -293,8 +292,7 @@ std::string MDFlexConfig::to_string() const {
     printOption(fuzzyRuleFilename);
   }
 
-  // TODO: C++20 Use contains instead of count
-  if (getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
+  if (getInteractionTypes().contains(autopas::InteractionTypeOption::pairwise)) {
     os << setw(valueOffset) << left << "PairwiseInteraction:" << endl;
     constexpr int indentWidth = 2;
     const auto indent = std::string(indentWidth, ' ');
@@ -332,8 +330,7 @@ std::string MDFlexConfig::to_string() const {
 
   printOption(vecPatternOptions);
 
-  // TODO c++20: use contains instead of count
-  if (getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
+  if (getInteractionTypes().contains(autopas::InteractionTypeOption::triwise)) {
     os << setw(valueOffset) << left << "ThreeBodyInteraction:" << endl;
     constexpr int indentWidth = 2;
     const auto indent = std::string(indentWidth, ' ');
@@ -400,12 +397,12 @@ std::string MDFlexConfig::to_string() const {
 
   os << setw(valueOffset) << left << "Objects:" << endl;
 
-  auto printObjectCollection = [](auto objectCollection, auto name, auto &os) {
+  auto printObjectCollection = [](const auto &objectCollection, auto name, auto &os) {
     int objectId = 0;
     for (const auto &object : objectCollection) {
       os << "  " << name << ":" << endl;
       os << "    " << objectId << ":  " << endl;
-      auto objectStr = object.to_string();
+      auto objectStr = object->to_string();
       // indent all lines of object
       objectStr = std::regex_replace(objectStr, std::regex("(^|\n)(.)"), "$1      $2");
       os << objectStr;  // no endl needed here because objectStr ends a line
@@ -413,11 +410,11 @@ std::string MDFlexConfig::to_string() const {
     }
   };
 
-  printObjectCollection(cubeGridObjects, cubeGridObjectsStr, os);
-  printObjectCollection(cubeGaussObjects, cubeGaussObjectsStr, os);
-  printObjectCollection(cubeUniformObjects, cubeUniformObjectsStr, os);
-  printObjectCollection(cubeClosestPackedObjects, cubeClosestPackedObjectsStr, os);
-  printObjectCollection(sphereObjects, sphereObjectsStr, os);
+  printObjectCollection(getObjectsByType<CubeGrid>(), cubeGridObjectsStr, os);
+  printObjectCollection(getObjectsByType<CubeGauss>(), cubeGaussObjectsStr, os);
+  printObjectCollection(getObjectsByType<CubeUniform>(), cubeUniformObjectsStr, os);
+  printObjectCollection(getObjectsByType<CubeClosestPacked>(), cubeClosestPackedObjectsStr, os);
+  printObjectCollection(getObjectsByType<Sphere>(), sphereObjectsStr, os);
 
   if (not globalForceIsZero()) {
     printOption(globalForce);
@@ -465,44 +462,49 @@ std::string MDFlexConfig::to_string() const {
 
 void MDFlexConfig::calcSimulationBox() {
   const double interactionLength = cutoff.value + verletSkinRadius.value;
-  const auto preBoxMin = boxMin.value;
-  const auto preBoxMax = boxMax.value;
 
-  // helper function so that we can do the same for every object collection
-  // resizes the domain to the maximal extents of all objects
-  auto resizeToObjectLimits = [&](const auto &objectCollection) {
-    for (auto &object : objectCollection) {
-      auto objectMin = object.getBoxMin();
-      auto objectMax = object.getBoxMax();
-      auto objectSpacing = object.getParticleSpacing();
+  const auto isNotNan = [](const double x) { return not std::isnan(x); };
+  const bool userDefinedBox =
+      std::ranges::any_of(boxMin.value, isNotNan) or std::ranges::any_of(boxMax.value, isNotNan);
 
-      for (size_t i = 0; i < 3; ++i) {
-        // pad domain such that periodic boundaries can work.
-        // This is necessary if the given min/max is not at least half the spacing away of the farthest object.
-        boxMin.value[i] = std::min(boxMin.value[i], objectMin[i] - objectSpacing / 2);
-        boxMax.value[i] = std::max(boxMax.value[i], objectMax[i] + objectSpacing / 2);
-      }
-    }
-  };
+  std::array<double, 3> totalBoxMin{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                                    std::numeric_limits<double>::max()};
+  std::array<double, 3> totalBoxMax{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
+                                    std::numeric_limits<double>::lowest()};
 
-  resizeToObjectLimits(cubeGaussObjects);
-  resizeToObjectLimits(cubeGridObjects);
-  resizeToObjectLimits(cubeUniformObjects);
-  resizeToObjectLimits(sphereObjects);
-  resizeToObjectLimits(cubeClosestPackedObjects);
-
-  if (boxMin.value != preBoxMin or boxMax.value != preBoxMax) {
-    std::cout << "WARNING: Simulation box increased due to particles being too close to the boundaries." << std::endl;
+  for (const auto &object : particleObjects) {
+    totalBoxMin = autopas::utils::ArrayMath::min(totalBoxMin, object->getBoxMin());
+    totalBoxMax = autopas::utils::ArrayMath::max(totalBoxMax, object->getBoxMax());
   }
 
-  // guarantee the box is at least of size interationLength
+  if (userDefinedBox) {
+    for (int i = 0; i < 3; i++) {
+      if (boxMax.value[i] - boxMin.value[i] < interactionLength) {
+        std::cout << "WARNING: Simulation box in dimension " << i << " is shorter than interaction length ("
+                  << interactionLength << ")!" << std::endl;
+      }
+      if (boxMax.value[i] < totalBoxMax[i] or boxMin.value[i] > totalBoxMin[i]) {
+        std::cout << "WARNING: Simulation box in dimension " << i
+                  << " is shorter than required by the defined particle objects" << std::endl;
+      }
+    }
+    // user defined box takes precedence over particle objects
+    return;
+  }
+
+  const bool hasParticleObjects = not particleObjects.empty();
+  boxMin.value = hasParticleObjects ? totalBoxMin : std::array<double, 3>{0.0, 0.0, 0.0};
+  boxMax.value = hasParticleObjects ? totalBoxMax : std::array<double, 3>{1.0, 1.0, 1.0};
+
+  // guarantee the box is at least of size interactionLength
   for (int i = 0; i < 3; i++) {
-    // needed for 2D Simulation, that BoxLength >= interactionLength for all Dimensions
-    if (boxMax.value[i] - boxMin.value[i] < interactionLength) {
+    const double boxLength = boxMax.value[i] - boxMin.value[i];
+    if (boxLength < interactionLength) {
       std::cout << "WARNING: Simulation box in dimension " << i
                 << " is shorter than interaction length and will be increased." << std::endl;
-      boxMin.value[i] -= interactionLength / 2;
-      boxMax.value[i] += interactionLength / 2;
+      const double deficit = (interactionLength - boxLength) / 2.0;
+      boxMin.value[i] -= deficit;
+      boxMax.value[i] += deficit;
     }
   }
 }
@@ -629,20 +631,8 @@ void MDFlexConfig::initializeObjects() {
   int myRank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
   if (myRank == 0) {
-    for (const auto &object : cubeGridObjects) {
-      object.generate(particles);
-    }
-    for (const auto &object : cubeGaussObjects) {
-      object.generate(particles);
-    }
-    for (const auto &object : cubeUniformObjects) {
-      object.generate(particles);
-    }
-    for (const auto &object : sphereObjects) {
-      object.generate(particles);
-    }
-    for (const auto &object : cubeClosestPackedObjects) {
-      object.generate(particles);
+    for (const auto &object : particleObjects) {
+      object->generate(particles);
     }
   }
 }

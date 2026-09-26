@@ -30,6 +30,8 @@ Objects:
       bottomLeftCorner           :  [27, 27, 27]
       particle-spacing           :  0.95
       velocity                   :  [0, 0, 0]
+      structure                  :  hcp
+      centered                   :  false
 no-end-config                    :  true
 no-progress-bar                  :  false
 vtk-filename                     :  ExplodingCube
