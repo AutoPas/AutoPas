@@ -1217,11 +1217,13 @@ class LJFunctorHWY
                               const double *const __restrict yPtr, const double *const __restrict zPtr,
                               const int64_t *const __restrict ownedStatePtr, double *const __restrict fxPtr,
                               double *const __restrict fyPtr, double *const __restrict fzPtr,
-                              const size_t *const typeID1Ptr, const size_t *const typeIDPtr,
+                              const VectorDouble& sqrtEpsilon1, const VectorDouble& sigmaHalf1,
+                              const double *const __restrict sqrtEpsilonPtr, const double *const __restrict sigmaHalfPtr,
                               const size_t *const __restrict neighborList, VectorDouble &fxAcc, VectorDouble &fyAcc,
                               VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
                               VectorDouble &virialSumZ, VectorDouble &uPotSum,
                               [[maybe_unused]] const size_t rest = 0) const {
+
     VectorDouble epsilon24s = highway::Undefined(tag_double);
     VectorDouble sigmaSquareds = highway::Undefined(tag_double);
     VectorDouble shift6s = highway::Undefined(tag_double);
@@ -1238,24 +1240,37 @@ class LJFunctorHWY
       indices = highway::LoadU(tag_long, reinterpret_cast<const int64_t *>(neighborList + j));
     }
 
+    VectorDouble x2;
+    VectorDouble y2;
+    VectorDouble z2;
+    VectorLong ownedState2;
+    VectorDouble sqrtEpsilon2;
+    VectorDouble sigmaHalf2;
+
+    if constexpr (remainder) {
+      x2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, xPtr, indices);
+      y2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, yPtr, indices);
+      z2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, zPtr, indices);
+      ownedState2 = highway::MaskedGatherIndex(restMaskLong, tag_long, ownedStatePtr, indices);
+      sqrtEpsilon2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, sqrtEpsilonPtr, indices);
+      sigmaHalf2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, sigmaHalfPtr, indices);
+    } else {
+      x2 = highway::GatherIndex(tag_double, xPtr, indices);
+      y2 = highway::GatherIndex(tag_double, yPtr, indices);
+      z2 = highway::GatherIndex(tag_double, zPtr, indices);
+      ownedState2 = highway::GatherIndex(tag_long, ownedStatePtr, indices);
+    }
+
     if constexpr (useMixing) {
-      HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
-      HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
-      HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
-      const size_t kMax = remainder ? rest : _vecLengthDouble;
-      for (size_t k = 0; k < kMax; ++k) {
-        epsilons[k] = _PPLibrary->get().getMixing24Epsilon(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
-        sigmas[k] = _PPLibrary->get().getMixingSigmaSquared(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
-        if constexpr (applyShift) {
-          shifts[k] = _PPLibrary->get().getMixingShift6(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
-        }
-      }
-      epsilon24s = highway::Load(tag_double, epsilons.data());
-      sigmaSquareds = highway::Load(tag_double, sigmas.data());
+      epsilon24s = highway::Mul(highway::Set(tag_double, 24.), highway::Mul(sqrtEpsilon1, sqrtEpsilon2));
+      sigmaSquareds = highway::Add(sigmaHalf1, sigmaHalf2);
+      sigmaSquareds = highway::Mul(sigmaSquareds, sigmaSquareds);
+
       if constexpr (applyShift) {
-        shift6s = highway::Load(tag_double, shifts.data());
-      } else {
-        shift6s = highway::Zero(tag_double);
+        VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
+        const auto tmpShift1 = highway::Div(sigmaSquareds, cutoffSquared);
+        const auto tmpShift2 = tmpShift1 * tmpShift1 * tmpShift1;
+        shift6s = epsilon24s * (tmpShift2 - tmpShift2 * tmpShift2);
       }
     } else {
       epsilon24s = highway::Set(tag_double, _epsilon24AoS);
@@ -1265,23 +1280,6 @@ class LJFunctorHWY
       } else {
         shift6s = highway::Zero(tag_double);
       }
-    }
-
-    VectorDouble x2;
-    VectorDouble y2;
-    VectorDouble z2;
-    VectorLong ownedState2;
-
-    if constexpr (remainder) {
-      x2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, xPtr, indices);
-      y2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, yPtr, indices);
-      z2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, zPtr, indices);
-      ownedState2 = highway::MaskedGatherIndex(restMaskLong, tag_long, ownedStatePtr, indices);
-    } else {
-      x2 = highway::GatherIndex(tag_double, xPtr, indices);
-      y2 = highway::GatherIndex(tag_double, yPtr, indices);
-      z2 = highway::GatherIndex(tag_double, zPtr, indices);
-      ownedState2 = highway::GatherIndex(tag_long, ownedStatePtr, indices);
     }
 
     const MaskLong ownedMaskJLong = highway::Ne(ownedState2, highway::Zero(tag_long));
@@ -1416,10 +1414,6 @@ class LJFunctorHWY
     VectorDouble fxAcc = highway::Zero(tag_double);
     VectorDouble fyAcc = highway::Zero(tag_double);
     VectorDouble fzAcc = highway::Zero(tag_double);
-    // Unused by the p1xVec pattern used here; only pVecxVec's Newton3 reduction reads these.
-    VectorDouble fx2Acc = highway::Zero(tag_double);
-    VectorDouble fy2Acc = highway::Zero(tag_double);
-    VectorDouble fz2Acc = highway::Zero(tag_double);
 
     const VectorDouble x1 = highway::Set(tag_double, xPtr[indexFirst]);
     const VectorDouble y1 = highway::Set(tag_double, yPtr[indexFirst]);
@@ -1437,7 +1431,7 @@ class LJFunctorHWY
     for (; j < vecEnd; j += _vecLengthDouble) {
       SoAKernelVerlet<newton3, false>(indexFirst, j, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
                                       reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
-                                      &typeIDPtr[indexFirst], typeIDPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
+                                      sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
                                       virialSumX, virialSumY, virialSumZ, uPotSum);
     }
 
@@ -1446,7 +1440,7 @@ class LJFunctorHWY
     if (rest > 0) {
       SoAKernelVerlet<newton3, true>(indexFirst, j, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
                                      reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
-                                     &typeIDPtr[indexFirst], typeIDPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
+                                     sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
                                      virialSumX, virialSumY, virialSumZ, uPotSum, rest);
     }
 

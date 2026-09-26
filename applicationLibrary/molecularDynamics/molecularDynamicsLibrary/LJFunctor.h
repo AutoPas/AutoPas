@@ -897,9 +897,9 @@ class LJFunctor
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> shift6s;
         if constexpr (useMixing) {
           for (size_t j = 0; j < vecsize; j++) {
-            const SoAFloatPrecision sigma = halfSigmaptr[indexFirst] + halfSigmaptr[neighborListPtr[joff + j]];
+            const SoAFloatPrecision sigma = halfSigmaptr[indexFirst] + halfSigmaptr[neighborList[joff + j]];
             sigmaSquareds[j] = sigma * sigma;
-            epsilon24s[j] = 24. * (sqrtEpsilonptr[indexFirst] * sqrtEpsilonptr[neighborListPtr[joff + j]]);
+            epsilon24s[j] = 24. * (sqrtEpsilonptr[indexFirst] * sqrtEpsilonptr[neighborList[joff + j]]);
             if constexpr (applyShift) {
               shift6s[j] =
                   ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24s[j], sigmaSquareds[j], cutoffSquared);
