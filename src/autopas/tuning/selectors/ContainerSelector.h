@@ -50,25 +50,26 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
   const auto &verletClusterSize = containerInfo.verletClusterSize;
   const auto &cellSizeFactor = containerInfo.cellSizeFactor;
   const auto &loadEstimator = containerInfo.loadEstimator;
-  const auto &aosSortingThreshold = containerInfo.aosSortingThreshold;
-  const auto &soaSortingThreshold = containerInfo.soaSortingThreshold;
+  const auto &aosSortingThresholdFallback = containerInfo.aosSortingThresholdFallback;
+  const auto &soaSortingThresholdFallback = containerInfo.soaSortingThresholdFallback;
 
   std::unique_ptr<ParticleContainerInterface<Particle_T>> container;
   switch (containerChoice) {
     case ContainerOption::directSum: {
-      container = std::make_unique<DirectSum<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, aosSortingThreshold,
-                                                          soaSortingThreshold);
+      container = std::make_unique<DirectSum<Particle_T>>(boxMin, boxMax, cutoff, verletSkin,
+                                                          aosSortingThresholdFallback, soaSortingThresholdFallback);
       break;
     }
 
     case ContainerOption::linkedCells: {
       container = std::make_unique<LinkedCells<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor,
-                                                            aosSortingThreshold, soaSortingThreshold, loadEstimator);
+                                                            aosSortingThresholdFallback, soaSortingThresholdFallback,
+                                                            loadEstimator);
       break;
     }
     case ContainerOption::linkedCellsReferences: {
       container = std::make_unique<LinkedCellsReferences<Particle_T>>(
-          boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, aosSortingThreshold, soaSortingThreshold);
+          boxMin, boxMax, cutoff, verletSkin, cellSizeFactor, aosSortingThresholdFallback, soaSortingThresholdFallback);
       break;
     }
     case ContainerOption::verletLists: {
@@ -101,7 +102,7 @@ std::unique_ptr<ParticleContainerInterface<Particle_T>> ContainerSelector<Partic
     }
     case ContainerOption::octree: {
       container = std::make_unique<Octree<Particle_T>>(boxMin, boxMax, cutoff, verletSkin, cellSizeFactor,
-                                                       aosSortingThreshold, soaSortingThreshold);
+                                                       aosSortingThresholdFallback, soaSortingThresholdFallback);
       break;
     }
     default: {

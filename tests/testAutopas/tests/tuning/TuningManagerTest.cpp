@@ -48,7 +48,8 @@ TEST_F(TuningManagerTest, testTuningIntervalIsFixed) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -102,7 +103,8 @@ TEST_F(TuningManagerTest, testMultipleTuners) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, triwiseSearchSpace, autoTunerInfo, rebuildFrequency, "3B"),
       autopas::InteractionTypeOption::triwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> pairFunctor;
   testing::NiceMock<MockTriwiseFunctor<Molecule>> triFunctor;
@@ -184,7 +186,8 @@ TEST_F(TuningManagerTest, testTuningPhaseLongerThanTuningInterval) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -240,7 +243,8 @@ TEST_F(TuningManagerTest, testForceRetuneBetweenPhases) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   const size_t numExpectedTuningIterations = searchSpace.size() * autoTunerInfo.maxSamples;
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
@@ -313,7 +317,8 @@ TEST_F(TuningManagerTest, testForceRetuneInPhase) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   const size_t numExpectedTuningIterations = searchSpace.size() * autoTunerInfo.maxSamples;
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
@@ -390,7 +395,8 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
 
   std::map<autopas::ContainerOption, size_t> configsPerContainer;
@@ -431,10 +437,11 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
       configsPerContainer[autopas::ContainerOption::linkedCells] - 48;
 
   // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3)                              =   2
-  //   Subtotal:                                                                                              =   2
+  // VerletLists:           vl_list_iteration_27        (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
+  //   Subtotal:                                                                                              =   6
   // Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
   // Verlet Lists only supports 1xVec pattern => Multiply by 1
-  configsPerContainer[autopas::ContainerOption::verletLists] = 4;
+  configsPerContainer[autopas::ContainerOption::verletLists] = 12;
 
   // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
   //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 LB heuristics) =  12
@@ -610,7 +617,8 @@ TEST_F(TuningManagerTest, testWillRebuildDL) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -681,7 +689,8 @@ TEST_F(TuningManagerTest, testWillRebuildDDL) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -767,7 +776,8 @@ TEST_F(TuningManagerTest, testWillRebuildDDLOneConfigKicked) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -830,7 +840,8 @@ TEST_F(TuningManagerTest, testOneConfig) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   EXPECT_EQ(_confLc_c08_noN3, tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
 
@@ -871,7 +882,8 @@ TEST_F(TuningManagerTest, testConfigSecondInvalid) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
 
@@ -912,7 +924,8 @@ TEST_F(TuningManagerTest, testLastConfigThrownOut) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));

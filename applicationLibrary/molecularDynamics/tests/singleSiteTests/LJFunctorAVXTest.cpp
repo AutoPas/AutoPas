@@ -12,7 +12,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/ParticleDefinitions.h"
-#include "generators/src/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
 
@@ -107,9 +107,9 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
   }
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
+  autopas::generators::UniformGenerator::fillWithParticles(
       cell1AVX, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
-  autopasTools::generators::UniformGenerator::fillWithParticles(
+  autopas::generators::UniformGenerator::fillWithParticles(
       cell2AVX, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
 
   for (auto &particle : cell1AVX) {
@@ -233,8 +233,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
   }
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
-                                                                numParticles);
+  autopas::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
+                                                           numParticles);
 
   for (auto &particle : cellAVX) {
     if (doDeleteSomeParticles) {
@@ -332,8 +332,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   }
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
-                                                                numParticles);
+  autopas::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
+                                                           numParticles);
 
   for (auto &particle : cellAVX) {
     if (doDeleteSomeParticles) {
@@ -444,8 +444,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
   }
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
-                                                                numParticles);
+  autopas::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
+                                                           numParticles);
 
   for (auto &particle : cellAVX) {
     if (doDeleteSomeParticles) {
