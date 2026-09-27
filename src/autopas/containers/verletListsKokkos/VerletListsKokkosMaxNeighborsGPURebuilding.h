@@ -824,7 +824,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
     size_t _maxNeighbors {64};
 
     
-    bool _useTeamsRebuild {true};
+    bool _useTeamsRebuild {false};
     SectionTimings _sectionTimes{};
    
 };
