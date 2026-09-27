@@ -661,7 +661,7 @@ class LogicHandler {
     // Iterate over the owned particles in container to determine maximum velocity
     AUTOPAS_OPENMP(parallel reduction(max : maxVelocity))
     for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
-      std::array<double, 3> tempVel = iter->getV();
+      const auto tempVel = utils::ArrayUtils::static_cast_copy_array<double>(iter->getV());
       double tempVelAbs = sqrt(dot(tempVel, tempVel));
       maxVelocity = std::max(tempVelAbs, maxVelocity);
     }

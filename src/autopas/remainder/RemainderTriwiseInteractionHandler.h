@@ -196,8 +196,8 @@ class RemainderTriwiseInteractionHandler {
     AUTOPAS_OPENMP(parallel for)
     for (auto i = 0; i < bufferParticles.size(); ++i) {
       Particle_T &p1 = *bufferParticles[i];
-      const auto min = p1.getR() - cutoff;
-      const auto max = p1.getR() + cutoff;
+      const auto min = static_cast_copy_array<double>(p1.getR()) - cutoff;
+      const auto max = static_cast_copy_array<double>(p1.getR()) + cutoff;
 
       for (auto j = 0; j < bufferParticles.size(); ++j) {
         if (j == i) continue;
@@ -239,8 +239,8 @@ class RemainderTriwiseInteractionHandler {
     const double cutoff = container.getCutoff();
     for (auto i = 0; i < bufferParticles.size(); ++i) {
       Particle_T &p1 = *bufferParticles[i];
-      const auto boxMin = p1.getR() - cutoff;
-      const auto boxMax = p1.getR() + cutoff;
+      const auto boxMin = static_cast_copy_array<double>(p1.getR()) - cutoff;
+      const auto boxMax = static_cast_copy_array<double>(p1.getR()) + cutoff;
 
       auto p2Iter = container.getRegionIterator(
           boxMin, boxMax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, std::nullopt);

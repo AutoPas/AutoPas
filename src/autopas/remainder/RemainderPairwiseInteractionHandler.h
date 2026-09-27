@@ -183,18 +183,18 @@ class RemainderPairwiseInteractionHandler {
 
       // 1. particleBuffer with all close particles in container
       for (auto &&p1 : particleBuffer) {
-        const auto min = p1.getR() - cutoff;
-        const auto max = p1.getR() + cutoff;
+        const auto min = static_cast_copy_array<double>(p1.getR()) - cutoff;
+        const auto max = static_cast_copy_array<double>(p1.getR()) + cutoff;
         container.forEachInRegion(
             [&](auto &p2) {
               if constexpr (newton3) {
-                const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
+                const std::lock_guard<std::mutex> lock(getSpacialLock(static_cast_copy_array<double>(p2.getR())));
                 f->AoSFunctor(p1, p2, true);
               } else {
                 f->AoSFunctor(p1, p2, false);
                 // no need to calculate force enacted on a halo
                 if (not p2.isHalo()) {
-                  const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
+                  const std::lock_guard<std::mutex> lock(getSpacialLock(static_cast_copy_array<double>(p2.getR())));
                   f->AoSFunctor(p2, p1, false);
                 }
               }
@@ -204,14 +204,14 @@ class RemainderPairwiseInteractionHandler {
 
       // 2. haloParticleBuffer with owned, close particles in container
       for (auto &&p1halo : haloParticleBuffer) {
-        const auto min = p1halo.getR() - cutoff;
-        const auto max = p1halo.getR() + cutoff;
+        const auto min = static_cast_copy_array<double>(p1halo.getR()) - cutoff;
+        const auto max = static_cast_copy_array<double>(p1halo.getR()) + cutoff;
         container.forEachInRegion(
             [&](auto &p2) {
               // No need to apply anything to p1halo
               //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
               //   -> newton3 argument needed for correct globals
-              const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
+              const std::lock_guard<std::mutex> lock(getSpacialLock(static_cast_copy_array<double>(p2.getR())));
               f->AoSFunctor(p2, p1halo, newton3);
             },
             min, max, IteratorBehavior::owned);
