@@ -134,6 +134,7 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
   loadEstimatorOptions = newLoadEstimatorOptions;
   dataLayoutOptions = newDataLayoutOptions;
   newton3Options = newNewton3Options;
+  threadCounts.resetValues(newThreadCounts);
 }
 
 void distributeConfigurations(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
