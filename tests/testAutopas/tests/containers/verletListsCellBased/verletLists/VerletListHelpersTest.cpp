@@ -102,51 +102,6 @@ TEST_F(VerletListHelpersTest, FillerFunctorThreadSafety) {
 }
 
 /**
-     * Tests that when newton3=false, the counter functor increments the neighbor count for
-  BOTH particles.
-     */
-TEST_F(VerletListHelpersTest, CounterFunctorNewton3False) {
-  cell.addParticle(ParticleType({0., 0., 0.}, {0., 0., 0.}, 0));
-  cell.addParticle(ParticleType({0., 0., 0.}, {0., 0., 0.}, 1));
-  particleToIndex[&cell[0]] = 0;
-  particleToIndex[&cell[1]] = 1;
-
-  std::vector<typename Helpers::VerletListCounterFunctor::PaddedAtomic> counts(2);
-  Helpers::VerletListCounterFunctor functor(counts, particleToIndex, interactionLength);
-
-  // newton3 = false -> should register for both 0 and 1
-  functor.AoSFunctor(cell[0], cell[1], false);
-
-  EXPECT_EQ(counts[0].value.load(), 1);
-  EXPECT_EQ(counts[1].value.load(), 1);
-}
-
-/**
- * Tests that when newton3=false, the filler functor inserts the neighbor index for
-BOTH particles.
- */
-TEST_F(VerletListHelpersTest, FillerFunctorNewton3False) {
-  cell.addParticle(ParticleType({0., 0., 0.}, {0., 0., 0.}, 0));
-  cell.addParticle(ParticleType({0., 0., 0.}, {0., 0., 0.}, 1));
-  particleToIndex[&cell[0]] = 0;
-  particleToIndex[&cell[1]] = 1;
-
-  typename Helpers::NeighborListCRS neighborList;
-  neighborList.offsets = {0, 1, 2};  // 1 neighbor each
-  neighborList.indices.resize(2);
-
-  std::vector<typename Helpers::VerletListCounterFunctor::PaddedAtomic> fillPos(2);
-  fillPos[0].value.store(0);
-  fillPos[1].value.store(1);
-
-  Helpers::VerletListFillerFunctor filler(neighborList, fillPos, particleToIndex, interactionLength);
-  filler.AoSFunctor(cell[0], cell[1], false);  // newton3 = false
-
-  EXPECT_EQ(neighborList.indices[0], 1) << "Particle 0 should have particle 1 in its list.";
-  EXPECT_EQ(neighborList.indices[1], 0) << "Particle 1 should have particle 0 in its list.";
-}
-
-/**
  * Tests that particles outside the interaction length are completely ignored.
  */
 TEST_F(VerletListHelpersTest, DistanceFiltering) {

@@ -212,7 +212,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   }
 
   /**
-   * Single-threaded rebuild: One traversal with VerletListGeneratorFunctor writing into per-particle
+   * Single-threaded rebuild: One traversal with InteractionListGeneratorFunctor writing into per-particle
    * std::vector<size_t>, followed by a serial prefix-sum + copy into the flat CRS.
    */
   void updateNeighborListsSingleThread(size_t N, double interactionLength, DataLayoutOption dataLayout,
@@ -496,7 +496,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Mapping of every particle pointer to its dense SoA index.
    * Built once per rebuild in buildParticleIndex() before the traversal.
-   * Shared with VerletListGeneratorFunctor during list construction and with the traversal for the AoS force
+   * Shared with InteractionListGeneratorFunctor during list construction and with the traversal for the AoS force
    * computations.
    */
   std::unordered_map<const Particle_T *, size_t> _particleToIndex;

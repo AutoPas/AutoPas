@@ -184,7 +184,7 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionPair) {
             ljFunctor.initTraversal();
 
             CellFunctorType cellFunctor(ljFunctor, cutoff);
-            cellFunctor.setAoSSortingThreshold(aosSortingThreshold);
+            cellFunctor.setAoSSortingThresholds(autopas::SortingThresholdInfoSingle(aosSortingThreshold));
 
             const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
                 cellFunctor, ownershipParticleA, ownershipParticleB, ownershipCellA, ownerShipStateCellB,
@@ -274,7 +274,7 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionSingle) {
           ljFunctor.initTraversal();
 
           CellFunctorType cellFunctor(ljFunctor, cutoff);
-          cellFunctor.setAoSSortingThreshold(aosSortingThreshold);
+          cellFunctor.setAoSSortingThresholds(autopas::SortingThresholdInfoSingle(aosSortingThreshold));
 
           const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
               cellFunctor, ownershipParticleA, ownershipParticleB, ownershipCellA, ownershipCellA,

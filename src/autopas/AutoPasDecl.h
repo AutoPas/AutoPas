@@ -1142,30 +1142,37 @@ class AutoPas {
    * sorted view of the particles to avoid unnecessary distance checks.
    * @param aosSortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
-  void setAoSSortingThreshold(size_t aosSortingThreshold) {
-    _logicHandlerInfo.aosSortingThreshold = aosSortingThreshold;
-  }
+  void setAoSSortingThreshold(size_t aosSortingThreshold) { _autoTunerInfo.aosSortingThreshold = aosSortingThreshold; }
 
   /**
    * Get the aos-sorting-threshold for traversals that use the CellFunctor.
    * @return aos-sorting-threshold
    */
-  size_t getAoSSortingThreshold() const { return _logicHandlerInfo.aosSortingThreshold; }
+  size_t getAoSSortingThreshold() const { return _autoTunerInfo.aosSortingThreshold; }
 
   /**
    * Set the SoA sorting-threshold.
    * If the sum of the SoA buffer sizes of two cells exceeds this value, the SoA path uses SoAFunctorPairSorted.
    * @param soaSortingThreshold Sum of the SoA buffer sizes from which SoA sorting should be enabled.
    */
-  void setSoASortingThreshold(size_t soaSortingThreshold) {
-    _logicHandlerInfo.soaSortingThreshold = soaSortingThreshold;
-  }
+  void setSoASortingThreshold(size_t soaSortingThreshold) { _autoTunerInfo.soaSortingThreshold = soaSortingThreshold; }
 
   /**
    * Get the SoA sorting-threshold.
    * @return SoA sorting-threshold
    */
-  size_t getSoASortingThreshold() const { return _logicHandlerInfo.soaSortingThreshold; }
+  size_t getSoASortingThreshold() const { return _autoTunerInfo.soaSortingThreshold; }
+
+  /**
+   * Enable or disable benchmark-based AoS/SoA pair-sorting threshold selection.
+   * When enabled, AutoPas runs a micro-benchmark (once per interaction type) to determine per-direction-type
+   * thresholds. SoA thresholds are only benchmarked for functors that support SoA sorting; otherwise the fixed fallback
+   * remains.
+   * @param useSortingThresholdBenchmark
+   */
+  void setUseSortingThresholdBenchmark(bool useSortingThresholdBenchmark) {
+    _logicHandlerInfo.useSortingThresholdBenchmark = useSortingThresholdBenchmark;
+  }
 
  private:
   autopas::ParticleContainerInterface<Particle_T> &getContainer();

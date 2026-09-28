@@ -44,5 +44,19 @@ struct AutoTunerInfo {
    * Flag for whether LOESS Smoothening is used to smoothen the tuning results.
    */
   bool useLOESSSmoothening{false};
+
+  /**
+   * Default number of particles in two cells from which AoS sorting should be performed, used to seed this tuner's
+   * SortingThresholdBenchmark before/without a benchmark run.
+   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
+   */
+  size_t aosSortingThreshold{8};
+
+  /**
+   * Default number of particles in two SoA buffers from which SoA sorting should be performed, used to seed this
+   * tuner's SortingThresholdBenchmark before/without a benchmark run.
+   * Default comes from the LJFunctorHWY Benchmarks.
+   */
+  size_t soaSortingThreshold{100};
 };
 }  // namespace autopas

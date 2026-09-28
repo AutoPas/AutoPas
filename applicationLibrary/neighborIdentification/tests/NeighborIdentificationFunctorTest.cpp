@@ -21,6 +21,10 @@
  * InteractionListGeneratorFunctor, except for the functor name.
  */
 
+extern template class autopas::AutoPas<autopas::ParticleBaseFP64>;
+extern template bool autopas::AutoPas<autopas::ParticleBaseFP64>::computeInteractions(
+    autopas::NeighborIdentificationFunctor<autopas::ParticleBaseFP64> *);
+
 namespace {
 using NeighborListAoSType = std::unordered_map<autopas::ParticleBaseFP64 *, std::vector<autopas::ParticleBaseFP64 *>>;
 using AoSPolicy = autopas::AoSNeighborListPolicy<autopas::ParticleBaseFP64>;

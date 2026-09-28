@@ -8,7 +8,7 @@
 
 #include <random>
 
-namespace autopasTools::generators {
+namespace autopas::generators {
 
 std::array<double, 3> UniformGenerator::randomPosition(std::mt19937 &generator, const std::array<double, 3> &boxMin,
                                                        const std::array<double, 3> &boxMax) {
@@ -23,4 +23,4 @@ std::array<double, 3> UniformGenerator::randomPosition(std::mt19937 &generator, 
   }
   return r;
 }
-}  // namespace autopasTools::generators
+}  // namespace autopas::generators

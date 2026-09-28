@@ -7,7 +7,7 @@ file(
 
 add_executable(sph-diagram-generation ${MY_SRC})
 
-target_link_libraries(sph-diagram-generation autopas generators SPHLibrary)
+target_link_libraries(sph-diagram-generation autopas SPHLibrary)
 
 # -----------------test-----------------
 # add check for current target

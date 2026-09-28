@@ -31,7 +31,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   autopas::LinkedCells<ParticleFP64> linkedCells(linkedCellsBoxMin, linkedCellsBoxMax, cutoff, 0.0, 1.0 / cutoff, 32,
                                                  loadEstimatorOption);
 
-  autopasTools::generators::GridGenerator::fillWithParticles(linkedCells, edgeLength);
+  autopas::generators::GridGenerator::fillWithParticles(linkedCells, edgeLength);
   ASSERT_EQ(linkedCells.size(), edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
   std::array<unsigned long, 3> overlap = {};

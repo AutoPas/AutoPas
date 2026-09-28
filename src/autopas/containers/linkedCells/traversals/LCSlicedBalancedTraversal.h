@@ -56,16 +56,17 @@ class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCe
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_balanced; }
 
   /**
-   * @copydoc autopas::CellTraversal::setAoSSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    */
-  void setAoSSortingThreshold(size_t aosSortingThreshold) override {
-    _cellHandler.setAoSSortingThreshold(aosSortingThreshold);
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) override {
+    _cellHandler.setAoSSortingThresholds(aosSortingThreshold);
   }
+
   /**
-   * @copydoc autopas::CellTraversal::setSoASortingThreshold()
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
    */
-  void setSoASortingThreshold(size_t soaSortingThreshold) override {
-    _cellHandler.setSoASortingThreshold(soaSortingThreshold);
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold) override {
+    _cellHandler.setSoASortingThresholds(soaSortingThreshold);
   }
 
  private:

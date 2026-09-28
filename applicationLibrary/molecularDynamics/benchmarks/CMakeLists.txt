@@ -22,7 +22,6 @@ target_link_libraries(
         LJFunctorHWYBench
         PRIVATE
         autopas
-        generators
         molecularDynamicsLibrary
         benchmark::benchmark
 )

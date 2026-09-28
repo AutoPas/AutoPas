@@ -108,7 +108,8 @@ void AutoPas<Particle_T>::init() {
 
   // Create logic handler
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
-      _tuningManager, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
+      _tuningManager, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix, _autoTunerInfo.aosSortingThreshold,
+      _autoTunerInfo.soaSortingThreshold);
 }
 
 template <class Particle_T>

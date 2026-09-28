@@ -128,6 +128,11 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vl_list_iteration,
     /**
+     * VLListIterationC27Traversal : Distribute processing of neighbor lists dynamically to threads.
+     * Uses C27 coloring to avoid race conditions when using Newton3.
+     */
+    vl_list_iteration_c27,
+    /**
      * VLListIntersectionTraversal :  Distribute processing of neighbor lists dynamically to threads.
      * Calls Functor for the Intersection of two neighbor lists. Finds intersection by sorting neighbor lists.
      * Only viable for triwise interactions.
@@ -347,6 +352,7 @@ class TraversalOption : public Option<TraversalOption> {
 
         // VerletList Traversals:
         {TraversalOption::vl_list_iteration, "vl_list_iteration"},
+        {TraversalOption::vl_list_iteration_c27, "vl_list_iteration_c27"},
         {TraversalOption::vl_list_intersection, "vl_list_intersection"},
         {TraversalOption::vl_pair_list_iteration, "vl_pair_list_iteration"},
 

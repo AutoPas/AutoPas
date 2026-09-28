@@ -26,8 +26,7 @@ void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer) 
 #endif
 
   // Use dummy to fill container
-  autopasTools::generators::GridGenerator::fillWithParticles(autopasContainer, {2, 2, 2}, dummy, {1, 1, 1},
-                                                             {0., 0., 0.});
+  autopas::generators::GridGenerator::fillWithParticles(autopasContainer, {2, 2, 2}, dummy, {1, 1, 1}, {0., 0., 0.});
 }
 
 void initPPL(ParticlePropertiesLibrary<> &PPL) {
