@@ -42,7 +42,7 @@ class Configuration {
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
-                          InteractionTypeOption _interactionType, int _threadCount = 0,
+                          InteractionTypeOption _interactionType, int _threadCount = autopas::autopas_all_threads,
                           VectorizationPatternOption _vecPattern = VectorizationPatternOption::p1xVec)
       : container(_container),
         traversal(_traversal),
@@ -65,8 +65,9 @@ class Configuration {
         dataLayout(),
         newton3(),
         cellSizeFactor(-1.),
+        interactionType(),
         threadCount(-1),
-        interactionType() {}
+        vecPattern() {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
@@ -148,10 +149,6 @@ class Configuration {
    */
   TraversalOption traversal;
   /**
-   * Vectorization Pattern option
-   */
-  VectorizationPatternOption vecPattern;
-  /**
    * Load Estimator option.
    */
   LoadEstimatorOption loadEstimator;
@@ -168,14 +165,18 @@ class Configuration {
    */
   double cellSizeFactor;
   /**
+   * Interaction type of the configuration.
+   */
+  InteractionTypeOption interactionType;
+  /**
    * Tuned OpenMP thread count.
    * (Must be between 1 and the number of hardware threads.)
    */
   int threadCount;
   /**
-   * Interaction type of the configuration.
+   * Vectorization Pattern option
    */
-  InteractionTypeOption interactionType;
+  VectorizationPatternOption vecPattern;
 
  private:
   /**

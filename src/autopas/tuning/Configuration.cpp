@@ -25,7 +25,9 @@ std::string autopas::Configuration::getCSVLine() const { return getCSVRepresenta
 bool autopas::Configuration::hasValidValues() const {
   return container != ContainerOption() and cellSizeFactor != -1 and traversal != TraversalOption() and
          loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option() and
-         interactionType != InteractionTypeOption() and threadCount >= 0 and threadCount <= autopas_get_max_threads();
+         interactionType != InteractionTypeOption() and
+         (threadCount == autopas::autopas_all_threads or
+          (threadCount > 0 and threadCount <= autopas_get_max_threads()));
 }
 
 std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) const {
@@ -109,7 +111,8 @@ bool autopas::Configuration::hasCompatibleValues() const {
   }
 
   // VVLAsBuildTraversal assumes all threads are used
-  if (threadCount != autopas_get_max_threads() and container == ContainerOption::varVerletListsAsBuild) {
+  if (threadCount != autopas_get_max_threads() and threadCount != autopas_all_threads and
+      container == ContainerOption::varVerletListsAsBuild) {
     return false;
   }
 

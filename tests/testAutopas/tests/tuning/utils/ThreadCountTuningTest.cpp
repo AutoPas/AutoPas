@@ -71,7 +71,7 @@ void ThreadCountTuningTest::testThreadCountTuning(const size_t boxMax, const std
   EXPECT_EQ(numInsertedMolecules,
             logicHandler.getContainer().size());  // Should not have any leaving molecules in this test
   int selectedThreadCount = autopas::autopas_get_tuned_num_threads();
-  if (expectedSelectedThreadCount == 0) {
+  if (expectedSelectedThreadCount == autopas::autopas_all_threads) {
     // Tuning should be disabled (Only check if all threads are used)
     expectedSelectedThreadCount = autopas::autopas_get_max_threads();
   } else {

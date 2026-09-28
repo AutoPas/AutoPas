@@ -74,7 +74,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
 SearchSpaceGenerators::OptionSpace SearchSpaceGenerators::inferOptionDimensions(
     const std::set<Configuration> &searchSet) {
   OptionSpace optionSpace;
-  for (const auto &[container, traversal, vecPattern, loadEst, dataLayout, newton3, csf, interactT, threadCount] :
+  for (const auto &[container, traversal, loadEst, dataLayout, newton3, csf, interactT, threadCount, vecPattern] :
        searchSet) {
     optionSpace.containerOptions.insert(container);
     optionSpace.traversalOptions.insert(traversal);

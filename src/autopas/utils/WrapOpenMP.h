@@ -26,6 +26,8 @@
 
 namespace autopas {
 
+constexpr int autopas_all_threads = 0;
+
 #if defined(AUTOPAS_USE_OPENMP)
 
 /**

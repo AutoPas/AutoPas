@@ -1413,8 +1413,11 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
 
   // Check if the thread count is valid
   int maxThreads = autopas_get_max_threads();
-  // Valid options: 0 = No thread count tuning (use all threads), 1-maxThreads = Use explicit number of threads
-  if (config.threadCount != 0 and (config.threadCount < 1 or config.threadCount > maxThreads)) {
+  // Valid options:
+  //   autopas::autopas_all_threads (0) = No thread count tuning (use all threads),
+  //   1-maxThreads = Use explicit number of threads
+  if (config.threadCount != autopas::autopas_all_threads and
+      (config.threadCount < 1 or config.threadCount > maxThreads)) {
     AutoPasLog(DEBUG, "Configuration rejected: The requested thread count of {} is not in [0,1-{}]!",
                config.threadCount, maxThreads);
     return {nullptr, /*rejectIndefinitely*/ true};

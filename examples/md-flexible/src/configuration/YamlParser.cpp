@@ -473,7 +473,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           errors.push_back(ss.str());
         }
         std::sort(threadCounts.begin(), threadCounts.end());
-        if (threadCounts[0] == 0) threadCounts[0] = autopas::autopas_get_max_threads();
+        if (threadCounts[0] == autopas::autopas_all_threads) threadCounts[0] = autopas::autopas_get_max_threads();
         const std::set<int> threadCountsSet(threadCounts.begin(), threadCounts.end());
         if (threadCountErrors.empty() and not threadCounts.empty()) {
           (*config.threadCounts.value) = {threadCountsSet};

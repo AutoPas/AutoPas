@@ -631,7 +631,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         for (const auto str : needles) {
           try {
             int threadCount = std::stoi(str);
-            if (threadCount == 0) threadCount = autopas::autopas_get_max_threads();
+            if (threadCount == autopas::autopas_all_threads) threadCount = autopas::autopas_get_max_threads();
             threadCounts.insert(threadCount);
           } catch (const exception &) {
             cerr << "Error parsing thread count options: " << strArg << endl;
