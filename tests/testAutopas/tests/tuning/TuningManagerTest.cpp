@@ -190,7 +190,8 @@ TEST_F(TuningManagerTest, testMultipleTunersSameContainersRebuildLogic) {
       .boxMin{0., 0., 0.},
       .boxMax{10., 10., 10.},
   };
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> pairwiseFunctor{};
   testing::NiceMock<MockTriwiseFunctor<Molecule>> triwiseFunctor{};
@@ -277,7 +278,8 @@ TEST_F(TuningManagerTest, testMultipleTunersDifferentContainersRebuildLogic) {
       .boxMin{0., 0., 0.},
       .boxMax{10., 10., 10.},
   };
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> pairwiseFunctor{};
   testing::NiceMock<MockTriwiseFunctor<Molecule>> triwiseFunctor{};

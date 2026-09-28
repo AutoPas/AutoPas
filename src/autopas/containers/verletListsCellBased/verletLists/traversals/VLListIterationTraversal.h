@@ -31,8 +31,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLListIterationTraversal(Functor_T &functor, const DataLayoutOption dataLayout,
-                                    const bool useNewton3)
+  explicit VLListIterationTraversal(Functor_T &functor, const DataLayoutOption dataLayout, const bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _functor(functor) {
     if (useNewton3) {
       AutoPasLog(WARN,
