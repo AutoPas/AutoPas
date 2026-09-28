@@ -1259,6 +1259,8 @@ class LJFunctorHWY
       y2 = highway::GatherIndex(tag_double, yPtr, indices);
       z2 = highway::GatherIndex(tag_double, zPtr, indices);
       ownedState2 = highway::GatherIndex(tag_long, ownedStatePtr, indices);
+      sqrtEpsilon2 = highway::GatherIndex(tag_double, sqrtEpsilonPtr, indices);
+      sigmaHalf2 = highway::GatherIndex(tag_double, sigmaHalfPtr, indices);
     }
 
     if constexpr (useMixing) {
@@ -1418,8 +1420,9 @@ class LJFunctorHWY
     const VectorDouble x1 = highway::Set(tag_double, xPtr[indexFirst]);
     const VectorDouble y1 = highway::Set(tag_double, yPtr[indexFirst]);
     const VectorDouble z1 = highway::Set(tag_double, zPtr[indexFirst]);
-    const VectorDouble sqrtEpsilon1 = highway::Set(tag_double, sqrtEpsilonPtr[indexFirst]);
-    const VectorDouble sigmaHalf1 = highway::Set(tag_double, halfSigmaPtr[indexFirst]);
+    VectorDouble sqrtEpsilon1 = highway::Set(tag_double, sqrtEpsilonPtr[indexFirst]);
+    VectorDouble sigmaHalf1 = highway::Set(tag_double, halfSigmaPtr[indexFirst]);
+
     const auto ownedI = static_cast<int64_t>(ownedStatePtr[indexFirst]);
     const VectorDouble ownedStateI = highway::Set(tag_double, static_cast<double>(ownedI));
     const MaskDouble ownedMaskI = highway::Ne(ownedStateI, highway::Zero(tag_double));
