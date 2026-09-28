@@ -33,6 +33,13 @@ add_test(
     CONFIGURATIONS checkExamples checkExamplesSPHDia
 )
 # cmake-format: on
+set_tests_properties(
+    sph-diagram-generation.test_direct_sum_density
+    sph-diagram-generation.test_linked_cells_density
+    sph-diagram-generation.test_direct_sum_hydro
+    sph-diagram-generation.test_linked_cells_hydro
+    PROPERTIES LABELS checkExamples
+)
 
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples sph-diagram-generation)

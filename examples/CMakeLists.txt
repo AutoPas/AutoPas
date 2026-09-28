@@ -9,6 +9,8 @@ if (NOT AUTOPAS_BUILD_EXAMPLES)
     return()
 endif ()
 
+# Example tests are plain add_test() tests that need both `CONFIGURATIONS checkExamples`, which hides them from a plain
+# `ctest`, and `LABELS checkExamples`, which CI selects them by.CI.
 add_custom_target(
     checkExamples
     COMMAND

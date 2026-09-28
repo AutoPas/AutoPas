@@ -28,6 +28,7 @@ add_test(
     CONFIGURATIONS checkExamples checkExamplesMPI
 )
 # cmake-format: on
+set_tests_properties(sph-main-mpi.test PROPERTIES LABELS checkExamples)
 
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples sph-main-mpi)

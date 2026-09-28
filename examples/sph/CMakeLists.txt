@@ -18,6 +18,7 @@ add_test(
     CONFIGURATIONS checkExamples
 )
 # cmake-format: on
+set_tests_properties(sph-main.test PROPERTIES LABELS checkExamples)
 
 # add the executable to checkExamples as dependency
 add_dependencies(checkExamples sph-main)
