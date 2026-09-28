@@ -26,6 +26,11 @@
 
 namespace autopas {
 
+/**
+ * Sentinel value indicating that the number of OpenMP threads should not be modified
+ * and that all available threads should be used.
+ * (This value is portable value across systems with different core counts.)
+ */
 constexpr int autopas_all_threads = 0;
 
 #if defined(AUTOPAS_USE_OPENMP)
