@@ -18,23 +18,23 @@ namespace autopas {
  * This class provides a colored Traversal for the verlet lists container.
  *
  * @tparam ParticleCell_T the type of cells
- * @tparam PairwiseFunctor_T The functor that defines the interaction of two particles.
+ * @tparam Functor_T The functor that defines the interaction of two or three particles.
  */
-template <class ParticleCell_T, class PairwiseFunctor_T>
+template <class ParticleCell_T, class Functor_T>
 class VLListIterationC27Traversal : public TraversalInterface, public VLTraversalInterface<ParticleCell_T> {
   using ParticleType = ParticleCell_T::ParticleType;
 
  public:
   /**
    * Constructor for colored Verlet Traversal
-   * @param pairwiseFunctor Functor to be used with this Traversal
+   * @param functor Functor to be used with this Traversal
    * @param dataLayout
    * @param useNewton3
    * @param cellsPerDim Dimensions of the cell grid (needed for coloring)
    */
-  explicit VLListIterationC27Traversal(PairwiseFunctor_T &pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3,
+  explicit VLListIterationC27Traversal(Functor_T &functor, const DataLayoutOption dataLayout, const bool useNewton3,
                                        const std::array<unsigned long, 3> &cellsPerDim)
-      : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor), _cellsPerDim(cellsPerDim) {}
+      : TraversalInterface(dataLayout, useNewton3), _functor(functor), _cellsPerDim(cellsPerDim) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration_c27; }
 
@@ -64,7 +64,7 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
       if (offsets[c] < offsets[c + 1]) {
         auto c3D = utils::ThreeDimensionalMapping::oneToThreeD(c, _cellsPerDim);
         const size_t color = (c3D[0] % 3) + 3 * (c3D[1] % 3) + 9 * (c3D[2] % 3);
-        _colorCells[color].push_back({offsets[c], offsets[c + 1]});
+        _colorCells[color].emplace_back(offsets[c], offsets[c + 1]);
       }
     }
 
@@ -90,6 +90,21 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
   }
 
   void traverseParticles() override {
+    if constexpr (utils::isPairwiseFunctor<Functor_T>()) {
+      traverseParticlePairs();
+    } else if constexpr (utils::isTriwiseFunctor<Functor_T>()) {
+      traverseParticleTriplets();
+    } else {
+      utils::ExceptionHandler::exception(
+          "VLListIterationTraversal::traverseParticles(): Functor {} is not of type PairwiseFunctor or TriwiseFunctor.",
+          _functor.getName());
+    }
+  }
+
+  /**
+   *  Iterate over all pairs of particles.
+   */
+  void traverseParticlePairs() {
     auto &neighborList = *(this->_neighborList);
     const auto &indexToParticle = *this->_indexToParticle;
 
@@ -129,7 +144,55 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
         return;
       }
       default: {
-        utils::ExceptionHandler::exception("VerletList dataLayout {} not available", _dataLayout);
+        utils::ExceptionHandler::exception(
+            "VLListIterationC27Traversal::traverseParticlePairs(): VerletList dataLayout {} not available",
+            _dataLayout);
+      }
+    }
+  }
+
+  /**
+   *  Iterate over all triplets of particles.
+   */
+  void traverseParticleTriplets() {
+    auto &neighborList = *(this->_neighborList);
+    const auto &indexToParticle = *this->_indexToParticle;
+
+    switch (this->_dataLayout) {
+      case DataLayoutOption::aos: {
+        // Parallelized AoS with Newton3 using C27 coloring
+        for (int color = 0; color < 27; ++color) {
+          const auto &cellsOfColor = _colorCells[color];
+          AUTOPAS_OPENMP(parallel for schedule(dynamic))
+          for (size_t c = 0; c < cellsOfColor.size(); ++c) {
+            const auto &range = cellsOfColor[c];
+            for (size_t i = range.first; i < range.second; ++i) {
+              ParticleType &particle = *indexToParticle[i];
+              const size_t numNeighbors = neighborList.count(i);
+              const size_t *neighbors = neighborList.begin(i);
+              for (size_t j = 0; j < numNeighbors; ++j) {
+                ParticleType &neighbor1 = *indexToParticle[neighbors[j]];
+                for (size_t k = j + 1; k < numNeighbors; ++k) {
+                  ParticleType &neighbor2 = *indexToParticle[neighbors[k]];
+                  _functor.AoSFunctor(particle, neighbor1, neighbor2, _useNewton3);
+                }
+              }
+            }
+          }
+        }
+        return;
+      }
+
+      case DataLayoutOption::soa: {
+        utils::ExceptionHandler::exception(
+            "VLListIterationC27Traversal::traverseParticleTriplets(): SoA dataLayout not implemented yet for "
+            "triwise interactions.");
+        return;
+      }
+      default: {
+        utils::ExceptionHandler::exception(
+            "VLListIterationC27Traversal::traverseParticleTriplets(): VerletList dataLayout {} not available",
+            _dataLayout);
       }
     }
   }
@@ -138,7 +201,7 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
   /**
    * Functor for Traversal
    */
-  PairwiseFunctor_T &_functor;
+  Functor_T &_functor;
 
   /**
    * SoA buffer of verlet lists.

@@ -250,8 +250,8 @@ class TraversalOption : public Option<TraversalOption> {
     std::set<TraversalOption> allPairwiseOptions;
     auto allOptions = getAllOptions();
     auto triwiseOptions = getAllTriwiseOnlyOptions();
-    std::set_difference(allOptions.begin(), allOptions.end(), triwiseOptions.begin(), triwiseOptions.end(),
-                        std::inserter(allPairwiseOptions, allPairwiseOptions.begin()));
+    std::ranges::set_difference(allOptions, triwiseOptions,
+                                std::inserter(allPairwiseOptions, allPairwiseOptions.begin()));
     return allPairwiseOptions;
   }
 
@@ -267,6 +267,7 @@ class TraversalOption : public Option<TraversalOption> {
             Value::lc_sliced_c02,
             Value::lc_c04,
             Value::vl_list_iteration,
+            Value::vl_list_iteration_c27,
             Value::vl_list_intersection,
             Value::vl_pair_list_iteration};
   }
@@ -287,8 +288,8 @@ class TraversalOption : public Option<TraversalOption> {
     std::set<TraversalOption> mostPairwiseOptions;
     auto allOptions = getAllPairwiseOptions();
     auto discouragedOptions = getDiscouragedOptions();
-    std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
-                        std::inserter(mostPairwiseOptions, mostPairwiseOptions.begin()));
+    std::ranges::set_difference(allOptions, discouragedOptions,
+                                std::inserter(mostPairwiseOptions, mostPairwiseOptions.begin()));
     return mostPairwiseOptions;
   }
 
@@ -300,8 +301,8 @@ class TraversalOption : public Option<TraversalOption> {
     std::set<TraversalOption> mostTriwiseOptions;
     auto allOptions = getAllTriwiseOptions();
     auto discouragedOptions = getDiscouragedOptions();
-    std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
-                        std::inserter(mostTriwiseOptions, mostTriwiseOptions.begin()));
+    std::ranges::set_difference(allOptions, discouragedOptions,
+                                std::inserter(mostTriwiseOptions, mostTriwiseOptions.begin()));
     return mostTriwiseOptions;
   }
 
@@ -310,11 +311,11 @@ class TraversalOption : public Option<TraversalOption> {
    * @param interactionType
    * @return
    */
-  static std::set<TraversalOption> getAllOptionsOf(const autopas::InteractionTypeOption &interactionType) {
+  static std::set<TraversalOption> getAllOptionsOf(const InteractionTypeOption &interactionType) {
     switch (interactionType) {
-      case autopas::InteractionTypeOption::pairwise:
+      case InteractionTypeOption::pairwise:
         return getAllPairwiseOptions();
-      case autopas::InteractionTypeOption::triwise:
+      case InteractionTypeOption::triwise:
         return getAllTriwiseOptions();
       default:
         return {};

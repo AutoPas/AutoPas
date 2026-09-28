@@ -64,7 +64,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::Configuration config) {
   }
   // vl_list_iteration generates triplets from pairwise neighbor lists, which leads to a non-deterministic ratio of
   // Functor calls between Newton3 on/off
-  if (config.traversal == autopas::TraversalOption::vl_list_iteration and
+  if ((config.traversal == autopas::TraversalOption::vl_list_iteration or
+       config.traversal == autopas::TraversalOption::vl_list_iteration_c27) and
       config.interactionType == autopas::InteractionTypeOption::triwise) {
     return;
   }

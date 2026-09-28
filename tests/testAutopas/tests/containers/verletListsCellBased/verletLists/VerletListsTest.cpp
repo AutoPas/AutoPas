@@ -370,11 +370,15 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
   EXPECT_FALSE(iter2.isValid());
 }
 
+/**
+ * This test checks that the pair list is built correctly and that the pair traversal iterates over all pairs in the
+ * list.
+ */
 TEST_P(VerletListsTest, testPairVerletListBuildAndIterate) {
-  std::array<double, 3> min = {1, 1, 1};
-  std::array<double, 3> max = {3, 3, 3};
-  double cutoff = 1.;
-  double skin = 0.2;
+  constexpr std::array<double, 3> min = {1, 1, 1};
+  constexpr std::array<double, 3> max = {3, 3, 3};
+  constexpr double cutoff = 1.;
+  constexpr double skin = 0.2;
   auto [cellSizeFactor, newton3] = GetParam();
   // VLPairListIterationTraversal only supports non-Newton3
   if (newton3) {
@@ -384,9 +388,9 @@ TEST_P(VerletListsTest, testPairVerletListBuildAndIterate) {
       min, max, cutoff, skin, autopas::VerletLists<ParticleFP64>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   // 3 particles mutually within cutoff + skin
-  ParticleFP64 p0({1.5, 1.5, 1.5}, {0., 0., 0.}, 0);
-  ParticleFP64 p1({1.6, 1.5, 1.5}, {0., 0., 0.}, 1);
-  ParticleFP64 p2({1.5, 1.6, 1.5}, {0., 0., 0.}, 2);
+  const ParticleFP64 p0({1.5, 1.5, 1.5}, {0., 0., 0.}, 0);
+  const ParticleFP64 p1({1.6, 1.5, 1.5}, {0., 0., 0.}, 1);
+  const ParticleFP64 p2({1.5, 1.6, 1.5}, {0., 0., 0.}, 2);
   verletLists.addParticle(p0);
   verletLists.addParticle(p1);
   verletLists.addParticle(p2);

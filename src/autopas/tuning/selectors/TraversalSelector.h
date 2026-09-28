@@ -419,6 +419,11 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
                                                                                                dataLayout, useNewton3);
       break;
     }
+    case TraversalOption::vl_list_iteration_c27: {
+      traversal = std::make_unique<VLListIterationC27Traversal<ParticleCell_T, TriwiseFunctor_T>>(
+          triwiseFunctor, dataLayout, useNewton3, traversalInfo.cellsPerDim);
+      break;
+    }
     case TraversalOption::vl_list_intersection: {
       traversal = std::make_unique<VLListIntersectionTraversal<ParticleCell_T, TriwiseFunctor_T>>(
           triwiseFunctor, dataLayout, useNewton3);

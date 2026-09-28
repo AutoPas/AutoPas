@@ -183,7 +183,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
               ParticleType &neighbor1 = *indexToParticle[neighbors[j]];
               for (size_t k = j + 1; k < numNeighbors; ++k) {
                 ParticleType &neighbor2 = *indexToParticle[neighbors[k]];
-                _functor.AoSFunctor(particleI, neighbor1, neighbor2, false);
+                _functor.AoSFunctor(particleI, neighbor1, neighbor2, true);
               }
             }
           }

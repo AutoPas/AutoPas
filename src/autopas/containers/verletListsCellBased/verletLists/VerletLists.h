@@ -131,14 +131,15 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     const auto buildWithN3 = traversal->getUseNewton3();
 
-    // Check for triwise traversals
+    // Depending on the traversal type, different neighbor lists are built. Mostly relevant for triwise interactions.
     switch (traversal->getTraversalType()) {
-      // Standard pairwise traversal
       case TraversalOption::vl_list_iteration: {
         this->updateNeighborLists(buildWithN3);
-        if (buildWithN3) {
-          this->modifyNeighborListsForTriwiseTraversal(TraversalOption::vl_list_iteration);
-        }
+        break;
+      }
+      case TraversalOption::vl_list_iteration_c27: {
+        this->updateNeighborLists(buildWithN3);
+        this->modifyNeighborListsForTriwiseTraversal(TraversalOption::vl_list_iteration_c27);
         break;
       }
       case TraversalOption::vl_list_intersection: {
@@ -190,7 +191,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    *
    * @param useNewton3  Whether the force traversal will use Newton's third law.
    */
-  virtual void updateNeighborLists(bool useNewton3) {
+  virtual void updateNeighborLists(const bool useNewton3) {
     const size_t N = buildParticleIndex();
     const double interactionLength = this->getInteractionLength();
 
@@ -310,13 +311,13 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
 
   /**
    * Modifies neighbor lists for specialized triwise traversals:
-   * - vl_list_iteration (Newton3 on): Re-orients (halo -> owned) edges to (owned -> halo) edges so owned
+   * - vl_list_iteration_c27 (Newton3 on): Re-orients (halo -> owned) edges to (owned -> halo) edges so owned
    *   particles own all pairwise connections to their halo neighbors, and clears halo particle neighbor lists.
    * - vl_list_intersection: Generates halo-halo edges between halo particles that share an owned neighbor.
    *
    * @param traversalOption The triwise traversal type.
    */
-  void modifyNeighborListsForTriwiseTraversal(TraversalOption traversalOption) {
+  void modifyNeighborListsForTriwiseTraversal(const TraversalOption traversalOption) {
     using namespace utils::ArrayMath::literals;
 
     const size_t N = _neighborList.size();
@@ -325,7 +326,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
       tempLists[i].assign(_neighborList.begin(i), _neighborList.end(i));
     }
 
-    if (traversalOption == TraversalOption::vl_list_iteration) {
+    if (traversalOption == TraversalOption::vl_list_iteration_c27) {
       // Re-orient halo -> owned edges to owned -> halo
       for (size_t i = 0; i < N; ++i) {
         if (not _indexToParticle[i]->isHalo()) {
@@ -364,8 +365,8 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
           for (size_t k = j + 1; k < numHalos; ++k) {
             const size_t h2 = haloNeighbors[k];
             const auto &pos2 = _indexToParticle[h2]->getR();
-            const auto dist = pos1 - pos2;
-            if (utils::ArrayMath::dot(dist, dist) < interactionLengthSquared) {
+            const auto displacement = pos1 - pos2;
+            if (utils::ArrayMath::dot(displacement, displacement) < interactionLengthSquared) {
               tempLists[h1].push_back(h2);
               tempLists[h2].push_back(h1);
             }
