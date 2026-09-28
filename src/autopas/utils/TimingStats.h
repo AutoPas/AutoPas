@@ -1,6 +1,7 @@
 #ifndef TIMINGSTATS_H
 #define TIMINGSTATS_H
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <spdlog/spdlog.h>
@@ -31,12 +32,18 @@ class TimingStats{
         void printStats(const std::string& operationName) const {
             if (count > 0) {
                 double averageTiming = sumTimings / count;
+                auto sortedTimings = times;
+                std::sort(sortedTimings.begin(), sortedTimings.end());
+                const std::size_t middle = sortedTimings.size() / 2;
+                const double medianTiming = sortedTimings.size() % 2 == 0
+                                                ? (sortedTimings[middle - 1] + sortedTimings[middle]) / 2
+                                                : sortedTimings[middle];
                 double stdev = 0;
                 for (const auto& time : times) {
                     stdev += (time - averageTiming) * (time - averageTiming);
                 }
                 stdev = std::sqrt(stdev / count);
-                spdlog::info("{} - Average: {} s, Min: {} s, Max: {} s, StdDev: {} s over {} instances", operationName, averageTiming, minimumTiming, maximumTiming, stdev, count);
+                spdlog::info("{} - Average: {} s, Median: {} s, Min: {} s, Max: {} s, StdDev: {} s over {} instances", operationName, averageTiming, medianTiming, minimumTiming, maximumTiming, stdev, count);
             } else {
                 spdlog::info("{} - No timings recorded.", operationName);
             }
