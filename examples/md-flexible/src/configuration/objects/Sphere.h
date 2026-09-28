@@ -7,6 +7,7 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/generators/SphereGenerator.h"
 
 /**
  * Class describing a regular 3D spherical particle grid object.
@@ -50,40 +51,7 @@ class Sphere : public Object {
    * @param f Function called for every point.
    */
   void iteratePositions(const std::function<void(std::array<double, 3>)> &f) const {
-    using namespace autopas::utils::ArrayMath::literals;
-
-    // generate regular grid for 1/8th of the sphere
-    for (int z = 0; z <= _radius; ++z) {
-      for (int y = 0; y <= _radius; ++y) {
-        for (int x = 0; x <= _radius; ++x) {
-          // position relative to the center
-          const std::array<double, 3> relativePos = {(double)x, (double)y, (double)z};
-          // mirror to rest of sphere
-          for (int i = -1; i <= 1; i += 2) {
-            for (int k = -1; k <= 1; k += 2) {
-              for (int l = -1; l <= 1; l += 2) {
-                const std::array<double, 3> mirrorMultipliers = {(double)i, (double)k, (double)l};
-                // position mirrored, scaled and absolute
-                const std::array<double, 3> posVector =
-                    _center + ((relativePos * mirrorMultipliers) * _particleSpacing);
-
-                double distFromCentersSquare = autopas::utils::ArrayMath::dot(posVector - _center, posVector - _center);
-                const auto r = (_radius + 1) * _particleSpacing;
-                const auto rSquare = r * r;
-                // since the loops create a cubic grid only apply f for positions inside the sphere
-                if (distFromCentersSquare <= rSquare) {
-                  f(posVector);
-                }
-                // avoid duplicates
-                if (z == 0) break;
-              }
-              if (y == 0) break;
-            }
-            if (x == 0) break;
-          }
-        }
-      }
-    }
+    autopas::generators::SphereGenerator::iteratePositions(_center, _radius, _particleSpacing, f);
   }
 
   /**
