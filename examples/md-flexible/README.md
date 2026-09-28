@@ -103,11 +103,16 @@ accept the keyword `all` to enable all, even discouraged choices.
 To quickly set up scenarios md-flexible provides a couple of object
 generators that create 3D shapes filled with particles. From the command line
 only one generator can be used at a time, however when using a YAML file one
-can use as an arbitrary amount of generators. In YAML files it is also
+can use as an arbitrary number of generators. In YAML files it is also
 possible to generate multiple objects from the same generator as one
 specifies the objects directly. For a list of all possible objects and their
 descriptions see [`src/Objects`](https://autopas.github.io/doxygen_documentation_md-flexible/git-master/dir_8e5023335c6d80afeb9fe41ac1daf95f.html).
 For examples how to define and configure each object see [`input/AllOptions.yaml`](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible/input/AllOptions.yaml).
+
+For a basic homogeneous distribution of particles in a box, it is recommended to use the `CubeClosestPacked` object.
+When `centered` is set to `true` the particles will be generated slightly offset from the box boundaries and as such 
+should work with any boundary conditions.
+See [`input/AllOptions.yaml`](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible/input/AllOptions.yaml) for more details.
 
 ### Output
 
