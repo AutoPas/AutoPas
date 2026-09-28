@@ -10,8 +10,7 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/generators/FCCGenerator.h"
-#include "autopas/utils/generators/HCPGenerator.h"
+#include "autopas/utils/generators/ClosestPackedGenerator.h"
 #include "autopas/utils/generators/PseudoContainer.h"
 
 /**
@@ -22,7 +21,7 @@ class CubeClosestPacked : public Object {
   /**
    * Structure type of closest packing.
    */
-  enum LatticeStructure { FCC, HCP };
+  using LatticeStructure = autopas::generators::ClosestPackedGenerator::LatticeStructure;
 
   /**
    * Constructor based on a given particle spacing.
@@ -36,7 +35,7 @@ class CubeClosestPacked : public Object {
    */
   CubeClosestPacked(const std::array<double, 3> &velocity, const size_t typeId, const double particleSpacing,
                     const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner,
-                    const LatticeStructure structure = HCP, const bool centered = false)
+                    const LatticeStructure structure = LatticeStructure::HCP, const bool centered = false)
       : CubeClosestPacked(velocity, typeId, boxLength, bottomLeftCorner, structure, centered) {
     _particleSpacing = particleSpacing;
     _density =
@@ -56,9 +55,10 @@ class CubeClosestPacked : public Object {
    */
   CubeClosestPacked(const std::array<double, 3> &velocity, const size_t typeId, const std::array<double, 3> &boxLength,
                     const std::array<double, 3> &bottomLeftCorner, const double density,
-                    const LatticeStructure structure = HCP, const bool centered = false)
+                    const LatticeStructure structure = LatticeStructure::HCP, const bool centered = false)
       : CubeClosestPacked(velocity, typeId, boxLength, bottomLeftCorner, structure, centered) {
-    _particleSpacing = optimizeSpacingForDensity(_bottomLeftCorner, _topRightCorner, density, structure, centered);
+    _particleSpacing = autopas::generators::ClosestPackedGenerator::optimizeSpacingForDensity(
+        _bottomLeftCorner, _topRightCorner, density, structure, centered);
     const auto newDensity =
         static_cast<double>(CubeClosestPacked::getParticlesTotal()) / (boxLength[0] * boxLength[1] * boxLength[2]);
     _density = newDensity;
@@ -90,7 +90,8 @@ class CubeClosestPacked : public Object {
    * @return number of generated particles.
    */
   [[nodiscard]] size_t getParticlesTotal() const override {
-    return calculateParticleCount(_bottomLeftCorner, _topRightCorner, _particleSpacing, _structure, _centered);
+    return autopas::generators::ClosestPackedGenerator::calculateParticleCount(_bottomLeftCorner, _topRightCorner,
+                                                                               _particleSpacing, _structure, _centered);
   }
 
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
@@ -116,7 +117,7 @@ class CubeClosestPacked : public Object {
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
            << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << "\n";
     output << std::setw(_valueOffset) << std::left << "structure"
-           << ":  " << (_structure == FCC ? "fcc" : "hcp") << "\n";
+           << ":  " << (_structure == LatticeStructure::FCC ? "fcc" : "hcp") << "\n";
     output << std::setw(_valueOffset) << std::left << "centered"
            << ":  " << (_centered ? "true" : "false") << "\n";
     output << Object::to_string();
@@ -134,19 +135,8 @@ class CubeClosestPacked : public Object {
     // dummy particle used as a template with id of the first newly generated one
     const ParticleType dummyParticle = getDummyParticle(particles.size());
 
-    switch (_structure) {
-      case FCC:
-        autopas::generators::FCCGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
-                                                             dummyParticle, _particleSpacing, _centered);
-        break;
-      case HCP:
-        autopas::generators::HCPGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, _topRightCorner,
-                                                             dummyParticle, _particleSpacing, _centered);
-        break;
-      default:
-        autopas::utils::ExceptionHandler::exception(
-            "CubeClosestPacked: Unknown lattice structure. Possible values: (fcc hcp)");
-    }
+    autopas::generators::ClosestPackedGenerator::fillWithParticles(
+        particlesWrapper, _bottomLeftCorner, _topRightCorner, dummyParticle, _particleSpacing, _structure, _centered);
   }
 
  private:
@@ -160,107 +150,14 @@ class CubeClosestPacked : public Object {
    * @param centered If true, the cell offset moved inward by 1/4 * lattice constant.
    */
   CubeClosestPacked(const std::array<double, 3> &velocity, const size_t typeId, const std::array<double, 3> &boxLength,
-                    const std::array<double, 3> &bottomLeftCorner, const LatticeStructure structure = FCC,
-                    const bool centered = false)
+                    const std::array<double, 3> &bottomLeftCorner,
+                    const LatticeStructure structure = LatticeStructure::FCC, const bool centered = false)
       : Object(velocity, typeId),
         _boxLength(boxLength),
         _bottomLeftCorner(bottomLeftCorner),
         _topRightCorner(autopas::utils::ArrayMath::add(bottomLeftCorner, boxLength)),
         _structure(structure),
         _centered(centered) {}
-
-  /**
-   * Helper to calculate the total particle count for a given lattice structure and spacing.
-   * @param boxMin
-   * @param boxMax
-   * @param spacing
-   * @param structure
-   * @param centered
-   * @return particle count
-   */
-  static size_t calculateParticleCount(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                       const double spacing, const LatticeStructure structure, const bool centered) {
-    switch (structure) {
-      case FCC:
-        return autopas::generators::FCCGenerator::getNumberOfParticles(boxMin, boxMax, spacing, centered);
-      case HCP:
-        return autopas::generators::HCPGenerator::getNumberOfParticles(boxMin, boxMax, spacing, centered);
-      default:
-        autopas::utils::ExceptionHandler::exception(
-            "CubeClosestPacked: Unknown lattice structure. Possible values: (fcc hcp)");
-    }
-    return 0;
-  }
-
-  /**
-   * Computes an optimized particle spacing for a target density in a given bounding box.
-   * Ensures particles are never compressed below the theoretical bulk spacing s0 = cbrt(sqrt(2) / density),
-   * but may increase the spacing (s >= s0) to make the resulting total particle count as close to
-   * round(density * volume) as possible.
-   *
-   * @param boxMin Minimum box coordinates.
-   * @param boxMax Maximum box coordinates.
-   * @param targetDensity Target particle density.
-   * @param structure Lattice structure (FCC or HCP).
-   * @param centered If true, lattice is centered.
-   * @return Optimized particle spacing s >= s0.
-   */
-  static double optimizeSpacingForDensity(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                          const double targetDensity, const LatticeStructure structure,
-                                          const bool centered) {
-    const double volume = (boxMax[0] - boxMin[0]) * (boxMax[1] - boxMin[1]) * (boxMax[2] - boxMin[2]);
-
-    // Spacing for a theoretical infinite lattice (s0)
-    const double spacingExact = std::cbrt(std::sqrt(2.0) / targetDensity);
-    const auto targetParticles = static_cast<size_t>(std::round(targetDensity * volume));
-
-    const auto countAtExactSpacing = calculateParticleCount(boxMin, boxMax, spacingExact, structure, centered);
-
-    if (countAtExactSpacing <= targetParticles) {
-      return spacingExact;
-    }
-
-    // If countAtExactSpacing > targetParticles. We search for a spacing s >= s0 to reduce particle count to
-    // targetParticles.
-    double spacingLow = spacingExact;
-    double spacingHigh = spacingExact * 1.2;
-    size_t countAtHighSpacing = countAtExactSpacing;
-    while (countAtHighSpacing > targetParticles) {
-      countAtHighSpacing = calculateParticleCount(boxMin, boxMax, spacingHigh, structure, centered);
-      spacingLow = spacingHigh;
-      spacingHigh *= 1.2;
-      if (countAtHighSpacing <= 1) {
-        break;
-      }
-    }
-
-    // Binary search for the transition around targetParticles
-    constexpr size_t maxIterations = 20;
-    constexpr double tolerance = 1e-10;
-    for (size_t iter = 0; iter < maxIterations and (spacingHigh - spacingLow) > tolerance; ++iter) {
-      const double spacingMid = spacingLow + 0.5 * (spacingHigh - spacingLow);
-      const size_t countMid = calculateParticleCount(boxMin, boxMax, spacingMid, structure, centered);
-      if (countMid > targetParticles) {
-        spacingLow = spacingMid;
-      } else {
-        spacingHigh = spacingMid;
-      }
-    }
-
-    // spacingLow gives count > targetParticles, spacingHigh gives count <= targetParticles.
-    const size_t countLow = calculateParticleCount(boxMin, boxMax, spacingLow, structure, centered);
-    const size_t countHigh = calculateParticleCount(boxMin, boxMax, spacingHigh, structure, centered);
-
-    const size_t diffLow = (countLow >= targetParticles) ? (countLow - targetParticles) : (targetParticles - countLow);
-    const size_t diffHigh =
-        (countHigh >= targetParticles) ? (countHigh - targetParticles) : (targetParticles - countHigh);
-
-    // Pick whichever is closer to targetParticles
-    if (diffHigh <= diffLow) {
-      return spacingHigh;
-    }
-    return spacingLow;
-  }
 
   /**
    * The distance between the particles.
@@ -290,7 +187,7 @@ class CubeClosestPacked : public Object {
   /**
    * Structure (hcp or fcc).
    */
-  LatticeStructure _structure{HCP};
+  LatticeStructure _structure{LatticeStructure::HCP};
 
   /**
    * Lattice alignment (First particle at center or origin of a lattice unit cell).
