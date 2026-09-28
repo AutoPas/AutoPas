@@ -108,6 +108,11 @@ bool autopas::Configuration::hasCompatibleValues() const {
     return false;
   }
 
+  // VVLAsBuildTraversal assumes all threads are used
+  if (threadCount != autopas_get_max_threads() and container == ContainerOption::varVerletListsAsBuild) {
+    return false;
+  }
+
   return true;
 }
 
