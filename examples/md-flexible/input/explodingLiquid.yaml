@@ -35,11 +35,12 @@ Objects:
   CubeClosestPacked:
     0:
       particle-type-id           :  0
-      box-length                 :  [14, 6, 14]
-      # Move particles half spacing away from domain border to prevent automatic border extension
-      bottomLeftCorner           :  [0.5, 27, 0.5]
+      box-length                 :  [15, 6, 15]
+      bottomLeftCorner           :  [0.0, 27, 0.0]
       particle-spacing           :  1.
       velocity                   :  [0, 0, 0]
+      structure                  :  fcc
+      centered                   :  true
 no-end-config                    :  true
 no-progress-bar                  :  false
 vtk-filename                     :  explodingLiquid
