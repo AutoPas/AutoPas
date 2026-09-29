@@ -27,7 +27,7 @@ bool autopas::Configuration::hasValidValues() const {
          loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option() and
          interactionType != InteractionTypeOption() and
          (threadCount == autopas::autopas_all_threads or
-          (threadCount > 0 and threadCount <= autopas_get_max_threads()));
+          (threadCount >= 1 and threadCount <= autopas_get_max_threads()));
 }
 
 std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) const {

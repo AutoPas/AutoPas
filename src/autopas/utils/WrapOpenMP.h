@@ -27,11 +27,10 @@
 namespace autopas {
 
 /**
- * Sentinel value indicating that the number of OpenMP threads should not be modified
- * and that all available threads should be used.
- * (This value is portable value across systems with different core counts.)
+ * Sentinel value indicating that the maximum number of OpenMP threads should be used.
+ * (Portable method of "disabling" thread count tuning across systems with different physical core counts.)
  */
-constexpr int autopas_all_threads = 0;  // Must not be a valid thread count
+constexpr int autopas_all_threads = 0;
 
 #if defined(AUTOPAS_USE_OPENMP)
 
@@ -72,12 +71,7 @@ inline int autopas_get_max_threads() { return omp_get_max_threads(); }
  * (Sets the maximum, not the tuned number of threads.)
  * @param n New max number of threads.
  */
-inline void autopas_set_num_threads(int n) {
-#ifndef NDEBUG
-  if (n <= 0) throw std::runtime_error("Number of threads must be greater or equal to one!");
-#endif
-  omp_set_num_threads(n);
-}
+inline void autopas_set_num_threads(int n) { omp_set_num_threads(n); }
 
 /**
  * Obtain a mutable reference to the tuned number of threads.
@@ -93,12 +87,10 @@ inline int &_autopas_get_tuned_num_threads_ref() {
 /**
  * Set the number of threads to use in OpenMP for loop annotations
  * @param n the number of threads
+ * (Substitutes \ref autopas_get_max_threads() for the sentinel value of \ref autopas_all_threads.)
  */
 inline void autopas_set_tuned_num_threads(int n) {
-#ifndef NDEBUG
-  if (n <= 0) throw std::runtime_error("Number of threads must be greater or equal to one!");
-#endif
-  _autopas_get_tuned_num_threads_ref() = n;
+  _autopas_get_tuned_num_threads_ref() = n == autopas_all_threads ? autopas_get_max_threads() : n;
 }
 /**
  * Get the number of threads to use in OpenMP for loop annotations

@@ -670,6 +670,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         for (const auto str : needles) {
           try {
             int threadCount = std::stoi(str);
+            // Replace sentinel value to avoid duplicate configurations (0 == max threads)
             if (threadCount == autopas::autopas_all_threads) threadCount = autopas::autopas_get_max_threads();
             threadCounts.insert(threadCount);
           } catch (const exception &) {

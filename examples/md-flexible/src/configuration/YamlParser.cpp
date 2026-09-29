@@ -555,7 +555,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
         if (threadCountErrors.empty() and not threadCounts.empty()) {
           std::set<int> threadCountsSet(threadCounts.begin(), threadCounts.end());
-          // Replace sentinel value
+          // Replace sentinel value to avoid duplicate configurations (0 == max threads)
           if (threadCountsSet.find(autopas::autopas_all_threads) != threadCountsSet.end()) {
             threadCountsSet.erase(autopas::autopas_all_threads);
             threadCountsSet.insert(autopas::autopas_get_max_threads());
