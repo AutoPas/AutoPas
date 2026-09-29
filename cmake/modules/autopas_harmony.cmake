@@ -5,6 +5,12 @@ if (NOT AUTOPAS_ENABLE_HARMONY)
     return()
 endif ()
 
+# Reuse a harmony target a parent project already provides.
+if (TARGET harmony)
+    message(STATUS "AutoPas: Reusing harmony target provided by parent project")
+    return()
+endif ()
+
 message(STATUS "harmony - using bundled version")
 
 # Enable ExternalProject CMake module

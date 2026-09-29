@@ -28,6 +28,35 @@ class EnergySensor {
   EnergySensor(EnergySensorOption sensor);
 
   /**
+   * Destructor.
+   */
+  ~EnergySensor();
+
+  /**
+   * Copy constructor, deleted. The sensor exclusively owns its pmt instance, so it cannot be copied.
+   */
+  EnergySensor(const EnergySensor &other) = delete;
+
+  /**
+   * Copy assignment operator, deleted. The sensor exclusively owns its pmt instance, so it cannot be copied.
+   * @return Reference to this.
+   */
+  EnergySensor &operator=(const EnergySensor &other) = delete;
+
+  /**
+   * Move constructor.
+   * @param other Sensor to move from.
+   */
+  EnergySensor(EnergySensor &&other);
+
+  /**
+   * Move assignment operator.
+   * @param other Sensor to move from.
+   * @return Reference to this.
+   */
+  EnergySensor &operator=(EnergySensor &&other);
+
+  /**
    * Initializes the EnergySenor.
    * @param tuningMetricIsEnergy whether energy is selected as the tuning metric.
    * @return Bool whether energy measurement is turned on.
