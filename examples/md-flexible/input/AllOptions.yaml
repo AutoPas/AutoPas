@@ -9,7 +9,7 @@ newton3                              :  [disabled, enabled]
 data-layout                          :  [AoS, SoA]
 # Configuration options for triwise interactions
 functor-3b                           :  axilrod-teller-muto
-traversal-3b                         :  [ds_sequential, vl_list_iteration, vl_pair_list_iteration, vl_list_intersection]
+traversal-3b                         :  [ds_sequential, lc_c01, lc_c08, lc_sliced, lc_sliced_c02, lc_c04, vl_list_iteration, vl_list_iteration_c27, vl_pair_list_iteration, vl_list_intersection]
 newton3-3b                           :  [enabled, disabled]
 data-layout-3b                       :  [AoS, SoA]
 
