@@ -105,10 +105,13 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Build the pair neighbor list if necessary without fully rebuilding the other neighbor lists.
    * @param traversal
+   * @note This case happens if a rebuild started with a pairwise functor, at which point no
+   * pair lists were built. For the following triwise functor, the LogicHandler does not call
+   * for rebuilding again, so in this case, we need to build the pair list 'on demand'.
    */
   void prepareForTraversal(TraversalInterface *traversal) override {
     if (traversal->getTraversalType() == TraversalOption::vl_pair_list_iteration) {
-      if (not _pairListIsValid) {
+      if (not _pairListWasBuilt) {
         this->updateNeighborPairsList(this->_verletBuiltNewton3);
       }
     }
@@ -130,6 +133,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     const auto buildWithN3 = traversal->getUseNewton3();
+    _pairListWasBuilt = false;
 
     // Depending on the traversal type, different neighbor lists are built. Mostly relevant for triwise interactions.
     switch (traversal->getTraversalType()) {
@@ -160,7 +164,6 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
 
     // the neighbor list is now valid
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
-    _pairListIsValid = false;
   }
 
  private:
@@ -400,13 +403,12 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
    *
    * @param useNewton3 Whether the traversal will use Newton's third law.
    */
-  void updateNeighborPairsList(bool useNewton3) {
+  void updateNeighborPairsList(const bool useNewton3) {
     updateNeighborLists(useNewton3);
-    // this->addSharedHaloNeighbors(useNewton3);
     const size_t N = _neighborList.size();
     const double interactionLength = this->getInteractionLength();
 
-    DataLayoutOption dataLayout = DataLayoutOption::aos;
+    constexpr DataLayoutOption dataLayout = DataLayoutOption::aos;
     if (_buildVerletListType == BuildVerletListType::VerletSoA) {
       // there are no SoA 3-body traversals, so we print out a warning and use AoS Layout instead
       AutoPasLog(WARN, "Pair Verlet Lists can currently only be built with AoS DataLayout, using that instead!");
@@ -417,7 +419,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
     } else {
       updateNeighborPairsListMultiThread(N, interactionLength, dataLayout, useNewton3);
     }
-    _pairListIsValid = true;
+    _pairListWasBuilt = true;
   }
 
   /**
@@ -528,7 +530,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Shows if the pair list for triwise interactions is currently valid.
    */
-  bool _pairListIsValid{false};
+  bool _pairListWasBuilt{false};
 
   /**
    * Specifies which data layout is used when building the neighbor lists.

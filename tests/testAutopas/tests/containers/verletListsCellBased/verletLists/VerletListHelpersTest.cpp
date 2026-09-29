@@ -209,9 +209,26 @@ TEST_F(VerletListHelpersTest, PairFillerFunctorThreadSafety) {
     }
   }
 
+  // Validation
   for (size_t i = 0; i < numParticles; ++i) {
+    auto startIter = neighborPairsList.pairs.begin() + neighborPairsList.offsets[i];
+    auto endIter = neighborPairsList.pairs.begin() + neighborPairsList.offsets[i + 1];
+
+    // Copy and sort the stored neighbor index pairs (fetch_add insertion order is non-deterministic in parallel)
+    std::vector<std::pair<size_t, size_t>> pairs(startIter, endIter);
+    std::sort(pairs.begin(), pairs.end());
+
     const size_t remaining = numParticles - 1 - i;
     const size_t expectedPairs = remaining >= 2 ? (remaining * (remaining - 1)) / 2 : 0;
-    EXPECT_EQ(neighborPairsList.count(i), expectedPairs);
+    ASSERT_EQ(pairs.size(), expectedPairs);
+
+    size_t pairIdx = 0;
+    for (size_t j = i + 1; j < numParticles; ++j) {
+      for (size_t k = j + 1; k < numParticles; ++k) {
+        EXPECT_EQ(pairs[pairIdx], (std::pair<size_t, size_t>{j, k}))
+            << "Corrupted CRS pair array insertion detected for particle " << i << "!";
+        ++pairIdx;
+      }
+    }
   }
 }
