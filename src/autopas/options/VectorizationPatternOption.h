@@ -69,16 +69,6 @@ class VectorizationPatternOption : public Option<VectorizationPatternOption> {
      *  --------------------------------
      */
     pVecx1,
-    /**
-     * Interact the full vector length from the first list with the full vector length from the second list and shuffle the registers in between
-     *
-     * ---------------------------------
-     * | i |i+1|i+2|i+3|i+4|i+5|i+6|i+7|
-     * ---------------------------------
-     * | j |j+1|j+2|j+3| j |j+1|j+2|j+3|
-     *  --------------------------------
-     */
-    pVecxVec
   };
 
   /**
@@ -114,7 +104,6 @@ class VectorizationPatternOption : public Option<VectorizationPatternOption> {
         {p2xVecDiv2, "2xVectorLengthDiv2"},
         {pVecDiv2x2, "VectorLengthDiv2x2"},
         {pVecx1, "VectorLengthx1"},
-        {pVecxVec, "VectorLengthxVectorLength"}
     };
   }
 

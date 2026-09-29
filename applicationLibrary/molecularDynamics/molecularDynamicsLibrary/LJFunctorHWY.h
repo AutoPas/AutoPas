@@ -264,14 +264,6 @@ class LJFunctorHWY
         }
         break;
       }
-      case VectorizationPattern::pVecxVec: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecxVec>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecxVec>(soa1, soa2);
-        }
-        break;
-      }
       default:
         autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
     }
@@ -318,14 +310,6 @@ class LJFunctorHWY
         }
         break;
       }
-      case VectorizationPattern::pVecxVec: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecxVec>(soa1, soa2, sortingData);
-        } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecxVec>(soa1, soa2, sortingData);
-        }
-        break;
-      }
       default:
         autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
     }
@@ -347,7 +331,7 @@ class LJFunctorHWY
     if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
       return _vecLengthDouble / 2;
     }
-    if constexpr (vecPattern == VectorizationPattern::pVecx1 || vecPattern == VectorizationPattern::pVecxVec) {
+    if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       return _vecLengthDouble;
     }
     autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
@@ -369,7 +353,7 @@ class LJFunctorHWY
     if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
       return 2;
     }
-    if constexpr (vecPattern == VectorizationPattern::pVecx1 || vecPattern == VectorizationPattern::pVecxVec) {
+    if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       return 1;
     }
     autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
@@ -386,18 +370,9 @@ class LJFunctorHWY
    */
   template <VectorizationPattern vecPattern>
   static constexpr bool checkSecondLoopCondition(std::ptrdiff_t i, size_t j) {
-    // Round i down to the nearest multiple of the j-side block width to get the exclusive upper bound. For
-    // pVecxVec the loop advances j one lane at a time (jStepSize == 1) but a full rotation "block" spans
-    // _vecLengthDouble steps, so that (not jStepSize) is the width the bound must be rounded to.
-    if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
-      const std::ptrdiff_t blockWidth = static_cast<std::ptrdiff_t>(_vecLengthDouble);
-      const std::ptrdiff_t limit = i - (i % blockWidth);
-      return j < static_cast<size_t>(limit);
-    } else {
-      const std::ptrdiff_t jStep = static_cast<std::ptrdiff_t>(jStepSize<vecPattern>());
-      const std::ptrdiff_t limit = i - (i % jStep);
-      return j < static_cast<size_t>(limit);
-    }
+    const std::ptrdiff_t jStep = static_cast<std::ptrdiff_t>(jStepSize<vecPattern>());
+    const std::ptrdiff_t limit = i - (i % jStep);
+    return j < static_cast<size_t>(limit);
   }
 
   static void rotate1LaneRight(VectorDouble &vec) {
@@ -451,7 +426,7 @@ class LJFunctorHWY
         const int lanes = remainder ? rest : _vecLengthDouble / 2;
         const auto v = highway::LoadN(tag, &basePtr[windowStart], lanes);
         return highway::ConcatLowerLower(tag, v, v);
-      } else if constexpr (vecPattern == VectorizationPattern::pVecx1 || vecPattern == VectorizationPattern::pVecxVec) {
+      } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
         const auto windowStart = reversed ? (remainder ? 0 : idx - _vecLengthDouble + 1) : idx;
         if constexpr (remainder) {
           return highway::LoadN(tag, &basePtr[windowStart], rest);
@@ -460,7 +435,7 @@ class LJFunctorHWY
         }
       }
     } else {
-      if constexpr (vecPattern == VectorizationPattern::p1xVec || vecPattern == VectorizationPattern::pVecxVec) {
+      if constexpr (vecPattern == VectorizationPattern::p1xVec) {
         if constexpr (remainder) {
           return highway::LoadN(tag, &basePtr[idx], rest);
         } else {
@@ -711,7 +686,7 @@ class LJFunctorHWY
       highway::StoreN(newFx, tag_double_half, &fxPtr[index], lanes);
       highway::StoreN(newFy, tag_double_half, &fyPtr[index], lanes);
       highway::StoreN(newFz, tag_double_half, &fzPtr[index], lanes);
-    } else if constexpr (vecPattern == VectorizationPattern::pVecx1 || vecPattern == VectorizationPattern::pVecxVec) {
+    } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       const VectorDouble oldFx =
           remainder ? highway::LoadN(tag_double, &fxPtr[i], restI) : highway::LoadU(tag_double, &fxPtr[i]);
       const VectorDouble oldFy =
@@ -791,15 +766,6 @@ class LJFunctorHWY
     VectorDouble fyAcc = highway::Zero(tag_double);
     VectorDouble fzAcc = highway::Zero(tag_double);
 
-    // pVecxVec-only running Newton3 accumulator for the j-side force (see accumulatePVecxVecNewton3()
-    // and flushPVecxVecNewton3Block()); passed through to SoAKernel unconditionally but ignored for
-    // every other vecPattern.
-    VectorDouble fx2Acc = highway::Zero(tag_double);
-    VectorDouble fy2Acc = highway::Zero(tag_double);
-    VectorDouble fz2Acc = highway::Zero(tag_double);
-    [[maybe_unused]] size_t pendingBlockJ0 = 0;
-    [[maybe_unused]] bool hasPendingBlock = false;
-
     MaskDouble ownedMaskI;
 
     VectorDouble x1 = highway::Zero(tag_double);
@@ -820,63 +786,18 @@ class LJFunctorHWY
     MaskDouble ownedMaskJ;
     for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j);
          j += static_cast<std::ptrdiff_t>(jStepSize<vecPattern>())) {
-      if constexpr (vecPattern == VectorizationPattern::pVecxVec && newton3) {
-        // The main loop only ever advances through full _vecLengthDouble-wide blocks (see
-        // checkSecondLoopCondition), so this check exactly identifies the start of a new block.
-        if (static_cast<size_t>(j) % _vecLengthDouble == 0) {
-          if (hasPendingBlock) {
-            flushPVecxVecNewton3Block(pendingBlockJ0, fxPtr2, fyPtr2, fzPtr2, fx2Acc, fy2Acc, fz2Acc);
-          }
-          fx2Acc = highway::Zero(tag_double);
-          fy2Acc = highway::Zero(tag_double);
-          fz2Acc = highway::Zero(tag_double);
-          pendingBlockJ0 = static_cast<size_t>(j);
-          hasPendingBlock = true;
-        }
-      }
 
       fillJRegisters<false, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2,
                                         y2, z2, ownedMaskJ, 0);
-      if (vecPattern != VectorizationPattern::pVecxVec || j % _vecLengthDouble == 0) {
-        sqrtEpsilon2 = loadRegister<false, false, reversed, vecPattern>(tag_double, sqrtEpsilonPtr2, j, 0);
-        sigmaHalf2 = loadRegister<false, false, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, 0);
-      } else {
-        rotate1LaneRight(sqrtEpsilon2);
-        rotate1LaneRight(sigmaHalf2);
-      }
+      sqrtEpsilon2 = loadRegister<false, false, reversed, vecPattern>(tag_double, sqrtEpsilonPtr2, j, 0);
+      sigmaHalf2 = loadRegister<false, false, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, 0);
 
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
           i, j, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
-          sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, fx2Acc, fy2Acc, fz2Acc, virialSumX, virialSumY, virialSumZ,
+          sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
           uPotSum, restI, 0);
     }
 
-    if constexpr (vecPattern == VectorizationPattern::pVecxVec && newton3) {
-      if (hasPendingBlock) {
-        flushPVecxVecNewton3Block(pendingBlockJ0, fxPtr2, fyPtr2, fzPtr2, fx2Acc, fy2Acc, fz2Acc);
-      }
-    }
-
-    if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
-      // The main loop above only processes full _vecLengthDouble-wide rotation blocks (checkSecondLoopCondition
-      // floors to that width). A non-block-aligned tail of restJ valid j's is handled like pVecx1 instead of
-      // running a full _vecLengthDouble-step rotation cycle: broadcasting each remaining j against the whole
-      // i-vector in one O(1) step is cheaper than a diagonal rotation cycle in which most of the vecLen steps
-      // would be entirely masked out (only restJ of the vecLen i-lanes' pairings are ever valid per step).
-      const size_t restJ = jVecEnd % _vecLengthDouble;
-      for (size_t m = 0; m < restJ; ++m, ++j) {
-        fillJRegisters<false, VectorizationPattern::pVecx1>(
-            j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2, y2, z2, ownedMaskJ, 0);
-        sqrtEpsilon2 =
-            loadRegister<false, false, reversed, VectorizationPattern::pVecx1>(tag_double, sqrtEpsilonPtr2, j, 0);
-        sigmaHalf2 =
-            loadRegister<false, false, reversed, VectorizationPattern::pVecx1>(tag_double, halfSigmaPtr2, j, 0);
-        SoAKernel<newton3, remainderI, false, reversed, VectorizationPattern::pVecx1>(
-            i, j, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
-            sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, fx2Acc, fy2Acc, fz2Acc, virialSumX, virialSumY, virialSumZ,
-            uPotSum, restI, 0);
-      }
-    } else {
       const size_t restJ = jVecEnd & (jStepSize<vecPattern>() - 1);
       if (restJ > 0) {
         fillJRegisters<true, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2,
@@ -885,10 +806,9 @@ class LJFunctorHWY
         sigmaHalf2 = loadRegister<false, true, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, restJ);
         SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
             i, j, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
-            sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, fx2Acc, fy2Acc, fz2Acc, virialSumX, virialSumY, virialSumZ,
+            sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
             uPotSum, restI, restJ);
       }
-    }
 
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
   }
@@ -949,9 +869,7 @@ class LJFunctorHWY
     VectorDouble uPotSum = highway::Zero(tag_double);
 
     const size_t iStep = iStepSize<vecPattern>();
-    // jStep is used below only to round jVecStart down to a lane/block boundary. For pVecxVec the loop steps j by
-    // 1 (one rotation at a time), but the rotation math needs jVecStart aligned to a full _vecLengthDouble block.
-    const size_t jStep = vecPattern == VectorizationPattern::pVecxVec ? _vecLengthDouble : jStepSize<vecPattern>();
+    const size_t jStep = jStepSize<vecPattern>();
 
     std::ptrdiff_t i = startI;
     for (; i + static_cast<std::ptrdiff_t>(iStep) <= endI; i += static_cast<std::ptrdiff_t>(iStep)) {
@@ -1043,16 +961,6 @@ class LJFunctorHWY
                              const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
                              VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, MaskDouble &ownedMaskJ,
                              const size_t rest) {
-    if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
-      if (j % _vecLengthDouble != 0) {
-        // Rotate
-        rotate1LaneRight(x2);
-        rotate1LaneRight(y2);
-        rotate1LaneRight(z2);
-        rotate1LaneRight(ownedMaskJ);
-        return;
-      }
-    }
     x2 = loadRegister<false, remainder, false, vecPattern>(tag_double, x2Ptr, j, rest);
     y2 = loadRegister<false, remainder, false, vecPattern>(tag_double, y2Ptr, j, rest);
     z2 = loadRegister<false, remainder, false, vecPattern>(tag_double, z2Ptr, j, rest);
@@ -1105,8 +1013,7 @@ class LJFunctorHWY
                         double *const __restrict fy2Ptr, double *const __restrict fz2Ptr,
                         const VectorDouble &sqrtEpsilon1, const VectorDouble &sigmaHalf1,
                         const VectorDouble &sqrtEpsilon2, const VectorDouble &sigmaHalf2, VectorDouble &fxAcc,
-                        VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &fx2Acc, VectorDouble &fy2Acc,
-                        VectorDouble &fz2Acc, VectorDouble &virialSumX, VectorDouble &virialSumY,
+                        VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
                         VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t restJ) {
     VectorDouble epsilon24s = highway::Undefined(tag_double);
     VectorDouble sigmaSquareds = highway::Undefined(tag_double);
@@ -1150,14 +1057,6 @@ class LJFunctorHWY
     const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, cutoffSquared);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
-      // pVecxVec's Newton3 accumulator must be rotated exactly once per step to stay in lockstep
-      // with fx/fy/fz's rotation frame (see accumulatePVecxVecNewton3()); skipping that rotation
-      // on an all-masked step - as this early-out otherwise would - desyncs the accumulator from
-      // the step counter and corrupts every later step's target lane for the rest of the block.
-      if constexpr (newton3 && vecPattern == VectorizationPattern::pVecxVec) {
-        const VectorDouble zero = highway::Zero(tag_double);
-        accumulatePVecxVecNewton3(zero, zero, zero, fx2Acc, fy2Acc, fz2Acc);
-      }
       return;
     }
 
@@ -1203,11 +1102,7 @@ class LJFunctorHWY
     }
 
     if constexpr (newton3) {
-      if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
-        accumulatePVecxVecNewton3(fx, fy, fz, fx2Acc, fy2Acc, fz2Acc);
-      } else {
-        handleNewton3Reduction<remainderJ, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
-      }
+      handleNewton3Reduction<remainderJ, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
     }
   }
 
