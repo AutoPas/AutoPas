@@ -429,7 +429,6 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
 
   // Linked Cells References:
   // same as linked Cells but without the squaredParticlesPerCell load estimator for sliced_balanced (-4 * 3 * 4 = -48)
-  // i.e. "-4 * 3 * 5 = -60".
   configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
       configsPerContainer[autopas::ContainerOption::linkedCells] - 48;
 
