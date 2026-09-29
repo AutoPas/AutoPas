@@ -181,6 +181,7 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
     particle.setF(forces[i]);
     particle.setID(ids[i]);
 #if MD_FLEXIBLE_MODE == SINGLESITE
+    particle.setTypeId(typeIds[i]);
     particle.setSqrtEpsilon(epsilons[i]);
     particle.setHalfSigma(sigmas[i]);
 #endif
