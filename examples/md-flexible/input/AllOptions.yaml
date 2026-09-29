@@ -75,6 +75,8 @@ Objects:
     0:
       particles-per-dimension        :  [10, 10, 10]
       particle-spacing               :  1.1225
+      # Alternatively to particle-spacing, particle-density can be specified:
+      # particle-density             :  0.7071
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
       # For single-site simulations, particle-type-id fills the object with single-site LJ molecules with the LJ parameters
@@ -82,6 +84,10 @@ Objects:
       # parameters given above for Molecule-0. See particleTypeStr in the documentation for MDFlexConfig.h for more
       # information.
       particle-type-id               :  0
+      # If true, the first particle is placed at 1/2 particle-spacing from the bottomLeftCorner and the topRightCorner
+      # is determined as the last particle plus 1/2 the spacing. If false, the first and last particles are placed at
+      # the bottomLeftCorner and topRightCorner respectively.
+      centered                        :  true
   CubeGauss:
     0:
       distribution-mean              :  [17, 17, 17]
@@ -94,17 +100,26 @@ Objects:
   CubeUniform:
     0:
       numberOfParticles              :  100
+      # Alternatively to numberOfParticles, particle-density can be specified:
+      # particle-density             :  0.1
       box-length                     :  [10, 10, 10]
       bottomLeftCorner               :  [15, 0, 0]
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
   CubeClosestPacked:
     0:
+      # structure can be either 'hcp' (hexagonal closest packing, default) or 'fcc' (face-centered cubic)
+      structure                      :  fcc
       box-length                     :  [4, 4, 4]
       bottomLeftCorner               :  [0, 0, 15]
       particle-spacing               :  1.1225
+      # Alternatively to particle-spacing, particle-density can be specified:
+      # particle-density             :  1.0
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
+      # If true, the first and last particles are placed slightly inwardly from the bottomLeftCorner and the topRightCorner
+      # If false, the first particle is placed right at the bottomLeftCorner.
+      centered                        :  true
   Sphere:
     0:
       center                         :  [4, 16, 4]
