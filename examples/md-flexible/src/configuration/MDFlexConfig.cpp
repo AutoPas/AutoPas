@@ -159,6 +159,10 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   const auto sigmas = readPayload<double, 1>(inputStream, numParticles);
 
+  findWord(inputStream, "typeIds");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  const auto typeIds = readPayload<size_t, 1>(inputStream, numParticles);
+
   findWord(inputStream, "ids");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   const auto ids = readPayload<size_t, 1>(inputStream, numParticles);
