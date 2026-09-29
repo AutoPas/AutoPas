@@ -200,7 +200,7 @@ std::ostream &operator<<(std::ostream &os, const Configuration &configuration);
 std::istream &operator>>(std::istream &in, Configuration &configuration);
 
 /**
- * Equals operator for Configuration objects.
+ * Equals operator for Configuration objects. Comparison is made by comparing the Configuration::tie of the objects.
  * @param lhs
  * @param rhs
  * @return true iff all components are equal.
@@ -217,10 +217,7 @@ bool operator!=(const Configuration &lhs, const Configuration &rhs);
 
 /**
  * Comparison operator for Configuration objects. This is mainly used for configurations to have a sane ordering in e.g.
- * sets.
- *
- * Configurations are compared member wise in the order: container, cellSizeFactor, traversal, loadEstimator,
- * dataLayout, newton3.
+ * sets. Comparison is made by comparing the Configuration::tie of the objects.
  *
  * @param lhs
  * @param rhs
