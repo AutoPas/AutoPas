@@ -30,7 +30,7 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
   const ParticleType dummy;
 
   autoPas.init();
-  autopas::generators::GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, dummy, {1, 1, 1}, boxmin);
+  autopas::generators::GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, dummy, {1, 1, 1}, boxMin);
   AUTOPAS_OPENMP(parallel MD_FLEXIBLE_NUM_THREADS)
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     EXPECT_TRUE(autopas::utils::inBox(iter->getR(), boxMin, boxMax));
