@@ -375,20 +375,6 @@ class LJFunctorHWY
     return j < static_cast<size_t>(limit);
   }
 
-  static void rotate1LaneRight(VectorDouble &vec) {
-    VectorDouble tmp = vec;
-    vec = highway::Slide1Up(tag_double, vec);
-    tmp = highway::SlideDownLanes(tag_double, tmp, _vecLengthDouble - 1);
-    vec = highway::Or(vec, tmp);
-  }
-
-  static void rotate1LaneRight(MaskDouble &mask) {
-    MaskDouble tmp = mask;
-    mask = highway::SlideMask1Up(tag_double, mask);
-    tmp = highway::SlideMaskDownLanes(tag_double, tmp, _vecLengthDouble - 1);
-    mask = highway::Or(mask, tmp);
-  }
-
   /**
    * Depending on the vectorization pattern, loads/broadcasts one scalar array (positions, ownership state, or mixing
    * properties) into a full vector register. This is the shared primitive behind fillIRegisters and fillJRegisters:
