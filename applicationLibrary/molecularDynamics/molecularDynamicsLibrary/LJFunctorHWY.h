@@ -786,7 +786,6 @@ class LJFunctorHWY
     MaskDouble ownedMaskJ;
     for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j);
          j += static_cast<std::ptrdiff_t>(jStepSize<vecPattern>())) {
-
       fillJRegisters<false, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2,
                                         y2, z2, ownedMaskJ, 0);
       sqrtEpsilon2 = loadRegister<false, false, reversed, vecPattern>(tag_double, sqrtEpsilonPtr2, j, 0);
@@ -794,21 +793,19 @@ class LJFunctorHWY
 
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
           i, j, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
-          sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
-          uPotSum, restI, 0);
+          sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
     }
 
-      const size_t restJ = jVecEnd & (jStepSize<vecPattern>() - 1);
-      if (restJ > 0) {
-        fillJRegisters<true, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2,
-                                         y2, z2, ownedMaskJ, restJ);
-        sqrtEpsilon2 = loadRegister<false, true, reversed, vecPattern>(tag_double, sqrtEpsilonPtr2, j, restJ);
-        sigmaHalf2 = loadRegister<false, true, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, restJ);
-        SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
-            i, j, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
-            sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
-            uPotSum, restI, restJ);
-      }
+    const size_t restJ = jVecEnd & (jStepSize<vecPattern>() - 1);
+    if (restJ > 0) {
+      fillJRegisters<true, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2,
+                                       y2, z2, ownedMaskJ, restJ);
+      sqrtEpsilon2 = loadRegister<false, true, reversed, vecPattern>(tag_double, sqrtEpsilonPtr2, j, restJ);
+      sigmaHalf2 = loadRegister<false, true, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, restJ);
+      SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
+          i, j, ownedMaskI, ownedMaskJ, x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
+          sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
+    }
 
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
   }
@@ -1112,13 +1109,12 @@ class LJFunctorHWY
                               const double *const __restrict yPtr, const double *const __restrict zPtr,
                               const int64_t *const __restrict ownedStatePtr, double *const __restrict fxPtr,
                               double *const __restrict fyPtr, double *const __restrict fzPtr,
-                              const VectorDouble& sqrtEpsilon1, const VectorDouble& sigmaHalf1,
-                              const double *const __restrict sqrtEpsilonPtr, const double *const __restrict sigmaHalfPtr,
-                              const size_t *const __restrict neighborList, VectorDouble &fxAcc, VectorDouble &fyAcc,
-                              VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
-                              VectorDouble &virialSumZ, VectorDouble &uPotSum,
+                              const VectorDouble &sqrtEpsilon1, const VectorDouble &sigmaHalf1,
+                              const double *const __restrict sqrtEpsilonPtr,
+                              const double *const __restrict sigmaHalfPtr, const size_t *const __restrict neighborList,
+                              VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
+                              VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &uPotSum,
                               [[maybe_unused]] const size_t rest = 0) const {
-
     VectorDouble epsilon24s = highway::Undefined(tag_double);
     VectorDouble sigmaSquareds = highway::Undefined(tag_double);
     VectorDouble shift6s = highway::Undefined(tag_double);
@@ -1329,8 +1325,8 @@ class LJFunctorHWY
     for (; j < vecEnd; j += _vecLengthDouble) {
       SoAKernelVerlet<newton3, false>(indexFirst, j, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
                                       reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
-                                      sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
-                                      virialSumX, virialSumY, virialSumZ, uPotSum);
+                                      sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, neighborList.data(),
+                                      fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum);
     }
 
     const size_t rest = neighborListSize & (_vecLengthDouble - 1);
@@ -1338,8 +1334,8 @@ class LJFunctorHWY
     if (rest > 0) {
       SoAKernelVerlet<newton3, true>(indexFirst, j, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
                                      reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
-                                     sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
-                                     virialSumX, virialSumY, virialSumZ, uPotSum, rest);
+                                     sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, neighborList.data(), fxAcc,
+                                     fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, rest);
     }
 
     fxPtr[indexFirst] += highway::ReduceSum(tag_double, fxAcc);

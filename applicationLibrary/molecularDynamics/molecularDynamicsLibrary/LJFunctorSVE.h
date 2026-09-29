@@ -275,9 +275,9 @@ class LJFunctorSVE
 
         SoAKernel<true, false>(j, ownedStatePtr[i] == autopas::OwnershipState::owned,
                                reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr, zptr, fxptr,
-                               fyptr, fzptr, sqrtEpsilon1, halfSigma1, sqrtEpsilonptr, halfSigmaptr, fxacc, fyacc, fzacc, virialSumX,
-                               virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(),
-                               pg_3, svundef_u64(), pg_4, svundef_u64());
+                               fyptr, fzptr, sqrtEpsilon1, halfSigma1, sqrtEpsilonptr, halfSigmaptr, fxacc, fyacc,
+                               fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2,
+                               svundef_u64(), pg_3, svundef_u64(), pg_4, svundef_u64());
       }
 
       fxptr[i] += svaddv(svptrue_b64(), fxacc);
@@ -362,9 +362,9 @@ class LJFunctorSVE
 
         SoAKernel<newton3, false>(j, ownedStatePtr1[i] == autopas::OwnershipState::owned,
                                   reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr, y2ptr, z2ptr,
-                                  fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, fxacc, fyacc,
-                                  fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(),
-                                  pg_2, svundef_u64(), pg_3, svundef_u64(), pg_4, svundef_u64());
+                                  fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr,
+                                  fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, pg_1,
+                                  svundef_u64(), pg_2, svundef_u64(), pg_3, svundef_u64(), pg_4, svundef_u64());
       }
 
       fx1ptr[i] += svaddv_f64(svptrue_b64(), fxacc);
@@ -525,9 +525,9 @@ class LJFunctorSVE
       const svfloat64_t &x1, const svfloat64_t &y1, const svfloat64_t &z1, const double *const __restrict x2ptr,
       const double *const __restrict y2ptr, const double *const __restrict z2ptr, double *const __restrict fx2ptr,
       double *const __restrict fy2ptr, double *const __restrict fz2ptr, const svfloat64_t &sqrtEpsilon1,
-      const svfloat64_t &halfSigma1, const double *const __restrict sqrtEpsilon2ptr, const double *const __restrict halfSigma2ptr,
-      svfloat64_t &fxacc, svfloat64_t &fyacc, svfloat64_t &fzacc, svfloat64_t &virialSumX, svfloat64_t &virialSumY,
-      svfloat64_t &virialSumZ, svfloat64_t &potentialEnergySum,
+      const svfloat64_t &halfSigma1, const double *const __restrict sqrtEpsilon2ptr,
+      const double *const __restrict halfSigma2ptr, svfloat64_t &fxacc, svfloat64_t &fyacc, svfloat64_t &fzacc,
+      svfloat64_t &virialSumX, svfloat64_t &virialSumY, svfloat64_t &virialSumZ, svfloat64_t &potentialEnergySum,
 
       const svbool_t &pg_1, const svuint64_t &index_1, const svbool_t &pg_2, const svuint64_t &index_2,
       const svbool_t &pg_3, const svuint64_t &index_3, const svbool_t &pg_4, const svuint64_t &index_4
@@ -575,32 +575,32 @@ class LJFunctorSVE
     svfloat64_t lj6_1;
     svfloat64_t fac_1;
     if (continue_1)
-      lennardJones<indexed>(j, index_1, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, pgC_1, dr2_1, epsilon24s_1,
-                            shift6s_1, lj6_1, fac_1);
+      lennardJones<indexed>(j, index_1, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, pgC_1, dr2_1,
+                            epsilon24s_1, shift6s_1, lj6_1, fac_1);
 
     svfloat64_t epsilon24s_2;
     svfloat64_t shift6s_2;
     svfloat64_t lj6_2;
     svfloat64_t fac_2;
     if (continue_2)
-      lennardJones<indexed>(j + svlen(x1), index_2, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, pgC_2, dr2_2,
-                            epsilon24s_2, shift6s_2, lj6_2, fac_2);
+      lennardJones<indexed>(j + svlen(x1), index_2, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, pgC_2,
+                            dr2_2, epsilon24s_2, shift6s_2, lj6_2, fac_2);
 
     svfloat64_t epsilon24s_3;
     svfloat64_t shift6s_3;
     svfloat64_t lj6_3;
     svfloat64_t fac_3;
     if (continue_3)
-      lennardJones<indexed>(j + svlen(x1) * 2, index_3, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, pgC_3, dr2_3,
-                            epsilon24s_3, shift6s_3, lj6_3, fac_3);
+      lennardJones<indexed>(j + svlen(x1) * 2, index_3, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, pgC_3,
+                            dr2_3, epsilon24s_3, shift6s_3, lj6_3, fac_3);
 
     svfloat64_t epsilon24s_4;
     svfloat64_t shift6s_4;
     svfloat64_t lj6_4;
     svfloat64_t fac_4;
     if (continue_4)
-      lennardJones<indexed>(j + svlen(x1) * 3, index_4, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, pgC_4, dr2_4,
-                            epsilon24s_4, shift6s_4, lj6_4, fac_4);
+      lennardJones<indexed>(j + svlen(x1) * 3, index_4, sqrtEpsilon1, halfSigma1, sqrtEpsilon2ptr, halfSigma2ptr, pgC_4,
+                            dr2_4, epsilon24s_4, shift6s_4, lj6_4, fac_4);
 
     if (continue_1)
       applyForces<newton3, indexed>(j, index_1, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
@@ -701,8 +701,8 @@ class LJFunctorSVE
       svfloat64_t lj6_1;
       svfloat64_t fac_1;
       if (continue_1)
-        lennardJones<true>(0, index_1, sqrtEpsilon1, halfSigma1, sqrtEpsilonptr, halfSigmaptr, pgC_1, dr2_1, epsilon24s_1, shift6s_1,
-                           lj6_1, fac_1);
+        lennardJones<true>(0, index_1, sqrtEpsilon1, halfSigma1, sqrtEpsilonptr, halfSigmaptr, pgC_1, dr2_1,
+                           epsilon24s_1, shift6s_1, lj6_1, fac_1);
 
       if (continue_1)
         applyForces<newton3, true>(0, index_1, ownedStatePtr[indexFirst] == autopas::OwnershipState::owned, fxptr,
@@ -749,10 +749,10 @@ class LJFunctorSVE
    */
   constexpr static auto getNeededAttr(std::false_type) {
     return std::array<typename Particle_T::AttributeNames, 8>{
-        Particle_T::AttributeNames::id,      Particle_T::AttributeNames::posX,
-        Particle_T::AttributeNames::posY,    Particle_T::AttributeNames::posZ,
-        Particle_T::AttributeNames::typeId,  Particle_T::AttributeNames::sqrtEpsilon,
-        Particle_T::AttributeNames::halfSigma,   Particle_T::AttributeNames::ownershipState};
+        Particle_T::AttributeNames::id,        Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,      Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::typeId,    Particle_T::AttributeNames::sqrtEpsilon,
+        Particle_T::AttributeNames::halfSigma, Particle_T::AttributeNames::ownershipState};
   }
 
   /**

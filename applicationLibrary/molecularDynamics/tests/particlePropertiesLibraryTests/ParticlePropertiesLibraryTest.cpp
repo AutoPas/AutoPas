@@ -236,8 +236,8 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
   mdLib::MoleculeLJ molB({cutoff, 0., 0.}, {0., 0., 0.}, 1, 0);
   molA.setSqrtEpsilon(std::sqrt(epsilon));
   molB.setSqrtEpsilon(std::sqrt(epsilon));
-  molA.setHalfSigma(sigma/2.);
-  molB.setHalfSigma(sigma/2.);
+  molA.setHalfSigma(sigma / 2.);
+  molB.setHalfSigma(sigma / 2.);
 
   // Create LJ Functor class and use it to calculate the potential energy between the two
   mdLib::LJFunctor<mdLib::MoleculeLJ, /* shifting */ false, /*mixing*/ true, autopas::FunctorN3Modes::Both,
