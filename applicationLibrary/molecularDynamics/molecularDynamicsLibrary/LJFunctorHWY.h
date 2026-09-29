@@ -580,55 +580,6 @@ class LJFunctorHWY
       fy2Ptr[j] -= highway::ReduceSum(tag_double, fy);
       fz2Ptr[j] -= highway::ReduceSum(tag_double, fz);
     }
-    // pVecxVec's Newton3 reduction does not go through here: see accumulatePVecxVecNewton3() and
-    // flushPVecxVecNewton3Block() below.
-  }
-
-  /**
-   * pVecxVec-specific Newton3 reduction step. fx/fy/fz are rotated relative to the start of the
-   * current _vecLengthDouble-wide j-block (see handleILoopBody's rotation scheme). Rather than
-   * un-rotating fx/fy/fz back to natural per-particle order and doing a full load/subtract/store of
-   * the j-force block on every one of the _vecLengthDouble rotation steps (which costs O(vecLen^2)
-   * rotations and O(vecLen) redundant memory traffic per block), this accumulates the contribution
-   * into a running accumulator kept in lockstep with fx/fy/fz's rotated frame: rotating the
-   * accumulator by one lane before adding the new contribution reproduces exactly the same running
-   * sum you'd get from un-rotating fx/fy/fz every step, but at O(1) cost per step instead of O(k).
-   * Call this once per rotation step, then flushPVecxVecNewton3Block() once per full block.
-   */
-  static void accumulatePVecxVecNewton3(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
-                                        VectorDouble &fx2Acc, VectorDouble &fy2Acc, VectorDouble &fz2Acc) {
-    rotate1LaneRight(fx2Acc);
-    rotate1LaneRight(fy2Acc);
-    rotate1LaneRight(fz2Acc);
-    fx2Acc = highway::Add(fx2Acc, fx);
-    fy2Acc = highway::Add(fy2Acc, fy);
-    fz2Acc = highway::Add(fz2Acc, fz);
-  }
-
-  /**
-   * Flushes a pVecxVec Newton3 accumulator built up over one full _vecLengthDouble-wide j-block to
-   * memory. After _vecLengthDouble calls to accumulatePVecxVecNewton3(), the accumulator's frame
-   * lags the natural per-particle frame by exactly one rotation, so a single final rotation aligns
-   * it before the one load/subtract/store needed for the whole block. Only called for full blocks
-   * (the trailing partial block is handled without rotation, see handleILoopBody), so an unaligned
-   * full-width load/store is always safe here.
-   *
-   * @param j0 Start index (a multiple of _vecLengthDouble) of the block to flush.
-   */
-  static void flushPVecxVecNewton3Block(const size_t j0, double *const __restrict fx2Ptr,
-                                        double *const __restrict fy2Ptr, double *const __restrict fz2Ptr,
-                                        VectorDouble &fx2Acc, VectorDouble &fy2Acc, VectorDouble &fz2Acc) {
-    rotate1LaneRight(fx2Acc);
-    rotate1LaneRight(fy2Acc);
-    rotate1LaneRight(fz2Acc);
-
-    const VectorDouble fx2 = highway::LoadU(tag_double, &fx2Ptr[j0]);
-    const VectorDouble fy2 = highway::LoadU(tag_double, &fy2Ptr[j0]);
-    const VectorDouble fz2 = highway::LoadU(tag_double, &fz2Ptr[j0]);
-
-    highway::StoreU(highway::Sub(fx2, fx2Acc), tag_double, &fx2Ptr[j0]);
-    highway::StoreU(highway::Sub(fy2, fy2Acc), tag_double, &fy2Ptr[j0]);
-    highway::StoreU(highway::Sub(fz2, fz2Acc), tag_double, &fz2Ptr[j0]);
   }
 
   template <bool reversed, bool remainder, VectorizationPattern vecPattern>
@@ -992,10 +943,6 @@ class LJFunctorHWY
    * @param fxAcc
    * @param fyAcc
    * @param fzAcc
-   * @param fx2Acc pVecxVec-only running Newton3 accumulator for the j-side force; see
-   * accumulatePVecxVecNewton3(). Ignored for every other vecPattern.
-   * @param fy2Acc pVecxVec-only, see fx2Acc.
-   * @param fz2Acc pVecxVec-only, see fx2Acc.
    * @param virialSumX
    * @param virialSumY
    * @param virialSumZ
