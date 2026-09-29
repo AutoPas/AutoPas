@@ -42,7 +42,7 @@ int LoggerTest::testLevel(autopas::Logger::LogLevel level, bool enabled = true) 
 TEST_F(LoggerTest, LogLevelTest) {
   // Some log levels might be deactivated on compile time. Calculate how many we expect.
   constexpr int numLogLevelsTotal = 6;
-  constexpr int numLogLevelsActive = numLogLevelsTotal - SPDLOG_ACTIVE_LEVEL;
+  constexpr int numLogLevelsActive = numLogLevelsTotal - AUTOPAS_ACTIVE_LEVEL;
 
   // The expected number of lines is limited by the active log levels
   EXPECT_EQ(testLevel(autopas::Logger::LogLevel::trace), std::clamp(6, 0, numLogLevelsActive));
