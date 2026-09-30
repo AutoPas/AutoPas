@@ -492,7 +492,8 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
 
   // Check that there are the correct number of configurations per container, and print detailed breakdowns if not.
 
-  // Each configuration exists with a thread count of either one or all threads
+  // Each configuration exists with a thread count of either one or all threads.
+  // If built without OpenMP, only one options exists.
   const size_t numThreadCountOptions = std::set<int>{1, autopas::autopas_get_max_threads()}.size();
   for (const auto &container : autopas::ContainerOption::getAllOptions()) {
     const auto expectedNumConfigs =
@@ -528,11 +529,12 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   }
 
   // Check that the total number of configurations is correct and stop if not
-  const size_t numberOfConfigs = std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
-                                                 [](auto acc, auto &pair) { return acc + pair.second; })
-                                     // Test with multiple thread count options except vvl_as_built
-                                     * numThreadCountOptions -
-                                 configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild];
+  const size_t numberOfConfigs =
+      std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
+                      [](auto acc, auto &pair) { return acc + pair.second; })
+          // Test with multiple thread count options except vvl_as_built
+          * numThreadCountOptions -
+      (configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] * (numThreadCountOptions - 1));
   ASSERT_EQ(numberOfConfigs, searchSpace.size())
       << "The calculated number of configurations is not equal to the cross product search space!";
   // total number of possible configurations * number of samples + last iteration after tuning

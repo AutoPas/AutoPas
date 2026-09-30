@@ -90,10 +90,26 @@ void ThreadCountTuningTest::testThreadCountTuning(const size_t boxMax, const std
 TEST_F(ThreadCountTuningTest, testSetGetTunedThreadCount) {
   const int previousTunedThreads = autopas::autopas_get_tuned_num_threads();
   auto maxThreads = autopas::autopas_get_max_threads();
+  autopas::autopas_set_tuned_num_threads(1);
+  EXPECT_EQ(autopas::autopas_get_tuned_num_threads(), 1);
+  autopas::autopas_set_tuned_num_threads(autopas::autopas_all_threads);
+  EXPECT_EQ(autopas::autopas_get_tuned_num_threads(),
+#ifdef AUTOPAS_USE_OPENMP
+            maxThreads
+#else
+            1
+#endif
+  );
   // Use maxThreads + 1, since this is not actually used and maxThreads may be 1, which would make this test meaningless
   for (int n = 1; n <= maxThreads + 1; n++) {
     autopas::autopas_set_tuned_num_threads(n);
-    EXPECT_EQ(autopas::autopas_get_tuned_num_threads(), n);
+    EXPECT_EQ(autopas::autopas_get_tuned_num_threads(),
+#ifdef AUTOPAS_USE_OPENMP
+              n
+#else
+              1
+#endif
+    );
   }
   autopas::autopas_set_tuned_num_threads(previousTunedThreads);
 }
