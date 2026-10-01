@@ -26,8 +26,11 @@ bool autopas::Configuration::hasValidValues() const {
   return container != ContainerOption() and cellSizeFactor != -1 and traversal != TraversalOption() and
          loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option() and
          interactionType != InteractionTypeOption() and
-         (threadCount == autopas::autopas_all_threads or
-          (threadCount >= 1 and threadCount <= autopas_get_max_threads()));
+         (threadCount == autopas::autopas_all_threads
+#ifdef AUTOPAS_TUNE_THREADS
+          or (threadCount >= 1 and threadCount <= autopas_get_max_threads())
+#endif
+         );
 }
 
 std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) const {

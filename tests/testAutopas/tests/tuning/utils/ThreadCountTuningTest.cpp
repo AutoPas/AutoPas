@@ -19,6 +19,7 @@ using ::testing::_;
 
 void ThreadCountTuningTest::testThreadCountTuning(const size_t boxMax, const std::set<int> &threadCountOptions,
                                                   std::optional<int> expectedSelectedThreadCount) const {
+  const NumThreadGuard numThreadGuard(autopas::autopas_get_max_threads(), TUNED_THREADS);
   const std::set<autopas::ContainerOption> containerOptions({autopas::ContainerOption::linkedCells});
   const std::set<autopas::TraversalOption> traversalOptions({autopas::TraversalOption::lc_c01});
   const std::set<autopas::LoadEstimatorOption> loadEstimatorOptions({autopas::LoadEstimatorOption::none});
@@ -88,7 +89,7 @@ void ThreadCountTuningTest::testThreadCountTuning(const size_t boxMax, const std
  * Tests: Setter/getter for tuned number of threads
  */
 TEST_F(ThreadCountTuningTest, testSetGetTunedThreadCount) {
-  const int previousTunedThreads = autopas::autopas_get_tuned_num_threads();
+  const NumThreadGuard numThreadGuard(autopas::autopas_get_max_threads(), TUNED_THREADS);
   auto maxThreads = autopas::autopas_get_max_threads();
   autopas::autopas_set_tuned_num_threads(1);
   EXPECT_EQ(autopas::autopas_get_tuned_num_threads(), 1);
@@ -111,7 +112,6 @@ TEST_F(ThreadCountTuningTest, testSetGetTunedThreadCount) {
 #endif
     );
   }
-  autopas::autopas_set_tuned_num_threads(previousTunedThreads);
 }
 
 /**

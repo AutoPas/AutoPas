@@ -21,4 +21,11 @@ class ThreadCountTuningTest : public AutoPasTestBase {
    */
   void testThreadCountTuning(const size_t boxMax, const std::set<int> &threadCountOptions,
                              std::optional<int> expectedSelectedThreadCount = std::nullopt) const;
+
+ protected:
+  void SetUp() override {
+#ifndef AUTOPAS_TUNE_THREADS
+    GTEST_SKIP() << "Thread count tuning is not enabled";
+#endif
+  }
 };

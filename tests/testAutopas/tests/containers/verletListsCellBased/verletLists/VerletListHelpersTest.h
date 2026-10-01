@@ -13,11 +13,14 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/particles/ParticleDefinitions.h"
+#include "autopas/utils/WrapOpenMP.h"
+#include "testingHelpers/NumThreadGuard.h"
 
 using namespace autopas;
 
 class VerletListHelpersTest : public ::testing::Test {
  protected:
+  NumThreadGuard _numThreadGuard{autopas::autopas_get_max_threads(), TUNED_THREADS};
   using ParticleType = ParticleBaseFP64;
   using CellType = FullParticleCell<ParticleType>;
   using Helpers = VerletListHelpers<ParticleType>;

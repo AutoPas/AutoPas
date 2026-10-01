@@ -662,7 +662,7 @@ class LogicHandler {
     // Initialize the maximum velocity to zero
     double maxVelocity = 0;
     // Iterate over the owned particles in container to determine maximum velocity
-    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity) num_threads(autopas_get_tuned_num_threads()))
+    AUTOPAS_OPENMP(parallel reduction(max : maxVelocity) AUTOPAS_NUM_THREADS)
     for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
       std::array<double, 3> tempVel = iter->getV();
       double tempVelAbs = sqrt(dot(tempVel, tempVel));
@@ -967,7 +967,7 @@ void LogicHandler<Particle_T>::updateRebuildPositions() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbor list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel num_threads(autopas_get_tuned_num_threads()))
+  AUTOPAS_OPENMP(parallel AUTOPAS_NUM_THREADS)
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     iter->resetRAtRebuild();
   }
@@ -1015,9 +1015,7 @@ void LogicHandler<Particle_T>::checkNeighborListsInvalidDoDynamicRebuild() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbor list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel reduction(or
-                                    : _neighborListInvalidDoDynamicRebuild)
-                     num_threads(autopas_get_tuned_num_threads()))
+  AUTOPAS_OPENMP(parallel reduction(or : _neighborListInvalidDoDynamicRebuild) AUTOPAS_NUM_THREADS)
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);

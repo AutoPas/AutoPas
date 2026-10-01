@@ -494,7 +494,13 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
 
   // Each configuration exists with a thread count of either one or all threads.
   // If built without OpenMP, only one options exists.
-  const size_t numThreadCountOptions = std::set<int>{1, autopas::autopas_get_max_threads()}.size();
+  const size_t numThreadCountOptions = std::set<int>{autopas::autopas_all_threads
+#ifdef AUTOPAS_TUNE_THREADS
+                                                     ,
+                                                     1
+#endif
+  }
+                                           .size();
   for (const auto &container : autopas::ContainerOption::getAllOptions()) {
     const auto expectedNumConfigs =
         configsPerContainer.at(container) *

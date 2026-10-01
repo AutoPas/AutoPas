@@ -318,7 +318,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     bool exceptionCaught{false};
     std::string exceptionMsg{""};
 
-    AUTOPAS_OPENMP(parallel num_threads(autopas_get_tuned_num_threads())) {
+    AUTOPAS_OPENMP(parallel AUTOPAS_NUM_THREADS) {
       // private for each thread!
       std::vector<Particle_T> myInvalidParticles, myInvalidNotOwnedParticles;
       AUTOPAS_OPENMP(for)

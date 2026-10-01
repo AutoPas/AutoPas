@@ -9,6 +9,8 @@
 #include <gtest/gtest.h>
 
 #include "autopas/AutoPasDecl.h"
+#include "autopas/utils/WrapOpenMP.h"
+#include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
@@ -23,6 +25,7 @@ class AutoPasTest : public testing::Test {
   }
 
  protected:
+  NumThreadGuard _numThreadGuard{autopas::autopas_get_max_threads(), TUNED_THREADS};
   void expectedParticles(size_t expectedOwned, size_t expectedHalo);
 
   autopas::AutoPas<Molecule> autoPas;

@@ -6,6 +6,7 @@
 #include "YamlParser.h"
 
 #include "autopas/options/TuningMetricOption.h"
+#include "autopas/utils/logging/Logger.h"
 
 std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node &node, const std::string &errMsg,
                                                                       const bool allThrowsError) {
@@ -545,7 +546,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "List of thread count (int) options.";
         description = config.threadCounts.description;
         std::vector<std::string> threadCountErrors;
-        auto threadCounts = parseComplexTypeValueSequence<int>(node, key, threadCountErrors);
+        auto threadCountsParsed = parseComplexTypeValueSequence<int>(node, key, threadCountErrors);
         for (const auto error : threadCountErrors) {
           std::stringstream ss;
           ss << "YamlParser: Error parsing thread count." << std::endl
@@ -553,12 +554,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
              << "See AllOptions.yaml for examples." << std::endl;
           errors.push_back(ss.str());
         }
-        if (threadCountErrors.empty() and not threadCounts.empty()) {
-          std::set<int> threadCountsSet(threadCounts.begin(), threadCounts.end());
-          // Replace sentinel value to avoid duplicate configurations (0 == max threads)
-          if (threadCountsSet.find(autopas::autopas_all_threads) != threadCountsSet.end()) {
-            threadCountsSet.erase(autopas::autopas_all_threads);
-            threadCountsSet.insert(autopas::autopas_get_max_threads());
+        if (threadCountErrors.empty() and not threadCountsParsed.empty()) {
+#ifndef AUTOPAS_TUNE_THREADS
+          AutoPasLog(WARN, "AutoPas was built without thread count tuning support!")
+#endif
+              std::set<int>
+                  threadCounts(threadCountsParsed.begin(), threadCountsParsed.end());
+          if (threadCounts.find(autopas::autopas_all_threads) != threadCounts.end() and
+              threadCounts.find(autopas::autopas_get_max_threads()) != threadCounts.end()) {
+            // Remove sentinel value to avoid duplicate configurations (0 == max threads)
+            threadCounts.erase(autopas::autopas_all_threads);
           }
           (*config.threadCounts.value) = {threadCountsSet};
         }

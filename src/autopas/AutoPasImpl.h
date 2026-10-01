@@ -194,7 +194,7 @@ template <class Collection, class F>
 void AutoPas<Particle_T>::addParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
-  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue) num_threads(autopas_get_tuned_num_threads()))
+  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue) AUTOPAS_NUM_THREADS)
   for (auto i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);
@@ -251,7 +251,7 @@ template <class Collection, class F>
 void AutoPas<Particle_T>::addHaloParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
-  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue) num_threads(autopas_get_tuned_num_threads()))
+  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue) AUTOPAS_NUM_THREADS)
   for (auto i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);

@@ -32,6 +32,18 @@ namespace autopas {
  */
 constexpr int autopas_all_threads = 0;
 
+#ifdef AUTOPAS_TUNE_THREADS
+/**
+ * Use tuned number of threads in AUTOPAS_OPENMP
+ */
+#define AUTOPAS_NUM_THREADS num_threads(autopas_get_tuned_num_threads())
+#else
+/**
+ * Empty macro to throw away any arguments.
+ */
+#define AUTOPAS_NUM_THREADS
+#endif
+
 #if defined(AUTOPAS_USE_OPENMP)
 
 /**

@@ -92,6 +92,7 @@ add_subdirectory(src)
 add_subdirectory(tools)
 
 # modules needing targets:
+include(autopas_thread_tuning)
 include(autopas_coloring)
 include(autopas_logging)
 include(autopas_other-compileroptions)

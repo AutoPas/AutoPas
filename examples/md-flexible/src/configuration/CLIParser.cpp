@@ -11,6 +11,8 @@
 #include <any>
 #include <fstream>
 
+#include "autopas/utils/logging/Logger.h"
+
 // anonymous namespace to hide helper function
 namespace {
 
@@ -670,8 +672,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         for (const auto str : needles) {
           try {
             int threadCount = std::stoi(str);
-            // Replace sentinel value to avoid duplicate configurations (0 == max threads)
-            if (threadCount == autopas::autopas_all_threads) threadCount = autopas::autopas_get_max_threads();
             threadCounts.insert(threadCount);
           } catch (const exception &) {
             cerr << "Error parsing thread count options: " << strArg << endl;
@@ -681,6 +681,14 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           }
         }
         if (not threadCounts.empty()) {
+#ifndef AUTOPAS_TUNE_THREADS
+          AutoPasLog(WARN, "AutoPas was built without thread count tuning support!")
+#endif
+              if (threadCounts.find(autopas::autopas_all_threads) != threadCounts.end() and
+                  threadCounts.find(autopas::autopas_get_max_threads()) != threadCounts.end()) {
+            // Remove sentinel value to avoid duplicate configurations (0 == max threads)
+            threadCounts.erase(autopas::autopas_all_threads);
+          }
           (*config.threadCounts.value) = {threadCounts};
         }
         break;
