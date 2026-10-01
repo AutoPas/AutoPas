@@ -11,7 +11,6 @@
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
-#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/EnergySensorOption.h"
@@ -794,24 +793,6 @@ class AutoPas {
    */
   void setEvidenceFirstPrediction(unsigned int evidenceFirstPrediction) {
     _tuningStrategyFactoryInfo.minNumberOfEvidence = evidenceFirstPrediction;
-  }
-
-  /**
-   * Get acquisition function used for tuning
-   * @return
-   */
-  [[nodiscard]] AcquisitionFunctionOption getAcquisitionFunction() const {
-    return _tuningStrategyFactoryInfo.acquisitionFunctionOption;
-  }
-
-  /**
-   * Set acquisition function for tuning.
-   * For possible acquisition function choices see options::AcquisitionFunctionOption::Value.
-   * @note This function is only relevant for the bayesian based searches.
-   * @param acqFun acquisition function
-   */
-  void setAcquisitionFunction(AcquisitionFunctionOption acqFun) {
-    _tuningStrategyFactoryInfo.acquisitionFunctionOption = acqFun;
   }
 
   /**
