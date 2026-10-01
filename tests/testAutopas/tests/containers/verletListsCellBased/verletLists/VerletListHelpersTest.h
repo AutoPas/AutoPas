@@ -10,11 +10,11 @@
 
 #include <unordered_map>
 
+#include "NumThreadGuard.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "NumThreadGuard.h"
 
 using namespace autopas;
 

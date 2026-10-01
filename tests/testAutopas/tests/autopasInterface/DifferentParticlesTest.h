@@ -8,8 +8,8 @@
 
 #include <gtest/gtest.h>
 
-#include "autopas/utils/WrapOpenMP.h"
 #include "NumThreadGuard.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 class DifferentParticlesTest : public testing::Test {
  protected:

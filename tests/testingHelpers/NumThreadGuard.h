@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <stdexcept>
+
 #include "autopas/utils/WrapOpenMP.h"
 
 /**
@@ -33,8 +35,9 @@ class NumThreadGuard final {
    * @param restoreType Type of thread setting to set/restore (Defaults to USED_THREADS)
    */
   explicit NumThreadGuard(const int newNum, const RestoreType restoreType = USED_THREADS) : _restoreType(restoreType) {
-    if (_restoreType == USED_THREADS) numThreadsBefore = autopas::autopas_get_num_threads();
-    if (_restoreType == TUNED_THREADS)
+    if (_restoreType == USED_THREADS)
+      numThreadsBefore = autopas::autopas_get_num_threads();
+    else if (_restoreType == TUNED_THREADS)
       numThreadsBefore = autopas::autopas_get_tuned_num_threads();
     else
       std::runtime_error("Unknown RestoreType!");
@@ -59,8 +62,9 @@ class NumThreadGuard final {
 
  private:
   void set_num_threads(const int newNum) {
-    if (_restoreType == USED_THREADS) autopas::autopas_set_num_threads(newNum);
-    if (_restoreType == TUNED_THREADS)
+    if (_restoreType == USED_THREADS)
+      autopas::autopas_set_num_threads(newNum);
+    else if (_restoreType == TUNED_THREADS)
       autopas::autopas_set_tuned_num_threads(newNum);
     else
       std::runtime_error("Unknown RestoreType!");

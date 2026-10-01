@@ -6,11 +6,11 @@
 
 #include "RemainderTraversalTest.h"
 
+#include "NumThreadGuard.h"
 #include "autopas/LogicHandler.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**

@@ -6,10 +6,10 @@
 #include "RegionParticleIteratorTest.h"
 
 #include "IteratorTestHelper.h"
+#include "NumThreadGuard.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "testingHelpers/EmptyPairwiseFunctor.h"
-#include "NumThreadGuard.h"
 
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);

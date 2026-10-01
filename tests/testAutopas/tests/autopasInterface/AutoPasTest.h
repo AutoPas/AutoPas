@@ -8,9 +8,9 @@
 
 #include <gtest/gtest.h>
 
+#include "NumThreadGuard.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;

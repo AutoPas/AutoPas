@@ -7,6 +7,7 @@
 
 #include <ranges>
 
+#include "NumThreadGuard.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
@@ -15,7 +16,6 @@
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "NumThreadGuard.h"
 #include "testingHelpers/ParticleMatcher.h"
 #include "testingHelpers/commonTypedefs.h"
 
