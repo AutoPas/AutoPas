@@ -39,7 +39,7 @@ constexpr int autopas_all_threads = 0;
 #define AUTOPAS_NUM_THREADS num_threads(autopas::autopas_get_tuned_num_threads())
 #else
 /**
- * Empty macro to throw away any arguments.
+ * Empty macro to disable using tuned number of threads.
  */
 #define AUTOPAS_NUM_THREADS
 #endif
