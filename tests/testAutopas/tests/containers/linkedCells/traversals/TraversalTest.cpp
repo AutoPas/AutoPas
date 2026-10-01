@@ -12,7 +12,7 @@
 #include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
-#include "testingHelpers/NumThreadGuard.h"
+#include "NumThreadGuard.h"
 
 using ::testing::_;  // anything is ok
 using ::testing::Bool;

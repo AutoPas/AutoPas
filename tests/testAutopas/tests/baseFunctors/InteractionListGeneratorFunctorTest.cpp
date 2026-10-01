@@ -22,7 +22,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/generators/GridGenerator.h"
-#include "testingHelpers/NumThreadGuard.h"
+#include "NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 namespace {

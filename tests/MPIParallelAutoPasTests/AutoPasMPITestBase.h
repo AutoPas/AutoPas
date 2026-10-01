@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "autopas/utils/WrapOpenMP.h"
-#include "testingHelpers/NumThreadGuard.h"
+#include "NumThreadGuard.h"
 
 class AutoPasMPITestBase : public testing::Test {
  protected:

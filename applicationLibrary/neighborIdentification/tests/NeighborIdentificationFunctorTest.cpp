@@ -14,7 +14,7 @@
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "neighborIdentificationLibrary/NeighborIdentificationFunctor.h"
-#include "testingHelpers/NumThreadGuard.h"
+#include "NumThreadGuard.h"
 
 /**
  * This is a simple test suite that checks that the public-facing NeighborIdentificationFunctor matches the internal

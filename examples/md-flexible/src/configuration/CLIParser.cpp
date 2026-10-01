@@ -670,10 +670,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         if (not threadCounts.empty()) {
 #ifndef AUTOPAS_TUNE_THREADS
-          AutoPasLog(WARN, "AutoPas was built without thread count tuning support!")
+          AutoPasLog(WARN, "AutoPas was built without thread count tuning support!");
 #endif
-              if (threadCounts.find(autopas::autopas_all_threads) != threadCounts.end() and
-                  threadCounts.find(autopas::autopas_get_max_threads()) != threadCounts.end()) {
+          if (threadCounts.find(autopas::autopas_all_threads) != threadCounts.end() and
+              threadCounts.find(autopas::autopas_get_max_threads()) != threadCounts.end()) {
             // Remove sentinel value to avoid duplicate configurations (0 == max threads)
             threadCounts.erase(autopas::autopas_all_threads);
           }

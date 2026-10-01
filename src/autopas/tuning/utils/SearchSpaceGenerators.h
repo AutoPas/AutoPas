@@ -30,15 +30,12 @@ namespace autopas::SearchSpaceGenerators {
  * @param allowedVecPatternOptions
  * @return A set containing all valid configurations.
  */
-std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowedContainerOptions,
-                                         const std::set<TraversalOption> &allowedTraversalOptions,
-                                         const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
-                                         const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                         const std::set<Newton3Option> &allowedNewton3Options,
-                                         const NumberSet<double> *allowedCellSizeFactors,
-                                         const NumberSetFinite<int> *allowedThreadCounts,
-                                         const std::set<VectorizationPatternOption> &allowedVecPatternOptions,
-                                         const InteractionTypeOption &interactionType);
+std::set<Configuration> cartesianProduct(
+    const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
+    const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+    const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
+    const NumberSet<double> *allowedCellSizeFactors, const NumberSetFinite<int> *allowedThreadCounts,
+    const std::set<VectorizationPatternOption> &allowedVecPatternOptions, const InteractionTypeOption &interactionType);
 
 /**
  * For a given domain parametrization, calculate which cell size factors (csf) in an interval actually are useful to

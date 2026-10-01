@@ -15,7 +15,7 @@
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "testingHelpers/NumThreadGuard.h"
+#include "NumThreadGuard.h"
 #include "testingHelpers/ParticleMatcher.h"
 #include "testingHelpers/commonTypedefs.h"
 

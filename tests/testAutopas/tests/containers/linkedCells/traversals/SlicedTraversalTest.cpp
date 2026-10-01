@@ -9,7 +9,7 @@
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
 #include "autopas/utils/generators/GridGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "testingHelpers/NumThreadGuard.h"
+#include "NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;

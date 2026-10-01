@@ -10,7 +10,7 @@
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "testingHelpers/NumThreadGuard.h"
+#include "NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**

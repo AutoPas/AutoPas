@@ -14,7 +14,7 @@
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
-#include "testingHelpers/NumThreadGuard.h"
+#include "NumThreadGuard.h"
 
 class ContainerIteratorTestBase : public testing::Test {
  protected:

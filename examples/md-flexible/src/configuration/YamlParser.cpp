@@ -556,10 +556,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
         if (threadCountErrors.empty() and not threadCountsParsed.empty()) {
 #ifndef AUTOPAS_TUNE_THREADS
-          AutoPasLog(WARN, "AutoPas was built without thread count tuning support!")
+          AutoPasLog(WARN, "AutoPas was built without thread count tuning support!");
 #endif
-              std::set<int>
-                  threadCounts(threadCountsParsed.begin(), threadCountsParsed.end());
+          std::set<int> threadCounts(threadCountsParsed.begin(), threadCountsParsed.end());
           if (threadCounts.find(autopas::autopas_all_threads) != threadCounts.end() and
               threadCounts.find(autopas::autopas_get_max_threads()) != threadCounts.end()) {
             // Remove sentinel value to avoid duplicate configurations (0 == max threads)
