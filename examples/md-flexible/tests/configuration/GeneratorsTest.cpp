@@ -9,8 +9,8 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/generators/GridGenerator.h"
 #include "autopas/utils/generators/UniformGenerator.h"
+#include "commonTypedefs.h"
 #include "src/configuration/YamlParser.h"
-#include "testingHelpers/commonTypedefs.h"
 
 TEST_F(GeneratorsTest, GridFillwithBoxMin) {
   auto autoPas = autopas::AutoPas<ParticleType>(std::cout);

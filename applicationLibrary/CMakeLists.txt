@@ -95,9 +95,8 @@ if (AUTOPAS_BUILD_TESTS)
     target_include_directories(
             ${TEST_EXE_NAME}
             PUBLIC
-            "${PROJECT_SOURCE_DIR}/tests"
+            "${PROJECT_SOURCE_DIR}/tests/testingHelpers"
             "${PROJECT_SOURCE_DIR}/tests/testAutopas"
-            "molecularDynamics"
     )
 
     target_link_libraries(
@@ -131,7 +130,7 @@ if (AUTOPAS_BUILD_TESTS)
 
     target_include_directories(
             sphLibTests PUBLIC
-            ${PROJECT_SOURCE_DIR}/tests ${PROJECT_SOURCE_DIR}/tests/testAutopas sph
+            ${PROJECT_SOURCE_DIR}/tests/testAutopas
     )
 
     target_link_libraries(
@@ -163,7 +162,7 @@ if (AUTOPAS_BUILD_TESTS)
 
     target_include_directories(
             neighborIdentificationLibTests PUBLIC
-            ${PROJECT_SOURCE_DIR}/tests ${PROJECT_SOURCE_DIR}/tests/testAutopas
+            ${PROJECT_SOURCE_DIR}/tests/testingHelpers ${PROJECT_SOURCE_DIR}/tests/testAutopas
     )
 
     target_link_libraries(
