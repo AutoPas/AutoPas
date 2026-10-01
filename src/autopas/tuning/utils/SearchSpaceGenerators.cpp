@@ -71,23 +71,6 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
   return searchSet;
 }
 
-SearchSpaceGenerators::OptionSpace SearchSpaceGenerators::inferOptionDimensions(
-    const std::set<Configuration> &searchSet) {
-  OptionSpace optionSpace;
-  for (const auto &[container, traversal, loadEst, dataLayout, newton3, csf, interactT, threadCount, vecPattern] :
-       searchSet) {
-    optionSpace.containerOptions.insert(container);
-    optionSpace.traversalOptions.insert(traversal);
-    optionSpace.loadEstimatorOptions.insert(loadEst);
-    optionSpace.dataLayoutOptions.insert(dataLayout);
-    optionSpace.newton3Options.insert(newton3);
-    optionSpace.cellSizeFactors.insert(csf);
-    optionSpace.threadCounts.insert(threadCount);
-    optionSpace.vecPatternOptions.insert(vecPattern);
-  }
-  return optionSpace;
-}
-
 std::set<double> SearchSpaceGenerators::calculateRelevantCsfs(const NumberInterval<double> &numberInterval,
                                                               double interactionLength, double domainLengthX) {
   // helper function for readability
@@ -110,8 +93,4 @@ std::set<double> SearchSpaceGenerators::calculateRelevantCsfs(const NumberInterv
 
   return relevantCsfs;
 }
-
-SearchSpaceGenerators::OptionSpace::OptionSpace() = default;
-
-SearchSpaceGenerators::OptionSpace::~OptionSpace() noexcept = default;
 }  // namespace autopas
