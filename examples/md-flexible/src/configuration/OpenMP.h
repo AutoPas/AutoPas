@@ -9,7 +9,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 
 #ifdef MD_FLEXIBLE_USE_TUNED_THREADS
-#define MD_FLEXIBLE_NUM_THREADS num_threads(autopas::autopas_get_tuned_num_threads())
+#define MD_FLEXIBLE_NUM_THREADS AUTOPAS_NUM_THREADS
 #else
 /**
  * Empty macro to throw away any arguments.

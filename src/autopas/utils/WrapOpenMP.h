@@ -36,7 +36,7 @@ constexpr int autopas_all_threads = 0;
 /**
  * Use tuned number of threads in AUTOPAS_OPENMP
  */
-#define AUTOPAS_NUM_THREADS num_threads(autopas_get_tuned_num_threads())
+#define AUTOPAS_NUM_THREADS num_threads(autopas::autopas_get_tuned_num_threads())
 #else
 /**
  * Empty macro to throw away any arguments.
