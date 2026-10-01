@@ -26,6 +26,10 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
   }
   const auto cellSizeFactors = allowedCellSizeFactors->getAll();
+  // The not-applicable (N/A) vectorization pattern is always included in the config search space, used in e.g. AoS
+  // configurations.
+  auto vecPatternOptions = allowedVecPatternOptions;
+  vecPatternOptions.insert(VectorizationPatternOption::NA);
 
   std::set<Configuration> searchSet;
   // generate all potential configs
@@ -46,7 +50,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
         for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
           for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
             for (const auto &newton3Option : allowedNewton3Options) {
-              for (const auto &vecPatternOption : allowedVecPatternOptions) {
+              for (const auto &vecPatternOption : vecPatternOptions) {
                 const Configuration configuration{containerOption,  csf,           traversalOption, loadEstimatorOption,
                                                   dataLayoutOption, newton3Option, interactionType, vecPatternOption};
                 if (configuration.hasCompatibleValues()) {
