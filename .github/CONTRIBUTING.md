@@ -186,7 +186,7 @@ The (Fuzzy) rule based tuning strategies rely on an Antlr parsing logic and gram
 whenever an option is added to the tuning procedure.
 We do not actively maintain these parsing logic and grammars and so they may be outdated.
 However, if you wish to use them, update them as follows:
-* [`RuleLanguage.g4`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleLanguage.g4) hardcodes every option value as a literal token, so it **must** be regenerated when an option changes. Run [`generateRuleLanguage.sh`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/generateRuleLanguage.sh), which rebuilds it from the current `Option.h` files.
+* [`RuleLanguage.g4`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleLanguage.g4) hardcodes every option value as a literal token, so it **must** be regenerated when an option changes. Run [`generateRuleLanguage.sh`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/generateRuleLanguage.sh), which rebuilds it from the current `Option.h` files, and redirect its stdout to `RuleLanguage.g4`.
 * ([`FuzzyLanguage.g4`](/src/autopas/tuning/tuningStrategy/fuzzyTuning/FuzzyLanguage.g4) is purely structural (`IDENTIFIER '=' STRING`) and is written by hand. It needs **no** change when an option is added — only when the fuzzy language syntax itself changes.)
 * After changing a grammar, regenerate its parser with the `antlr4` CLI. The exact command is documented next to the grammar it belongs to, in [`ruleBasedTuning/README.md`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/README.md) and [`fuzzyTuning/README.md`](/src/autopas/tuning/tuningStrategy/fuzzyTuning/README.md). The output goes into the `autopas_generated_*_rule_syntax/` subdirectory of `parser_generated/` and is committed to the repository. Don't forget to apply clang-format afterward.
 * Note that `parser_generated/` also holds hand-written glue that the `antlr4` CLI does **not** overwrite, such as `TranslationVisitor.cpp`. Its `knownProperties` list enumerates the accepted configuration properties by name and must be extended when an option is added.
@@ -212,7 +212,6 @@ The table below lists the dependencies. The **Path** column currently reflects t
 
 | Dep        | Path                                                    | Upstream                                            | Pinned ref             | Post-import commits                        |
 |------------|---------------------------------------------------------|-----------------------------------------------------|------------------------|--------------------------------------------|
-| ALL        | [`libs/ALL-0.9.3.zip`](/libs/ALL-0.9.3.zip)             | https://gitlab.jsc.fz-juelich.de/SLMS/loadbalancing | tag `v0.9.3`           | —                                          |
 | antlr4     | [`libs/antlr4`](/libs/antlr4)                           | https://github.com/antlr/antlr4                     | tag `4.13.2`           | non-Cpp runtimes pruned                    |
 | benchmark  | [`libs/benchmark-1.9.4.zip`](/libs/benchmark-1.9.4.zip) | https://github.com/google/benchmark                 | tag `v1.9.4`           | —                                          |
 | eigen      | [`libs/eigen`](/libs/eigen)                             | https://gitlab.com/libeigen/eigen                   | tag `5.0.1`            | —                                          |
@@ -221,6 +220,12 @@ The table below lists the dependencies. The **Path** column currently reflects t
 | pmt        | [`libs/pmt`](/libs/pmt)                                 | https://git.astron.nl/RD/pmt                        | commit `7a56fa3a`      | AutoPas-specific patch (in `libs/patches`) |
 | spdlog     | [`libs/spdlog`](/libs/spdlog)                           | https://github.com/gabime/spdlog                    | tag `v1.17.0`          | —                                          |
 | yaml-cpp   | [`libs/yaml-cpp`](/libs/yaml-cpp)                       | https://github.com/jbeder/yaml-cpp                  | tag `yaml-cpp-0.9.0`   | —                                          |
+
+Not in the table, because it is not shipped with AutoPas: **ALL**
+(https://gitlab.jsc.fz-juelich.de/SLMS/loadbalancing, tag `v0.9.4`) is an optional load balancer for
+md-flexible. [`cmake/modules/autopas_all.cmake`](/cmake/modules/autopas_all.cmake) downloads it at configure
+time when `MD_FLEXIBLE_ENABLE_ALLLBL=ON`, so enabling it requires network access. To update it, bump the
+`GIT_TAG` and the `expectedVersion` in that module.
 
 ### Updating a dependency
 
