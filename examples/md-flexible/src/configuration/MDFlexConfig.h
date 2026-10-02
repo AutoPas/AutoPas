@@ -479,6 +479,7 @@ class MDFlexConfig {
    */
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
       15, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
+
   /**
    * fastParticlesThrow
    */
