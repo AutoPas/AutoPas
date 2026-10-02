@@ -27,6 +27,7 @@ namespace autopas::SearchSpaceGenerators {
  * @param allowedCellSizeFactors
  * @param interactionType
  * @param allowedVecPatternOptions
+ * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return an empty set.
  * @return A set containing all valid configurations.
  */
 std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowedContainerOptions,
@@ -36,7 +37,7 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
                                          const std::set<VectorizationPatternOption> &allowedVecPatternOptions,
-                                         const InteractionTypeOption &interactionType);
+                                         const InteractionTypeOption &interactionType, bool throwIfNone = true);
 
 /**
  * For a given domain parametrization, calculate which cell size factors (csf) in an interval actually are useful to
