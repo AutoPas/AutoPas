@@ -30,19 +30,22 @@ class VLTraversalInterface {
 
   /**
    * Sets the information the traversal needs for the iteration.
-   * @param cells         The cells of the underlying LinkedCells container.
-   * @param neighborList  The flat CRS neighbor list.
-   * @param particleToIndex Map from particle pointers to their dense SoA index.
-   * @param indexToParticle Vector mapping SoA indices to particle pointers.
+   * @param cells              The cells of the underlying LinkedCells container.
+   * @param neighborList       The flat CRS neighbor list.
+   * @param particleToIndex    Map from particle pointers to their dense SoA index.
+   * @param indexToParticle    Vector mapping SoA indices to particle pointers.
+   * @param neighborPairsList  The flat CRS neighbor pairs list.
    */
-  virtual void setCellsAndNeighborLists(std::vector<LinkedParticleCell> &cells,
-                                        VerletListHelpers<ParticleType>::NeighborListCRS &neighborList,
-                                        const std::unordered_map<const ParticleType *, size_t> &particleToIndex,
-                                        const std::vector<ParticleType *> &indexToParticle) {
+  virtual void setCellsAndNeighborLists(
+      std::vector<LinkedParticleCell> &cells, typename VerletListHelpers<ParticleType>::NeighborListCRS &neighborList,
+      const std::unordered_map<const ParticleType *, size_t> &particleToIndex,
+      const std::vector<ParticleType *> &indexToParticle,
+      typename VerletListHelpers<ParticleType>::NeighborPairsListCRS &neighborPairsList) {
     _cells = &cells;
     _neighborList = &neighborList;
     _particleToIndex = &particleToIndex;
     _indexToParticle = &indexToParticle;
+    _neighborPairsList = &neighborPairsList;
   }
 
  protected:
@@ -54,7 +57,7 @@ class VLTraversalInterface {
   /**
    * The flat CRS neighbor list.
    */
-  VerletListHelpers<ParticleType>::NeighborListCRS *_neighborList = nullptr;
+  typename VerletListHelpers<ParticleType>::NeighborListCRS *_neighborList = nullptr;
 
   /**
    * Map from particle pointers to their dense SoA index.
@@ -67,6 +70,11 @@ class VLTraversalInterface {
    * Used by the AoS traversal path to resolve indices back to particle references.
    */
   const std::vector<ParticleType *> *_indexToParticle = nullptr;
+
+  /**
+   * The flat CRS pair neighbor list of the verlet lists container.
+   */
+  typename VerletListHelpers<ParticleType>::NeighborPairsListCRS *_neighborPairsList = nullptr;
 };
 
 }  // namespace autopas

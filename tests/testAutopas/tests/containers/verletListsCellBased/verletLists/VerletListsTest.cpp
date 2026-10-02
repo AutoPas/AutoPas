@@ -8,7 +8,9 @@
 
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLPairListIterationTraversal.h"
 #include "autopas/particles/OwnershipState.h"
+#include "mocks/MockTriwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 
 using ::testing::_;
@@ -366,6 +368,49 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
   }
   EXPECT_FALSE(iter1.isValid());
   EXPECT_FALSE(iter2.isValid());
+}
+
+/**
+ * This test checks that the pair list is built correctly and that the pair traversal iterates over all pairs in the
+ * list.
+ */
+TEST_P(VerletListsTest, testPairVerletListBuildAndIterate) {
+  constexpr std::array<double, 3> min = {1, 1, 1};
+  constexpr std::array<double, 3> max = {3, 3, 3};
+  constexpr double cutoff = 1.;
+  constexpr double skin = 0.2;
+  auto [cellSizeFactor, newton3] = GetParam();
+  // VLPairListIterationTraversal only supports non-Newton3
+  if (newton3) {
+    return;
+  }
+  autopas::VerletLists<ParticleFP64> verletLists(
+      min, max, cutoff, skin, autopas::VerletLists<ParticleFP64>::BuildVerletListType::VerletSoA, cellSizeFactor);
+
+  // 3 particles mutually within cutoff + skin
+  const ParticleFP64 p0({1.5, 1.5, 1.5}, {0., 0., 0.}, 0);
+  const ParticleFP64 p1({1.6, 1.5, 1.5}, {0., 0., 0.}, 1);
+  const ParticleFP64 p2({1.5, 1.6, 1.5}, {0., 0., 0.}, 2);
+  verletLists.addParticle(p0);
+  verletLists.addParticle(p1);
+  verletLists.addParticle(p2);
+
+  MockTriwiseFunctor<ParticleFP64> mockFunctor;
+  EXPECT_CALL(mockFunctor, AoSFunctor(_, _, _, false)).Times(3);
+
+  autopas::VLPairListIterationTraversal<FPCell, MockTriwiseFunctor<ParticleFP64>> pairTraversal(
+      mockFunctor, autopas::DataLayoutOption::aos, false);
+  verletLists.rebuildNeighborLists(&pairTraversal);
+  verletLists.prepareForTraversal(&pairTraversal);
+  verletLists.computeInteractions(&pairTraversal);
+
+  const auto &pairList = verletLists.getNeighborPairsList();
+  EXPECT_EQ(pairList.size(), 3);
+  size_t totalPairs = 0;
+  for (size_t i = 0; i < pairList.size(); ++i) {
+    totalPairs += pairList.count(i);
+  }
+  EXPECT_EQ(totalPairs, 3);
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, VerletListsTest, ::testing::Combine(Values(1.0, 2.0), Values(true, false)),
