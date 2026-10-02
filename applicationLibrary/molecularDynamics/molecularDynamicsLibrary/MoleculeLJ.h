@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "autopas/particles/ParticleDefinitions.h"
+#include "MoleculeBase.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/KokkosSoA.h"
 
@@ -18,7 +18,7 @@ namespace mdLib {
 /**
  * Molecule class for the LJFunctor.
  */
-class MoleculeLJ : public autopas::ParticleBaseFP32 {
+class MoleculeLJ : public MoleculeBase {
  public:
   MoleculeLJ() = default;
 

@@ -31,6 +31,14 @@ elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=1)
 endif()
 
+# Set CMake option for the floating point precision of the molecules
+option(MD_USE_FLOAT_PRECISION "Use float (32 bit) instead of double (64 bit) precision for molecules." OFF)
+target_compile_definitions(
+        molecularDynamicsLibrary
+        PUBLIC
+        $<$<BOOL:${MD_USE_FLOAT_PRECISION}>:MD_USE_FLOAT_PRECISION>
+)
+
 target_link_libraries(molecularDynamicsLibrary
         PUBLIC
         autopas)

@@ -41,11 +41,6 @@
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
- * Precision used for particle representations. If you want to test other precisions change it here.
- */
-using FloatPrecision = float;
-
-/**
  * Type of the Particles used in md-flexible.
  * Switches between autopas::MoleculeLJ and autopas::MultisiteMoleculeLJ as determined by CMake flag
  * MD_FLEXIBLE_MODE.
@@ -55,6 +50,12 @@ using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
 using ParticleType = mdLib::KokkosMoleculeLJ;
 #endif
+
+/**
+ * Precision used for particle representations. Determined by the CMake flag MD_USE_FLOAT_PRECISION
+ * (float if ON, double otherwise).
+ */
+using FloatPrecision = ParticleType::ParticleSoAFloatPrecision;
 
 namespace mdFlexibleTypeDefs {
 /**

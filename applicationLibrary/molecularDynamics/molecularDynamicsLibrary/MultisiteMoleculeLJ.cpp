@@ -7,26 +7,36 @@
 #include "MultisiteMoleculeLJ.h"
 
 namespace mdLib {
-MultisiteMoleculeLJ::MultisiteMoleculeLJ(std::array<float, 3> r, std::array<float, 3> v, std::array<float, 4> q,
-                                         std::array<float, 3> angularVel, unsigned long moleculeId,
+MultisiteMoleculeLJ::MultisiteMoleculeLJ(std::array<ParticleSoAFloatPrecision, 3> r,
+                                         std::array<ParticleSoAFloatPrecision, 3> v,
+                                         std::array<ParticleSoAFloatPrecision, 4> q,
+                                         std::array<ParticleSoAFloatPrecision, 3> angularVel, unsigned long moleculeId,
                                          unsigned long typeId)
     : mdLib::MoleculeLJ(r, v, moleculeId, typeId), _q(q), _angularVel(angularVel), _torque({0., 0., 0.}) {}
 
-const std::array<float, 4> &MultisiteMoleculeLJ::getQuaternion() const { return _q; }
-void MultisiteMoleculeLJ::setQuaternion(const std::array<float, 4> &q) { _q = q; }
+const std::array<MultisiteMoleculeLJ::ParticleSoAFloatPrecision, 4> &MultisiteMoleculeLJ::getQuaternion() const {
+  return _q;
+}
+void MultisiteMoleculeLJ::setQuaternion(const std::array<ParticleSoAFloatPrecision, 4> &q) { _q = q; }
 
-const std::array<float, 3> &MultisiteMoleculeLJ::getAngularVel() const { return _angularVel; }
-void MultisiteMoleculeLJ::setAngularVel(const std::array<float, 3> &angularVel) { _angularVel = angularVel; }
-void MultisiteMoleculeLJ::addAngularVel(const std::array<float, 3> &angularVel) {
+const std::array<MultisiteMoleculeLJ::ParticleSoAFloatPrecision, 3> &MultisiteMoleculeLJ::getAngularVel() const {
+  return _angularVel;
+}
+void MultisiteMoleculeLJ::setAngularVel(const std::array<ParticleSoAFloatPrecision, 3> &angularVel) {
+  _angularVel = angularVel;
+}
+void MultisiteMoleculeLJ::addAngularVel(const std::array<ParticleSoAFloatPrecision, 3> &angularVel) {
   _angularVel = autopas::utils::ArrayMath::add(_angularVel, angularVel);
 }
 
-const std::array<float, 3> &MultisiteMoleculeLJ::getTorque() const { return _torque; }
-void MultisiteMoleculeLJ::setTorque(const std::array<float, 3> &torque) { _torque = torque; }
-void MultisiteMoleculeLJ::addTorque(const std::array<float, 3> &torque) {
+const std::array<MultisiteMoleculeLJ::ParticleSoAFloatPrecision, 3> &MultisiteMoleculeLJ::getTorque() const {
+  return _torque;
+}
+void MultisiteMoleculeLJ::setTorque(const std::array<ParticleSoAFloatPrecision, 3> &torque) { _torque = torque; }
+void MultisiteMoleculeLJ::addTorque(const std::array<ParticleSoAFloatPrecision, 3> &torque) {
   _torque = autopas::utils::ArrayMath::add(_torque, torque);
 }
-void MultisiteMoleculeLJ::subTorque(const std::array<float, 3> &torque) {
+void MultisiteMoleculeLJ::subTorque(const std::array<ParticleSoAFloatPrecision, 3> &torque) {
   _torque = autopas::utils::ArrayMath::sub(_torque, torque);
 }
 
