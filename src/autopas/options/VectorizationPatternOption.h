@@ -115,7 +115,7 @@ class VectorizationPatternOption : public Option<VectorizationPatternOption> {
    */
   static std::map<VectorizationPatternOption, std::string> getOptionNames() {
     return {
-        {NA, "N/A"},
+        {NA, "NotApplicable"},
         {p1xVec, "1xVectorLength"},
         {p2xVecDiv2, "2xVectorLengthDiv2"},
         {pVecDiv2x2, "VectorLengthDiv2x2"},
