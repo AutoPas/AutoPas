@@ -10,8 +10,8 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
-#include "testingHelpers/commonTypedefs.h"
 
 class ATMFunctorTest : public AutoPasTestBase {
  public:

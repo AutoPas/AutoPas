@@ -17,6 +17,7 @@
 #include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
+#include "testingHelpers/ArbitraryConfigurations.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -58,7 +59,8 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
       .tuningInterval = 1000,
       .maxSamples = 3};
   // Use configurations with N3, otherwise there are more calls to AoSFunctor
-  const auto searchSpace = {_confLc_c08_N3, _confDs_seq_N3};
+  const auto searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_2,
+                            arbitraryConfigurations::_arbitrary_config_2B_0};
 
   autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
 
@@ -136,7 +138,8 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
  */
 TEST_F(AutoTunerTest, testSampleWeightingOneRebuild) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  const autopas::AutoTuner::SearchSpaceType searchSpace{arbitraryConfigurations::_arbitrary_config_2B_3,
+                                                        arbitraryConfigurations::_arbitrary_config_2B_6};
   constexpr autopas::AutoTunerInfo autoTunerInfo{
       .maxSamples = 3,
   };
@@ -162,7 +165,8 @@ TEST_F(AutoTunerTest, testSampleWeightingOneRebuild) {
  */
 TEST_F(AutoTunerTest, testSampleWeightingTwoRebuild) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  const autopas::AutoTuner::SearchSpaceType searchSpace{arbitraryConfigurations::_arbitrary_config_2B_3,
+                                                        arbitraryConfigurations::_arbitrary_config_2B_6};
   constexpr autopas::AutoTunerInfo autoTunerInfo{
       .maxSamples = 5,
   };
@@ -196,7 +200,8 @@ TEST_F(AutoTunerTest, testRestoreAfterWipe) {
   tuningStrategies.emplace_back(std::make_unique<autopas::SortByName>());
 
   // Set up the tuner
-  const autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  const autopas::AutoTuner::SearchSpaceType searchSpace{arbitraryConfigurations::_arbitrary_config_2B_3,
+                                                        arbitraryConfigurations::_arbitrary_config_2B_6};
   constexpr autopas::AutoTunerInfo autoTunerInfo{
       .maxSamples = 1,
   };
@@ -216,8 +221,8 @@ TEST_F(AutoTunerTest, testRestoreAfterWipe) {
 
   // The slow config filter should have been ignored
   // But the second strategy should still have been applied reversing the order of configs
-  EXPECT_EQ(autoTuner.getConfigQueue()[0], _confLc_c01_noN3);
-  EXPECT_EQ(autoTuner.getConfigQueue()[1], _confLc_c08_noN3);
+  EXPECT_EQ(autoTuner.getConfigQueue()[0], arbitraryConfigurations::_arbitrary_config_2B_6);
+  EXPECT_EQ(autoTuner.getConfigQueue()[1], arbitraryConfigurations::_arbitrary_config_2B_3);
 }
 
 void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinitely) const {
@@ -227,10 +232,10 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
   constexpr unsigned int rebuildFrequency = 1;
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_noN3,
-      _confDs_seq_N3,
-      _confLc_c08_N3,
-      _confLc_c18_N3,
+      arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_0,
+      arbitraryConfigurations::_arbitrary_config_2B_2,
+      arbitraryConfigurations::_arbitrary_config_2B_5,
   };
 
   autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, "2B"};
@@ -259,7 +264,7 @@ void AutoTunerTest::testEndingTuningPhaseWithRejectedConfig(bool rejectIndefinit
   const auto config4 = autoTuner.getCurrentConfig();
   const auto configAfterReject4 = autoTuner.rejectConfig(config4, /*indefinitely*/ rejectIndefinitely, tuningPhase);
 
-  const auto expectedBest = _confLc_c08_N3;
+  const auto expectedBest = arbitraryConfigurations::_arbitrary_config_2B_2;
   EXPECT_EQ(configAfterReject4, expectedBest);
 
   iteration++;
@@ -288,18 +293,21 @@ TEST_F(AutoTunerTest, testForceOptimalConfiguration) {
   constexpr autopas::AutoTunerInfo autoTunerInfo{.maxSamples = 3};
 
   // Provide a search space with multiple options
-  const auto searchSpace = {_confLc_c08_noN3, _confDs_seq_noN3, _confLc_c18_noN3};
+  const auto searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_3,
+                            arbitraryConfigurations::_arbitrary_config_2B_1,
+                            arbitraryConfigurations::_arbitrary_config_2B_4};
   autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, 20, ""};
 
   autoTuner.tuneConfiguration(0, 0, true);
   EXPECT_TRUE(autoTuner.inTuningPhase());
 
   // The TuningManager steps in and forces a specific config
-  autoTuner.setOptimalConfiguration(_confDs_seq_noN3);
+  autoTuner.setOptimalConfiguration(arbitraryConfigurations::_arbitrary_config_2B_1);
 
   // Assert the state machine correctly aborted tuning and locked in the choice
   EXPECT_FALSE(autoTuner.inTuningPhase()) << "Tuner should not be tuning after an optimal config is forced.";
-  EXPECT_EQ(autoTuner.getCurrentConfig(), _confDs_seq_noN3) << "Current config does not match the forced config.";
+  EXPECT_EQ(autoTuner.getCurrentConfig(), arbitraryConfigurations::_arbitrary_config_2B_1)
+      << "Current config does not match the forced config.";
 
   // Assert that further calls to tune do not mistakenly restart it
   const bool stillTuning = autoTuner.tuneConfiguration(1, 0, false);
@@ -316,7 +324,8 @@ TEST_F(AutoTunerTest, testEarlyStopping) {
       .maxSamples = 3,
       .earlyStoppingFactor = 2.0  // Stop if a config is > 2x slower than the current best
   };
-  const auto searchSpace = {_confLc_c08_noN3, _confDs_seq_noN3};
+  const auto searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_3,
+                            arbitraryConfigurations::_arbitrary_config_2B_1};
   autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, 20, ""};
 
   size_t iteration = 0;
@@ -368,7 +377,7 @@ TEST_F(AutoTunerTest, testTrivialSearchSpace) {
   constexpr autopas::AutoTunerInfo autoTunerInfo{.maxSamples = 3};
 
   // Provide a search space with EXACTLY ONE option
-  const auto searchSpace = {_confLc_c08_noN3};
+  const auto searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_3};
   autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, 20, ""};
 
   // Assert that it immediately recognizes it has nothing to tune
@@ -379,7 +388,7 @@ TEST_F(AutoTunerTest, testTrivialSearchSpace) {
   EXPECT_FALSE(stillTuning) << "Tuner should refuse to start tuning when search space is trivial.";
 
   // Assert it returns the only valid configuration
-  EXPECT_EQ(autoTuner.getCurrentConfig(), _confLc_c08_noN3);
+  EXPECT_EQ(autoTuner.getCurrentConfig(), arbitraryConfigurations::_arbitrary_config_2B_3);
 
   EXPECT_FALSE(autoTuner.inTuningPhase())
       << "Tuner should not have entered a tuning phase when search space is trivial.";
