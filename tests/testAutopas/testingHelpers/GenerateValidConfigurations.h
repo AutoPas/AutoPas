@@ -102,7 +102,12 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     const std::set<autopas::DataLayoutOption> &allowedDataLayoutOptions = autopas::DataLayoutOption::getAllOptions(),
     const std::set<autopas::Newton3Option> &allowedNewton3Options = autopas::Newton3Option::getAllOptions(),
     const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
-    const std::set<int> &allowedThreadCounts = {1, autopas::autopas_get_max_threads()},
+    const std::set<int> &allowedThreadCounts = {autopas::autopas_all_threads
+#ifdef AUTOPAS_TUNE_THREADS
+                                                ,
+                                                1
+#endif
+    },
     const std::set<autopas::VectorizationPatternOption> &allowedVectorPatterns =
         autopas::VectorizationPatternOption::getAllOptions()) {
   const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);

@@ -141,7 +141,7 @@ class Configuration {
    */
   [[nodiscard]] auto tie() const {
     return std::tie(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType,
-                    vecPattern);
+                    vecPattern, threadCount);
   }
 
   /**
@@ -150,7 +150,7 @@ class Configuration {
    */
   [[nodiscard]] auto tie() {
     return std::tie(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType,
-                    vecPattern);
+                    vecPattern, threadCount);
   }
 
   /**

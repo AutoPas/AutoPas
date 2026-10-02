@@ -15,6 +15,10 @@
 #include "autopas/utils/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
+#ifdef AUTOPAS_USE_OPENMP
+#include <omp.h>
+#endif
+
 using ::testing::_;
 
 void ThreadCountTuningTest::testThreadCountTuning(const size_t boxMax, const std::set<int> &threadCountOptions,
@@ -112,6 +116,22 @@ TEST_F(ThreadCountTuningTest, testSetGetTunedThreadCount) {
 #endif
     );
   }
+}
+
+/**
+ * Tests: use tuned number of threads in parallel regions
+ */
+TEST_F(ThreadCountTuningTest, testUseTunedThreadCount) {
+#ifndef AUTOPAS_USE_OPENMP
+  GTEST_SKIP() << "OpenMP support is not enabled";
+#else
+  auto maxThreads = autopas::autopas_get_max_threads();
+  // Use maxThreads + 1, since this is not actually used and maxThreads may be 1, which would make this test meaningless
+  for (int n = 1; n <= maxThreads + 1; n++) {
+    autopas::autopas_set_tuned_num_threads(n);
+    AUTOPAS_OPENMP(parallel AUTOPAS_NUM_THREADS) { EXPECT_EQ(omp_get_num_threads(), n); }
+  }
+#endif
 }
 
 /**
