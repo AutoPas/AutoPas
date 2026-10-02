@@ -20,6 +20,7 @@ target_link_libraries(
     autopas
     gmock
     MPI::MPI_CXX
+    testingHelpers # Shared helpers
 )
 set(AUTOPAS_TESTS_NUM_MPI_RANKS 3 CACHE STRING "Number of MPI Ranks to run AutoPas tests with.")
 if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.29)

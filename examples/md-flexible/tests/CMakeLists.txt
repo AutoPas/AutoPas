@@ -42,6 +42,7 @@ target_link_libraries(
     yaml-cpp
     ${ALL_LIB} 
     $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>
+    testingHelpers # Shared helpers
 )
 
 if (MD_FLEXIBLE_USE_MPI)

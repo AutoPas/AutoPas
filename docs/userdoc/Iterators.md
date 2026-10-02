@@ -3,6 +3,7 @@
 Since particles could be stored in many different ways within AutoPas, it is generally not feasible to provide random access to individual particles.
 To access particles, iterators are used.
 AutoPas provides three interfaces to do this:
+
 1. Classic iterators 
    These `ContainerIterator`s are useable in loops where they provide a maximum of flexibility over the loop flow control.
    They support restriction to certain particle types and regions, as well as parallelization and particle deletion but not addition.
@@ -37,9 +38,11 @@ for(auto iter = autoPas.begin(); iter != autoPas.end(); ++iter) {
   auto position = iter->getR();
 }
 ```
+
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const` iterator.
 
 Some further information to be aware of:
+
 - The iterator can only go forward.
   Its design doesn't necessarily prohibit reverse iteration, but it is (currently) not implemented.
 - Adding particles during iteration is considered undefined behavior.
@@ -116,6 +119,7 @@ All features described above also work in parallel, including particle deletion.
 
 If iterators are nested, inner loops should not spawn multiple iterators to avoid spreading the work too thin.
 This can be achieved by adapting the `IteratorBehavior`, which works similar to a bit vector:
+
 ```c++
 AUTOPAS_OPENMP(parallel)
 for(auto& particle : autoPas) {   // spawns N iterators
@@ -127,14 +131,13 @@ for(auto& particle : autoPas) {   // spawns N iterators
 }
 ```
 
-
 ## `ForEach`
 
 The `forEach`-style methods aim to provide a similar feature set as `ContainerIterator`.
 For this, multiple member functions are available:
 
 | Function | Purpose |
-|:---------|:--------|
+| :--------- | :-------- |
 | `forEach(Lambda, IteratorBehavior)` | Sequential iteration over all particles in the container. |
 | `forEachParallel(Lambda, IteratorBehavior)` | Parallel iteration over all particles in the container. |
 | `forEachInRegion(Lambda, lowCorner, highCorner, IteratorBehavior)` | Sequential iteration over a given box, same as region iterators. |
@@ -156,6 +159,7 @@ autoPas.forEachInRegionParallel([](auto &particle) {
 
 On top of that, for every `forEach`-style function, there is also a corresponding `reduce[inRegion][Parallel]()` function.
 Here, the lambda function has the form `(Particle &, ResultT &) -> void`
+
 ```c++
 size_t result = 0;
 autoPas.reduceInRegionParallel([](auto &particle, auto &accumulator) {
@@ -165,4 +169,5 @@ autoPas.reduceInRegionParallel([](auto &particle, auto &accumulator) {
 ```
 
 ## Related Files and Folders
+
 - src/autopas/utils/logging/

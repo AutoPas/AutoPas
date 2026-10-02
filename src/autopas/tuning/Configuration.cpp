@@ -8,12 +8,14 @@
 
 #include "autopas/containers/CompatibleCellSizeFactors.h"
 #include "autopas/utils/StringUtils.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 std::string autopas::Configuration::toString() const {
   return "{Interaction Type: " + interactionType.to_string() + " , Container: " + container.to_string() +
          " , CellSizeFactor: " + std::to_string(cellSizeFactor) + " , Traversal: " + traversal.to_string() +
          " , Load Estimator: " + loadEstimator.to_string() + " , Data Layout: " + dataLayout.to_string() +
-         " , Newton 3: " + newton3.to_string() + " , VectorizationPattern: " + vecPattern.to_string() + "}";
+         " , Newton 3: " + newton3.to_string() + " , ThreadCount: " + std::to_string(threadCount) +
+         " , VectorizationPattern: " + vecPattern.to_string() + "}";
 }
 
 std::string autopas::Configuration::getCSVHeader() const { return getCSVRepresentation(true); }
@@ -23,7 +25,12 @@ std::string autopas::Configuration::getCSVLine() const { return getCSVRepresenta
 bool autopas::Configuration::hasValidValues() const {
   return container != ContainerOption() and cellSizeFactor != -1 and traversal != TraversalOption() and
          loadEstimator != LoadEstimatorOption() and dataLayout != DataLayoutOption() and newton3 != Newton3Option() and
-         interactionType != InteractionTypeOption();
+         interactionType != InteractionTypeOption() and
+         (threadCount == autopas::autopas_all_threads
+#ifdef AUTOPAS_TUNE_THREADS
+          or (threadCount >= 1 and threadCount <= autopas_get_max_threads())
+#endif
+         );
 }
 
 std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) const {
@@ -106,6 +113,12 @@ bool autopas::Configuration::hasCompatibleValues() const {
     return false;
   }
 
+  // VVLAsBuildTraversal assumes all threads are used
+  if (threadCount != autopas_get_max_threads() and threadCount != autopas_all_threads and
+      container == ContainerOption::varVerletListsAsBuild) {
+    return false;
+  }
+
   return true;
 }
 
@@ -141,6 +154,8 @@ std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &conf
   in >> configuration.dataLayout;
   in.ignore(max, ':');
   in >> configuration.newton3;
+  in.ignore(max, ':');
+  in >> configuration.threadCount;
   in.ignore(max, ':');
   in >> configuration.vecPattern;
   return in;

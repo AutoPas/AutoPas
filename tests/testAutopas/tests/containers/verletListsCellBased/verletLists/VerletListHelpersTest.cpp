@@ -14,7 +14,6 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "testingHelpers/NumThreadGuard.h"
 
 using namespace autopas;
 

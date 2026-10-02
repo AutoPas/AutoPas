@@ -6,13 +6,13 @@
 
 #include "TraversalTest.h"
 
+#include "NumThreadGuard.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
-#include "testingHelpers/NumThreadGuard.h"
 
 using ::testing::_;  // anything is ok
 using ::testing::Bool;

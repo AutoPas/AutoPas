@@ -21,6 +21,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/HashCombine.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -38,29 +39,39 @@ class Configuration {
    * @param _newton3
    * @param _cellSizeFactor
    * @param _interactionType
+   * @param _threadCount (for energy tuning, defaults to maximum number of threads)
    * @param _vecPattern
    *
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
-                          InteractionTypeOption _interactionType,
+                          InteractionTypeOption _interactionType, int _threadCount = autopas::autopas_all_threads,
                           VectorizationPatternOption _vecPattern = VectorizationPatternOption::p1xVec)
       : container(_container),
         traversal(_traversal),
-        vecPattern(_vecPattern),
         loadEstimator(_loadEstimator),
         dataLayout(_dataLayout),
         newton3(_newton3),
         cellSizeFactor(_cellSizeFactor),
-        interactionType(_interactionType) {}
+        interactionType(_interactionType),
+        threadCount(_threadCount),
+        vecPattern(_vecPattern) {}
 
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration()
-      : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.), interactionType() {}
+      : container(),
+        traversal(),
+        loadEstimator(),
+        dataLayout(),
+        newton3(),
+        cellSizeFactor(-1.),
+        interactionType(),
+        threadCount(-1),
+        vecPattern() {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
@@ -80,7 +91,8 @@ class Configuration {
                   container.to_string(fixedLength) + delimiter + std::to_string(cellSizeFactor) + delimiter +
                   traversal.to_string(fixedLength) + delimiter + loadEstimator.to_string(fixedLength) + delimiter +
                   dataLayout.to_string(fixedLength) + delimiter + newton3.to_string(fixedLength) + delimiter +
-                  vecPattern.to_string(fixedLength) + (forParameterizedTestName ? "" : "}");
+                  std::to_string(threadCount) + delimiter + vecPattern.to_string(fixedLength) +
+                  (forParameterizedTestName ? "" : "}");
 
     // For parameterized test names, no punctuation is allowed except "_"
     if (forParameterizedTestName) {
@@ -129,7 +141,7 @@ class Configuration {
    */
   [[nodiscard]] auto tie() const {
     return std::tie(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType,
-                    vecPattern);
+                    vecPattern, threadCount);
   }
 
   /**
@@ -138,7 +150,7 @@ class Configuration {
    */
   [[nodiscard]] auto tie() {
     return std::tie(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType,
-                    vecPattern);
+                    vecPattern, threadCount);
   }
 
   /**
@@ -149,10 +161,6 @@ class Configuration {
    * Traversal option.
    */
   TraversalOption traversal;
-  /**
-   * Vectorization Pattern option
-   */
-  VectorizationPatternOption vecPattern;
   /**
    * Load Estimator option.
    */
@@ -173,6 +181,15 @@ class Configuration {
    * Interaction type of the configuration.
    */
   InteractionTypeOption interactionType;
+  /**
+   * Tuned OpenMP thread count.
+   * (Must be between 1 and the number of hardware threads.)
+   */
+  int threadCount;
+  /**
+   * Vectorization Pattern option
+   */
+  VectorizationPatternOption vecPattern;
 
  private:
   /**
