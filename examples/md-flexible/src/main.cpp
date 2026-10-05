@@ -5,6 +5,7 @@
  */
 
 #include <fstream>
+#include <type_traits>
 
 #include "Simulation.h"
 #include "autopas/utils/WrapMPI.h"
@@ -36,6 +37,8 @@ int main(int argc, char **argv) {
     if (domainDecomposition->getDomainIndex() == 0) {
       std::cout << configuration.to_string() << std::endl;
       std::cout << std::endl << "Using " << autopas::autopas_get_max_threads() << " Threads" << std::endl;
+      std::cout << "Using " << (std::is_same_v<FloatPrecision, float> ? "float" : "double") << " precision ("
+                << sizeof(FloatPrecision) * 8 << " bit)." << std::endl;
 #if defined(AUTOPAS_INCLUDE_MPI)
       std::cout << "MPI is running with " << domainDecomposition->getNumberOfSubdomains() << " ranks." << std::endl;
 #else
