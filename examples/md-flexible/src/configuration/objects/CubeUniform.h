@@ -10,24 +10,54 @@
 #include "autopas/utils/generators/UniformGenerator.h"
 
 /**
- * Class describing an cuboid object filled with uniformly randomly distributed particles.
+ * Class describing a cuboid object filled with uniformly randomly distributed particles.
  */
 class CubeUniform : public Object {
  public:
   /**
-   * Constructor.
+   * Constructor based on the number of particles.
    * @param velocity
    * @param typeId
    * @param numParticles
    * @param boxLength
    * @param bottomLeftCorner
    */
-  CubeUniform(const std::array<double, 3> &velocity, unsigned long typeId, size_t numParticles,
+  CubeUniform(const std::array<double, 3> &velocity, const size_t typeId, const size_t numParticles,
               const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity, typeId),
-        _numParticles(numParticles),
-        _boxLength(boxLength),
-        _bottomLeftCorner(bottomLeftCorner) {}
+      : CubeUniform(velocity, typeId, boxLength, bottomLeftCorner) {
+    _numParticles = numParticles;
+    const double volume = boxLength[0] * boxLength[1] * boxLength[2];
+    _density = static_cast<double>(numParticles) / volume;
+  }
+
+  /**
+   * Constructor based on particle density.
+   * @param velocity
+   * @param typeId
+   * @param boxLength
+   * @param bottomLeftCorner
+   * @param density Target particle density.
+   */
+  CubeUniform(const std::array<double, 3> &velocity, const size_t typeId, const std::array<double, 3> &boxLength,
+              const std::array<double, 3> &bottomLeftCorner, const double density)
+      : CubeUniform(velocity, typeId, boxLength, bottomLeftCorner) {
+    const double volume = boxLength[0] * boxLength[1] * boxLength[2];
+    _numParticles = static_cast<size_t>(std::round(density * volume));
+    const double newDensity = static_cast<double>(_numParticles) / volume;
+    _density = newDensity;
+    if (std::abs(newDensity - density) > 1e-10) {
+      std::cout << "CubeUniform: The requested density of " << density << " could not be achieved with the given box "
+                << "length. Actual density: " << newDensity << "." << std::endl;
+    }
+  }
+
+  [[nodiscard]] std::string getObjectType() const override { return "CubeUniform"; }
+
+  /**
+   * Returns the particle density.
+   * @return density of particles.
+   */
+  [[nodiscard]] double getParticleDensity() const { return _density; }
 
   /**
    * Returns the total amount of particles which will be / have been generated.
@@ -59,6 +89,8 @@ class CubeUniform : public Object {
 
     output << std::setw(_valueOffset) << std::left << "numberOfParticles"
            << ":  " << _numParticles << "\n";
+    output << std::setw(_valueOffset) << std::left << "particle-density"
+           << ":  " << _density << "\n";
     output << std::setw(_valueOffset) << std::left << "box-length"
            << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << "\n";
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
@@ -87,12 +119,23 @@ class CubeUniform : public Object {
 
  private:
   /**
-   * The number of particles in the object.
+   * Internal constructor.
+   * @param velocity
+   * @param typeId
+   * @param boxLength
+   * @param bottomLeftCorner
    */
-  size_t _numParticles;
+  CubeUniform(const std::array<double, 3> &velocity, const size_t typeId, const std::array<double, 3> &boxLength,
+              const std::array<double, 3> &bottomLeftCorner)
+      : Object(velocity, typeId), _boxLength(boxLength), _bottomLeftCorner(bottomLeftCorner) {}
 
   /**
-   * The lenght of the box in each direction.
+   * The number of particles in the object.
+   */
+  size_t _numParticles{};
+
+  /**
+   * The length of the box in each direction.
    */
   std::array<double, 3> _boxLength;
 
@@ -100,4 +143,9 @@ class CubeUniform : public Object {
    * The Coordinates of the bottom left front corner.
    */
   std::array<double, 3> _bottomLeftCorner;
+
+  /**
+   * Target particle density.
+   */
+  double _density{};
 };

@@ -17,7 +17,6 @@ target_link_libraries(
         molecularDynamicsLibrary
         gmock # gmock includes the gtest target, so we don't need it here.
         Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
-        $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony> # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
 )
 
 # Kokkos (and its CUDA headers) do not build against libc++, so Clang-based Kokkos builds have to

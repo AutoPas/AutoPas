@@ -211,6 +211,8 @@ jobs:
             KOKKOS_OPTS="${KOKKOS_OPTS} -DKokkos_ENABLE_CUDA=ON -DKokkos_ARCH_AMPERE80=ON"
           fi
           
+          # MD_FLEXIBLE_ENABLE_ALLLBL stays OFF: ALL is fetched from an external GitLab at
+          # configure time and no test exercises it. Its integration lives in RegularGridDecomposition.
           CC=${{ matrix.config.cc }} CXX=${{ matrix.config.cxx }} cmake \
             -G "${{ matrix.config.builder }}" \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
@@ -232,8 +234,7 @@ jobs:
             -DMD_FLEXIBLE_FUNCTOR_AVX=${{ matrix.config.avx }} \
             -DMD_FLEXIBLE_FUNCTOR_HWY=${{ matrix.config.hwy }} \
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
-            -DMD_FLEXIBLE_ENABLE_ALLLBL=${UseMPI} \
-            -DAUTOPAS_ENABLE_HARMONY=ON \
+            -DMD_FLEXIBLE_ENABLE_ALLLBL=OFF \
             -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON \
             -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON \
             -DAUTOPAS_ENABLE_DYNAMIC_CONTAINERS=ON \
