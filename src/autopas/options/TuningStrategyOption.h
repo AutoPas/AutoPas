@@ -36,21 +36,6 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      */
     fullSearch,
     /**
-     * Predict the configuration which will yield the most
-     * information if tested next.
-     */
-    bayesianSearch,
-    /**
-     * Predict the configuration which will yield the most
-     * information if tested next. Uses a Gaussian Process
-     * per allowed discrete tuple.
-     */
-    bayesianClusterSearch,
-    /**
-     * ActiveHarmony client / server system
-     */
-    activeHarmony,
-    /**
      * Predicts performance of all configurations based on previous tuning phases, tests those which are in the optimum
      * range, and selects the best.
      */
@@ -117,11 +102,8 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
    */
   static std::map<TuningStrategyOption, std::string> getOptionNames() {
     return {
-        {TuningStrategyOption::bayesianSearch, "bayesian-Search"},
-        {TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster-Search"},
         {TuningStrategyOption::fullSearch, "full-Search"},
         {TuningStrategyOption::randomSearch, "random-Search"},
-        {TuningStrategyOption::activeHarmony, "active-harmony"},
         {TuningStrategyOption::predictiveTuning, "predictive-tuning"},
         {TuningStrategyOption::ruleBasedTuning, "rule-based-tuning"},
         {TuningStrategyOption::fuzzyTuning, "fuzzy-tuning"},

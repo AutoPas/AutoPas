@@ -10,6 +10,7 @@ if (NOT AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
 endif ()
 
 message(STATUS "Rules-Based Tuning Enabled")
+message(WARNING "(Fuzzy) Rules-Based Tuning is not actively maintained, and may require modification. See CONTRIBUTING.md.")
 
 # Gets the antlr4 C++ runtime by (in order of priority): reusing a target a parent project provides, an
 # installed version via find_package, or the bundled 4.13.2 copy in libs/antlr4.
@@ -65,7 +66,7 @@ if (NOT antlr4cppResolved)
     )
 endif ()
 
-# AutoPas links the runtime as `antlr4cpp` (see src/autopas/CMakeLists.txt), so expose it under that name, but 
+# AutoPas links the runtime as `antlr4cpp` (see src/autopas/CMakeLists.txt), so expose it under that name, but
 # antlr4cpp's CMakeLists produces a shared and/or static library, `antlr4_shared` and `antlr4_static`. By default, we
 # alias the static library as `antlr4cpp`, but a parent project or installed package may only provide the shared
 # library, in which case we alias that as `antlr4cpp`.
