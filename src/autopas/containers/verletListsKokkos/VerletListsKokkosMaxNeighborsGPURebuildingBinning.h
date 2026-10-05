@@ -10,6 +10,10 @@
 
 #pragma once
 
+#include <optional>
+#include <tuple>
+#include <utility>
+
 #include <Kokkos_Core.hpp>
 #include <Kokkos_DualView.hpp>
 #include <Kokkos_Sort.hpp>
@@ -104,6 +108,11 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
      * whether to use flat or teams rebuild kernel
      */
     void setUseTeamsRebuild(bool useTeams) { _useTeamsRebuild = useTeams; }
+
+    /**
+     * whether to reorder the owned particles in the SoA by cell id during the rebuild
+     */
+    void setUseParticleSorting(bool useSorting) { _useParticleSorting = useSorting; }
 
     bool allowsKokkos() const override { return true; }
 
@@ -206,7 +215,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
     }
 
     // TODO: move to a faster (cell-binned) algorithm.
-    void rebuildNeighborLists([[maybe_unused]]TraversalInterface *traversal) override {
+    void rebuildNeighborLists(TraversalInterface *traversal) override {
         if (_neighborListValid) {
             return;
         }
@@ -214,6 +223,14 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
         Kokkos::Timer rebuildTimer;
         const double startRebuild = rebuildTimer.seconds();
         
+        if (_useParticleSorting) {
+            // Sorting permutes every attribute of the owned SoA on the device, so the SoA has to hold the current data
+            // on the device. convertToSoA() may refresh the halo SoA on the host as well, hence the halo sync.
+            convertToSoA();
+            _ownedParticles.template sync<DeviceSpace::execution_space>();
+            _haloParticles.template sync<DeviceSpace::execution_space>();
+        }
+
         auto& ownedSoA = _ownedParticles.getSoA();
         auto& haloSoA = _haloParticles.getSoA();
 
@@ -227,14 +244,15 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
                 Kokkos::realloc(Kokkos::WithoutInitializing,_haloNeighborListEntries, numberOfOwned * _maxNeighbors);
             }
             double endAlloc = rebuildTimer.seconds();
+            // Only the owned particles are sorted. The owned-owned list is built first, so the owned-halo list below already sees the sorted owned order.
             const bool ownedOverflow = _useTeamsRebuild
-                ? buildNeighborListsBinTeams(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view)
-                : buildNeighborListsBinFlat(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view);
+                ? buildNeighborListsBinTeams(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view,_useParticleSorting)
+                : buildNeighborListsBinFlat(ownedSoA,ownedSoA,_neighborListOffsets.d_view,_neighborListEntries.d_view,_useParticleSorting);
 
             
             const bool haloOverflow = haloSoA.size()> 0 ? (_useTeamsRebuild
-                ? buildNeighborListsBinTeams(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view)
-                : buildNeighborListsBinFlat(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view)):false;
+                ? buildNeighborListsBinTeams(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view,false)
+                : buildNeighborListsBinFlat(ownedSoA,haloSoA,_haloNeighborListOffsets.d_view,_haloNeighborListEntries.d_view,false)):false;
             if (!ownedOverflow && !haloOverflow) {
                 _sectionTimes._allocation.addTiming(endAlloc-startAlloc);
                 break;
@@ -243,6 +261,17 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             spdlog::info("VerletListsKokkosMaxNeighbors: neighbor overflow, growing maxNeighbors {} -> {}",
                          _maxNeighbors, grown);
             _maxNeighbors = grown;
+        }
+
+        if (_useParticleSorting) {
+            // the owned particles were reordered on the device, so the host SoA and the AoS are stale now
+            _ownedParticles.template markModified<DeviceSpace::execution_space>();
+            _aosUpToDate = false;
+            // AoS readers convert lazily, except an AoS traversal on an AoS container (prepareTraversal only converts
+            // when the layouts differ)
+            if (traversal->getDataLayout() == DataLayoutOption::aos) {
+                convertToAoS();
+            }
         }
 
         _neighborListOffsets.modify_device();
@@ -480,6 +509,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             KernelTimings _buildNL{"build NeighborList, VerletListsKokkosMaxNeighbors::buildNeighborListsFlat/Teams()"};
             TimingStats _cellList{"buildCellList excluding sort_by_key"};
             TimingStats _sortByKey{"sort_by_key"};
+            TimingStats _particleSort{"particle sort, permute owned SoA by cell"};
             TimingStats _allocation{"allocation, Kokkos::realloc of entries and offsets"};
             TimingStats _totalRebuild{"total rebuild, VerletListsKokkosMaxNeighbors::rebuildNeighborLists()"};
         };
@@ -697,7 +727,35 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
 	        _sectionTimes._sortByKey.addTiming(endSort - startSort);
         }
 
-        bool buildNeighborListsBinFlat(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
+        
+        template <std::size_t... I>
+        void sortParticlesByCell(const Particle_T::KokkosSoAArraysType& soa, const Kokkos::View<int*>& partIds, std::index_sequence<I...>) {
+            using SoA = typename Particle_T::KokkosSoAArraysType;
+            Kokkos::Timer sortTimer;
+            const size_t n = partIds.extent(0);
+            
+            if (not _sortTmp or _sortTmp->size() < n) {
+                _sortTmp.emplace(typename std::tuple_element_t<I, typename SoA::DualViewTuple>::t_dev(
+                    Kokkos::view_alloc(Kokkos::WithoutInitializing, "particleSortTmp"), n)...);
+            }
+            const auto tmpDevice = *_sortTmp;
+            const auto soaDevice = soa.deviceView();
+            auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, n);
+
+            Kokkos::parallel_for("vl_kokkos_sort_gather", rangePolicy, KOKKOS_LAMBDA(const int s) {
+                const int k = partIds(s);
+                ((tmpDevice.template operator()<I, false>(s) = soaDevice.template operator()<I, false>(k)), ...);
+            });
+            Kokkos::parallel_for("vl_kokkos_sort_copy_back", rangePolicy, KOKKOS_LAMBDA(const int s) {
+                ((soaDevice.template operator()<I, false>(s) = tmpDevice.template operator()<I, false>(s)), ...);
+            });
+            Kokkos::fence();
+            _sectionTimes._particleSort.addTiming(sortTimer.seconds());
+        }
+
+        // The cell list is built over soa2, since its partIds/cellStart index into soa2. If sortSoa2 is set, soa2 is
+        // reordered by cell, which also reorders soa1 when both are the same storage (owned-owned).
+        bool buildNeighborListsBinFlat(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries, const bool sortSoa2){
             Kokkos::Timer buildTimer;
             double startBuild= buildTimer.seconds();
             const size_t N = soa1.size();
@@ -722,18 +780,21 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             Kokkos::View<int, DeviceSpace> overflowFlag("overflowFlag");
             Kokkos::deep_copy(overflowFlag, 0);
 
-            Kokkos::View<int*> cellIds("cellIdx",N);
-            Kokkos::View<int*> partIds("particleIdx",N);
+            Kokkos::View<int*> cellIds("cellIdx",M);
+            Kokkos::View<int*> partIds("particleIdx",M);
 
 	        auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
 
             
             Grid g = _grid;
-            double startKernel = buildTimer.seconds();
             Kokkos::View<int*> cellStart("cellStart", g.nCells+1);
-            buildCellList(cellIds,partIds,cellStart,soa1Device,N);
+            buildCellList(cellIds,partIds,cellStart,soa2Device,M);
 	        double endCellListBuild = buildTimer.seconds();
             spdlog::info("Cell List Build Time:{} ",endCellListBuild-startBuild);
+            if(sortSoa2){
+                sortParticlesByCell(soa2, partIds, std::make_index_sequence<Particle_T::KokkosSoAArraysType::tupleSize()>{});
+            }
+            const double startKernel = buildTimer.seconds();
 
             Kokkos::parallel_for("vl_kokkos_rebuild_cells", rangePolicy, KOKKOS_LAMBDA(const int i) {
 
@@ -748,7 +809,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
                 for (int s = 0; s < 27; ++s) {
                     const int c = nbr[s];
                     for (int slot = cellStart(c); slot < cellStart(c + 1); ++slot) {
-                        const int k = partIds(slot);
+                        const int k = sortSoa2 ? slot : partIds(slot);
 
                         const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
                         const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
@@ -773,15 +834,16 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             });
             Kokkos::fence();
             double endBuild = buildTimer.seconds();
-	        spdlog::info("flat neighborlist building Kernel: {}",endBuild-endCellListBuild);
-	        _sectionTimes._buildNL._kernel.addTiming(endBuild - endCellListBuild);
+	        spdlog::info("flat neighborlist building Kernel: {}",endBuild-startKernel);
+	        _sectionTimes._buildNL._kernel.addTiming(endBuild - startKernel);
             _sectionTimes._buildNL._total.addTiming(endBuild-startBuild);
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
             return overflow!=0;
         }
 
-        bool buildNeighborListsBinTeams(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
+        // see buildNeighborListsBinFlat for the meaning of soa2 and sortSoa2
+        bool buildNeighborListsBinTeams(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries, const bool sortSoa2){
             Kokkos::Timer buildTimer;
             double startBuild= buildTimer.seconds();
             const size_t N = soa1.size();
@@ -805,14 +867,18 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             Kokkos::View<int, DeviceSpace> overflowFlag("overflowFlag");
             Kokkos::deep_copy(overflowFlag, 0);
 
-            Kokkos::View<int*> cellIds("cellIdx",N);
-            Kokkos::View<int*> partIds("particleIdx",N);
+            Kokkos::View<int*> cellIds("cellIdx",M);
+            Kokkos::View<int*> partIds("particleIdx",M);
            
             Grid g = _grid;
             Kokkos::View<int*> cellStart("cellStart", g.nCells+1);
-            buildCellList(cellIds,partIds,cellStart,soa1Device,N);
+            buildCellList(cellIds,partIds,cellStart,soa2Device,M);
 	        double endCellListBuild = buildTimer.seconds();
             spdlog::info("Cell List Build Time:{} ",endCellListBuild-startBuild);
+            if(sortSoa2){
+                sortParticlesByCell(soa2, partIds, std::make_index_sequence<Particle_T::KokkosSoAArraysType::tupleSize()>{});
+            }
+            const double startKernel = buildTimer.seconds();
 
 	        auto rangePolicy = Kokkos::RangePolicy<typename DeviceSpace::execution_space>(0, N);
 
@@ -842,7 +908,7 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
                 for (int s = 0; s < 27; ++s) {
                     const int c = nbr[s];
                     Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, cellStart(c+1)-cellStart(c)), [&](const size_t k) {
-                        const int j = partIds(cellStart(c)+k);
+                        const int j = sortSoa2 ? cellStart(c)+k : partIds(cellStart(c)+k);
 
                         const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(j);
                         const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(j);
@@ -872,8 +938,8 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
             });
             Kokkos::fence();
             double endBuild = buildTimer.seconds();
-	        spdlog::info("nl teams building: {}",endBuild-endCellListBuild);
-	        _sectionTimes._buildNL._kernel.addTiming(endBuild - endCellListBuild);
+	        spdlog::info("nl teams building: {}",endBuild-startKernel);
+	        _sectionTimes._buildNL._kernel.addTiming(endBuild - startKernel);
             _sectionTimes._buildNL._total.addTiming(endBuild-startBuild);
             int overflow = 0;
             Kokkos::deep_copy(overflow, overflowFlag);
@@ -1102,7 +1168,9 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
     size_t _maxNeighbors {64};
 
     bool _useTeamsRebuild {false};
-    bool _useParticleSorting{false};
+    bool _useParticleSorting{true};
+    // device-only scratch copy of all SoA attributes for sortParticlesByCell(), grown on demand
+    std::optional<typename Particle_T::KokkosSoAArraysType::DeviceView> _sortTmp {};
     Grid _grid;
     SectionTimings _sectionTimes{};
 };
