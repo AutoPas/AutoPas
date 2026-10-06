@@ -21,6 +21,7 @@ template bool autopas::AutoPas<Molecule>::computeInteractions(
 template bool autopas::AutoPas<Molecule>::computeInteractions(
     LJFunctorType</* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                   /*globals*/ false> *);
+template bool autopas::AutoPas<Molecule>::computeInteractions(ATMFunctorGlobals *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
 template bool autopas::AutoPas<NonConstructibleParticle>::computeInteractions(
     MockPairwiseFunctor<NonConstructibleParticle> *);
