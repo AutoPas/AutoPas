@@ -299,48 +299,51 @@ std::vector<AutoPasConfigEndToEndTest::StepResult> AutoPasConfigEndToEndTest::si
   size_t nextId = initialParticles.size();
   const double deletionFraction = params[interactionType].deletionPercentage / 100.;
 
+  // The perturbation of a particle: maps the first three random numbers from [0, 1) to [-width/2, width/2).
+  auto perturbation = [](const std::array<double, 4> &numbers) -> std::array<double, 3> {
+    return {(numbers[0] - 0.5) * _perturbationWidth, (numbers[1] - 0.5) * _perturbationWidth,
+            (numbers[2] - 0.5) * _perturbationWidth};
+  };
+  const bool deleteParticles = particleChangeMode & ParticleChangeMode::deleteParticles;
+
   std::vector<StepResult> results;
   for (size_t timestep = 0; timestep < _numTimesteps; ++timestep) {
-    // 1. Perturb all particles and reset the forces.
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
-      const auto numbers = randomNumbers(iter->getID(), timestep);
-      // Map [0, 1) to [-width/2, width/2).
-      iter->addR({(numbers[0] - 0.5) * _perturbationWidth, (numbers[1] - 0.5) * _perturbationWidth,
-                  (numbers[2] - 0.5) * _perturbationWidth});
+    // 1. Perturb all owned particles and reset the forces.
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      iter->addR(perturbation(randomNumbers(iter->getID(), timestep)));
       iter->setF({0., 0., 0.});
     }
 
-    // 2. Delete particles.
-    if (particleChangeMode & ParticleChangeMode::deleteParticles) {
-      for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
+    // 2. Delete owned particles.
+    if (deleteParticles) {
+      for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         if (randomNumbers(iter->getID(), timestep)[3] < deletionFraction) {
           autoPas.deleteParticle(iter);
         }
       }
     }
 
-    // 3. Add new particles. The positions only depend on the timestep, so all configurations add the same particles.
-    if (particleChangeMode & ParticleChangeMode::addParticles) {
-      std::mt19937 generator(timestep);
-      for (size_t i = 0; i < numParticlesToAdd; ++i) {
-        const auto pos = autopas::generators::UniformGenerator::randomPosition(generator, boxMin, boxMax);
-        autoPas.addParticle(Molecule(pos, {0., 0., 0.}, nextId++));
-      }
-    }
-
-    // 4. Update the container.
+    // 3. Update the container.
     // This deletes the halo particles. In a real multi-rank simulation, these would communicated anew from the
     // neighboring MPI ranks, but as we merely mimic a multi-rank simulation in the subdomain halo mode, we just save
-    // the halo particles and later add them back in.
+    // the halo particles and later add them back in. The saved copies are then perturbed and potentially deleted like
+    // owned particles, as the neighboring ranks would do with their particles.
     std::vector<Molecule> haloParticles;
     if (haloMode == HaloMode::subdomainHalo) {
       for (auto iter = autoPas.begin(autopas::IteratorBehavior::halo); iter.isValid(); ++iter) {
-        haloParticles.push_back(*iter);
+        const auto numbers = randomNumbers(iter->getID(), timestep);
+        if (deleteParticles and numbers[3] < deletionFraction) {
+          continue;
+        }
+        auto haloParticle = *iter;
+        haloParticle.addR(perturbation(numbers));
+        haloParticle.setF({0., 0., 0.});
+        haloParticles.push_back(haloParticle);
       }
     }
     const auto leavingParticles = autoPas.updateContainer();
 
-    // 5. Exchange particles with the surroundings.
+    // 4. Exchange particles with the surroundings.
     switch (haloMode) {
       case HaloMode::noHalo:
         // Leaving particles are deleted.
@@ -363,6 +366,15 @@ std::vector<AutoPasConfigEndToEndTest::StepResult> AutoPasConfigEndToEndTest::si
           autoPas.addHaloParticle(image);
         }
         break;
+    }
+
+    // 5. Add new particles. The positions only depend on the timestep, so all configurations add the same particles.
+    if (particleChangeMode & ParticleChangeMode::addParticles) {
+      std::mt19937 generator(timestep);
+      for (size_t i = 0; i < numParticlesToAdd; ++i) {
+        const auto pos = autopas::generators::UniformGenerator::randomPosition(generator, boxMin, boxMax);
+        autoPas.addParticle(Molecule(pos, {0., 0., 0.}, nextId++));
+      }
     }
 
     // 6. Calculate forces.
@@ -442,7 +454,16 @@ TEST_P(AutoPasConfigEndToEndTest, configTest) {
 
     const auto startTime = std::chrono::steady_clock::now();
     std::string rejectionMessage;
-    const auto calculated = simulate(config, key, true, rejectionMessage);
+    std::optional<std::vector<StepResult>> calculated;
+    try {
+      calculated = simulate(config, key, true, rejectionMessage);
+    } catch (const std::exception &e) {
+      // Report the exception as a failure of this configuration and continue with the remaining configurations.
+      ADD_FAILURE() << "Exception thrown for configuration " << config.toShortString(false) << " in scenario "
+                    << scenario.toString() << ":\n"
+                    << e.what();
+      continue;
+    }
     const auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime).count();
     // Timings per configuration, used to balance the cost of tests.
