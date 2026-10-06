@@ -7,8 +7,8 @@
 
 #include <gtest/gtest.h>
 
+#include "commonTypedefs.h"
 #include "src/ParticleSerializationTools.h"
-#include "testingHelpers/commonTypedefs.h"
 
 ParticleSerializationToolsTest::ParticleSerializationToolsTest() : AutoPasTestBase() {
   _molecule.setR({5.0, 6.0, 7.0});

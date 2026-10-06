@@ -11,8 +11,8 @@
 #include <chrono>
 
 #include "AutoPasTestBase.h"
+#include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
-#include "testingHelpers/commonTypedefs.h"
 
 class AoSvsSoATest : public AutoPasTestBase {
  public:

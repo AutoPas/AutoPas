@@ -6,8 +6,8 @@
  */
 
 #include "autopas/AutoPasImpl.h"
+#include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "testingHelpers/commonTypedefs.h"
 
 //! @cond Doxygen_Suppress
 template class autopas::AutoPas<Molecule>;

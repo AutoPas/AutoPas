@@ -8,9 +8,9 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "commonTypedefs.h"
 #include "src/configuration/YamlParser.h"
 #include "src/domainDecomposition/LoadBalancerOption.h"
-#include "testingHelpers/commonTypedefs.h"
 
 using MDFlexParser::YamlParser::parseSequenceOneElementExpected;
 
