@@ -10,6 +10,7 @@
 #include "autopas/particles/ParticleDefinitions.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "mocks/MockTriwiseFunctor.h"
+#include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
@@ -58,3 +59,9 @@ using LJFunctorType =
  */
 using LJFunctorGlobals = LJFunctorType</* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                                        /*globals*/ true>;
+
+/**
+ * Helper alias for the Axilrod-Teller-Muto functor with globals enabled but mixing disabled.
+ */
+using ATMFunctorGlobals =
+    mdLib::AxilrodTellerMutoFunctor<Molecule, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true>;
