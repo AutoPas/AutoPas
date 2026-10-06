@@ -7,6 +7,10 @@ file(
 
 add_executable(runTests ${MY_SRC})
 
+# Shared testing helpers live in tests/testingHelpers, so add the parent tests/ dir to the include path
+# (headers are included as "testingHelpers/...").
+target_include_directories(runTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
 target_compile_definitions(runTests PRIVATE)
 
 target_link_libraries(
@@ -16,7 +20,6 @@ target_link_libraries(
         molecularDynamicsLibrary
         gmock # gmock includes the gtest target, so we don't need it here.
         Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
-        $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony> # ActiveHarmony is needed for the tests, but normally not required when using AutoPas.
 )
 
 include(GoogleTest)

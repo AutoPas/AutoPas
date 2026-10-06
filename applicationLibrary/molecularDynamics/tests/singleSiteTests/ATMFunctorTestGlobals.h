@@ -9,10 +9,10 @@
 #include <gtest/gtest.h>
 
 #include "ATMFunctorTest.h"
+#include "ATMPotential.h"
 #include "AutoPasTestBase.h"
+#include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
-#include "testingHelpers/ATMPotential.h"
-#include "testingHelpers/commonTypedefs.h"
 
 template <class FuncType>
 class ATMFunctorTestGlobals : public ATMFunctorTest {

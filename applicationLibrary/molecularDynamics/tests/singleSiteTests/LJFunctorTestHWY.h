@@ -10,9 +10,9 @@
 #include "autopas/options/SortingDirectionOption.h"
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/SoA.h"
+#include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
-#include "testingHelpers/commonTypedefs.h"
 
 using VectorizationPattern = autopas::VectorizationPatternOption::Value;
 
