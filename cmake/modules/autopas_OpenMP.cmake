@@ -27,3 +27,19 @@ if (AUTOPAS_OPENMP)
 else ()
     message(STATUS "OpenMP disabled.")
 endif ()
+
+# Which OpenMP schedule kinds the OpenMP runtime supports, passed to the code as AUTOPAS_OPENMP_SCHEDULE_LEVEL (see
+# OpenMPKindOption::ScheduleLevel). Each level supports the kinds of all lower levels, so levels can be compared with
+# inequalities:
+#   0: GCC + libgomp, or OpenMP disabled: static, dynamic, guided
+#   1: Clang + libomp: adds auto, trapezoidal
+#   2: Clang + libomp with a working static_steal: adds static_steal. Placeholder, not detected yet.
+#   3: Clang + LB4OMP (Auto4OMP): adds all remaining Auto4OMP selection methods and LB4OMP scheduling techniques
+if (AUTOPAS_OPENMP AND AUTOPAS_AUTO4OMP)
+    set(AUTOPAS_OPENMP_SCHEDULE_LEVEL 3)
+elseif (AUTOPAS_OPENMP AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(AUTOPAS_OPENMP_SCHEDULE_LEVEL 1)
+else ()
+    set(AUTOPAS_OPENMP_SCHEDULE_LEVEL 0)
+endif ()
+message(STATUS "OpenMP schedule level: ${AUTOPAS_OPENMP_SCHEDULE_LEVEL}")

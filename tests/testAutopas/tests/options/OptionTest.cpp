@@ -109,7 +109,6 @@ TEST(OptionTest, parseOpenMPKindOptionsTest) {
       {autopas::OpenMPKindOption::omp_auto, "auto"},
       {autopas::OpenMPKindOption::omp_dynamic, "dynamic"},
       {autopas::OpenMPKindOption::omp_guided, "guided"},
-      {autopas::OpenMPKindOption::omp_runtime, "runtime"},
       {autopas::OpenMPKindOption::omp_static, "static"},
 
       // Auto4OMP's automated selection methods:
@@ -118,7 +117,6 @@ TEST(OptionTest, parseOpenMPKindOptionsTest) {
       {autopas::OpenMPKindOption::auto4omp_binarySearch, "binarySearch"},
       {autopas::OpenMPKindOption::auto4omp_expertsel, "expertSel"},
 
-#ifdef AUTOPAS_USE_LB4OMP
       // LB4OMP's scheduling techniques (beware, technique names in LB4OMP's README are outdated):
       {autopas::OpenMPKindOption::lb4omp_profiling, "profiling"},  // Profiling
       {autopas::OpenMPKindOption::lb4omp_fsc, "fsc"},              // Fixed Size Chunk
@@ -133,8 +131,6 @@ TEST(OptionTest, parseOpenMPKindOptionsTest) {
       {autopas::OpenMPKindOption::lb4omp_awf, "awf"},              // Adaptive Weighted Factoring
       {autopas::OpenMPKindOption::lb4omp_tfss, "tfss"},            // Trapezoid Factoring Self Scheduling
       {autopas::OpenMPKindOption::lb4omp_fiss, "fiss"},            // Fixed Increase Self Scheduling
-      {autopas::OpenMPKindOption::lb4omp_viss, "viss"},            // Variable Increase Self Scheduling
-      {autopas::OpenMPKindOption::lb4omp_rnd, "rnd"},              // Random
 
       // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds):
       {autopas::OpenMPKindOption::lb4omp_trapezoidal, "trapezoidal"},    // Trapezoid Self Scheduling
@@ -145,7 +141,6 @@ TEST(OptionTest, parseOpenMPKindOptionsTest) {
       {autopas::OpenMPKindOption::lb4omp_awf_d, "awf_d"},                // Adaptive Weighted Factoring Variant D
       {autopas::OpenMPKindOption::lb4omp_awf_e, "awf_e"},                // Adaptive Weighted Factoring Variant E
       {autopas::OpenMPKindOption::lb4omp_af_a, "af_a"},                  // Improved Adaptive Factoring
-#endif
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::OpenMPKindOption::getOptionNames().size());

@@ -97,6 +97,10 @@ bool autopas::Configuration::hasCompatibleValues() const {
       return false;
     }
   }
+  // Check if the compiler and OpenMP runtime AutoPas is built with support the OpenMP schedule kind.
+  if (not ompKind.isSupportedAtScheduleLevel(OpenMPKindOption::runtimeScheduleLevel)) {
+    return false;
+  }
 
   const auto allContainersSupportingSuper1CSF = compatibleCSFs::allContainersSupportingSuper1CSF();
   if ((not allContainersSupportingSuper1CSF.contains(container)) and cellSizeFactor > 1.0) {

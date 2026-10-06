@@ -6,6 +6,8 @@
 
 #include "autopas/utils/OpenMPConfigurator.h"
 
+#include "autopas/utils/ExceptionHandler.h"
+
 namespace autopas {
 /**
  * OpenMP default chunk size.
@@ -17,7 +19,7 @@ int openMPDefaultChunkSize = 0;
  * OpenMP default chunk size.
  * md-flexible: set via command-line option --openmp-kind kind
  */
-OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
+OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_static;
 
 /**
  * OpenMP configurator default constructor.
@@ -78,6 +80,13 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
  * @return the current OpenMP kind, directly usable in OpenMP's schedule setter
  */
 [[maybe_unused]] [[nodiscard]] omp_sched_t OpenMPConfigurator::getOMPKind() const {
+  if (not _kind.isSupportedAtScheduleLevel(OpenMPKindOption::runtimeScheduleLevel)) {
+    utils::ExceptionHandler::exception(
+        "OpenMPConfigurator::getOMPKind(): The OpenMP schedule kind {} is not supported by the compiler and OpenMP "
+        "runtime AutoPas is built with. Configuration::hasCompatibleValues() should have rejected it.",
+        _kind.to_string());
+  }
+
   switch (_kind) {
     case OpenMPKindOption::omp_dynamic:
       return omp_sched_dynamic;
@@ -85,7 +94,13 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
       return omp_sched_guided;
     case OpenMPKindOption::omp_static:
       return omp_sched_static;
-#ifdef AUTOPAS_USE_LB4OMP  // LB4OMP's scheduling techniques.
+    // libomp's extensions. Declared by LB4OMP's omp.h, otherwise by WrapOpenMP.h.
+    case OpenMPKindOption::lb4omp_trapezoidal:
+      return omp_sched_trapezoidal;
+    case OpenMPKindOption::lb4omp_static_steal:
+      return omp_sched_static_steal;
+#if AUTOPAS_OPENMP_SCHEDULE_LEVEL >= 3  // OpenMPKindOption::ScheduleLevel::clangLB4OMP
+    // LB4OMP's scheduling techniques, only declared by LB4OMP's omp.h.
     case OpenMPKindOption::lb4omp_profiling:
       return omp_sched_profiling;
     case OpenMPKindOption::lb4omp_fsc:
@@ -112,16 +127,8 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
       return omp_sched_tfss;
     case OpenMPKindOption::lb4omp_fiss:
       return omp_sched_fiss;
-    case OpenMPKindOption::lb4omp_viss:
-      return omp_sched_viss;
-    case OpenMPKindOption::lb4omp_rnd:
-      return omp_sched_rnd;
-    case OpenMPKindOption::lb4omp_trapezoidal:
-      return omp_sched_trapezoidal;
     case OpenMPKindOption::lb4omp_fac2a:
       return omp_sched_fac2a;
-    case OpenMPKindOption::lb4omp_static_steal:
-      return omp_sched_static_steal;
     case OpenMPKindOption::lb4omp_awf_b:
       return omp_sched_awf_b;
     case OpenMPKindOption::lb4omp_awf_c:
@@ -149,22 +156,4 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
  * @return whether the scheduling chunk size should be overwritten
  */
 [[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::overrideChunkSize() const { return _kind >= 1; }
-
-/**
- * Tells whether the scheduling kind is a manual LB4OMP scheduling technique.
- * @return whether the scheduling kind is a manual LB4OMP scheduling technique
- */
-// NOLINTNEXTLINE: the function can only be static if not AUTOPAS_USE_LB4OMP.
-[[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::standard() const {
-  switch (_kind) {
-    case OpenMPKindOption::omp_auto:
-    case OpenMPKindOption::omp_dynamic:
-    case OpenMPKindOption::omp_guided:
-    case OpenMPKindOption::omp_runtime:
-    case OpenMPKindOption::omp_static:
-      return true;
-    default:
-      return false;
-  }
-}
 }  // namespace autopas

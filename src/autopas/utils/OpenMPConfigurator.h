@@ -79,6 +79,8 @@ class OpenMPConfigurator {
 
   /**
    * OpenMP scheduling kind getter for setting OpenMP's scheduling runtime variables.
+   * Throws if the compiler and OpenMP runtime AutoPas is built with do not support the kind (see
+   * OpenMPKindOption::isSupportedAtScheduleLevel()).
    * @return the current OpenMP kind, directly usable in OpenMP's schedule setter
    */
   [[maybe_unused]] [[nodiscard]] omp_sched_t getOMPKind() const;
@@ -94,12 +96,6 @@ class OpenMPConfigurator {
    * @return whether the scheduling chunk size should be overwritten
    */
   [[maybe_unused]] [[nodiscard]] bool overrideChunkSize() const;
-
-  /**
-   * Tells whether the scheduling kind is a standard OpenMP kind.
-   * @return whether the scheduling kind is a standard OpenMP kind
-   */
-  [[maybe_unused]] [[nodiscard]] bool standard() const;
 };  // class OpenMPConfigurator
 
 /**
@@ -108,14 +104,7 @@ class OpenMPConfigurator {
  * @param ompConfig the OpenMP configurator
  */
 inline void autopas_set_schedule(autopas::OpenMPConfigurator ompConfig) {
-  // If the configurator is set to omp_runtime, users are assumed to have set OMP_SCHEDULE manually.
-  if (ompConfig.getKind() == OpenMPKindOption::omp_runtime) return;
-
-  if (ompConfig.standard()) {
-    autopas_set_schedule(ompConfig.getOMPKind(), ompConfig.getOMPChunkSize());
-  } else {
-    autopas_auto4omp_set_schedule(ompConfig.getOMPKind(), ompConfig.getOMPChunkSize());
-  }
+  autopas_set_schedule(ompConfig.getOMPKind(), ompConfig.getOMPChunkSize());
 }  // void autopas_set_schedule
 }  // namespace autopas
 

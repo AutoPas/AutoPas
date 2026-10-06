@@ -19,6 +19,14 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
  public:
   /**
    * Possible choices for OpenMP's scheduling kind.
+   *
+   * Which of these the OpenMP runtime supports is described by ScheduleLevel.
+   *
+   * Some kinds are deliberately not options:
+   * - OpenMP's runtime kind, which takes the kind from the OMP_SCHEDULE environment variable: AutoPas always sets the
+   *   schedule itself, so it makes no sense as a tunable option.
+   * - LB4OMP's Variable Increase Self Scheduling (viss) and Random (rnd): LB4OMP's omp_get_schedule() does not handle
+   *   them and aborts with KMP_FATAL. These could be fixed in LB4OMP, but doubt they will be effective in AutoPas.
    */
   enum Value {
     // Standard OpenMP's scheduling kinds:
@@ -42,12 +50,6 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      * The chunk size starts large, and decreases over time towards the minimum set by the chunk size argument.
      */
     omp_guided,
-
-    /**
-     * Runtime: uses the scheduling kind set by the OMP_SCHEDULE environment variable.
-     * ToDo maybe remove
-     */
-    omp_runtime,
 
     /**
      * Standard OpenMP static: iterations are distributed to the threads in chunks.
@@ -83,7 +85,6 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      */
     auto4omp_expertsel,
 
-#ifdef AUTOPAS_USE_LB4OMP
     // LB4OMP's scheduling techniques [1, 2] (beware, technique names in the papers and Git README are outdated):
     /**
      * Profiling: uses dynamic,1 and tracks the execution times of loop iterations.
@@ -162,17 +163,6 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      */
     lb4omp_fiss,
 
-    /**
-     * Variable Increase Self Scheduling: periodically increases the chunk size by a variable bump.
-     * The bump starts as half the initial chunk size, and gets halved each period.
-     */
-    lb4omp_viss,
-
-    /**
-     * Random:  the chunk size varies randomly within a specific range.
-     */
-    lb4omp_rnd,
-
     // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds) [1, 2]:
     /**
      * Trapezoid Self Scheduling (from standard OpenMP): similar to guided,
@@ -215,8 +205,43 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      * Improved Adaptive Factoring: like af, but prior scheduling overhead influences chunk size.
      */
     lb4omp_af_a,
-#endif
   };
+
+  /**
+   * Levels of OpenMP schedule kind support, depending on the compiler and OpenMP runtime AutoPas is built with.
+   * Each level supports the kinds of all lower levels, so levels can be compared with inequalities.
+   * The level AutoPas is built with is runtimeScheduleLevel, which CMake sets (see autopas_OpenMP.cmake).
+   */
+  enum class ScheduleLevel : int {
+    /**
+     * GCC + libgomp: static, dynamic, guided. auto is implemented as static with default chunk size, so it is
+     * considered unsupported to avoid redundantly duplicating static.
+     */
+    gccLibgomp = 0,
+    /**
+     * Clang + libomp: adds auto (implemented as a variant of guided) and trapezoidal. Whilst static_steal is
+     * implemented, the setter does not work with it, so this is excluded.
+     */
+    clangLibomp = 1,
+    /**
+     * Clang + a libomp with a working static_steal: adds static_steal. This is a placeholder for now, until a fix
+     * gets added to a later version of LLVM.
+     */
+    clangFixedLibomp = 2,
+    /**
+     * Clang + LB4OMP (Auto4OMP): adds all remaining Auto4OMP selection methods and LB4OMP scheduling techniques.
+     */
+    clangLB4OMP = 3,
+  };
+
+  static_assert(AUTOPAS_OPENMP_SCHEDULE_LEVEL >= static_cast<int>(ScheduleLevel::gccLibgomp) and
+                    AUTOPAS_OPENMP_SCHEDULE_LEVEL <= static_cast<int>(ScheduleLevel::clangLB4OMP),
+                "AUTOPAS_OPENMP_SCHEDULE_LEVEL is not a valid OpenMPKindOption::ScheduleLevel.");
+
+  /**
+   * The schedule level of the compiler and OpenMP runtime AutoPas is built with.
+   */
+  static constexpr ScheduleLevel runtimeScheduleLevel = static_cast<ScheduleLevel>(AUTOPAS_OPENMP_SCHEDULE_LEVEL);
 
   /**
    * Constructor.
@@ -238,6 +263,54 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
   constexpr operator Value() const { return _value; }
 
   /**
+   * Whether the given schedule level supports this kind, i.e. whether a compiler and OpenMP runtime with this level can
+   * set it.
+   * @param level The schedule level. For the level AutoPas is built with, use runtimeScheduleLevel.
+   * @return True if the kind is supported at the given level.
+   */
+  [[nodiscard]] bool isSupportedAtScheduleLevel(ScheduleLevel level) const {
+    switch (_value) {
+      case omp_static:
+      case omp_dynamic:
+      case omp_guided:
+        return level >= ScheduleLevel::gccLibgomp;
+      case omp_auto:
+      case lb4omp_trapezoidal:
+        return level >= ScheduleLevel::clangLibomp;
+      case lb4omp_static_steal:
+        return level >= ScheduleLevel::clangFixedLibomp;
+      case auto4omp_randomsel:
+      case auto4omp_exhaustivesel:
+      case auto4omp_binarySearch:
+      case auto4omp_expertsel:
+      case lb4omp_profiling:
+      case lb4omp_fsc:
+      case lb4omp_mfsc:
+      case lb4omp_tap:
+      case lb4omp_fac:
+      case lb4omp_faca:
+      case lb4omp_bold:
+      case lb4omp_fac2:
+      case lb4omp_wf:
+      case lb4omp_af:
+      case lb4omp_awf:
+      case lb4omp_tfss:
+      case lb4omp_fiss:
+      case lb4omp_fac2a:
+      case lb4omp_awf_b:
+      case lb4omp_awf_c:
+      case lb4omp_awf_d:
+      case lb4omp_awf_e:
+      case lb4omp_af_a:
+        return level >= ScheduleLevel::clangLB4OMP;
+      default:
+        utils::ExceptionHandler::exception("OpenMPKindOption::isSupportedAtScheduleLevel(): Unknown option {}.",
+                                           static_cast<int>(_value));
+    }
+    return false;
+  }
+
+  /**
    * Set of options that are very unlikely to be interesting.
    *
    * These are all kinds that are not tested with AutoPas, leaving static, dynamic, guided, trapezoidal and fac2a.
@@ -246,7 +319,6 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
    *   does, and are currently broken.
    * - Several of LB4OMP's techniques need data that LB4OMP only has after a profiling run (see KMP_PROFILE_DATA), and
    *   abort inside the runtime otherwise.
-   * - omp_runtime takes its kind from the OMP_SCHEDULE environment variable, which AutoPas overwrites anyway.
    *
    * @return
    */
@@ -256,7 +328,6 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         OpenMPKindOption::auto4omp_exhaustivesel,
         OpenMPKindOption::auto4omp_binarySearch,
         OpenMPKindOption::auto4omp_expertsel,
-#ifdef AUTOPAS_USE_LB4OMP
         OpenMPKindOption::lb4omp_profiling,
         OpenMPKindOption::lb4omp_fsc,
         OpenMPKindOption::lb4omp_mfsc,
@@ -270,14 +341,11 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         OpenMPKindOption::lb4omp_awf,
         OpenMPKindOption::lb4omp_tfss,
         OpenMPKindOption::lb4omp_fiss,
-        OpenMPKindOption::lb4omp_viss,
-        OpenMPKindOption::lb4omp_rnd,
         OpenMPKindOption::lb4omp_awf_b,
         OpenMPKindOption::lb4omp_awf_c,
         OpenMPKindOption::lb4omp_awf_d,
         OpenMPKindOption::lb4omp_awf_e,
         OpenMPKindOption::lb4omp_af_a,
-#endif
     };
   }
 
@@ -291,7 +359,6 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         {OpenMPKindOption::omp_auto, "auto"},
         {OpenMPKindOption::omp_dynamic, "dynamic"},
         {OpenMPKindOption::omp_guided, "guided"},
-        {OpenMPKindOption::omp_runtime, "runtime"},
         {OpenMPKindOption::omp_static, "static"},
 
         // Auto4OMP's automated selection methods:
@@ -300,7 +367,6 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         {OpenMPKindOption::auto4omp_binarySearch, "binarySearch"},
         {OpenMPKindOption::auto4omp_expertsel, "expertSel"},
 
-#ifdef AUTOPAS_USE_LB4OMP
         // LB4OMP's scheduling techniques (beware, technique names in LB4OMP's README are outdated):
         {OpenMPKindOption::lb4omp_profiling, "profiling"},  // Profiling
         {OpenMPKindOption::lb4omp_fsc, "fsc"},              // Fixed Size Chunk             // Requires profiling
@@ -315,8 +381,6 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         {OpenMPKindOption::lb4omp_awf, "awf"},              // Adaptive Weighted Factoring
         {OpenMPKindOption::lb4omp_tfss, "tfss"},            // Trapezoid Factoring Self Scheduling
         {OpenMPKindOption::lb4omp_fiss, "fiss"},            // Fixed Increase Self Scheduling
-        {OpenMPKindOption::lb4omp_viss, "viss"},            // Variable Increase Self Scheduling
-        {OpenMPKindOption::lb4omp_rnd, "rnd"},              // Random
 
         // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds):
         {OpenMPKindOption::lb4omp_trapezoidal, "trapezoidal"},    // Trapezoid Self Scheduling
@@ -327,7 +391,6 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         {OpenMPKindOption::lb4omp_awf_d, "awf_d"},                // Adaptive Weighted Factoring Variant D
         {OpenMPKindOption::lb4omp_awf_e, "awf_e"},                // Adaptive Weighted Factoring Variant E
         {OpenMPKindOption::lb4omp_af_a, "af_a"},                  // Improved Adaptive Factoring
-#endif
     };
   };
 

@@ -41,11 +41,6 @@ set(
         "Directory for Auto4OMP to install its libraries."
 )
 
-set(
-        AUTOPAS_LB4OMP_DOC
-        "Provides LB4OMP's individual scheduling techniques for users."
-)
-
 string(
         CONCAT AUTOPAS_LLVM_LIT_EXECUTABLE_DOC
         "Path to the LLVM-lit executable, required by Auto4OMP. E.g., \"/usr/lib/llvm-18/build/utils/lit/lit.py\". "
@@ -93,8 +88,7 @@ set(
 )
 
 # AutoPas CMake variables for Auto4OMP.
-option(AUTOPAS_AUTO4OMP "${AUTOPAS_AUTO4OMP_DOC}" ON)
-option(AUTOPAS_LB4OMP "${AUTOPAS_LB4OMP_DOC}" ON)
+option(AUTOPAS_AUTO4OMP "${AUTOPAS_AUTO4OMP_DOC}" OFF)
 option(AUTOPAS_AUTO4OMP_DEBUG "${AUTOPAS_AUTO4OMP_DEBUG_DOC}" OFF)
 option(AUTOPAS_AUTO4OMP_MASTER_FORCE "${AUTOPAS_AUTO4OMP_DEBUG_DOC}" OFF)
 option(AUTOPAS_AUTO4OMP_ForceBundled "${AUTOPAS_AUTO4OMP_ForceBundled_DOC}" ON)
@@ -110,19 +104,27 @@ set(AUTOPAS_OMP_VERSION 45 CACHE STRING ${AUTOPAS_OMP_VERSION_DOC})
 if (NOT AUTOPAS_AUTO4OMP)
     # If Auto4OMP disabled, notify.
     message(STATUS "Auto4OMP disabled.")
-    set(AUTOPAS_LB4OMP OFF CACHE BOOL ${AUTOPAS_LB4OMP_DOC} FORCE)
 elseif (NOT AUTOPAS_OPENMP)
     # If OpenMP disabled, warn.
     message(WARNING "OpenMP must be enabled to use Auto4OMP. Auto4OMP disabled.")
     set(AUTOPAS_AUTO4OMP OFF CACHE BOOL ${AUTOPAS_AUTO4OMP_DOC} FORCE)
-    set(AUTOPAS_LB4OMP OFF CACHE BOOL ${AUTOPAS_LB4OMP_DOC} FORCE)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # Auto4OMP is a replacement for LLVM's libomp, which GCC does not use.
+    message(
+            FATAL_ERROR
+            "Auto4OMP does not work with GCC. Use Clang, or disable Auto4OMP with -DAUTOPAS_AUTO4OMP=OFF."
+    )
 else ()
     # Notify.
     message(STATUS "Auto4OMP enabled.")
 
     if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        # If Clang isn't used, warn. Auto4OMP is tested with up to clang 7 and gcc 4. Modern gcc fails.
-        message(WARNING "Auto4OMP needs clang, but ${CMAKE_CXX_COMPILER_ID} is used. Building may produce errors.")
+        # Auto4OMP is only tested with Clang.
+        message(
+                WARNING
+                "Auto4OMP is untested with ${CMAKE_CXX_COMPILER_ID}, it is only tested with Clang. "
+                "Building may produce errors, and further errors may appear whilst running."
+        )
     endif ()
 
     # Auto4OMP's CMake variables:
