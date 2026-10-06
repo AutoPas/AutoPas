@@ -271,11 +271,12 @@ class AutoPasConfigEndToEndTest : public AutoPasTestBase,
    * Simulates _numTimesteps iterations with the given configuration through the AutoPas interface.
    *
    * Every iteration:
-   *  1. All owned and halo particles are moved by a deterministic random perturbation.
-   *  2. Optionally, particles are deleted.
-   *  3. Optionally, new particles are added.
-   *  4. The container is updated via AutoPas::updateContainer().
-   *  5. Particles are exchanged according to the HaloMode, like a user would do with neighboring subdomains.
+   *  1. All owned particles are moved by a deterministic random perturbation.
+   *  2. Optionally, owned particles are deleted.
+   *  3. The container is updated via AutoPas::updateContainer(). For HaloMode::subdomainHalo, the halo particles are
+   *     read out before, and the copies are perturbed and deleted like the owned particles.
+   *  4. Particles are exchanged according to the HaloMode, like a user would do with neighboring subdomains.
+   *  5. Optionally, new particles are added.
    *  6. Forces are calculated via AutoPas::computeInteractions().
    * Since no position depends on calculated forces, floating point differences can not accumulate over the steps.
    *
