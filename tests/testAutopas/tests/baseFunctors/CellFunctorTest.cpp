@@ -180,6 +180,7 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionPair) {
           for (const auto ownerShipStateCellB : {ownershipParticleB, ownedOrHalo}) {
             LJFunctorType<> ljFunctor(cutoff);
             ljFunctor.setParticleProperties(sigma, epsilon);
+            ljFunctor.setVecPattern(autopas::VectorizationPatternOption::p1xVec);
 
             ljFunctor.initTraversal();
 
@@ -270,6 +271,7 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionSingle) {
 
           LJFunctorType<> ljFunctor(cutoff);
           ljFunctor.setParticleProperties(sigma, epsilon);
+          ljFunctor.setVecPattern(autopas::VectorizationPatternOption::p1xVec);
 
           ljFunctor.initTraversal();
 
