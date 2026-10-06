@@ -395,10 +395,12 @@ const std::vector<AutoPasConfigEndToEndTest::StepResult> &AutoPasConfigEndToEndT
         interactionType == autopas::InteractionTypeOption::pairwise
             ? autopas::Configuration(autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08,
                                      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                     autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise)
+                                     autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise,
+                                     autopas::VectorizationPatternOption::NA)
             : autopas::Configuration(autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01,
                                      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                     autopas::Newton3Option::disabled, autopas::InteractionTypeOption::triwise);
+                                     autopas::Newton3Option::disabled, autopas::InteractionTypeOption::triwise,
+                                     autopas::VectorizationPatternOption::NA);
     std::string rejectionMessage;
     const auto reference = simulate(referenceConfig, key, false, rejectionMessage);
     if (not reference) {
@@ -567,17 +569,9 @@ std::unordered_map<autopas::InteractionTypeOption::Value, AutoPasConfigEndToEndT
 std::map<AutoPasConfigEndToEndTest::Scenario, std::set<autopas::Configuration>>
     AutoPasConfigEndToEndTest::_expectedSkips = [] {
       const auto allContainers = autopas::ContainerOption::getAllOptions();
-      const auto allTraversals = autopas::TraversalOption::getAllOptions();
       const auto allLoadEstimators = autopas::LoadEstimatorOption::getAllOptions();
       const auto allDataLayouts = autopas::DataLayoutOption::getAllOptions();
       const auto allNewton3Options = autopas::Newton3Option::getAllOptions();
-
-      // Triwise functors only support the vectorization pattern p1xVec.
-      auto vecPatternsExceptP1xVec = autopas::VectorizationPatternOption::getAllOptions();
-      vecPatternsExceptP1xVec.erase(autopas::VectorizationPatternOption::p1xVec);
-      const auto triwiseVecPatterns = generateAllValidConfigurations(
-          autopas::InteractionTypeOption::triwise, allContainers, allTraversals, allLoadEstimators, allDataLayouts,
-          allNewton3Options, {0.5, 1.0, 1.5}, vecPatternsExceptP1xVec);
 
       // The c04 traversals are not applicable with cell size factor 0.5.
       const std::set<autopas::TraversalOption> c04Traversals{autopas::TraversalOption::lc_c04,
@@ -596,7 +590,6 @@ std::map<AutoPasConfigEndToEndTest::Scenario, std::set<autopas::Configuration>>
       for (const auto &[interactionType, testParams] : params) {
         for (const auto &scenario : testParams.scenarios) {
           auto &skips = expectedSkips[scenario];
-          skips.insert(triwiseVecPatterns.begin(), triwiseVecPatterns.end());
           skips.insert(c04SmallCells.begin(), c04SmallCells.end());
           if (std::ranges::any_of(scenario.boxMax,
                                   [](double boxLength) { return boxLength < 2 * (_cutoff + _skin); })) {
