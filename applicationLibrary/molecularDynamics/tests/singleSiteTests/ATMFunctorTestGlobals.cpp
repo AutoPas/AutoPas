@@ -6,7 +6,7 @@
 
 #include "ATMFunctorTestGlobals.h"
 
-#include "testingHelpers/ATMPotential.h"
+#include "ATMPotential.h"
 
 TYPED_TEST_SUITE_P(ATMFunctorTestGlobals);
 
