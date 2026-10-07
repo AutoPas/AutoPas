@@ -283,11 +283,7 @@ std::string MDFlexConfig::to_string() const {
   }
 
   if (getInteractionTypes().contains(autopas::InteractionTypeOption::pairwise)) {
-    os << setw(valueOffset) << left << "PairwiseInteraction:" << endl;
-    constexpr int indentWidth = 2;
-    const auto indent = std::string(indentWidth, ' ');
-    os << indent;
-    os << setw(valueOffset - indentWidth) << left << functorOption.name << ":  ";
+    os << setw(valueOffset) << left << functorOption.name << ":  ";
     switch (functorOption.value) {
       case FunctorOption::none: {
         os << "None selected" << endl;
@@ -310,22 +306,15 @@ std::string MDFlexConfig::to_string() const {
         break;
       }
     }
-    os << indent;
-    printOption(traversalOptions, -indentWidth);
-    os << indent;
-    printOption(dataLayoutOptions, -indentWidth);
-    os << indent;
-    printOption(newton3Options, -indentWidth);
+    printOption(traversalOptions);
+    printOption(dataLayoutOptions);
+    printOption(newton3Options);
   }
 
   printOption(vecPatternOptions);
 
   if (getInteractionTypes().contains(autopas::InteractionTypeOption::triwise)) {
-    os << setw(valueOffset) << left << "ThreeBodyInteraction:" << endl;
-    constexpr int indentWidth = 2;
-    const auto indent = std::string(indentWidth, ' ');
-    os << indent;
-    os << setw(valueOffset - indentWidth) << left << functorOption3B.name << ":  ";
+    os << setw(valueOffset) << left << functorOption3B.name << ":  ";
     switch (functorOption3B.value) {
       case FunctorOption3B::none: {
         os << "None selected" << endl;
@@ -336,12 +325,9 @@ std::string MDFlexConfig::to_string() const {
         break;
       }
     }
-    os << indent;
-    printOption(traversalOptions3B, -indentWidth);
-    os << indent;
-    printOption(dataLayoutOptions3B, -indentWidth);
-    os << indent;
-    printOption(newton3Options3B, -indentWidth);
+    printOption(traversalOptions3B);
+    printOption(dataLayoutOptions3B);
+    printOption(newton3Options3B);
   }
 
   printOption(cutoff);
