@@ -8,15 +8,17 @@
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/generators/GridGenerator.h"
-#include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamicsLibrary/MoleculeLJ.h"
 
-extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::computeInteractions(LJFunctorType<> *);
+extern template class autopas::AutoPas<mdLib::MoleculeLJ>;
+extern template bool autopas::AutoPas<mdLib::MoleculeLJ>::computeInteractions(
+    mdLib::LJFunctor<mdLib::MoleculeLJ, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+                     /*globals*/ false, /*countFLOPs*/ false, /*relevantForTuning*/ true> *);
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
                                   std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
-  autopas::AutoPas<Molecule> autoPas;
+  autopas::AutoPas<mdLib::MoleculeLJ> autoPas;
   std::array<double, 3> boxMin = {0., 0., 0.};
   std::array<double, 3> boxMax = {3., 3., 3.};
 
@@ -29,12 +31,14 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   autoPas.setAllowedDataLayouts({dataLayoutOption});
 
   autoPas.init();
-  Molecule defaultParticle;
+  mdLib::MoleculeLJ defaultParticle;
 
   autopas::generators::GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
                                                         {particleSpacing, particleSpacing, particleSpacing});
 
-  LJFunctorType<> functor(cutoff);
+  mdLib::LJFunctor<mdLib::MoleculeLJ, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+                   /*globals*/ false, /*countFLOPs*/ false, /*relevantForTuning*/ true>
+      functor(cutoff);
   functor.setParticleProperties(24, 1);
 
   autoPas.computeInteractions(&functor);
