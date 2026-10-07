@@ -1,10 +1,10 @@
 # --------------------------- google benchmark -------------------------------
 # Opt-in micro-benchmarks built on top of google/benchmark. Off by default so
-# standalone AutoPas builds are not penalized by the extra fetch + compile.
+# standalone AutoPas builds are not penalized by the extra compilation.
 
 option_conditional(
         AUTOPAS_BUILD_BENCHMARKS
-        "Build google-benchmark based micro-benchmarks (will be downloaded if not available)"
+        "Build google-benchmark based micro-benchmarks"
         OFF
 )
 
@@ -12,7 +12,7 @@ if (NOT AUTOPAS_BUILD_BENCHMARKS)
     return()
 endif ()
 
-# Fetch benchmark::benchmark from the bundled zip under libs/.
+# Include benchmark::benchmark via cmake/modules/autopas_benchmark.cmake
 include(autopas_benchmark)
 
 # Each micro-benchmark lives in a dedicated file to keep compile times low.
