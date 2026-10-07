@@ -13,6 +13,7 @@
 #include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
+#include "molecularDynamicsLibrary/LJFunctorHWY.h"
 
 class LJFunctorTest : public AutoPasTestBase {
  public:
@@ -49,6 +50,8 @@ template <bool shift, bool mixing, bool globals>
 using LJFunMol = mdLib::LJFunctor<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
 template <bool shift, bool mixing, bool globals>
 using LJFunAVXMol = mdLib::LJFunctorAVX<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
+template <bool shift, bool mixing, bool globals>
+using LJFunHWYMol = mdLib::LJFunctorHWY<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
 
 // struct aliasing for readable names
 struct LJFunShiftMixNoGlob : public LJFunMol<true, true, false> {
@@ -74,6 +77,9 @@ struct LJFunAVXShiftMixGlob : public LJFunAVXMol<true, true, true> {
 };
 struct LJFunAVXShiftNoMixGlob : public LJFunAVXMol<true, false, true> {
   using LJFunAVXMol<true, false, true>::LJFunctorAVX;
+};
+struct LJFunHWYShiftNoMixGlob : public LJFunHWYMol<true, false, true> {
+  using LJFunHWYMol<true, false, true>::LJFunctorHWY;
 };
 #ifdef __ARM_FEATURE_SVE
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
