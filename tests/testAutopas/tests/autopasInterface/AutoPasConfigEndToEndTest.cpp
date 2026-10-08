@@ -23,6 +23,7 @@
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/utils/inBox.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
+#include "testingHelpers/PeriodicBoundariesHelpers.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
@@ -34,26 +35,6 @@ using AutoPasConfigEndToEndTestHelper::ParticleChangeMode;
 using AutoPasConfigEndToEndTestHelper::Scenario;
 
 namespace {
-
-/**
- * Wraps a position that left the box back into it, as if all boundaries were periodic.
- * @param pos
- * @param boxMin
- * @param boxMax
- * @return position inside [boxMin, boxMax).
- */
-std::array<double, 3> wrapIntoBox(std::array<double, 3> pos, const std::array<double, 3> &boxMin,
-                                  const std::array<double, 3> &boxMax) {
-  for (size_t d = 0; d < 3; ++d) {
-    const double boxLength = boxMax[d] - boxMin[d];
-    if (pos[d] < boxMin[d]) {
-      pos[d] += boxLength;
-    } else if (pos[d] >= boxMax[d]) {
-      pos[d] = pos[d] - boxLength;
-    }
-  }
-  return pos;
-}
 
 /**
  * Deterministic pseudo random numbers in [0, 1) that only depend on the particle id and the timestep.
@@ -125,53 +106,6 @@ std::vector<Molecule> generateInitialParticles(const Scenario &scenario, const d
     allMolecules[id].setID(id);
   }
   return allMolecules;
-}
-
-/**
- * Generates periodic images of all owned particles within the interaction length of the boundaries.
- * Images keep the id of the particle they are copied from.
- * @param autoPas
- * @param interactionLength
- * @return The images, which all lie outside the box.
- */
-std::vector<Molecule> generatePeriodicImages(autopas::AutoPas<Molecule> &autoPas, const double interactionLength) {
-  const auto &boxMin = autoPas.getBoxMin();
-  const auto &boxMax = autoPas.getBoxMax();
-
-  std::vector<Molecule> images;
-  for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    const auto &pos = iter->getR();
-    // Check every face, edge, and corner of the box, given as a direction from the box center. The particle has an
-    // image on the opposite side if it is within the interaction length of all boundaries of this direction.
-    for (const int x : {-1, 0, 1}) {
-      for (const int y : {-1, 0, 1}) {
-        for (const int z : {-1, 0, 1}) {
-          if (x == 0 and y == 0 and z == 0) {
-            continue;
-          }
-          const std::array<int, 3> direction{x, y, z};
-          bool nearBoundaries = true;
-          std::array<double, 3> shift{};
-          for (size_t d = 0; d < 3; ++d) {
-            const double boxLength = boxMax[d] - boxMin[d];
-            if (direction[d] == -1) {
-              nearBoundaries = nearBoundaries and pos[d] < boxMin[d] + interactionLength;
-              shift[d] = boxLength;
-            } else if (direction[d] == 1) {
-              nearBoundaries = nearBoundaries and pos[d] >= boxMax[d] - interactionLength;
-              shift[d] = -boxLength;
-            }
-          }
-          if (nearBoundaries) {
-            auto image = *iter;
-            image.addR(shift);
-            images.push_back(image);
-          }
-        }
-      }
-    }
-  }
-  return images;
 }
 
 /**
