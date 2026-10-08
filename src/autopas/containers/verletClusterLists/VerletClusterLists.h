@@ -207,11 +207,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto &haloPos = haloParticle.getR();
+    const auto skinHalf = 0.5 * this->getVerletSkin();
     // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it = getRegionIterator(haloPos - (this->getVerletSkin() / 2.), haloPos + (this->getVerletSkin() / 2.),
+    for (auto it = getRegionIterator(haloPos - skinHalf, haloPos + skinHalf,
                                      IteratorBehavior::halo | IteratorBehavior::forceSequential, std::nullopt);
          it.isValid(); ++it) {
-      if (haloParticle.getID() == it->getID()) {
+      const auto distanceVec = it->getR() - haloPos;
+      if (haloParticle.getID() == it->getID() and
+          utils::ArrayMath::dot(distanceVec, distanceVec) < skinHalf * skinHalf) {
         // don't simply copy haloParticle over iter. This would trigger a dataRace with other regionIterators that
         // overlap with this region.
         it->setR(haloPos);
