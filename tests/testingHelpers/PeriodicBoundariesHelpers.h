@@ -9,6 +9,8 @@
 #include <array>
 #include <vector>
 
+#include "autopas/AutoPasDecl.h"
+
 /**
  * Wraps a position that left the box back into it, as if all boundaries were periodic.
  * @param pos
@@ -40,8 +42,10 @@ inline std::array<double, 3> wrapIntoBox(std::array<double, 3> pos, const std::a
  * @return The images, which all lie outside the box.
  */
 template <class Particle_T>
-std::vector<Particle_T> generatePeriodicImages(const Particle_T &particle, const std::array<double, 3> &boxMin,
-                                               const std::array<double, 3> &boxMax, const double interactionLength) {
+std::vector<Particle_T> generatePeriodicImagesOfSingleParticle(const Particle_T &particle,
+                                                               const std::array<double, 3> &boxMin,
+                                                               const std::array<double, 3> &boxMax,
+                                                               const double interactionLength) {
   std::vector<Particle_T> images;
   const auto &pos = particle.getR();
   // Check every face, edge, and corner of the box, given as a direction from the box center. The particle has an
@@ -72,6 +76,27 @@ std::vector<Particle_T> generatePeriodicImages(const Particle_T &particle, const
         }
       }
     }
+  }
+  return images;
+}
+
+/**
+ * Generates periodic images of all owned particles within the interaction length of the boundaries.
+ * Images keep the id of the particle they are copied from.
+ * @tparam Particle_T
+ * @param autoPas
+ * @param interactionLength
+ * @return The images, which all lie outside the box.
+ */
+template <class Particle_T>
+std::vector<Particle_T> generatePeriodicImages(autopas::AutoPas<Particle_T> &autoPas, const double interactionLength) {
+  const auto &boxMin = autoPas.getBoxMin();
+  const auto &boxMax = autoPas.getBoxMax();
+
+  std::vector<Particle_T> images;
+  for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    const auto particleImages = generatePeriodicImagesOfSingleParticle(*iter, boxMin, boxMax, interactionLength);
+    images.insert(images.end(), particleImages.begin(), particleImages.end());
   }
   return images;
 }
