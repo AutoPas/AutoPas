@@ -11,7 +11,7 @@
 
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "testingHelpers/PeriodicBoundaries.h"
+#include "testingHelpers/PeriodicBoundariesHelpers.h"
 
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests,
                          ::testing::Combine(::testing::ValuesIn(autopas::ContainerOption::getAllOptions())),
