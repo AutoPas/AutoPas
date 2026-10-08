@@ -215,6 +215,12 @@ class AutoTuner {
   bool inTuningPhase() const;
 
   /**
+   * Indicate if the tuner is about to trial its current configuration for the first time in this tuning phase.
+   * @return
+   */
+  bool isAtStartOfConfigurationTrial() const;
+
+  /**
    * Indicates if the tuner is in the last iteration of the tuning phase.
    * @return
    */

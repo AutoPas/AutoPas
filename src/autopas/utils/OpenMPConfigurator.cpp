@@ -6,6 +6,8 @@
 
 #include "autopas/utils/OpenMPConfigurator.h"
 
+#include <algorithm>
+
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
@@ -156,4 +158,47 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_static;
  * @return whether the scheduling chunk size should be overwritten
  */
 [[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::overrideChunkSize() const { return _kind >= 1; }
+
+[[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::fallsBackToOtherKind(size_t loopCount, int numThreads) const {
+  // GCC's libgomp has no fallbacks.
+  if (OpenMPKindOption::runtimeScheduleLevel == OpenMPKindOption::ScheduleLevel::gccLibgomp) {
+    return false;
+  }
+
+  if (numThreads <= 1) {
+    switch (_kind) {
+      case OpenMPKindOption::lb4omp_static_steal:
+      case OpenMPKindOption::omp_guided:
+      case OpenMPKindOption::omp_auto:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  // The OpenMP runtimes use a chunk size of 1 if they are given a smaller one.
+  // TODO We will eventaully add a default chunk size option. Will need to check this works then.
+  const auto chunkSize = static_cast<size_t>(std::max(getOMPChunkSize(), 1));
+  const auto numThreadsUnsigned = static_cast<size_t>(numThreads);
+
+  switch (_kind) {
+    case OpenMPKindOption::lb4omp_static_steal: {
+      // static_steal needs at least one chunk per thread.
+      const auto numChunks = loopCount / chunkSize + (loopCount % chunkSize == 0 ? 0 : 1);
+      return numChunks < numThreadsUnsigned;
+    }
+    case OpenMPKindOption::omp_guided:
+    case OpenMPKindOption::omp_auto:
+      return (2 * chunkSize + 1) * numThreadsUnsigned >= loopCount;
+    default:
+      return false;
+  }
+}
+
+[[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::fallsBackToOtherKindForAllLoops(
+    const std::vector<size_t> &loopCounts, int numThreads) const {
+  return not loopCounts.empty() and std::ranges::all_of(loopCounts, [&](const auto loopCount) {
+    return fallsBackToOtherKind(loopCount, numThreads);
+  });
+}
 }  // namespace autopas

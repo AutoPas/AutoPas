@@ -43,6 +43,15 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }
 
   /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   * The loop runs over all particles in the neighbor list, which is estimated by the given number of particles.
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo & /*traversalInfo*/, size_t numParticles) const override {
+    return std::vector<size_t>{numParticles};
+  }
+
+  /**
    * VL List iteration is always applicable to the domain.
    * @return true
    */

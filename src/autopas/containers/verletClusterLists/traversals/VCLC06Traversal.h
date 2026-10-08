@@ -66,6 +66,35 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c06; }
 
   /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   * The towers are only built when the neighbor lists are rebuilt. Hence, this uses the tower grid estimated in the
+   * given traversal selector info. Must be kept in line with traverseParticles().
+   *
+   * TODO Once merging in the Verlet Cluster Lists fix, this function probably needs changing. As that fix should
+   * hopefully be merged before this branch - this means this TODO should probably be addressed before merging.
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo &traversalInfo, size_t /*numParticles*/) const override {
+    // see ClusterTowerBlock2D::resize()
+    const auto towersPerColoringCell =
+        std::max(std::ceil(traversalInfo.interactionLength / traversalInfo.cellLength[0]),
+                 std::ceil(traversalInfo.interactionLength / traversalInfo.cellLength[1]));
+    std::array<unsigned long, 2> coloringCellsPerDim{};
+    for (int i = 0; i < 2; i++) {
+      coloringCellsPerDim[i] =
+          static_cast<unsigned long>(std::ceil(traversalInfo.cellsPerDim[i] / towersPerColoringCell));
+      // With fewer coloring cells than colors in a dimension, some colors are empty. This is not estimated.
+      if (coloringCellsPerDim[i] < _stride[i]) {
+        return std::nullopt;
+      }
+    }
+
+    // localStride is necessary because stride is constexpr and colorTraversalLoopCounts() wants a const &
+    auto localStride = _stride;
+    return this->colorTraversalLoopCounts({coloringCellsPerDim[0], coloringCellsPerDim[1], 1}, localStride);
+  }
+
+  /**
    * VCL C06 is always applicable to the domain.
    * @return true
    */

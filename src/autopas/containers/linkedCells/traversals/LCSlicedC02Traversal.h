@@ -52,6 +52,14 @@ class LCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell_T, Func
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_c02; }
 
   /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+    return this->cSlicedTraversalLoopCounts();
+  }
+
+  /**
    * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    */
   void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) override {

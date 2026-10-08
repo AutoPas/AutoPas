@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <set>
+#include <vector>
 
 #include "autopas/options/OpenMPKindOption.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -96,6 +97,45 @@ class OpenMPConfigurator {
    * @return whether the scheduling chunk size should be overwritten
    */
   [[maybe_unused]] [[nodiscard]] bool overrideChunkSize() const;
+
+  /**
+   * Returns true if the OpenMP runtime would silently change a loop's schedule kind to another "fallback" kind
+   * (typically due to chunk size and number of threads being too large). This is not problematic in the sense of
+   * producing errors, but results in AutoPas running what it thinks are different configurations but in reality are
+   * actually duplicate configurations.
+   *
+   * E.g. at a high chunk size and thread count and low loop length, static-steal falls back to e.g. dynamic scheduling
+   * but AutoPas may have already trialled dynamic scheduling at that chunk size. This can result in a large number of
+   * duplicate configurations being run, which AutoPas is not aware of. This function therefore manually determines if
+   * a fallback would happen.
+   *
+   * Fallbacks on LLVM-based libomp/LB4OMP:
+   * - static_steal is only used if numThreads > 1 and ceil(loopCount / chunk) >= numThreads. Otherwise, LB4OMP and
+   *   libomp < 10 use static, default chunk size, and libomp >= 10 uses dynamic, at the given chunk size.
+   * - guided/auto are only used if numThreads > 1 and (2 * chunk + 1) * numThreads < loopCount. Otherwise, dynamic is
+   *   used, or static if there is only one thread.
+   *
+   * GCC's libgomp does not fall back from guided. This is determined from OpenMPKindOption::runtimeScheduleLevel.
+   *
+   * @note This function will not work perfectly without being more invasive and high maintainence, but should help
+   * prune some duplicate configurations.
+   *
+   * @param loopCount Number of iterations of the loop. For collapsed loops, this is the number of iterations of the
+   * collapsed loop.
+   * @param numThreads Number of threads of the team that executes the loop.
+   * @return True if the OpenMP runtime would fall back to another kind.
+   */
+  [[maybe_unused]] [[nodiscard]] bool fallsBackToOtherKind(size_t loopCount, int numThreads) const;
+
+  /**
+   * Tells whether the OpenMP runtime would fall back to another kind for all loops with the given loop counts (see
+   * fallsBackToOtherKind()), i.e. in cases of coloured traversals, if the fall back would occur for all colours.
+   * @param loopCounts Number of iterations of each loop.
+   * @param numThreads Number of threads of the team that executes the loops.
+   * @return True if the OpenMP runtime would fall back to another kind for every loop. False if there are no loops.
+   */
+  [[maybe_unused]] [[nodiscard]] bool fallsBackToOtherKindForAllLoops(const std::vector<size_t> &loopCounts,
+                                                                      int numThreads) const;
 };  // class OpenMPConfigurator
 
 /**

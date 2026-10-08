@@ -583,6 +583,8 @@ class LogicHandler {
    * domain.
    * - TraversalInterface::isApplicableToDomain (via TraversalSelector::generateTraversalFromConfig) for checking
    * configuration (specifically traversal) is compatible with the domain.
+   * - TraversalInterface::getRuntimeScheduledLoopCounts and OpenMPConfigurator::fallsBackToOtherKindForAllLoops for
+   * checking that the OpenMP runtime would not fall back from the configuration's schedule kind.
    *
    * In addition, this function checks that the configuration is applicable to the functor.
    *
@@ -1451,9 +1453,30 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     setCurrentContainer(std::move(containerPtr));
   }
 
-  // Set OMP Configuration - todo, this is maybe over complicated -> we maybe want to handle this inside AUTOPAS_OPENMP
-  // wrapper
   const OpenMPConfigurator ompConfig(config.ompKind, config.ompChunkSize);
+
+  // Reject the configuration if the OpenMP runtime would fall back from its schedule kind for all loops of the
+  // traversal, as it then duplicates another configuration. E.g. guided with a high chunk size becomes dynamic, and
+  // repeating an already trialled dynamic without AutoPas being aware results in redundant configurations in the search
+  // space. This is not a perfect check, but meant to eliminate the majority of "fall back" cases.
+
+  // This is only checked when the trial of the configuration starts, as the tuner cannot handle a configuration
+  // rejected later on. We assume cases when the runtime will later "fall back" as acceptable imperfections of this
+  // mechanic.
+  if (traversalPtr and _tuningManager->getAutoTuners().at(config.interactionType)->isAtStartOfConfigurationTrial() and
+      functor.isRelevantForTuning()) {
+    const auto loopCounts = traversalPtr->getRuntimeScheduledLoopCounts(
+        _currentContainer->getTraversalSelectorInfo(), getNumberOfParticlesOwned() + getNumberOfParticlesHalo());
+    if (loopCounts and ompConfig.fallsBackToOtherKindForAllLoops(*loopCounts, autopas_get_max_threads())) {
+      AutoPasLog(DEBUG,
+                 "Configuration rejected: The OpenMP runtime would fall back from the schedule kind {} for all loops "
+                 "of the traversal!",
+                 config.ompKind);
+      return {nullptr, /*rejectIndefinitely*/ false};
+    }
+  }
+
+  // Set OMP Configuration
   autopas_set_schedule(ompConfig);
 
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};

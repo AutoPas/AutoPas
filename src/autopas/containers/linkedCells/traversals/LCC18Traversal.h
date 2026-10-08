@@ -67,6 +67,14 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c18; }
 
   /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+    return this->template c18TraversalLoopCounts</*allCells*/ false>();
+  }
+
+  /**
    * LC C18 is always applicable to the domain.
    * @return true
    */

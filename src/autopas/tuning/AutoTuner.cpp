@@ -419,6 +419,8 @@ bool AutoTuner::inTuningPhase() const {
   return (_isTuning or _forceRetune) and not searchSpaceIsTrivial();
 }
 
+bool AutoTuner::isAtStartOfConfigurationTrial() const { return inTuningPhase() and getCurrentNumSamples() == 0; }
+
 bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }

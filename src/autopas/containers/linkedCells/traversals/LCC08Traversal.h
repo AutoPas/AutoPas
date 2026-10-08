@@ -55,6 +55,14 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, publ
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08; }
 
   /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+    return this->c08TraversalLoopCounts();
+  }
+
+  /**
    * LC C08 is always applicable to the domain.
    * @return true
    */

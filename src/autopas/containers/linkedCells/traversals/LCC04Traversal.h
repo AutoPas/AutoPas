@@ -53,6 +53,27 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, publ
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04; }
 
   /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   * Must be kept in line with traverseSingleColor(). Iterations which are skipped there because of their parity (i.e.
+   * they do not belong to the color) are still counted, as OpenMP schedules them as well.
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+    std::vector<size_t> loopCounts;
+    for (int color = 0; color < 4; ++color) {
+      // colors 0 and 2 start at -2, colors 1 and 3 at 0
+      const long start = (color % 2 == 0) ? -2l : 0l;
+      size_t loopCount = 1;
+      for (size_t d = 0; d < 3; ++d) {
+        // The "+ 3" means we round up always, unless "_end[d] - start" is perfectly divided by the stride of 4
+        loopCount *= static_cast<size_t>((_end[d] - start + 3) / 4);
+      }
+      loopCounts.push_back(loopCount);
+    }
+    return loopCounts;
+  }
+
+  /**
    * C04 traversals are usable, if cellSizeFactor >= 1.0 and there are at least 3 cells for each dimension.
    * @return information about applicability
    */

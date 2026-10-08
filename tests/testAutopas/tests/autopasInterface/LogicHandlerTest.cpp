@@ -9,13 +9,14 @@
 #include "autopas/LogicHandler.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/ArbitraryConfigurations.h"
+#include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Return;
 
-void LogicHandlerTest::initLogicHandler() {
+void LogicHandlerTest::initLogicHandler(const std::set<autopas::Configuration> &searchSpace) {
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
       .boxMax{10., 10., 10.},
@@ -29,7 +30,6 @@ void LogicHandlerTest::initLogicHandler() {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   constexpr double cellSizeFactor = 1.;
   constexpr unsigned int verletRebuildFrequency = 10;
-  const std::set<autopas::Configuration> searchSpace({arbitraryConfigurations::_arbitrary_config_2B_0});
   _tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   _tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
@@ -241,3 +241,39 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
          "doesn't affect the container. \n";
 }
 #endif
+
+/**
+ * Tests that a configuration is rejected when its trial starts, if the OpenMP runtime would fall back from its schedule
+ * kind for all loops of the traversal. Other tests handle indivdual components of this mechanic more thouroghly, this
+ * test just checks that the whole mechanic gets put together by the LogicHandler correctly.
+ */
+TEST_F(LogicHandlerTest, testRejectConfigWhoseScheduleKindFallsBack) {
+  if (autopas::OpenMPKindOption::runtimeScheduleLevel == autopas::OpenMPKindOption::ScheduleLevel::gccLibgomp) {
+    GTEST_SKIP() << "libgomp does not fall back from schedule kinds.";
+  }
+  // lc_c01 has one loop over the 3 x 3 x 3 non-halo cells of the domain which initLogicHandler() sets up. With 4
+  // threads, guided falls back if (2 * chunkSize + 1) * 4 >= 27, so not with chunk size 1, but with chunk size 4.
+  const NumThreadGuard numThreadGuard(4);
+  const auto getConfig = [](size_t chunkSize) {
+    return autopas::Configuration(autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01,
+                                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                  autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_guided, chunkSize,
+                                  autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
+  };
+  const auto configRunsGuided = getConfig(1);
+  const auto configFallsBack = getConfig(4);
+  initLogicHandler({configRunsGuided, configFallsBack});
+  LJFunctorGlobals functor(2.5);
+
+  // Start a tuning phase, so that the tuner is about to trial its first configuration.
+  _tuningManager->tune(0, autopas::LiveInfo{});
+
+  EXPECT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configRunsGuided, functor)), nullptr);
+  const auto [traversal, rejectIndefinitely] = _logicHandler->isConfigurationApplicable(configFallsBack, functor);
+  EXPECT_EQ(traversal, nullptr);
+  EXPECT_FALSE(rejectIndefinitely) << "Whether the runtime falls back depends on the domain.";
+
+  // Once the configuration has samples, it must not be rejected anymore.
+  _tuningManager->addMeasurement(1, 1, true, 0, autopas::InteractionTypeOption::pairwise);
+  EXPECT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configFallsBack, functor)), nullptr);
+}

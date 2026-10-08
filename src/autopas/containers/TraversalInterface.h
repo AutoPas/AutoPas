@@ -6,12 +6,18 @@
 
 #pragma once
 
+#include <cstddef>
+#include <optional>
+#include <vector>
+
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/OpenMPConfigurator.h"
 
 namespace autopas {
+
+class TraversalSelectorInfo;
 
 /**
  * This interface serves as a common parent class for all traversals.
@@ -43,6 +49,25 @@ class TraversalInterface {
    * @return true iff the traversal is applicable to the domain.
    */
   [[nodiscard]] virtual bool isApplicableToDomain() const = 0;
+
+  /**
+   * Returns the number of iterations of each parallelized loop this traversal runs with OpenMP's schedule(runtime). For
+   * collapsed loops, this is the number of iterations of the collapsed loop. The values are exact for loops that only
+   * depend on the cell grid, and estimates for loops that depend on the particles. The one exception is
+   * vl_list_iteration_c27, which gives an upper bound: it counts all cells of a color instead of the non-empty ones,
+   * which is far off in sparse or inhomogeneous domains.
+   *
+   * This is used to find out whether the OpenMP runtime would fall back from the configuration's schedule kind for all
+   * loops of the traversal (see OpenMPConfigurator::fallsBackToOtherKindForAllLoops()).
+   *
+   * @param traversalInfo The traversal selector info of the container the traversal will run on.
+   * @param numParticles Number of particles (owned + halo).
+   * @return The loop counts, or std::nullopt if the traversal does not provide them.
+   */
+  [[nodiscard]] virtual std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo &traversalInfo, size_t numParticles) const {
+    return std::nullopt;
+  }
 
   /**
    * Initializes the traversal. Should be called before traverse().

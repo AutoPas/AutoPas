@@ -34,6 +34,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
     /**
      * Standard OpenMP auto:
      * defaults to an analytical variant of guided.
+     * libomp and LB4OMP fall back to dynamic for short loops (see OpenMPConfigurator::fallsBackToOtherKind()).
      */
     omp_auto,
 
@@ -48,6 +49,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      * Standard OpenMP guided: iterations are distributed to the threads in chunks.
      * When a thread finishes its chunk, it requests a new one.
      * The chunk size starts large, and decreases over time towards the minimum set by the chunk size argument.
+     * libomp and LB4OMP fall back to dynamic for short loops (see OpenMPConfigurator::fallsBackToOtherKind()).
      */
     omp_guided,
 
@@ -178,6 +180,8 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
     /**
      * Static with Steal enabled (from standard OpenMP): like static,
      * but threads steal tasks from each other if they finish early.
+     * libomp and LB4OMP fall back to static or dynamic for short loops (see
+     * OpenMPConfigurator::fallsBackToOtherKind()).
      */
     lb4omp_static_steal,
 

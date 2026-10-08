@@ -39,6 +39,28 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration_c27; }
 
   /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   * The loops only run over the non-empty cells of a color, which are only known in initTraversal(). Hence, this
+   * returns the number of all cells of each color as an upper bound.
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+    std::vector<size_t> loopCounts;
+    loopCounts.reserve(27);
+    for (size_t color = 0; color < 27; ++color) {
+      // color = (x % 3) + 3 * (y % 3) + 9 * (z % 3), see initTraversal()
+      const std::array<size_t, 3> colorOffset{color % 3, (color / 3) % 3, color / 9};
+      size_t numCells = 1;
+      for (size_t d = 0; d < 3; ++d) {
+        // number of cell indices i < _cellsPerDim[d] with i % 3 == colorOffset[d]
+        numCells *= (_cellsPerDim[d] + 2 - colorOffset[d]) / 3;
+      }
+      loopCounts.push_back(numCells);
+    }
+    return loopCounts;
+  }
+
+  /**
    * VL List iteration C27 is always applicable to the domain.
    * @return true
    */

@@ -51,6 +51,14 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell_T, Functo
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced; }
 
   /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+    return this->slicedTraversalLoopCounts();
+  }
+
+  /**
    * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    */
   void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) override {
