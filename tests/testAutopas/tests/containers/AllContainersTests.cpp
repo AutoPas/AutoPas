@@ -349,7 +349,7 @@ TEST_P(AllContainersTests, testUpdateHaloParticlePeriodicImagesInThinDomain) {
 
   const auto generateHaloImages = [&](const std::array<double, 3> &position, size_t id) {
     const ParticleFP64 haloParticle(position, {0., 0., 0.}, id, autopas::OwnershipState::halo);
-    return generatePeriodicImages(haloParticle, boxMin, boxMax, cutoff + skin);
+    return generatePeriodicImagesOfSingleParticle(haloParticle, boxMin, boxMax, cutoff + skin);
   };
 
   // Add the owned particles and their periodic images.
