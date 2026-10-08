@@ -198,6 +198,8 @@ class AutoPas {
    * @param haloParticle Particle to be added.
    * @note An exception is thrown if the halo particle is added and it is inside of the owned domain (defined by boxMin
    * and boxMax) of the container.
+   * @note Several halo particles may have the same ID only if they are different periodic copies of the same particle.
+   * Such copies are expected to be at least cutoff + skin apart.
    * @note This function is NOT thread-safe if the container is Octree.
    */
   void addHaloParticle(const Particle_T &haloParticle);

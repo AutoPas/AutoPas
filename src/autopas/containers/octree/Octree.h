@@ -191,8 +191,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
+    // Iterating the halo cell is not thread safe.
+    std::lock_guard<AutoPasLock> cellLock(this->_cells[CellTypes::HALO].getCellLock());
     return internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[CellTypes::HALO], haloParticle,
-                                                                 this->getVerletSkin());
+                                                                 0.5 * this->getVerletSkin());
   }
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {}

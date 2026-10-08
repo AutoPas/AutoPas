@@ -148,6 +148,10 @@ class ParticleContainerInterface {
  public:
   /**
    * Update a halo particle of the container with the given haloParticle.
+   * A stored particle is only updated if it has the same ID as haloParticle and is less than half the skin away from
+   * it.
+   * @note Several halo particles may have the same ID only if they are different periodic copies of the same particle.
+   * Such copies are expected to be at least cutoff + skin apart.
    * @param haloParticle Particle to be updated.
    * @return Returns true if the particle was updated, false if no particle could be found.
    */
