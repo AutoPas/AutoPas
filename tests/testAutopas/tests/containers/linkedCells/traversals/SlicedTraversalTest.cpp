@@ -15,6 +15,8 @@
 using ::testing::_;
 
 void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
+  NumThreadGuard numThreadGuard(4);
+
   // Get LJ Functor with FLOP Counting enabled
   LJFunctorType</*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ false, /*flops*/ true>
       ljFunctor(1.);
@@ -24,8 +26,6 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
   autopas::generators::GridGenerator::fillWithParticles(cells, edgeLength, edgeLength,
                                                         autopas::utils::ParticleTypeTrait<FMCell>::value(),
                                                         {0.99, 0.99, 0.99}, {0.5, 0.5, 0.5}, {1., 1., 1.});
-
-  NumThreadGuard numThreadGuard(4);
 
   autopas::LCSlicedTraversal<FMCell, decltype(ljFunctor)> slicedTraversal(edgeLength, ljFunctor, 1., {1., 1., 1.},
                                                                           autopas::DataLayoutOption::aos, true);
