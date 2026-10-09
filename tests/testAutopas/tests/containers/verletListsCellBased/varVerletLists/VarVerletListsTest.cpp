@@ -267,7 +267,7 @@ TEST_F(VarVerletListsTest, testUpdateHaloParticle) {
   autopas::VarVerletLists<ParticleFP64, autopas::VerletNeighborListAsBuild<ParticleFP64>> verletLists(
       {0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 1);
 
-  ParticleFP64 p({-.1, 10.1, -.1}, {0., 0., 0.}, 1, autopas::OwnershipState::halo);
+  ParticleFP64 p({-.04, 10.04, -.04}, {0., 0., 0.}, 1, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p);
 
   // test same position, change velocity
@@ -282,16 +282,16 @@ TEST_F(VarVerletListsTest, testUpdateHaloParticle) {
   }
 
   // test different position, same cell
-  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {-.05, 10.1, -.1}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {-.02, 10.04, -.04}));
 
   // test different position, neighboring cells
-  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.05, 10.1, -.1}));
-  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {-.1, 9.95, -.1}));
-  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {-.1, 10.1, .05}));
-  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {-.1, 9.95, .05}));
-  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.05, 10.1, .05}));
-  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.05, 9.95, -.1}));
-  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.05, 9.95, .05}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.04, 10.04, -.04}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {-.04, 9.96, -.04}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {-.04, 10.04, .04}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {-.04, 9.96, .04}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.04, 10.04, .04}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.04, 9.96, -.04}));
+  EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.04, 9.96, .04}));
 
   // check for particle with wrong id
   ParticleFP64 p2({-.1, -.1, -.1}, {0., 0., 0.}, 2, autopas::OwnershipState::halo);
@@ -307,7 +307,7 @@ TEST_F(VarVerletListsTest, testUpdateHaloParticle) {
   ParticleFP64 p4({4., 10.2, 2.}, {0., 0., 0.}, 4, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p4);
   EXPECT_TRUE(verletLists.updateHaloParticle(p4));
-  ParticleFP64 p5({5., 4., 10.2}, {0., 0., 0.}, 3, autopas::OwnershipState::halo);
+  ParticleFP64 p5({5., 4., 10.2}, {0., 0., 0.}, 5, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p5);
   EXPECT_TRUE(verletLists.updateHaloParticle(p5));
 }
