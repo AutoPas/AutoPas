@@ -9,11 +9,11 @@
 #include <gtest/gtest.h>
 
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests,
-                         ::testing::Combine(::testing::ValuesIn(autopas::ContainerOption::getAllOptions())),
+                         ::testing::ValuesIn(generateAllValidContainerConfigurations()),
                          AllContainersTests::getParamToStringFunction());
 
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTestsBothUpdates,
-                         ::testing::Combine(::testing::ValuesIn(autopas::ContainerOption::getAllOptions()),
+                         ::testing::Combine(::testing::ValuesIn(generateAllValidContainerConfigurations()),
                                             ::testing::Bool()),
                          AllContainersTestsBothUpdates::getParamToStringFunction());
 
@@ -21,7 +21,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTestsBothUpdates,
  * Checks if ParticleContainerInterface::getNumParticle() returns the correct number of particles.
  */
 TEST_P(AllContainersTests, testGetNumberOfParticles) {
-  auto container = getInitializedContainer<ParticleFP64>(std::get<0>(GetParam()));
+  auto container = getInitializedContainer<ParticleFP64>(GetParam());
   EXPECT_EQ(container->size(), 0);
 
   const std::array<double, 3> r = {2, 2, 2};
@@ -39,7 +39,7 @@ TEST_P(AllContainersTests, testGetNumberOfParticles) {
  * Checks if ParticleContainerInterface::deleteAllParticles() deletes all particles.
  */
 TEST_P(AllContainersTests, testDeleteAllParticles) {
-  auto container = this->getInitializedContainer<ParticleFP64>(std::get<0>(GetParam()));
+  auto container = this->getInitializedContainer<ParticleFP64>(GetParam());
   EXPECT_EQ(container->size(), 0);
 
   const std::array<double, 3> r = {2, 2, 2};
@@ -60,7 +60,7 @@ TEST_P(AllContainersTests, testDeleteAllParticles) {
  * throws.
  */
 TEST_P(AllContainersTests, testParticleAdding) {
-  auto container = getInitializedContainer<ParticleFP64>(std::get<0>(GetParam()));
+  auto container = getInitializedContainer<ParticleFP64>(GetParam());
   int id = 1;
   for (double x : {boxMin[0] - 1.5, boxMin[0] - .5, boxMin[0], boxMin[0] + 5., boxMax[0] - 0.001, boxMax[0],
                    boxMax[0] + .5, boxMax[0] + 1.5}) {
@@ -98,7 +98,7 @@ TEST_P(AllContainersTests, testParticleAdding) {
 TEST_P(AllContainersTests, testDeleteHaloParticles) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto container = getInitializedContainer<ParticleFP64>(std::get<0>(GetParam()));
+  auto container = getInitializedContainer<ParticleFP64>(GetParam());
 
   const std::array<double, 3> zeros{0, 0, 0};
 
@@ -245,7 +245,7 @@ TEST_P(AllContainersTestsBothUpdates, testUpdateContainerDeletesPreviouslyHaloDu
  * b) Owned particles are not moved within the container, i.e., the pointer to the particle is still the same.
  */
 TEST_P(AllContainersTests, testUpdateContainerKeepsNeighborListsValidIfSpecified) {
-  auto container = getInitializedContainer<ParticleFP64>(std::get<0>(GetParam()));
+  auto container = getInitializedContainer<ParticleFP64>(GetParam());
 
   {
     const ParticleFP64 p({-.1, -.1, -.1}, {0., 0., 0.}, 0, autopas::OwnershipState::halo);
