@@ -6,8 +6,12 @@
 
 #pragma once
 
+#include <algorithm>
+#include <string>
+
 #include "AutoPasTestBase.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class AllContainersTestsBase : public AutoPasTestBase {
@@ -17,39 +21,45 @@ class AllContainersTestsBase : public AutoPasTestBase {
   double cutoff = 1;
   const double skin = 0.2;
   const unsigned int rebuildFrequency = 20;
-  const double cellSizeFactor = 1;
 
   template <class Particle_T>
-  auto getInitializedContainer(autopas::ContainerOption containerOptionToTest) {
+  auto getInitializedContainer(const ContainerConfiguration &containerConfig) {
     const autopas::ContainerSelectorInfo selectorInfo{
-        boxMin, boxMax, cutoff, cellSizeFactor, skin, 32, 8, 8, autopas::LoadEstimatorOption::none};
-    auto container = autopas::ContainerSelector<Particle_T>::generateContainer(containerOptionToTest, selectorInfo);
+        boxMin, boxMax, cutoff, containerConfig.cellSizeFactor, skin, 32, 8, 8, autopas::LoadEstimatorOption::none};
+    auto container =
+        autopas::ContainerSelector<Particle_T>::generateContainer(containerConfig.container, selectorInfo);
     return std::move(container);
   }
 };
 
-using ParamType = std::tuple<autopas::ContainerOption>;
+using ParamType = ContainerConfiguration;
 
 class AllContainersTests : public AllContainersTestsBase, public ::testing::WithParamInterface<ParamType> {
  public:
   static auto getParamToStringFunction() {
     static const auto paramToString = [](const testing::TestParamInfo<ParamType> &info) {
-      auto [containerOption] = info.param;
-      return containerOption.to_string();
+      const auto &containerConfig = info.param;
+      return containerConfig.container.to_string() + "_cellSizeFactor" +
+             std::to_string(containerConfig.cellSizeFactor);
     };
     return paramToString;
   }
 };
 
-using ParamTypeBothUpdates = std::tuple<autopas::ContainerOption, bool /*keep Lists Valid*/>;
+using ParamTypeBothUpdates = std::tuple<ContainerConfiguration, bool /*keep Lists Valid*/>;
 
 class AllContainersTestsBothUpdates : public AllContainersTestsBase,
                                       public ::testing::WithParamInterface<ParamTypeBothUpdates> {
  public:
   static auto getParamToStringFunction() {
     static const auto paramToString = [](const testing::TestParamInfo<ParamType> &info) {
-      auto [containerOption, keepListValid] = info.param;
-      return containerOption.to_string() + "_" + (keepListValid ? "keepListsValid" : "allowListInvalidation");
+      auto [containerConfig, keepListValid] = info.param;
+      std::string str = containerConfig.container.to_string() + "_cellSizeFactor" +
+                        std::to_string(containerConfig.cellSizeFactor) + "_" +
+                        (keepListValid ? "keepListsValid" : "allowListInvalidation");
+      std::replace(str.begin(), str.end(), '-', '_');
+      std::replace(str.begin(), str.end(), '.', '_');
+      return str;
     };
     return paramToString;
   }
