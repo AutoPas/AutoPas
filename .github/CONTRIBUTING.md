@@ -213,7 +213,7 @@ The table below lists the dependencies. The **Path** column currently reflects t
 | Dep        | Path                                                    | Upstream                                            | Pinned ref             | Post-import commits                        |
 |------------|---------------------------------------------------------|-----------------------------------------------------|------------------------|--------------------------------------------|
 | antlr4     | [`libs/antlr4`](/libs/antlr4)                           | https://github.com/antlr/antlr4                     | tag `4.13.2`           | non-Cpp runtimes pruned                    |
-| benchmark  | [`libs/benchmark-1.9.4.zip`](/libs/benchmark-1.9.4.zip) | https://github.com/google/benchmark                 | tag `v1.9.4`           | —                                          |
+| benchmark  | [`libs/benchmark`](/libs/benchmark)                     | https://github.com/google/benchmark                 | tag `v1.9.5`           | —                                          |
 | eigen      | [`libs/eigen`](/libs/eigen)                             | https://gitlab.com/libeigen/eigen                   | tag `5.0.1`            | —                                          |
 | googletest | [`libs/googletest`](/libs/googletest)                   | https://github.com/google/googletest                | tag `v1.17.0`          | —                                          |
 | highway    | [`libs/highway`](/libs/highway)                         | https://github.com/google/highway                   | tag `1.4.0`            | —                                          |
