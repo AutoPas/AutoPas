@@ -103,9 +103,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
   bool updateHaloParticle(const Particle_T &haloParticle) override {
-    auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
+    const auto skinHalf = 0.5 * this->getVerletSkin();
+    auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), skinHalf);
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
+      bool updated = internal::checkParticleInCellAndUpdateByIDAndPosition(*cellptr, haloParticle, skinHalf);
       if (updated) {
         return true;
       }

@@ -12,6 +12,7 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/generators/UniformGenerator.h"
+#include "molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -99,8 +100,9 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   Globals calculatedGlobals;
 
   if (interactionType == autopas::InteractionTypeOption::pairwise) {
-    mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                     globals /*calculateGlobals*/>
+    // The HWY functor is used, because it supports all vectorization patterns.
+    mdLib::LJFunctorHWY<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+                        globals /*calculateGlobals*/>
         functor{_cutoff};
     functor.setParticleProperties(_eps * 24, _sig * _sig);
     std::tie(calculatedForces, calculatedGlobals) =
@@ -162,6 +164,8 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
       numHaloParticles);
   EXPECT_EQ(container->size(), numParticles + numHaloParticles) << "Wrong number of halo molecules inserted!";
 
+  // As in the LogicHandler, the functor has to be told which vectorization pattern to use.
+  functor.setVecPattern(config.vecPattern);
   auto traversal = autopas::TraversalSelector::generateTraversalFromConfig<Molecule, decltype(functor)>(
       config, functor, container->getTraversalSelectorInfo());
 
@@ -233,16 +237,11 @@ void TraversalComparison::generateReference(mykey_t key) {
 }
 
 /**
- * This tests a given configuration against a reference configuration.
+ * This tests all valid configurations against a reference configuration.
  */
 TEST_P(TraversalComparison, traversalTest) {
-  auto [config, numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals,
-        interactionType] = GetParam();
-  // Todo: Remove this when the AxilrodTeller functor implements SoA
-  if (interactionType == autopas::InteractionTypeOption::triwise and
-      config.dataLayout == autopas::DataLayoutOption::soa) {
-    GTEST_SKIP_("SoAs are not yet implemented for triwise traversals/functors.");
-  }
+  auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals, interactionType] =
+      GetParam();
 
   TraversalComparison::mykey_t key{numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition,
                                    globals,      interactionType};
@@ -253,38 +252,54 @@ TEST_P(TraversalComparison, traversalTest) {
   constexpr double rel_err_tolerance = 1.0e-10;
   constexpr double rel_err_tolerance_globals = 1.0e-10;
 
-  std::vector<std::array<double, 3>> calculatedForces;
-  Globals calculatedGlobals;
   if (globals) {
-    std::tie(calculatedForces, calculatedGlobals) = calculateForces<true>(config, key, true);
     generateReference<true>(key);
   } else {
-    std::tie(calculatedForces, calculatedGlobals) = calculateForces<false>(config, key, true);
     generateReference<false>(key);
   }
 
-  if (calculatedForces.empty()) {
-    GTEST_SKIP_("Not applicable!");
-  }
+  for (const auto &config : generateAllValidConfigurations(interactionType)) {
+    SCOPED_TRACE(config.toShortString(false));
 
-  for (size_t i = 0; i < numParticles; ++i) {
-    for (unsigned int d = 0; d < 3; ++d) {
-      const double calculatedForce = calculatedForces[i][d];
-      const double referenceForce = _forcesReference[key][i][d];
-      EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance))
-          << "Dim: " << d << " Particle id: " << i;
+    // Todo: Remove this when the AxilrodTeller functor implements SoA
+    if (interactionType == autopas::InteractionTypeOption::triwise and
+        config.dataLayout == autopas::DataLayoutOption::soa) {
+      // SoAs are not yet implemented for triwise traversals/functors.
+      continue;
     }
-  }
 
-  auto &globalValuesReferenceRef = _globalValuesReference[key];
-  if (globals) {
-    EXPECT_NE(calculatedGlobals.upot, 0);
-    EXPECT_NEAR(calculatedGlobals.upot, globalValuesReferenceRef.upot,
-                std::abs(rel_err_tolerance_globals * globalValuesReferenceRef.upot));
+    std::vector<std::array<double, 3>> calculatedForces;
+    Globals calculatedGlobals;
+    if (globals) {
+      std::tie(calculatedForces, calculatedGlobals) = calculateForces<true>(config, key, true);
+    } else {
+      std::tie(calculatedForces, calculatedGlobals) = calculateForces<false>(config, key, true);
+    }
 
-    EXPECT_NE(calculatedGlobals.virial, 0);
-    EXPECT_NEAR(calculatedGlobals.virial, globalValuesReferenceRef.virial,
-                std::abs(rel_err_tolerance_globals * globalValuesReferenceRef.virial));
+    if (calculatedForces.empty()) {
+      // Not applicable!
+      continue;
+    }
+
+    for (size_t i = 0; i < numParticles; ++i) {
+      for (unsigned int d = 0; d < 3; ++d) {
+        const double calculatedForce = calculatedForces[i][d];
+        const double referenceForce = _forcesReference[key][i][d];
+        EXPECT_NEAR(calculatedForce, referenceForce, std::fabs(calculatedForce * rel_err_tolerance))
+            << "Dim: " << d << " Particle id: " << i;
+      }
+    }
+
+    auto &globalValuesReferenceRef = _globalValuesReference[key];
+    if (globals) {
+      EXPECT_NE(calculatedGlobals.upot, 0);
+      EXPECT_NEAR(calculatedGlobals.upot, globalValuesReferenceRef.upot,
+                  std::abs(rel_err_tolerance_globals * globalValuesReferenceRef.upot));
+
+      EXPECT_NE(calculatedGlobals.virial, 0);
+      EXPECT_NEAR(calculatedGlobals.virial, globalValuesReferenceRef.virial,
+                  std::abs(rel_err_tolerance_globals * globalValuesReferenceRef.virial));
+    }
   }
 }
 
@@ -292,11 +307,11 @@ TEST_P(TraversalComparison, traversalTest) {
  * Lambda to generate a readable string out of the parameters of this test.
  */
 static auto toString = [](const auto &info) {
-  auto [config, numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals,
-        interactionType] = info.param;
+  auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals, interactionType] =
+      info.param;
   std::stringstream resStream;
-  resStream << config.toShortString(false, true) << "_NP" << numParticles << "_NH" << numHaloParticles << "_"
-            << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << (doSlightShift ? "withShift" : "noshift")
+  resStream << interactionType.to_string() << "_NP" << numParticles << "_NH" << numHaloParticles << "_" << boxMax[0]
+            << "_" << boxMax[1] << "_" << boxMax[2] << (doSlightShift ? "withShift" : "noshift")
             << (particleDeletionPosition == DeletionPosition::never ? "_NoDeletions" : "")
             << (particleDeletionPosition & DeletionPosition::beforeLists ? "_DeletionsBeforeLists" : "")
             << (particleDeletionPosition & DeletionPosition::afterLists ? "_DeletionsAfterLists" : "")
@@ -308,25 +323,28 @@ static auto toString = [](const auto &info) {
 };
 
 /**
- * Function to generate all possible configurations.
+ * Function to generate all tested simulation setups. Configurations are not part of the parameters but tested in a
+ * loop.
  * @return
  */
 auto TraversalComparison::getTestParams() {
   std::vector<TestingTuple> testParams{};
   for (auto interactionType : autopas::InteractionTypeOption::getMostOptions()) {
-    const auto allConfigs = generateAllValidConfigurations(interactionType);
-    for (const auto &config : allConfigs) {
-      for (auto numParticles : params[interactionType].numParticles) {
-        for (auto boxMax : params[interactionType].boxMax) {
-          for (auto numHalo : params[interactionType].numHaloParticles) {
-            for (bool slightMove : {true, false}) {
-              for (bool globals : {true, /*false*/}) {
-                for (DeletionPosition particleDeletionPosition :
-                     {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
-                      DeletionPosition::beforeAndAfterLists}) {
-                  testParams.emplace_back(config, numParticles, numHalo, boxMax, slightMove, particleDeletionPosition,
-                                          globals, interactionType);
-                }
+    for (auto numParticles : params[interactionType].numParticles) {
+      for (auto boxMax : params[interactionType].boxMax) {
+        // This scenario is far denser than any realistic simulation.
+        if (interactionType == autopas::InteractionTypeOption::pairwise and numParticles == 2000 and
+            boxMax == std::array<double, 3>{3., 3., 3.}) {
+          continue;
+        }
+        for (auto numHalo : params[interactionType].numHaloParticles) {
+          for (bool slightMove : {true, false}) {
+            for (bool globals : {true, /*false*/}) {
+              for (DeletionPosition particleDeletionPosition :
+                   {DeletionPosition::never, /*DeletionPosition::beforeLists, DeletionPosition::afterLists,*/
+                    DeletionPosition::beforeAndAfterLists}) {
+                testParams.emplace_back(numParticles, numHalo, boxMax, slightMove, particleDeletionPosition, globals,
+                                        interactionType);
               }
             }
           }
