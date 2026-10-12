@@ -134,10 +134,9 @@ TEST_F(ThermostatTest, MultiComponentTest) {
 
   // calculate the expected scaling factors
   // Note that different components have different scaling factors
-  std::vector<double> scalingFactors{};
-  scalingFactors.reserve(temperatureMap.size());
-  for (size_t i = 0; i < temperatureMap.size(); ++i) {
-    scalingFactors[i] = std::sqrt(targetTemperature2 / temperatureMap[i]);
+  std::map<size_t, double> scalingFactors;
+  for (const auto &[typeId, temp] : temperatureMap) {
+    scalingFactors[typeId] = std::sqrt(targetTemperature2 / temp);
   }
 
   // apply thermostat
@@ -153,7 +152,7 @@ TEST_F(ThermostatTest, MultiComponentTest) {
   for (auto &particle : _autopas) {
     for (size_t dim = 0; dim < 3; ++dim) {
       // Check for correct scaling. oldF stores the velocity before the Thermostat::apply.
-      EXPECT_NEAR(particle.getV()[dim], particle.getOldF()[dim] * scalingFactors[particle.getTypeId()], 1e-12);
+      EXPECT_NEAR(particle.getV()[dim], particle.getOldF()[dim] * scalingFactors.at(particle.getTypeId()), 1e-12);
     }
   }
 }

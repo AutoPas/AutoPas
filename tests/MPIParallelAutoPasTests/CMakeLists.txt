@@ -15,6 +15,10 @@ file(
 )
 add_executable(runMPITests ${MY_SRC})
 
+# Shared testing helpers live in tests/testingHelpers, so add the parent tests/ dir to the include path
+# (headers are included as "testingHelpers/...").
+target_include_directories(runMPITests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
 target_link_libraries(
     runMPITests
     autopas

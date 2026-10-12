@@ -17,7 +17,6 @@
 # or ignored, ensuring they remain fully visible and reviewable in Pull Requests.
 # ==============================================================================
 
-libs/ALL/**        linguist-vendored linguist-generated
 libs/antlr4/**     linguist-vendored linguist-generated
 libs/benchmark/**  linguist-vendored linguist-generated
 libs/eigen/**      linguist-vendored linguist-generated
