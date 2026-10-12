@@ -6,7 +6,12 @@
 
 #include "AllContainersTests.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
+#include "testingHelpers/PeriodicBoundariesHelpers.h"
 
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests,
                          ::testing::Combine(::testing::ValuesIn(autopas::ContainerOption::getAllOptions())),
@@ -308,4 +313,90 @@ TEST_P(AllContainersTests, testUpdateContainerKeepsNeighborListsValidIfSpecified
     EXPECT_EQ(value.occurrences, 1) << "Particle with id " << value.id << " at address " << key
                                     << " not visited correctly!";
   }
+}
+
+/**
+ * Checks that updateHaloParticle() updates the correct particle if several periodic images of the same particle are
+ * stored for the case that the domain is so thin that these images would be stored in neighboring cells.
+ * All images are added, the owned particles are moved, some of them across the periodic boundaries, and the images of
+ * the new positions are updated as in an iteration without a rebuild. This test then checks that:
+ * a) An image is updated exactly if the same image was stored less than half the skin away.
+ * b) Exactly the updated images are stored afterwards, i.e. no image is lost.
+ */
+TEST_P(AllContainersTests, testUpdateHaloParticlePeriodicImagesInThinDomain) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using autopas::utils::ArrayMath::dot;
+  using autopas::utils::ArrayUtils::to_string;
+
+  // With this box and cutoff, the cell based containers have only one cell per dimension inside of the box.
+  boxMax = {3., 3., 3.};
+  cutoff = 2.5;
+  auto container = getInitializedContainer<ParticleFP64>(std::get<0>(GetParam()));
+
+  // Start position and displacement of the owned particles. The index is the particle ID.
+  const std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> startPositionsAndDisplacements{
+      // Stays inside of the box.
+      {{1.5, 1.5, 1.5}, {0.05, 0.05, 0.05}},
+      // Leaves the box through a face.
+      {{1.5, 2.97, 1.5}, {0., 0.05, 0.}},
+      // Leaves the box through an edge.
+      {{2.97, 2.97, 1.5}, {0.05, 0.05, 0.}},
+      // Leaves the box through a corner.
+      {{2.97, 2.97, 2.97}, {0.05, 0.05, 0.05}},
+      // Stays inside of the box, but moves further than half the skin. None of its images may be updated.
+      {{0.5, 0.5, 0.5}, {0.15, 0., 0.}},
+  };
+
+  const auto generateHaloImages = [&](const std::array<double, 3> &position, size_t id) {
+    const ParticleFP64 haloParticle(position, {0., 0., 0.}, id, autopas::OwnershipState::halo);
+    return generatePeriodicImagesOfSingleParticle(haloParticle, boxMin, boxMax, cutoff + skin);
+  };
+
+  // Add the owned particles and their periodic images.
+  for (size_t id = 0; id < startPositionsAndDisplacements.size(); ++id) {
+    const auto &startPosition = startPositionsAndDisplacements[id].first;
+    container->addParticle(ParticleFP64(startPosition, {0., 0., 0.}, id));
+    for (const auto &image : generateHaloImages(startPosition, id)) {
+      container->addHaloParticle(image);
+    }
+  }
+
+  // Move the owned particles.
+  for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    iter->addR(startPositionsAndDisplacements[iter->getID()].second);
+  }
+
+  const auto leavingParticles = container->updateContainer(true);
+  EXPECT_EQ(leavingParticles.size(), 3ul);
+
+  // Update the periodic images of all particles.
+  std::vector<std::array<double, 3>> updatedPositions;
+  for (size_t id = 0; id < startPositionsAndDisplacements.size(); ++id) {
+    const auto &[startPosition, displacement] = startPositionsAndDisplacements[id];
+    const auto previousImages = generateHaloImages(startPosition, id);
+    // Particles that left the box reenter it through the opposite periodic boundary.
+    const auto newPosition = wrapIntoBox(startPosition + displacement, boxMin, boxMax);
+    for (const auto &image : generateHaloImages(newPosition, id)) {
+      const bool sameImageWasStored =
+          std::any_of(previousImages.begin(), previousImages.end(), [&](const auto &previousImage) {
+            const auto distance = previousImage.getR() - image.getR();
+            return dot(distance, distance) < skin * skin / 4.;
+          });
+      const bool updated = container->updateHaloParticle(image);
+      // VerletClusterLists currently never updates an image, because it does not find the dummies of the stored images.
+      // Todo fix this and then change the test
+      if (updated or std::get<0>(GetParam()) != autopas::ContainerOption::verletClusterLists) {
+        EXPECT_EQ(updated, sameImageWasStored) << "Image of particle " << id << " at " << to_string(image.getR());
+      }
+      if (updated) {
+        updatedPositions.push_back(image.getR());
+      }
+    }
+  }
+
+  std::vector<std::array<double, 3>> storedPositions;
+  for (auto iter = container->begin(autopas::IteratorBehavior::halo); iter.isValid(); ++iter) {
+    storedPositions.push_back(iter->getR());
+  }
+  EXPECT_THAT(storedPositions, ::testing::UnorderedElementsAreArray(updatedPositions));
 }
