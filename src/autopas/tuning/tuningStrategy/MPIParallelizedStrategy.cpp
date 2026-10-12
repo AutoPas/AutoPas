@@ -75,7 +75,7 @@ Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::se
                                DataLayoutOption::aos,
                                Newton3Option::disabled,
                                interactionType,
-                               VectorizationPatternOption::p1xVec};
+                               VectorizationPatternOption::NA};
 
   if (interactionType == InteractionTypeOption::triwise) {
     fallBackConfig.traversal = TraversalOption::lc_c01;
@@ -87,6 +87,7 @@ Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::se
   for (const auto &conf : searchSpace) {
     if (not foundSoA and conf.dataLayout == DataLayoutOption::soa) {
       fallBackConfig.dataLayout = DataLayoutOption::soa;
+      fallBackConfig.vecPattern = VectorizationPatternOption::p1xVec;
       foundSoA = true;
     }
     if (not foundN3Enabled and conf.newton3 == Newton3Option::enabled) {

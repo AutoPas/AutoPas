@@ -166,6 +166,8 @@ class Functor {
   /**
    * Specifies whether the functor is capable of using the specified Vectorization Pattern in the SoA functor.
    *
+   * @note This is only relevant for SoA configurations. AoS configurations always use the not-applicable (N/A)
+   * vectorization pattern, so this is never queried for AoS.
    * @param vecPattern
    * @return whether the functor is capable of using the specified Vectorization Pattern
    */
