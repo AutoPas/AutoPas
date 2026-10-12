@@ -14,11 +14,11 @@
 #include "testingHelpers/PeriodicBoundariesHelpers.h"
 
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests,
-                         ::testing::Combine(::testing::ValuesIn(autopas::ContainerOption::getAllOptions())),
+                         ::testing::Combine(::testing::ValuesIn(generateAllValidContainerConfigurations())),
                          AllContainersTests::getParamToStringFunction());
 
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTestsBothUpdates,
-                         ::testing::Combine(::testing::ValuesIn(autopas::ContainerOption::getAllOptions()),
+                         ::testing::Combine(::testing::ValuesIn(generateAllValidContainerConfigurations()),
                                             ::testing::Bool()),
                          AllContainersTestsBothUpdates::getParamToStringFunction());
 
@@ -328,7 +328,9 @@ TEST_P(AllContainersTests, testUpdateHaloParticlePeriodicImagesInThinDomain) {
   using autopas::utils::ArrayMath::dot;
   using autopas::utils::ArrayUtils::to_string;
 
-  // With this box and cutoff, the cell based containers have only one cell per dimension inside of the box.
+  // With this box and cutoff, the cell based containers have only one cell per dimension inside of the box, unless the
+  // cell size factor is smaller than one. In the CSF < 1 case, this test will probably trivially pass, but we keep it
+  // in for completeness.
   boxMax = {3., 3., 3.};
   cutoff = 2.5;
   auto container = getInitializedContainer<ParticleFP64>(std::get<0>(GetParam()));
@@ -385,7 +387,7 @@ TEST_P(AllContainersTests, testUpdateHaloParticlePeriodicImagesInThinDomain) {
       const bool updated = container->updateHaloParticle(image);
       // VerletClusterLists currently never updates an image, because it does not find the dummies of the stored images.
       // Todo fix this and then change the test
-      if (updated or std::get<0>(GetParam()) != autopas::ContainerOption::verletClusterLists) {
+      if (updated or std::get<0>(GetParam()).container != autopas::ContainerOption::verletClusterLists) {
         EXPECT_EQ(updated, sameImageWasStored) << "Image of particle " << id << " at " << to_string(image.getR());
       }
       if (updated) {
