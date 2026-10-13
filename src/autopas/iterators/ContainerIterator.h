@@ -365,9 +365,10 @@ class ContainerIterator {
   }
 
   /**
-   * Deletes the particle the particle currently pointed to. This function uses swap-delete and thus will change
-   * the order of elements in the container. After deletion _currentParticle points to the next particle,
-   * which is the particle that was swapped here. So when used in a loop do not increment the iterator after deletion.
+   * Deletes the particle currently pointed to. A particle in the container is only marked as deleted. A particle in
+   * the additional vectors is removed via swap-delete, which changes the order of elements in its vector.
+   * After deletion _currentParticle points to the next particle, but the index is moved back by one. So incrementing
+   * the index results in the iterator arriving at the next particle correctly.
    */
   void deleteCurrentParticle() {
     if (_iteratingAdditionalVectors) {

@@ -25,6 +25,7 @@
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -306,25 +307,18 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
    * @copydoc ParticleContainerInterface::deleteParticle(Particle_T &particle)
    */
   bool deleteParticle(Particle_T &particle) override {
-    // deduce into which vector the reference points
-    auto &particleVec = _cellBlock.getContainingCell(particle.getR())._particles;
-    const bool isRearParticle = &particle == &particleVec.back();
-    // swap-delete
-    particle = particleVec.back();
-    particleVec.pop_back();
-    return not isRearParticle;
+    internal::markParticleAsDeleted(particle);
+    return false;
   }
 
   /**
    * @copydoc ParticleContainerInterface::deleteParticle(size_t cellIndex, size_t particleIndex)
    */
   bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
-    auto &particleVec = this->_cells[cellIndex]._particles;
-    auto &particle = particleVec[particleIndex];
-    // swap-delete
-    particle = particleVec.back();
-    particleVec.pop_back();
-    return particleIndex < particleVec.size();
+    // This function doesn't actually delete anything as it would mess up the references in neighbor lists that are
+    // built on top of this container.
+    internal::markParticleAsDeleted(this->_cells[cellIndex][particleIndex]);
+    return false;
   }
 
   /**
