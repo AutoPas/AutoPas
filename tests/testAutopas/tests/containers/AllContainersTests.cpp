@@ -402,3 +402,64 @@ TEST_P(AllContainersTests, testUpdateHaloParticlePeriodicImagesInThinDomain) {
   }
   EXPECT_THAT(storedPositions, ::testing::UnorderedElementsAreArray(updatedPositions));
 }
+
+/**
+ * Checks that deleting a particle only marks it as deleted until the container is rebuilt. This test checks that:
+ * a) No particle is moved, i.e. every particle is still stored at the same address.
+ * b) Exactly the deleted particles are dummies.
+ * c) updateContainer(false) removes the dummies.
+ */
+TEST_P(AllContainersTests, testDeleteParticleOnlyMarks) {
+  const auto containerConfig = std::get<0>(GetParam());
+  auto container = getInitializedContainer<ParticleFP64>(containerConfig);
+
+  // We assume that the all particles are in the same cell (e.g. that the tested cell size factor is not too small)
+  // If so, prefer to reduce the particle placement so they all fit instead of removing that container configuration
+  // from the test.
+  ASSERT_THAT(container->getTraversalSelectorInfo().cellLength, ::testing::Each(::testing::Gt(0.4)));
+  const unsigned long numParticles = 4;
+  for (unsigned long id = 0; id < numParticles; ++id) {
+    container->addParticle(ParticleFP64({0.1 + 0.1 * static_cast<double>(id), 0.1, 0.1}, {0., 0., 0.}, id));
+  }
+  std::map<ParticleFP64 *, unsigned long> idsByAddress;
+  for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    idsByAddress[&*iter] = iter->getID();
+  }
+  ASSERT_EQ(idsByAddress.size(), numParticles);
+
+  // Delete particle 0 via a reference to it.
+  std::set<unsigned long> deletedIDs{0};
+  for (const auto &[address, id] : idsByAddress) {
+    if (id == 0) {
+      // The return of deleteParticle is whether an Iterator/ptr pointing to that particle would remain valid.
+      // This should always be false for all containers, as we always mark particles kept there as dummies to delete
+      // them.
+      EXPECT_FALSE(container->deleteParticle(*address));
+    }
+  }
+  // Delete particle 1 via an iterator. VerletClusterLists is left out, because it keeps new particles in a buffer until
+  // its towers are built and deleting from this buffer via an iterator moves particles.
+  if (containerConfig.container != autopas::ContainerOption::verletClusterLists) {
+    deletedIDs.insert(1);
+    for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      if (iter->getID() == 1) {
+        autopas::internal::deleteParticle(iter);
+      }
+    }
+  }
+
+  size_t numParticlesFound = 0;
+  for (auto iter = container->begin(autopas::IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
+    ++numParticlesFound;
+    const auto addressAndID = idsByAddress.find(&*iter);
+    ASSERT_NE(addressAndID, idsByAddress.end()) << "Particle " << iter->getID() << " was moved.";
+    EXPECT_EQ(iter->getID(), addressAndID->second);
+    EXPECT_EQ(iter->isDummy(), deletedIDs.contains(iter->getID()));
+  }
+  EXPECT_EQ(numParticlesFound, numParticles);
+  EXPECT_EQ(container->getNumberOfParticles(autopas::IteratorBehavior::owned), numParticles - deletedIDs.size());
+
+  const auto leavingParticles = container->updateContainer(false);
+  EXPECT_TRUE(leavingParticles.empty());
+  EXPECT_EQ(container->size(), numParticles - deletedIDs.size());
+}
