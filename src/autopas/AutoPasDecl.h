@@ -235,8 +235,8 @@ class AutoPas {
   /**
    * Deletes the particle behind the current iterator position and leaves the container in a valid state.
    *
-   * Internally, depending on the container, this might just mark the particle as deleted without actually removing it.
-   * If this can not be done without compromising e.g. a VerletList reference structure the particle is only marked.
+   * Internally, a particle that is stored in the container is only marked as deleted (i.e. a dummy particle) and
+   * removed when the container is rebuilt. A particle that is stored in one of AutoPas' buffers is removed immediately.
    *
    * @param iter Needs to be a modify-able iterator.
    */
@@ -252,8 +252,8 @@ class AutoPas {
   /**
    * Deletes the given particle and leaves the container in a valid state.
    *
-   * Internally, depending on the container, this might just mark the particle as deleted without actually removing it.
-   * If this can not be done without compromising e.g. a VerletList reference structure the particle is only marked.
+   * Internally, a particle that is stored in the container is only marked as deleted and removed when the container is
+   * rebuilt. A particle that is stored in one of AutoPas' buffers is removed immediately.
    *
    * @note This function might invalidate iterators.
    *

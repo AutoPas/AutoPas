@@ -24,6 +24,7 @@
 #include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/inBox.h"
 #include "autopas/utils/logging/OctreeLogger.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -329,24 +330,16 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @copydoc ParticleContainerInterface::deleteParticle()
    */
   bool deleteParticle(Particle_T &particle) override {
-    if (particle.isOwned()) {
-      return this->_cells[CellTypes::OWNED].deleteParticle(particle);
-    } else if (particle.isHalo()) {
-      return this->_cells[CellTypes::HALO].deleteParticle(particle);
-    } else {
-      utils::ExceptionHandler::exception("Particle to be deleted is neither owned nor halo!\n" + particle.toString());
-      return false;
-    }
+    // This function doesn't actually delete anything. The particle is removed when the container is rebuilt.
+    internal::markParticleAsDeleted(particle);
+    return false;
   }
 
   bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+    // This function doesn't actually delete anything. The particle is removed when the container is rebuilt.
     auto [cellIndexVector, cell] = getLeafCellByIndex(cellIndex);
-    auto &particleVec = cell->_particles;
-    auto &particle = particleVec[particleIndex];
-    // swap-delete
-    particle = particleVec.back();
-    particleVec.pop_back();
-    return particleIndex < particleVec.size();
+    internal::markParticleAsDeleted(cell->_particles[particleIndex]);
+    return false;
   }
 
   /**

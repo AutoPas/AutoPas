@@ -22,6 +22,7 @@
 #include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -337,47 +338,15 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
    * @copydoc autopas::ParticleContainerInterface::deleteParticle()
    */
   bool deleteParticle(Particle_T &particle) override {
-    // swap-delete helper function
-    auto swapDelFromCell = [&](auto &particleCell) -> bool {
-      auto &particleVec = particleCell._particles;
-      const bool isRearParticle = &particle == &particleVec.back();
-      particle = particleVec.back();
-      particleVec.pop_back();
-      return isRearParticle;
-    };
-
-    // deduce into which vector the reference points
-    if (particle.isOwned()) {
-      return swapDelFromCell(getOwnedCell());
-    } else if (particle.isHalo()) {
-      const auto boxMin = this->getBoxMin();
-      const auto boxMax = this->getBoxMax();
-      const auto skinHalf = 0.5 * this->getVerletSkin();
-      const auto pos = particle.getR();
-
-      // Look for the particle in halo cells that are within half the skinHalf distance of its position
-      for (size_t dim = 0; dim < 3; ++dim) {
-        if (pos[dim] < boxMin[dim] + skinHalf) {
-          if (swapDelFromCell(this->_cells[2 * dim + 1])) {
-            return true;
-          }
-        } else if (pos[dim] >= boxMax[dim] - skinHalf) {
-          if (swapDelFromCell(this->_cells[2 * dim + 2])) {
-            return true;
-          }
-        }
-      }
-    }
+    // This function doesn't actually delete anything. The particle is removed when the container is rebuilt.
+    internal::markParticleAsDeleted(particle);
     return false;
   }
 
   bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
-    auto &particleVec = this->_cells[cellIndex]._particles;
-    auto &particle = particleVec[particleIndex];
-    // swap-delete
-    particle = particleVec.back();
-    particleVec.pop_back();
-    return particleIndex < particleVec.size();
+    // This function doesn't actually delete anything. The particle is removed when the container is rebuilt.
+    internal::markParticleAsDeleted(this->_cells[cellIndex][particleIndex]);
+    return false;
   }
 
  private:
