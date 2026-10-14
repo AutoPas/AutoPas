@@ -8,8 +8,8 @@
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/generators/GridGenerator.h"
+#include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::computeInteractions(LJFunctorType<> *);

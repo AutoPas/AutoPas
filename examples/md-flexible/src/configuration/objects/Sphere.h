@@ -25,6 +25,8 @@ class Sphere : public Object {
          double particleSpacing)
       : Object(velocity, typeId), _center(center), _radius(radius), _particleSpacing(particleSpacing) {}
 
+  [[nodiscard]] std::string getObjectType() const override { return "Sphere"; }
+
   /**
    * Getter for center of Sphere
    * @return center

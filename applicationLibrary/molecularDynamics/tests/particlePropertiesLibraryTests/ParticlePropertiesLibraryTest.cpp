@@ -5,8 +5,8 @@
  */
 #include "ParticlePropertiesLibraryTest.h"
 
+#include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "testingHelpers/commonTypedefs.h"
 
 /**
  * Initializes a ParticleProperties Library, adds two sites, and tests that the getters for site values return correct

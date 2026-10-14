@@ -49,8 +49,7 @@ class Configuration {
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
                           OpenMPKindOption _ompKind, OpenMPChunkSize _ompChunkSize,
-                          InteractionTypeOption _interactionType,
-                          VectorizationPatternOption _vecPattern = VectorizationPatternOption::p1xVec)
+                          InteractionTypeOption _interactionType, VectorizationPatternOption _vecPattern)
       : container(_container),
         traversal(_traversal),
         vecPattern(_vecPattern),
@@ -225,7 +224,7 @@ std::ostream &operator<<(std::ostream &os, const Configuration &configuration);
 std::istream &operator>>(std::istream &in, Configuration &configuration);
 
 /**
- * Equals operator for Configuration objects.
+ * Equals operator for Configuration objects. Comparison is made by comparing the Configuration::tie of the objects.
  * @param lhs
  * @param rhs
  * @return true iff all components are equal.
@@ -242,9 +241,7 @@ bool operator!=(const Configuration &lhs, const Configuration &rhs);
 
 /**
  * Comparison operator for Configuration objects. This is mainly used for configurations to have a sane ordering in e.g.
- * sets.
- *
- * Configurations are compared member wise in the order given by Configuration::tie().
+ * sets. Comparison is made by comparing the Configuration::tie of the objects.
  *
  * @param lhs
  * @param rhs
