@@ -176,7 +176,9 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
       traversal->getRuntimeScheduledLoopCounts(container->getTraversalSelectorInfo(), numParticles + numHaloParticles)
           .value_or(std::vector<size_t>{}),
       autopas::autopas_get_max_threads());
-  autopas::autopas_set_schedule(ompConfig);
+  if (config.ompKind != autopas::OpenMPKindOption::sequential) {
+    autopas::autopas_set_schedule(ompConfig);
+  }
 
   if (particleDeletionPosition & DeletionPosition::beforeLists) {
     markSomeParticlesAsDeleted(*container, numParticles + numHaloParticles, 19, interactionType);

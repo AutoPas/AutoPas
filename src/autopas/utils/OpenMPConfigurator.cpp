@@ -79,6 +79,11 @@ namespace autopas {
       }
       return static_cast<int>(goldenChunkSize);
     }
+    case OpenMPChunkSize::Type::notApplicable:
+      utils::ExceptionHandler::exception(
+          "OpenMPConfigurator::getActualOMPChunkSize(): The not-applicable chunk size is only used with sequential "
+          "traversals, for which no schedule should be set.");
+      return 0;
   }
   utils::ExceptionHandler::exception("OpenMPConfigurator::getActualOMPChunkSize(): Unknown type of chunk size.");
   return 0;
@@ -161,6 +166,11 @@ namespace autopas {
     case OpenMPKindOption::lb4omp_af_a:
       return omp_sched_af_a;
 #endif
+    case OpenMPKindOption::sequential:
+      utils::ExceptionHandler::exception(
+          "OpenMPConfigurator::getOMPKind(): The sequential kind is not an OpenMP schedule kind. It is only used with "
+          "sequential traversals, for which no schedule should be set.");
+      return omp_sched_static;
     default:
       return omp_sched_auto;  // Standard auto and Auto4OMP's selection methods.
   }
@@ -213,6 +223,7 @@ namespace autopas {
       return not _loopCounts.empty() and
              std::ranges::all_of(_loopCounts, [&](const auto loopCount) { return loopCount <= _numThreads; });
     case OpenMPChunkSize::Type::fixed:
+    case OpenMPChunkSize::Type::notApplicable:
       break;
   }
   return false;

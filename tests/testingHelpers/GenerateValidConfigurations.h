@@ -36,9 +36,10 @@
  * @param allowedNewton3Options By default, all options.
  * @param allowedCellSizeFactors By default, {0.5, 1.0, 1.5}
  * @param allowedOpenMPKindOptions By default, only static, since OpenMP scheduling is assumed to be correct and
- * therefore does not need to be swept over. Sweeping it multiplies the parameterized test suites by the number of
- * combinations.
- * @param allowedOpenMPChunkSizes By default, 1, balanced and golden.
+ * therefore does not need to be swept over. Sequential traversals always use the sequential kind, which is included
+ * implicitly.
+ * @param allowedOpenMPChunkSizes By default, 1, balanced, and golden. Sequential traversals always use the
+ * not-applicable chunk size, which is included implicitly.
  * @param allowedVectorPatterns By default, all options.
  * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return an empty set.
  * @return
@@ -92,8 +93,10 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
  * @param dataLayoutOption If provided, restrict to this data layout, otherwise consider all options.
  * @param newton3Option If provided, restrict to this Newton 3 option, otherwise consider all options.
  * @param cellSizeFactor If provided, restrict to this cell size factor, otherwise consider {0.5, 1.0, 1.5}.
- * @param ompKind If provided, restrict to this OpenMP schedule kind, otherwise only static is considered.
- * @param ompChunkSize If provided, restrict to this OpenMP chunk size, otherwise only 1 is considered.
+ * @param ompKind If provided, restrict to this OpenMP schedule kind, otherwise only static is considered. Sequential
+ * traversals always use the sequential kind, regardless of this.
+ * @param ompChunkSize If provided, restrict to this OpenMP chunk size, otherwise only 1 is considered. Sequential
+ * traversals always use the not-applicable chunk size, regardless of this.
  * @param vectorPattern If provided, restrict to this vectorization pattern, otherwise consider all options.
  * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return std::nullopt
  * instead.

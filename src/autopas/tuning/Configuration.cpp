@@ -96,6 +96,15 @@ bool autopas::Configuration::hasCompatibleValues() const {
       return false;
     }
   }
+  // Sequential traversals only support the sequential schedule kind and the not-applicable chunk size, which in turn
+  // are not supported by any other traversal.
+  if (compatibleTraversals::allSequentialTraversals().contains(traversal)) {
+    if (ompKind != OpenMPKindOption::sequential or ompChunkSize != OpenMPChunkSize::notApplicable) {
+      return false;
+    }
+  } else if (ompKind == OpenMPKindOption::sequential or ompChunkSize == OpenMPChunkSize::notApplicable) {
+    return false;
+  }
   // The balanced chunk size is only compatible with the static scheduling kind (it is static's default chunk size,
   // whereas other kinds have a default chunk size of 1 and balanced makes no sense for)
   if (ompChunkSize == OpenMPChunkSize::balanced and ompKind != OpenMPKindOption::omp_static) {

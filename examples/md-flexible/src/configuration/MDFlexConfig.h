@@ -323,7 +323,7 @@ class MDFlexConfig {
   MDFlexOption<std::set<autopas::OpenMPKindOption>, __LINE__> openMPKindOptions{
       autopas::OpenMPKindOption::getMostOptions(), "openmp-schedule-kinds", true,
       "List of OpenMP Scheduling Kind options to use. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::OpenMPKindOption::getAllOptions(), " ", {"(", ")"})};
+          autopas::utils::ArrayUtils::to_string(autopas::OpenMPKindOption::getAllParallelKinds(), " ", {"(", ")"})};
   /**
    * openMPChunkSizes
    */

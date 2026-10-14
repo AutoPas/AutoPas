@@ -278,7 +278,9 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::Configuration
       config.ompKind, config.ompChunkSize,
       traversal->getRuntimeScheduledLoopCounts(traversalSelectorInfo, container.size()).value_or(std::vector<size_t>{}),
       autopas::autopas_get_max_threads());
-  autopas::autopas_set_schedule(ompConfig);
+  if (config.ompKind != autopas::OpenMPKindOption::sequential) {
+    autopas::autopas_set_schedule(ompConfig);
+  }
 
   iterate(container, std::move(traversal));
 

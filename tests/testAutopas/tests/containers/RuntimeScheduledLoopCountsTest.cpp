@@ -162,6 +162,7 @@ TEST_F(RuntimeScheduledLoopCountsTest, testLoopCountsMatchOpenMPRuntime) {
   constexpr size_t numHaloParticles = 200;
 
   const auto static1OnlyTraversals = autopas::compatibleTraversals::allTraversalsSupportingOnlyStatic1Scheduling();
+  const auto sequentialTraversals = autopas::compatibleTraversals::allSequentialTraversals();
   std::set<autopas::TraversalOption> checkedTraversals;
   // Checks an arbitrary configuration of every container, traversal and cell size factor for the interaction type of
   // the given functor.
@@ -239,7 +240,7 @@ TEST_F(RuntimeScheduledLoopCountsTest, testLoopCountsMatchOpenMPRuntime) {
   checkLoopCounts(triwiseFunctor);
 
   for (const auto &traversalOption : autopas::TraversalOption::getAllOptions()) {
-    if (not static1OnlyTraversals.contains(traversalOption)) {
+    if (not static1OnlyTraversals.contains(traversalOption) and not sequentialTraversals.contains(traversalOption)) {
       EXPECT_TRUE(checkedTraversals.contains(traversalOption))
           << traversalOption.to_string() << " did not report loop counts for any configuration.";
     }

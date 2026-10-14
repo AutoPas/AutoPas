@@ -22,10 +22,12 @@ TEST(OpenMPChunkSizeTest, testToStringAndParse) {
   EXPECT_EQ(OpenMPChunkSize(4).to_string(), "4");
   EXPECT_EQ(OpenMPChunkSize::balanced.to_string(), "balanced");
   EXPECT_EQ(OpenMPChunkSize::golden.to_string(), "golden");
+  EXPECT_EQ(OpenMPChunkSize::notApplicable.to_string(), "NotApplicable");
 
   EXPECT_EQ(OpenMPChunkSize::parse("4"), OpenMPChunkSize(4));
   EXPECT_EQ(OpenMPChunkSize::parse("balanced"), OpenMPChunkSize::balanced);
   EXPECT_EQ(OpenMPChunkSize::parse("golden"), OpenMPChunkSize::golden);
+  EXPECT_EQ(OpenMPChunkSize::parse("NotApplicable"), OpenMPChunkSize::notApplicable);
   EXPECT_EQ(OpenMPChunkSize::parse("Golden"), OpenMPChunkSize::golden) << "parse() should ignore the case.";
 
   EXPECT_ANY_THROW(OpenMPChunkSize::parse(""));
@@ -51,17 +53,19 @@ TEST(OpenMPChunkSizeTest, testParseChunkSizes) {
 
 /**
  * Checks the comparison operators: chunk sizes are only equal to themselves, fixed chunk sizes are ordered by size and
- * come before balanced, which comes before golden.
+ * come before balanced, which comes before golden, which comes before notApplicable.
  */
 TEST(OpenMPChunkSizeTest, testComparison) {
   EXPECT_EQ(OpenMPChunkSize(4), OpenMPChunkSize(4));
   EXPECT_NE(OpenMPChunkSize(4), OpenMPChunkSize(5));
   EXPECT_NE(OpenMPChunkSize::balanced, OpenMPChunkSize::golden);
   EXPECT_NE(OpenMPChunkSize::balanced, OpenMPChunkSize(0));
+  EXPECT_NE(OpenMPChunkSize::notApplicable, OpenMPChunkSize(0));
 
   EXPECT_LT(OpenMPChunkSize(4), OpenMPChunkSize(5));
   EXPECT_LT(OpenMPChunkSize(1000), OpenMPChunkSize::balanced);
   EXPECT_LT(OpenMPChunkSize::balanced, OpenMPChunkSize::golden);
+  EXPECT_LT(OpenMPChunkSize::golden, OpenMPChunkSize::notApplicable);
 }
 
 /**
@@ -75,6 +79,7 @@ TEST(OpenMPChunkSizeTest, testHash) {
   EXPECT_NE(hash(OpenMPChunkSize(4)), hash(OpenMPChunkSize(5)));
   EXPECT_NE(hash(OpenMPChunkSize::balanced), hash(OpenMPChunkSize::golden));
   EXPECT_NE(hash(OpenMPChunkSize::balanced), hash(OpenMPChunkSize(0)));
+  EXPECT_NE(hash(OpenMPChunkSize::golden), hash(OpenMPChunkSize::notApplicable));
 }
 
 /**

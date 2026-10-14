@@ -82,7 +82,7 @@ class OpenMPConfigurator {
    * - Our special chunk sizes "balanced" and "golden". balanced becomes 0, which is what the OpenMP runtimes take for
    *   the default chunk size. golden gets calculated and returned.
    *
-   * Throws for a fixed chunk size of 0.
+   * Throws for a fixed chunk size of 0 and for the not-applicable chunk size.
    *
    * @return the actual OpenMP chunk size, directly usable in OpenMP's schedule setter
    */
@@ -103,7 +103,7 @@ class OpenMPConfigurator {
   /**
    * OpenMP scheduling kind getter for setting OpenMP's scheduling runtime variables.
    * Throws if the compiler and OpenMP runtime AutoPas is built with do not support the kind (see
-   * OpenMPKindOption::isSupportedAtScheduleLevel()).
+   * OpenMPKindOption::isSupportedAtScheduleLevel()), and for the sequential kind, which is not an OpenMP kind.
    * @return the current OpenMP kind, directly usable in OpenMP's schedule setter
    */
   [[maybe_unused]] [[nodiscard]] omp_sched_t getOMPKind() const;
@@ -155,7 +155,8 @@ class OpenMPConfigurator {
    *
    * This function is useful for eliminating redundant duplicate configurations.
    *
-   * @return True if the chunk size falls back to a chunk size of 1 for every loop. False for fixed chunk sizes.
+   * @return True if the chunk size falls back to a chunk size of 1 for every loop. False for fixed and not-applicable
+   * chunk sizes.
    */
   [[maybe_unused]] [[nodiscard]] bool fallsBackToChunkSize1() const;
 };  // class OpenMPConfigurator

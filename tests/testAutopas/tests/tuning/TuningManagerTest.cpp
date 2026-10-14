@@ -370,9 +370,9 @@ TEST_F(TuningManagerTest, testForceRetuneInPhase) {
  *
  * As there are high maintainence costs in manually determining the expected number of configurations with OpenMP
  * scheduling kinds and chunk sizes that do not fall back to other kinds and chunk sizes and are considered
- * inapplicable, we do two passes: one with only static, 1 scheduling, which never fallsback and so we can determine an
- * exact expected number of configurations; and another with more scheduling options, where we only determine an upper
- * bound.
+ * inapplicable, we do two passes: one with only static, 1 scheduling (or sequential scheduling for sequential
+ * traversals), which never falls back and so we can determine an exact expected number of configurations; and another
+ * with more scheduling options, where we only determine an upper bound.
  */
 TEST_F(TuningManagerTest, testAllConfigurations) {
   const autopas::NumberSetFinite<double> cellSizeFactors({1});
@@ -404,8 +404,8 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
       .WillRepeatedly(
           testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
 
-  // First pass: all valid configurations with a single OpenMP schedule (static, 1), for which the exact numbers of
-  // configurations and iterations are known.
+  // First pass: all valid configurations with a single OpenMP schedule (static, 1), or (sequential, NotApplicable) for
+  // sequential traversals, for which the exact numbers of configurations and iterations are known.
   const auto searchSpace = generateAllValidConfigurations(
       autopas::InteractionTypeOption::pairwise, autopas::ContainerOption::getAllOptions(),
       autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
@@ -431,7 +431,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   // Traversal::isApplicableToDomain are still included in this count.
   //
   // Direct Sum:
-  //   Only static, 1 scheduling:
+  //   Only sequential scheduling:
   //                        ds_sequential               (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
   //     Subtotal:                                                                                            =   4
   // Direct Sum only supports CSF 1 => Multiply by 1
@@ -523,7 +523,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = (18 + 4) * 2;
 
   // Octree:
-  //   Only static, 1 scheduling:
+  //   Only sequential scheduling:
   //                        ot_c01                      (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
   //                        ot_c18                      (AoS <=> SoA x 4 vecPat, newton3)                     =   5
   //     Subtotal:                                                                                            =  10
@@ -651,10 +651,12 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
 
   // Upper bound: assume no schedule falls back, so every configuration is trialled, apart from the ones which are not
   // applicable. These are the ones determined above for (static, 1), once for every schedule in the search space, as
-  // their traversals support all schedules.
+  // their traversals support all schedules (except sequential).
   std::set<std::pair<autopas::OpenMPKindOption, autopas::OpenMPChunkSize>> schedules;
   for (const auto &config : searchSpaceMultipleSchedules) {
-    schedules.emplace(config.ompKind, config.ompChunkSize);
+    if (config.ompKind != autopas::OpenMPKindOption::sequential) {
+      schedules.emplace(config.ompKind, config.ompChunkSize);
+    }
   }
   const size_t maxNumberOfIterationsMultipleSchedules =
       (searchSpaceMultipleSchedules.size() - numConfigsExpectedNotApplicable * schedules.size()) *
@@ -671,8 +673,8 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
     ++iterationsMultipleSchedules;
   }
 
-  // Lower bound: the configurations of the first pass are in this search space as well, and their schedule (static, 1)
-  // never falls back.
+  // Lower bound: the configurations of the first pass are in this search space as well, and their schedules (static, 1)
+  // and (sequential, NotApplicable) never fall back.
   EXPECT_GE(iterationsMultipleSchedules, expectedNumberOfIterations);
   EXPECT_LE(iterationsMultipleSchedules, maxNumberOfIterationsMultipleSchedules);
 }

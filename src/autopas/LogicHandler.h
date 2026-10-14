@@ -1503,8 +1503,10 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
     }
   }
 
-  // Set OMP Configuration
-  autopas_set_schedule(ompConfig);
+  // Set OMP Configuration. Sequential traversals have no schedule to set.
+  if (config.ompKind != OpenMPKindOption::sequential) {
+    autopas_set_schedule(ompConfig);
+  }
 
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};
 }

@@ -310,6 +310,31 @@ TEST_F(LogicHandlerTest, testSetGoldenChunkSize) {
 }
 
 /**
+ * Tests that the LogicHandler does not set the OpenMP schedule for a configuration with the sequential schedule kind.
+ */
+TEST_F(LogicHandlerTest, testSequentialConfigDoesNotSetSchedule) {
+#ifndef AUTOPAS_USE_OPENMP
+  GTEST_SKIP() << "Without OpenMP, there is no schedule to set.";
+#else
+  const auto configSequential =
+      getArbitraryConfiguration(autopas::InteractionTypeOption::pairwise, autopas::ContainerOption::directSum,
+                                autopas::TraversalOption::ds_sequential)
+          .value();
+  initLogicHandler({configSequential});
+  LJFunctorGlobals functor(2.5);
+
+  autopas::autopas_set_schedule(omp_sched_dynamic, 7);
+  ASSERT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configSequential, functor)), nullptr);
+
+  omp_sched_t kind{};
+  int chunkSize{};
+  autopas::autopas_get_schedule(&kind, &chunkSize);
+  EXPECT_EQ(kind, omp_sched_dynamic);
+  EXPECT_EQ(chunkSize, 7);
+#endif
+}
+
+/**
  * Tests that a configuration with the golden chunk size is rejected when its trial starts, if the golden chunk size
  * falls back to a chunk size of 1 and the same configuration with a chunk size of 1 is in the search space. As with
  * testRejectConfigWhoseScheduleKindFallsBack, this just checks that the LogicHandler puts the mechanic together

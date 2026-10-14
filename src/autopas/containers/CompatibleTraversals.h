@@ -177,21 +177,22 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 /**
  * Provides a set of all traversal that only support/are designed for OpenMP schedule static, 1.
  *
- * For now, also includes sequential traversals, so that the search space doesn't include multiple loop schedules
- * when nothing happens.
- *
  * @return
  */
 static std::set<TraversalOption> allTraversalsSupportingOnlyStatic1Scheduling() {
-  return {TraversalOption::ds_sequential,  // todo, this is an ugly way to handle sequential only traversals
-          TraversalOption::lc_sliced_balanced,
-          TraversalOption::ot_c01,  // Todo: Similar
-          TraversalOption::ot_c18,  // Todo: Similar
-          TraversalOption::vcl_sliced_balanced,
-          TraversalOption::vcl_c01_balanced,
-          TraversalOption::vvl_as_built,
-          TraversalOption::vlc_sliced_balanced,
-          TraversalOption::vlp_sliced_balanced};
+  return {TraversalOption::lc_sliced_balanced,  TraversalOption::vcl_sliced_balanced,
+          TraversalOption::vcl_c01_balanced,    TraversalOption::vvl_as_built,
+          TraversalOption::vlc_sliced_balanced, TraversalOption::vlp_sliced_balanced};
+}
+
+/**
+ * Provides a set of all sequential traversals. These have no OpenMP loops, so they only support the sequential OpenMP
+ * schedule kind (OpenMPKindOption::sequential) with the not-applicable chunk size (OpenMPChunkSize::notApplicable).
+ *
+ * @return
+ */
+[[maybe_unused]] static std::set<TraversalOption> allSequentialTraversals() {
+  return {TraversalOption::ds_sequential, TraversalOption::ot_c01, TraversalOption::ot_c18};
 }
 
 /**

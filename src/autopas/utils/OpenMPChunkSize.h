@@ -25,12 +25,12 @@ namespace autopas {
 
 /**
  * Class representing the choices for OpenMP's scheduling chunk size: a fixed size (i.e. a simple size_t), or one of the
- * special chunk sizes (balanced and golden).
+ * special chunk sizes (balanced, golden, and notApplicable).
  *
  * Every object stores a Type and a size. The size is only used if the type is fixed, and is 0 otherwise.
  * - A fixed chunk size OpenMPChunkSize is constructed from a size_t, e.g. `OpenMPChunkSize chunkSize = 4;`.
- * - The special chunk sizes are not constructed. They are the constants OpenMPChunkSize::balanced and
- *   OpenMPChunkSize::golden, which are used like enumerators,
+ * - The special chunk sizes are not constructed. They are the constants OpenMPChunkSize::balanced,
+ *   OpenMPChunkSize::golden, and OpenMPChunkSize::notApplicable, which are used like enumerators,
  *   e.g. `OpenMPChunkSize chunkSize = OpenMPChunkSize::golden`.
  */
 class OpenMPChunkSize {
@@ -53,6 +53,11 @@ class OpenMPChunkSize {
      * threads of the loop (see OpenMPConfigurator::getGoldenChunkSize()).
      */
     golden,
+    /**
+     * Not applicable: used with sequential traversals, for which no schedule is set. It is never set by the user, but
+     * implicitly included in the search space.
+     */
+    notApplicable,
   };
 
   /**
@@ -78,6 +83,11 @@ class OpenMPChunkSize {
   static const OpenMPChunkSize golden;
 
   /**
+   * The not-applicable chunk size.
+   */
+  static const OpenMPChunkSize notApplicable;
+
+  /**
    * Getter for the type of the chunk size.
    * @return
    */
@@ -96,7 +106,8 @@ class OpenMPChunkSize {
   }
 
   /**
-   * Comparison operator. Fixed chunk sizes are ordered by size and come before balanced, which comes before golden.
+   * Comparison operator. Fixed chunk sizes are ordered by size and come before balanced, which comes before golden,
+   * which comes before notApplicable.
    * @return
    */
   constexpr auto operator<=>(const OpenMPChunkSize &) const = default;
@@ -113,6 +124,8 @@ class OpenMPChunkSize {
         return "balanced";
       case Type::golden:
         return "golden";
+      case Type::notApplicable:
+        return "NotApplicable";
     }
     utils::ExceptionHandler::exception("OpenMPChunkSize::to_string(): Unknown type {}.", static_cast<int>(_type));
     return "";
@@ -131,6 +144,9 @@ class OpenMPChunkSize {
     }
     if (lowerCaseString == "golden") {
       return golden;
+    }
+    if (lowerCaseString == "notapplicable") {
+      return notApplicable;
     }
 
     // Check that a non-balanced/golden chunk size is actually a positive integer value
@@ -193,9 +209,9 @@ class OpenMPChunkSize {
 
  private:
   /**
-   * Constructor for the special chunk sizes. Only used for the definitions of balanced and golden below the class.
-   * Fixed chunk sizes are constructed from their size instead.
-   * @param type Type::balanced or Type::golden.
+   * Constructor for the special chunk sizes. Only used for the definitions of balanced, golden, and notApplicable below
+   * the class. Fixed chunk sizes are constructed from their size instead.
+   * @param type Type::balanced, Type::golden, or Type::notApplicable.
    */
   constexpr explicit OpenMPChunkSize(Type type) : _type(type) {
     if (type == Type::fixed) {
@@ -214,11 +230,12 @@ class OpenMPChunkSize {
   size_t _size{0};
 };
 
-// Expose balanced and golden similarly to if they were enumerators. Under the hood, they are objects of OpenMPChunkSize
-// with the type balanced and golden respectively, created using the private constructor above. They are defined here
-// and not inside the class, as a class cannot contain objects of itself before its definition is complete.
+// Expose balanced, golden, and notApplicable similarly to if they were enumerators. Under the hood, they are objects of
+// OpenMPChunkSize with the type balanced, golden, and notApplicable respectively, created using the private constructor
+// above.
 inline constexpr OpenMPChunkSize OpenMPChunkSize::balanced{OpenMPChunkSize::Type::balanced};
 inline constexpr OpenMPChunkSize OpenMPChunkSize::golden{OpenMPChunkSize::Type::golden};
+inline constexpr OpenMPChunkSize OpenMPChunkSize::notApplicable{OpenMPChunkSize::Type::notApplicable};
 
 }  // namespace autopas
 

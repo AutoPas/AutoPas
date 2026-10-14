@@ -141,6 +141,9 @@ TEST(OptionTest, parseOpenMPKindOptionsTest) {
       {autopas::OpenMPKindOption::lb4omp_awf_d, "awf_d"},                // Adaptive Weighted Factoring Variant D
       {autopas::OpenMPKindOption::lb4omp_awf_e, "awf_e"},                // Adaptive Weighted Factoring Variant E
       {autopas::OpenMPKindOption::lb4omp_af_a, "af_a"},                  // Improved Adaptive Factoring
+
+      // AutoPas' kind for sequential traversals:
+      {autopas::OpenMPKindOption::sequential, "sequential"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::OpenMPKindOption::getOptionNames().size());

@@ -209,6 +209,12 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      * Improved Adaptive Factoring: like af, but prior scheduling overhead influences chunk size.
      */
     lb4omp_af_a,
+
+    /**
+     * Sequential: not an OpenMP scheduling kind, but used with sequential traversals. It is never set by the user, but
+     * implicitly included in the search space.
+     */
+    sequential,
   };
 
   /**
@@ -277,6 +283,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
       case omp_static:
       case omp_dynamic:
       case omp_guided:
+      case sequential:
         return level >= ScheduleLevel::gccLibgomp;
       case omp_auto:
       case lb4omp_trapezoidal:
@@ -324,10 +331,13 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
    * - Several of LB4OMP's techniques need data that LB4OMP only has after a profiling run (see KMP_PROFILE_DATA), and
    *   abort inside the runtime otherwise.
    *
+   * Also includes sequential, which is never set by the user, as it is always included implicitly.
+   *
    * @return
    */
   static std::set<OpenMPKindOption> getDiscouragedOptions() {
     return {
+        OpenMPKindOption::sequential,
         OpenMPKindOption::auto4omp_randomsel,
         OpenMPKindOption::auto4omp_exhaustivesel,
         OpenMPKindOption::auto4omp_binarySearch,
@@ -395,8 +405,21 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         {OpenMPKindOption::lb4omp_awf_d, "awf_d"},                // Adaptive Weighted Factoring Variant D
         {OpenMPKindOption::lb4omp_awf_e, "awf_e"},                // Adaptive Weighted Factoring Variant E
         {OpenMPKindOption::lb4omp_af_a, "af_a"},                  // Improved Adaptive Factoring
+
+        // AutoPas' kind for sequential traversals:
+        {OpenMPKindOption::sequential, "sequential"},
     };
   };
+
+  /**
+   * Set of all options, excluding sequential.
+   * @return
+   */
+  static std::set<OpenMPKindOption> getAllParallelKinds() {
+    auto s = getAllOptions();
+    s.erase(sequential);
+    return s;
+  }
 
   /**
    * Converts the old LB4OMP scheduling technique names to their corresponding new names.

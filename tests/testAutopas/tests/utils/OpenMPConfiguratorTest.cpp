@@ -245,6 +245,9 @@ TEST(OpenMPConfiguratorChunkSizeTest, getActualOMPChunkSize) {
   EXPECT_EQ(OpenMPConfigurator(OpenMPKindOption::omp_dynamic, 4, loopCounts, 8).getActualOMPChunkSize(), 4);
   EXPECT_ANY_THROW(OpenMPConfigurator(OpenMPKindOption::omp_dynamic, 0, loopCounts, 8).getActualOMPChunkSize())
       << "A fixed chunk size must be at least 1.";
+  EXPECT_ANY_THROW(OpenMPConfigurator(OpenMPKindOption::sequential, OpenMPChunkSize::notApplicable, loopCounts, 8)
+                       .getActualOMPChunkSize())
+      << "The not-applicable chunk size has no actual chunk size.";
   EXPECT_EQ(OpenMPConfigurator(OpenMPKindOption::omp_static, OpenMPChunkSize::balanced, loopCounts, 8)
                 .getActualOMPChunkSize(),
             0);
@@ -294,9 +297,11 @@ TEST(OpenMPConfiguratorFallbackTest, fallsBackToChunkSize1) {
       OpenMPConfigurator(OpenMPKindOption::omp_static, OpenMPChunkSize::balanced, {}, 8).fallsBackToChunkSize1())
       << "Without loop counts, this cannot be known.";
 
-  // Fixed chunk sizes do not fall back.
+  // Fixed and not-applicable chunk sizes do not fall back.
   EXPECT_FALSE(OpenMPConfigurator(OpenMPKindOption::omp_static, 1, {8}, 8).fallsBackToChunkSize1());
   EXPECT_FALSE(OpenMPConfigurator(OpenMPKindOption::omp_dynamic, 4, {8}, 8).fallsBackToChunkSize1());
+  EXPECT_FALSE(
+      OpenMPConfigurator(OpenMPKindOption::sequential, OpenMPChunkSize::notApplicable, {8}, 8).fallsBackToChunkSize1());
 }
 
 /**

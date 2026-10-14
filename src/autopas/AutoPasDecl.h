@@ -948,20 +948,38 @@ class AutoPas {
 
   /**
    * Set allowed OpenMP chunk sizes.
+   *
+   * @note The not-applicable chunk size (used for sequential traversals) is always included implicitly and does not
+   * need to be set.
+   *
    * @param allowedChunkSizes A set of allowed OpenMP chunk sizes. If 1 is not included, some traversals which must
    * use static, 1 scheduling will never be selected.
    */
   void setAllowedOpenMPChunkSizes(const std::set<OpenMPChunkSize> &allowedChunkSizes) {
     _allowedOpenMPChunkSizes = allowedChunkSizes;
+    if (_allowedOpenMPChunkSizes.erase(OpenMPChunkSize::notApplicable) > 0) {
+      AutoPasLog(WARN,
+                 "The not-applicable OpenMP chunk size is always included implicitly and does not need to be set. It "
+                 "is removed from the allowed OpenMP chunk sizes.");
+    }
   }
 
   /**
    * Set allowed OpenMP scheduling kind.
+   *
+   * @note The sequential kind (used for sequential traversals) is always included implicitly and does not need to be
+   * set.
+   *
    * @param allowedKinds A set of allowed OpenMP Scheduler kinds. If static is not included, some traversals which must
    * use static, 1 scheduling will never be selected. (It is highly recommended to not include only static.)
    */
   void setAllowedOpenMPScheduleKinds(const std::set<OpenMPKindOption> &allowedKinds) {
     _allowedOpenMPKinds = allowedKinds;
+    if (_allowedOpenMPKinds.erase(OpenMPKindOption::sequential) > 0) {
+      AutoPasLog(WARN,
+                 "The sequential OpenMP schedule kind is always included implicitly and does not need to be set. It is "
+                 "removed from the allowed OpenMP schedule kinds.");
+    }
   }
 
   /**
@@ -1272,7 +1290,7 @@ class AutoPas {
    * Allowed OpenMP Schedule Kind options. May include options that may not be usable with a given version of OpenMP.
    * These should be filtered out as invalid configurations during tuning.
    */
-  std::set<OpenMPKindOption> _allowedOpenMPKinds{OpenMPKindOption::getAllOptions()};
+  std::set<OpenMPKindOption> _allowedOpenMPKinds{OpenMPKindOption::getAllParallelKinds()};
   /**
    * Allowed OpenMP chunks sizes.
    */
