@@ -39,15 +39,15 @@ class Configuration {
    * @param _newton3
    * @param _cellSizeFactor
    * @param _interactionType
-   * @param _threadCount (for energy tuning, defaults to maximum number of threads)
    * @param _vecPattern
+   * @param _threadCount (for energy tuning, defaults to maximum number of threads)
    *
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
-                          InteractionTypeOption _interactionType, int _threadCount = autopas::autopas_all_threads,
-                          VectorizationPatternOption _vecPattern = VectorizationPatternOption::p1xVec)
+                          InteractionTypeOption _interactionType, VectorizationPatternOption _vecPattern,
+                          int _threadCount = autopas::autopas_all_threads)
       : container(_container),
         traversal(_traversal),
         loadEstimator(_loadEstimator),
@@ -98,6 +98,7 @@ class Configuration {
     if (forParameterizedTestName) {
       std::ranges::replace(result, '.', '_');
       std::ranges::replace(result, '-', '_');
+      std::ranges::replace(result, '/', '_');
     }
 
     return result;

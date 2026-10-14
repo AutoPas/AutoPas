@@ -9,6 +9,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/generators/GridGenerator.h"
 #include "autopas/utils/generators/UniformGenerator.h"
+#include "commonTypedefs.h"
 #include "src/configuration/OpenMP.h"
 #include "src/configuration/YamlParser.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
@@ -16,7 +17,6 @@
 #include "src/configuration/objects/CubeGrid.h"
 #include "src/configuration/objects/CubeUniform.h"
 #include "src/configuration/objects/Sphere.h"
-#include "testingHelpers/commonTypedefs.h"
 
 /**
  * This test checks if the GridGenerator fills the container with particles that are inside the box.

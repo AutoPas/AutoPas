@@ -107,8 +107,6 @@ class CubeClosestPacked : public Object {
   [[nodiscard]] std::string to_string() const override {
     std::ostringstream output;
 
-    output << std::setw(_valueOffset) << std::left << "particle-spacing"
-           << ":  " << _particleSpacing << "\n";
     output << std::setw(_valueOffset) << std::left << "particle-density"
            << ":  " << _density << "\n";
     output << std::setw(_valueOffset) << std::left << "box-length"

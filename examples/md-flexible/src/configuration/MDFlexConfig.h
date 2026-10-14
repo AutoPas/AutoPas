@@ -309,7 +309,7 @@ class MDFlexConfig {
    * vectorizationPattern
    */
   MDFlexOption<std::set<autopas::VectorizationPatternOption>, __LINE__> vecPatternOptions{
-      autopas::VectorizationPatternOption::getMostOptions(), "vectorization-pattern", true,
+      autopas::VectorizationPatternOption::getAllApplicablePatterns(), "vectorization-pattern", true,
       "Vectorization Pattern for HWY Functor."};
   /**
    * cellSizeFactors
@@ -408,7 +408,7 @@ class MDFlexConfig {
    * EarlyStoppingFactor
    */
   MDFlexOption<double, __LINE__> earlyStoppingFactor{
-      std::numeric_limits<double>::infinity(), "early-stopping-factor", false,
+      std::numeric_limits<double>::max(), "early-stopping-factor", false,
       "EarlyStoppingFactor for the auto-tuner. A configuration seeming to perform worse than the "
       "previously best configuration "
       "by this factor will not be sampled again during that tuning phase."};

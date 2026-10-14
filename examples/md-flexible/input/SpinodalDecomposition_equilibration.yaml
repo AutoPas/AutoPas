@@ -27,6 +27,7 @@ Objects:
       particle-spacing           :  1.5
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
+      centered                   :  true
 thermostat:
   initialTemperature             :  1.4
   targetTemperature              :  1.4

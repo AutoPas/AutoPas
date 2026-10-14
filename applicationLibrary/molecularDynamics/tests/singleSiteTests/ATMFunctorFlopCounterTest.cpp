@@ -10,8 +10,8 @@
 #include "autopas/AutoPasImpl.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
-#include "testingHelpers/commonTypedefs.h"
 
 // AutoPas is instantiated in AutoPasInstantiations.cpp
 // but computeInteractions() versions with countFLOPs == true not,

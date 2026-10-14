@@ -20,13 +20,17 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
     const NumberSet<double> *allowedCellSizeFactors, const NumberSetFinite<int> *allowedThreadCounts,
-    const std::set<VectorizationPatternOption> &allowedVecPatternOptions,
-    const InteractionTypeOption &interactionType) {
+    const std::set<VectorizationPatternOption> &allowedVecPatternOptions, const InteractionTypeOption &interactionType,
+    bool throwIfNone) {
   if (allowedCellSizeFactors->isInterval()) {
     utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
   }
   const auto cellSizeFactors = allowedCellSizeFactors->getAll();
   const auto threadCounts = allowedThreadCounts->getAll();
+  // The not-applicable (N/A) vectorization pattern is always included in the config search space, used in e.g. AoS
+  // configurations.
+  auto vecPatternOptions = allowedVecPatternOptions;
+  vecPatternOptions.insert(VectorizationPatternOption::NA);
 
   std::set<Configuration> searchSet;
   // generate all potential configs
@@ -51,8 +55,8 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
                 for (const auto &vecPatternOption : allowedVecPatternOptions) {
                   const Configuration configuration{
                       containerOption,  csf,           traversalOption, loadEstimatorOption,
-                      dataLayoutOption, newton3Option, interactionType, threadCountOption,
-                      vecPatternOption};
+                      dataLayoutOption, newton3Option, interactionType, vecPatternOption,
+                      threadCountOption};
                   if (configuration.hasCompatibleValues()) {
                     searchSet.insert(configuration);
                   }
@@ -65,7 +69,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     }
   }
 
-  if (searchSet.empty()) {
+  if (throwIfNone and searchSet.empty()) {
     utils::ExceptionHandler::exception("No valid configurations could be created.");
   }
   return searchSet;
