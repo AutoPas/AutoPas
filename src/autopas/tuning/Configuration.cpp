@@ -110,6 +110,16 @@ bool autopas::Configuration::hasCompatibleValues() const {
   if (ompChunkSize == OpenMPChunkSize::balanced and ompKind != OpenMPKindOption::omp_static) {
     return false;
   }
+  // The OpenMP runtimes ignore the chunk size for auto, so we only allow it with chunk size 1 to prevent config
+  // duplication. We do not use the notApplicable chunk size, because LLVM libomp's auto uses an analytic variant of
+  // guided with a chunk size of 1, regardless of the actually supplied chunk size.
+  if (ompKind == OpenMPKindOption::omp_auto and ompChunkSize != OpenMPChunkSize(1)) {
+    return false;
+  }
+  // Auto4OMP's selection methods internally calculate and use the golden chunk size, so they are only used with it.
+  if (OpenMPKindOption::getAuto4OMPSelectionMethods().contains(ompKind) and ompChunkSize != OpenMPChunkSize::golden) {
+    return false;
+  }
   // Check if the compiler and OpenMP runtime AutoPas is built with support the OpenMP schedule kind.
   if (not ompKind.isSupportedAtScheduleLevel(OpenMPKindOption::runtimeScheduleLevel)) {
     return false;

@@ -51,6 +51,12 @@ class ScheduleGuard final {
 }  // namespace
 
 Configuration OpenMPConfiguratorTest::getConfiguration(OpenMPKindOption ompKind) {
+  OpenMPChunkSize ompChunkSize = 4;
+  if (ompKind == OpenMPKindOption::omp_auto) {
+    ompChunkSize = 1;
+  } else if (OpenMPKindOption::getAuto4OMPSelectionMethods().contains(ompKind)) {
+    ompChunkSize = OpenMPChunkSize::golden;
+  }
   return {ContainerOption::linkedCells,
           1.,
           TraversalOption::lc_c08,
@@ -58,7 +64,7 @@ Configuration OpenMPConfiguratorTest::getConfiguration(OpenMPKindOption ompKind)
           DataLayoutOption::aos,
           Newton3Option::enabled,
           ompKind,
-          chunkSize,
+          ompChunkSize,
           InteractionTypeOption::pairwise,
           VectorizationPatternOption::NA};
 }
@@ -270,6 +276,35 @@ TEST(OpenMPConfiguratorChunkSizeTest, getActualOMPChunkSize) {
     EXPECT_EQ(OpenMPConfigurator(kind, OpenMPChunkSize::golden, loopCounts, 8).getActualOMPChunkSize(),
               expectedChunkSize)
         << kind.to_string();
+  }
+}
+
+/**
+ * Checks that Configuration::hasCompatibleValues() only accepts auto with a chunk size of 1, and Auto4OMP's selection
+ * methods with the golden chunk size. Kinds the OpenMP runtime does not support are skipped.
+ */
+TEST(OpenMPConfiguratorChunkSizeTest, autoKindsOnlyWithTheirChunkSize) {
+  const std::vector<OpenMPChunkSize> chunkSizes{1, OpenMPChunkSize::golden, 4};
+
+  const OpenMPKindOption autoKind{OpenMPKindOption::omp_auto};
+  if (autoKind.isSupportedAtScheduleLevel(OpenMPKindOption::runtimeScheduleLevel)) {
+    auto config = OpenMPConfiguratorTest::getConfiguration(autoKind);
+    for (const auto chunkSize : chunkSizes) {
+      config.ompChunkSize = chunkSize;
+      EXPECT_EQ(config.hasCompatibleValues(), chunkSize == OpenMPChunkSize(1)) << "auto, " << chunkSize.to_string();
+    }
+  }
+
+  for (const auto ompKind : OpenMPKindOption::getAuto4OMPSelectionMethods()) {
+    if (not ompKind.isSupportedAtScheduleLevel(OpenMPKindOption::runtimeScheduleLevel)) {
+      continue;
+    }
+    auto config = OpenMPConfiguratorTest::getConfiguration(ompKind);
+    for (const auto chunkSize : chunkSizes) {
+      config.ompChunkSize = chunkSize;
+      EXPECT_EQ(config.hasCompatibleValues(), chunkSize == OpenMPChunkSize::golden)
+          << ompKind.to_string() << ", " << chunkSize.to_string();
+    }
   }
 }
 

@@ -422,6 +422,14 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
   }
 
   /**
+   * Set of Auto4OMP's selection methods.
+   * @return
+   */
+  static std::set<OpenMPKindOption> getAuto4OMPSelectionMethods() {
+    return {auto4omp_randomsel, auto4omp_exhaustivesel, auto4omp_binarySearch, auto4omp_expertsel};
+  }
+
+  /**
    * Converts the old LB4OMP scheduling technique names to their corresponding new names.
    * The old names are the ones used in the LB4OMP and Auto4OMP papers and Git Readme.
    * The new names are the ones accepted in practice by the master branch LB4OMP.

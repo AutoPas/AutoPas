@@ -953,7 +953,7 @@ class AutoPas {
    * need to be set.
    *
    * @param allowedChunkSizes A set of allowed OpenMP chunk sizes. If 1 is not included, some traversals which must
-   * use static, 1 scheduling will never be selected.
+   * use static, 1 scheduling, and the auto schedule kind, will never be selected. If golden is not included.
    */
   void setAllowedOpenMPChunkSizes(const std::set<OpenMPChunkSize> &allowedChunkSizes) {
     _allowedOpenMPChunkSizes = allowedChunkSizes;

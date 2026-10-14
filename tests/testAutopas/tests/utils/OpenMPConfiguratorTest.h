@@ -21,12 +21,8 @@
 class OpenMPConfiguratorTest : public AutoPasTestBase, public ::testing::WithParamInterface<autopas::OpenMPKindOption> {
  public:
   /**
-   * The OpenMP chunk size all tests use. Not 1, so that a chunk size falling back to the default is noticed.
-   */
-  static constexpr size_t chunkSize = 4;
-
-  /**
-   * The configuration all tests use, which only varies in the OpenMP schedule kind.
+   * The configuration all tests use, which only varies in the OpenMP schedule kind (and in the chunk size where
+   * relevant).
    * @param ompKind The OpenMP schedule kind.
    * @return The configuration.
    */
