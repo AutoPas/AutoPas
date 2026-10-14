@@ -144,7 +144,7 @@ TEST_P(AutoPasAllContainersTest, deleteParticleOnlyMarksTest) {
   /// Test
   for (const auto &[address, id] : idsByAddress) {
     if (deletedIDsViaReference.contains(id)) {
-      EXPECT_FALSE(autoPas.deleteParticle(*address));
+      autoPas.deleteParticle(*address);
     }
   }
   for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {

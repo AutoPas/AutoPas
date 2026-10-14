@@ -293,19 +293,17 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
   /**
    * @copydoc ParticleContainerInterface::deleteParticle(Particle_T &particle)
    */
-  bool deleteParticle(Particle_T &particle) override {
+  void deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything as it would mess up the reference structure.
     internal::markParticleAsDeleted(particle);
-    return false;
   }
 
   /**
    * @copydoc ParticleContainerInterface::deleteParticle(size_t cellIndex, size_t particleIndex)
    */
-  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+  void deleteParticle(size_t cellIndex, size_t particleIndex) override {
     // This function doesn't actually delete anything as it would mess up the reference structure.
     internal::markParticleAsDeleted(this->_cells[cellIndex][particleIndex]);
-    return false;
   }
 
   std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {

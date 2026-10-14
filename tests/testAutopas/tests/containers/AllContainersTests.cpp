@@ -431,10 +431,7 @@ TEST_P(AllContainersTests, testDeleteParticleOnlyMarks) {
   std::set<unsigned long> deletedIDs{0};
   for (const auto &[address, id] : idsByAddress) {
     if (id == 0) {
-      // The return of deleteParticle is whether an Iterator/ptr pointing to that particle would remain valid.
-      // This should always be false for all containers, as we always mark particles kept there as dummies to delete
-      // them.
-      EXPECT_FALSE(container->deleteParticle(*address));
+      container->deleteParticle(*address);
     }
   }
   // Delete particle 1 via an iterator.

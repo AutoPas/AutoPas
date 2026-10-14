@@ -411,10 +411,9 @@ class LogicHandler {
    * Takes a particle, checks if it is in any of the particle buffers, and marks it as deleted if found. No particle is
    * moved by this. The particle is removed from the buffer by the next updateContainer().
    * @param particle Particle to delete.
-   * @return Tuple: <True iff the particle was found and marked as deleted, True iff the reference still points to a
-   * valid particle>. As particles are only marked, the second value is always false if the first is true.
+   * @return True iff the particle was found and marked as deleted.
    */
-  std::tuple<bool, bool> deleteParticleFromBuffers(Particle_T &particle) {
+  bool deleteParticleFromBuffers(Particle_T &particle) {
     // find the buffer the particle belongs to
     auto &bufferCollection = particle.isOwned() ? _particleBuffer : _haloParticleBuffer;
     for (auto &cell : bufferCollection) {
@@ -422,10 +421,10 @@ class LogicHandler {
       // if the address of the particle is between start and end of the buffer it is in this buffer
       if (not buffer.empty() and &(buffer.front()) <= &particle and &particle <= &(buffer.back())) {
         internal::markParticleAsDeleted(particle);
-        return {true, false};
+        return true;
       }
     }
-    return {false, true};
+    return false;
   }
 
   /**
