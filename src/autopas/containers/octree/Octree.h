@@ -329,17 +329,15 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   /**
    * @copydoc ParticleContainerInterface::deleteParticle()
    */
-  bool deleteParticle(Particle_T &particle) override {
+  void deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything. The particle is removed when the container is rebuilt.
     internal::markParticleAsDeleted(particle);
-    return false;
   }
 
-  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+  void deleteParticle(size_t cellIndex, size_t particleIndex) override {
     // This function doesn't actually delete anything. The particle is removed when the container is rebuilt.
     auto [cellIndexVector, cell] = getLeafCellByIndex(cellIndex);
     internal::markParticleAsDeleted(cell->_particles[particleIndex]);
-    return false;
   }
 
   /**

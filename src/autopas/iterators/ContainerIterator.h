@@ -374,19 +374,11 @@ class ContainerIterator {
   void deleteCurrentParticle() {
     if (_iteratingAdditionalVectors) {
       internal::markParticleAsDeleted(*_currentParticle);
-      this->operator++();
     } else {
-      const auto indicesValid = _container->deleteParticle(_currentVectorIndex, _currentParticleIndex);
-      // Edge cases:
-      if (not indicesValid) {
-        // CASE: the indices and thus the pointer are invalid now
-        this->operator++();
-      } else if (not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-                     *_currentParticle, _behavior, _regionMin, _regionMax)) {
-        // CASE: the particle was swapped and now the pointer points at something uninteresting
-        this->operator++();
-      }
+      _container->deleteParticle(_currentVectorIndex, _currentParticleIndex);
     }
+    // move on to the next particle, as the deleted one stays in place.
+    this->operator++();
     // move the current index back so that the next ++ points again to the same particle.
     --_currentParticleIndex;
   }
