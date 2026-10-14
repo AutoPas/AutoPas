@@ -337,16 +337,14 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   /**
    * @copydoc autopas::ParticleContainerInterface::deleteParticle()
    */
-  bool deleteParticle(Particle_T &particle) override {
+  void deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything. The particle is removed when the container is rebuilt.
     internal::markParticleAsDeleted(particle);
-    return false;
   }
 
-  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+  void deleteParticle(size_t cellIndex, size_t particleIndex) override {
     // This function doesn't actually delete anything. The particle is removed when the container is rebuilt.
     internal::markParticleAsDeleted(this->_cells[cellIndex][particleIndex]);
-    return false;
   }
 
  private:

@@ -412,20 +412,16 @@ class ParticleContainerInterface {
    * Marks the given particle as deleted. No particle is moved by this. The particle is removed from the container when
    * the container is rebuilt.
    * @param particle Reference to the particle that is to be deleted.
-   * @return True if the given pointer still points to a new particle. As particles are only marked, this is always
-   * false.
    */
-  virtual bool deleteParticle(Particle_T &particle) = 0;
+  virtual void deleteParticle(Particle_T &particle) = 0;
 
   /**
    * Marks the particle at the given index positions as deleted. No particle is moved by this. The particle is removed
    * from the container when the container is rebuilt. If the positions do not exist the behavior is undefined.
    * @param cellIndex
    * @param particleIndex
-   * @return True if the given indices still point to a new particle. As particles are only marked, this is always
-   * false.
    */
-  virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
+  virtual void deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
 
  protected:
   /**

@@ -306,19 +306,15 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
   /**
    * @copydoc ParticleContainerInterface::deleteParticle(Particle_T &particle)
    */
-  bool deleteParticle(Particle_T &particle) override {
-    internal::markParticleAsDeleted(particle);
-    return false;
-  }
+  void deleteParticle(Particle_T &particle) override { internal::markParticleAsDeleted(particle); }
 
   /**
    * @copydoc ParticleContainerInterface::deleteParticle(size_t cellIndex, size_t particleIndex)
    */
-  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+  void deleteParticle(size_t cellIndex, size_t particleIndex) override {
     // This function doesn't actually delete anything as it would mess up the references in neighbor lists that are
     // built on top of this container.
     internal::markParticleAsDeleted(this->_cells[cellIndex][particleIndex]);
-    return false;
   }
 
   /**
