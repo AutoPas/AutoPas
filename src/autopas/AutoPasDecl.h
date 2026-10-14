@@ -27,6 +27,7 @@
 #include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/OpenMPChunkSize.h"
 #include "autopas/utils/OpenMPConfigurator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
@@ -949,8 +950,8 @@ class AutoPas {
    * @param allowedChunkSizes A set of allowed OpenMP chunk sizes. If 1 is not included, some traversals which must
    * use static, 1 scheduling will never be selected.
    */
-  void setAllowedOpenMPChunkSizes(const NumberSet<size_t> &allowedChunkSizes) {
-    _allowedOpenMPChunkSizes = std::move(allowedChunkSizes.clone());
+  void setAllowedOpenMPChunkSizes(const std::set<OpenMPChunkSize> &allowedChunkSizes) {
+    _allowedOpenMPChunkSizes = allowedChunkSizes;
   }
 
   /**
@@ -1261,8 +1262,7 @@ class AutoPas {
   /**
    * Allowed OpenMP chunks sizes.
    */
-  std::unique_ptr<NumberSet<size_t>> _allowedOpenMPChunkSizes{
-      std::make_unique<NumberSetFinite<size_t>>(std::set<size_t>({1}))};
+  std::set<OpenMPChunkSize> _allowedOpenMPChunkSizes{1, OpenMPChunkSize::balanced, OpenMPChunkSize::golden};
   /**
    * LogicHandler of autopas.
    */

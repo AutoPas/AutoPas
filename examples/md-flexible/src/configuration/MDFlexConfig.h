@@ -25,6 +25,7 @@
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/OpenMPChunkSize.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
 #include "src/configuration/objects/CubeGauss.h"
@@ -310,9 +311,11 @@ class MDFlexConfig {
   /**
    * openMPChunkSizes
    */
-  MDFlexOption<std::shared_ptr<autopas::NumberSet<size_t>>, __LINE__> openMPChunkSizes{
-      std::make_shared<autopas::NumberSetFinite<size_t>>(std::set<size_t>{1}), "openmp-chunk-sizes", true,
-      "Chunk Sizes that can be used for OpenMP Scheduling."};
+  MDFlexOption<std::set<autopas::OpenMPChunkSize>, __LINE__> openMPChunkSizes{
+      {1, autopas::OpenMPChunkSize::balanced, autopas::OpenMPChunkSize::golden},
+      "openmp-chunk-sizes",
+      true,
+      "Chunk Sizes that can be used for OpenMP Scheduling. Possible Values: positive integers, 'balanced', 'golden'"};
   /**
    * logFileName
    */

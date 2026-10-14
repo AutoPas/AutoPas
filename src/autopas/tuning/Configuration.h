@@ -22,6 +22,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/HashCombine.h"
+#include "autopas/utils/OpenMPChunkSize.h"
 
 namespace autopas {
 
@@ -47,7 +48,8 @@ class Configuration {
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
-                          OpenMPKindOption _ompKind, size_t _ompChunkSize, InteractionTypeOption _interactionType,
+                          OpenMPKindOption _ompKind, OpenMPChunkSize _ompChunkSize,
+                          InteractionTypeOption _interactionType,
                           VectorizationPatternOption _vecPattern = VectorizationPatternOption::p1xVec)
       : container(_container),
         traversal(_traversal),
@@ -93,7 +95,7 @@ class Configuration {
                   container.to_string(fixedLength) + delimiter + std::to_string(cellSizeFactor) + delimiter +
                   traversal.to_string(fixedLength) + delimiter + loadEstimator.to_string(fixedLength) + delimiter +
                   dataLayout.to_string(fixedLength) + delimiter + newton3.to_string(fixedLength) + delimiter +
-                  ompKind.to_string(fixedLength) + delimiter + std::to_string(ompChunkSize) + delimiter +
+                  ompKind.to_string(fixedLength) + delimiter + ompChunkSize.to_string() + delimiter +
                   vecPattern.to_string(fixedLength) + (forParameterizedTestName ? "" : "}");
 
     // For parameterized test names, no punctuation is allowed except "_"
@@ -191,7 +193,7 @@ class Configuration {
   /**
    * OpenMP Chunk Size.
    */
-  size_t ompChunkSize;
+  OpenMPChunkSize ompChunkSize;
   /**
    * Interaction type of the configuration.
    */

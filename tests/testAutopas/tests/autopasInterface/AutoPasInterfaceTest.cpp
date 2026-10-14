@@ -293,7 +293,7 @@ void setFromConfig(const autopas::Configuration &conf, autopas::AutoPas<Molecule
   autoPas.setAllowedNewton3Options({conf.newton3});
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({conf.cellSizeFactor})));
   autoPas.setAllowedOpenMPScheduleKinds({conf.ompKind});
-  autoPas.setAllowedOpenMPChunkSizes(autopas::NumberSetFinite<size_t>(std::set<size_t>({conf.ompChunkSize})));
+  autoPas.setAllowedOpenMPChunkSizes({conf.ompChunkSize});
   autoPas.setAllowedVecPatterns({conf.vecPattern});
 }
 

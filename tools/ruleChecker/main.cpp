@@ -65,14 +65,14 @@ int main(int argc, char **argv) {
   unsigned long tuningTimeSum = 0;
   unsigned long wouldHaveSkippedTuningTimeSum = 0;
   const std::string rulesfile{argv[1]};
-  const autopas::NumberSetFinite<double> csfs({1., 2.});
-  // TODO: When we add the default and the golden chunk sizes, add them here
-  const autopas::NumberSetFinite<size_t> ompChunkSizes({1});
+  const autopas::NumberSetFinite<double> csfs({0.5, 1., 2.});
+  const std::set<autopas::OpenMPChunkSize> ompChunkSizes{1, autopas::OpenMPChunkSize::balanced,
+                                                         autopas::OpenMPChunkSize::golden};
   // @TODO: Have rules for triwise interactions
   const std::set<autopas::Configuration> searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-      autopas::Newton3Option::getAllOptions(), &csfs, autopas::OpenMPKindOption::getAllOptions(), &ompChunkSizes,
+      autopas::Newton3Option::getAllOptions(), &csfs, autopas::OpenMPKindOption::getAllOptions(), ompChunkSizes,
       autopas::VectorizationPatternOption::getAllOptions(), autopas::InteractionTypeOption::pairwise);
 
   for (int i = 2; i < argc; i++) {

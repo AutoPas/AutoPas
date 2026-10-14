@@ -7,48 +7,41 @@
 #include "autopas/utils/OpenMPConfigurator.h"
 
 #include <algorithm>
+#include <cmath>
+#include <ranges>
 
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
-/**
- * OpenMP default chunk size.
- * md-flexible: set via command-line option --openmp-chunk-size int
- */
-int openMPDefaultChunkSize = 0;
-
-/**
- * OpenMP default chunk size.
- * md-flexible: set via command-line option --openmp-kind kind
- */
-OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_static;
-
-/**
- * OpenMP configurator default constructor.
- */
-[[maybe_unused]] OpenMPConfigurator::OpenMPConfigurator() = default;
-
-/**
- * OpenMP configurator constructor.
- * @param kind the OpenMP scheduling kind, LB4OMP scheduling technique, or Auto4OMP selection method to use
- * @param chunkSize the OpenMP scheduling chunk size to use
- */
-[[maybe_unused]] OpenMPConfigurator::OpenMPConfigurator(OpenMPKindOption kind, int chunkSize) {
+[[maybe_unused]] OpenMPConfigurator::OpenMPConfigurator(OpenMPKindOption kind, OpenMPChunkSize chunkSize,
+                                                        const std::vector<size_t> &loopCounts, size_t numThreads)
+    : _loopCounts(loopCounts), _numThreads(numThreads) {
   setKind(kind);
   setChunkSize(chunkSize);
+}
+
+[[maybe_unused]] [[nodiscard]] size_t OpenMPConfigurator::getGoldenChunkSize(size_t loopCount, size_t numThreads) {
+  const auto numThreadsNonZero = std::max<size_t>(numThreads, 1);
+  const auto iterationsPerThread = loopCount / numThreadsNonZero;
+  // LB4OMP's formula gives 0 with fewer than two iterations per thread, and is undefined with fewer than one.
+  // In these cases, we just use a chunk size of 1.
+  if (iterationsPerThread < 2) {
+    return 1;
+  }
+  // Golden ratio = 0.618: choose a chunk size in the "middle" between 1 and loopCount / (2 * numThreads).
+  const auto exponent = std::floor(std::log2(iterationsPerThread) * 0.618);
+  const auto numChunksPerThread = static_cast<size_t>(std::pow(2., exponent + 1.));
+  return loopCount / (numChunksPerThread * numThreadsNonZero);
 }
 
 /**
  * AutoPas OpenMP configurator chunk size getter.
  * @return the current OpenMP chunk size
  */
-[[maybe_unused]] [[nodiscard]] int OpenMPConfigurator::getChunkSize() const { return _chunkSize; }
+[[maybe_unused]] [[nodiscard]] OpenMPChunkSize OpenMPConfigurator::getChunkSize() const { return _chunkSize; }
 
-/**
- * OpenMP chunk size getter for setting OpenMP's scheduling runtime variables.
- * @return the current OpenMP chunk size, directly usable in OpenMP's schedule setter
- */
-[[maybe_unused]] [[nodiscard]] int OpenMPConfigurator::getOMPChunkSize() const {
+[[maybe_unused]] [[nodiscard]] int OpenMPConfigurator::getActualOMPChunkSize() const {
+  // If an auto kind, return the appropriate chunk size.
   switch (_kind) {
     case OpenMPKindOption::omp_auto:
       return 1;
@@ -61,15 +54,41 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_static;
     case OpenMPKindOption::auto4omp_expertsel:
       return 5;
     default:
-      return _chunkSize;
+      break;
   }
+
+  switch (_chunkSize.getType()) {
+    case OpenMPChunkSize::Type::fixed:
+      if (_chunkSize.getSize() == 0) {
+        utils::ExceptionHandler::exception(
+            "OpenMPConfigurator::getActualOMPChunkSize(): A fixed chunk size must be at least 1. For a default chunk "
+            "size for static, use OpenMPChunkSize::balanced; for other schedulers use 1.");
+      }
+      return static_cast<int>(_chunkSize.getSize());
+    case OpenMPChunkSize::Type::balanced:
+      // OpenMP runtimes use a chunk size of 0 for the default chunk size i.e. in the case of static scheduling, this is
+      // balanced
+      return 0;
+    case OpenMPChunkSize::Type::golden: {
+      // We use the smallest golden chunk size of the golden chunk size for all loops.
+      size_t goldenChunkSize = 1;
+      if (not _loopCounts.empty()) {
+        goldenChunkSize = std::ranges::min(_loopCounts | std::views::transform([&](const auto loopCount) {
+                                             return getGoldenChunkSize(loopCount, _numThreads);
+                                           }));
+      }
+      return static_cast<int>(goldenChunkSize);
+    }
+  }
+  utils::ExceptionHandler::exception("OpenMPConfigurator::getActualOMPChunkSize(): Unknown type of chunk size.");
+  return 0;
 }
 
 /**
  * AutoPas OpenMP configurator chunk size setter.
  * @param chunkSize the new chunk size to use
  */
-[[maybe_unused]] void OpenMPConfigurator::setChunkSize(int chunkSize) { _chunkSize = chunkSize; }
+[[maybe_unused]] void OpenMPConfigurator::setChunkSize(OpenMPChunkSize chunkSize) { _chunkSize = chunkSize; }
 
 /**
  * AutoPas OpenMP configurator scheduling kind getter.
@@ -159,46 +178,43 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_static;
  */
 [[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::overrideChunkSize() const { return _kind >= 1; }
 
-[[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::fallsBackToOtherKind(size_t loopCount, int numThreads) const {
-  // GCC's libgomp has no fallbacks.
-  if (OpenMPKindOption::runtimeScheduleLevel == OpenMPKindOption::ScheduleLevel::gccLibgomp) {
+[[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::fallsBackToOtherKindForAllLoops() const {
+  // GCC's libgomp has no fallbacks. Also skip and return false if the Configurator has no loop counts.
+  if (OpenMPKindOption::runtimeScheduleLevel == OpenMPKindOption::ScheduleLevel::gccLibgomp or _loopCounts.empty()) {
     return false;
   }
 
-  if (numThreads <= 1) {
-    switch (_kind) {
-      case OpenMPKindOption::lb4omp_static_steal:
-      case OpenMPKindOption::omp_guided:
-      case OpenMPKindOption::omp_auto:
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  // The OpenMP runtimes use a chunk size of 1 if they are given a smaller one.
-  // TODO We will eventaully add a default chunk size option. Will need to check this works then.
-  const auto chunkSize = static_cast<size_t>(std::max(getOMPChunkSize(), 1));
-  const auto numThreadsUnsigned = static_cast<size_t>(numThreads);
+  // The kinds fall back for loops which are too short, so all loops fall back if the longest one does.
+  const auto longestLoopCount = std::ranges::max(_loopCounts);
+  const auto chunkSize = getActualOMPChunkSize();
 
   switch (_kind) {
     case OpenMPKindOption::lb4omp_static_steal: {
-      // static_steal needs at least one chunk per thread.
-      const auto numChunks = loopCount / chunkSize + (loopCount % chunkSize == 0 ? 0 : 1);
-      return numChunks < numThreadsUnsigned;
+      // static_steal needs more than one thread and at least one chunk per thread.
+      const auto numChunks = longestLoopCount / chunkSize + (longestLoopCount % chunkSize == 0 ? 0 : 1);
+      return _numThreads <= 1 or numChunks < _numThreads;
     }
     case OpenMPKindOption::omp_guided:
     case OpenMPKindOption::omp_auto:
-      return (2 * chunkSize + 1) * numThreadsUnsigned >= loopCount;
+      // guided and auto need more than one thread and more than (2 * chunkSize + 1) iterations per thread.
+      return _numThreads <= 1 or (2 * chunkSize + 1) * _numThreads >= longestLoopCount;
     default:
       return false;
   }
 }
 
-[[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::fallsBackToOtherKindForAllLoops(
-    const std::vector<size_t> &loopCounts, int numThreads) const {
-  return not loopCounts.empty() and std::ranges::all_of(loopCounts, [&](const auto loopCount) {
-    return fallsBackToOtherKind(loopCount, numThreads);
-  });
+[[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::fallsBackToChunkSize1() const {
+  switch (_chunkSize.getType()) {
+    case OpenMPChunkSize::Type::golden:
+      return getActualOMPChunkSize() == 1;
+    case OpenMPChunkSize::Type::balanced:
+      // Static gives each thread one chunk of about loopCount / numThreads iterations. With at most one iteration per
+      // thread, this is the same as a chunk size of 1.
+      return not _loopCounts.empty() and
+             std::ranges::all_of(_loopCounts, [&](const auto loopCount) { return loopCount <= _numThreads; });
+    case OpenMPChunkSize::Type::fixed:
+      break;
+  }
+  return false;
 }
 }  // namespace autopas

@@ -365,7 +365,14 @@ TEST_F(TuningManagerTest, testForceRetuneInPhase) {
 }
 
 /**
- * Test the AutoTuner with all valid pairwise configurations in the search space.
+ * Test the AutoTuner with all valid pairwise configurations in the search space, by comparing manually determined
+ * expected number of configurations with the actuall trialled number of configurations.
+ *
+ * As there are high maintainence costs in manually determining the expected number of configurations with OpenMP
+ * scheduling kinds and chunk sizes that do not fall back to other kinds and chunk sizes and are considered
+ * inapplicable, we do two passes: one with only static, 1 scheduling, which never fallsback and so we can determine an
+ * exact expected number of configurations; and another with more scheduling options, where we only determine an upper
+ * bound.
  */
 TEST_F(TuningManagerTest, testAllConfigurations) {
   const autopas::NumberSetFinite<double> cellSizeFactors({1});
@@ -397,7 +404,13 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
       .WillRepeatedly(
           testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
 
-  const auto searchSpace = generateAllValidConfigurations(autopas::InteractionTypeOption::pairwise);
+  // First pass: all valid configurations with a single OpenMP schedule (static, 1), for which the exact numbers of
+  // configurations and iterations are known.
+  const auto searchSpace = generateAllValidConfigurations(
+      autopas::InteractionTypeOption::pairwise, autopas::ContainerOption::getAllOptions(),
+      autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
+      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions(), {0.5, 1.0, 1.5},
+      {autopas::OpenMPKindOption::omp_static}, {1});
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
@@ -409,11 +422,9 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
 
   std::map<autopas::ContainerOption, size_t> configsPerContainer;
 
-  // TODO before merge: The multiplier for the configuration count which comes from the OMP kinds and chunk sizes that
-  // generateAllValidConfigurations sweeps over. That is only (static, 1), hence 1. If it ever sweeps more again, this
-  // is the only number below that needs adjusting, as traversals only supporting static, 1 scheduling are counted
-  // separately.
-  constexpr size_t ompFactor = 1;
+  // TODO before merge: below was changed to differentiate between static, 1 only configs and others, but it looks like
+  // we don't need this anymore. If this remains the case, we should change below to match the master version to reduce
+  // review cost.
 
   // Number of configs manually counted:
   // Configurations considered valid by cartesian product but are typically invalid due to
@@ -444,7 +455,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   //     Subtotal:                                                                                            =  20
   // Linked Cells supports all CSFs (i.e. 0.5, 1.0, 1.5) => Multiply by 3
   // * C04 traversals will almost always not support CSF 0.5, but these will be excluded later.
-  configsPerContainer[autopas::ContainerOption::linkedCells] = (77 * ompFactor + 20) * 3;
+  configsPerContainer[autopas::ContainerOption::linkedCells] = (77 + 20) * 3;
 
   // Linked Cells References:
   // same as linked Cells but without the squaredParticlesPerCell load estimator for sliced_balanced. As
@@ -458,7 +469,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   //                        vl_list_iteration_27        (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
   //     Subtotal:                                                                                            =   6
   // Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
-  configsPerContainer[autopas::ContainerOption::verletLists] = 6 * ompFactor * 2;
+  configsPerContainer[autopas::ContainerOption::verletLists] = 6 * 2;
 
   // VerletListsCells:
   //   All OpenMP configurations:
@@ -473,7 +484,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   //                                                     3 LB heuristics)                                     =  12
   //     Subtotal:                                                                                            =  12
   // Verlet Lists Cells only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
-  configsPerContainer[autopas::ContainerOption::verletListsCells] = (18 * ompFactor + 12) * 2;
+  configsPerContainer[autopas::ContainerOption::verletListsCells] = (18 + 12) * 2;
 
   // VerletClusterLists:
   //   All OpenMP configurations:
@@ -488,7 +499,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   //                                                     2 LB heuristics)                                     =  20
   //     Subtotal:                                                                                            =  25
   // Verlet Cluster Lists only support CSF 1 => Multiply by 1
-  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 35 * ompFactor + 25;
+  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 35 + 25;
 
   // VarVerletListsAsBuild:
   //   Only static, 1 scheduling:
@@ -509,7 +520,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   //                        vlp_sliced_balanced         (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
   //     Subtotal:                                                                                            =   4
   // Pairwise Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
-  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = (18 * ompFactor + 4) * 2;
+  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = (18 + 4) * 2;
 
   // Octree:
   //   Only static, 1 scheduling:
@@ -569,9 +580,8 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   // All LC C04 traversals with CSF 0.5 are expected to not be applicable
   // => lc_c04 (10), lc_c04_combined_SoA (8), lc_c04_HCP (10) => 28 configurations
   // Similarly for Linked Cells References => 28 more
-  // All of these traversals support every OpenMP configuration => Multiply by ompFactor
 
-  const size_t numConfigsExpectedNotApplicable{56 * ompFactor};
+  const size_t numConfigsExpectedNotApplicable{56};
 
   const size_t expectedNumberOfIterations =
       (numberOfConfigs - numConfigsExpectedNotApplicable) * autoTunerInfo.maxSamples + 1;
@@ -617,6 +627,54 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   }
 
   EXPECT_EQ(expectedNumberOfIterations, iterations);
+
+  // Second pass: also sweep over several OpenMP schedule kinds and chunk sizes. Which of the kinds end up in the search
+  // space depends on what the OpenMP runtime supports, and how many configurations are rejected because their schedule
+  // falls back to another one depends on the number of threads. Hence, the number of iterations is only checked
+  // against bounds.
+  const auto searchSpaceMultipleSchedules = generateAllValidConfigurations(
+      autopas::InteractionTypeOption::pairwise, autopas::ContainerOption::getAllOptions(),
+      autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
+      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions(), {0.5, 1.0, 1.5},
+      {autopas::OpenMPKindOption::omp_static, autopas::OpenMPKindOption::omp_dynamic,
+       autopas::OpenMPKindOption::omp_guided, autopas::OpenMPKindOption::lb4omp_trapezoidal,
+       autopas::OpenMPKindOption::lb4omp_static_steal, autopas::OpenMPKindOption::lb4omp_fac2a},
+      {1, autopas::OpenMPChunkSize::balanced, autopas::OpenMPChunkSize::golden});
+  auto tuningManagerMultipleSchedules = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tuningManagerMultipleSchedules->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpaceMultipleSchedules, autoTunerInfo,
+                                           rebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
+  autopas::LogicHandler<Molecule> logicHandlerMultipleSchedules(tuningManagerMultipleSchedules, logicHandlerInfo,
+                                                                rebuildFrequency, "", autoTunerInfo.aosSortingThreshold,
+                                                                autoTunerInfo.soaSortingThreshold);
+
+  // Upper bound: assume no schedule falls back, so every configuration is trialled, apart from the ones which are not
+  // applicable. These are the ones determined above for (static, 1), once for every schedule in the search space, as
+  // their traversals support all schedules.
+  std::set<std::pair<autopas::OpenMPKindOption, autopas::OpenMPChunkSize>> schedules;
+  for (const auto &config : searchSpaceMultipleSchedules) {
+    schedules.emplace(config.ompKind, config.ompChunkSize);
+  }
+  const size_t maxNumberOfIterationsMultipleSchedules =
+      (searchSpaceMultipleSchedules.size() - numConfigsExpectedNotApplicable * schedules.size()) *
+          autoTunerInfo.maxSamples +
+      1;
+
+  size_t iterationsMultipleSchedules = 0;
+  bool stillTuningMultipleSchedules = true;
+  // Stop above the upper bound to avoid infinite looping.
+  while (stillTuningMultipleSchedules and iterationsMultipleSchedules <= maxNumberOfIterationsMultipleSchedules) {
+    logicHandlerMultipleSchedules.updateContainer();
+    stillTuningMultipleSchedules =
+        logicHandlerMultipleSchedules.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+    ++iterationsMultipleSchedules;
+  }
+
+  // Lower bound: the configurations of the first pass are in this search space as well, and their schedule (static, 1)
+  // never falls back.
+  EXPECT_GE(iterationsMultipleSchedules, expectedNumberOfIterations);
+  EXPECT_LE(iterationsMultipleSchedules, maxNumberOfIterationsMultipleSchedules);
 }
 
 /**

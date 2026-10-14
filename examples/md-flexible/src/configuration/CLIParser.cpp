@@ -463,8 +463,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.openMPChunkSizes)::getoptChar: {
-        config.openMPChunkSizes.value = autopas::utils::StringUtils::parseNumberSet<size_t>(strArg);
-        if (config.cellSizeFactors.value->isEmpty()) {
+        config.openMPChunkSizes.value = autopas::OpenMPChunkSize::parseChunkSizes(strArg);
+        if (config.openMPChunkSizes.value.empty()) {
           cerr << "Error parsing OpenMP Chunk Sizes (must have a least one chunk size)" << optarg << endl;
           displayHelp = true;
         }

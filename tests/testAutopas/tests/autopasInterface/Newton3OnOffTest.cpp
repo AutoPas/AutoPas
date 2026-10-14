@@ -8,6 +8,7 @@
 
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "autopas/utils/logging/Logger.h"
 
@@ -269,8 +270,17 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::Configuration
 
   auto traversalSelectorInfo = container.getTraversalSelectorInfo();
 
-  iterate(container, autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64, Functor_T>(
-                         config, mockFunctor, traversalSelectorInfo));
+  auto traversal = autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64, Functor_T>(
+      config, mockFunctor, traversalSelectorInfo);
+
+  // Set the OpenMP schedule of the configuration, as the LogicHandler would.
+  const autopas::OpenMPConfigurator ompConfig(
+      config.ompKind, config.ompChunkSize,
+      traversal->getRuntimeScheduledLoopCounts(traversalSelectorInfo, container.size()).value_or(std::vector<size_t>{}),
+      autopas::autopas_get_max_threads());
+  autopas::autopas_set_schedule(ompConfig);
+
+  iterate(container, std::move(traversal));
 
   return std::make_tuple(callsSC.load(), callsPair.load(), callsTriple.load());
 }

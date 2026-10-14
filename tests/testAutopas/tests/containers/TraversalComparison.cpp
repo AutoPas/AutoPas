@@ -10,6 +10,7 @@
 
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
@@ -168,6 +169,14 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   if (not traversal) {
     return {};
   }
+
+  // Set the OpenMP schedule of the configuration, as the LogicHandler would.
+  const autopas::OpenMPConfigurator ompConfig(
+      config.ompKind, config.ompChunkSize,
+      traversal->getRuntimeScheduledLoopCounts(container->getTraversalSelectorInfo(), numParticles + numHaloParticles)
+          .value_or(std::vector<size_t>{}),
+      autopas::autopas_get_max_threads());
+  autopas::autopas_set_schedule(ompConfig);
 
   if (particleDeletionPosition & DeletionPosition::beforeLists) {
     markSomeParticlesAsDeleted(*container, numParticles + numHaloParticles, 19, interactionType);

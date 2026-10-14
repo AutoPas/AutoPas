@@ -14,8 +14,7 @@ std::string autopas::Configuration::toString() const {
          " , CellSizeFactor: " + std::to_string(cellSizeFactor) + " , Traversal: " + traversal.to_string() +
          " , Load Estimator: " + loadEstimator.to_string() + " , Data Layout: " + dataLayout.to_string() +
          " , Newton 3: " + newton3.to_string() + " , OpenMP Schedule Kind: " + ompKind.to_string() +
-         " , OpenMPChunkSize: " + std::to_string(ompChunkSize) + " , VectorizationPattern: " + vecPattern.to_string() +
-         "}";
+         " , OpenMPChunkSize: " + ompChunkSize.to_string() + " , VectorizationPattern: " + vecPattern.to_string() + "}";
 }
 
 std::string autopas::Configuration::getCSVHeader() const { return getCSVRepresentation(true); }
@@ -91,11 +90,16 @@ bool autopas::Configuration::hasCompatibleValues() const {
       return false;
     }
   }
-  if (ompKind != OpenMPKindOption::omp_static or ompChunkSize != 1) {
+  if (ompKind != OpenMPKindOption::omp_static or ompChunkSize != OpenMPChunkSize(1)) {
     const auto static1OnlyTraversals = compatibleTraversals::allTraversalsSupportingOnlyStatic1Scheduling();
     if (static1OnlyTraversals.contains(traversal)) {
       return false;
     }
+  }
+  // The balanced chunk size is only compatible with the static scheduling kind (it is static's default chunk size,
+  // whereas other kinds have a default chunk size of 1 and balanced makes no sense for)
+  if (ompChunkSize == OpenMPChunkSize::balanced and ompKind != OpenMPKindOption::omp_static) {
+    return false;
   }
   // Check if the compiler and OpenMP runtime AutoPas is built with support the OpenMP schedule kind.
   if (not ompKind.isSupportedAtScheduleLevel(OpenMPKindOption::runtimeScheduleLevel)) {

@@ -311,13 +311,13 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           throw std::runtime_error("Unknown Newton3 option!");
         }
       } else if (key == config.openMPChunkSizes.name) {
-        expected = "YAML-sequence of unsigned integers.";
+        expected = "YAML-sequence of positive integers, 'balanced', or 'golden'.";
         description = config.openMPChunkSizes.description;
 
-        config.openMPChunkSizes.value = autopas::utils::StringUtils::parseNumberSet<size_t>(
-            autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+        config.openMPChunkSizes.value =
+            autopas::OpenMPChunkSize::parseChunkSizes(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
 
-        if (config.openMPChunkSizes.value->isEmpty()) {
+        if (config.openMPChunkSizes.value.empty()) {
           throw std::runtime_error("Parsed openmp-chunk-sizes is empty.");
         }
       } else if (key == config.openMPKindOptions.name) {

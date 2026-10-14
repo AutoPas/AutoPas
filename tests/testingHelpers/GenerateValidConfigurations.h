@@ -38,7 +38,7 @@
  * @param allowedOpenMPKindOptions By default, only static, since OpenMP scheduling is assumed to be correct and
  * therefore does not need to be swept over. Sweeping it multiplies the parameterized test suites by the number of
  * combinations.
- * @param allowedOpenMPChunkSizes By default, only 1, for the same reason as allowedOpenMPKindOptions.
+ * @param allowedOpenMPChunkSizes By default, 1, balanced and golden.
  * @param allowedVectorPatterns By default, all options.
  * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return an empty set.
  * @return
@@ -53,19 +53,19 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     const std::set<autopas::Newton3Option> &allowedNewton3Options = autopas::Newton3Option::getAllOptions(),
     const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
     const std::set<autopas::OpenMPKindOption> &allowedOpenMPKindOptions = {autopas::OpenMPKindOption::omp_static},
-    const std::set<size_t> &allowedOpenMPChunkSizes = {1},
+    const std::set<autopas::OpenMPChunkSize> &allowedOpenMPChunkSizes = {1, autopas::OpenMPChunkSize::balanced,
+                                                                         autopas::OpenMPChunkSize::golden},
     const std::set<autopas::VectorizationPatternOption> &allowedVectorPatterns =
         autopas::VectorizationPatternOption::getAllOptions(),
     bool throwIfNone = true) {
   const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);
-  const autopas::NumberSetFinite<size_t> ompChunkSizes(allowedOpenMPChunkSizes);
   if (interactionType == autopas::InteractionTypeOption::all) {
     std::set<autopas::Configuration> allConfigs;
     for (auto iType : autopas::InteractionTypeOption::getMostOptions()) {
       // Do not throw for individual interaction types, as only the union has to be non-empty.
       const auto configs = autopas::SearchSpaceGenerators::cartesianProduct(
           allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-          allowedNewton3Options, &csfs, allowedOpenMPKindOptions, &ompChunkSizes, allowedVectorPatterns, iType,
+          allowedNewton3Options, &csfs, allowedOpenMPKindOptions, allowedOpenMPChunkSizes, allowedVectorPatterns, iType,
           /*throwIfNone*/ false);
       allConfigs.insert(configs.begin(), configs.end());
     }
@@ -76,8 +76,8 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
   } else {
     return autopas::SearchSpaceGenerators::cartesianProduct(
         allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-        allowedNewton3Options, &csfs, allowedOpenMPKindOptions, &ompChunkSizes, allowedVectorPatterns, interactionType,
-        throwIfNone);
+        allowedNewton3Options, &csfs, allowedOpenMPKindOptions, allowedOpenMPChunkSizes, allowedVectorPatterns,
+        interactionType, throwIfNone);
   }
 }
 
@@ -107,7 +107,8 @@ inline std::optional<autopas::Configuration> getArbitraryConfiguration(
     std::optional<autopas::DataLayoutOption> dataLayoutOption = std::nullopt,
     std::optional<autopas::Newton3Option> newton3Option = std::nullopt,
     std::optional<double> cellSizeFactor = std::nullopt,
-    std::optional<autopas::OpenMPKindOption> ompKind = std::nullopt, std::optional<size_t> ompChunkSize = std::nullopt,
+    std::optional<autopas::OpenMPKindOption> ompKind = std::nullopt,
+    std::optional<autopas::OpenMPChunkSize> ompChunkSize = std::nullopt,
     std::optional<autopas::VectorizationPatternOption> vectorPattern = std::nullopt, bool throwIfNone = true) {
   const auto configurations = generateAllValidConfigurations(
       interactionType.value_or(autopas::InteractionTypeOption::all),
@@ -124,7 +125,8 @@ inline std::optional<autopas::Configuration> getArbitraryConfiguration(
       cellSizeFactor.has_value() ? std::set<double>{*cellSizeFactor} : std::set<double>{0.5, 1.0, 1.5},
       ompKind.has_value() ? std::set<autopas::OpenMPKindOption>{*ompKind}
                           : std::set<autopas::OpenMPKindOption>{autopas::OpenMPKindOption::omp_static},
-      ompChunkSize.has_value() ? std::set<size_t>{*ompChunkSize} : std::set<size_t>{1},
+      ompChunkSize.has_value() ? std::set<autopas::OpenMPChunkSize>{*ompChunkSize}
+                               : std::set<autopas::OpenMPChunkSize>{1},
       vectorPattern.has_value() ? std::set<autopas::VectorizationPatternOption>{*vectorPattern}
                                 : autopas::VectorizationPatternOption::getAllOptions(),
       /*throwIfNone -> false so that we use the error message below which is clearer for users of this function*/

@@ -129,7 +129,8 @@ TEST_F(RuntimeScheduledLoopCountsTest, testLoopCountsMatchOpenMPRuntime) {
     int chunkSize{};
   } scheduleGuard;
   // The kind recordLoopCount() recognizes the loops with schedule(runtime) by.
-  autopas::autopas_set_schedule(autopas::OpenMPConfigurator(autopas::OpenMPKindOption::lb4omp_trapezoidal, 1));
+  autopas::autopas_set_schedule(autopas::OpenMPConfigurator(autopas::OpenMPKindOption::lb4omp_trapezoidal, 1, {},
+                                                            autopas::autopas_get_max_threads()));
   const NumThreadGuard numThreadGuard(2);
 
   // Runs the given code and returns the loop counts of the loops with schedule(runtime) in it.

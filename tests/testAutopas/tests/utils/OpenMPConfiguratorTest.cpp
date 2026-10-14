@@ -6,6 +6,7 @@
 
 #include "OpenMPConfiguratorTest.h"
 
+#include <utility>
 #include <vector>
 
 #include "autopas/utils/OpenMPConfigurator.h"
@@ -74,7 +75,7 @@ TEST_P(OpenMPConfiguratorTest, setScheduleTest) {
   ASSERT_TRUE(getConfiguration(OpenMPKindOption::omp_static).hasCompatibleValues());
 
   const auto config = getConfiguration(ompKind);
-  const OpenMPConfigurator ompConfig(config.ompKind, config.ompChunkSize);
+  const OpenMPConfigurator ompConfig(config.ompKind, config.ompChunkSize, {}, autopas_get_max_threads());
 
   if (not config.hasCompatibleValues()) {
     // Kinds the OpenMP runtime does not support must never be set. Should one get past
@@ -95,9 +96,19 @@ TEST_P(OpenMPConfiguratorTest, setScheduleTest) {
   EXPECT_EQ(kind, ompConfig.getOMPKind());
   // OpenMP runtimes ignore the chunk size for auto.
   if (ompKind != OpenMPKindOption::omp_auto) {
-    EXPECT_EQ(chunkSizeGot, ompConfig.getOMPChunkSize());
+    EXPECT_EQ(chunkSizeGot, ompConfig.getActualOMPChunkSize());
   }
 #endif
+}
+
+/**
+ * Checks that Configuration::hasCompatibleValues() only accepts the balanced chunk size with the static schedule kind.
+ */
+TEST_P(OpenMPConfiguratorTest, balancedOnlyWithStaticTest) {
+  const auto ompKind = GetParam();
+  auto config = getConfiguration(ompKind);
+  config.ompChunkSize = OpenMPChunkSize::balanced;
+  EXPECT_EQ(config.hasCompatibleValues(), ompKind == OpenMPKindOption::omp_static);
 }
 
 INSTANTIATE_TEST_SUITE_P(Generated, OpenMPConfiguratorTest, ::testing::ValuesIn(OpenMPKindOption::getAllOptions()),
@@ -156,40 +167,36 @@ TEST(OpenMPRuntimeTest, runtimeRejectsKindsAboveScheduleLevel) {
 }
 
 /**
- * Checks OpenMPConfigurator::fallsBackToOtherKind() right at the thresholds of libomp's and LB4OMP's criteria. With
- * libgomp, nothing falls back.
+ * Checks OpenMPConfigurator::fallsBackToOtherKindForAllLoops() for a single loop, right at the thresholds of libomp's
+ * and LB4OMP's criteria. With libgomp, nothing falls back.
  */
-TEST(OpenMPConfiguratorFallbackTest, fallsBackToOtherKind) {
+TEST(OpenMPConfiguratorFallbackTest, fallsBackToOtherKindForSingleLoop) {
   const bool hasFallbacks = OpenMPKindOption::runtimeScheduleLevel != OpenMPKindOption::ScheduleLevel::gccLibgomp;
-  constexpr int numThreads = 8;  // Not actually used, just for testing.
 
   // static_steal needs at least one chunk per thread: 29 iterations are 8 chunks of size 4, 28 iterations are 7.
-  const OpenMPConfigurator staticSteal(OpenMPKindOption::lb4omp_static_steal, 4);
-  EXPECT_FALSE(staticSteal.fallsBackToOtherKind(29, numThreads));
-  EXPECT_EQ(staticSteal.fallsBackToOtherKind(28, numThreads), hasFallbacks);
-  EXPECT_EQ(staticSteal.fallsBackToOtherKind(1000000, 1), hasFallbacks) << "With one thread, it always falls back.";
-  // A chunk size smaller than 1 counts as 1.
-  const OpenMPConfigurator staticStealNoChunkSize(OpenMPKindOption::lb4omp_static_steal, 0);
-  EXPECT_FALSE(staticStealNoChunkSize.fallsBackToOtherKind(8, numThreads));
-  EXPECT_EQ(staticStealNoChunkSize.fallsBackToOtherKind(7, numThreads), hasFallbacks);
+  EXPECT_FALSE(OpenMPConfigurator(OpenMPKindOption::lb4omp_static_steal, 4, {29}, 8).fallsBackToOtherKindForAllLoops());
+  EXPECT_EQ(OpenMPConfigurator(OpenMPKindOption::lb4omp_static_steal, 4, {28}, 8).fallsBackToOtherKindForAllLoops(),
+            hasFallbacks);
+  EXPECT_EQ(
+      OpenMPConfigurator(OpenMPKindOption::lb4omp_static_steal, 4, {1000000}, 1).fallsBackToOtherKindForAllLoops(),
+      hasFallbacks);
 
   // guided needs (2 * chunk + 1) * numThreads < loopCount: (2 * 4 + 1) * 8 = 72.
-  const OpenMPConfigurator guided(OpenMPKindOption::omp_guided, 4);
-  EXPECT_FALSE(guided.fallsBackToOtherKind(73, numThreads));
-  EXPECT_EQ(guided.fallsBackToOtherKind(72, numThreads), hasFallbacks);
-  EXPECT_EQ(guided.fallsBackToOtherKind(1000000, 1), hasFallbacks) << "With one thread, it always falls back.";
+  EXPECT_FALSE(OpenMPConfigurator(OpenMPKindOption::omp_guided, 4, {73}, 8).fallsBackToOtherKindForAllLoops());
+  EXPECT_EQ(OpenMPConfigurator(OpenMPKindOption::omp_guided, 4, {72}, 8).fallsBackToOtherKindForAllLoops(),
+            hasFallbacks);
+  EXPECT_EQ(OpenMPConfigurator(OpenMPKindOption::omp_guided, 4, {1000000}, 1).fallsBackToOtherKindForAllLoops(),
+            hasFallbacks);
 
   // auto is guided with a chunk size of 1, whichever chunk size is configured: (2 * 1 + 1) * 8 = 24.
-  const OpenMPConfigurator autoKind(OpenMPKindOption::omp_auto, 4);
-  EXPECT_FALSE(autoKind.fallsBackToOtherKind(25, numThreads));
-  EXPECT_EQ(autoKind.fallsBackToOtherKind(24, numThreads), hasFallbacks);
+  EXPECT_FALSE(OpenMPConfigurator(OpenMPKindOption::omp_auto, 4, {25}, 8).fallsBackToOtherKindForAllLoops());
+  EXPECT_EQ(OpenMPConfigurator(OpenMPKindOption::omp_auto, 4, {24}, 8).fallsBackToOtherKindForAllLoops(), hasFallbacks);
 
   // Other kinds never fall back.
   for (const OpenMPKindOption kind : {OpenMPKindOption::omp_static, OpenMPKindOption::omp_dynamic,
                                       OpenMPKindOption::lb4omp_trapezoidal, OpenMPKindOption::lb4omp_fac2a}) {
-    const OpenMPConfigurator ompConfig(kind, 1000);
-    EXPECT_FALSE(ompConfig.fallsBackToOtherKind(1, numThreads)) << kind.to_string();
-    EXPECT_FALSE(ompConfig.fallsBackToOtherKind(1, 1)) << kind.to_string();
+    EXPECT_FALSE(OpenMPConfigurator(kind, 1000, {1}, 8).fallsBackToOtherKindForAllLoops()) << kind.to_string();
+    EXPECT_FALSE(OpenMPConfigurator(kind, 1000, {1}, 1).fallsBackToOtherKindForAllLoops()) << kind.to_string();
   }
 }
 
@@ -198,11 +205,117 @@ TEST(OpenMPConfiguratorFallbackTest, fallsBackToOtherKind) {
  */
 TEST(OpenMPConfiguratorFallbackTest, fallsBackToOtherKindForAllLoops) {
   const bool hasFallbacks = OpenMPKindOption::runtimeScheduleLevel != OpenMPKindOption::ScheduleLevel::gccLibgomp;
-  constexpr int numThreads = 8;
 
   // With 8 threads, guided with chunk size 4 falls back for loops of up to 72 iterations.
-  const OpenMPConfigurator guided(OpenMPKindOption::omp_guided, 4);
-  EXPECT_EQ(guided.fallsBackToOtherKindForAllLoops({10, 72, 30}, numThreads), hasFallbacks);
-  EXPECT_FALSE(guided.fallsBackToOtherKindForAllLoops({10, 73, 30}, numThreads)) << "One loop does not fall back.";
-  EXPECT_FALSE(guided.fallsBackToOtherKindForAllLoops({}, numThreads)) << "Without loops, nothing falls back.";
+  EXPECT_EQ(OpenMPConfigurator(OpenMPKindOption::omp_guided, 4, {10, 72, 30}, 8).fallsBackToOtherKindForAllLoops(),
+            hasFallbacks);
+  EXPECT_FALSE(OpenMPConfigurator(OpenMPKindOption::omp_guided, 4, {10, 73, 30}, 8).fallsBackToOtherKindForAllLoops())
+      << "One loop does not fall back.";
+  EXPECT_FALSE(OpenMPConfigurator(OpenMPKindOption::omp_guided, 4, {}, 8).fallsBackToOtherKindForAllLoops())
+      << "Without loops, nothing falls back.";
+}
+
+/**
+ * Checks OpenMPConfigurator::getGoldenChunkSize() against values calculated by hand from LB4OMP's formula:
+ * loopCount / (2^(floor(log2(loopCount / numThreads) * 0.618) + 1) * numThreads), with integer divisions.
+ */
+TEST(OpenMPConfiguratorChunkSizeTest, getGoldenChunkSize) {
+  // floor(log2(1000) * 0.618) = floor(6.16) = 6, so 8000 / (2^7 * 8) = 7
+  EXPECT_EQ(OpenMPConfigurator::getGoldenChunkSize(8000, 8), 7);
+  // floor(log2(27) * 0.618) = floor(2.94) = 2, so 27 / (2^3 * 1) = 3
+  EXPECT_EQ(OpenMPConfigurator::getGoldenChunkSize(27, 1), 3);
+  // floor(log2(8) * 0.618) = floor(1.85) = 1, so 64 / (2^2 * 8) = 2
+  EXPECT_EQ(OpenMPConfigurator::getGoldenChunkSize(64, 8), 2);
+  // floor(log2(7) * 0.618) = floor(1.73) = 1, so 63 / (2^2 * 8) = 1
+  EXPECT_EQ(OpenMPConfigurator::getGoldenChunkSize(63, 8), 1);
+  // With fewer than two iterations per thread, LB4OMP's formula gives 0, which is replaced by 1.
+  EXPECT_EQ(OpenMPConfigurator::getGoldenChunkSize(15, 8), 1);
+  EXPECT_EQ(OpenMPConfigurator::getGoldenChunkSize(7, 8), 1);
+  EXPECT_EQ(OpenMPConfigurator::getGoldenChunkSize(0, 8), 1);
+}
+
+/**
+ * Checks that OpenMPConfigurator::getActualOMPChunkSize() converts every type of chunk size to what the OpenMP runtime
+ * takes.
+ */
+TEST(OpenMPConfiguratorChunkSizeTest, getActualOMPChunkSize) {
+  // With 8 threads, the golden chunk sizes of these loops are 7, 2 and 24 (= 100000 / (2^9 * 8)).
+  const std::vector<size_t> loopCounts{8000, 64, 100000};
+
+  EXPECT_EQ(OpenMPConfigurator(OpenMPKindOption::omp_dynamic, 4, loopCounts, 8).getActualOMPChunkSize(), 4);
+  EXPECT_ANY_THROW(OpenMPConfigurator(OpenMPKindOption::omp_dynamic, 0, loopCounts, 8).getActualOMPChunkSize())
+      << "A fixed chunk size must be at least 1.";
+  EXPECT_EQ(OpenMPConfigurator(OpenMPKindOption::omp_static, OpenMPChunkSize::balanced, loopCounts, 8)
+                .getActualOMPChunkSize(),
+            0);
+  EXPECT_EQ(
+      OpenMPConfigurator(OpenMPKindOption::omp_dynamic, OpenMPChunkSize::golden, loopCounts, 8).getActualOMPChunkSize(),
+      2)
+      << "The golden chunk size should be the smallest golden chunk size of all loops.";
+  EXPECT_EQ(OpenMPConfigurator(OpenMPKindOption::omp_dynamic, OpenMPChunkSize::golden, {}, 8).getActualOMPChunkSize(),
+            1)
+      << "Without loop counts, the golden chunk size should be 1.";
+  // For auto and Auto4OMP's selection methods, the kind determines the chunk size.
+  const std::vector<std::pair<OpenMPKindOption, int>> autoKindsAndChunkSizes{
+      {OpenMPKindOption::omp_auto, 1},
+      {OpenMPKindOption::auto4omp_randomsel, 2},
+      {OpenMPKindOption::auto4omp_exhaustivesel, 3},
+      {OpenMPKindOption::auto4omp_binarySearch, 4},
+      {OpenMPKindOption::auto4omp_expertsel, 5},
+  };
+  for (const auto &[kind, expectedChunkSize] : autoKindsAndChunkSizes) {
+    EXPECT_EQ(OpenMPConfigurator(kind, OpenMPChunkSize::golden, loopCounts, 8).getActualOMPChunkSize(),
+              expectedChunkSize)
+        << kind.to_string();
+  }
+}
+
+/**
+ * Checks OpenMPConfigurator::fallsBackToChunkSize1() right at the thresholds for the golden and the balanced chunk
+ * size.
+ */
+TEST(OpenMPConfiguratorFallbackTest, fallsBackToChunkSize1) {
+  // With 8 threads, the golden chunk size is 1 for up to 63 iterations (see the test getGoldenChunkSize).
+  EXPECT_TRUE(
+      OpenMPConfigurator(OpenMPKindOption::omp_dynamic, OpenMPChunkSize::golden, {63}, 8).fallsBackToChunkSize1());
+  EXPECT_FALSE(
+      OpenMPConfigurator(OpenMPKindOption::omp_dynamic, OpenMPChunkSize::golden, {64}, 8).fallsBackToChunkSize1());
+  EXPECT_TRUE(OpenMPConfigurator(OpenMPKindOption::omp_dynamic, OpenMPChunkSize::golden, {64, 63, 8000}, 8)
+                  .fallsBackToChunkSize1());
+  EXPECT_TRUE(
+      OpenMPConfigurator(OpenMPKindOption::omp_dynamic, OpenMPChunkSize::golden, {}, 8).fallsBackToChunkSize1());
+
+  // balanced is the same as a chunk size of 1 if no loop has more iterations than there are threads.
+  EXPECT_TRUE(
+      OpenMPConfigurator(OpenMPKindOption::omp_static, OpenMPChunkSize::balanced, {8, 3}, 8).fallsBackToChunkSize1());
+  EXPECT_FALSE(
+      OpenMPConfigurator(OpenMPKindOption::omp_static, OpenMPChunkSize::balanced, {8, 9}, 8).fallsBackToChunkSize1());
+  EXPECT_FALSE(
+      OpenMPConfigurator(OpenMPKindOption::omp_static, OpenMPChunkSize::balanced, {}, 8).fallsBackToChunkSize1())
+      << "Without loop counts, this cannot be known.";
+
+  // Fixed chunk sizes do not fall back.
+  EXPECT_FALSE(OpenMPConfigurator(OpenMPKindOption::omp_static, 1, {8}, 8).fallsBackToChunkSize1());
+  EXPECT_FALSE(OpenMPConfigurator(OpenMPKindOption::omp_dynamic, 4, {8}, 8).fallsBackToChunkSize1());
+}
+
+/**
+ * Checks that setting static with the balanced chunk size results in static without a chunk size, which the OpenMP
+ * runtimes report as a chunk size of 0.
+ */
+TEST(OpenMPConfiguratorChunkSizeTest, setBalancedSchedule) {
+#ifndef AUTOPAS_USE_OPENMP
+  GTEST_SKIP() << "Without OpenMP, there is no schedule to set.";
+#else
+  const ScheduleGuard scheduleGuard;
+  // Start from a schedule with a chunk size, so that it is noticed if the chunk size is not reset.
+  autopas_set_schedule(omp_sched_static, 7);
+  autopas_set_schedule(OpenMPConfigurator(OpenMPKindOption::omp_static, OpenMPChunkSize::balanced, {100}, 4));
+
+  omp_sched_t kind{};
+  int chunkSizeGot{};
+  autopas_get_schedule(&kind, &chunkSizeGot);
+  EXPECT_EQ(kind, omp_sched_static);
+  EXPECT_EQ(chunkSizeGot, 0);
+#endif
 }

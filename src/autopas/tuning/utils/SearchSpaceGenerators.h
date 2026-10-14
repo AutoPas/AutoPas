@@ -39,7 +39,7 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
                                          const std::set<OpenMPKindOption> &allowedOpenMPKindOptions,
-                                         const NumberSet<size_t> *allowedOpenMPChunkSizes,
+                                         const std::set<OpenMPChunkSize> &allowedOpenMPChunkSizes,
                                          const std::set<VectorizationPatternOption> &allowedVecPatternOptions,
                                          const InteractionTypeOption &interactionType, bool throwIfNone = true);
 

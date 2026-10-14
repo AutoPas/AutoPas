@@ -20,15 +20,13 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
     const NumberSet<double> *allowedCellSizeFactors, const std::set<OpenMPKindOption> &allowedOpenMPKindOptions,
-    const NumberSet<size_t> *allowedOpenMPChunkSizes,
+    const std::set<OpenMPChunkSize> &allowedOpenMPChunkSizes,
     const std::set<VectorizationPatternOption> &allowedVecPatternOptions, const InteractionTypeOption &interactionType,
     bool throwIfNone) {
-  if (allowedCellSizeFactors->isInterval() or allowedOpenMPChunkSizes->isInterval()) {
-    utils::ExceptionHandler::exception(
-        "Cross product does not work with continuous cell size factors or OpenMP chunk sizes!");
+  if (allowedCellSizeFactors->isInterval()) {
+    utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
   }
   const auto cellSizeFactors = allowedCellSizeFactors->getAll();
-  const auto ompChunkSizes = allowedOpenMPChunkSizes->getAll();
 
   std::set<Configuration> searchSet;
   // generate all potential configs
@@ -50,7 +48,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
           for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
             for (const auto &newton3Option : allowedNewton3Options) {
               for (const auto &ompKind : allowedOpenMPKindOptions) {
-                for (const auto &ompChunkSize : ompChunkSizes) {
+                for (const auto &ompChunkSize : allowedOpenMPChunkSizes) {
                   for (const auto &vecPatternOption : allowedVecPatternOptions) {
                     const Configuration configuration{
                         containerOption, csf,     traversalOption, loadEstimatorOption, dataLayoutOption,
