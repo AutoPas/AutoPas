@@ -20,6 +20,7 @@ target_link_libraries(
         molecularDynamicsLibrary
         gmock # gmock includes the gtest target, so we don't need it here.
         Eigen3 # Eigen3 is needed for the tests, but normally not required when using AutoPas.
+        testingHelpers # Shared helpers
 )
 
 include(GoogleTest)

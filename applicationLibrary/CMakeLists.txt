@@ -126,6 +126,7 @@ if (AUTOPAS_BUILD_TESTS)
             ${TEST_EXE_NAME}
             PUBLIC
             autopas molecularDynamicsLibrary gmock
+            testingHelpers # Shared helpers
     )
 
         # this cmake module was only introduced in 3.10
@@ -161,6 +162,7 @@ if (AUTOPAS_BUILD_TESTS)
     target_link_libraries(
             sphLibTests PUBLIC
             autopas SPHLibrary gmock
+            testingHelpers # Shared helpers
     )
 
         # this cmake module was only introduced in 3.10
@@ -195,6 +197,7 @@ if (AUTOPAS_BUILD_TESTS)
         target_link_libraries(
                 neighborIdentificationLibTests PUBLIC
                 autopas neighborIdentificationLibrary gmock
+                testingHelpers # Shared helpers
         )
 
         # this cmake module was only introduced in 3.10

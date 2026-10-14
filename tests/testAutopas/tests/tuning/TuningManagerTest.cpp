@@ -397,7 +397,17 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
       .WillRepeatedly(
           testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
 
-  const auto searchSpace = generateAllValidConfigurations(autopas::InteractionTypeOption::pairwise);
+  const std::set<int> threadCountOptions{autopas::autopas_all_threads
+#ifdef AUTOPAS_TUNE_THREADS
+                                         ,
+                                         1
+#endif
+  };
+  const auto searchSpace = generateAllValidConfigurations(
+      autopas::InteractionTypeOption::pairwise, autopas::ContainerOption::getAllOptions(),
+      autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
+      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions(), {0.5, 1.0, 1.5},
+      autopas::VectorizationPatternOption::getAllOptions(), threadCountOptions);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
@@ -494,8 +504,15 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size());
 
   // Check that there are the correct number of configurations per container, and print detailed breakdowns if not.
+
+  // Each configuration exists with a thread count of either one or all threads.
+  // If built without OpenMP, only one options exists.
+  const size_t numThreadCountOptions = threadCountOptions.size();
   for (const auto &container : autopas::ContainerOption::getAllOptions()) {
-    const auto expectedNumConfigs = configsPerContainer.at(container);
+    const auto expectedNumConfigs =
+        configsPerContainer.at(container) *
+        // Test with multiple thread count options except vvl_as_built
+        (container == autopas::ContainerOption::varVerletListsAsBuild ? 1 : numThreadCountOptions);
 
     const auto actualNumConfigs =
         std::ranges::count_if(searchSpace, [container](const auto &config) { return config.container == container; });
@@ -525,8 +542,12 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   }
 
   // Check that the total number of configurations is correct and stop if not
-  const size_t numberOfConfigs = std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
-                                                 [](auto acc, auto &pair) { return acc + pair.second; });
+  const size_t numberOfConfigs =
+      std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
+                      [](auto acc, auto &pair) { return acc + pair.second; })
+          // Test with multiple thread count options except vvl_as_built
+          * numThreadCountOptions -
+      (configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] * (numThreadCountOptions - 1));
   ASSERT_EQ(numberOfConfigs, searchSpace.size())
       << "The calculated number of configurations is not equal to the cross product search space!";
   // total number of possible configurations * number of samples + last iteration after tuning
@@ -542,7 +563,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   constexpr size_t numConfigsExpectedNotApplicable{56};
 
   const size_t expectedNumberOfIterations =
-      (numberOfConfigs - numConfigsExpectedNotApplicable) * autoTunerInfo.maxSamples + 1;
+      (numberOfConfigs - numConfigsExpectedNotApplicable * numThreadCountOptions) * autoTunerInfo.maxSamples + 1;
 
   ASSERT_GT(autoTunerInfo.tuningInterval, expectedNumberOfIterations)
       << "The tuning interval must be greater than the expected number of iterations! Fix this test.";
