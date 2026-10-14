@@ -437,14 +437,11 @@ TEST_P(AllContainersTests, testDeleteParticleOnlyMarks) {
       EXPECT_FALSE(container->deleteParticle(*address));
     }
   }
-  // Delete particle 1 via an iterator. VerletClusterLists is left out, because it keeps new particles in a buffer until
-  // its towers are built and deleting from this buffer via an iterator moves particles.
-  if (containerConfig.container != autopas::ContainerOption::verletClusterLists) {
-    deletedIDs.insert(1);
-    for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-      if (iter->getID() == 1) {
-        autopas::internal::deleteParticle(iter);
-      }
+  // Delete particle 1 via an iterator.
+  deletedIDs.insert(1);
+  for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    if (iter->getID() == 1) {
+      autopas::internal::deleteParticle(iter);
     }
   }
 

@@ -20,6 +20,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 
@@ -365,24 +366,15 @@ class ContainerIterator {
   }
 
   /**
-   * Deletes the particle currently pointed to. A particle in the container is only marked as deleted. A particle in
-   * the additional vectors is removed via swap-delete, which changes the order of elements in its vector.
+   * Deletes the particle currently pointed to. The particle is only marked as deleted i.e. as a dummy and is left in
+   * place until a container rebuild.
    * After deletion _currentParticle points to the next particle, but the index is moved back by one. So incrementing
    * the index results in the iterator arriving at the next particle correctly.
    */
   void deleteCurrentParticle() {
     if (_iteratingAdditionalVectors) {
-      // the current particle address needs to be between start and end of the current vector
-      // otherwise it is from the previous vector
-      auto &currentVector = *_additionalVectors[_currentVectorIndex];
-      // swap-delete
-      *_currentParticle = currentVector.back();
-      currentVector.pop_back();
-      // make sure _currentParticle always points to a valid particle if there is one.
-      if (currentVector.empty() or not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-                                       *_currentParticle, _behavior, _regionMin, _regionMax)) {
-        this->operator++();
-      }
+      internal::markParticleAsDeleted(*_currentParticle);
+      this->operator++();
     } else {
       const auto indicesValid = _container->deleteParticle(_currentVectorIndex, _currentParticleIndex);
       // Edge cases:

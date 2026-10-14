@@ -8,9 +8,11 @@
 
 #include "autopas/AutoPasImpl.h"
 #include "autopas/utils/generators/UniformGenerator.h"
+#include "testingHelpers/EmptyPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
+extern template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
 
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasAllContainersTest,
                          ::testing::ValuesIn(generateAllValidContainerConfigurations()));
@@ -69,15 +71,21 @@ TEST_P(AutoPasAllContainersTest, addParticlesTest) {
 }
 
 /**
- * Checks that deleting a particle that is stored in the container only marks it as deleted until the container is
- * rebuilt. This test checks that:
+ * Checks that deleting a particle only marks it as deleted. This test checks that:
  * a) No particle is moved, i.e. every particle is still stored at the same address.
  * b) Exactly the deleted particles are dummies.
  * c) updateContainer() removes the dummies.
  */
 TEST_P(AutoPasAllContainersTest, deleteParticleOnlyMarksTest) {
   /// Config
-  constexpr unsigned long numParticles = 4;
+  // Particles 0-3 are stored in the container, 4-6 in the buffer for owned particles, and 7-9 in the buffer for halo
+  // particles. In each group, the first particle is deleted via a reference to it and the second via an iterator.
+  constexpr unsigned long numContainerParticles = 4;
+  constexpr unsigned long numOwnedBufferParticles = 3;
+  constexpr unsigned long numHaloBufferParticles = 3;
+  constexpr unsigned long numParticles = numContainerParticles + numOwnedBufferParticles + numHaloBufferParticles;
+  const std::set<unsigned long> deletedIDsViaReference{0, 4, 7};
+  const std::set<unsigned long> deletedIDsViaIterator{1, 5, 8};
   constexpr std::array<double, 3> boxMin{0., 0., 0.};
   constexpr std::array<double, 3> boxMax{10., 10., 10.};
   constexpr double cutoff = 1.;
@@ -90,6 +98,8 @@ TEST_P(AutoPasAllContainersTest, deleteParticleOnlyMarksTest) {
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
   autoPas.setVerletSkin(skin);
+  // Rebuild in every iteration, so the updateContainer() at the end of the test removes all dummies.
+  autoPas.setVerletRebuildFrequency(1);
   // Generate a valid arbitrary full configuration for the container configuration under test.
   const auto config = GetParam().generateFullConfig(autopas::InteractionTypeOption::pairwise).value();
   autoPas.setAllowedContainers({config.container});
@@ -101,40 +111,49 @@ TEST_P(AutoPasAllContainersTest, deleteParticleOnlyMarksTest) {
   autoPas.setAllowedVecPatterns({config.vecPattern});
   autoPas.setNumSamples(autoPas.getTuningInterval());  // to avoid warnings
   autoPas.init();
-  // We assume that the all particles are in the same cell (e.g. that the tested cell size factor is not too small)
-  // If so, prefer to reduce the particle placement so they all fit instead of removing that container configuration
-  // from the test.
+  // We assume that the all particles in the container are in the same cell (e.g. that the tested cell size factor is
+  // not too small) If so, prefer to reduce the particle placement so they all fit instead of removing that container
+  // configuration from the test.
   ASSERT_GT(config.cellSizeFactor * (cutoff + skin), 0.4);
-  for (unsigned long id = 0; id < numParticles; ++id) {
+  for (unsigned long id = 0; id < numContainerParticles; ++id) {
     autoPas.addParticle(Molecule({0.1 + 0.1 * static_cast<double>(id), 0.1, 0.1}, {0., 0., 0.}, id, 0));
   }
+  // Build the neighbor lists.
+  ASSERT_TRUE(autoPas.updateContainer().empty());
+  EmptyPairwiseFunctor<Molecule> functor;
+  autoPas.computeInteractions(&functor);
+  // Now we add buffer particles
+  for (unsigned long id = numContainerParticles; id < numContainerParticles + numOwnedBufferParticles; ++id) {
+    autoPas.addParticle(Molecule({0.1 + 0.1 * static_cast<double>(id), 0.1, 0.1}, {0., 0., 0.}, id, 0));
+  }
+  for (unsigned long id = numContainerParticles + numOwnedBufferParticles; id < numParticles; ++id) {
+    autoPas.addHaloParticle(Molecule({0.1 + 0.1 * static_cast<double>(id), 0.1, -0.1}, {0., 0., 0.}, id, 0));
+  }
+  size_t numParticlesActuallyInContainer = 0;
+  for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOrHalo | autopas::IteratorBehavior::containerOnly);
+       iter.isValid(); ++iter) {
+    ++numParticlesActuallyInContainer;
+  }
+  ASSERT_EQ(numParticlesActuallyInContainer, numContainerParticles)
+      << "Particles that should be in the buffers are not.";
   std::map<Molecule *, unsigned long> idsByAddress;
-  for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+  for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
     idsByAddress[&*iter] = iter->getID();
   }
-  ASSERT_EQ(idsByAddress.size(), numParticles);
 
   /// Test
-  // Delete particle 0 via a reference to it.
-  std::set<unsigned long> deletedIDs{0};
   for (const auto &[address, id] : idsByAddress) {
-    if (id == 0) {
-      // The return of deleteParticle is whether an Iterator/ptr pointing to that particle would remain valid.
-      // This should always be false for particles in the container, as we always mark particles kept there as dummies
-      // to delete them.
+    if (deletedIDsViaReference.contains(id)) {
       EXPECT_FALSE(autoPas.deleteParticle(*address));
     }
   }
-  // Delete particle 1 via an iterator. VerletClusterLists is left out, because it keeps new particles in a buffer until
-  // its towers are built and deleting from this buffer via an iterator moves particles.
-  if (config.container != autopas::ContainerOption::verletClusterLists) {
-    deletedIDs.insert(1);
-    for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-      if (iter->getID() == 1) {
-        autoPas.deleteParticle(iter);
-      }
+  for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
+    if (deletedIDsViaIterator.contains(iter->getID())) {
+      autoPas.deleteParticle(iter);
     }
   }
+  std::set<unsigned long> deletedIDs{deletedIDsViaReference};
+  deletedIDs.insert(deletedIDsViaIterator.begin(), deletedIDsViaIterator.end());
 
   /// Expectations
   size_t numParticlesFound = 0;
@@ -146,7 +165,9 @@ TEST_P(AutoPasAllContainersTest, deleteParticleOnlyMarksTest) {
     EXPECT_EQ(iter->isDummy(), deletedIDs.contains(iter->getID()));
   }
   EXPECT_EQ(numParticlesFound, numParticles);
-  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::owned), numParticles - deletedIDs.size());
+  // Four of the seven owned and two of the three halo particles were deleted.
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::owned), 3);
+  EXPECT_EQ(autoPas.getNumberOfParticles(autopas::IteratorBehavior::halo), 1);
 
   const auto leavingParticles = autoPas.updateContainer();
   EXPECT_TRUE(leavingParticles.empty());
@@ -154,5 +175,6 @@ TEST_P(AutoPasAllContainersTest, deleteParticleOnlyMarksTest) {
   for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
     ++numParticlesFound;
   }
-  EXPECT_EQ(numParticlesFound, numParticles - deletedIDs.size());
+  // updateContainer() now has removed all halo particles.
+  EXPECT_EQ(numParticlesFound, 3);
 }

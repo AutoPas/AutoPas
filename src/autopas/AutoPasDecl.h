@@ -235,8 +235,8 @@ class AutoPas {
   /**
    * Deletes the particle behind the current iterator position and leaves the container in a valid state.
    *
-   * Internally, a particle that is stored in the container is only marked as deleted (i.e. a dummy particle) and
-   * removed when the container is rebuilt. A particle that is stored in one of AutoPas' buffers is removed immediately.
+   * Internally, the particle is only marked as deleted (i.e. a dummy particle) and removed when the container
+   * is rebuilt.
    *
    * @param iter Needs to be a modify-able iterator.
    */
@@ -252,14 +252,13 @@ class AutoPas {
   /**
    * Deletes the given particle and leaves the container in a valid state.
    *
-   * Internally, a particle that is stored in the container is only marked as deleted and removed when the container is
-   * rebuilt. A particle that is stored in one of AutoPas' buffers is removed immediately.
-   *
-   * @note This function might invalidate iterators.
+   * Internally, the particle is only marked as deleted (i.e. a dummy particle) and removed when the container is
+   * rebuilt.
    *
    * @param particle Reference to the particle that should be deleted.
    *
-   * @return True iff the reference still points to a valid particle.
+   * @return True iff the reference still points to a valid particle. As particles are only marked, this is always
+   * false.
    */
   bool deleteParticle(Particle_T &particle);
 
