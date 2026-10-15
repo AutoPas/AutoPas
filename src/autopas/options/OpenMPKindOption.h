@@ -324,8 +324,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
   /**
    * Set of options that are very unlikely to be interesting.
    *
-   * These are all kinds that are not tested with AutoPas, leaving static, dynamic, guided, trapezoidal and fac2a.
-   * Among the untested ones:
+   * Among them:
    * - Auto4OMP's selection methods pick a scheduling technique themselves, which overlaps with what AutoPas' tuning
    *   does, and are currently broken.
    * - Several of LB4OMP's techniques need data that LB4OMP only has after a profiling run (see KMP_PROFILE_DATA), and

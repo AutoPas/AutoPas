@@ -7,8 +7,10 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdlib>
 #include <optional>
 #include <set>
+#include <string>
 
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -20,6 +22,64 @@
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/NumberSetFinite.h"
+
+/**
+ * OpenMP schedule kinds and chunk sizes to test.
+ */
+struct OpenMPSchedulesToTest {
+  /**
+   * The OpenMP schedule kinds.
+   */
+  std::set<autopas::OpenMPKindOption> kinds;
+  /**
+   * The OpenMP chunk sizes.
+   */
+  std::set<autopas::OpenMPChunkSize> chunkSizes;
+};
+
+/**
+ * Gets the OpenMP schedules that the configuration sweeps test, chosen at runtime with the environment variable
+ * AUTOPAS_TEST_OPENMP_SCHEDULES:
+ * - static1 (default, also if unset or empty): static with chunk size 1, since OpenMP scheduling is assumed to be
+ *   correct and therefore does not need to be swept over. To be sure that this assumption holds, more detailed sweeps
+ *   can be obtained with the following env variable options.
+ * - core: static, dynamic, and static_steal, with chunk sizes 1, balanced, and golden. The scheduling kinds known to be
+ *   potentially optimal with AutoPas, plus the recommended chunk sizes.
+ * - extended: static, dynamic, guided, auto, and LB4OMP's scheduling techniques used by Auto4OMP, with chunk sizes 1,
+ *   2, 1000 (stress-test), balanced, and golden.
+ *
+ * Kinds that the OpenMP runtime does not support, and incompatible pairs of kind and chunk size, are filtered out by
+ * Configuration::hasCompatibleValues().
+ *
+ * @return
+ */
+inline OpenMPSchedulesToTest getOpenMPSchedulesToTest() {
+  const char *suiteEnv = std::getenv("AUTOPAS_TEST_OPENMP_SCHEDULES");
+  const std::string suite = suiteEnv == nullptr ? "" : suiteEnv;
+  if (suite.empty() or suite == "static1") {
+    return {{autopas::OpenMPKindOption::omp_static}, {1}};
+  }
+  if (suite == "core") {
+    return {{autopas::OpenMPKindOption::omp_static, autopas::OpenMPKindOption::omp_dynamic,
+             autopas::OpenMPKindOption::lb4omp_static_steal},
+            {1, autopas::OpenMPChunkSize::balanced, autopas::OpenMPChunkSize::golden}};
+  }
+  if (suite == "extended") {
+    return {{autopas::OpenMPKindOption::omp_static, autopas::OpenMPKindOption::omp_dynamic,
+             autopas::OpenMPKindOption::omp_guided, autopas::OpenMPKindOption::omp_auto,
+             // LB4OMP's scheduling techniques used by Auto4OMP:
+             autopas::OpenMPKindOption::lb4omp_trapezoidal, autopas::OpenMPKindOption::lb4omp_fac2a,
+             autopas::OpenMPKindOption::lb4omp_static_steal, autopas::OpenMPKindOption::lb4omp_awf_b,
+             autopas::OpenMPKindOption::lb4omp_awf_c, autopas::OpenMPKindOption::lb4omp_awf_d,
+             autopas::OpenMPKindOption::lb4omp_awf_e, autopas::OpenMPKindOption::lb4omp_af_a},
+            {1, 2, 1000, autopas::OpenMPChunkSize::balanced, autopas::OpenMPChunkSize::golden}};
+  }
+  autopas::utils::ExceptionHandler::exception(
+      "getOpenMPSchedulesToTest(): Unknown value \"{}\" of AUTOPAS_TEST_OPENMP_SCHEDULES. Possible values: static1, "
+      "core, extended.",
+      suite);
+  return {};
+}
 
 /**
  * Generates all valid configurations for a given interaction type or all interaction types.
@@ -35,11 +95,10 @@
  * @param allowedDataLayoutOptions By default, all options.
  * @param allowedNewton3Options By default, all options.
  * @param allowedCellSizeFactors By default, {0.5, 1.0, 1.5}
- * @param allowedOpenMPKindOptions By default, only static, since OpenMP scheduling is assumed to be correct and
- * therefore does not need to be swept over. Sequential traversals always use the sequential kind, which is included
- * implicitly.
- * @param allowedOpenMPChunkSizes By default, 1, balanced, and golden. Sequential traversals always use the
- * not-applicable chunk size, which is included implicitly.
+ * @param allowedOpenMPKindOptions By default, the kinds of getOpenMPSchedulesToTest(). Sequential traversals always use
+ * the sequential kind, which is included implicitly.
+ * @param allowedOpenMPChunkSizes By default, the chunk sizes of getOpenMPSchedulesToTest(). Sequential traversals
+ * always use the not-applicable chunk size, which is included implicitly.
  * @param allowedVectorPatterns By default, all options.
  * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return an empty set.
  * @return
@@ -53,9 +112,8 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     const std::set<autopas::DataLayoutOption> &allowedDataLayoutOptions = autopas::DataLayoutOption::getAllOptions(),
     const std::set<autopas::Newton3Option> &allowedNewton3Options = autopas::Newton3Option::getAllOptions(),
     const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
-    const std::set<autopas::OpenMPKindOption> &allowedOpenMPKindOptions = {autopas::OpenMPKindOption::omp_static},
-    const std::set<autopas::OpenMPChunkSize> &allowedOpenMPChunkSizes = {1, autopas::OpenMPChunkSize::balanced,
-                                                                         autopas::OpenMPChunkSize::golden},
+    const std::set<autopas::OpenMPKindOption> &allowedOpenMPKindOptions = getOpenMPSchedulesToTest().kinds,
+    const std::set<autopas::OpenMPChunkSize> &allowedOpenMPChunkSizes = getOpenMPSchedulesToTest().chunkSizes,
     const std::set<autopas::VectorizationPatternOption> &allowedVectorPatterns =
         autopas::VectorizationPatternOption::getAllOptions(),
     bool throwIfNone = true) {
