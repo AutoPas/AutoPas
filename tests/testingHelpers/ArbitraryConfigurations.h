@@ -11,6 +11,7 @@
 #include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
+#include "autopas/options/OpenMPKindOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/tuning/Configuration.h"
@@ -33,6 +34,7 @@ namespace arbitraryConfigurations {
 inline constexpr autopas::Configuration _arbitrary_config_2B_0 = autopas::Configuration(
     autopas::ContainerOption::directSum, 1.0, autopas::TraversalOption::ds_sequential,
     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
+    autopas::OpenMPKindOption::sequential, autopas::OpenMPChunkSize::notApplicable,
     autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
 /**
  * Arbitrary pairwise configuration.
@@ -40,42 +42,43 @@ inline constexpr autopas::Configuration _arbitrary_config_2B_0 = autopas::Config
 inline constexpr autopas::Configuration _arbitrary_config_2B_1 = autopas::Configuration(
     autopas::ContainerOption::directSum, 1.0, autopas::TraversalOption::ds_sequential,
     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+    autopas::OpenMPKindOption::sequential, autopas::OpenMPChunkSize::notApplicable,
     autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
 /**
  * Arbitrary pairwise configuration.
  */
 inline constexpr autopas::Configuration _arbitrary_config_2B_2 = autopas::Configuration(
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-    autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise,
-    autopas::VectorizationPatternOption::NA);
+    autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, autopas::OpenMPKindOption::omp_dynamic, 1,
+    autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
 /**
  * Arbitrary pairwise configuration.
  */
 inline constexpr autopas::Configuration _arbitrary_config_2B_3 = autopas::Configuration(
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
-    autopas::VectorizationPatternOption::NA);
+    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_dynamic, 4,
+    autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
 /**
  * Arbitrary pairwise configuration.
  */
 inline constexpr autopas::Configuration _arbitrary_config_2B_4 = autopas::Configuration(
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c18, autopas::LoadEstimatorOption::none,
-    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
-    autopas::VectorizationPatternOption::NA);
+    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_static, 1,
+    autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
 /**
  * Arbitrary pairwise configuration.
  */
 inline constexpr autopas::Configuration _arbitrary_config_2B_5 = autopas::Configuration(
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c18, autopas::LoadEstimatorOption::none,
-    autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise,
-    autopas::VectorizationPatternOption::NA);
+    autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, autopas::OpenMPKindOption::omp_dynamic, 1,
+    autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
 /**
  * Arbitrary pairwise configuration.
  */
 inline constexpr autopas::Configuration _arbitrary_config_2B_6 = autopas::Configuration(
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
-    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise,
-    autopas::VectorizationPatternOption::NA);
+    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_dynamic, 4,
+    autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
 
 // Triwise (three-body) configurations:
 /**
@@ -83,14 +86,12 @@ inline constexpr autopas::Configuration _arbitrary_config_2B_6 = autopas::Config
  */
 inline constexpr autopas::Configuration _arbitrary_config_3B_0 = autopas::Configuration(
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
-    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::triwise,
-    autopas::VectorizationPatternOption::NA);
-/**
- * Arbitrary triwise configuration.
- */
+    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_dynamic, 1,
+    autopas::InteractionTypeOption::triwise, autopas::VectorizationPatternOption::NA);
 inline constexpr autopas::Configuration _arbitrary_config_3B_1 = autopas::Configuration(
     autopas::ContainerOption::directSum, 1.0, autopas::TraversalOption::ds_sequential,
     autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+    autopas::OpenMPKindOption::sequential, autopas::OpenMPChunkSize::notApplicable,
     autopas::InteractionTypeOption::triwise, autopas::VectorizationPatternOption::NA);
 
 }  // namespace arbitraryConfigurations

@@ -52,6 +52,14 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlp_c08; }
 
   /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+    return this->c08TraversalLoopCounts();
+  }
+
+  /**
    * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */

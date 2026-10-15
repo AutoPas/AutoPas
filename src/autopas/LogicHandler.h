@@ -28,6 +28,7 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/NumParticlesEstimator.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/TraceTimer.h"
@@ -583,6 +584,10 @@ class LogicHandler {
    * domain.
    * - TraversalInterface::isApplicableToDomain (via TraversalSelector::generateTraversalFromConfig) for checking
    * configuration (specifically traversal) is compatible with the domain.
+   * - OpenMPConfigurator::fallsBackToOtherKindForAllLoops for checking that the OpenMP runtime would not fall back from
+   * the configuration's schedule kind.
+   * - OpenMPConfigurator::fallsBackToChunkSize1 for checking that a balanced or golden chunk size does not duplicate
+   * the configuration with a chunk size of 1.
    *
    * In addition, this function checks that the configuration is applicable to the functor.
    *
@@ -1129,9 +1134,27 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo));
   }
 
+  // Set the configuration's OpenMP schedule only for the traversal and restore the previous one afterwards, so that it
+  // does not affect other schedule(runtime) loops, e.g. those of the application. Sequential traversals have no
+  // schedule to set.
+  const auto &config = autoTuner.getCurrentConfig();
+  omp_sched_t kindBefore{};
+  int chunkSizeBefore{};
+  autopas_get_schedule(&kindBefore, &chunkSizeBefore);
+  if (config.ompKind != OpenMPKindOption::sequential) {
+    const auto loopCounts = traversal
+                                .getRuntimeScheduledLoopCounts(_currentContainer->getTraversalSelectorInfo(),
+                                                               getNumberOfParticlesOwned() + getNumberOfParticlesHalo())
+                                .value_or(std::vector<size_t>{});
+    autopas_set_schedule(
+        OpenMPConfigurator(config.ompKind, config.ompChunkSize, loopCounts, autopas_get_max_threads()));
+  }
+
   timerComputeInteractions.start();
   _currentContainer->computeInteractions(&traversal);
   timerComputeInteractions.stop();
+
+  autopas_set_schedule(kindBefore, chunkSizeBefore);
 
   timerComputeRemainder.start();
   const bool newton3 = autoTuner.getCurrentConfig().newton3;
@@ -1447,6 +1470,54 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   if (traversalPtr and generateNewContainer) {
     _currentContainerSelectorInfo = containerInfo;
     setCurrentContainer(std::move(containerPtr));
+  }
+
+  // The loop counts of the traversal, which the OpenMP configurator needs for the golden chunk size and for the checks
+  // below. Empty if there is no traversal, or if it does not provide them.
+  std::vector<size_t> loopCounts{};
+  if (traversalPtr) {
+    loopCounts = traversalPtr
+                     ->getRuntimeScheduledLoopCounts(_currentContainer->getTraversalSelectorInfo(),
+                                                     getNumberOfParticlesOwned() + getNumberOfParticlesHalo())
+                     .value_or(loopCounts);
+  }
+  const OpenMPConfigurator ompConfig(config.ompKind, config.ompChunkSize, loopCounts, autopas_get_max_threads());
+
+  // Reject the configuration if the OpenMP runtime would fall back from the schedule kind we set to another for all
+  // loops of the traversal, as it then woudl duplicate another configuration. E.g. guided with a high chunk size
+  // becomes dynamic, and repeating an already trialled dynamic without AutoPas being aware results in redundant
+  // configurations in the search space. This is not a perfect check, but meant to eliminate the majority of "fall back"
+  // cases.
+
+  // Similarly, reject the configuration when using a "special" non-fixed chunk size if it would result in a chunk size
+  // of 1, and that chunk size is already in the search space.
+
+  // This is only checked when the trial of the configuration starts, as the tuner cannot handle a configuration
+  // rejected later on. We assume cases when the runtime will later "fall back" as acceptable imperfections of this
+  // mechanic.
+  if (traversalPtr and _tuningManager->getAutoTuners().at(config.interactionType)->isAtStartOfConfigurationTrial() and
+      functor.isRelevantForTuning()) {
+    if (ompConfig.fallsBackToOtherKindForAllLoops()) {
+      AutoPasLog(DEBUG,
+                 "Configuration rejected: The OpenMP runtime would fall back from the schedule kind {} for all loops "
+                 "of the traversal!",
+                 config.ompKind);
+      return {nullptr, /*rejectIndefinitely*/ false};
+    }
+
+    // Similarly, reject a balanced or golden chunk size which falls back to a chunk size of 1, if the configuration
+    // with a chunk size of 1 is in the search space, as it then duplicates that configuration.
+    if (ompConfig.fallsBackToChunkSize1()) {
+      auto configWithChunkSize1 = config;
+      configWithChunkSize1.ompChunkSize = 1;
+      if (_tuningManager->getAutoTuners().at(config.interactionType)->getSearchSpace().contains(configWithChunkSize1)) {
+        AutoPasLog(DEBUG,
+                   "Configuration rejected: The OpenMP chunk size {} falls back to a chunk size of 1, which is "
+                   "already in the search space!",
+                   config.ompChunkSize.to_string());
+        return {nullptr, /*rejectIndefinitely*/ false};
+      }
+    }
   }
 
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};

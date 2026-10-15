@@ -393,3 +393,35 @@ TEST_F(AutoTunerTest, testTrivialSearchSpace) {
   EXPECT_FALSE(autoTuner.inTuningPhase())
       << "Tuner should not have entered a tuning phase when search space is trivial.";
 }
+
+/**
+ * Test that isAtStartOfConfigurationTrial() only holds in a tuning phase before the first sample of a configuration.
+ */
+TEST_F(AutoTunerTest, testIsAtStartOfConfigurationTrial) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  const autopas::AutoTuner::SearchSpaceType searchSpace{arbitraryConfigurations::_arbitrary_config_2B_3,
+                                                        arbitraryConfigurations::_arbitrary_config_2B_6};
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 2,
+  };
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, 10, ""};
+
+  EXPECT_FALSE(autoTuner.isAtStartOfConfigurationTrial()) << "The tuning phase has not started yet.";
+
+  size_t iteration = 0;
+  for (size_t configNum = 0; configNum < searchSpace.size(); ++configNum) {
+    autoTuner.tuneConfiguration(iteration, 0, /*isStartOfTuningPhase*/ iteration == 0);
+    EXPECT_TRUE(autoTuner.isAtStartOfConfigurationTrial()) << "Configuration " << configNum << " has no samples yet.";
+    autoTuner.addMeasurement(1, 1, true, iteration, 0);
+    ++iteration;
+
+    autoTuner.tuneConfiguration(iteration, 0, /*isStartOfTuningPhase*/ false);
+    EXPECT_FALSE(autoTuner.isAtStartOfConfigurationTrial()) << "Configuration " << configNum << " has a sample.";
+    autoTuner.addMeasurement(1, 1, false, iteration, 0);
+    ++iteration;
+  }
+
+  // All configurations are sampled, so this ends the tuning phase.
+  autoTuner.tuneConfiguration(iteration, 0, /*isStartOfTuningPhase*/ false);
+  EXPECT_FALSE(autoTuner.isAtStartOfConfigurationTrial()) << "The tuning phase is over.";
+}

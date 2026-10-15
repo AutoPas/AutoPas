@@ -18,9 +18,11 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
+#include "autopas/options/OpenMPKindOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/HashCombine.h"
+#include "autopas/utils/OpenMPChunkSize.h"
 
 namespace autopas {
 
@@ -37,6 +39,8 @@ class Configuration {
    * @param _dataLayout
    * @param _newton3
    * @param _cellSizeFactor
+   * @param _ompKind
+   * @param _ompChunkSize
    * @param _interactionType
    * @param _vecPattern
    *
@@ -44,6 +48,7 @@ class Configuration {
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
                           LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
+                          OpenMPKindOption _ompKind, OpenMPChunkSize _ompChunkSize,
                           InteractionTypeOption _interactionType, VectorizationPatternOption _vecPattern)
       : container(_container),
         traversal(_traversal),
@@ -52,6 +57,8 @@ class Configuration {
         dataLayout(_dataLayout),
         newton3(_newton3),
         cellSizeFactor(_cellSizeFactor),
+        ompKind(_ompKind),
+        ompChunkSize(_ompChunkSize),
         interactionType(_interactionType) {}
 
   /**
@@ -59,7 +66,15 @@ class Configuration {
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration()
-      : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.), interactionType() {}
+      : container(),
+        traversal(),
+        loadEstimator(),
+        dataLayout(),
+        newton3(),
+        cellSizeFactor(-1.),
+        ompKind(),
+        ompChunkSize(0),
+        interactionType() {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
@@ -79,6 +94,7 @@ class Configuration {
                   container.to_string(fixedLength) + delimiter + std::to_string(cellSizeFactor) + delimiter +
                   traversal.to_string(fixedLength) + delimiter + loadEstimator.to_string(fixedLength) + delimiter +
                   dataLayout.to_string(fixedLength) + delimiter + newton3.to_string(fixedLength) + delimiter +
+                  ompKind.to_string(fixedLength) + delimiter + ompChunkSize.to_string() + delimiter +
                   vecPattern.to_string(fixedLength) + (forParameterizedTestName ? "" : "}");
 
     // For parameterized test names, no punctuation is allowed except "_"
@@ -128,8 +144,8 @@ class Configuration {
    * @return Tuple of const references to all members.
    */
   [[nodiscard]] auto tie() const {
-    return std::tie(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType,
-                    vecPattern);
+    return std::tie(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, ompKind, ompChunkSize,
+                    interactionType, vecPattern);
   }
 
   /**
@@ -137,8 +153,8 @@ class Configuration {
    * @return Tuple of mutable references to all members.
    */
   [[nodiscard]] auto tie() {
-    return std::tie(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType,
-                    vecPattern);
+    return std::tie(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, ompKind, ompChunkSize,
+                    interactionType, vecPattern);
   }
 
   /**
@@ -169,6 +185,14 @@ class Configuration {
    * CellSizeFactor
    */
   double cellSizeFactor;
+  /**
+   * OpenMP (Schedule) Kind Option, e.g. static, dynamic.
+   */
+  OpenMPKindOption ompKind;
+  /**
+   * OpenMP Chunk Size.
+   */
+  OpenMPChunkSize ompChunkSize;
   /**
    * Interaction type of the configuration.
    */

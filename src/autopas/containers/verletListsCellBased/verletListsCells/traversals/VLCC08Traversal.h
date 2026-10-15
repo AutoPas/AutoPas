@@ -50,6 +50,14 @@ class VLCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlc_c08; }
 
+  /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+    return this->c08TraversalLoopCounts();
+  }
+
   [[nodiscard]] bool isApplicableToDomain() const override {
     // This traversal is only safe to use with cell lengths at least as large as _interactionLength (typically holds for
     // CSF>=1)

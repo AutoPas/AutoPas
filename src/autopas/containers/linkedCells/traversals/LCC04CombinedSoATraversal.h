@@ -49,6 +49,14 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04_combined_SoA; }
 
   /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+    return this->c04TraversalLoopCounts();
+  }
+
+  /**
    * lc_c04_combined_SoA in theory have no domain-related applicability requirements.
    * @todo Currently there is a bug when there is an overlap of more than one cell (typically due to CSF<1.0):
    * https://github.com/AutoPas/AutoPas/issues/354

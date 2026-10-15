@@ -65,6 +65,27 @@ class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_sliced_c02; }
 
+  /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   * The towers are only built when the neighbor lists are rebuilt and this traversal is only set up for them in
+   * initTraversal(). Hence, this uses the tower grid estimated in the given traversal selector info. Must be kept in
+   * line with SlicedBasedTraversal::init(), SlicedC02BasedTraversal::initTraversal() and cSlicedTraversal().
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo &traversalInfo, size_t /*numParticles*/) const override {
+    const auto &towersPerDim = traversalInfo.cellsPerDim;
+    const auto longestDim =
+        std::distance(towersPerDim.begin(), std::minmax_element(towersPerDim.begin(), towersPerDim.end()).second);
+    auto overlapLongestAxis =
+        static_cast<unsigned long>(std::ceil(traversalInfo.interactionLength / traversalInfo.cellLength[longestDim]));
+    if (not this->_spaciallyForward) {
+      overlapLongestAxis *= 2;
+    }
+    const auto minSliceThickness = overlapLongestAxis;
+    const auto numSlices = towersPerDim[longestDim] / minSliceThickness;
+    return std::vector<size_t>{(numSlices + 1) / 2, numSlices / 2};
+  }
+
   void loadDataLayout() override {
     if (this->_dataLayout == DataLayoutOption::soa) {
       VCLTraversalInterface<ParticleType>::_verletClusterLists->loadParticlesIntoSoAs(_functor);

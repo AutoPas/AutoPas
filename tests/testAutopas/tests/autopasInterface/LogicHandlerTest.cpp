@@ -7,15 +7,18 @@
 #include "LogicHandlerTest.h"
 
 #include "autopas/LogicHandler.h"
+#include "mocks/MockPairwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/ArbitraryConfigurations.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
+#include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Return;
 
-void LogicHandlerTest::initLogicHandler() {
+void LogicHandlerTest::initLogicHandler(const std::set<autopas::Configuration> &searchSpace) {
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
       .boxMax{10., 10., 10.},
@@ -29,7 +32,6 @@ void LogicHandlerTest::initLogicHandler() {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   constexpr double cellSizeFactor = 1.;
   constexpr unsigned int verletRebuildFrequency = 10;
-  const std::set<autopas::Configuration> searchSpace({arbitraryConfigurations::_arbitrary_config_2B_0});
   _tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   _tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
@@ -241,3 +243,188 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
          "doesn't affect the container. \n";
 }
 #endif
+
+/**
+ * Tests that a configuration is rejected when its trial starts, if the OpenMP runtime would fall back from its schedule
+ * kind for all loops of the traversal. Other tests handle indivdual components of this mechanic more thouroghly, this
+ * test just checks that the whole mechanic gets put together by the LogicHandler correctly.
+ */
+TEST_F(LogicHandlerTest, testRejectConfigWhoseScheduleKindFallsBack) {
+  if (autopas::OpenMPKindOption::runtimeScheduleLevel == autopas::OpenMPKindOption::ScheduleLevel::gccLibgomp) {
+    GTEST_SKIP() << "libgomp does not fall back from schedule kinds.";
+  }
+  // lc_c01 has one loop over the 3 x 3 x 3 non-halo cells of the domain which initLogicHandler() sets up. With 4
+  // threads, guided falls back if (2 * chunkSize + 1) * 4 >= 27, so not with chunk size 1, but with chunk size 4.
+  const NumThreadGuard numThreadGuard(4);
+  const auto getConfig = [](size_t chunkSize) {
+    return autopas::Configuration(autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01,
+                                  autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                  autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_guided, chunkSize,
+                                  autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
+  };
+  const auto configRunsGuided = getConfig(1);
+  const auto configFallsBack = getConfig(4);
+  initLogicHandler({configRunsGuided, configFallsBack});
+  LJFunctorGlobals functor(2.5);
+
+  // Start a tuning phase, so that the tuner is about to trial its first configuration.
+  _tuningManager->tune(0, autopas::LiveInfo{});
+
+  EXPECT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configRunsGuided, functor)), nullptr);
+  const auto [traversal, rejectIndefinitely] = _logicHandler->isConfigurationApplicable(configFallsBack, functor);
+  EXPECT_EQ(traversal, nullptr);
+  EXPECT_FALSE(rejectIndefinitely) << "Whether the runtime falls back depends on the domain.";
+
+  // Once the configuration has samples, it must not be rejected anymore.
+  _tuningManager->addMeasurement(1, 1, true, 0, autopas::InteractionTypeOption::pairwise);
+  EXPECT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configFallsBack, functor)), nullptr);
+}
+
+/**
+ * Tests that the LogicHandler sets the golden chunk size in the OpenMP runtime, calculated from the loop counts of the
+ * traversal.
+ */
+TEST_F(LogicHandlerTest, testSetGoldenChunkSize) {
+#ifndef AUTOPAS_USE_OPENMP
+  GTEST_SKIP() << "Without OpenMP, there is no schedule to set.";
+#else
+  // lc_c01 has one loop over the 3 x 3 x 3 non-halo cells of the domain which initLogicHandler() sets up. With one
+  // thread, the golden chunk size of a loop with 27 iterations is 3.
+  const NumThreadGuard numThreadGuard(1);
+  const auto configGolden =
+      getArbitraryConfiguration(autopas::InteractionTypeOption::pairwise, autopas::ContainerOption::linkedCells,
+                                autopas::TraversalOption::lc_c01, /*loadEstimator*/ std::nullopt,
+                                autopas::DataLayoutOption::aos, /*newton3*/ std::nullopt, /*cellSizeFactor*/ 1.0,
+                                autopas::OpenMPKindOption::omp_dynamic, autopas::OpenMPChunkSize::golden)
+          .value();
+  initLogicHandler({configGolden});
+
+  // The OMP schedule only gets set for the traversal and is then reset, so we have to extract it during the traversal
+  // call. We do this with two neighboring particles and a mock functor that just gets the schedule.
+  _logicHandler->addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
+  _logicHandler->addParticle(Molecule{{1.5, 1., 1.}, {0., 0., 0.}, 1, 0});
+  omp_sched_t kindDuring{};
+  int chunkSizeDuring{};
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
+  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(_)).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, AoSFunctor).Times(AtLeast(1)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
+    autopas::autopas_get_schedule(&kindDuring, &chunkSizeDuring);
+  }));
+
+  omp_sched_t kindOriginal{};
+  int chunkSizeOriginal{};
+  autopas::autopas_get_schedule(&kindOriginal, &chunkSizeOriginal);
+  autopas::autopas_set_schedule(omp_sched_static, 7);
+
+  _logicHandler->updateContainer();
+  _logicHandler->computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+
+  EXPECT_EQ(kindDuring, omp_sched_dynamic);
+  EXPECT_EQ(chunkSizeDuring, 3);
+
+  omp_sched_t kindAfter{};
+  int chunkSizeAfter{};
+  autopas::autopas_get_schedule(&kindAfter, &chunkSizeAfter);
+  EXPECT_EQ(kindAfter, omp_sched_static);
+  EXPECT_EQ(chunkSizeAfter, 7);
+
+  autopas::autopas_set_schedule(kindOriginal, chunkSizeOriginal);
+#endif
+}
+
+/**
+ * Tests that the LogicHandler does not set the OpenMP schedule for a configuration with the sequential schedule kind.
+ */
+TEST_F(LogicHandlerTest, testSequentialConfigDoesNotSetSchedule) {
+#ifndef AUTOPAS_USE_OPENMP
+  GTEST_SKIP() << "Without OpenMP, there is no schedule to set.";
+#else
+  const auto configSequential =
+      getArbitraryConfiguration(autopas::InteractionTypeOption::pairwise, autopas::ContainerOption::directSum,
+                                autopas::TraversalOption::ds_sequential, /*loadEstimator*/ std::nullopt,
+                                autopas::DataLayoutOption::aos)
+          .value();
+  initLogicHandler({configSequential});
+
+  // The OMP schedule only gets set for the traversal and is then reset, so we have to extract it during the traversal
+  // call. We do this with two neighboring particles and a mock functor that just gets the schedule.
+  _logicHandler->addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
+  _logicHandler->addParticle(Molecule{{1.5, 1., 1.}, {0., 0., 0.}, 1, 0});
+  omp_sched_t kindDuring{};
+  int chunkSizeDuring{};
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
+  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(_)).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, AoSFunctor).Times(AtLeast(1)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
+    autopas::autopas_get_schedule(&kindDuring, &chunkSizeDuring);
+  }));
+
+  omp_sched_t kindOriginal{};
+  int chunkSizeOriginal{};
+  autopas::autopas_get_schedule(&kindOriginal, &chunkSizeOriginal);
+  autopas::autopas_set_schedule(omp_sched_dynamic, 7);
+
+  _logicHandler->updateContainer();
+  _logicHandler->computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+
+  EXPECT_EQ(kindDuring, omp_sched_dynamic);
+  EXPECT_EQ(chunkSizeDuring, 7);
+
+  omp_sched_t kindAfter{};
+  int chunkSizeAfter{};
+  autopas::autopas_get_schedule(&kindAfter, &chunkSizeAfter);
+  EXPECT_EQ(kindAfter, omp_sched_dynamic);
+  EXPECT_EQ(chunkSizeAfter, 7);
+
+  autopas::autopas_set_schedule(kindOriginal, chunkSizeOriginal);
+#endif
+}
+
+/**
+ * Tests that a configuration with the golden chunk size is rejected when its trial starts, if the golden chunk size
+ * falls back to a chunk size of 1 and the same configuration with a chunk size of 1 is in the search space. As with
+ * testRejectConfigWhoseScheduleKindFallsBack, this just checks that the LogicHandler puts the mechanic together
+ * correctly.
+ */
+TEST_F(LogicHandlerTest, testRejectConfigWhoseChunkSizeFallsBackTo1) {
+#ifndef AUTOPAS_USE_OPENMP
+  GTEST_SKIP() << "Without OpenMP, there is only one thread, with which the golden chunk size is not 1 here.";
+#else
+  // lc_c01 has one loop over the 3 x 3 x 3 non-halo cells of the domain which initLogicHandler() sets up. With 16
+  // threads, these 27 iterations are fewer than two per thread, so the golden chunk size is 1.
+  const NumThreadGuard numThreadGuard(16);
+  const auto configGolden =
+      getArbitraryConfiguration(autopas::InteractionTypeOption::pairwise, autopas::ContainerOption::linkedCells,
+                                autopas::TraversalOption::lc_c01, /*loadEstimator*/ std::nullopt,
+                                /*dataLayout*/ std::nullopt, /*newton3*/ std::nullopt, /*cellSizeFactor*/ 1.0,
+                                autopas::OpenMPKindOption::omp_dynamic, autopas::OpenMPChunkSize::golden)
+          .value();
+  auto configChunkSize1 = configGolden;
+  configChunkSize1.ompChunkSize = 1;
+  LJFunctorGlobals functor(2.5);
+
+  // Without the configuration with a chunk size of 1 in the search space, the golden one does not duplicate anything.
+  // The search space needs a second configuration, as the tuner is never in a tuning phase with only one.
+  initLogicHandler({configGolden, arbitraryConfigurations::_arbitrary_config_2B_0});
+  // Start a tuning phase, so that the tuner is about to trial its first configuration.
+  _tuningManager->tune(0, autopas::LiveInfo{});
+  EXPECT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configGolden, functor)), nullptr);
+
+  // With it in the search space, the golden one is rejected.
+  initLogicHandler({configGolden, configChunkSize1});
+  _tuningManager->tune(0, autopas::LiveInfo{});
+  EXPECT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configChunkSize1, functor)), nullptr);
+  const auto [traversal, rejectIndefinitely] = _logicHandler->isConfigurationApplicable(configGolden, functor);
+  EXPECT_EQ(traversal, nullptr);
+  EXPECT_FALSE(rejectIndefinitely) << "Whether the chunk size falls back depends on the domain.";
+
+  // Once the configuration has samples this tuning phase, it must not be rejected anymore.
+  _tuningManager->addMeasurement(1, 1, true, 0, autopas::InteractionTypeOption::pairwise);
+  EXPECT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configGolden, functor)), nullptr);
+#endif
+}

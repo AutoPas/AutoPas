@@ -82,9 +82,23 @@ class NumberInterval final : public NumberSet<Number> {
     return {};
   }
 
+  /**
+   * Gets a random uniformly distributed number between _min and _max.
+   *
+   * If Number is an integer type, this is unformly randomly selected from the integers between _min and _max.
+   * If Number is a floating point type, this is uniformly randomly selected from all real numbers between _min and _max.
+   *
+   * @param rng random seed
+   * @return
+   */
   inline Number getRandom(Random &rng) const override {
-    std::uniform_real_distribution<Number> distr(_min, _max);
-    return distr(rng);
+    if constexpr (std::is_integral_v<Number>) {
+      std::uniform_int_distribution<Number> distr(_min, _max);
+      return distr(rng);
+    } else {
+      std::uniform_real_distribution<Number> distr(_min, _max);
+      return distr(rng);
+    }
   }
   std::vector<Number> uniformSample(size_t n, Random &rng) const override {
     std::vector<Number> result;

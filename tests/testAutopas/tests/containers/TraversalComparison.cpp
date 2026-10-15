@@ -10,6 +10,7 @@
 
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
@@ -184,7 +185,24 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   }
 
   functor.initTraversal();
+
+  // Set the OpenMP schedule of the configuration only for the traversal and restore the previous one afterwards, as the
+  // LogicHandler does.
+  omp_sched_t kindBefore{};
+  int chunkSizeBefore{};
+  autopas::autopas_get_schedule(&kindBefore, &chunkSizeBefore);
+  const autopas::OpenMPConfigurator ompConfig(
+      config.ompKind, config.ompChunkSize,
+      traversal->getRuntimeScheduledLoopCounts(container->getTraversalSelectorInfo(), numParticles + numHaloParticles)
+          .value_or(std::vector<size_t>{}),
+      autopas::autopas_get_max_threads());
+  if (config.ompKind != autopas::OpenMPKindOption::sequential) {
+    autopas::autopas_set_schedule(ompConfig);
+  }
+
   container->computeInteractions(traversal.get());
+
+  autopas::autopas_set_schedule(kindBefore, chunkSizeBefore);
 
   functor.endTraversal(config.newton3);
 
@@ -215,16 +233,18 @@ void TraversalComparison::generateReference(mykey_t key) {
   // tests and compared against the reference, sorting is enabled.
   if (not _forcesReference.contains(key)) {
     if (interactionType == autopas::InteractionTypeOption::pairwise) {
-      constexpr auto referenceConfig = autopas::Configuration(
-          autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08,
-          autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
-          autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
+      constexpr auto referenceConfig =
+          autopas::Configuration(autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08,
+                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                 autopas::Newton3Option::enabled, autopas::OpenMPKindOption::omp_dynamic, 1,
+                                 autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
       std::tie(calculatedForces, calculatedGlobals) = calculateForces<globals>(referenceConfig, key, false);
     } else if (interactionType == autopas::InteractionTypeOption::triwise) {
-      constexpr auto referenceConfig = autopas::Configuration(
-          autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01,
-          autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-          autopas::InteractionTypeOption::triwise, autopas::VectorizationPatternOption::NA);
+      constexpr auto referenceConfig =
+          autopas::Configuration(autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01,
+                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                                 autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_dynamic, 1,
+                                 autopas::InteractionTypeOption::triwise, autopas::VectorizationPatternOption::NA);
       std::tie(calculatedForces, calculatedGlobals) = calculateForces<globals>(referenceConfig, key, false);
     }
     _forcesReference[key] = calculatedForces;
