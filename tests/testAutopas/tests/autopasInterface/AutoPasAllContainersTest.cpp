@@ -178,3 +178,86 @@ TEST_P(AutoPasAllContainersTest, deleteParticleOnlyMarksTest) {
   // updateContainer() now has removed all halo particles.
   EXPECT_EQ(numParticlesFound, 3);
 }
+
+/**
+ * Reproduces a scenario where buffer particles get added to the container in a rebuild step whilst an owned particle
+ * has already left the box. This case has resulted in errors in containers in the past. Checks that this neither throws
+ * nor loses a particle and that the particle that left is returned.
+ */
+TEST_P(AutoPasAllContainersTest, addBufferParticlesWhileOwnedParticleLeftBoxTest) {
+  // Particles 0-9 are stored in the container, 10-20 are added while the neighbor lists are valid and wait in the
+  // buffer. More particles wait in the buffer than are stored in the container, so a container that stores all
+  // particles in one std::vector must reallocate it when the buffer is emptied into it.
+  constexpr unsigned long numContainerParticles = 10;
+  constexpr unsigned long numBufferParticles = numContainerParticles + 1;
+  constexpr std::array<double, 3> boxMin{0., 0., 0.};
+  constexpr std::array<double, 3> boxMax{10., 10., 10.};
+  constexpr double cutoff = 1.;
+  constexpr double skin = 0.2;
+
+  // Generate a valid arbitrary full configuration for the container configuration under test.
+  const auto config = GetParam().generateFullConfig(autopas::InteractionTypeOption::pairwise).value();
+  if (config.container == autopas::ContainerOption::octree) {
+    // Note to reviewers: Octree experiences a different bug that occurs in the same scenario. This PR focuses on the
+    // fix for LCRefs, and a PR that sits above it in the stack will fix that bug and remove this skip.
+    GTEST_SKIP() << "Octree loses particles that moved out of a leaf when an added particle splits that leaf.";
+  }
+  // initialize AutoPas
+  autopas::AutoPas<Molecule> autoPas;
+  autoPas.setBoxMin(boxMin);
+  autoPas.setBoxMax(boxMax);
+  autoPas.setCutoff(cutoff);
+  autoPas.setVerletSkin(skin);
+  // The second iteration reuses the neighbor lists, the third rebuilds them.
+  autoPas.setVerletRebuildFrequency(2);
+  autoPas.setAllowedContainers({config.container});
+  autoPas.setAllowedTraversals({config.traversal});
+  autoPas.setAllowedLoadEstimators({config.loadEstimator});
+  autoPas.setAllowedDataLayouts({config.dataLayout});
+  autoPas.setAllowedNewton3Options({config.newton3});
+  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({config.cellSizeFactor})));
+  autoPas.setAllowedVecPatterns({config.vecPattern});
+  autoPas.setNumSamples(autoPas.getTuningInterval());  // to avoid warnings
+  autoPas.init();
+  EmptyPairwiseFunctor<Molecule> functor;
+
+  // First iteration: the particles are added to the container.
+  for (unsigned long id = 0; id < numContainerParticles; ++id) {
+    autoPas.addParticle(Molecule({0.05 + 0.1 * static_cast<double>(id), 0.5, 0.5}, {0., 0., 0.}, id, 0));
+  }
+  ASSERT_TRUE(autoPas.updateContainer().empty());
+  autoPas.computeInteractions(&functor);
+
+  // Second iteration: the neighbor lists are valid, so the added particles wait in the buffer.
+  ASSERT_TRUE(autoPas.updateContainer().empty());
+  for (unsigned long id = numContainerParticles; id < numContainerParticles + numBufferParticles; ++id) {
+    autoPas.addParticle(Molecule({1. + 0.1 * static_cast<double>(id), 1., 1.}, {0., 0., 0.}, id, 0));
+  }
+  size_t numParticlesActuallyInContainer = 0;
+  for (auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOrHalo | autopas::IteratorBehavior::containerOnly);
+       iter.isValid(); ++iter) {
+    ++numParticlesActuallyInContainer;
+  }
+  ASSERT_EQ(numParticlesActuallyInContainer, numContainerParticles)
+      << "Particles that should be in the buffer are not.";
+  autoPas.computeInteractions(&functor);
+
+  // Before the third iteration, particle 0 moves just outside the box.
+  for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    if (iter->getID() == 0) {
+      iter->setR({boxMin[0] - 0.1 * skin, 0.5, 0.5});
+    }
+  }
+
+  // The third iteration rebuilds the container, which first adds the particles from the buffer to it.
+  std::vector<Molecule> leavingParticles;
+  EXPECT_NO_THROW(leavingParticles = autoPas.updateContainer());
+
+  ASSERT_EQ(leavingParticles.size(), 1);
+  EXPECT_EQ(leavingParticles.front().getID(), 0);
+  size_t numOwnedParticlesFound = 0;
+  for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    ++numOwnedParticlesFound;
+  }
+  EXPECT_EQ(numOwnedParticlesFound, numContainerParticles + numBufferParticles - 1);
+}

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "autopas/cells/ParticleCell.h"
+#include "autopas/iterators/ReferenceCellIterator.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -17,7 +18,8 @@
 namespace autopas {
 
 /**
- * This class handles the storage of particles in their full form.
+ * This class refers to particles that are stored in a vector outside of the cell by their indices in that vector.
+ * Adding particles to that vector does not invalidate the indices, removing particles from it does.
  * @tparam Particle_T
  */
 template <class Particle_T>
@@ -28,9 +30,9 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
    */
   using SoAArraysType = typename Particle_T::SoAArraysType;
   /**
-   * Type that holds or refers to the actual particles.
+   * Type that holds or refers to the actual particles: their indices in the particle storage.
    */
-  using StorageType = std::vector<Particle_T *>;
+  using StorageType = std::vector<size_t>;
 
   /**
    * Constructs a new ReferenceParticleCell.
@@ -50,47 +52,63 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
   }
 
   /**
-   * @copydoc ParticleCell::addParticle()
+   * Sets the vector the indices stored in this cell refer to.
+   * @param particleStorage Vector holding the particles. It has to outlive this cell.
    */
-  void addParticleReference(Particle_T *p) {
-    // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: is a cell is a
+  void setParticleStorage(std::vector<Particle_T> *particleStorage) { _particleStorage = particleStorage; }
+
+  /**
+   * Adds the particle at the given index of the particle storage to this cell.
+   * @param index Index of the particle in the particle storage.
+   */
+  void addParticleReference(size_t index) {
+    if (_particleStorage == nullptr) {
+      autopas::utils::ExceptionHandler::exception(
+          "ReferenceParticleCell::addParticleReference() called before setParticleStorage().");
+    }
+    const Particle_T &p = (*_particleStorage)[index];
+    // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: if a cell is a
     // dummy-cell, only dummies can be added, otherwise dummies can always be added
-    if ((not toInt64(p->getOwnershipState() & this->_ownershipState)) and
-        p->getOwnershipState() != OwnershipState::dummy) {
+    if ((not toInt64(p.getOwnershipState() & this->_ownershipState)) and
+        p.getOwnershipState() != OwnershipState::dummy) {
       autopas::utils::ExceptionHandler::exception(
           "ReferenceParticleCell::addParticleReference() can not add a particle with OwnershipState {} to a cell with "
           "OwnershipState {}",
-          p->getOwnershipState(), this->_ownershipState);
+          p.getOwnershipState(), this->_ownershipState);
     }
 
     std::lock_guard<AutoPasLock> guard(this->_cellLock);
-    _particles.push_back(p);
+    _particles.push_back(index);
   }
 
   /**
    * @copydoc autopas::FullParticleCell::begin()
    */
-  [[nodiscard]] CellIterator<StorageType, true> begin() { return CellIterator<StorageType, true>(_particles.begin()); }
+  [[nodiscard]] ReferenceCellIterator<Particle_T, true> begin() {
+    return ReferenceCellIterator<Particle_T, true>(getParticleStorageBuffer(), _particles.begin());
+  }
 
   /**
    * @copydoc autopas::FullParticleCell::begin()
    * @note const version
    */
-  [[nodiscard]] CellIterator<StorageType, false> begin() const {
-    return CellIterator<StorageType, false>(_particles.cbegin());
+  [[nodiscard]] ReferenceCellIterator<Particle_T, false> begin() const {
+    return ReferenceCellIterator<Particle_T, false>(getParticleStorageBuffer(), _particles.cbegin());
   }
 
   /**
    * @copydoc autopas::FullParticleCell::end()
    */
-  [[nodiscard]] CellIterator<StorageType, true> end() { return CellIterator<StorageType, true>(_particles.end()); }
+  [[nodiscard]] ReferenceCellIterator<Particle_T, true> end() {
+    return ReferenceCellIterator<Particle_T, true>(getParticleStorageBuffer(), _particles.end());
+  }
 
   /**
    * @copydoc autopas::FullParticleCell::end()
    * @note const version
    */
-  [[nodiscard]] CellIterator<StorageType, false> end() const {
-    return CellIterator<StorageType, false>(_particles.cend());
+  [[nodiscard]] ReferenceCellIterator<Particle_T, false> end() const {
+    return ReferenceCellIterator<Particle_T, false>(getParticleStorageBuffer(), _particles.cend());
   }
 
   /**
@@ -161,8 +179,8 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
     std::lock_guard<AutoPasLock> guard(this->_cellLock);
 
     size_t numParticles{0};
-    numParticles =
-        std::count_if(_particles.begin(), _particles.end(), [&behavior](auto p) { return behavior.contains(*p); });
+    numParticles = std::count_if(_particles.begin(), _particles.end(),
+                                 [&](size_t index) { return behavior.contains((*_particleStorage)[index]); });
 
     return numParticles;
   }
@@ -172,7 +190,7 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
    * @param n Position of an element in the container
    * @return Reference to the element
    */
-  Particle_T &operator[](size_t n) { return *(_particles[n]); }
+  Particle_T &operator[](size_t n) { return (*_particleStorage)[_particles[n]]; }
 
   /**
    * @copydoc ParticleCell::getParticleCellTypeAsEnum()
@@ -184,30 +202,30 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
    * @param n Position of an element in the container
    * @return Reference to the element
    */
-  const Particle_T &operator[](size_t n) const { return *(_particles[n]); }
+  const Particle_T &operator[](size_t n) const { return (*_particleStorage)[_particles[n]]; }
 
   /**
    * Returns the particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  [[nodiscard]] Particle_T &at(size_t index) { return *(_particles.at(index)); }
+  [[nodiscard]] Particle_T &at(size_t index) { return (*_particleStorage)[_particles.at(index)]; }
 
   /**
    * Returns the const particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  [[nodiscard]] const Particle_T &at(size_t index) const { return *(_particles.at(index)); }
+  [[nodiscard]] const Particle_T &at(size_t index) const { return (*_particleStorage)[_particles.at(index)]; }
 
   [[nodiscard]] bool isEmpty() const override { return size() == 0; }
 
   void clear() override { _particles.clear(); }
 
   void deleteDummyParticles() override {
-    _particles.erase(
-        std::remove_if(_particles.begin(), _particles.end(), [](const auto &particle) { return particle->isDummy(); }),
-        _particles.end());
+    _particles.erase(std::remove_if(_particles.begin(), _particles.end(),
+                                    [&](size_t index) { return (*_particleStorage)[index].isDummy(); }),
+                     _particles.end());
   }
 
   void deleteByIndex(size_t index) override {
@@ -216,7 +234,7 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", size(), index);
     }
 
-    _particles[index]->setOwnershipState(OwnershipState::dummy);
+    (*_particleStorage)[_particles[index]].setOwnershipState(OwnershipState::dummy);
 
     if (index < size() - 1) {
       std::swap(_particles[index], _particles[size() - 1]);
@@ -229,19 +247,13 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
   [[nodiscard]] std::array<double, 3> getCellLength() const override { return _cellLength; }
 
   /**
-   * Resizes the container so that it contains n elements.
-   * @param n New container size
-   * @param toInsert Particle to insert. This is needed to allow for non-default-constructible particles.
-   */
-  void resize(size_t n, const Particle_T &toInsert) { _particles.resize(n, std::unique_ptr<Particle_T>(toInsert)); }
-
-  /**
    * Sort the particles in the cell by a dimension.
    * @param dim dimension to sort
    */
   void sortByDim(const size_t dim) {
-    std::sort(_particles.begin(), _particles.end(),
-              [dim](const auto *a, const auto *b) -> bool { return a->getR()[dim] < b->getR()[dim]; });
+    std::sort(_particles.begin(), _particles.end(), [&](size_t a, size_t b) -> bool {
+      return (*_particleStorage)[a].getR()[dim] < (*_particleStorage)[b].getR()[dim];
+    });
   }
 
   /**
@@ -251,7 +263,7 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
   void reserve(size_t n) { _particles.reserve(n); }
 
   /**
-   * Storage of the molecules of the cell.
+   * Indices of the particles of this cell in the particle storage.
    */
   StorageType _particles;
 
@@ -263,14 +275,29 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
  private:
   std::array<double, 3> _cellLength;
 
+  /**
+   * Vector holding the particles the indices in _particles refer to.
+   */
+  std::vector<Particle_T> *_particleStorage{nullptr};
+
+  /**
+   * Returns the start of the particle storage's buffer, or nullptr if no storage is set.
+   * @return Pointer to the first particle in the particle storage.
+   */
+  Particle_T *getParticleStorageBuffer() const {
+    return _particleStorage == nullptr ? nullptr : _particleStorage->data();
+  }
+
   template <bool regionCheck, typename Lambda>
   void forEachImpl(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                    const std::array<double, 3> &higherCorner,
                    IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
-    for (Particle_T *p : _particles) {
-      if (behavior.contains(*p)) {
-        if ((not regionCheck) or utils::inBox(p->getR(), lowerCorner, higherCorner)) {
-          forEachLambda(*p);
+    Particle_T *particles = getParticleStorageBuffer();
+    for (size_t index : _particles) {
+      Particle_T &p = particles[index];
+      if (behavior.contains(p)) {
+        if ((not regionCheck) or utils::inBox(p.getR(), lowerCorner, higherCorner)) {
+          forEachLambda(p);
         }
       }
     }
@@ -280,10 +307,12 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
   void reduceImpl(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                   const std::array<double, 3> &higherCorner,
                   IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
-    for (Particle_T *p : _particles) {
-      if ((not ownershipCheck) or behavior.contains(*p)) {
-        if ((not regionCheck) or utils::inBox(p->getR(), lowerCorner, higherCorner)) {
-          reduceLambda(*p, result);
+    Particle_T *particles = getParticleStorageBuffer();
+    for (size_t index : _particles) {
+      Particle_T &p = particles[index];
+      if ((not ownershipCheck) or behavior.contains(p)) {
+        if ((not regionCheck) or utils::inBox(p.getR(), lowerCorner, higherCorner)) {
+          reduceLambda(p, result);
         }
       }
     }

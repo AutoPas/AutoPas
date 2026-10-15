@@ -457,3 +457,56 @@ TEST_P(AllContainersTests, testDeleteParticleOnlyMarks) {
   EXPECT_TRUE(leavingParticles.empty());
   EXPECT_EQ(container->size(), numParticles - deletedIDs.size());
 }
+
+/**
+ * Adds particles while an owned particle has already left the box. This mimics what can happen at a rebuild, when
+ * AutoPas adds the particles from its buffer. The oddly specific scenario comes from this being a regression test for
+ * bugs which used to occur for this scenario. Checks that adding neither throws nor loses a particle and that
+ * updateContainer(false) returns the particle that left.
+ */
+TEST_P(AllContainersTests, testAddParticleWhileOwnedParticleLeftBox) {
+  const auto containerConfig = std::get<0>(GetParam());
+  if (containerConfig.container == autopas::ContainerOption::octree) {
+    // Note to reviewers: Octree experiences a different bug that occurs in the same scenario. This PR focuses on the
+    // fix for LCRefs, and a PR that sits above it in the stack will fix that bug and remove this skip.
+    GTEST_SKIP() << "Octree loses particles that moved out of a leaf when an added particle splits that leaf.";
+  }
+  auto container = getInitializedContainer<ParticleFP64>(containerConfig);
+
+  constexpr unsigned long numInitialParticles = 10;
+  for (unsigned long id = 0; id < numInitialParticles; ++id) {
+    container->addParticle(ParticleFP64({0.05 + 0.1 * static_cast<double>(id), 0.5, 0.5}, {0., 0., 0.}, id));
+  }
+  // Particle 0 moves just outside the box, as if it moved there since the last container update. The address of
+  // particle 1 is stored to check below that the adds reallocated the particle vector of LinkedCellsReferences.
+  std::uintptr_t addressOfParticle1{0};
+  for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    if (iter->getID() == 0) {
+      iter->setR({boxMin[0] - 0.1 * skin, 0.5, 0.5});
+    }
+    if (iter->getID() == 1) {
+      addressOfParticle1 = reinterpret_cast<std::uintptr_t>(&*iter);
+    }
+  }
+  // Add more particles than are stored, so a container that stores all particles in one std::vector must reallocate it.
+  constexpr unsigned long numAddedParticles = numInitialParticles + 1;
+  for (unsigned long id = numInitialParticles; id < numInitialParticles + numAddedParticles; ++id) {
+    EXPECT_NO_THROW(
+        container->addParticle(ParticleFP64({1. + 0.1 * static_cast<double>(id), 1., 1.}, {0., 0., 0.}, id)));
+  }
+  // A reallocation copies every particle to new memory, so particle 1 must now be stored at a different address.
+  if (containerConfig.container == autopas::ContainerOption::linkedCellsReferences) {
+    for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      if (iter->getID() == 1) {
+        EXPECT_NE(reinterpret_cast<std::uintptr_t>(&*iter), addressOfParticle1)
+            << "The particle vector was not reallocated, so this test does not cover the scenario it is meant for.";
+      }
+    }
+  }
+
+  const auto leavingParticles = container->updateContainer(false);
+  ASSERT_EQ(leavingParticles.size(), 1);
+  EXPECT_EQ(leavingParticles.front().getID(), 0);
+  EXPECT_EQ(container->getNumberOfParticles(autopas::IteratorBehavior::owned),
+            numInitialParticles + numAddedParticles - 1);
+}
