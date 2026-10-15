@@ -100,13 +100,16 @@ TEST(CellOwnershipTest, testOwnershipReferenceParticleCell) {
       pBad = pOwned;
     }
 
-    EXPECT_NO_THROW(cell.addParticleReference(&pGood));
+    std::vector<Molecule> particles{pGood, pDummy, pBad};
+    cell.setParticleStorage(&particles);
+
+    EXPECT_NO_THROW(cell.addParticleReference(0));
 
     // A dummy can be added always
-    EXPECT_NO_THROW(cell.addParticleReference(&pDummy));
+    EXPECT_NO_THROW(cell.addParticleReference(1));
 
     // A halo particle can not be added to a pure owned cell and vice versa
-    EXPECT_ANY_THROW(cell.addParticleReference(&pBad));
+    EXPECT_ANY_THROW(cell.addParticleReference(2));
   }
 }
 
