@@ -530,6 +530,85 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
   EXPECT_THAT(particlesInsideAfterResize, ::testing::UnorderedPointwise(ParticleEq(), expectedParticles));
 }
 
+/**
+ * Deletes a particle in an iteration without a rebuild and checks that the remaining particles experience the same
+ * forces as in an AutoPas object that never contained the deleted particle.
+ * @param conf
+ * @param deleteViaIterator If true, the particle is deleted via an iterator, otherwise via a reference to it.
+ */
+void testDeletionWithoutRebuild(const autopas::Configuration &conf, bool deleteViaIterator) {
+  // All particles are in the same cell and particle 1 interacts with particles 0 and 4.
+  const std::vector<std::array<double, 3>> positions{
+      {5., 5., 5.}, {5.9, 5., 5.}, {5., 5.9, 5.}, {5., 5., 5.9}, {5.6, 5.6, 5.6}};
+  const unsigned long idToDelete = 1;
+
+  // Does two iterations and returns the forces of the second one by particle id.
+  const auto computeForces = [&](bool withParticleToDelete) {
+    autopas::AutoPas<Molecule> autoPas;
+    setFromConfig(conf, autoPas);
+    defaultInit(autoPas);
+    for (unsigned long id = 0; id < positions.size(); ++id) {
+      // Add all particles, unless withParticleToDelete == false in which case the particle with the idToDelete is not
+      // added.
+      if (withParticleToDelete or id != idToDelete) {
+        autoPas.addParticle(Molecule(positions[id], {0., 0., 0.}, id, 0));
+      }
+    }
+    LJFunctorGlobals functor(cutoff);
+    functor.setParticleProperties(24.0, 1);
+
+    // The first iteration builds the neighbor lists.
+    doSimulationLoop(autoPas, &functor);
+
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      iter->setF(zeroArr);
+    }
+    if (withParticleToDelete) {
+      for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+        if (iter->getID() == idToDelete) {
+          if (deleteViaIterator) {
+            autoPas.deleteParticle(iter);
+          } else {
+            autoPas.deleteParticle(*iter);
+          }
+          break;
+        }
+      }
+    }
+    doSimulationLoop(autoPas, &functor);
+
+    std::map<unsigned long, std::array<double, 3>> forces;
+    for (auto iter = autoPas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+      forces[iter->getID()] = iter->getF();
+    }
+    return forces;
+  };
+
+  const auto forces = computeForces(true);
+  const auto referenceForces = computeForces(false);
+
+  ASSERT_EQ(forces.size(), referenceForces.size());
+  for (const auto &[id, referenceForce] : referenceForces) {
+    ASSERT_TRUE(forces.contains(id)) << "Particle " << id << " is missing.";
+    for (size_t dim = 0; dim < 3; ++dim) {
+      EXPECT_NEAR(forces.at(id)[dim], referenceForce[dim], 1e-12 * (1. + std::abs(referenceForce[dim])))
+          << "Particle " << id << ", dimension " << dim << ", deleted via "
+          << (deleteViaIterator ? "iterator" : "reference");
+    }
+  }
+}
+
+/**
+ * This test checks that deleting a particle in an iteration without a rebuild does not break the force calculation,
+ * see also the comments of testDeletionWithoutRebuild() for a more detailed description.
+ */
+TEST_P(AutoPasInterface1ContainersTest, DeletionWithoutRebuildTest) {
+  // Generate a valid arbitrary full configuration for the container configuration under test.
+  const auto conf = GetParam().generateFullConfig(autopas::InteractionTypeOption::pairwise).value();
+  testDeletionWithoutRebuild(conf, true);
+  testDeletionWithoutRebuild(conf, false);
+}
+
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterface1ContainersTest,
                          ValuesIn(generateAllValidContainerConfigurations()),
                          AutoPasInterface1ContainersTest::PrintToStringParamName());

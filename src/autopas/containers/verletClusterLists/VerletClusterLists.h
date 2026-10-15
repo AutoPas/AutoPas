@@ -362,16 +362,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     return {retPtr, cellIndex, particleIndex};
   }
 
-  bool deleteParticle(Particle_T &particle) override {
+  void deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything as it would mess up the clusters' references.
     internal::markParticleAsDeleted(particle);
-    return false;
   }
 
-  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+  void deleteParticle(size_t cellIndex, size_t particleIndex) override {
     // This function doesn't actually delete anything as it would mess up the clusters' references.
     internal::markParticleAsDeleted(_towerBlock[cellIndex][particleIndex]);
-    return false;
   }
 
   [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
