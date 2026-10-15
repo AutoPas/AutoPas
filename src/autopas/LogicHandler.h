@@ -1133,9 +1133,27 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo));
   }
 
+  // Set the configuration's OpenMP schedule only for the traversal and restore the previous one afterwards, so that it
+  // does not affect other schedule(runtime) loops, e.g. those of the application. Sequential traversals have no
+  // schedule to set.
+  const auto &config = autoTuner.getCurrentConfig();
+  omp_sched_t kindBefore{};
+  int chunkSizeBefore{};
+  autopas_get_schedule(&kindBefore, &chunkSizeBefore);
+  if (config.ompKind != OpenMPKindOption::sequential) {
+    const auto loopCounts = traversal
+                                .getRuntimeScheduledLoopCounts(_currentContainer->getTraversalSelectorInfo(),
+                                                               getNumberOfParticlesOwned() + getNumberOfParticlesHalo())
+                                .value_or(std::vector<size_t>{});
+    autopas_set_schedule(
+        OpenMPConfigurator(config.ompKind, config.ompChunkSize, loopCounts, autopas_get_max_threads()));
+  }
+
   timerComputeInteractions.start();
   _currentContainer->computeInteractions(&traversal);
   timerComputeInteractions.stop();
+
+  autopas_set_schedule(kindBefore, chunkSizeBefore);
 
   timerComputeRemainder.start();
   const bool newton3 = autoTuner.getCurrentConfig().newton3;
@@ -1144,8 +1162,6 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   timerComputeRemainder.stop();
 
   functor.endTraversal(newton3);
-
-  // ToDo: We need to reset the OMP config
 
   const auto [energyWatts, energyJoules, energyDeltaT, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
@@ -1501,11 +1517,6 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
         return {nullptr, /*rejectIndefinitely*/ false};
       }
     }
-  }
-
-  // Set OMP Configuration. Sequential traversals have no schedule to set.
-  if (config.ompKind != OpenMPKindOption::sequential) {
-    autopas_set_schedule(ompConfig);
   }
 
   return {std::move(traversalPtr), /*rejectIndefinitely*/ false};

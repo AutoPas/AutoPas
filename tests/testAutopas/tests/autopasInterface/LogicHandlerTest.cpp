@@ -7,6 +7,7 @@
 #include "LogicHandlerTest.h"
 
 #include "autopas/LogicHandler.h"
+#include "mocks/MockPairwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/ArbitraryConfigurations.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
@@ -293,19 +294,44 @@ TEST_F(LogicHandlerTest, testSetGoldenChunkSize) {
   const auto configGolden =
       getArbitraryConfiguration(autopas::InteractionTypeOption::pairwise, autopas::ContainerOption::linkedCells,
                                 autopas::TraversalOption::lc_c01, /*loadEstimator*/ std::nullopt,
-                                /*dataLayout*/ std::nullopt, /*newton3*/ std::nullopt, /*cellSizeFactor*/ 1.0,
+                                autopas::DataLayoutOption::aos, /*newton3*/ std::nullopt, /*cellSizeFactor*/ 1.0,
                                 autopas::OpenMPKindOption::omp_dynamic, autopas::OpenMPChunkSize::golden)
           .value();
   initLogicHandler({configGolden});
-  LJFunctorGlobals functor(2.5);
 
-  ASSERT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configGolden, functor)), nullptr);
+  // The OMP schedule only gets set for the traversal and is then reset, so we have to extract it during the traversal
+  // call. We do this with two neighboring particles and a mock functor that just gets the schedule.
+  _logicHandler->addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
+  _logicHandler->addParticle(Molecule{{1.5, 1., 1.}, {0., 0., 0.}, 1, 0});
+  omp_sched_t kindDuring{};
+  int chunkSizeDuring{};
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
+  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(_)).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, AoSFunctor).Times(AtLeast(1)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
+    autopas::autopas_get_schedule(&kindDuring, &chunkSizeDuring);
+  }));
 
-  omp_sched_t kind{};
-  int chunkSize{};
-  autopas::autopas_get_schedule(&kind, &chunkSize);
-  EXPECT_EQ(kind, omp_sched_dynamic);
-  EXPECT_EQ(chunkSize, 3);
+  omp_sched_t kindOriginal{};
+  int chunkSizeOriginal{};
+  autopas::autopas_get_schedule(&kindOriginal, &chunkSizeOriginal);
+  autopas::autopas_set_schedule(omp_sched_static, 7);
+
+  _logicHandler->updateContainer();
+  _logicHandler->computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+
+  EXPECT_EQ(kindDuring, omp_sched_dynamic);
+  EXPECT_EQ(chunkSizeDuring, 3);
+
+  omp_sched_t kindAfter{};
+  int chunkSizeAfter{};
+  autopas::autopas_get_schedule(&kindAfter, &chunkSizeAfter);
+  EXPECT_EQ(kindAfter, omp_sched_static);
+  EXPECT_EQ(chunkSizeAfter, 7);
+
+  autopas::autopas_set_schedule(kindOriginal, chunkSizeOriginal);
 #endif
 }
 
@@ -318,19 +344,44 @@ TEST_F(LogicHandlerTest, testSequentialConfigDoesNotSetSchedule) {
 #else
   const auto configSequential =
       getArbitraryConfiguration(autopas::InteractionTypeOption::pairwise, autopas::ContainerOption::directSum,
-                                autopas::TraversalOption::ds_sequential)
+                                autopas::TraversalOption::ds_sequential, /*loadEstimator*/ std::nullopt,
+                                autopas::DataLayoutOption::aos)
           .value();
   initLogicHandler({configSequential});
-  LJFunctorGlobals functor(2.5);
 
+  // The OMP schedule only gets set for the traversal and is then reset, so we have to extract it during the traversal
+  // call. We do this with two neighboring particles and a mock functor that just gets the schedule.
+  _logicHandler->addParticle(Molecule{{1., 1., 1.}, {0., 0., 0.}, 0, 0});
+  _logicHandler->addParticle(Molecule{{1.5, 1., 1.}, {0., 0., 0.}, 1, 0});
+  omp_sched_t kindDuring{};
+  int chunkSizeDuring{};
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
+  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, isVecPatternAllowed(_)).WillRepeatedly(Return(true));
+  EXPECT_CALL(functor, AoSFunctor).Times(AtLeast(1)).WillRepeatedly(testing::InvokeWithoutArgs([&]() {
+    autopas::autopas_get_schedule(&kindDuring, &chunkSizeDuring);
+  }));
+
+  omp_sched_t kindOriginal{};
+  int chunkSizeOriginal{};
+  autopas::autopas_get_schedule(&kindOriginal, &chunkSizeOriginal);
   autopas::autopas_set_schedule(omp_sched_dynamic, 7);
-  ASSERT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configSequential, functor)), nullptr);
 
-  omp_sched_t kind{};
-  int chunkSize{};
-  autopas::autopas_get_schedule(&kind, &chunkSize);
-  EXPECT_EQ(kind, omp_sched_dynamic);
-  EXPECT_EQ(chunkSize, 7);
+  _logicHandler->updateContainer();
+  _logicHandler->computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+
+  EXPECT_EQ(kindDuring, omp_sched_dynamic);
+  EXPECT_EQ(chunkSizeDuring, 7);
+
+  omp_sched_t kindAfter{};
+  int chunkSizeAfter{};
+  autopas::autopas_get_schedule(&kindAfter, &chunkSizeAfter);
+  EXPECT_EQ(kindAfter, omp_sched_dynamic);
+  EXPECT_EQ(chunkSizeAfter, 7);
+
+  autopas::autopas_set_schedule(kindOriginal, chunkSizeOriginal);
 #endif
 }
 

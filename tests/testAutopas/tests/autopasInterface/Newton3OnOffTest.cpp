@@ -273,7 +273,11 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::Configuration
   auto traversal = autopas::TraversalSelector::generateTraversalFromConfig<ParticleFP64, Functor_T>(
       config, mockFunctor, traversalSelectorInfo);
 
-  // Set the OpenMP schedule of the configuration, as the LogicHandler would.
+  // Set the OpenMP schedule of the configuration only for the traversal and restore the previous one afterwards, as the
+  // LogicHandler does.
+  omp_sched_t kindBefore{};
+  int chunkSizeBefore{};
+  autopas::autopas_get_schedule(&kindBefore, &chunkSizeBefore);
   const autopas::OpenMPConfigurator ompConfig(
       config.ompKind, config.ompChunkSize,
       traversal->getRuntimeScheduledLoopCounts(traversalSelectorInfo, container.size()).value_or(std::vector<size_t>{}),
@@ -283,6 +287,8 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::Configuration
   }
 
   iterate(container, std::move(traversal));
+
+  autopas::autopas_set_schedule(kindBefore, chunkSizeBefore);
 
   return std::make_tuple(callsSC.load(), callsPair.load(), callsTriple.load());
 }

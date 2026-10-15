@@ -170,16 +170,6 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     return {};
   }
 
-  // Set the OpenMP schedule of the configuration, as the LogicHandler would.
-  const autopas::OpenMPConfigurator ompConfig(
-      config.ompKind, config.ompChunkSize,
-      traversal->getRuntimeScheduledLoopCounts(container->getTraversalSelectorInfo(), numParticles + numHaloParticles)
-          .value_or(std::vector<size_t>{}),
-      autopas::autopas_get_max_threads());
-  if (config.ompKind != autopas::OpenMPKindOption::sequential) {
-    autopas::autopas_set_schedule(ompConfig);
-  }
-
   if (particleDeletionPosition & DeletionPosition::beforeLists) {
     markSomeParticlesAsDeleted(*container, numParticles + numHaloParticles, 19, interactionType);
   }
@@ -195,7 +185,24 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   }
 
   functor.initTraversal();
+
+  // Set the OpenMP schedule of the configuration only for the traversal and restore the previous one afterwards, as the
+  // LogicHandler does.
+  omp_sched_t kindBefore{};
+  int chunkSizeBefore{};
+  autopas::autopas_get_schedule(&kindBefore, &chunkSizeBefore);
+  const autopas::OpenMPConfigurator ompConfig(
+      config.ompKind, config.ompChunkSize,
+      traversal->getRuntimeScheduledLoopCounts(container->getTraversalSelectorInfo(), numParticles + numHaloParticles)
+          .value_or(std::vector<size_t>{}),
+      autopas::autopas_get_max_threads());
+  if (config.ompKind != autopas::OpenMPKindOption::sequential) {
+    autopas::autopas_set_schedule(ompConfig);
+  }
+
   container->computeInteractions(traversal.get());
+
+  autopas::autopas_set_schedule(kindBefore, chunkSizeBefore);
 
   functor.endTraversal(config.newton3);
 
