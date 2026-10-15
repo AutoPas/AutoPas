@@ -112,10 +112,10 @@ TEST(OptionTest, parseOpenMPKindOptionsTest) {
       {autopas::OpenMPKindOption::omp_static, "static"},
 
       // Auto4OMP's automated selection methods:
-      {autopas::OpenMPKindOption::auto4omp_randomsel, "randomSel"},
-      {autopas::OpenMPKindOption::auto4omp_exhaustivesel, "exhaustiveSel"},
+      {autopas::OpenMPKindOption::auto4omp_randomSel, "randomSel"},
+      {autopas::OpenMPKindOption::auto4omp_exhaustiveSel, "exhaustiveSel"},
       {autopas::OpenMPKindOption::auto4omp_binarySearch, "binarySearch"},
-      {autopas::OpenMPKindOption::auto4omp_expertsel, "expertSel"},
+      {autopas::OpenMPKindOption::auto4omp_expertSel, "expertSel"},
 
       // LB4OMP's scheduling techniques (beware, technique names in LB4OMP's README are outdated):
       {autopas::OpenMPKindOption::lb4omp_profiling, "profiling"},  // Profiling
@@ -133,7 +133,7 @@ TEST(OptionTest, parseOpenMPKindOptionsTest) {
       {autopas::OpenMPKindOption::lb4omp_fiss, "fiss"},            // Fixed Increase Self Scheduling
 
       // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds):
-      {autopas::OpenMPKindOption::lb4omp_trapezoidal, "trapezoidal"},    // Trapezoid Self Scheduling
+      {autopas::OpenMPKindOption::llvm_trapezoidal, "trapezoidal"},    // Trapezoid Self Scheduling
       {autopas::OpenMPKindOption::lb4omp_fac2a, "fac2a"},                // Improved Practical Factoring
       {autopas::OpenMPKindOption::lb4omp_static_steal, "static_steal"},  // Static with Steal enabled
       {autopas::OpenMPKindOption::lb4omp_awf_b, "awf_b"},                // Adaptive Weighted Factoring Variant B

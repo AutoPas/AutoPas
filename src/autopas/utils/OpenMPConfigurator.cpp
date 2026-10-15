@@ -45,13 +45,13 @@ namespace autopas {
   switch (_kind) {
     case OpenMPKindOption::omp_auto:
       return 1;
-    case OpenMPKindOption::auto4omp_randomsel:
+    case OpenMPKindOption::auto4omp_randomSel:
       return 2;
-    case OpenMPKindOption::auto4omp_exhaustivesel:
+    case OpenMPKindOption::auto4omp_exhaustiveSel:
       return 3;
     case OpenMPKindOption::auto4omp_binarySearch:
       return 4;
-    case OpenMPKindOption::auto4omp_expertsel:
+    case OpenMPKindOption::auto4omp_expertSel:
       return 5;
     default:
       break;
@@ -121,7 +121,7 @@ namespace autopas {
     case OpenMPKindOption::omp_static:
       return omp_sched_static;
     // libomp's extensions. Declared by LB4OMP's omp.h, otherwise by WrapOpenMP.h.
-    case OpenMPKindOption::lb4omp_trapezoidal:
+    case OpenMPKindOption::llvm_trapezoidal:
       return omp_sched_trapezoidal;
     case OpenMPKindOption::lb4omp_static_steal:
       return omp_sched_static_steal;

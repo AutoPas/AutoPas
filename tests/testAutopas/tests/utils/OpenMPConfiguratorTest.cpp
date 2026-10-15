@@ -200,7 +200,7 @@ TEST(OpenMPConfiguratorFallbackTest, fallsBackToOtherKindForSingleLoop) {
 
   // Other kinds never fall back.
   for (const OpenMPKindOption kind : {OpenMPKindOption::omp_static, OpenMPKindOption::omp_dynamic,
-                                      OpenMPKindOption::lb4omp_trapezoidal, OpenMPKindOption::lb4omp_fac2a}) {
+                                      OpenMPKindOption::llvm_trapezoidal, OpenMPKindOption::lb4omp_fac2a}) {
     EXPECT_FALSE(OpenMPConfigurator(kind, 1000, {1}, 8).fallsBackToOtherKindForAllLoops()) << kind.to_string();
     EXPECT_FALSE(OpenMPConfigurator(kind, 1000, {1}, 1).fallsBackToOtherKindForAllLoops()) << kind.to_string();
   }
@@ -267,10 +267,10 @@ TEST(OpenMPConfiguratorChunkSizeTest, getActualOMPChunkSize) {
   // For auto and Auto4OMP's selection methods, the kind determines the chunk size.
   const std::vector<std::pair<OpenMPKindOption, int>> autoKindsAndChunkSizes{
       {OpenMPKindOption::omp_auto, 1},
-      {OpenMPKindOption::auto4omp_randomsel, 2},
-      {OpenMPKindOption::auto4omp_exhaustivesel, 3},
+      {OpenMPKindOption::auto4omp_randomSel, 2},
+      {OpenMPKindOption::auto4omp_exhaustiveSel, 3},
       {OpenMPKindOption::auto4omp_binarySearch, 4},
-      {OpenMPKindOption::auto4omp_expertsel, 5},
+      {OpenMPKindOption::auto4omp_expertSel, 5},
   };
   for (const auto &[kind, expectedChunkSize] : autoKindsAndChunkSizes) {
     EXPECT_EQ(OpenMPConfigurator(kind, OpenMPChunkSize::golden, loopCounts, 8).getActualOMPChunkSize(),

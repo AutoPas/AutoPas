@@ -637,7 +637,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
       autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
       autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions(), {0.5, 1.0, 1.5},
       {autopas::OpenMPKindOption::omp_static, autopas::OpenMPKindOption::omp_dynamic,
-       autopas::OpenMPKindOption::omp_guided, autopas::OpenMPKindOption::lb4omp_trapezoidal,
+       autopas::OpenMPKindOption::omp_guided, autopas::OpenMPKindOption::llvm_trapezoidal,
        autopas::OpenMPKindOption::lb4omp_static_steal, autopas::OpenMPKindOption::lb4omp_fac2a},
       {1, autopas::OpenMPChunkSize::balanced, autopas::OpenMPChunkSize::golden});
   auto tuningManagerMultipleSchedules = std::make_shared<autopas::TuningManager>(autoTunerInfo);

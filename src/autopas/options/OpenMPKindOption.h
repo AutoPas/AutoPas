@@ -30,191 +30,334 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
    */
   enum Value {
     // Standard OpenMP's scheduling kinds:
-
     /**
-     * Standard OpenMP auto:
-     * defaults to an analytical variant of guided.
-     * libomp and LB4OMP fall back to dynamic for short loops (see OpenMPConfigurator::fallsBackToOtherKind()).
+     * OpenMP static scheduling.
+     *
+     * Iterations are distributed to the threads at the beginning of the loop. Where a chunk size is provided, each
+     * chunk is distributed in a round-robin fashion.
+     *
+     * In AutoPas, static scheduling can be paired with a balanced chunk size, resulting in one chunk per thread that
+     * evenly divides the loop between them (the default static behavior, where no chunk size is provided).
+     *
+     * Pros: No scheduling overhead, and predictable memory access.
+     * Cons: No ability to dynamically load balance, if some chunks take more time.
+     *
+     * Smaller chunks = better load balance (lower thread idle time). Large chunks/balanced = better memory access.
+     *
+     * Both static with a balanced chunk size and with a chunk size of 1 are good choices for AutoPas. Don't
+     * underestimate the ability of static with a chunk size of 1 to load balance.
      */
-    omp_auto,
+    omp_static,
 
     /**
-     * Standard OpenMP dynamic: iterations are distributed to the threads in chunks.
-     * When a thread finishes its chunk, it requests a new one.
-     * The chunk size remains constant.
+     * OpenMP dynamic scheduling.
+     *
+     * Chunks are distributed to the threads once the thread is done with their previous chunk.
+     *
+     * Pros: No predetermined distribution of loops allows better ability to adapt to load imbalance => better load
+     * balance, lower thread idle times than static.
+     * Cons: Unpredictable memory access, some scheduling overhead (typically minor with AutoPas).
+     *
+     * Larger chunk sizes reduce the impact of the pros but also the impact of the cons.
+     *
+     * dynamic with a chunk size of 1 is a good choice for AutoPas in heterogeneous scenarios, although static_steal is
+     * typically better in such scenarios, but is not available on GCC/libgomp and older Clang/libomp.
      */
     omp_dynamic,
 
     /**
-     * Standard OpenMP guided: iterations are distributed to the threads in chunks.
-     * When a thread finishes its chunk, it requests a new one.
-     * The chunk size starts large, and decreases over time towards the minimum set by the chunk size argument.
-     * libomp and LB4OMP fall back to dynamic for short loops (see OpenMPConfigurator::fallsBackToOtherKind()).
+     * OpenMP guided scheduling.
+     *
+     * Like dynamic, but begin with larger chunk sizes and reduce them to a minimum chunk size (that provided by us).
+     *
+     * Pros: combines the pros of dynamic with a small chunk size and the pros of dynamic with a large chunk size.
+     * Cons: combines the cons of dynamic with a small chunk size and the cons of dynamic with a large chunk size.
+     *
+     * Falls back to dynamic for short loops (see OpenMPConfigurator::fallsBackToOtherKind()).
+     *
+     * guided is rarely found to be that good a choice for AutoPas, we rarely have large enough loops.
      */
     omp_guided,
 
     /**
-     * Standard OpenMP static: iterations are distributed to the threads in chunks.
-     * The chunks are all distributed in advance (round-robin).
-     * If iterations runtimes differ significantly, some threads may finish too early.
-     * In such cases, use dynamic scheduling instead.
+     * OpenMP auto scheduling.
+     *
+     * In practice, never really implemented as an actual automated schedule selection.
+     *
+     * For GCC/libgomp, it is implemented just as static with the default chunk size (i.e. static with a balanced chunk
+     * size), so we just skip this when trialling configurations. For Clang/libomp/LB4OMP, it is implemented as an analytical variant of guided.
+     *
+     * See guided for pros and cons.
+     *
+     * Similarly, falls back to dynamic for short loops (see OpenMPConfigurator::fallsBackToOtherKind()).
+     *
+     * This can compare well to standard guided, but is similarly rarely found to be a good choice for AutoPas.
      */
-    omp_static,
+    omp_auto,
 
-    // Auto4OMP's automated selection methods:
-
-    /**
-     * RandomSel: may reselect a random scheduling algorithm at the end of each time-step.
-     * The probability of reselection increases with greater load imbalance.
-     */
-    auto4omp_randomsel,
-
-    /**
-     * ExhaustiveSel: tries each algorithm once, then selects the fastest one and keeps it for a while.
-     * Load imbalance re-triggers selection.
-     */
-    auto4omp_exhaustivesel,
-
-    /**
-     * Binary Search: tries the extreme ends of the algorithm list (ordered by load balancing overhead),
-     * moves to the half of the list where the better algorithm is, and searches there.
-     * Repeats until converging to the best scheduling technique.
-     */
-    auto4omp_binarySearch,
-
-    /**
-     * ExpertSel: uses runtime performance info and fuzzy logic with expert rules to select scheduling algorithms.
-     */
-    auto4omp_expertsel,
-
-    // LB4OMP's scheduling techniques [1, 2] (beware, technique names in the papers and Git README are outdated):
-    /**
-     * Profiling: uses dynamic,1 and tracks the execution times of loop iterations.
-     * Some other techniques use the gathered information in future runs.
-     * Pass a path for storing the data with KMP_PROFILE_DATA.
-     */
-    lb4omp_profiling,
-
-    /**
-     * Fixed Size Chunk: calculates an optimal chunk size and uses it for the entire simulation.
-     * Beware: requires a prior profiling run of the simulation. Point KMP_PROFILE_DATA to the profiling data file.
-     */
-    lb4omp_fsc,
-
-    /**
-     * Modified Fixed Size Chunk: calculates an optimal chunk size and uses it for the entire simulation.
-     * Does not require profiling.
-     */
-    lb4omp_mfsc,
-
-    /**
-     * Tapering: similar to guided, but uses a more optimal model to decrease the chunk size.
-     * Beware: requires a prior profiling run of the simulation. Point KMP_PROFILE_DATA to the profiling data file.
-     */
-    lb4omp_tap,
-
-    /**
-     * Factoring: schedules the chunks in batches to the threads.
-     * Each batch uses a specific chunk size calculated by its first thread.
-     * Beware: requires a prior profiling run of the simulation. Point KMP_PROFILE_DATA to the profiling data file.
-     */
-    lb4omp_fac,
-
-    /**
-     * Improved Factoring: like fac, but each thread calculates the chunk size of the batch independently,
-     * instead of idly waiting for the batch's first thread to calculate it.
-     * Beware: requires a prior profiling run of the simulation. Point KMP_PROFILE_DATA to the profiling data file.
-     */
-    lb4omp_faca,
-
-    /**
-     * Bold:  similar to fac, but starts with larger chunks to reduce the scheduling overhead.
-     * Beware: requires a prior profiling run of the simulation. Point KMP_PROFILE_DATA to the profiling data file.
-     */
-    lb4omp_bold,
-
-    /**
-     * Practical Factoring: like fac, but new batches pack half the remaining iterations.
-     */
-    lb4omp_fac2,
-
-    /**
-     * Weighted Factoring: like fac, but the sizes of chunks in a same batch vary
-     * based on the processing weight of their host thread.
-     * The processing weights of threads represent the specs of the computing node that runs them.
-     */
-    lb4omp_wf,
-
-    /**
-     * Adaptive Factoring: like fac, but uses run-time info instead of profiling data.
-     */
-    lb4omp_af,
-
-    /**
-     * Adaptive Weighted Factoring: like wf, but processing weights change dynamically based on thread performance.
-     */
-    lb4omp_awf,
-
-    /**
-     * Trapezoid Factoring Self Scheduling: like fac, but the chunk size decreases linearly over time.
-     */
-    lb4omp_tfss,
-
-    /**
-     * Fixed Increase Self Scheduling: periodically increases the chunk size by a constant bump.
-     */
-    lb4omp_fiss,
-
-    // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds) [1, 2]:
-    /**
-     * Trapezoid Self Scheduling (from standard OpenMP): similar to guided,
-     * but the chunk size decreases linearly.
-     */
-    lb4omp_trapezoidal,
-
-    /**
-     * Improved Practical Factoring: fac2 plus the optimizations from faca.
-     */
-    lb4omp_fac2a,
-
-    /**
-     * Static with Steal enabled (from standard OpenMP): like static,
-     * but threads steal tasks from each other if they finish early.
-     * libomp and LB4OMP fall back to static or dynamic for short loops (see
-     * OpenMPConfigurator::fallsBackToOtherKind()).
-     */
-    lb4omp_static_steal,
-
-    /**
-     * Adaptive Weighted Factoring Variant B: like awf, but processing weights are updated at the end of each batch.
-     */
-    lb4omp_awf_b,
-
-    /**
-     * Adaptive Weighted Factoring Variant C: like awf, but  processing weights are updated at the end of each chunk.
-     */
-    lb4omp_awf_c,
-
-    /**
-     * Adaptive Weighted Factoring Variant D: like awf_c, but scheduling overhead influences processing weights.
-     */
-    lb4omp_awf_d,
-
-    /**
-     * Adaptive Weighted Factoring Variant E: like awf_b, but scheduling overhead influences processing weights.
-     */
-    lb4omp_awf_e,
-
-    /**
-     * Improved Adaptive Factoring: like af, but prior scheduling overhead influences chunk size.
-     */
-    lb4omp_af_a,
-
+    // Sequential
     /**
      * Sequential: not an OpenMP scheduling kind, but used with sequential traversals. It is never set by the user, but
      * implicitly included in the search space.
      */
     sequential,
+
+    // LLVM's Intel extensions
+    // Intel added the following two scheduling kinds, not accessible by direct #pragma omp for schedule(...), but can
+    // be set in the setter for schedule(runtime) loops.
+    /**
+     * LLVM libomp's trapezoidal scheduling.
+     *
+     * Similar to guided, but with a linear reduction of chunk size. This is similarly rarely found to be a good choice
+     * for AutoPas.
+     */
+    llvm_trapezoidal,
+
+    /**
+     * LLVM libomp's static steal scheduling.
+     *
+     * Begin with a static balanced scheduling. When a thread finishes, it can "steal" work from other threads.
+     *
+     * Pros: The memory access benefits of static, balanced scheduling, with the ability to dynamically load balance.
+     * Cons: The load balancing has typically more overhead than for dynamic/guided/similar schedules. For perfectly
+     * balanced distributions, there is some overhead which static, balanced does not have.
+     *
+     * There is a bug in LLVM's libomp OpenMP runtime library, which means this schedule can't be set yet. A fix should
+     * come in LLVM 24. Otherwise, this schedule can be used when compiling LB4OMP as the OpenMP runtime library.
+     *
+     * For short loops, static_steal falls back to either static, balanced or dynamic (depends on version), so we skip
+     * this schedule in tuning when that would occur (see OpenMPConfigurator::fallsBackToOtherKind()).
+     *
+     * Unlike static, a non-default chunk size does not result in round-robin loop assignment -> the assignment is
+     * always balanced. The chunk size affects the granularity of the loops for the initial distribution and for
+     * stealing.
+     *
+     * AutoPas performs excellently with static_steal and a chunk size of 1. Typically, the only cases where it is
+     * outperformed are homogeneous ones (static, balanced is better) or for very sparse ones (where dynamic is better).
+     */
+    lb4omp_static_steal,
+
+    // AutoPas can also be compiled with LB4OMP, which includes a fix for static_steal, an extended range of scheduling
+    // techniques, and proper auto schedule selection methods (Auto4OMP). See [1, 2].
+
+    // LB4OMP's scheduling techniques used by Auto4OMP:
+
+    /**
+     * LB4OMP's improved practical factoring scheduling (mFAC2 in [1, 2]).
+     *
+     * Chunks are handed out dynamically in batches. Each batch is split evenly per thread. The first batch covers
+     * half of the loop, each following batch covers half of the previous, down to a minimum chunk size (that's provided
+     * by us). Each thread calculates the chunk sizes itself, without synchronizing with the other threads.
+     *
+     * Performs similarly to guided, and only extremely rarely is optimal in AutoPas
+     */
+    lb4omp_fac2a,
+
+    /**
+     * LB4OMP's adaptive weighted factoring variant B scheduling (AWF-B in [1, 2]).
+     *
+     * Like fac2a, but each chunk size is multiplied by a weight of the thread that executes it. Whenever a thread
+     * requests a new chunk, it updates its weight from the measured execution times of its previous chunks, relative to
+     * those of the other threads, so that faster threads get larger chunks. Handles really more hardware level imbalance
+     * than simulation scenario imbalance.
+     *
+     * Performs worse than fac2a for AutoPas. We don't really have enough loops for this to pay off.
+     */
+    lb4omp_awf_b,
+
+    /**
+     * LB4OMP's adaptive weighted factoring variant C scheduling (AWF-C in [1, 2]).
+     *
+     * Like awf_b, but the chunk size before weighting is recalculated for every chunk as the remaining iterations
+     * divided by 2P, instead of once per batch.
+     *
+     * Performs worse than fac2a for AutoPas. We don't really have enough loops for this to pay off.
+     */
+    lb4omp_awf_c,
+
+    /**
+     * LB4OMP's adaptive weighted factoring variant D scheduling (AWF-D in [1, 2]).
+     *
+     * Like awf_b, but the measured times include the scheduling overhead, so that it also influences the weights.
+     *
+     * Performs worse than fac2a for AutoPas. We don't really have enough loops for this to pay off.
+     */
+    lb4omp_awf_d,
+
+    /**
+     * LB4OMP's adaptive weighted factoring variant E scheduling (AWF-E in [1, 2]).
+     *
+     * Like awf_c, but the measured times include the scheduling overhead, so that it also influences the weights.
+     *
+     * Performs worse than fac2a for AutoPas. We don't really have enough loops for this to pay off.
+     */
+    lb4omp_awf_e,
+
+    /**
+     * LB4OMP's improved adaptive factoring scheduling (mAF in [1, 2]).
+     *
+     * Each thread measures the mean and standard deviation of its iteration execution times at runtime. Each chunk size
+     * is then calculated from these statistics of all threads and the number of remaining iterations, following the
+     * factoring model, down to a minimum chunk size (that provided by us). To measure the statistics, every chunk is
+     * executed as ten sub-chunks, and the first chunk of each thread has 100 iterations. The measured times include the
+     * scheduling overhead (unlike af).
+     *
+     * Performs worse than fac2a for AutoPas. We don't really have enough loops for this to pay off.
+     */
+    lb4omp_af_a,
+
+    // Auto4OMP's automated selection methods:
+    /**
+     * Auto4OMP's RandomSel automated schedule selector.
+     *
+     * May reselect a random scheduling algorithm at the end of each loop. The probability of reselection increases with
+     * greater load imbalance.
+     */
+    auto4omp_randomSel,
+
+    /**
+     * Auto4OMP's ExhaustiveSel automated schedule selector.
+     *
+     * Tries each algorithm once, then selects the fastest one and keeps it for a while. Similar to AutoPas's Full
+     * Search. Load imbalance re-triggers selection.
+     */
+    auto4omp_exhaustiveSel,
+
+    /**
+     * Auto4OMP's Binary Search automated schedule selector.
+     *
+     * Tries the extreme ends of the Auto4OMP scheduling algorithm list (ordered by load balancing overhead, see [2]),
+     * moves to the half of the list where the better algorithm is, and searches there. Repeats until converging to the
+     * best scheduling technique. Load imbalance re-triggers selection.
+     */
+    auto4omp_binarySearch,
+
+    /**
+     * Auto4OMP's ExpertSel automated schedule selector.
+     *
+     * Uses runtime performance info and fuzzy logic with expert rules to select scheduling algorithms and change them
+     * as the performance info changes.
+     */
+    auto4omp_expertSel,
+
+    // LB4OMP's remaining scheduling techniques [1, 2] (beware, technique names in the papers and Git README are outdated):
+    // We do not recommend using these as they are untested by either tests or in our own experiments.
+    /**
+     * LB4OMP's profiling "scheduling".
+     *
+     * Schedules like dynamic with a chunk size of 1, and measures the mean and standard deviation of the iteration
+     * execution times of each loop. These are stored in the file given by KMP_PROFILE_DATA, from which fsc, tap, fac,
+     * faca, and bold read them in later runs.
+     */
+    lb4omp_profiling,
+
+    /**
+     * LB4OMP's fixed size chunking scheduling (FSC in [1]).
+     *
+     * Like dynamic, but with a chunk size calculated to balance load imbalance against scheduling overhead, from the
+     * standard deviation of the iteration execution times and the scheduling overhead (given by KMP_OVERHEAD).
+     *
+     * Requires a prior profiling run (see lb4omp_profiling).
+     */
+    lb4omp_fsc,
+
+    /**
+     * LB4OMP's modified fixed size chunking scheduling (mFSC in [1]).
+     *
+     * Like fsc, but the chunk size is calculated only from the number of iterations and threads, so no profiling run is
+     * needed.
+     */
+    lb4omp_mfsc,
+
+    /**
+     * LB4OMP's tapering scheduling (TAP in [1]).
+     *
+     * Like guided, but the chunk sizes decrease according to a model that also takes the mean and standard deviation of
+     * the iteration execution times into account (scaled by KMP_ALPHA).
+     *
+     * Requires a prior profiling run (see lb4omp_profiling).
+     */
+    lb4omp_tap,
+
+    /**
+     * LB4OMP's factoring scheduling (FAC in [1]).
+     *
+     * Like fac2a, chunks are handed out in batches of one chunk per thread. The chunk size of each batch is calculated
+     * from the number of remaining iterations and the mean and standard deviation of the iteration execution times, by
+     * the thread that starts the batch, in a critical section.
+     *
+     * Requires a prior profiling run (see lb4omp_profiling).
+     */
+    lb4omp_fac,
+
+    /**
+     * LB4OMP's improved factoring scheduling (mFAC in [1]).
+     *
+     * Like fac, but each thread calculates the chunk sizes itself, instead of the thread that starts a batch doing so
+     * in a critical section.
+     *
+     * Requires a prior profiling run (see lb4omp_profiling).
+     */
+    lb4omp_faca,
+
+    /**
+     * LB4OMP's BOLD scheduling.
+     *
+     * Like fac, but starts with larger chunks to reduce the scheduling overhead, and adapts the chunk sizes to the
+     * progress of the threads. Also uses the scheduling overhead (given by KMP_OVERHEAD).
+     *
+     * Requires a prior profiling run (see lb4omp_profiling).
+     */
+    lb4omp_bold,
+
+    /**
+     * LB4OMP's practical factoring scheduling (FAC2 in [1]).
+     *
+     * The same chunk sizes as fac2a, calculated with a closed formula instead of by halving the chunk size of the
+     * previous batch.
+     */
+    lb4omp_fac2,
+
+    /**
+     * LB4OMP's weighted factoring scheduling (WF2 in [1]).
+     *
+     * Like fac2a, but each chunk size is multiplied by a fixed weight of the thread that executes it, given by
+     * KMP_WEIGHTS, e.g. for heterogeneous cores. Without KMP_WEIGHTS, all weights are 1, which is identical to fac2a.
+     */
+    lb4omp_wf,
+
+    /**
+     * LB4OMP's adaptive factoring scheduling (AF in [1]).
+     *
+     * Like af_a, but the measured times exclude the scheduling overhead, and the number of sub-chunks is given by
+     * KMP_DIVIDER.
+     */
+    lb4omp_af,
+
+    /**
+     * LB4OMP's adaptive weighted factoring scheduling for time-stepping applications (AWF in [1]).
+     *
+     * Like wf, but the weights are updated at the end of every execution of the loop (i.e. every time step), from the
+     * measured execution times of the threads. Unlike awf_b to awf_e, the weights stay fixed within one execution of the
+     * loop.
+     */
+    lb4omp_awf,
+
+    /**
+     * LB4OMP's trapezoid factoring self scheduling (TFSS in [1]).
+     *
+     * Like trapezoidal, the chunk sizes decrease linearly, but chunks are handed out in batches of one chunk per thread.
+     * The chunk size of a batch is the average of the next P chunk sizes of trapezoidal, for P threads.
+     */
+    lb4omp_tfss,
+
+    /**
+     * LB4OMP's fixed increase self scheduling (FISS in [1]).
+     *
+     * Chunks are handed out in batches of one chunk per thread. The chunk size starts small and increases by a fixed
+     * amount from batch to batch. The number of increases is given by KMP_FISS_STAGES, by default P - 1 for P threads.
+     */
+    lb4omp_fiss,
   };
 
   /**
@@ -286,14 +429,14 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
       case sequential:
         return level >= ScheduleLevel::gccLibgomp;
       case omp_auto:
-      case lb4omp_trapezoidal:
+      case llvm_trapezoidal:
         return level >= ScheduleLevel::clangLibomp;
       case lb4omp_static_steal:
         return level >= ScheduleLevel::clangFixedLibomp;
-      case auto4omp_randomsel:
-      case auto4omp_exhaustivesel:
+      case auto4omp_randomSel:
+      case auto4omp_exhaustiveSel:
       case auto4omp_binarySearch:
-      case auto4omp_expertsel:
+      case auto4omp_expertSel:
       case lb4omp_profiling:
       case lb4omp_fsc:
       case lb4omp_mfsc:
@@ -337,10 +480,10 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
   static std::set<OpenMPKindOption> getDiscouragedOptions() {
     return {
         OpenMPKindOption::sequential,
-        OpenMPKindOption::auto4omp_randomsel,
-        OpenMPKindOption::auto4omp_exhaustivesel,
+        OpenMPKindOption::auto4omp_randomSel,
+        OpenMPKindOption::auto4omp_exhaustiveSel,
         OpenMPKindOption::auto4omp_binarySearch,
-        OpenMPKindOption::auto4omp_expertsel,
+        OpenMPKindOption::auto4omp_expertSel,
         OpenMPKindOption::lb4omp_profiling,
         OpenMPKindOption::lb4omp_fsc,
         OpenMPKindOption::lb4omp_mfsc,
@@ -375,10 +518,10 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         {OpenMPKindOption::omp_static, "static"},
 
         // Auto4OMP's automated selection methods:
-        {OpenMPKindOption::auto4omp_randomsel, "randomSel"},
-        {OpenMPKindOption::auto4omp_exhaustivesel, "exhaustiveSel"},
+        {OpenMPKindOption::auto4omp_randomSel, "randomSel"},
+        {OpenMPKindOption::auto4omp_exhaustiveSel, "exhaustiveSel"},
         {OpenMPKindOption::auto4omp_binarySearch, "binarySearch"},
-        {OpenMPKindOption::auto4omp_expertsel, "expertSel"},
+        {OpenMPKindOption::auto4omp_expertSel, "expertSel"},
 
         // LB4OMP's scheduling techniques (beware, technique names in LB4OMP's README are outdated):
         {OpenMPKindOption::lb4omp_profiling, "profiling"},  // Profiling
@@ -396,7 +539,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         {OpenMPKindOption::lb4omp_fiss, "fiss"},            // Fixed Increase Self Scheduling
 
         // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds):
-        {OpenMPKindOption::lb4omp_trapezoidal, "trapezoidal"},    // Trapezoid Self Scheduling
+        {OpenMPKindOption::llvm_trapezoidal, "trapezoidal"},    // Trapezoid Self Scheduling
         {OpenMPKindOption::lb4omp_fac2a, "fac2a"},                // Improved Practical Factoring
         {OpenMPKindOption::lb4omp_static_steal, "static_steal"},  // Static with Steal enabled
         {OpenMPKindOption::lb4omp_awf_b, "awf_b"},                // Adaptive Weighted Factoring Variant B
@@ -425,7 +568,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
    * @return
    */
   static std::set<OpenMPKindOption> getAuto4OMPSelectionMethods() {
-    return {auto4omp_randomsel, auto4omp_exhaustivesel, auto4omp_binarySearch, auto4omp_expertsel};
+    return {auto4omp_randomSel, auto4omp_exhaustiveSel, auto4omp_binarySearch, auto4omp_expertSel};
   }
 
   /**

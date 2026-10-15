@@ -68,7 +68,7 @@ inline OpenMPSchedulesToTest getOpenMPSchedulesToTest() {
     return {{autopas::OpenMPKindOption::omp_static, autopas::OpenMPKindOption::omp_dynamic,
              autopas::OpenMPKindOption::omp_guided, autopas::OpenMPKindOption::omp_auto,
              // LB4OMP's scheduling techniques used by Auto4OMP:
-             autopas::OpenMPKindOption::lb4omp_trapezoidal, autopas::OpenMPKindOption::lb4omp_fac2a,
+             autopas::OpenMPKindOption::llvm_trapezoidal, autopas::OpenMPKindOption::lb4omp_fac2a,
              autopas::OpenMPKindOption::lb4omp_static_steal, autopas::OpenMPKindOption::lb4omp_awf_b,
              autopas::OpenMPKindOption::lb4omp_awf_c, autopas::OpenMPKindOption::lb4omp_awf_d,
              autopas::OpenMPKindOption::lb4omp_awf_e, autopas::OpenMPKindOption::lb4omp_af_a},
