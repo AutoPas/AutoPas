@@ -28,6 +28,7 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/NumParticlesEstimator.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/TraceTimer.h"
