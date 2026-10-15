@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <utility>
 #include <vector>
 
 #include "autopas/cells/FullParticleCell.h"
@@ -62,33 +63,25 @@ class SortedCellView : public ParticleCell<typename ParticleCellType::ParticleTy
    * @copydoc autopas::FullParticleCell::begin()
    * @note: iterating via begin / iterators does not yield the sorted order.
    */
-  CellIterator<typename ParticleCellType::StorageType, true> begin() {
-    return CellIterator<typename ParticleCellType::StorageType, true>(_cell->begin());
-  }
+  auto begin() { return _cell->begin(); }
 
   /**
    * @copydoc autopas::FullParticleCell::begin()
    * @note: iterating via begin / iterators does not yield the sorted order.
    * @note const version
    */
-  CellIterator<typename ParticleCellType::StorageType, false> begin() const {
-    return CellIterator<typename ParticleCellType::StorageType, false>(_cell->begin());
-  }
+  auto begin() const { return std::as_const(*_cell).begin(); }
 
   /**
    * @copydoc autopas::FullParticleCell::end()
    */
-  CellIterator<typename ParticleCellType::StorageType, true> end() {
-    return CellIterator<typename ParticleCellType::StorageType, true>(_cell->end());
-  }
+  auto end() { return _cell->end(); }
 
   /**
    * @copydoc autopas::FullParticleCell::end()
    * @note const version
    */
-  CellIterator<typename ParticleCellType::StorageType, false> end() const {
-    return CellIterator<typename ParticleCellType::StorageType, false>(_cell->end());
-  }
+  auto end() const { return std::as_const(*_cell).end(); }
 
   /**
    * Get the number of all particles stored in this cell (owned, halo and dummy).
