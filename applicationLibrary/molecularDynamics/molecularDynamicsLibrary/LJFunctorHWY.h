@@ -70,6 +70,8 @@ class LJFunctorHWY
                                                                calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = Particle_T::SoAArraysType;
 
+  enum LJMixingParameters : size_t { SigmaSquared, Epsilon24, Shift6 };
+
  public:
   /**
    * Deleted default constructor
@@ -85,8 +87,7 @@ class LJFunctorHWY
   explicit LJFunctorHWY(double cutoff, std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>>
                                            particlePropertiesLibrary = std::nullopt)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
-        _cutoffSquareAoS{cutoff * cutoff},
-        _PPLibrary{particlePropertiesLibrary} {
+        _cutoffSquareAoS{cutoff * cutoff} {
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
@@ -95,11 +96,18 @@ class LJFunctorHWY
     }
 
     if constexpr (useMixing) {
-      if (not _PPLibrary.has_value()) {
+      if (not particlePropertiesLibrary.has_value()) {
         throw std::runtime_error("Mixing is enabled but no ParticlePropertiesLibrary was provided!");
       }
+      // Build the mixing table from the particle properties library.
+      const size_t numTypes = particlePropertiesLibrary->get().getNumberRegisteredSiteTypes();
+      _mixingTable.build(numTypes, [&](const size_t typeI, const size_t typeJ) {
+        const auto [epsilon24, sigmaSquared, shift6] = particlePropertiesLibrary->get().getLJMixingData(typeI, typeJ);
+
+        return std::array<double, 3>{sigmaSquared, epsilon24, shift6};
+      });
     } else {
-      if (_PPLibrary.has_value()) {
+      if (particlePropertiesLibrary.has_value()) {
         throw std::runtime_error("Mixing is disabled but a ParticlePropertiesLibrary was provided!");
       }
     }
@@ -140,10 +148,10 @@ class LJFunctorHWY
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
-      sigmaSquare = _PPLibrary->get().getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->get().getMixing24Epsilon(i.getTypeId(), j.getTypeId());
+      sigmaSquare = _mixingTable.template get<SigmaSquared>(i.getTypeId(), j.getTypeId());
+      epsilon24 = _mixingTable.template get<Epsilon24>(i.getTypeId(), j.getTypeId());
       if constexpr (applyShift) {
-        shift6 = _PPLibrary->get().getMixingShift6(i.getTypeId(), j.getTypeId());
+        shift6 = _mixingTable.template get<Shift6>(i.getTypeId(), j.getTypeId());
       }
     }
     const auto dr = i.getR() - j.getR();
@@ -924,10 +932,10 @@ class LJFunctorHWY
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       for (int j = 0; j < (remainderJ ? restJ : _vecLengthDouble); ++j) {
-        epsilons[j] = _PPLibrary->get().getMixing24Epsilon(*typeID1Ptr, *(typeID2Ptr + j));
-        sigmas[j] = _PPLibrary->get().getMixingSigmaSquared(*typeID1Ptr, *(typeID2Ptr + j));
+        epsilons[j] = _mixingTable.template get<Epsilon24>(*typeID1Ptr, *(typeID2Ptr + j));
+        sigmas[j] = _mixingTable.template get<SigmaSquared>(*typeID1Ptr, *(typeID2Ptr + j));
         if constexpr (applyShift) {
-          shifts[j] = _PPLibrary->get().getMixingShift6(*typeID1Ptr, *(typeID2Ptr + j));
+          shifts[j] = _mixingTable.template get<Shift6>(*typeID1Ptr, *(typeID2Ptr + j));
         }
       }
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -935,11 +943,11 @@ class LJFunctorHWY
         for (int j = 0; j < (remainderJ ? restJ : _vecLengthDouble / 2); ++j) {
           const auto index = i * (_vecLengthDouble / 2) + j;
           const auto typeID1 = reversed ? typeID1Ptr - i : typeID1Ptr + i;
-          epsilons[index] = _PPLibrary->get().getMixing24Epsilon(*typeID1, *(typeID2Ptr + j));
-          sigmas[index] = _PPLibrary->get().getMixingSigmaSquared(*typeID1, *(typeID2Ptr + j));
+          epsilons[index] = _mixingTable.template get<Epsilon24>(*typeID1, *(typeID2Ptr + j));
+          sigmas[index] = _mixingTable.template get<SigmaSquared>(*typeID1, *(typeID2Ptr + j));
 
           if constexpr (applyShift) {
-            shifts[index] = _PPLibrary->get().getMixingShift6(*typeID1, *(typeID2Ptr + j));
+            shifts[index] = _mixingTable.template get<Shift6>(*typeID1, *(typeID2Ptr + j));
           }
         }
       }
@@ -949,22 +957,22 @@ class LJFunctorHWY
           const auto index = i + _vecLengthDouble / 2 * j;
           const auto typeID1 = reversed ? typeID1Ptr - i : typeID1Ptr + i;
 
-          epsilons[index] = _PPLibrary->get().getMixing24Epsilon(*typeID1, *(typeID2Ptr + j));
-          sigmas[index] = _PPLibrary->get().getMixingSigmaSquared(*typeID1, *(typeID2Ptr + j));
+          epsilons[index] = _mixingTable.template get<Epsilon24>(*typeID1, *(typeID2Ptr + j));
+          sigmas[index] = _mixingTable.template get<SigmaSquared>(*typeID1, *(typeID2Ptr + j));
 
           if constexpr (applyShift) {
-            shifts[index] = _PPLibrary->get().getMixingShift6(*typeID1, *(typeID2Ptr + j));
+            shifts[index] = _mixingTable.template get<Shift6>(*typeID1, *(typeID2Ptr + j));
           }
         }
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       for (int i = 0; i < (remainderI ? restI : _vecLengthDouble); ++i) {
         auto typeID1 = reversed ? typeID1Ptr - i : typeID1Ptr + i;
-        epsilons[i] = _PPLibrary->get().getMixing24Epsilon(*typeID1, *typeID2Ptr);
-        sigmas[i] = _PPLibrary->get().getMixingSigmaSquared(*typeID1, *typeID2Ptr);
+        epsilons[i] = _mixingTable.template get<Epsilon24>(*typeID1, *typeID2Ptr);
+        sigmas[i] = _mixingTable.template get<SigmaSquared>(*typeID1, *typeID2Ptr);
 
         if constexpr (applyShift) {
-          shifts[i] = _PPLibrary->get().getMixingShift6(*typeID1, *typeID2Ptr);
+          shifts[i] = _mixingTable.template get<Shift6>(*typeID1, *typeID2Ptr);
         }
       }
     }
@@ -1142,10 +1150,10 @@ class LJFunctorHWY
       HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
       const size_t kMax = remainder ? rest : _vecLengthDouble;
       for (size_t k = 0; k < kMax; ++k) {
-        epsilons[k] = _PPLibrary->get().getMixing24Epsilon(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
-        sigmas[k] = _PPLibrary->get().getMixingSigmaSquared(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
+        epsilons[k] = _mixingTable.template get<Epsilon24>(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
+        sigmas[k] = _mixingTable.template get<SigmaSquared>(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
         if constexpr (applyShift) {
-          shifts[k] = _PPLibrary->get().getMixingShift6(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
+          shifts[k] = _mixingTable.template get<Shift6>(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
         }
       }
       epsilon24s = highway::Load(tag_double, epsilons.data());
@@ -1523,7 +1531,7 @@ class LJFunctorHWY
 
   // optional to hold a reference to the ParticlePropertiesLibrary. If a ParticlePropertiesLibrary is not used the
   // optional is empty.
-  std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>> _PPLibrary;
+  MixingTable<3, double> _mixingTable{};
 
   // accumulators for the globals (potential energy and virial).
   double _potentialEnergySum{0.};

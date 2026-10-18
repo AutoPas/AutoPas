@@ -49,6 +49,8 @@ class LJFunctorAVX
                                                                calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle_T::SoAArraysType;
 
+  enum LJMixingParameters : size_t { SigmaSquared, Epsilon24, Shift6 };
+
  public:
   /**
    * Deleted default constructor
@@ -105,12 +107,18 @@ class LJFunctorAVX
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctorAVX(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit LJFunctorAVX(double cutoff, const ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : LJFunctorAVX(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
-    _PPLibrary = &particlePropertiesLibrary;
+    // Build the mixing table from the particle properties library.
+    const size_t numTypes = particlePropertiesLibrary.getNumberRegisteredSiteTypes();
+    _mixingTable.build(numTypes, [&](const size_t typeI, const size_t typeJ) {
+      const auto [epsilon24, sigmaSquared, shift6] = particlePropertiesLibrary.getLJMixingData(typeI, typeJ);
+
+      return std::array<double, 3>{sigmaSquared, epsilon24, shift6};
+    });
   }
 
   std::string getName() final { return "LJFunctorAVX"; }
@@ -134,10 +142,10 @@ class LJFunctorAVX
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
-      sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
+      sigmaSquared = _mixingTable.template get<SigmaSquared>(i.getTypeId(), j.getTypeId());
+      epsilon24 = _mixingTable.template get<Epsilon24>(i.getTypeId(), j.getTypeId());
       if constexpr (applyShift) {
-        shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
+        shift6 = _mixingTable.template get<Shift6>(i.getTypeId(), j.getTypeId());
       }
     }
     auto dr = i.getR() - j.getR();
@@ -470,23 +478,24 @@ class LJFunctorAVX
     __m256d sigmaSquareds = _sigmaSquared;
     __m256d shift6s = _shift6;
     if (useMixing) {
+      const auto typeI = *typeID1ptr;
       // the first argument for set lands in the last bits of the register
       epsilon24s = _mm256_set_pd(
-          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-          _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)));
+          not remainderIsMasked or rest > 3 ? (_mixingTable.template getMixingRow<Epsilon24>(typeI))[*(typeID2ptr + 3)] : 0,
+          not remainderIsMasked or rest > 2 ? (_mixingTable.template getMixingRow<Epsilon24>(typeI))[*(typeID2ptr + 2)] : 0,
+          not remainderIsMasked or rest > 1 ? (_mixingTable.template getMixingRow<Epsilon24>(typeI))[*(typeID2ptr + 1)] : 0,
+          (_mixingTable.template getMixingRow<Epsilon24>(typeI))[*typeID2ptr]);
       sigmaSquareds = _mm256_set_pd(
-          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-          _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 0)));
+          not remainderIsMasked or rest > 3 ? (_mixingTable.template getMixingRow<SigmaSquared>(typeI))[*(typeID2ptr + 3)] : 0,
+          not remainderIsMasked or rest > 2 ? (_mixingTable.template getMixingRow<SigmaSquared>(typeI))[*(typeID2ptr + 2)] : 0,
+          not remainderIsMasked or rest > 1 ? (_mixingTable.template getMixingRow<SigmaSquared>(typeI))[*(typeID2ptr + 1)] : 0,
+          (_mixingTable.template getMixingRow<SigmaSquared>(typeI))[*(typeID2ptr)]);
       if constexpr (applyShift) {
         shift6s = _mm256_set_pd(
-            (not remainderIsMasked or rest > 3) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-            (not remainderIsMasked or rest > 2) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-            (not remainderIsMasked or rest > 1) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-            _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 0)));
+            (not remainderIsMasked or rest > 3) ? (_mixingTable.template getMixingRow<Shift6>(typeI))[*(typeID2ptr + 3)] : 0,
+            (not remainderIsMasked or rest > 2) ? (_mixingTable.template getMixingRow<Shift6>(typeI))[*(typeID2ptr + 2)] : 0,
+            (not remainderIsMasked or rest > 1) ? (_mixingTable.template getMixingRow<Shift6>(typeI))[*(typeID2ptr + 1)] : 0,
+            (_mixingTable.template getMixingRow<Shift6>(typeI))[*(typeID2ptr)]);
       }
     }
 
@@ -1010,7 +1019,7 @@ class LJFunctorAVX
   const double _cutoffSquaredAoS = 0;
   double _epsilon24AoS, _sigmaSquaredAoS, _shift6AoS = 0;
 
-  ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
+  MixingTable<3, double> _mixingTable{};
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;
