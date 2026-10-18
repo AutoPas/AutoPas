@@ -51,6 +51,8 @@ class LJFunctorAVX
 
   enum LJMixingParameters : size_t { SigmaSquared, Epsilon24, Shift6 };
 
+  using MixingCacheType = SoAMixingCache<double, applyShift ? 3 : 2>;
+
  public:
   /**
    * Deleted default constructor
@@ -231,6 +233,11 @@ class LJFunctorAVX
     __m256d virialSumZ = _mm256_setzero_pd();
     __m256d potentialEnergySum = _mm256_setzero_pd();
 
+    [[maybe_unused]] MixingCacheType mixingParamsCache;
+    if constexpr (useMixing) {
+      mixingParamsCache = MixingCacheType{_mixingTable.getNumTypes(), soa.size()};
+    }
+
     // reverse outer loop s.th. inner loop always beginns at aligned array start
     // typecast to detect underflow
     for (size_t i = soa.size() - 1; (long)i >= 0; --i) {
@@ -253,21 +260,36 @@ class LJFunctorAVX
       const __m256d y1 = _mm256_broadcast_sd(&yptr[i]);
       const __m256d z1 = _mm256_broadcast_sd(&zptr[i]);
 
+      const double *sigmaSquaredsPtr = nullptr;
+      const double *epsilon24sPtr = nullptr;
+      const double *shift6sPtr = nullptr;
+      if constexpr (useMixing) {
+        if constexpr (applyShift) {
+          std::tie(sigmaSquaredsPtr, epsilon24sPtr, shift6sPtr) =
+              mixingParamsCache.template getPreloadedArrays<SigmaSquared, Epsilon24, Shift6>(
+                  _mixingTable, typeIDptr[i], typeIDptr, soa.size());
+        } else {
+          std::tie(sigmaSquaredsPtr, epsilon24sPtr) =
+              mixingParamsCache.template getPreloadedArrays<SigmaSquared, Epsilon24>(
+                  _mixingTable, typeIDptr[i], typeIDptr, soa.size());
+        }
+      }
+
       size_t j = 0;
       // floor soa numParticles to multiple of vecLength
       // If b is a power of 2 the following holds:
       // a & ~(b -1) == a - (a mod b)
       for (; j < (i & ~(vecLength - 1)); j += 4) {
         SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc,
-                               &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+                               zptr, fxptr, fyptr, fzptr, sigmaSquaredsPtr, epsilon24sPtr, shift6sPtr, fxacc, fyacc,
+                               fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       // If b is a power of 2 the following holds:
       // a & (b -1) == a mod b
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
         SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                              zptr, fxptr, fyptr, fzptr, &typeIDptr[i], &typeIDptr[j], fxacc, fyacc, fzacc, &virialSumX,
+                              zptr, fxptr, fyptr, fzptr, sigmaSquaredsPtr, epsilon24sPtr, shift6sPtr, fxacc, fyacc, fzacc, &virialSumX,
                               &virialSumY, &virialSumZ, &potentialEnergySum, rest);
       }
 
@@ -352,6 +374,11 @@ class LJFunctorAVX
     __m256d virialSumZ = _mm256_setzero_pd();
     __m256d potentialEnergySum = _mm256_setzero_pd();
 
+    [[maybe_unused]] MixingCacheType mixingParamsCache;
+    if constexpr (useMixing) {
+      mixingParamsCache = MixingCacheType{_mixingTable.getNumTypes(), soa2.size()};
+    }
+
     for (unsigned int i = 0; i < soa1.size(); ++i) {
       if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
         // If the i-th particle is a dummy, skip this loop iteration.
@@ -372,17 +399,32 @@ class LJFunctorAVX
       const __m256d y1 = _mm256_broadcast_sd(&y1ptr[i]);
       const __m256d z1 = _mm256_broadcast_sd(&z1ptr[i]);
 
+      const double *sigmaSquaredsPtr = nullptr;
+      const double *epsilon24sPtr = nullptr;
+      const double *shift6sPtr = nullptr;
+      if constexpr (useMixing) {
+        if constexpr (applyShift) {
+          std::tie(sigmaSquaredsPtr, epsilon24sPtr, shift6sPtr) =
+              mixingParamsCache.template getPreloadedArrays<SigmaSquared, Epsilon24, Shift6>(
+                  _mixingTable, typeID1ptr[i], typeID2ptr, soa2.size());
+        } else {
+          std::tie(sigmaSquaredsPtr, epsilon24sPtr) =
+              mixingParamsCache.template getPreloadedArrays<SigmaSquared, Epsilon24>(
+                  _mixingTable, typeID1ptr[i], typeID2ptr, soa2.size());
+        }
+      }
+
       // floor soa2 numParticles to multiple of vecLength
       unsigned int j = 0;
       for (; j < (soa2.size() & ~(vecLength - 1)); j += 4) {
         SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j], fxacc, fyacc,
+                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, sigmaSquaredsPtr, epsilon24sPtr, shift6sPtr, fxacc, fyacc,
                                   fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       const int rest = (int)(soa2.size() & (vecLength - 1));
       if (rest > 0)
         SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, &typeID1ptr[i], &typeID2ptr[j], fxacc, fyacc,
+                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, sigmaSquaredsPtr, epsilon24sPtr, shift6sPtr, fxacc, fyacc,
                                  fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
 
       // horizontally reduce fDacc to sumfD
@@ -471,31 +513,21 @@ class LJFunctorAVX
                         const __m256d &x1, const __m256d &y1, const __m256d &z1, const double *const __restrict x2ptr,
                         const double *const __restrict y2ptr, const double *const __restrict z2ptr,
                         double *const __restrict fx2ptr, double *const __restrict fy2ptr,
-                        double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
+                        double *const __restrict fz2ptr, const double *const __restrict sigmaSquaredsPtr,
+                        const double *const __restrict epsilon24sPtr, const double *const __restrict shift6sPtr,
                         __m256d &fxacc, __m256d &fyacc, __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY,
                         __m256d *virialSumZ, __m256d *potentialEnergySum, const unsigned int rest = 0) {
     __m256d epsilon24s = _epsilon24;
     __m256d sigmaSquareds = _sigmaSquared;
     __m256d shift6s = _shift6;
-    if (useMixing) {
-      const auto typeI = *typeID1ptr;
-      // the first argument for set lands in the last bits of the register
-      epsilon24s = _mm256_set_pd(
-          not remainderIsMasked or rest > 3 ? (_mixingTable.template getMixingRow<Epsilon24>(typeI))[*(typeID2ptr + 3)] : 0,
-          not remainderIsMasked or rest > 2 ? (_mixingTable.template getMixingRow<Epsilon24>(typeI))[*(typeID2ptr + 2)] : 0,
-          not remainderIsMasked or rest > 1 ? (_mixingTable.template getMixingRow<Epsilon24>(typeI))[*(typeID2ptr + 1)] : 0,
-          (_mixingTable.template getMixingRow<Epsilon24>(typeI))[*typeID2ptr]);
-      sigmaSquareds = _mm256_set_pd(
-          not remainderIsMasked or rest > 3 ? (_mixingTable.template getMixingRow<SigmaSquared>(typeI))[*(typeID2ptr + 3)] : 0,
-          not remainderIsMasked or rest > 2 ? (_mixingTable.template getMixingRow<SigmaSquared>(typeI))[*(typeID2ptr + 2)] : 0,
-          not remainderIsMasked or rest > 1 ? (_mixingTable.template getMixingRow<SigmaSquared>(typeI))[*(typeID2ptr + 1)] : 0,
-          (_mixingTable.template getMixingRow<SigmaSquared>(typeI))[*(typeID2ptr)]);
+    if constexpr (useMixing) {
+      epsilon24s = remainderIsMasked ? _mm256_maskload_pd(&epsilon24sPtr[j], _masks[rest - 1])
+                                     : _mm256_load_pd(&epsilon24sPtr[j]);
+      sigmaSquareds = remainderIsMasked ? _mm256_maskload_pd(&sigmaSquaredsPtr[j], _masks[rest - 1])
+                                        : _mm256_load_pd(&sigmaSquaredsPtr[j]);
       if constexpr (applyShift) {
-        shift6s = _mm256_set_pd(
-            (not remainderIsMasked or rest > 3) ? (_mixingTable.template getMixingRow<Shift6>(typeI))[*(typeID2ptr + 3)] : 0,
-            (not remainderIsMasked or rest > 2) ? (_mixingTable.template getMixingRow<Shift6>(typeI))[*(typeID2ptr + 2)] : 0,
-            (not remainderIsMasked or rest > 1) ? (_mixingTable.template getMixingRow<Shift6>(typeI))[*(typeID2ptr + 1)] : 0,
-            (_mixingTable.template getMixingRow<Shift6>(typeI))[*(typeID2ptr)]);
+        shift6s = remainderIsMasked ? _mm256_maskload_pd(&shift6sPtr[j], _masks[rest - 1])
+                                    : _mm256_load_pd(&shift6sPtr[j]);
       }
     }
 
@@ -663,8 +695,20 @@ class LJFunctorAVX
     alignas(64) std::array<double, vecLength> fx2tmp{};
     alignas(64) std::array<double, vecLength> fy2tmp{};
     alignas(64) std::array<double, vecLength> fz2tmp{};
+    alignas(64) std::array<double, vecLength> sigmaSq2tmp{};
+    alignas(64) std::array<double, vecLength> eps242tmp{};
+    alignas(64) std::array<double, vecLength> shift62tmp{};
     alignas(64) std::array<size_t, vecLength> typeID2tmp{};
     alignas(64) std::array<autopas::OwnershipState, vecLength> ownedStates2tmp{};
+
+    const size_t typeI = useMixing ? typeIDptr[indexFirst] : 0;
+    const double *const __restrict__ sigmaSqRow =
+        useMixing ? _mixingTable.template getMixingRow<SigmaSquared>(typeI) : nullptr;
+    const double *const __restrict__ eps24Row =
+        useMixing ? _mixingTable.template getMixingRow<Epsilon24>(typeI) : nullptr;
+    const double *const __restrict__ shift6Row =
+        (useMixing and applyShift) ? _mixingTable.template getMixingRow<Shift6>(typeI) : nullptr;
+
 
     // load 4 neighbors
     size_t j = 0;
@@ -695,13 +739,20 @@ class LJFunctorAVX
           fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
           fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
         }
-        typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
+        if constexpr (useMixing) {
+          const size_t typeJ = typeIDptr[neighborList[j + vecIndex]];
+          sigmaSq2tmp[vecIndex] = sigmaSqRow[typeJ];
+          eps242tmp[vecIndex] = eps24Row[typeJ];
+          if constexpr (applyShift) {
+            shift62tmp[vecIndex] = shift6Row[typeJ];
+          }
+        }
         ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
 
       SoAKernel<newton3, false>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
                                 x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
-                                &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX,
+                                sigmaSq2tmp.data(), eps242tmp.data(), shift62tmp.data(), fxacc, fyacc, fzacc, &virialSumX,
                                 &virialSumY, &virialSumZ, &potentialEnergySum, 0);
 
       if constexpr (newton3) {
@@ -739,13 +790,20 @@ class LJFunctorAVX
           fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
           fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
         }
-        typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
+        if constexpr (useMixing) {
+          const size_t typeJ = typeIDptr[neighborList[j + vecIndex]];
+          sigmaSq2tmp[vecIndex] = sigmaSqRow[typeJ];
+          eps242tmp[vecIndex] = eps24Row[typeJ];
+          if constexpr (applyShift) {
+            shift62tmp[vecIndex] = shift6Row[typeJ];
+          }
+        }
         ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
 
       SoAKernel<newton3, true>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
                                x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
-                               &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
+                               sigmaSq2tmp.data(), eps242tmp.data(), shift62tmp.data(), fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
                                &virialSumZ, &potentialEnergySum, rest);
 
       if constexpr (newton3) {

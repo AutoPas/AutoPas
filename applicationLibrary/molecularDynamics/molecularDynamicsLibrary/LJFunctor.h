@@ -9,6 +9,7 @@
 
 #include "ParticlePropertiesLibrary.h"
 #include "MixingTable.h"
+#include "SoAMixingCache.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -54,6 +55,8 @@ class LJFunctor
   using SoAFloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
   enum LJMixingParameters : size_t { SigmaSquared, Epsilon24, Shift6 };
+
+  using MixingCacheType = SoAMixingCache<SoAFloatPrecision, applyShift ? 3 : 2>;
 
  public:
   /**
@@ -239,6 +242,12 @@ class LJFunctor
     size_t numKernelCallsNoN3Sum = 0;
     size_t numGlobalCalcsSum = 0;
 
+    [[maybe_unused]] MixingCacheType mixingParamsCache;
+
+    if constexpr (useMixing) {
+        mixingParamsCache = MixingCacheType{_mixingTable.getNumTypes(), soa.size()};
+    }
+
     for (unsigned int i = 0; i < soa.size(); ++i) {
       const auto ownedStateI = ownedStatePtr[i];
       if (ownedStateI == autopas::OwnershipState::dummy) {
@@ -251,12 +260,16 @@ class LJFunctor
 
       const size_t typeI = useMixing ? typeptr[i] : 0;
 
-      const SoAFloatPrecision *const __restrict__ sigmaSqRow =
-          useMixing ? _mixingTable.template getMixingRow<SigmaSquared>(typeI) : nullptr;
-      const SoAFloatPrecision *const __restrict__ epsilon24Row =
-        useMixing ? _mixingTable.template getMixingRow<Epsilon24>(typeI) : nullptr;
-      const SoAFloatPrecision *const __restrict__ shift6Row =
-        (useMixing and applyShift) ? _mixingTable.template getMixingRow<Shift6>(typeI) : nullptr;
+      [[maybe_unused]] const SoAFloatPrecision *sigmaSquareds = nullptr;
+      [[maybe_unused]] const SoAFloatPrecision *epsilon24s = nullptr;
+      [[maybe_unused]] const SoAFloatPrecision *shift6s = nullptr;
+      if constexpr (useMixing) {
+        if constexpr (applyShift) {
+          std::tie(sigmaSquareds, epsilon24s, shift6s) = mixingParamsCache.template getPreloadedArrays<SigmaSquared, Epsilon24, Shift6>(_mixingTable, typeptr[i], typeptr, soa.size());
+        } else {
+          std::tie(sigmaSquareds, epsilon24s) = mixingParamsCache.template getPreloadedArrays<SigmaSquared, Epsilon24>(_mixingTable, typeptr[i], typeptr, soa.size());
+        }
+      }
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
@@ -266,11 +279,10 @@ class LJFunctor
         SoAFloatPrecision sigmaSquared = _sigmaSquared;
         SoAFloatPrecision epsilon24 = _epsilon24;
         if constexpr (useMixing) {
-          const size_t typeJ = typeptr[j];
-          sigmaSquared = sigmaSqRow[typeJ];
-          epsilon24 = epsilon24Row[typeJ];
+          sigmaSquared = sigmaSquareds[j];
+          epsilon24 = epsilon24s[j];
           if constexpr (applyShift) {
-            shift6 = shift6Row[typeJ];
+            shift6 = shift6s[j];
           }
         }
 
@@ -415,6 +427,11 @@ class LJFunctor
     SoAFloatPrecision sigmaSquared = _sigmaSquared;
     SoAFloatPrecision epsilon24 = _epsilon24;
 
+    [[maybe_unused]] MixingCacheType mixingParamsCache;
+    if constexpr (useMixing) {
+      mixingParamsCache = MixingCacheType{_mixingTable.getNumTypes(), soa2.size()};
+    }
+
     for (unsigned int i = 0; i < soa1.size(); ++i) {
       SoAFloatPrecision fxacc = 0;
       SoAFloatPrecision fyacc = 0;
@@ -425,25 +442,26 @@ class LJFunctor
         continue;
       }
 
-      const size_t typeI = useMixing ? typeptr1[i] : 0;
-      const SoAFloatPrecision *const __restrict__ sigmaSqRow =
-          useMixing ? _mixingTable.template getMixingRow<SigmaSquared>(typeI) : nullptr;
-      const SoAFloatPrecision *const __restrict__ eps24Row =
-          useMixing ? _mixingTable.template getMixingRow<Epsilon24>(typeI) : nullptr;
-      const SoAFloatPrecision *const __restrict__ shift6Row =
-          (useMixing and applyShift) ? _mixingTable.template getMixingRow<Shift6>(typeI) : nullptr;
-
+      [[maybe_unused]] const SoAFloatPrecision *sigmaSquareds = nullptr;
+      [[maybe_unused]] const SoAFloatPrecision *epsilon24s = nullptr;
+      [[maybe_unused]] const SoAFloatPrecision *shift6s = nullptr;
+      if constexpr (useMixing) {
+        if constexpr (applyShift) {
+          std::tie(sigmaSquareds, epsilon24s, shift6s) = mixingParamsCache.template getPreloadedArrays<SigmaSquared, Epsilon24, Shift6>(_mixingTable, typeptr1[i], typeptr2, soa2.size());
+        } else {
+          std::tie(sigmaSquareds, epsilon24s) = mixingParamsCache.template getPreloadedArrays<SigmaSquared, Epsilon24>(_mixingTable, typeptr1[i], typeptr2, soa2.size());
+        }
+      }
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
-          const size_t typeJ = typeptr2[j];
-          sigmaSquared = sigmaSqRow[typeJ];
-          epsilon24 = eps24Row[typeJ];
+          sigmaSquared = sigmaSquareds[j];
+          epsilon24 = epsilon24s[j];
           if constexpr (applyShift) {
-            shift6 = shift6Row[typeJ];
+            shift6 = shift6s[j];
           }
         }
 

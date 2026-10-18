@@ -91,6 +91,10 @@ namespace mdLib {
       return _mixingData[paramIdx]._ptr + i * _numTypes * _numTypes + j * _numTypes + k;
     }
 
+    [[nodiscard]] size_t getNumTypes() const noexcept {
+      return _numTypes;
+    }
+
   private:
 
     void rebindPointers() noexcept {

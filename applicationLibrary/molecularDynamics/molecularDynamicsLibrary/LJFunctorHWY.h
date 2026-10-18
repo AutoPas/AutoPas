@@ -13,7 +13,9 @@
 #include <optional>
 #include <vector>
 
+#include "MixingTable.h"
 #include "ParticlePropertiesLibrary.h"
+#include "SoAMixingCache.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/particles/OwnershipState.h"
@@ -71,6 +73,8 @@ class LJFunctorHWY
   using SoAArraysType = Particle_T::SoAArraysType;
 
   enum LJMixingParameters : size_t { SigmaSquared, Epsilon24, Shift6 };
+
+  using MixingCacheType = SoAMixingCache<double, applyShift ? 3 : 2>;
 
  public:
   /**
@@ -217,13 +221,19 @@ class LJFunctorHWY
     auto virialSumZ = highway::Zero(tag_double);
     auto uPotSum = highway::Zero(tag_double);
 
+    [[maybe_unused]] MixingCacheType mixingParamsCache;
+    if constexpr (useMixing) {
+      mixingParamsCache = MixingCacheType{_mixingTable.getNumTypes(), soa.size()};
+    }
+
     for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soa.size()) - 1; i >= 0; i -= 1) {
       static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
 
       handleILoopBody<true, true, false, VectorizationPattern::p1xVec>(
           i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr,
-          typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0, i);
+          typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0, i,
+          mixingParamsCache, soa.size());
     }
 
     if constexpr (calculateGlobals) {
@@ -678,7 +688,9 @@ class LJFunctorHWY
                               double *const __restrict fyPtr2, double *const __restrict fzPtr2,
                               const size_t *const __restrict typeIDptr1, const size_t *const __restrict typeIDptr2,
                               VectorDouble &virialSumX, VectorDouble &virialSumY, VectorDouble &virialSumZ,
-                              VectorDouble &uPotSum, const size_t restI, const size_t jVecStart, const size_t jVecEnd) {
+                              VectorDouble &uPotSum, const size_t restI, const size_t jVecStart, const size_t jVecEnd,
+                              [[maybe_unused]] MixingCacheType &mixingCache,
+                              [[maybe_unused]] const size_t numParticlesJ) {
     VectorDouble fxAcc = highway::Zero(tag_double);
     VectorDouble fyAcc = highway::Zero(tag_double);
     VectorDouble fzAcc = highway::Zero(tag_double);
@@ -691,13 +703,32 @@ class LJFunctorHWY
 
     fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI,
                                                      restI);
+
+    [[maybe_unused]] const double *preloadedSig = nullptr;
+    [[maybe_unused]] const double *preloadedEps = nullptr;
+    [[maybe_unused]] const double *preloadedShift = nullptr;
+
+    if constexpr (useMixing) {
+      if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+        if constexpr (applyShift) {
+          std::tie(preloadedSig, preloadedEps, preloadedShift) =
+              mixingCache.template getPreloadedArrays<SigmaSquared, Epsilon24, Shift6>(
+                  _mixingTable, typeIDptr1[i], typeIDptr2, numParticlesJ);
+        } else {
+          std::tie(preloadedSig, preloadedEps) =
+              mixingCache.template getPreloadedArrays<SigmaSquared, Epsilon24>(
+                  _mixingTable, typeIDptr1[i], typeIDptr2, numParticlesJ);
+        }
+      }
+    }
+
     auto j = static_cast<std::ptrdiff_t>(jVecStart);
     for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j);
          j += static_cast<std::ptrdiff_t>(jStepSize<vecPattern>())) {
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
           fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j], fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
-          uPotSum, restI, 0);
+          uPotSum, restI, 0, preloadedEps, preloadedSig, preloadedShift);
     }
 
     const size_t restJ = jVecEnd & (jStepSize<vecPattern>() - 1);
@@ -705,7 +736,7 @@ class LJFunctorHWY
       SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
           i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
           fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j], fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
-          uPotSum, restI, restJ);
+          uPotSum, restI, restJ, preloadedEps, preloadedSig, preloadedShift);
     }
 
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
@@ -764,6 +795,11 @@ class LJFunctorHWY
     VectorDouble virialSumZ = highway::Zero(tag_double);
     VectorDouble uPotSum = highway::Zero(tag_double);
 
+    [[maybe_unused]] MixingCacheType mixingParamsCache;
+    if constexpr (useMixing) {
+      mixingParamsCache = MixingCacheType{_mixingTable.getNumTypes(), n2};
+    }
+
     const size_t iStep = iStepSize<vecPattern>();
     const size_t jStep = jStepSize<vecPattern>();
 
@@ -798,7 +834,8 @@ class LJFunctorHWY
       }
       handleILoopBody<false, newton3, false, vecPattern>(
           i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr,
-          fy2Ptr, fz2Ptr, typeID1Ptr, typeID2Ptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, jVecStart, jVecEnd);
+          fy2Ptr, fz2Ptr, typeID1Ptr, typeID2Ptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, jVecStart, jVecEnd,
+          mixingParamsCache, n2);
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       // Rest I can't occur in 1xVec case. Bounded by endI, not n1: i-particles from endI onwards cannot
@@ -824,7 +861,8 @@ class LJFunctorHWY
           handleILoopBody<false, newton3, true, vecPattern>(
               i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr,
               fx2Ptr, fy2Ptr, fz2Ptr, typeID1Ptr, typeID2Ptr, virialSumX, virialSumY, virialSumZ, uPotSum,
-              static_cast<size_t>(restI), jVecStart, jVecEnd);
+              static_cast<size_t>(restI), jVecStart, jVecEnd,
+              mixingParamsCache, n2);
         }
       }
     }
@@ -921,66 +959,110 @@ class LJFunctorHWY
   }
 
   template <bool remainderI, bool remainderJ, bool reversed, VectorizationPattern vecPattern>
-  inline void fillPhysicsRegisters(const size_t *const typeID1Ptr, const size_t *const typeID2Ptr,
-                                   VectorDouble &epsilon24s, VectorDouble &sigmaSquareds, VectorDouble &shift6s,
-                                   const unsigned int restI, const unsigned int restJ) const {
-    // We overestimate the array size. This should be a tight/perfect upper bound on x86, and should never be large
-    // enough on e.g. ARM/RISC-V to cause issues.
-    HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
-    HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
-    HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
-
+  inline void fillPhysicsRegisters(const size_t j,
+                                   const double *const __restrict__ preloadedEps,
+                                   const double *const __restrict__ preloadedSig,
+                                   const double *const __restrict__ preloadedShift,
+                                   const size_t *const typeID1Ptr,
+                                   const size_t *const typeID2Ptr,
+                                   VectorDouble &epsilon24s,
+                                   VectorDouble &sigmaSquareds,
+                                   VectorDouble &shift6s,
+                                   const unsigned int restI,
+                                   const unsigned int restJ) const {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      for (int j = 0; j < (remainderJ ? restJ : _vecLengthDouble); ++j) {
-        epsilons[j] = _mixingTable.template get<Epsilon24>(*typeID1Ptr, *(typeID2Ptr + j));
-        sigmas[j] = _mixingTable.template get<SigmaSquared>(*typeID1Ptr, *(typeID2Ptr + j));
+      if constexpr (remainderJ) {
+        epsilon24s = highway::LoadN(tag_double, &preloadedEps[j], restJ);
+        sigmaSquareds = highway::LoadN(tag_double, &preloadedSig[j], restJ);
         if constexpr (applyShift) {
-          shifts[j] = _mixingTable.template get<Shift6>(*typeID1Ptr, *(typeID2Ptr + j));
+          shift6s = highway::LoadN(tag_double, &preloadedShift[j], restJ);
+        } else {
+          shift6s = highway::Zero(tag_double);
+        }
+      } else {
+        epsilon24s = highway::LoadU(tag_double, &preloadedEps[j]);
+        sigmaSquareds = highway::LoadU(tag_double, &preloadedSig[j]);
+        if constexpr (applyShift) {
+          shift6s = highway::LoadU(tag_double, &preloadedShift[j]);
+        } else {
+          shift6s = highway::Zero(tag_double);
         }
       }
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-      for (int i = 0; i < (remainderI ? 1 : 2); ++i) {
-        for (int j = 0; j < (remainderJ ? restJ : _vecLengthDouble / 2); ++j) {
-          const auto index = i * (_vecLengthDouble / 2) + j;
-          const auto typeID1 = reversed ? typeID1Ptr - i : typeID1Ptr + i;
-          epsilons[index] = _mixingTable.template get<Epsilon24>(*typeID1, *(typeID2Ptr + j));
-          sigmas[index] = _mixingTable.template get<SigmaSquared>(*typeID1, *(typeID2Ptr + j));
+      const int lanes = remainderJ ? restJ : _vecLengthDouble / 2;
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
 
+      for (int i = 0; i < (remainderI ? 1 : 2); ++i) {
+        const auto typeID1 = reversed ? *(typeID1Ptr - i) : *(typeID1Ptr + i);
+        const auto *const rowEps = _mixingTable.template getMixingRow<Epsilon24>(typeID1);
+        const auto *const rowSig = _mixingTable.template getMixingRow<SigmaSquared>(typeID1);
+        const auto *const rowShift = applyShift ? _mixingTable.template getMixingRow<Shift6>(typeID1) : nullptr;
+
+        for (int k = 0; k < lanes; ++k) {
+          const auto index = i * (_vecLengthDouble / 2) + k;
+          const auto typeJ = *(typeID2Ptr + k);
+          epsilons[index] = rowEps[typeJ];
+          sigmas[index] = rowSig[typeJ];
           if constexpr (applyShift) {
-            shifts[index] = _mixingTable.template get<Shift6>(*typeID1, *(typeID2Ptr + j));
+            shifts[index] = rowShift[typeJ];
           }
         }
+      }
+      epsilon24s = highway::Load(tag_double, epsilons.data());
+      sigmaSquareds = highway::Load(tag_double, sigmas.data());
+      if constexpr (applyShift) {
+        shift6s = highway::Load(tag_double, shifts.data());
+      } else {
+        shift6s = highway::Zero(tag_double);
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-      for (int i = 0; i < (remainderI ? restI : _vecLengthDouble / 2); ++i) {
-        for (int j = 0; j < (remainderJ ? 1 : 2); ++j) {
-          const auto index = i + _vecLengthDouble / 2 * j;
-          const auto typeID1 = reversed ? typeID1Ptr - i : typeID1Ptr + i;
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
 
-          epsilons[index] = _mixingTable.template get<Epsilon24>(*typeID1, *(typeID2Ptr + j));
-          sigmas[index] = _mixingTable.template get<SigmaSquared>(*typeID1, *(typeID2Ptr + j));
+      for (int i = 0; i < (remainderI ? restI : _vecLengthDouble / 2); ++i) {
+        for (int k = 0; k < (remainderJ ? 1 : 2); ++k) {
+          const auto index = i + _vecLengthDouble / 2 * k;
+          const auto typeID1 = reversed ? *(typeID1Ptr - i) : *(typeID1Ptr + i);
+
+          epsilons[index] = _mixingTable.template get<Epsilon24>(typeID1, *(typeID2Ptr + k));
+          sigmas[index] = _mixingTable.template get<SigmaSquared>(typeID1, *(typeID2Ptr + k));
 
           if constexpr (applyShift) {
-            shifts[index] = _mixingTable.template get<Shift6>(*typeID1, *(typeID2Ptr + j));
+            shifts[index] = _mixingTable.template get<Shift6>(typeID1, *(typeID2Ptr + k));
           }
         }
       }
+      epsilon24s = highway::Load(tag_double, epsilons.data());
+      sigmaSquareds = highway::Load(tag_double, sigmas.data());
+      if constexpr (applyShift) {
+        shift6s = highway::Load(tag_double, shifts.data());
+      } else {
+        shift6s = highway::Zero(tag_double);
+      }
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
+
       for (int i = 0; i < (remainderI ? restI : _vecLengthDouble); ++i) {
-        auto typeID1 = reversed ? typeID1Ptr - i : typeID1Ptr + i;
-        epsilons[i] = _mixingTable.template get<Epsilon24>(*typeID1, *typeID2Ptr);
-        sigmas[i] = _mixingTable.template get<SigmaSquared>(*typeID1, *typeID2Ptr);
+        const auto typeID1 = reversed ? *(typeID1Ptr - i) : *(typeID1Ptr + i);
+        epsilons[i] = _mixingTable.template get<Epsilon24>(typeID1, *typeID2Ptr);
+        sigmas[i] = _mixingTable.template get<SigmaSquared>(typeID1, *typeID2Ptr);
 
         if constexpr (applyShift) {
-          shifts[i] = _mixingTable.template get<Shift6>(*typeID1, *typeID2Ptr);
+          shifts[i] = _mixingTable.template get<Shift6>(typeID1, *typeID2Ptr);
         }
       }
-    }
-
-    epsilon24s = highway::Load(tag_double, epsilons.data());
-    sigmaSquareds = highway::Load(tag_double, sigmas.data());
-    if constexpr (applyShift) {
-      shift6s = highway::Load(tag_double, shifts.data());
+      epsilon24s = highway::Load(tag_double, epsilons.data());
+      sigmaSquareds = highway::Load(tag_double, sigmas.data());
+      if constexpr (applyShift) {
+        shift6s = highway::Load(tag_double, shifts.data());
+      } else {
+        shift6s = highway::Zero(tag_double);
+      }
     }
   }
 
@@ -1016,6 +1098,9 @@ class LJFunctorHWY
    * @param uPotSum
    * @param restI
    * @param restJ
+   * @param preloadedEps
+   * @param preloadedSig
+   * @param preloadedShift
    */
   template <bool newton3, bool remainderI, bool remainderJ, bool reversed, VectorizationPattern vecPattern>
   inline void SoAKernel(const size_t i, const size_t j, const MaskDouble &ownedMaskI,
@@ -1026,14 +1111,18 @@ class LJFunctorHWY
                         double *const __restrict fz2Ptr, const size_t *const typeID1Ptr, const size_t *const typeID2Ptr,
                         VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
                         VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &uPotSum,
-                        const unsigned int restI, const unsigned int restJ) {
+                        const unsigned int restI, const unsigned int restJ,
+                        const double *const __restrict__ preloadedEps = nullptr,
+                        const double *const __restrict__ preloadedSig = nullptr,
+                        const double *const __restrict__ preloadedShift = nullptr) {
     VectorDouble epsilon24s = highway::Undefined(tag_double);
     VectorDouble sigmaSquareds = highway::Undefined(tag_double);
     VectorDouble shift6s = highway::Undefined(tag_double);
 
     if constexpr (useMixing) {
-      fillPhysicsRegisters<remainderI, remainderJ, reversed, vecPattern>(typeID1Ptr, typeID2Ptr, epsilon24s,
-                                                                         sigmaSquareds, shift6s, restI, restJ);
+      fillPhysicsRegisters<remainderI, remainderJ, reversed, vecPattern>(
+          j, preloadedEps, preloadedSig, preloadedShift, typeID1Ptr, typeID2Ptr, epsilon24s,
+          sigmaSquareds, shift6s, restI, restJ);
     } else {
       epsilon24s = highway::Set(tag_double, _epsilon24AoS);
       sigmaSquareds = highway::Set(tag_double, _sigmaSquareAoS);
