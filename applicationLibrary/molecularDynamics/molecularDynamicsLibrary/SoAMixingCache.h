@@ -17,7 +17,7 @@
 
 namespace mdLib {
 
-  template <typename FloatType, size_t numParams, size_t maxStaticTypes = 8, size_t maxStackParticles = 512>
+  template <typename FloatType, size_t numParams, size_t maxStaticTypes = 8, size_t maxStackParticles = 256>
   class SoAMixingCache {
   public:
     struct alignas(64) AlignedBuffer {
