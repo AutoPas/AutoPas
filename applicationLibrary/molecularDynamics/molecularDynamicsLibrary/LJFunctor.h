@@ -8,6 +8,7 @@
 #pragma once
 
 #include "ParticlePropertiesLibrary.h"
+#include "MixingTable.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -51,6 +52,8 @@ class LJFunctor
    * Precision of SoA entries.
    */
   using SoAFloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
+
+  enum LJMixingParameters : size_t { SigmaSquared, Epsilon24, Shift6 };
 
  public:
   /**
@@ -100,12 +103,19 @@ class LJFunctor
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit LJFunctor(double cutoff, const ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : LJFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
-    _PPLibrary = &particlePropertiesLibrary;
+
+    // Build the mixing table from the particle properties library.
+    const size_t numTypes = particlePropertiesLibrary.getNumberRegisteredSiteTypes();
+    _mixingTable.build(numTypes, [&](const size_t typeI, const size_t typeJ) {
+      const auto [epsilon24, sigmaSquared, shift6] = particlePropertiesLibrary.getLJMixingData(typeI, typeJ);
+
+      return std::array<SoAFloatPrecision, 3>{sigmaSquared, epsilon24, shift6};
+    });
   }
 
   std::string getName() final { return "LJFunctorAutoVec"; }
@@ -137,26 +147,26 @@ class LJFunctor
     auto epsilon24 = _epsilon24;
     auto shift6 = _shift6;
     if constexpr (useMixing) {
-      sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
+      sigmaSquared = _mixingTable.template get<SigmaSquared>(i.getTypeId(), j.getTypeId());
+      epsilon24 = _mixingTable.template get<Epsilon24>(i.getTypeId(), j.getTypeId());
       if constexpr (applyShift) {
-        shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
+        shift6 = _mixingTable.template get<Shift6>(i.getTypeId(), j.getTypeId());
       }
     }
     auto dr = i.getR() - j.getR();
-    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+    const double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquared) {
       return;
     }
 
-    double invdr2 = 1. / dr2;
+    const double invdr2 = 1. / dr2;
     double lj6 = sigmaSquared * invdr2;
     lj6 = lj6 * lj6 * lj6;
-    double lj12 = lj6 * lj6;
-    double lj12m6 = lj12 - lj6;
-    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = dr * fac;
+    const double lj12 = lj6 * lj6;
+    const double lj12m6 = lj12 - lj6;
+    const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    const auto f = dr * fac;
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
@@ -175,8 +185,8 @@ class LJFunctor
       // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
       // Potential energy has an additional factor of 6, which is also handled in endTraversal().
 
-      auto virial = dr * f;
-      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
+      const auto virial = dr * f;
+      const double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       if (i.isOwned()) {
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
@@ -229,24 +239,6 @@ class LJFunctor
     size_t numKernelCallsNoN3Sum = 0;
     size_t numGlobalCalcsSum = 0;
 
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
-    if constexpr (useMixing) {
-      // Preload all sigma and epsilons for next vectorized region.
-      // Not preloading and directly using the values, will produce worse results.
-      sigmaSquareds.resize(soa.size());
-      epsilon24s.resize(soa.size());
-      // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
-      if constexpr (applyShift) {
-        shift6s.resize(soa.size());
-      }
-    }
-
-    const SoAFloatPrecision const_shift6 = _shift6;
-    const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
-    const SoAFloatPrecision const_epsilon24 = _epsilon24;
-
     for (unsigned int i = 0; i < soa.size(); ++i) {
       const auto ownedStateI = ownedStatePtr[i];
       if (ownedStateI == autopas::OwnershipState::dummy) {
@@ -257,29 +249,28 @@ class LJFunctor
       SoAFloatPrecision fyacc = 0.;
       SoAFloatPrecision fzacc = 0.;
 
-      if constexpr (useMixing) {
-        for (unsigned int j = 0; j < soa.size(); ++j) {
-          auto mixingData = _PPLibrary->getLJMixingData(typeptr[i], typeptr[j]);
-          sigmaSquareds[j] = mixingData.sigmaSquared;
-          epsilon24s[j] = mixingData.epsilon24;
-          if constexpr (applyShift) {
-            shift6s[j] = mixingData.shift6;
-          }
-        }
-      }
+      const size_t typeI = useMixing ? typeptr[i] : 0;
+
+      const SoAFloatPrecision *const __restrict__ sigmaSqRow =
+          useMixing ? _mixingTable.template getMixingRow<SigmaSquared>(typeI) : nullptr;
+      const SoAFloatPrecision *const __restrict__ epsilon24Row =
+        useMixing ? _mixingTable.template getMixingRow<Epsilon24>(typeI) : nullptr;
+      const SoAFloatPrecision *const __restrict__ shift6Row =
+        (useMixing and applyShift) ? _mixingTable.template getMixingRow<Shift6>(typeI) : nullptr;
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsSum)
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
-        SoAFloatPrecision shift6 = const_shift6;
-        SoAFloatPrecision sigmaSquared = const_sigmaSquared;
-        SoAFloatPrecision epsilon24 = const_epsilon24;
+        SoAFloatPrecision shift6 = _shift6;
+        SoAFloatPrecision sigmaSquared = _sigmaSquared;
+        SoAFloatPrecision epsilon24 = _epsilon24;
         if constexpr (useMixing) {
-          sigmaSquared = sigmaSquareds[j];
-          epsilon24 = epsilon24s[j];
+          const size_t typeJ = typeptr[j];
+          sigmaSquared = sigmaSqRow[typeJ];
+          epsilon24 = epsilon24Row[typeJ];
           if constexpr (applyShift) {
-            shift6 = shift6s[j];
+            shift6 = shift6Row[typeJ];
           }
         }
 
@@ -424,19 +415,6 @@ class LJFunctor
     SoAFloatPrecision sigmaSquared = _sigmaSquared;
     SoAFloatPrecision epsilon24 = _epsilon24;
 
-    // preload all sigma and epsilons for next vectorized region
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
-    if constexpr (useMixing) {
-      sigmaSquareds.resize(soa2.size());
-      epsilon24s.resize(soa2.size());
-      // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
-      if constexpr (applyShift) {
-        shift6s.resize(soa2.size());
-      }
-    }
-
     for (unsigned int i = 0; i < soa1.size(); ++i) {
       SoAFloatPrecision fxacc = 0;
       SoAFloatPrecision fyacc = 0;
@@ -447,26 +425,25 @@ class LJFunctor
         continue;
       }
 
-      // preload all sigma and epsilons for next vectorized region
-      if constexpr (useMixing) {
-        for (unsigned int j = 0; j < soa2.size(); ++j) {
-          sigmaSquareds[j] = _PPLibrary->getMixingSigmaSquared(typeptr1[i], typeptr2[j]);
-          epsilon24s[j] = _PPLibrary->getMixing24Epsilon(typeptr1[i], typeptr2[j]);
-          if constexpr (applyShift) {
-            shift6s[j] = _PPLibrary->getMixingShift6(typeptr1[i], typeptr2[j]);
-          }
-        }
-      }
+      const size_t typeI = useMixing ? typeptr1[i] : 0;
+      const SoAFloatPrecision *const __restrict__ sigmaSqRow =
+          useMixing ? _mixingTable.template getMixingRow<SigmaSquared>(typeI) : nullptr;
+      const SoAFloatPrecision *const __restrict__ eps24Row =
+          useMixing ? _mixingTable.template getMixingRow<Epsilon24>(typeI) : nullptr;
+      const SoAFloatPrecision *const __restrict__ shift6Row =
+          (useMixing and applyShift) ? _mixingTable.template getMixingRow<Shift6>(typeI) : nullptr;
+
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
-          sigmaSquared = sigmaSquareds[j];
-          epsilon24 = epsilon24s[j];
+          const size_t typeJ = typeptr2[j];
+          sigmaSquared = sigmaSqRow[typeJ];
+          epsilon24 = eps24Row[typeJ];
           if constexpr (applyShift) {
-            shift6 = shift6s[j];
+            shift6 = shift6Row[typeJ];
           }
         }
 
@@ -839,6 +816,8 @@ class LJFunctor
     SoAFloatPrecision fxacc = 0;
     SoAFloatPrecision fyacc = 0;
     SoAFloatPrecision fzacc = 0;
+    const size_t neighborListSize = neighborList.size();
+    const size_t *const __restrict neighborListPtr = neighborList.data();
 
     // checks whether particle i is owned.
     const auto ownedStateI = ownedStatePtr[indexFirst];
@@ -864,9 +843,17 @@ class LJFunctor
 #endif
     size_t joff = 0;
 
+    const size_t typeI = useMixing ? typeptr1[indexFirst] : 0;
+    const SoAFloatPrecision *const __restrict__ sigmaSqRow =
+        useMixing ? _mixingTable.template getMixingRow<SigmaSquared>(typeI) : nullptr;
+    const SoAFloatPrecision *const __restrict__ eps24Row =
+        useMixing ? _mixingTable.template getMixingRow<Epsilon24>(typeI) : nullptr;
+    const SoAFloatPrecision *const __restrict__ shift6Row =
+        (useMixing and applyShift) ? _mixingTable.template getMixingRow<Shift6>(typeI) : nullptr;
+
+
     // if the size of the verlet list is larger than the given size vecsize,
     // we will use a vectorized version.
-    const size_t neighborListSize = neighborList.size();
     if (neighborListSize >= vecsize) {
       alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, xArr, yArr, zArr, fxArr, fyArr, fzArr;
       alignas(64) std::array<autopas::OwnershipState, vecsize> ownedStateArr{};
@@ -885,25 +872,25 @@ class LJFunctor
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> sigmaSquareds;
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> epsilon24s;
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> shift6s;
-        if constexpr (useMixing) {
-          for (size_t j = 0; j < vecsize; j++) {
-            sigmaSquareds[j] =
-                _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[neighborList[joff + j]]);
-            epsilon24s[j] = _PPLibrary->getMixing24Epsilon(typeptr1[indexFirst], typeptr2[neighborList[joff + j]]);
-            if constexpr (applyShift) {
-              shift6s[j] = _PPLibrary->getMixingShift6(typeptr1[indexFirst], typeptr2[neighborList[joff + j]]);
-            }
-          }
-        }
 
         // gather position of particle j
 #pragma omp simd safelen(vecsize)
         for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-          xArr[tmpj] = xptr[neighborList[joff + tmpj]];
-          yArr[tmpj] = yptr[neighborList[joff + tmpj]];
-          zArr[tmpj] = zptr[neighborList[joff + tmpj]];
-          ownedStateArr[tmpj] = ownedStatePtr[neighborList[joff + tmpj]];
+          const size_t neighborIdx = neighborListPtr[joff + tmpj];
+          xArr[tmpj] = xptr[neighborIdx];
+          yArr[tmpj] = yptr[neighborIdx];
+          zArr[tmpj] = zptr[neighborIdx];
+          ownedStateArr[tmpj] = ownedStatePtr[neighborIdx];
+          if constexpr (useMixing) {
+            const size_t typeJ = typeptr2[neighborIdx];
+            sigmaSquareds[tmpj] = sigmaSqRow[typeJ];
+            epsilon24s[tmpj] = eps24Row[typeJ];
+            if constexpr (applyShift) {
+              shift6s[tmpj] = shift6Row[typeJ];
+            }
+          }
         }
+
         // do omp simd with reduction of the interaction
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
@@ -1003,10 +990,11 @@ class LJFunctor
       size_t j = neighborList[jNeighIndex];
       if (indexFirst == j) continue;
       if constexpr (useMixing) {
-        sigmaSquared = _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[j]);
-        epsilon24 = _PPLibrary->getMixing24Epsilon(typeptr1[indexFirst], typeptr2[j]);
+        const size_t typeJ = typeptr2[j];
+        sigmaSquared = sigmaSqRow[typeJ];
+        epsilon24 = eps24Row[typeJ];
         if constexpr (applyShift) {
-          shift6 = _PPLibrary->getMixingShift6(typeptr1[indexFirst], typeptr2[j]);
+          shift6 = shift6Row[typeJ];
         }
       }
 
@@ -1196,7 +1184,7 @@ class LJFunctor
   // not const because they might be reset through PPL
   double _epsilon24, _sigmaSquared, _shift6 = 0;
 
-  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
+  MixingTable<3, SoAFloatPrecision> _mixingTable{};
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;

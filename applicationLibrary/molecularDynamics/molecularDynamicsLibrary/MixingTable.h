@@ -112,7 +112,7 @@ namespace mdLib {
     }
 
     inline void writeEntry(const size_t channelIndex, const size_t index, const FloatType value) noexcept {
-      if (index <= maxStaticTypes) {
+      if (_numTypes <= maxStaticTypes) {
         _mixingData[channelIndex]._staticBuffer[index] = value;
       } else {
         _mixingData[channelIndex]._dynamicBuffer[index] = value;
