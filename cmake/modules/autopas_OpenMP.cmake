@@ -1,14 +1,14 @@
 set(AUTOPAS_OPENMP_DOC "Activates OpenMP shared memory parallelization. (requires OpenMP 4.5)")
 option(AUTOPAS_OPENMP ${AUTOPAS_OPENMP_DOC} ON)
 
-# Include Auto4OMP's CMake module to access its variables. Must be included after AUTOPAS_OPENMP is set.
-include(autopas_auto4omp)
+# Include LB4OMP's CMake module to access its variables. Must be included after AUTOPAS_OPENMP is set.
+include(autopas_lb4omp)
 
 if (AUTOPAS_OPENMP)
     message(STATUS "OpenMP enabled.")
     find_package(OpenMP REQUIRED)
     if (
-        NOT AUTOPAS_AUTO4OMP
+        NOT AUTOPAS_LB4OMP
         # OpenMP version 4.5 was specified in 11.2015
         AND (OpenMP_CXX_SPEC_DATE LESS 201511)
         AND
@@ -35,7 +35,7 @@ endif ()
 #   1: Clang + libomp: adds auto, trapezoidal
 #   2: Clang + libomp with a working static_steal: adds static_steal. Placeholder, not detected yet.
 #   3: Clang + LB4OMP (Auto4OMP): adds all remaining Auto4OMP selection methods and LB4OMP scheduling techniques
-if (AUTOPAS_OPENMP AND AUTOPAS_AUTO4OMP)
+if (AUTOPAS_OPENMP AND AUTOPAS_LB4OMP)
     set(AUTOPAS_OPENMP_SCHEDULE_LEVEL 3)
 elseif (AUTOPAS_OPENMP AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(AUTOPAS_OPENMP_SCHEDULE_LEVEL 1)

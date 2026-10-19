@@ -35,9 +35,9 @@ target_link_libraries(
     PUBLIC
         $<$<NOT:$<PLATFORM_ID:Darwin>>:rt> # required for Time.h, on macOS not needed
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
-        # Link against OpenMP_CXX, unless not compiling OpenMP, or if we link against the Auto4OMP runtime
-        $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${AUTOPAS_AUTO4OMP}>>>:OpenMP::OpenMP_CXX>
-        $<$<BOOL:${AUTOPAS_AUTO4OMP}>:auto4omp::omp>
+        # Link against OpenMP_CXX, unless not compiling OpenMP, or if we link against the LB4OMP runtime
+        $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${AUTOPAS_LB4OMP}>>>:OpenMP::OpenMP_CXX>
+        $<$<BOOL:${AUTOPAS_LB4OMP}>:lb4omp::omp>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
@@ -66,20 +66,4 @@ target_compile_definitions(
 
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)
-
-if (AUTOPAS_AUTO4OMP)
-    # Without Auto4OMP, OpenMP::OpenMP_CXX provides the OpenMP flags. With Auto4OMP, it is not linked, so:
-    # -fopenmp enables pragma recognition and __kmpc_* code generation (required for LB4OMP dispatch).
-    # Must be in compile_options (not link_options) so the compiler emits __kmpc_dispatch_* calls without
-    # also implicitly linking system libomp — only LB4OMP's libomp.so (from auto4omp::omp) is linked.
-    # -fopenmp-version=45 restricts to OMP 4.5 to avoid calling functions absent from LB4OMP's older LLVM base.
-    target_compile_options(autopas PUBLIC -fopenmp -fopenmp-version=45)
-
-    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_SOURCE_DIR}/runtime/src)
-    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_BINARY_DIR}/runtime/src)
-
-    # Ensure Auto4OMP's libomp.so is searched before the system's at both link and runtime
-    target_link_directories(autopas BEFORE PUBLIC ${auto4omp_BINARY_DIR}/runtime/src)
-    set_target_properties(autopas PROPERTIES BUILD_RPATH "${auto4omp_BINARY_DIR}/runtime/src")
-endif ()
 
