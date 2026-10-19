@@ -22,6 +22,8 @@ message(STATUS "LB4OMP - using bundled version (commit b9d25eca) with AutoPas fi
 set(LIBOMP_OMP_VERSION 45 CACHE INTERNAL "")
 # Offloading is not needed, and its build fails if CUDA is installed.
 set(OPENMP_ENABLE_LIBOMPTARGET OFF CACHE INTERNAL "")
+# Don't copy omp.h and libomp.so into libs/lb4omp/runtime/exports; AutoPas uses the copies in the build tree.
+set(LIBOMP_COPY_EXPORTS OFF CACHE INTERNAL "")
 # LB4OMP's scheduling code needs a high resolution timer, but LB4OMP only looks for one if LIBOMP_STATS is on.
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "x86|AMD64")
     set(LIBOMP_HAVE___RDTSC ON CACHE INTERNAL "")
