@@ -176,7 +176,7 @@ TEST(RegressionModelsTest, testRebuildDecisionContext) {
   EXPECT_EQ(rebuildDecisionContext.getNumParticlesBufferEstimate(), 21);
   // Rebuild is cheaper than another remainder traversal with a full buffer
   EXPECT_TRUE(rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(rf));
-  EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 190);
+  EXPECT_NEAR(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 190, 1e-6);
   rebuildDecisionContext.afterRebuild(120, false);
 
   // Steps since rebuild: 1

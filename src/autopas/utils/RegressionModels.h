@@ -8,7 +8,6 @@
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
 #include <algorithm>
-#include <boost/math/statistics/linear_regression.hpp>
 #include <climits>
 #include <iostream>
 #include <limits>
@@ -281,7 +280,7 @@ class SimpleLinearRegressionBoost : public RegressionBase {
     }
     std::pair<double, double> lin_reg_coeffs;
     try {
-      lin_reg_coeffs = boost::math::statistics::simple_ordinary_least_squares(_x, _y);
+      lin_reg_coeffs = utils::Math::simpleLeastSquares(_x, _y);
     } catch (...) {
       return Result{0, ReturnCode::UNKNOWN_ERROR_REG, false};
     }
