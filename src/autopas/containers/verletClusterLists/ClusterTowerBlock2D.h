@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <vector>
 
@@ -92,25 +93,15 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     using autopas::utils::ArrayUtils::static_cast_copy_array;
     _towerSideLength = towerSideLength;
     _towerSideLengthReciprocal = 1. / towerSideLength;
-    const auto numTowersPerInteractionLength2D =
-        static_cast_copy_array<int>(ceil(_interactionLength / _towerSideLength));
-    // Sanity check. This is not necessarily a problem with the method but potentially with the way the code is written.
-    if (numTowersPerInteractionLength2D[0] != numTowersPerInteractionLength2D[1]) {
-      AutoPasLog(WARN,
-                 "Number of towers per interaction length differs in X vs Y direction! "
-                 "The container is built on the assumption that they are the same, "
-                 "so from here on the behavior might be undefined. Values: {}",
-                 utils::ArrayUtils::to_string(numTowersPerInteractionLength2D));
-    }
-    _numTowersPerInteractionLength =
-        *std::max_element(numTowersPerInteractionLength2D.begin(), numTowersPerInteractionLength2D.end());
+    _numTowersPerInteractionLength2D = static_cast_copy_array<int>(ceil(_interactionLength / _towerSideLength));
+    _maxNumTowersPerInteractionLength = std::ranges::max(_numTowersPerInteractionLength2D);
     _towersPerDim = towersPerDim;
     _towers.resize(_towersPerDim[0] * _towersPerDim[1]);
 
     // converting indices relies on _towersPerDim to already have the new values.
-    _firstOwnedTowerIndex = towerIndex2DTo1D(_numTowersPerInteractionLength, _numTowersPerInteractionLength);
-    _lastOwnedTowerIndex = towerIndex2DTo1D(_towersPerDim[0] - _numTowersPerInteractionLength,
-                                            _towersPerDim[1] - _numTowersPerInteractionLength);
+    _firstOwnedTowerIndex = towerIndex2DTo1D(_numTowersPerInteractionLength2D[0], _numTowersPerInteractionLength2D[1]);
+    _lastOwnedTowerIndex = towerIndex2DTo1D(_towersPerDim[0] - _numTowersPerInteractionLength2D[0],
+                                            _towersPerDim[1] - _numTowersPerInteractionLength2D[1]);
   }
 
   /**
@@ -147,9 +138,10 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     const std::array<double, 3> boxSize = _boxMax - _boxMin;
     const std::array<double, 2> boxSize2D{boxSize[0], boxSize[1]};
     if (numParticles == 0) {
-      // We always build at least 3 towers per direction (one owned, two halo)
-      // This is needed for sliced traversals to work correctly.
-      return {boxSize2D, {3, 3}};
+      // One owned tower per direction plus the halo towers filling one interaction length on each side, so at least 3
+      // towers per direction. This is needed for sliced traversals to work correctly.
+      const auto numTowers = ceil(_interactionLength / boxSize2D) * 2. + 1.;
+      return {boxSize2D, static_cast_copy_array<size_t>(numTowers)};
     }
 
     const double volume = boxSize[0] * boxSize[1] * boxSize[2];
@@ -197,9 +189,9 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     }
     // towerBoxMin[0/1] does NOT start at _haloBoxMin[0/1] because the halo towers might extend beyond the halo box.
     const std::array<double, 3> towerBoxMin{
-        _boxMin[0] - _towerSideLength[0] * _numTowersPerInteractionLength +
+        _boxMin[0] - _towerSideLength[0] * _numTowersPerInteractionLength2D[0] +
             _towerSideLength[0] * static_cast<double>(index2D[0]),
-        _boxMin[1] - _towerSideLength[1] * _numTowersPerInteractionLength +
+        _boxMin[1] - _towerSideLength[1] * _numTowersPerInteractionLength2D[1] +
             _towerSideLength[1] * static_cast<double>(index2D[1]),
         _haloBoxMin[2],
     };
@@ -228,10 +220,20 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     for (int dim = 0; dim < 2; dim++) {
       const auto towerDimIndex =
           static_cast<long int>(std::floor((pos[dim] - _boxMin[dim]) * _towerSideLengthReciprocal[dim])) +
-          _numTowersPerInteractionLength;
-      const auto towerDimIndexNonNegative = static_cast<size_t>(std::max(towerDimIndex, 0l));
-      const auto towerDimIndexNonLargerValue = std::min(towerDimIndexNonNegative, _towersPerDim[dim] - 1);
-      towerIndex2D[dim] = towerDimIndexNonLargerValue;
+          _numTowersPerInteractionLength2D[dim];
+      // Rounding can put the index of a position next to the box boundary on the wrong side of it.
+      const long int numHaloTowers = _numTowersPerInteractionLength2D[dim];
+      const auto numTowers = static_cast<long int>(_towersPerDim[dim]);
+      long int minIndex = numHaloTowers;
+      long int maxIndex = numTowers - numHaloTowers - 1;
+      if (pos[dim] < _boxMin[dim]) {
+        minIndex = 0;
+        maxIndex = numHaloTowers - 1;
+      } else if (pos[dim] >= _boxMax[dim]) {
+        minIndex = numTowers - numHaloTowers;
+        maxIndex = numTowers - 1;
+      }
+      towerIndex2D[dim] = static_cast<size_t>(std::clamp(towerDimIndex, minIndex, maxIndex));
       /// @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
       // flag manager
       if (pos[dim] >= _haloBoxMax[dim]) {
@@ -313,10 +315,10 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
    */
   double getInteractionLength() const { return _interactionLength; }
   /**
-   * Getter
+   * Getter for the number of towers per interaction length, the maximum over x and y.
    * @return
    */
-  int getNumTowersPerInteractionLength() const { return _numTowersPerInteractionLength; }
+  int getMaxNumTowersPerInteractionLength() const { return _maxNumTowersPerInteractionLength; }
   /**
    * Getter
    * @return
@@ -376,8 +378,8 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     const auto index2D = towerIndex1DTo2D(index1d);
     bool isHaloTower = false;
     for (size_t i = 0; i < index2D.size(); ++i) {
-      if (index2D[i] < _numTowersPerInteractionLength or
-          index2D[i] >= _towersPerDim[i] - _numTowersPerInteractionLength) {
+      if (index2D[i] < _numTowersPerInteractionLength2D[i] or
+          index2D[i] >= _towersPerDim[i] - _numTowersPerInteractionLength2D[i]) {
         isHaloTower = true;
         break;
       }
@@ -399,10 +401,17 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
    */
   double _interactionLength;
   /**
-   * The interaction length in number of towers it reaches.
-   * static_cast<int>(std::ceil((this->getInteractionLength()) * _towerSideLengthReciprocal))
+   * The interaction length in number of towers it reaches, the maximum over x and y.
+   * Used where an upper bound for both dimensions suffices: the neighbor search, the interaction cells and the
+   * coloring.
    */
-  int _numTowersPerInteractionLength{};
+  int _maxNumTowersPerInteractionLength{};
+
+  /**
+   * The number of towers per dimension reachable with the interaction length.
+   * This is also the number of halo tower layers on each side of the owned towers in that dimension.
+   */
+  std::array<int, 2> _numTowersPerInteractionLength2D{};
 
   /**
    * Minimum of the container.
