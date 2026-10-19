@@ -466,11 +466,6 @@ TEST_P(AllContainersTests, testDeleteParticleOnlyMarks) {
  */
 TEST_P(AllContainersTests, testAddParticleWhileOwnedParticleLeftBox) {
   const auto containerConfig = std::get<0>(GetParam());
-  if (containerConfig.container == autopas::ContainerOption::octree) {
-    // Note to reviewers: Octree experiences a different bug that occurs in the same scenario. This PR focuses on the
-    // fix for LCRefs, and a PR that sits above it in the stack will fix that bug and remove this skip.
-    GTEST_SKIP() << "Octree loses particles that moved out of a leaf when an added particle splits that leaf.";
-  }
   auto container = getInitializedContainer<ParticleFP64>(containerConfig);
 
   constexpr unsigned long numInitialParticles = 10;

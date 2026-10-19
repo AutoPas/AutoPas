@@ -109,6 +109,14 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
     // set type of particles in the two cells
     this->_cells[CellTypes::OWNED].setPossibleParticleOwnerships(OwnershipState::owned);
     this->_cells[CellTypes::HALO].setPossibleParticleOwnerships(OwnershipState::halo);
+
+    // one buffer per thread for the owned and the halo particles that are not yet sorted into the octrees
+    for (const auto cellType : {CellTypes::OWNED, CellTypes::HALO}) {
+      _particlesToAdd[cellType].resize(autopas_get_max_threads());
+      for (auto &buffer : _particlesToAdd[cellType]) {
+        buffer.setPossibleParticleOwnerships(this->_cells[cellType].getPossibleParticleOwnerships());
+      }
+    }
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListValid) override {
@@ -127,6 +135,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
       // 1. Copy all particles out of the container
       std::vector<Particle_T *> particleRefs;
       this->_cells[CellTypes::OWNED].collectAllParticles(particleRefs);
+      for (auto &buffer : _particlesToAdd[CellTypes::OWNED]) {
+        for (auto &particle : buffer._particles) {
+          particleRefs.push_back(&particle);
+        }
+      }
       std::vector<Particle_T> particles{};
       particles.reserve(particleRefs.size());
 
@@ -146,7 +159,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
 
       // 3. Insert the particles back into the container
       for (auto &particle : particles) {
-        addParticleImpl(particle);
+        this->_cells[CellTypes::OWNED].addParticle(particle);
       }
     }
 
@@ -154,6 +167,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   }
 
   void computeInteractions(TraversalInterface *traversal) override {
+    if (not particlesToAddEmpty()) {
+      utils::ExceptionHandler::exception(
+          "Octree::computeInteractions(): Particles were added after the last updateContainer() or "
+          "rebuildNeighborLists(), so they are not sorted into the octrees and the traversal would miss them.");
+    }
     if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCellType> *>(traversal)) {
       traversalInterface->setCells(&this->_cells);
     }
@@ -179,13 +197,15 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   /**
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
-  void addParticleImpl(const ParticleType &p) override { this->_cells[CellTypes::OWNED].addParticle(p); }
+  void addParticleImpl(const ParticleType &p) override {
+    _particlesToAdd[CellTypes::OWNED][autopas_get_thread_num()].addParticle(p);
+  }
 
   /**
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    this->_cells[CellTypes::HALO].addParticle(haloParticle);
+    _particlesToAdd[CellTypes::HALO][autopas_get_thread_num()].addParticle(haloParticle);
   }
 
   /**
@@ -194,11 +214,34 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     // Iterating the halo cell is not thread safe.
     std::lock_guard<AutoPasLock> cellLock(this->_cells[CellTypes::HALO].getCellLock());
-    return internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[CellTypes::HALO], haloParticle,
-                                                                 0.5 * this->getVerletSkin());
+    if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[CellTypes::HALO], haloParticle,
+                                                              0.5 * this->getVerletSkin())) {
+      return true;
+    }
+    for (auto &buffer : _particlesToAdd[CellTypes::HALO]) {
+      std::lock_guard<AutoPasLock> bufferLock(buffer.getCellLock());
+      if (internal::checkParticleInCellAndUpdateByIDAndPosition(buffer, haloParticle, 0.5 * this->getVerletSkin())) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  void rebuildNeighborLists(TraversalInterface *traversal) override {}
+  /**
+   * The octree has no neighbor lists. Instead, this sorts the particles that were added since the last
+   * updateContainer() into the octrees.
+   * @param traversal Not used.
+   */
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
+    for (const auto cellType : {CellTypes::OWNED, CellTypes::HALO}) {
+      for (auto &buffer : _particlesToAdd[cellType]) {
+        for (const auto &particle : buffer._particles) {
+          this->_cells[cellType].addParticle(particle);
+        }
+        buffer.clear();
+      }
+    }
+  }
 
   std::tuple<const Particle_T *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                              IteratorBehavior iteratorBehavior,
@@ -346,7 +389,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   [[nodiscard]] ContainerIterator<Particle_T, true, false> begin(
       IteratorBehavior behavior,
       utils::optRef<typename ContainerIterator<Particle_T, true, false>::ParticleVecType> additionalVectors) override {
-    return ContainerIterator<Particle_T, true, false>(*this, behavior, additionalVectors);
+    auto allAdditionalVectors = gatherAdditionalVectors(additionalVectors, _particlesToAdd);
+    return ContainerIterator<Particle_T, true, false>(*this, behavior, std::ref(allAdditionalVectors));
   }
 
   /**
@@ -356,7 +400,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
       IteratorBehavior behavior,
       utils::optRef<typename ContainerIterator<Particle_T, false, false>::ParticleVecType> additionalVectors =
           std::nullopt) const override {
-    return ContainerIterator<Particle_T, false, false>(*this, behavior, additionalVectors);
+    auto allAdditionalVectors = gatherAdditionalVectors(additionalVectors, _particlesToAdd);
+    return ContainerIterator<Particle_T, false, false>(*this, behavior, std::ref(allAdditionalVectors));
   }
 
   /**
@@ -366,7 +411,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       utils::optRef<typename ContainerIterator<Particle_T, true, true>::ParticleVecType> additionalVectors =
           std::nullopt) override {
-    return ContainerIterator<Particle_T, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+    auto allAdditionalVectors = gatherAdditionalVectors(additionalVectors, _particlesToAdd);
+    return ContainerIterator<Particle_T, true, true>(*this, behavior, std::ref(allAdditionalVectors), lowerCorner,
+                                                     higherCorner);
   }
 
   /**
@@ -376,7 +423,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       utils::optRef<typename ContainerIterator<Particle_T, false, true>::ParticleVecType> additionalVectors =
           std::nullopt) const override {
-    return ContainerIterator<Particle_T, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+    auto allAdditionalVectors = gatherAdditionalVectors(additionalVectors, _particlesToAdd);
+    return ContainerIterator<Particle_T, false, true>(*this, behavior, std::ref(allAdditionalVectors), lowerCorner,
+                                                      higherCorner);
   }
 
   /**
@@ -396,18 +445,44 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    * @return Number of particles saved in the container (owned + halo + dummy).
    */
   [[nodiscard]] size_t size() const override {
-    return this->_cells[CellTypes::OWNED].size() + this->_cells[CellTypes::HALO].size();
+    size_t numParticles = this->_cells[CellTypes::OWNED].size() + this->_cells[CellTypes::HALO].size();
+    for (const auto &buffers : _particlesToAdd) {
+      for (const auto &buffer : buffers) {
+        numParticles += buffer.size();
+      }
+    }
+    return numParticles;
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getNumberOfParticles()
    */
   [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
-    return this->_cells[CellTypes::OWNED].getNumberOfParticles(behavior) +
-           this->_cells[CellTypes::HALO].getNumberOfParticles(behavior);
+    size_t numParticles = this->_cells[CellTypes::OWNED].getNumberOfParticles(behavior) +
+                          this->_cells[CellTypes::HALO].getNumberOfParticles(behavior);
+    for (const auto &buffers : _particlesToAdd) {
+      for (const auto &buffer : buffers) {
+        numParticles += buffer.getNumberOfParticles(behavior);
+      }
+    }
+    return numParticles;
   }
 
-  void deleteHaloParticles() override { this->_cells[CellTypes::HALO].clear(); }
+  void deleteHaloParticles() override {
+    this->_cells[CellTypes::HALO].clear();
+    for (auto &buffer : _particlesToAdd[CellTypes::HALO]) {
+      buffer.clear();
+    }
+  }
+
+  void deleteAllParticles() override {
+    for (auto &buffers : _particlesToAdd) {
+      for (auto &buffer : buffers) {
+        buffer.clear();
+      }
+    }
+    CellBasedParticleContainer<ParticleCellType>::deleteAllParticles();
+  }
 
   [[nodiscard]] bool cellCanContainHaloParticles(std::size_t i) const override {
     if (i > 1) {
@@ -433,6 +508,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     if (behavior & IteratorBehavior::owned) this->_cells[OWNED].forEach(forEachLambda);
     if (behavior & IteratorBehavior::halo) this->_cells[HALO].forEach(forEachLambda);
+    for (auto &buffers : _particlesToAdd) {
+      for (auto &buffer : buffers) {
+        buffer.forEach(forEachLambda, behavior);
+      }
+    }
     if (not(behavior & IteratorBehavior::ownedOrHalo))
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
   }
@@ -449,6 +529,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     if (behavior & IteratorBehavior::owned) this->_cells[OWNED].reduce(reduceLambda, result);
     if (behavior & IteratorBehavior::halo) this->_cells[HALO].reduce(reduceLambda, result);
+    for (auto &buffers : _particlesToAdd) {
+      for (auto &buffer : buffers) {
+        buffer.reduce(reduceLambda, result, behavior);
+      }
+    }
     if (not(behavior & IteratorBehavior::ownedOrHalo))
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
   }
@@ -462,6 +547,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
     if (behavior & IteratorBehavior::owned)
       this->_cells[OWNED].forEachInRegion(forEachLambda, lowerCorner, higherCorner);
     if (behavior & IteratorBehavior::halo) this->_cells[HALO].forEachInRegion(forEachLambda, lowerCorner, higherCorner);
+    for (auto &buffers : _particlesToAdd) {
+      for (auto &buffer : buffers) {
+        buffer.forEach(forEachLambda, lowerCorner, higherCorner, behavior);
+      }
+    }
     if (not(behavior & IteratorBehavior::ownedOrHalo))
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
   }
@@ -476,6 +566,11 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
       this->_cells[OWNED].reduceInRegion(reduceLambda, result, lowerCorner, higherCorner);
     if (behavior & IteratorBehavior::halo)
       this->_cells[HALO].reduceInRegion(reduceLambda, result, lowerCorner, higherCorner);
+    for (auto &buffers : _particlesToAdd) {
+      for (auto &buffer : buffers) {
+        buffer.reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
+      }
+    }
     if (not(behavior & IteratorBehavior::ownedOrHalo))
       utils::ExceptionHandler::exception("Encountered invalid iterator behavior!");
   }
@@ -603,6 +698,61 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
         (*currentLeafCellPtr)[particleIndex], iteratorBehavior, boxMin, boxMax));
     return {currentLeafCellPtr, particleIndex};
   }
+
+  /**
+   * Helper for begin() and getRegionIterator() that appends the non-empty buffers of _particlesToAdd to the additional
+   * vectors passed to the container (e.g. the buffers of the LogicHandler).
+   *
+   * It is static and templated on the buffer type, so that const and non-const callers get pointers of the constness
+   * that their ContainerIterator expects.
+   *
+   * @tparam ParticleVec_T Vector of pointers to particle vectors, as used by ContainerIterator.
+   * @tparam ParticlesToAdd_T Type of _particlesToAdd, possibly const.
+   * @param additionalVectors Additional vectors passed to the container.
+   * @param particlesToAdd _particlesToAdd of the calling container.
+   * @return The additional vectors followed by the non-empty buffers.
+   */
+  template <class ParticleVec_T, class ParticlesToAdd_T>
+  static ParticleVec_T gatherAdditionalVectors(utils::optRef<ParticleVec_T> additionalVectors,
+                                               ParticlesToAdd_T &particlesToAdd) {
+    ParticleVec_T allAdditionalVectors;
+    if (additionalVectors.has_value()) {
+      allAdditionalVectors = additionalVectors->get();
+    }
+    for (auto &buffers : particlesToAdd) {
+      for (auto &buffer : buffers) {
+        if (not buffer.isEmpty()) {
+          allAdditionalVectors.push_back(&buffer._particles);
+        }
+      }
+    }
+    return allAdditionalVectors;
+  }
+
+  /**
+   * Checks whether all buffers of _particlesToAdd are empty.
+   * @return True if no particle waits to be sorted into the octrees.
+   */
+  [[nodiscard]] bool particlesToAddEmpty() const {
+    for (const auto &buffers : _particlesToAdd) {
+      for (const auto &buffer : buffers) {
+        if (not buffer.isEmpty()) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Particles that were added since the last updateContainer(false) or rebuildNeighborLists() and are not yet sorted
+   * into the octrees. Indexed like _cells by CellTypes, then by thread.
+   *
+   * Particles are only sorted in at these two points, because only there the particles in the octrees are guaranteed to
+   * be inside their leaves. In between, particles move, and splitting a leaf (when an insertion makes it exceed the
+   * split threshold) would lose every particle that moved out of it, as it fits into none of the new children.
+   */
+  std::array<std::vector<FullParticleCell<Particle_T>>, 2> _particlesToAdd;
 
   /**
    * A logger that can be called to log the octree data structure.

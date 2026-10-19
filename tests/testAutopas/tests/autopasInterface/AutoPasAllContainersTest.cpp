@@ -197,11 +197,6 @@ TEST_P(AutoPasAllContainersTest, addBufferParticlesWhileOwnedParticleLeftBoxTest
 
   // Generate a valid arbitrary full configuration for the container configuration under test.
   const auto config = GetParam().generateFullConfig(autopas::InteractionTypeOption::pairwise).value();
-  if (config.container == autopas::ContainerOption::octree) {
-    // Note to reviewers: Octree experiences a different bug that occurs in the same scenario. This PR focuses on the
-    // fix for LCRefs, and a PR that sits above it in the stack will fix that bug and remove this skip.
-    GTEST_SKIP() << "Octree loses particles that moved out of a leaf when an added particle splits that leaf.";
-  }
   // initialize AutoPas
   autopas::AutoPas<Molecule> autoPas;
   autoPas.setBoxMin(boxMin);
