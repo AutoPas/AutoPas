@@ -50,29 +50,24 @@ struct Grid{
             return ix + nx * (iy + ny * iz);
         }
 
+        // Writes the existing neighbor cells (incl. c itself) to out and returns how many there are.
+        // Cells outside the grid are skipped instead of wrapped: wrapping visits the same cell multiple times
+        // when a dimension has fewer than 3 cells, which duplicates neighbor list entries.
         KOKKOS_INLINE_FUNCTION
-        void neighborCells(int c, int out[27]) const {
+        int neighborCells(int c, int out[27]) const {
             const int ix = c % nx;
             const int iy = (c / nx) % ny;
             const int iz = c / (nx * ny);
 
             int m = 0;
-            for (int dz = -1; dz <= 1; ++dz) {
-                int kz = iz + dz;
-                if (kz < 0) kz += nz; 
-                else if (kz >= nz) kz -= nz;
-                for (int dy = -1; dy <= 1; ++dy) {
-                    int ky = iy + dy;
-                    if (ky < 0) ky += ny; 
-                    else if (ky >= ny) ky -= ny;
-                    for (int dx = -1; dx <= 1; ++dx) {
-                        int kx = ix + dx;
-                        if (kx < 0) kx += nx; 
-                        else if (kx >= nx) kx -= nx;
+            for (int kz = Kokkos::max(iz - 1, 0); kz <= Kokkos::min(iz + 1, nz - 1); ++kz) {
+                for (int ky = Kokkos::max(iy - 1, 0); ky <= Kokkos::min(iy + 1, ny - 1); ++ky) {
+                    for (int kx = Kokkos::max(ix - 1, 0); kx <= Kokkos::min(ix + 1, nx - 1); ++kx) {
                         out[m++] = kx + nx * (ky + ny * kz);
                     }
                 }
             }
+            return m;
         }
         // grid dimensions
         int nx, ny ,nz;
@@ -803,10 +798,10 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
                 const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
 
                 int nbr[27];
-                g.neighborCells(g.cellOf(x1, y1, z1), nbr);
+                const int numNbr = g.neighborCells(g.cellOf(x1, y1, z1), nbr);
 
                 size_t count = 0;
-                for (int s = 0; s < 27; ++s) {
+                for (int s = 0; s < numNbr; ++s) {
                     const int c = nbr[s];
                     for (int slot = cellStart(c); slot < cellStart(c + 1); ++slot) {
                         const int k = sortSoa2 ? slot : partIds(slot);
@@ -900,12 +895,12 @@ class VerletListsKokkosMaxNeighborsGPURebuildingBinning : public ParticleContain
                 const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
 
                 int nbr[27];
-                g.neighborCells(g.cellOf(x1, y1, z1), nbr);
+                const int numNbr = g.neighborCells(g.cellOf(x1, y1, z1), nbr);
 
                 CounterView count(teamHandle.team_scratch(0), 1);
                 Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() { count(0) = 0; });
                 teamHandle.team_barrier();
-                for (int s = 0; s < 27; ++s) {
+                for (int s = 0; s < numNbr; ++s) {
                     const int c = nbr[s];
                     Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, cellStart(c+1)-cellStart(c)), [&](const size_t k) {
                         const int j = sortSoa2 ? cellStart(c)+k : partIds(cellStart(c)+k);
