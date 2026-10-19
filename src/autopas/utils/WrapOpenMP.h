@@ -66,6 +66,11 @@ inline int autopas_get_max_threads() { return omp_get_max_threads(); }
  */
 inline void autopas_set_num_threads(int n) { omp_set_num_threads(n); }
 
+/**
+ * OpenMP's schedule kind type, made available as autopas::omp_sched_t, so we can use it regardless of compiling OpenMP.
+ */
+using ::omp_sched_t;
+
 #if AUTOPAS_OPENMP_SCHEDULE_LEVEL < 3  // Below OpenMPKindOption::ScheduleLevel::clangLB4OMP
 /**
  * libomp's trapezoidal schedule kind, as omp_set_schedule() takes it. libomp only declares it in its internal kmp.h

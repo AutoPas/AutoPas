@@ -182,12 +182,6 @@ namespace autopas {
  */
 [[maybe_unused]] void OpenMPConfigurator::setKind(OpenMPKindOption kind) { _kind = kind; }
 
-/**
- * Tells whether the scheduling chunk size should be overwritten.
- * @return whether the scheduling chunk size should be overwritten
- */
-[[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::overrideChunkSize() const { return _kind >= 1; }
-
 [[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::fallsBackToOtherKindForAllLoops() const {
   // GCC's libgomp has no fallbacks. Also skip and return false if the Configurator has no loop counts.
   if (OpenMPKindOption::runtimeScheduleLevel == OpenMPKindOption::ScheduleLevel::gccLibgomp or _loopCounts.empty()) {

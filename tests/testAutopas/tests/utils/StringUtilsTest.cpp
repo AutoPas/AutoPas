@@ -21,6 +21,22 @@ TEST(StringUtilsTest, parseNumberSetFiniteTest) {
   EXPECT_THAT(numberSetFinite->getAll(), ::testing::UnorderedElementsAre(1., 1.5, 2., 3., 20., 0.012));
 }
 
+/**
+ * Checks that parseNumber() only accepts strings that are entirely a number of the requested type.
+ */
+TEST(StringUtilsTest, parseNumberTest) {
+  using autopas::utils::StringUtils::parseNumber;
+
+  EXPECT_EQ(parseNumber<size_t>("42"), 42);
+  EXPECT_EQ(parseNumber<double>("1.5"), 1.5);
+  EXPECT_EQ(parseNumber<double>("2e1"), 20.);
+
+  EXPECT_ANY_THROW(parseNumber<size_t>("1.5"));
+  EXPECT_ANY_THROW(parseNumber<double>("1.5x"));
+  EXPECT_ANY_THROW(parseNumber<double>(""));
+  EXPECT_ANY_THROW(parseNumber<float>("1e100"));
+}
+
 TEST(StringUtilsTest, parseNumberIntervalTest) {
   auto numberSet = autopas::utils::StringUtils::parseNumberSet<double>("1.-2e1");
   auto numberInterval = dynamic_cast<autopas::NumberInterval<double> *>(numberSet.get());

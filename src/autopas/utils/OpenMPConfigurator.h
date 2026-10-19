@@ -115,12 +115,6 @@ class OpenMPConfigurator {
   [[maybe_unused]] void setKind(OpenMPKindOption kind);
 
   /**
-   * Tells whether the scheduling chunk size should be overwritten.
-   * @return whether the scheduling chunk size should be overwritten
-   */
-  [[maybe_unused]] [[nodiscard]] bool overrideChunkSize() const;
-
-  /**
    * Returns true if the OpenMP runtime would silently change the schedule kind to another "fallback" kind for all loops
    * of the configurator (typically due to chunk size and number of threads being too large), i.e. in cases of colored
    * traversals, if the fall back would occur for all colours. This is not problematic in the sense of producing errors,

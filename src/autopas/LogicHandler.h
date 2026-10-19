@@ -1103,6 +1103,23 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 
   const bool energyMeasurementsPossible = autoTuner.resetEnergy();
   timerTotal.start();
+
+  // Set the configuration's OpenMP schedule only for the neighbor list rebuild and the traversal, and restore the
+  // previous one afterwards, so that it does not affect other schedule(runtime) loops, e.g. those of the application.
+  // Sequential traversals have no schedule to set.
+  const auto &config = autoTuner.getCurrentConfig();
+  omp_sched_t kindBefore{};
+  int chunkSizeBefore{};
+  autopas_get_schedule(&kindBefore, &chunkSizeBefore);
+  if (config.ompKind != OpenMPKindOption::sequential) {
+    const auto loopCounts = traversal
+                                .getRuntimeScheduledLoopCounts(_currentContainer->getTraversalSelectorInfo(),
+                                                               getNumberOfParticlesOwned() + getNumberOfParticlesHalo())
+                                .value_or(std::vector<size_t>{});
+    autopas_set_schedule(
+        OpenMPConfigurator(config.ompKind, config.ompChunkSize, loopCounts, autopas_get_max_threads()));
+  }
+
   timerRebuild.start();
   functor.initTraversal();
 
@@ -1132,22 +1149,6 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   // Mainly for NeighborIdentificationFunctor, initialize the neighbors
   if constexpr (requires { functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo)); }) {
     functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo));
-  }
-
-  // Set the configuration's OpenMP schedule only for the traversal and restore the previous one afterwards, so that it
-  // does not affect other schedule(runtime) loops, e.g. those of the application. Sequential traversals have no
-  // schedule to set.
-  const auto &config = autoTuner.getCurrentConfig();
-  omp_sched_t kindBefore{};
-  int chunkSizeBefore{};
-  autopas_get_schedule(&kindBefore, &chunkSizeBefore);
-  if (config.ompKind != OpenMPKindOption::sequential) {
-    const auto loopCounts = traversal
-                                .getRuntimeScheduledLoopCounts(_currentContainer->getTraversalSelectorInfo(),
-                                                               getNumberOfParticlesOwned() + getNumberOfParticlesHalo())
-                                .value_or(std::vector<size_t>{});
-    autopas_set_schedule(
-        OpenMPConfigurator(config.ompKind, config.ompChunkSize, loopCounts, autopas_get_max_threads()));
   }
 
   timerComputeInteractions.start();

@@ -275,7 +275,7 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest::eval(autopas::Configuration
 
   // Set the OpenMP schedule of the configuration only for the traversal and restore the previous one afterwards, as the
   // LogicHandler does.
-  omp_sched_t kindBefore{};
+  autopas::omp_sched_t kindBefore{};
   int chunkSizeBefore{};
   autopas::autopas_get_schedule(&kindBefore, &chunkSizeBefore);
   const autopas::OpenMPConfigurator ompConfig(

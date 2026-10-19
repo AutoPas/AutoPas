@@ -7,6 +7,8 @@
 #pragma once
 
 #include <cmath>
+#include <cstdlib>
+#include <limits>
 #include <regex>
 #include <set>
 #include <string>
@@ -158,14 +160,27 @@ inline std::vector<std::string> tokenize(const std::string &searchString, const 
  * @tparam T Type. Must be arithemetic.
  * @param str String to be converted
  * @return str as a number of type T.
- * ToDo this needs a test!
+ * Throws if the string is not entirely a number of type T, e.g. "1.5" for an integer type.
  */
 template <Numeric T>
 T parseNumber(const std::string_view str) {
-  T value;
-  const auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+  T value{};
+  bool isNumber = false;
+  if constexpr (std::is_floating_point_v<T>) {
+    // Not all standard libraries provide std::from_chars for floating-point types (e.g. Apple's libc++), so use
+    // strtold, which needs a null-terminated string.
+    const std::string string{str};
+    char *end = nullptr;
+    const long double parsed = std::strtold(string.c_str(), &end);
+    isNumber = not string.empty() and end == string.c_str() + string.size() and
+               std::abs(parsed) <= std::numeric_limits<T>::max();
+    value = static_cast<T>(parsed);
+  } else {
+    const auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+    isNumber = ec == std::errc{} and ptr == str.data() + str.size();
+  }
 
-  if (ec == std::errc::invalid_argument or ec == std::errc::result_out_of_range) {
+  if (not isNumber) {
     ExceptionHandler::exception("parseNumber: Cannot convert string to number: " + std::string(str));
   }
   return value;

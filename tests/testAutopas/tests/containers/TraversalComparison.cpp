@@ -188,7 +188,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
 
   // Set the OpenMP schedule of the configuration only for the traversal and restore the previous one afterwards, as the
   // LogicHandler does.
-  omp_sched_t kindBefore{};
+  autopas::omp_sched_t kindBefore{};
   int chunkSizeBefore{};
   autopas::autopas_get_schedule(&kindBefore, &chunkSizeBefore);
   const autopas::OpenMPConfigurator ompConfig(

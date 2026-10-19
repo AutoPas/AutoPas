@@ -5,7 +5,7 @@
 # data-layout                      :  [AoS, SoA]
 # newton3                          :  [disabled, enabled]
 # cell-size                            :  [1]
-# openmp-schedule-kinds                :  [omp_static, omp_dynamic, omp_guided, omp_auto, lb4omp_trapezoidal, lb4omp_fac2a, lb4omp_static_steal, lb4omp_awf_b, lb4omp_awf_c, lb4omp_awf_d, lb4omp_awf_e, lb4omp_awf_e]
+# openmp-schedule-kinds                :  [omp_static, omp_dynamic, omp_guided, omp_auto, lb4omp_trapezoidal, lb4omp_fac2a, lb4omp_static_steal, lb4omp_awf_b, lb4omp_awf_c, lb4omp_awf_d, lb4omp_awf_e, lb4omp_af_a]
 # openmp-chunk-sizes                   :  [1, 2, 4, 8, 16, 32, 64]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  0.2

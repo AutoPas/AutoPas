@@ -7,7 +7,6 @@
 #pragma once
 
 #include "autopas/options/Option.h"
-#include "autopas/utils/StringUtils.h"
 
 namespace autopas {
 inline namespace options {
@@ -507,6 +506,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
 
   /**
    * Provides a way to iterate over the possible choices of OpenMPKindOption.
+   * TODO before merge: Check this
    * @return map option -> string representation
    */
   static std::map<OpenMPKindOption, std::string> getOptionNames() {
@@ -569,40 +569,6 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
    */
   static std::set<OpenMPKindOption> getAuto4OMPSelectionMethods() {
     return {auto4omp_randomSel, auto4omp_exhaustiveSel, auto4omp_binarySearch, auto4omp_expertSel};
-  }
-
-  /**
-   * Converts the old LB4OMP scheduling technique names to their corresponding new names.
-   * The old names are the ones used in the LB4OMP and Auto4OMP papers and Git Readme.
-   * The new names are the ones accepted in practice by the master branch LB4OMP.
-   * If no conversion takes place, the given name will be returned in lower case.
-   * @param name the name to convert
-   * @return the converted lower case name
-   */
-  static std::string toNewName(const std::string &name) {
-    std::string lowName = name;
-    std::transform(lowName.begin(), lowName.end(), lowName.begin(), ::tolower);
-    if (autopas::utils::StringUtils::contains(lowName, "ss"))
-      return "dynamic";
-    else if (autopas::utils::StringUtils::contains(lowName, "gss"))
-      return "guided";
-    else if (autopas::utils::StringUtils::contains(lowName, "mfac2"))
-      return "fac2a";
-    else if (autopas::utils::StringUtils::contains(lowName, "mfac"))
-      return "faca";
-    else if (autopas::utils::StringUtils::contains(lowName, "awf-b"))
-      return "awf_b";
-    else if (autopas::utils::StringUtils::contains(lowName, "awf-c"))
-      return "awf_c";
-    else if (autopas::utils::StringUtils::contains(lowName, "awf-d"))
-      return "awf_d";
-    else if (autopas::utils::StringUtils::contains(lowName, "awf-e"))
-      return "awf_e";
-    else if (autopas::utils::StringUtils::contains(lowName, "tss"))
-      return "trapezoidal";
-    else if (autopas::utils::StringUtils::contains(lowName, "maf"))
-      return "af_a";
-    return lowName;
   }
 
  private:
