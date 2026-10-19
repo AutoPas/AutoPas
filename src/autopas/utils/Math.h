@@ -218,46 +218,42 @@ double normalCDF(double x);
 double sigmoid(double x);
 
 /*
-* Finds the least squares solution for a linear regression problem.
-* @param x The x values of the data points.
-* @param y The y values of the data points.
-* @return A pair containing the slope and y-intercept of the best-fit line.
-*/
-// Returns {intercept, slope}, mirroring boost::math::statistics::simple_ordinary_least_squares.
-// Throws std::domain_error if fewer than 2 points or all x are identical
+ * Finds the least squares solution for a linear regression problem.
+ * @param x The x values of the data points.
+ * @param y The y values of the data points.
+ * @return A pair containing the slope and y-intercept of the best-fit line, mirroring
+ * boost::math::statistics::simple_ordinary_least_squares. Throws std::domain_error if fewer than 2 points or all x are
+ * identical
+ */
 template <class T>
-  requires std::convertible_to<T, double>
-[[nodiscard]] inline std::pair<double, double> simpleLeastSquares(
-    const std::vector<T>& x,
-    const std::vector<T>& y)
-{
-    const std::size_t n = std::min(x.size(), y.size());
-    if (n < 2) {
-        throw std::domain_error("least squares requires at least 2 points");
-    }
+requires std::convertible_to<T, double>
+[[nodiscard]] inline std::pair<double, double> simpleLeastSquares(const std::vector<T> &x, const std::vector<T> &y) {
+  const std::size_t n = std::min(x.size(), y.size());
+  if (n < 2) {
+    throw std::domain_error("least squares requires at least 2 points");
+  }
 
-    // Welford-style running means for numerical stability.
-    double mean_x = 0.0, mean_y = 0.0;
-    double sxx = 0.0, sxy = 0.0;
-    for (std::size_t i = 0; i < n; ++i) {
-        const double xi = static_cast<double>(x[i]);
-        const double yi = static_cast<double>(y[i]);
-        const double dx = xi - mean_x;
-        const double dy = yi - mean_y;
-        mean_x += dx / static_cast<double>(i + 1);
-        mean_y += dy / static_cast<double>(i + 1);
-        sxy += dx * (yi - mean_y);   // note: uses UPDATED mean_y
-        sxx += dx * (xi - mean_x);   // note: uses UPDATED mean_x
-    }
+  // Welford-style running means for numerical stability.
+  double mean_x = 0.0, mean_y = 0.0;
+  double sxx = 0.0, sxy = 0.0;
+  for (std::size_t i = 0; i < n; ++i) {
+    const double xi = static_cast<double>(x[i]);
+    const double yi = static_cast<double>(y[i]);
+    const double dx = xi - mean_x;
+    const double dy = yi - mean_y;
+    mean_x += dx / static_cast<double>(i + 1);
+    mean_y += dy / static_cast<double>(i + 1);
+    sxy += dx * (yi - mean_y);  // note: uses UPDATED mean_y
+    sxx += dx * (xi - mean_x);  // note: uses UPDATED mean_x
+  }
 
-    if (sxx == 0.0) {
-        throw std::domain_error("all x values are identical");
-    }
+  if (sxx == 0.0) {
+    throw std::domain_error("all x values are identical");
+  }
 
-    const double slope = sxy / sxx;
-    return {mean_y - slope * mean_x, slope};
+  const double slope = sxy / sxx;
+  return {mean_y - slope * mean_x, slope};
 }
-
 
 /**
  * This default relative EPSILON used for the {@link isNearRel} function.
