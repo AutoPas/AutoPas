@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <charconv>
 #include <cmath>
 #include <cstdlib>
 #include <limits>
@@ -13,7 +14,6 @@
 #include <set>
 #include <string>
 #include <vector>
-#include <charconv>
 
 #include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSet.h"
@@ -207,8 +207,8 @@ inline std::array<T, 3> parseArray3D(const std::string &string) {
     try {
       parsedArray[i] = parseNumber<T>(strings[i]);
     } catch (const std::exception &e) {
-      autopas::utils::ExceptionHandler::exception("parseArray3D(): could not convert {} to the specified numeric type: \n{}", strings[i],
-                                                  e.what());
+      autopas::utils::ExceptionHandler::exception(
+          "parseArray3D(): could not convert {} to the specified numeric type: \n{}", strings[i], e.what());
     }
   }
   return parsedArray;
@@ -247,8 +247,8 @@ inline std::set<T> parseNumbers(const std::string &string) {
   std::regex regexDouble(regexDoubleStr);
 
   // use regex iter to find all numbers in the string.
-  for (auto number = std::sregex_iterator(string.begin(), string.end(), regexDouble);
-       number != std::sregex_iterator(); ++number) {
+  for (auto number = std::sregex_iterator(string.begin(), string.end(), regexDouble); number != std::sregex_iterator();
+       ++number) {
     try {
       T value = parseNumber<T>(number->str());
       numbers.insert(value);

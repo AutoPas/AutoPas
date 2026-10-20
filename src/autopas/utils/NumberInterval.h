@@ -86,7 +86,8 @@ class NumberInterval final : public NumberSet<Number> {
    * Gets a random uniformly distributed number between _min and _max.
    *
    * If Number is an integer type, this is unformly randomly selected from the integers between _min and _max.
-   * If Number is a floating point type, this is uniformly randomly selected from all real numbers between _min and _max.
+   * If Number is a floating point type, this is uniformly randomly selected from all real numbers between _min and
+   * _max.
    *
    * @param rng random seed
    * @return

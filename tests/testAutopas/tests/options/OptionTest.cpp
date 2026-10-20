@@ -133,7 +133,7 @@ TEST(OptionTest, parseOpenMPKindOptionsTest) {
       {autopas::OpenMPKindOption::lb4omp_fiss, "fiss"},            // Fixed Increase Self Scheduling
 
       // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds):
-      {autopas::OpenMPKindOption::llvm_trapezoidal, "trapezoidal"},    // Trapezoid Self Scheduling
+      {autopas::OpenMPKindOption::llvm_trapezoidal, "trapezoidal"},      // Trapezoid Self Scheduling
       {autopas::OpenMPKindOption::lb4omp_fac2a, "fac2a"},                // Improved Practical Factoring
       {autopas::OpenMPKindOption::lb4omp_static_steal, "static_steal"},  // Static with Steal enabled
       {autopas::OpenMPKindOption::lb4omp_awf_b, "awf_b"},                // Adaptive Weighted Factoring Variant B

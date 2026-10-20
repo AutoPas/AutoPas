@@ -1050,8 +1050,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
    * @param loopBody The lambda to execute for all clusters. Parameters given is internal::Cluster& cluster.
    */
   template <class LoopBody>
-  void
-  traverseClustersParallel(LoopBody &&loopBody) {
+  void traverseClustersParallel(LoopBody &&loopBody) {
     const auto towersPerDimX = _towerBlock.getTowersPerDim()[0];
     const auto towersPerDimY = _towerBlock.getTowersPerDim()[1];
 

@@ -84,7 +84,8 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      * In practice, never really implemented as an actual automated schedule selection.
      *
      * For GCC/libgomp, it is implemented just as static with the default chunk size (i.e. static with a balanced chunk
-     * size), so we just skip this when trialling configurations. For Clang/libomp/LB4OMP, it is implemented as an analytical variant of guided.
+     * size), so we just skip this when trialling configurations. For Clang/libomp/LB4OMP, it is implemented as an
+     * analytical variant of guided.
      *
      * See guided for pros and cons.
      *
@@ -157,8 +158,8 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      *
      * Like fac2a, but each chunk size is multiplied by a weight of the thread that executes it. Whenever a thread
      * requests a new chunk, it updates its weight from the measured execution times of its previous chunks, relative to
-     * those of the other threads, so that faster threads get larger chunks. Handles really more hardware level imbalance
-     * than simulation scenario imbalance.
+     * those of the other threads, so that faster threads get larger chunks. Handles really more hardware level
+     * imbalance than simulation scenario imbalance.
      *
      * Performs worse than fac2a for AutoPas. We don't really have enough loops for this to pay off.
      */
@@ -239,7 +240,8 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      */
     auto4omp_expertSel,
 
-    // LB4OMP's remaining scheduling techniques [1, 2] (beware, technique names in the papers and Git README are outdated):
+    // LB4OMP's remaining scheduling techniques [1, 2] (beware, technique names in the papers and Git README are
+    // outdated):
     // We do not recommend using these as they are untested by either tests or in our own experiments.
     /**
      * LB4OMP's profiling "scheduling".
@@ -337,16 +339,16 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      * LB4OMP's adaptive weighted factoring scheduling for time-stepping applications (AWF in [1]).
      *
      * Like wf, but the weights are updated at the end of every execution of the loop (i.e. every time step), from the
-     * measured execution times of the threads. Unlike awf_b to awf_e, the weights stay fixed within one execution of the
-     * loop.
+     * measured execution times of the threads. Unlike awf_b to awf_e, the weights stay fixed within one execution of
+     * the loop.
      */
     lb4omp_awf,
 
     /**
      * LB4OMP's trapezoid factoring self scheduling (TFSS in [1]).
      *
-     * Like trapezoidal, the chunk sizes decrease linearly, but chunks are handed out in batches of one chunk per thread.
-     * The chunk size of a batch is the average of the next P chunk sizes of trapezoidal, for P threads.
+     * Like trapezoidal, the chunk sizes decrease linearly, but chunks are handed out in batches of one chunk per
+     * thread. The chunk size of a batch is the average of the next P chunk sizes of trapezoidal, for P threads.
      */
     lb4omp_tfss,
 
@@ -539,7 +541,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         {OpenMPKindOption::lb4omp_fiss, "fiss"},            // Fixed Increase Self Scheduling
 
         // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds):
-        {OpenMPKindOption::llvm_trapezoidal, "trapezoidal"},    // Trapezoid Self Scheduling
+        {OpenMPKindOption::llvm_trapezoidal, "trapezoidal"},      // Trapezoid Self Scheduling
         {OpenMPKindOption::lb4omp_fac2a, "fac2a"},                // Improved Practical Factoring
         {OpenMPKindOption::lb4omp_static_steal, "static_steal"},  // Static with Steal enabled
         {OpenMPKindOption::lb4omp_awf_b, "awf_b"},                // Adaptive Weighted Factoring Variant B
