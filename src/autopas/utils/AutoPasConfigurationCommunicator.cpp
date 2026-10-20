@@ -90,8 +90,7 @@ std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte
   for (size_t i = 0; i < configurationsSerialized.size(); i += serializedConfSize) {
     // copy the bytes of one configuration into a dedicated buffer
     SerializedConfiguration serializedConfig{};
-    std::copy(configurationsSerialized.begin() + i, configurationsSerialized.begin() + i + serializedConfSize,
-              serializedConfig.begin());
+    std::copy_n(configurationsSerialized.begin() + i, serializedConfSize, serializedConfig.begin());
     // turn the byte buffer into a config and store it in the return vector
     configurations.push_back(deserializeConfiguration(serializedConfig));
   }
@@ -127,7 +126,7 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, d
   // sort all values
   std::sort(similarityMetrics.begin(), similarityMetrics.end());
 
-  // calculate absolute differences between neighbouring values
+  // calculate absolute differences between neighboring values
   std::vector<double> differences;
   std::adjacent_difference(similarityMetrics.begin(), similarityMetrics.end(), std::back_inserter(differences));
 

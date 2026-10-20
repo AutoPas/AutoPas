@@ -53,6 +53,18 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Functo
   inline void cSlicedTraversal(LoopBody &&loopBody);
 
   /**
+   * Returns the number of iterations of the two loops cSlicedTraversal() runs with OpenMP's schedule(runtime), which
+   * are the numbers of slices of each color. As the slices are only set up in initTraversal(), this computes their
+   * number in the same way. Must be kept in line with cSlicedTraversal() and initTraversal().
+   * @return The number of slices of each of the two colors.
+   */
+  [[nodiscard]] std::vector<size_t> cSlicedTraversalLoopCounts() const {
+    const auto minSliceThickness = this->_overlapLongestAxis;
+    const auto numSlices = this->_cellsPerDimension[this->_dimsSortedByLength[0]] / minSliceThickness;
+    return {(numSlices + 1) / 2, numSlices / 2};
+  }
+
+  /**
    * @copydoc TraversalInterface::isApplicableToDomain
    */
   [[nodiscard]] bool isApplicableToDomain() const override {
@@ -87,7 +99,7 @@ void SlicedC02BasedTraversal<ParticleCell, Functor>::cSlicedTraversal(LoopBody &
 
   for (size_t offset = 0; offset < 2; offset++) {
     // although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
-    AUTOPAS_OPENMP(parallel for schedule(dynamic, 1))
+    AUTOPAS_OPENMP(parallel for schedule(runtime))
     for (size_t slice = offset; slice < numSlices; slice += 2) {
       array<unsigned long, 3> myStartArray{0, 0, 0};
       for (size_t i = 0; i < slice; ++i) {

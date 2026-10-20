@@ -39,6 +39,7 @@ EXTRACT_ANON_NSPACES    = YES # default NO
 
 JAVADOC_AUTOBRIEF      = YES # default NO
 QT_AUTOBRIEF           = YES # default NO
+BUILTIN_STL_SUPPORT    = YES # default NO
 
 #QUIET                 = NO # default NO
 #WARNINGS              = YES # default YES

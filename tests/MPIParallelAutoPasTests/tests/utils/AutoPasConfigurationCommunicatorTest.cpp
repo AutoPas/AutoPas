@@ -14,10 +14,8 @@ using namespace autopas;
 
 // Test if serializing and deserializing again works as expected.
 TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
-  Configuration config = Configuration(ContainerOption::directSum, 1.2, TraversalOption::lc_sliced,
-                                       LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::disabled,
-                                       InteractionTypeOption::pairwise, VectorizationPatternOption::p1xVec);
-  Configuration passedConfig = deserializeConfiguration(serializeConfiguration(config));
+  const Configuration config = arbitraryConfigurations::_arbitrary_config_2B_3;
+  const Configuration passedConfig = deserializeConfiguration(serializeConfiguration(config));
   EXPECT_EQ(passedConfig, config);
 }
 
@@ -35,17 +33,16 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  Configuration config = Configuration(
-      ContainerOption::directSum, 1 + rank, TraversalOption::lc_sliced, LoadEstimatorOption::neighborListLength,
-      DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise, VectorizationPatternOption::NA);
+  // The configuration is arbitrary, apart from the cell size factor, which identifies the rank it came from.
+  Configuration config = arbitraryConfigurations::_arbitrary_config_2B_0;
+  config.cellSizeFactor = 1 + rank;
   // provide rank as the time for the config.
-  Configuration optimized = findGloballyBestConfiguration(MPI_COMM_WORLD, config, rank);
+  const Configuration optimized = findGloballyBestConfiguration(MPI_COMM_WORLD, config, rank);
 
   // CSF should be 1, because rank 0 provided the lowest time.
-  EXPECT_EQ(optimized,
-            Configuration(ContainerOption::directSum, 1, TraversalOption::lc_sliced,
-                          LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled,
-                          InteractionTypeOption::pairwise, VectorizationPatternOption::NA));
+  Configuration expectedConfig = arbitraryConfigurations::_arbitrary_config_2B_0;
+  expectedConfig.cellSizeFactor = 1;
+  EXPECT_EQ(optimized, expectedConfig);
 }
 
 TEST_F(AutoPasConfigurationCommunicatorTest, testGatherConfigs) {
