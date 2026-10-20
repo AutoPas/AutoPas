@@ -1,7 +1,7 @@
-// This file describes the grammar of the fuzzy rule language used by fuzzy-tuning. The parsing code is generated using
-// the ANTLR plugin for CLion. It is generated into parser_generated/ and committed to the repository. Changing this
-// file requires manual regeneration of the code into this directory, and also committing (and formatting) the generated
-// files.
+// This file describes the grammar of the fuzzy rule language used by fuzzy-tuning. The parsing code is generated
+// with the antlr4 CLI; see README.md in this directory for the exact command. It is generated into
+// parser_generated/ and committed to the repository, so changing this file requires regenerating that code
+// and committing (and formatting) the generated files.
 
 grammar FuzzyLanguage;
 

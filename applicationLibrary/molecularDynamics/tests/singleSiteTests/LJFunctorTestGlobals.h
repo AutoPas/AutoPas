@@ -9,9 +9,9 @@
 #include <gtest/gtest.h>
 
 #include "LJFunctorTest.h"
+#include "LJPotential.h"
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
-#include "testingHelpers/LJPotential.h"
 
 template <class FuncType>
 class LJFunctorTestGlobals : public LJFunctorTest {

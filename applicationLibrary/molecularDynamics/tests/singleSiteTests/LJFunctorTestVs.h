@@ -10,9 +10,9 @@
 
 #include "AutoPasTestBase.h"
 #include "LJFunctorTest.h"
+#include "ParticleMatcher.h"
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
-#include "testingHelpers/ParticleMatcher.h"
 
 template <class FuncType>
 class LJFunctorTestVs : public LJFunctorTest {

@@ -35,6 +35,8 @@ class CubeGauss : public Object {
         _distributionStdDev(distributionStdDev),
         _bottomLeftCorner(bottomLeftCorner) {}
 
+  [[nodiscard]] std::string getObjectType() const override { return "CubeGauss"; }
+
   /**
    * Getter for distribution mean.
    * @return distributionMean

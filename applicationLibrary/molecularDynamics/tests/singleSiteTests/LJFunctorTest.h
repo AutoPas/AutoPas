@@ -10,9 +10,9 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
-#include "testingHelpers/commonTypedefs.h"
 
 class LJFunctorTest : public AutoPasTestBase {
  public:
