@@ -23,11 +23,6 @@ endif ()
 
 add_library(autopas STATIC ${MY_SRC})
 
-if (AUTOPAS_ENABLE_PYTHON_BASED_TUNING)
-    # Include JSON
-    target_include_directories(autopas PRIVATE "${AUTOPAS_SOURCE_DIR}/libs/json/single_include")
-endif ()
-
 # Namespaced alias so consumers (e.g. via FetchContent / add_subdirectory) can link a stable,
 # collision-safe target name and use `if (NOT TARGET AutoPas::autopas)` guards
 if (NOT TARGET AutoPas::autopas)
@@ -49,8 +44,10 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:pmt>
         Eigen3
         hwy
-        # pybind11 is only needed privately when building AutoPas.
+    PRIVATE
+        # pybind11 and json are only needed privately when building AutoPas.
         $<$<BOOL:${AUTOPAS_ENABLE_PYTHON_BASED_TUNING}>:pybind11::embed>
+        $<$<BOOL:${AUTOPAS_ENABLE_PYTHON_BASED_TUNING}>:nlohmann_json::nlohmann_json>
 )
 
 # OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
