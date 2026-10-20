@@ -640,14 +640,16 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
        autopas::OpenMPKindOption::omp_guided, autopas::OpenMPKindOption::llvm_trapezoidal,
        autopas::OpenMPKindOption::lb4omp_static_steal, autopas::OpenMPKindOption::lb4omp_fac2a},
       {1, autopas::OpenMPChunkSize::balanced, autopas::OpenMPChunkSize::golden});
+
+  const std::string outputSuffixMultipleSchedules = "multipleSchedules";
   auto tuningManagerMultipleSchedules = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManagerMultipleSchedules->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpaceMultipleSchedules, autoTunerInfo,
-                                           rebuildFrequency, ""),
+                                           rebuildFrequency, outputSuffixMultipleSchedules),
       autopas::InteractionTypeOption::pairwise);
-  autopas::LogicHandler<Molecule> logicHandlerMultipleSchedules(tuningManagerMultipleSchedules, logicHandlerInfo,
-                                                                rebuildFrequency, "", autoTunerInfo.aosSortingThreshold,
-                                                                autoTunerInfo.soaSortingThreshold);
+  autopas::LogicHandler<Molecule> logicHandlerMultipleSchedules(
+      tuningManagerMultipleSchedules, logicHandlerInfo, rebuildFrequency, outputSuffixMultipleSchedules,
+      autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   // Upper bound: assume no schedule falls back, so every configuration is trialled, apart from the ones which are not
   // applicable. These are the ones determined above for (static, 1), once for every schedule in the search space, as
