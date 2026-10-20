@@ -1,0 +1,51 @@
+#ifndef PMT_CONFIG_H_
+#define PMT_CONFIG_H_
+
+#cmakedefine PMT_BUILD_POWERSENSOR2
+#cmakedefine PMT_BUILD_POWERSENSOR3
+#cmakedefine PMT_BUILD_NVML
+#cmakedefine PMT_BUILD_AMDSMI
+#cmakedefine PMT_BUILD_ROCM
+#cmakedefine PMT_BUILD_RAPL
+#cmakedefine PMT_BUILD_TEGRA
+#cmakedefine PMT_BUILD_XILINX
+#cmakedefine PMT_BUILD_LIKWID
+#cmakedefine PMT_BUILD_CRAY
+#cmakedefine PMT_BUILD_NVIDIA
+
+#include <pmt/Dummy.h>
+#if defined(PMT_BUILD_POWERSENSOR2)
+#include <pmt/PowerSensor2.h>
+#endif
+#if defined(PMT_BUILD_POWERSENSOR3)
+#include <pmt/PowerSensor3.h>
+#endif
+#if defined(PMT_BUILD_NVML)
+#include <pmt/NVML.h>
+#endif
+#if defined(PMT_BUILD_AMDSMI)
+#include <pmt/AMDSMI.h>
+#endif
+#if defined(PMT_BUILD_ROCM)
+#include <pmt/ROCM.h>
+#endif
+#if defined(PMT_BUILD_RAPL)
+#include <pmt/Rapl.h>
+#endif
+#if defined(PMT_BUILD_TEGRA)
+#include <pmt/Tegra.h>
+#endif
+#if defined(PMT_BUILD_XILINX)
+#include <pmt/Xilinx.h>
+#endif
+#if defined(PMT_BUILD_LIKWID)
+#include <pmt/Likwid.h>
+#endif
+#if defined(PMT_BUILD_CRAY)
+#include <pmt/Cray.h>
+#endif
+#if defined(PMT_BUILD_NVIDIA)
+#include <pmt/NVIDIA.h>
+#endif
+
+#endif

@@ -24,13 +24,6 @@
 
 using ::testing::_;
 
-TEST_F(OctreeTest, testDummy) {
-  using namespace autopas;
-
-  std::array<double, 3> min = {0, 0, 0}, max = {2, 2, 2};
-  Octree<ParticleFP64> tree(min, max, 0.001f, 0.01f, 10, 1.0f);
-}
-
 /**
  * This test checks (pairwise) whether the boxes split on one layer are correctly aligned with themselves.
  */
@@ -481,8 +474,8 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Construct container
   auto container = ContainerSelector<Molecule>::generateContainer(
-      containerOption,
-      ContainerSelectorInfo{boxMin, boxMax, cutoff, cellSizeFactor, skin, 32, 8, autopas::LoadEstimatorOption::none});
+      containerOption, ContainerSelectorInfo{boxMin, boxMax, cutoff, cellSizeFactor, skin, 32, 8, 8,
+                                             autopas::LoadEstimatorOption::none});
 
   // Create a functor that is able to calculate forces
   LJFunctorType<true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both, false /*calculateGlobals*/>

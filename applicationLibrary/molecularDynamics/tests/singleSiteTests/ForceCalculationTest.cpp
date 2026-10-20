@@ -7,9 +7,9 @@
 #include "ForceCalculationTest.h"
 
 #include "autopas/AutoPasDecl.h"
-#include "autopasTools/generators/GridGenerator.h"
+#include "autopas/utils/generators/GridGenerator.h"
+#include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::computeInteractions(LJFunctorType<> *);
@@ -31,8 +31,8 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   autoPas.init();
   Molecule defaultParticle;
 
-  autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
-                                                             {particleSpacing, particleSpacing, particleSpacing});
+  autopas::generators::GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
+                                                        {particleSpacing, particleSpacing, particleSpacing});
 
   LJFunctorType<> functor(cutoff);
   functor.setParticleProperties(24, 1);

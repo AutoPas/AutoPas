@@ -52,7 +52,11 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c01; }
 
-  [[nodiscard]] bool isApplicable() const override { return not this->_useNewton3; }
+  /**
+   * OT C01 is always applicable to the domain.
+   * @return true
+   */
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     // Preprocess all leaves
@@ -104,9 +108,18 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
   }
 
   /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    */
-  void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) override {
+    _cellFunctor.setAoSSortingThresholds(aosSortingThreshold);
+  }
+
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold) override {
+    _cellFunctor.setSoASortingThresholds(soaSortingThreshold);
+  }
 
  private:
   /**

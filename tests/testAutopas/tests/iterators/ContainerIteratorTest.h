@@ -12,18 +12,19 @@
 
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/IteratorBehavior.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
 
 class ContainerIteratorTestBase : public testing::Test {
  public:
   struct PrintToStringParamName {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
-      auto [containerOption, cellSizeFactor, useRegionIterator, testConstIterators, priorForceCalc, behavior] =
+      auto [containerConfig, useRegionIterator, testConstIterators, priorForceCalc, behavior] =
           static_cast<ParamType>(info.param);
       std::string str;
-      str += containerOption.to_string() + "_";
+      str += containerConfig.container.to_string() + "_";
       str += std::string{useRegionIterator ? "Region" : ""} + "Iterator_";
-      str += std::string{"cellSizeFactor"} + std::to_string(cellSizeFactor);
+      str += std::string{"csf"} + "_" + std::to_string(containerConfig.cellSizeFactor);
       str += testConstIterators ? "_const" : "_nonConst";
       str += priorForceCalc ? "_priorForceCalc" : "_noPriorForceCalc";
       str += "_" + behavior.to_string();
@@ -40,7 +41,7 @@ class ContainerIteratorTestBase : public testing::Test {
    * @return tuple {haloBoxMin, haloBoxMax}
    */
   template <typename AutoPasT>
-  auto defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption, double cellSizeFactor);
+  auto defaultInit(AutoPasT &autoPas, ContainerConfiguration containerConfig);
 
   /**
    * Deletes all particles whose ID matches the given Predicate.
@@ -58,9 +59,8 @@ class ContainerIteratorTestBase : public testing::Test {
                        const autopas::IteratorBehavior &behavior);
 };
 
-using testingTuple =
-    std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*regionIterator (true) or regular (false)*/,
-               bool /*testConstIterators*/, bool /*priorForceCalc*/, autopas::IteratorBehavior>;
+using testingTuple = std::tuple<ContainerConfiguration, bool /*regionIterator (true) or regular (false)*/,
+                                bool /*testConstIterators*/, bool /*priorForceCalc*/, autopas::IteratorBehavior>;
 class ContainerIteratorTest : public ContainerIteratorTestBase, public ::testing::WithParamInterface<testingTuple> {};
 
 class ContainerIteratorTestNonConst : public ContainerIteratorTestBase,

@@ -9,6 +9,7 @@
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/baseFunctors/CellFunctor3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
+#include "autopas/utils/SortingThresholdInfoInterface.h"
 #include "autopas/utils/checkFunctorType.h"
 
 namespace autopas {
@@ -82,9 +83,18 @@ class LCC08CellHandler {
   inline void processBaseCellTriwise(std::vector<ParticleCell_T> &cells, unsigned long baseIndex);
 
   /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    */
-  void setSortingThreshold(size_t sortingThreshold) { _cellFunctor.setSortingThreshold(sortingThreshold); }
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) {
+    _cellFunctor.setAoSSortingThresholds(aosSortingThreshold);
+  }
+
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold) {
+    _cellFunctor.setSoASortingThresholds(soaSortingThreshold);
+  }
 
  protected:
   /**

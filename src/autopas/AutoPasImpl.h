@@ -70,8 +70,6 @@ void AutoPas<Particle_T>::init() {
     _tuningStrategyFactoryInfo.mpiDivideAndConquer = true;
   }
 
-  _logicHandlerInfo.sortingThreshold = _sortingThreshold;
-
   // If an interval was given for the cell size factor, change it to the relevant values.
   // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.
   const auto cellSizeFactors = [&]() -> NumberSetFinite<double> {
@@ -110,7 +108,8 @@ void AutoPas<Particle_T>::init() {
 
   // Create logic handler
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
-      _tuningManager, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
+      _tuningManager, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix, _autoTunerInfo.aosSortingThreshold,
+      _autoTunerInfo.soaSortingThreshold);
 }
 
 template <class Particle_T>

@@ -46,7 +46,7 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ds_sequential; }
 
-  [[nodiscard]] bool isApplicable() const override { return true; }
+  [[nodiscard]] bool isApplicableToDomain() const override { return true; }
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
@@ -69,9 +69,18 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
   void traverseParticles() override;
 
   /**
-   * @copydoc autopas::CellTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setAoSSortingThresholds()
    */
-  void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
+  void setAoSSortingThresholds(const SortingThresholdInfoInterface &aosSortingThreshold) override {
+    _cellFunctor.setAoSSortingThresholds(aosSortingThreshold);
+  }
+
+  /**
+   * @copydoc autopas::CellTraversal::setSoASortingThresholds()
+   */
+  void setSoASortingThresholds(const SortingThresholdInfoInterface &soaSortingThreshold) override {
+    _cellFunctor.setSoASortingThresholds(soaSortingThreshold);
+  }
 
  private:
   // CellFunctor type for either Pairwise or Triwise Functors.

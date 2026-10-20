@@ -1,0 +1,49 @@
+# Simulates a ball in the center of a large domain heating up and expanding to fill the entire domain.
+# Used in Newcome et al., 2025 (https://doi.org/10.1007/978-3-031-97635-3_35)
+# It is a good example for demonstrating dynamic algorithm selection within an experiment without MPI, but do not
+# expect as significant a speedup as from algorithm selection between entirely different simulations or within a
+# simulation with MPI.
+# Across half a node on HSUper (https://www.hsu-hh.de/hpc/en/hsuper/), this took about an hour.
+
+verlet-rebuild-frequency         :  10
+verlet-skin-radius               :  0.5
+verlet-cluster-size              :  4
+selector-strategy                :  Fastest-Mean-Value
+data-layout                      :  [AoS, SoA]
+traversal                        :  [lc_sliced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vl_list_iteration, vlc_c01, vlc_c08, vlc_c18, vlc_sliced, vlc_sliced_c02, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_c02]
+vectorization-pattern            :  [1xVectorLength, 2xVectorLengthDiv2, VectorLengthDiv2x2, VectorLengthx1]
+tuning-strategies                :  []
+tuning-interval                  :  10000
+tuning-samples                   :  10
+functor                          :  Lennard-Jones-HWY
+newton3                          :  [disabled, enabled]
+cutoff                           :  3
+box-min                          :  [0, 0, 0]
+box-max                          :  [200, 200, 200]
+cell-size                        :  [0.5, 1]
+deltaT                           :  0.0001
+iterations                       :  150000
+boundary-type                    :  [reflective, reflective ,reflective]
+globalForce                      :  [0,0,0]
+Sites:
+  0:
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1.
+Objects:
+  Sphere:
+    0:
+      center                     :  [100, 100, 100]
+      radius                     :  10
+      particle-spacing           :  1.22462048
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  0
+thermostat:
+  initialTemperature             :  0.1
+  targetTemperature              :  100
+  deltaTemperature               :  0.1
+  thermostatInterval             :  100
+  addBrownianMotion              :  true
+no-end-config                    :  true
+no-progress-bar                  :  true
+log-level                        :  info

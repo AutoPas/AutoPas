@@ -6,6 +6,8 @@
 
 #include "TuningManagerTest.h"
 
+#include <ranges>
+
 #include "autopas/LogicHandler.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/TuningManager.h"
@@ -14,6 +16,8 @@
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/FuzzyTuning.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
+#include "testingHelpers/ArbitraryConfigurations.h"
+#include "testingHelpers/GenerateValidConfigurations.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
@@ -35,9 +39,9 @@ TEST_F(TuningManagerTest, testTuningIntervalIsFixed) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_noN3,
-      _confDs_seq_N3,
-      _confLc_c08_noN3,
+      arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_0,
+      arbitraryConfigurations::_arbitrary_config_2B_3,
   };
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -45,7 +49,8 @@ TEST_F(TuningManagerTest, testTuningIntervalIsFixed) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -88,8 +93,11 @@ TEST_F(TuningManagerTest, testMultipleTuners) {
       .boxMax{10., 10., 10.},
   };
 
-  const auto pairwiseSearchSpace = {_confDs_seq_N3, _confLc_c18_N3, _confLc_c08_N3};
-  const auto triwiseSearchSpace = {_confDs_3b_N3, _confLc_c01_3b_noN3};
+  const auto pairwiseSearchSpace = {arbitraryConfigurations::_arbitrary_config_2B_0,
+                                    arbitraryConfigurations::_arbitrary_config_2B_5,
+                                    arbitraryConfigurations::_arbitrary_config_2B_2};
+  const auto triwiseSearchSpace = {arbitraryConfigurations::_arbitrary_config_3B_1,
+                                   arbitraryConfigurations::_arbitrary_config_3B_0};
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(std::make_unique<autopas::AutoTuner>(tuningStrategies, pairwiseSearchSpace, autoTunerInfo,
@@ -99,7 +107,8 @@ TEST_F(TuningManagerTest, testMultipleTuners) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, triwiseSearchSpace, autoTunerInfo, rebuildFrequency, "3B"),
       autopas::InteractionTypeOption::triwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> pairFunctor;
   testing::NiceMock<MockTriwiseFunctor<Molecule>> triFunctor;
@@ -172,8 +181,8 @@ TEST_F(TuningManagerTest, testTuningPhaseLongerThanTuningInterval) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confLc_c18_noN3,
-      _confLc_c08_N3,
+      arbitraryConfigurations::_arbitrary_config_2B_4,
+      arbitraryConfigurations::_arbitrary_config_2B_2,
   };
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -181,7 +190,8 @@ TEST_F(TuningManagerTest, testTuningPhaseLongerThanTuningInterval) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -229,7 +239,9 @@ TEST_F(TuningManagerTest, testForceRetuneBetweenPhases) {
       .maxSamples = 3,
   };
 
-  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c01_noN3, _confLc_c18_noN3, _confLc_c08_noN3};
+  autopas::AutoTuner::SearchSpaceType searchSpace{arbitraryConfigurations::_arbitrary_config_2B_6,
+                                                  arbitraryConfigurations::_arbitrary_config_2B_4,
+                                                  arbitraryConfigurations::_arbitrary_config_2B_3};
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -237,7 +249,8 @@ TEST_F(TuningManagerTest, testForceRetuneBetweenPhases) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   const size_t numExpectedTuningIterations = searchSpace.size() * autoTunerInfo.maxSamples;
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
@@ -303,14 +316,17 @@ TEST_F(TuningManagerTest, testForceRetuneInPhase) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  const auto searchSpace = {_confLc_c01_noN3, _confLc_c18_noN3, _confLc_c08_noN3};
+  const auto searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_6,
+                            arbitraryConfigurations::_arbitrary_config_2B_4,
+                            arbitraryConfigurations::_arbitrary_config_2B_3};
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, verletRebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   const size_t numExpectedTuningIterations = searchSpace.size() * autoTunerInfo.maxSamples;
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
@@ -361,7 +377,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
       .verletSkin = .2,
   };
   constexpr autopas::AutoTunerInfo autoTunerInfo{
-      .tuningInterval = 1000,
+      .tuningInterval = std::numeric_limits<unsigned int>::max(),
       .maxSamples = 2,
   };
 
@@ -380,98 +396,175 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
       .Times(testing::AtLeast(1))
       .WillRepeatedly(
           testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
-  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
-      autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::VectorizationPatternOption::getAllOptions(),
-      autopas::InteractionTypeOption::pairwise);
+
+  const auto searchSpace = generateAllValidConfigurations(autopas::InteractionTypeOption::pairwise);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
 
   std::map<autopas::ContainerOption, size_t> configsPerContainer;
 
-  // number of configs manually counted:
+  // Number of configs manually counted:
+  // Configurations considered valid by cartesian product but are typically invalid due to
+  // Traversal::isApplicableToDomain are still included in this count.
   //
-  // Direct Sum:            ds_sequential               (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  configsPerContainer[autopas::ContainerOption::directSum] = 16;
-  // LinkedCells:           lc_c08                      (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  //                        lc_sliced                   (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  //                        lc_sliced_balanced          (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics, 4 vecPattern)
-  //                                                    = 32
-  //                        lc_sliced_c02               (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  //                        lc_c18                      (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  //                        lc_c01                      (AoS <=> SoA, noNewton3, 4 vecPattern)             = 8
-  //                        lc_c01_combined_SoA         (SoA, noNewton3, 4 vecPattern)                     = 4
-  //                        lc_c04 (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)                      = 16
-  //                        lc_c04_combined_SoA         (SoA,newton3 <=> noNewton3, 4 vecPattern)          = 8
-  //                        lc_c04_HCP (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)                  = 16
-  configsPerContainer[autopas::ContainerOption::linkedCells] = 148;
-  // same as linked Cells but load estimator stuff is currently missing
+  // Direct Sum:            ds_sequential               (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //   Subtotal:                                                                                              =   4
+  // Direct Sum only supports CSF 1 => Multiply by 1
+
+  configsPerContainer[autopas::ContainerOption::directSum] = 4;
+  // LinkedCells:           lc_c08                      (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        lc_sliced                   (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        lc_sliced_balanced          (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3,
+  //                                                     2 LB heuristics)                                     =  20
+  //                        lc_sliced_c02               (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        lc_c18                      (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        lc_c01                      (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
+  //                        lc_c01_combined_SoA         (SoA x 4 vecPat, noNewton3)                           =   4
+  //                        lc_c04                      (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3) *     =  10
+  //                        lc_c04_combined_SoA         (SoA x 4 vecPat, newton3 <=> noNewton3)         *     =   8
+  //                        lc_c04_HCP                  (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3) *     =  10
+  //   Subtotal:                                                                                              =  97
+  // Linked Cells supports all CSFs (i.e. 0.5, 1.0, 1.5) => Multiply by 3
+  // * C04 traversals will almost always not support CSF 0.5, but these will be excluded later.
+  configsPerContainer[autopas::ContainerOption::linkedCells] = 291;
+
+  // Linked Cells References:
+  // same as linked Cells but without the squaredParticlesPerCell load estimator for sliced_balanced (-10 * 3  = -30)
   configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
-      configsPerContainer[autopas::ContainerOption::linkedCells] - 16;
-  // VerletLists:           vl_list_iteration           (AoS <=> SoA, noNewton3, 1 vecPattern) = 2
-  configsPerContainer[autopas::ContainerOption::verletLists] = 2;
-  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
-  //                        vlc_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 3 heuristics, 1 vecPattern)
-  //                                                    = 12
-  //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
-  //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
-  //                        vlc_c01                     (AoS <=> SoA, noNewton3, 1 vecPattern)             = 2
-  //                        vlc_c08 (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern)                     = 4
-  configsPerContainer[autopas::ContainerOption::verletListsCells] = 30;
-  // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3, 4 vecPattern)             = 8
-  //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern) = 16
-  //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3, 4 vecPattern)             = 8
-  //                        vcl_sliced (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)                  = 16
-  //                        vcl_sliced_c02 (AoS <=> SoA, newton3 <=> noNewton3, 4 vecPattern)              = 16
-  //                        vcl_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 2 heuristics, 4 vecPattern)
-  //                                                    = 32
-  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 96;
-  // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
-  configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
+      configsPerContainer[autopas::ContainerOption::linkedCells] - 30;
 
-  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
-  //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
-  //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
-  //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern) = 4
-  //                        vlp_c01                     (AoS <=> SoA, noNewton3, 1 vecPattern)             = 2
-  //                        vlp_c08 (AoS <=> SoA, newton3 <=> noNewton3, 1 vecPattern)                     = 4
-  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 22;
+  // VerletLists:           vl_list_iteration           (AoS <=> SoA x 1 vecPat, noNewton3)                   =   2
+  // VerletLists:           vl_list_iteration_27        (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
+  //   Subtotal:                                                                                              =   6
+  // Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
+  configsPerContainer[autopas::ContainerOption::verletLists] = 12;
 
-  // Octree:                ot_c01                      (AoS <=> SoA, noNewton3, 4 vecPattern)             = 8
-  //                        ot_c18                      (AoS <=> SoA, newton3, 4 vecPattern)               = 8
-  configsPerContainer[autopas::ContainerOption::octree] = 16;
+  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlc_sliced_balanced         (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3,
+  //                                                     3 LB heuristics)                                     =  12
+  //                        vlc_sliced_colored          (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlc_c18                     (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlc_c01                     (AoS <=> SoA x 1 vecPat, noNewton3)                   =   2
+  //                        vlc_c08                     (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //   Subtotal:                                                                                              =  30
+  // Verlet Lists Cells only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
+  configsPerContainer[autopas::ContainerOption::verletListsCells] = 60;
+
+  // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
+  //                        vcl_c06                     (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        vcl_c01_balanced            (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
+  //                        vcl_sliced                  (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        vcl_sliced_c02              (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //                        vcl_sliced_balanced         (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3,
+  //                                                     2 LB heuristics)                                     =  20
+  //   Subtotal:                                                                                              =  60
+  // Verlet Cluster Lists only support CSF 1 => Multiply by 1
+  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 60;
+
+  // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //   Subtotal:                                                                                              =   4
+  // Var Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
+  configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 8;
+
+  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlp_sliced_balanced         (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlp_sliced_colored          (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlp_c18                     (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //                        vlp_c01                     (AoS <=> SoA x 1 vecPat, noNewton3)                   =   2
+  //                        vlp_c08                     (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //   Subtotal:                                                                                              =  22
+  // Pairwise Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
+  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 44;
+
+  // Octree:                ot_c01                      (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
+  //                        ot_c18                      (AoS <=> SoA x 4 vecPat, newton3)                     =   5
+  //   Subtotal:                                                                                              =  10
+  // Octree only supports CSF 1 => Multiply by 1
+  configsPerContainer[autopas::ContainerOption::octree] = 10;
+
+  // --------------- Check that the manually determined values above match that automatically generated ---------------
 
   // check that there is an entry for every container.
   ASSERT_EQ(configsPerContainer.size(), autopas::ContainerOption::getAllOptions().size());
 
+  // Check that there are the correct number of configurations per container, and print detailed breakdowns if not.
+  for (const auto &container : autopas::ContainerOption::getAllOptions()) {
+    const auto expectedNumConfigs = configsPerContainer.at(container);
+
+    const auto actualNumConfigs =
+        std::ranges::count_if(searchSpace, [container](const auto &config) { return config.container == container; });
+
+    auto detailedConfigsPerTraversal = [&]() {
+      // Filter configs for this container and group by traversal
+      auto containerConfigs =
+          searchSpace | std::views::filter([container](const auto &config) { return config.container == container; });
+
+      // Count configurations per traversal
+      std::map<autopas::TraversalOption, size_t> traversalCounts;
+      std::ranges::for_each(containerConfigs,
+                            [&traversalCounts](const auto &config) { ++traversalCounts[config.traversal]; });
+
+      // Build error message
+      std::ostringstream oss;
+      oss << "\n Number of configurations per traversal for this container:";
+      std::ranges::for_each(traversalCounts,
+                            [&](const auto &pair) { oss << "\n  " << pair.first.to_string() << ": " << pair.second; });
+      return oss.str();
+    };
+
+    EXPECT_EQ(actualNumConfigs, expectedNumConfigs)
+        << "Unexpected number of configurations for container " << container.to_string()
+        << ".\n Check that the manually determined values in AutoTunerTest::testAllConfigurations are correct!"
+        << detailedConfigsPerTraversal();
+  }
+
+  // Check that the total number of configurations is correct and stop if not
   const size_t numberOfConfigs = std::accumulate(configsPerContainer.begin(), configsPerContainer.end(), 0ul,
                                                  [](auto acc, auto &pair) { return acc + pair.second; });
   ASSERT_EQ(numberOfConfigs, searchSpace.size())
       << "The calculated number of configurations is not equal to the cross product search space!";
   // total number of possible configurations * number of samples + last iteration after tuning
-  const size_t expectedNumberOfIterations = numberOfConfigs * autoTunerInfo.maxSamples + 1;
+
+  // Manually determine how many configurations will not be applicable to the domain.
+  // As the domain is rather ordinary, this probably will only result from configurations with traversals not supporting
+  // CSF < 1.0, but where the container in general could support this.
+
+  // All LC C04 traversals with CSF 0.5 are expected to not be applicable
+  // => lc_c04 (10), lc_c04_combined_SoA (8), lc_c04_HCP (10) => 28 configurations
+  // Similarly for Linked Cells References => 28 more
+
+  constexpr size_t numConfigsExpectedNotApplicable{56};
+
+  const size_t expectedNumberOfIterations =
+      (numberOfConfigs - numConfigsExpectedNotApplicable) * autoTunerInfo.maxSamples + 1;
+
+  ASSERT_GT(autoTunerInfo.tuningInterval, expectedNumberOfIterations)
+      << "The tuning interval must be greater than the expected number of iterations! Fix this test.";
 
   size_t collectedSamples = 0;
   size_t iterations = 0;
   bool stillTuning = true;
   auto prevConfig = autopas::Configuration();
 
-  while (stillTuning) {
+  // We should have the loop end at iterations == expectedNumberOfIterations, but for ease of debugging we extend this
+  // to double. We don't use a while(stillTuning) to avoid infinite looping.
+  for (; iterations < 2 * expectedNumberOfIterations; ++iterations) {
     if (collectedSamples == autoTunerInfo.maxSamples) {
       collectedSamples = 0;
       logicHandler.getContainer().deleteAllParticles();
     }
 
     // Should not have any leaving particles in this test
-    auto dummyParticlesVec = logicHandler.updateContainer();
+    auto leavingParticlesVec = logicHandler.updateContainer();
+    EXPECT_EQ(leavingParticlesVec.size(), 0)
+        << "A non-zero number of particles have left the container when none should!";
     stillTuning = logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-    ++iterations;
     ++collectedSamples;
 
     const auto currentConfig = tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise);
@@ -483,6 +576,10 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
         EXPECT_EQ(currentConfig, prevConfig)
             << "Iteration: " << iterations << " collectedSamples: " << collectedSamples;
       }
+    } else {
+      // Increment iteration counter to "complete" this iteration
+      ++iterations;
+      break;
     }
     prevConfig = currentConfig;
   }
@@ -506,8 +603,8 @@ TEST_F(TuningManagerTest, testWillRebuildDL) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_noN3,
-      _confLc_c08_noN3,
+      arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_3,
   };
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -515,7 +612,8 @@ TEST_F(TuningManagerTest, testWillRebuildDL) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -576,9 +674,9 @@ TEST_F(TuningManagerTest, testWillRebuildDDL) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_noN3,
-      _confDs_seq_N3,
-      _confLc_c08_noN3,
+      arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_0,
+      arbitraryConfigurations::_arbitrary_config_2B_3,
   };
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -586,7 +684,8 @@ TEST_F(TuningManagerTest, testWillRebuildDDL) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -662,9 +761,9 @@ TEST_F(TuningManagerTest, testWillRebuildDDLOneConfigKicked) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_noN3,
-      _confDs_seq_N3,
-      _confLc_c08_N3,
+      arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_0,
+      arbitraryConfigurations::_arbitrary_config_2B_2,
   };
 
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
@@ -672,7 +771,8 @@ TEST_F(TuningManagerTest, testWillRebuildDDLOneConfigKicked) {
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -729,15 +829,17 @@ TEST_F(TuningManagerTest, testOneConfig) {
       .maxSamples = 3,
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const auto searchSpace = {_confLc_c08_noN3};
+  const auto searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_3};
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
-  EXPECT_EQ(_confLc_c08_noN3, tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
+  EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_3,
+            tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -752,7 +854,8 @@ TEST_F(TuningManagerTest, testOneConfig) {
     }
     logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
     ++numSamples;
-    EXPECT_EQ(_confLc_c08_noN3, tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
+    EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_3,
+              tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
   }
 }
 
@@ -770,13 +873,15 @@ TEST_F(TuningManagerTest, testConfigSecondInvalid) {
       .maxSamples = 3,
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const auto searchSpace = {_confLc_c08_noN3, _confLc_c08_N3};
+  const auto searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_3,
+                            arbitraryConfigurations::_arbitrary_config_2B_2};
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
 
@@ -787,13 +892,16 @@ TEST_F(TuningManagerTest, testConfigSecondInvalid) {
 
   logicHandler.updateContainer();
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-  EXPECT_EQ(_confLc_c08_N3, tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
+  EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_2,
+            tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
   logicHandler.updateContainer();
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-  EXPECT_EQ(_confLc_c08_N3, tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
+  EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_2,
+            tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
   logicHandler.updateContainer();
   logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
-  EXPECT_EQ(_confLc_c08_N3, tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
+  EXPECT_EQ(arbitraryConfigurations::_arbitrary_config_2B_2,
+            tuningManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise));
 }
 
 /**
@@ -811,13 +919,15 @@ TEST_F(TuningManagerTest, testLastConfigThrownOut) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  const auto searchSpace = {_confLc_c08_noN3, _confLc_c18_noN3};
+  const auto searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_3,
+                            arbitraryConfigurations::_arbitrary_config_2B_4};
   const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
 
-  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -842,9 +952,11 @@ TEST_F(TuningManagerTest, testSetOptimalConfigurationsCommonContainer) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies2{};
 
   // Pairwise Search Space
-  const autopas::AutoTuner::SearchSpaceType pairwiseSpace{_confLc_c08_noN3, _confDs_seq_noN3};
+  const autopas::AutoTuner::SearchSpaceType pairwiseSpace{arbitraryConfigurations::_arbitrary_config_2B_3,
+                                                          arbitraryConfigurations::_arbitrary_config_2B_1};
   // Triwise Search Space
-  const autopas::AutoTuner::SearchSpaceType triwiseSpace{_confLc_c01_3b_noN3, _confDs_3b_N3};
+  const autopas::AutoTuner::SearchSpaceType triwiseSpace{arbitraryConfigurations::_arbitrary_config_3B_0,
+                                                         arbitraryConfigurations::_arbitrary_config_3B_1};
 
   auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
@@ -877,8 +989,10 @@ TEST_F(TuningManagerTest, testSetOptimalConfigurationsCommonContainer) {
   tunerManager->tune(iteration, info);
 
   // Assert both tuners were forcefully locked into the LC container
-  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise), _confLc_c08_noN3);
-  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::triwise), _confLc_c01_3b_noN3);
+  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise),
+            arbitraryConfigurations::_arbitrary_config_2B_3);
+  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::triwise),
+            arbitraryConfigurations::_arbitrary_config_3B_0);
 
   // Assert both tuners correctly exited the tuning phase
   EXPECT_FALSE(tunerManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise)->inTuningPhase());
@@ -899,9 +1013,11 @@ TEST_F(TuningManagerTest, testSetOptimalConfigurationsDifferentContainers) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies2{};
 
   // Pairwise Search Space
-  const autopas::AutoTuner::SearchSpaceType pairwiseSpace{_confLc_c08_noN3, _confDs_seq_noN3};
+  const autopas::AutoTuner::SearchSpaceType pairwiseSpace{arbitraryConfigurations::_arbitrary_config_2B_3,
+                                                          arbitraryConfigurations::_arbitrary_config_2B_1};
   // Triwise Search Space
-  const autopas::AutoTuner::SearchSpaceType triwiseSpace{_confLc_c01_3b_noN3, _confDs_3b_N3};
+  const autopas::AutoTuner::SearchSpaceType triwiseSpace{arbitraryConfigurations::_arbitrary_config_3B_0,
+                                                         arbitraryConfigurations::_arbitrary_config_3B_1};
 
   const auto tunerManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tunerManager->addAutoTuner(
@@ -933,8 +1049,10 @@ TEST_F(TuningManagerTest, testSetOptimalConfigurationsDifferentContainers) {
   // triwise functor call is still better, even if we have to rebuild every time.
   tunerManager->tune(iteration, info);
 
-  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise), _confDs_seq_noN3);
-  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::triwise), _confLc_c01_3b_noN3);
+  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::pairwise),
+            arbitraryConfigurations::_arbitrary_config_2B_1);
+  EXPECT_EQ(tunerManager->getCurrentConfig(autopas::InteractionTypeOption::triwise),
+            arbitraryConfigurations::_arbitrary_config_3B_0);
 
   // Assert both tuners correctly exited the tuning phase
   EXPECT_FALSE(tunerManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise)->inTuningPhase());
@@ -952,7 +1070,7 @@ TEST_F(TuningManagerTest, testLiveInfoRouting) {
   };
 
   // We need a tuner that actually requests LiveInfo to test the gatekeeper
-  const autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3};
+  const autopas::AutoTuner::SearchSpaceType searchSpace{arbitraryConfigurations::_arbitrary_config_2B_3};
 
   // Dummy strategy 1: Only needs standard LiveInfo (at the start of a phase)
   class DummyStrategyLiveInfo : public autopas::TuningStrategyInterface {

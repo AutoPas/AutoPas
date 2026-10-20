@@ -16,6 +16,12 @@ EnergySensor::EnergySensor(EnergySensorOption sensor) : _option(sensor) {
 #endif
 }
 
+EnergySensor::~EnergySensor() = default;
+
+EnergySensor::EnergySensor(EnergySensor &&other) = default;
+
+EnergySensor &EnergySensor::operator=(EnergySensor &&other) = default;
+
 bool EnergySensor::init(bool tuningMetricIsEnergy) {
 #ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
   return true;

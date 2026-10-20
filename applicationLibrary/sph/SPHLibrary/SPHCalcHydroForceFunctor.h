@@ -370,8 +370,7 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle_T, SPH
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) override {
+                        std::span<const size_t> neighborList, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
     if (soa.size() == 0) return;
 

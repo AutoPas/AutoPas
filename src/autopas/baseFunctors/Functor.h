@@ -98,6 +98,20 @@ class Functor {
   }
 
   /**
+   * Whether this functor supports the SortedSoAView optimization path (SoAFunctorPairSorted).
+   * Derived functors that set this to true must also:
+   *   1. Implement getNeededAttr() and getComputedAttr().
+   *   2. Override SoAFunctorPairSorted() — the default throws.
+   *   3. Only list numeric (arithmetic) types in getComputedAttr(), because SortedSoAView scatters them
+   *      back to the source SoA via `+=`. Non-numeric attributes cannot be accumulated this way.
+   *   4. Ensure that the semantics of every computed attribute are additive: the functor accumulates into
+   *      zero-initialized buffers, and SortedSoAView adds the results back with `+=`. Attributes whose
+   *      correct update requires assignment (e.g. `=`) rather than accumulation must not appear in
+   *      getComputedAttr().
+   */
+  static constexpr bool supportsSoASorting = false;
+
+  /**
    * Copies the AoS data of the given cell in the given soa.
    *
    * @param cell Cell from where the data is loaded.
@@ -152,6 +166,8 @@ class Functor {
   /**
    * Specifies whether the functor is capable of using the specified Vectorization Pattern in the SoA functor.
    *
+   * @note This is only relevant for SoA configurations. AoS configurations always use the not-applicable (N/A)
+   * vectorization pattern, so this is never queried for AoS.
    * @param vecPattern
    * @return whether the functor is capable of using the specified Vectorization Pattern
    */

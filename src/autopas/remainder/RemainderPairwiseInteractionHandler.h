@@ -63,13 +63,6 @@ class RemainderPairwiseInteractionHandler {
   void computeRemainderInteractions(PairwiseFunctor *f, ContainerType &container,
                                     std::vector<FullParticleCell<Particle_T>> &particleBuffers,
                                     std::vector<FullParticleCell<Particle_T>> &haloParticleBuffers, bool useSoA) {
-    // Balance buffers. This makes processing them with static scheduling quite efficient.
-    // Also, if particles were not inserted in parallel, this enables us to process them in parallel now.
-    // Cost is at max O(2N) worst O(N) per buffer collection and negligible compared to interacting them.
-    auto cellToVec = [](auto &cell) -> std::vector<Particle_T> & { return cell._particles; };
-    utils::ArrayUtils::balanceVectors(particleBuffers, cellToVec);
-    utils::ArrayUtils::balanceVectors(haloParticleBuffers, cellToVec);
-
     // The following part performs the main remainder traversal. The actual calculation is done in 4 steps carried out
     // in three helper functions.
 

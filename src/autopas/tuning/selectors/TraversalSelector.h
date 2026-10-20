@@ -30,6 +30,7 @@
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedC02Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedTraversal.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/traversals/VVLAsBuildTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationC27Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC01Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC08Traversal.h"
@@ -199,6 +200,11 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
                                                                                                 dataLayout, useNewton3);
       break;
     }
+    case TraversalOption::vl_list_iteration_c27: {
+      traversal = std::make_unique<VLListIterationC27Traversal<ParticleCell_T, PairwiseFunctor_T>>(
+          pairwiseFunctor, dataLayout, useNewton3, traversalInfo.cellsPerDim);
+      break;
+    }
     // Var Verlet Lists
     case TraversalOption::vvl_as_built: {
       traversal = std::make_unique<
@@ -350,7 +356,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
     }
   }
   // Check if the traversal is applicable.
-  if (not traversal->isApplicable()) {
+  if (not traversal->isApplicableToDomain()) {
     return nullptr;
   }
   // If applicable, return the traversal.
@@ -410,7 +416,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generateTriwiseTraversal(
     }
   }
   // Check if the traversal is applicable.
-  if (not traversal->isApplicable()) {
+  if (not traversal->isApplicableToDomain()) {
     return nullptr;
   }
   // If applicable, return the traversal.

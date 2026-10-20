@@ -12,7 +12,7 @@
 
 #include "AutoPasTestBase.h"
 #include "SPHLibrary/autopassph.h"
-#include "autopasTools/generators/UniformGenerator.h"
+#include "autopas/utils/generators/UniformGenerator.h"
 
 enum SPHFunctorType { density, hydro };
 
