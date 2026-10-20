@@ -10,7 +10,7 @@ We, therefore, will also discuss possibilities to modify and experiment with the
 
 ### Python
 
-To use this tuning strategy, you will need a suitable version of Python, compatible with the version of PyBind11 being used. This means, currently, at least v3.7. (See [PyBind11 releases](https://github.com/pybind/pybind11/releases) and cross-reference against the version bundled under `./libs` or your own version for the most-up-to-date information.) On HPC systems, this sometimes means the loading a module for a more up-to-date version of Python.
+To use this tuning strategy, you will need a suitable version of Python, compatible with the version of PyBind11 being used. This means, currently, at least v3.9. (See [PyBind11 releases](https://github.com/pybind/pybind11/releases) and cross-reference against the version bundled under `./libs` or your own version for the most-up-to-date information.) On HPC systems, this sometimes means the loading a module for a more up-to-date version of Python.
 
 We have tested this with Python 3.11.7.
 
