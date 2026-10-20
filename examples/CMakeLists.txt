@@ -1,4 +1,4 @@
-# make exapmles optional. Useful when only the library is needed.
+# make examples optional. Useful when only the library is needed.
 option_conditional(AUTOPAS_BUILD_EXAMPLES
         "Build examples."
         AUTOPAS_STANDALONE_BUILD
@@ -10,7 +10,7 @@ if (NOT AUTOPAS_BUILD_EXAMPLES)
 endif ()
 
 # Example tests are plain add_test() tests that need both `CONFIGURATIONS checkExamples`, which hides them from a plain
-# `ctest`, and `LABELS checkExamples`, which CI selects them by.CI.
+# `ctest`, and `LABELS checkExamples`, which CI selects them by.
 add_custom_target(
     checkExamples
     COMMAND
