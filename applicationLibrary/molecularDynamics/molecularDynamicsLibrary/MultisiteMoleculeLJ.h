@@ -7,6 +7,7 @@
 #pragma once
 
 #include "MoleculeLJ.h"
+#include "ParticlePropertiesLibrary.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/particles/ParticleBase.h"
 
@@ -34,9 +35,12 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * @param moleculeId Id of the particle.
    * @param typeId Id of the type of the particle. Used in conjunction with ParticlePropertiesLibrary to access
    * molecular information such as site types and relative site positions.
+   * @param PPL Static reference to Particles Properties Library. Used to provide convient in-class getters/setters
+   * for site position/force which are not explicitly stored by the particle.
    */
   MultisiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
-                      std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0);
+                      std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0,
+                      const static ParticlePropertiesLibrary<> &PPL);
 
   /**
    * Destructor of the MultisiteMoleculeLJ class.
@@ -48,6 +52,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    */
   enum AttributeNames : int {
     ptr,
+    // Attributes explicitly stored:
     id,
     posX,
     posY,
@@ -72,7 +77,15 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
     torqueY,
     torqueZ,
     typeId,
-    ownershipState
+    ownershipState,
+    // Attributes not explicitly stored:
+    sitePosX,
+    sitePosY,
+    sitePosZ,
+    siteTypeId,
+    siteForceX,
+    siteForceY,
+    siteForceZ
   };
 
   /**
@@ -80,6 +93,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * Used for accessing and creating a SoA with a structure that is known only at compile-time.
    */
   using AttributeTypes = std::tuple<MoleculeLJ *,
+                                    // Attributes explicitly stored:
                                     size_t /*id*/,
                                     double /*x*/,
                                     double /*y*/,
@@ -104,7 +118,15 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
                                     double /*ty*/,
                                     double /*tz*/,
                                     size_t /*typeId*/,
-                                    autopas::OwnershipState /*ownershipState*/>;
+                                    autopas::OwnershipState /*ownershipState*/,
+                                    // Attributes not explicitly stored:
+                                    double /*sitePosX*/,
+                                    double /*sitePosY*/,
+                                    double /*sitePosZ*/,
+                                    size_t /*siteTypeId*/,
+                                    double /*siteForceX*/,
+                                    double /*siteForceY*/,
+                                    double /*siteForceZ*/>;
 
   /**
    * The type for the SoA storage.
@@ -113,14 +135,19 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * This means it shall always only take values 0.0 (=false) or 1.0 (=true).
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
-  using SoAArraysType = typename autopas::utils::SoAType<autopas::utils::SoAPartitionType<
+  using SoAArraysType = typename autopas::utils::SoAType<
+    // Main Partition
+    autopas::utils::SoAPartitionType<
       AttributeTypes, AttributeNames::ptr, AttributeNames::posX, AttributeNames::posY, AttributeNames::posZ,
       AttributeNames::velocityX, AttributeNames::velocityY, AttributeNames::velocityZ, AttributeNames::forceX,
       AttributeNames::forceY, AttributeNames::forceZ, AttributeNames::oldForceX, AttributeNames::oldForceY,
       AttributeNames::oldForceZ, AttributeNames::quaternion0, AttributeNames::quaternion1, AttributeNames::quaternion2,
       AttributeNames::quaternion3, AttributeNames::angularVelX, AttributeNames::angularVelY,
       AttributeNames::angularVelZ, AttributeNames::torqueX, AttributeNames::torqueY, AttributeNames::torqueZ,
-      AttributeNames::typeId, AttributeNames::ownershipState>>;
+      AttributeNames::typeId, AttributeNames::ownershipState>,
+    // LJ Site Partition
+    autopas::utils::SoAPartitionType<AttributeTypes, AttributeNames::sitePosX, AttributeNames::sitePosY, AttributeNames::sitePosZ,
+      AttributeNames::siteTypeId, AttributeNames::siteForceX, AttributeNames::siteForceY, AttributeNames::siteForceZ>>;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -193,6 +220,13 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       return this->_ownershipState;
     } else {
       autopas::utils::ExceptionHandler::exception("MultisiteMoleculeLJ::get() unknown attribute {}", attribute);
+    }
+  }
+
+  template <AttributeNames attribute>
+  auto get(size_t depth) const {
+    if constexpr (attribute == AttributeNames::sitePosX) {
+
     }
   }
 
@@ -309,10 +343,67 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
   void addTorque(const std::array<double, 3> &torque);
 
   /**
-   * Subracts given torque to the particle's torque.
+   * Subtracts given torque to the particle's torque.
    * @param torque torque to be subtracted
    */
   void subTorque(const std::array<double, 3> &torque);
+
+  /**
+   * Gets the i'th site's position x-coordinate.
+   * This is not stored explicitly and so is calculated on-the-fly from the particle's position, quaternion, and typeId
+   * as well as the particle property library.
+   * @param i site number
+   * @return The i'th site's position x-coordinate
+   */
+  [[nodiscard]] const double getSitePosX(size_t i) const;
+
+  /**
+   * Gets the i'th site's position y-coordinate
+   * This is not stored explicitly and so is calculated on-the-fly from the particle's position, quaternion, and typeId
+   * as well as the particle property library.
+   * @param i site number
+   * @return The i'th site's position y-coordinate
+   */
+  [[nodiscard]] const double getSitePosY(size_t i) const;
+
+  /**
+   * Gets the i'th site's position z-coordinate
+   * This is not stored explicitly and so is calculated on-the-fly from the particle's position, quaternion, and typeId
+   * as well as the particle property library.
+   * @param i site number
+   * @return The i'th site's position z-coordinate
+   */
+  [[nodiscard]] const double getSitePosZ(size_t i) const;
+
+  /**
+   * Gets the i'th site's typeId
+   * This is not stored explicitly and so is determined using the particle property library.
+   * @param i site number
+   * @return The i'th site's typeId
+   */
+  [[nodiscard]] const size_t &getSiteTypeId(size_t i) const;
+
+  /**
+   * Add the contributions of the i'th site's force buffer to the molecule's force and torque buffers.
+   * @param i site number
+   * @param siteForceX
+   */
+  void addSiteForceX(const size_t i, const double &siteForceX);
+
+  /**
+   * Add the contributions of the i'th site's force buffer to the molecule's force and torque buffers.
+   * @param i site number
+   * @param siteForceY
+   */
+  void addSiteForceY(const double &siteForceY);
+
+  /**
+   * Add the contributions of the i'th site's force buffer to the molecule's force and torque buffers.
+   * @param i site number
+   * @param siteForceZ
+   */
+  void addSiteForceZ(const double &siteForceZ);
+
 
   /**
    * Creates a string containing all data of the particle.
@@ -335,6 +426,12 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * Torque applied to particle.
    */
   std::array<double, 3> _torque{};
+
+ private:
+  /**
+   * Static reference to PPL. Used for handling site specific data kept only in SoAs.
+   */
+  static ParticlePropertiesLibrary<> &_PPL;
 };
 
 }  // namespace mdLib

@@ -184,7 +184,7 @@ class ParticlePropertiesLibrary {
    * @param i Type Id of a multi-site molecule.
    * @return untranslated, non-rotated site positions
    */
-  std::vector<std::array<floatType, 3>> getSitePositions(intType i) const;
+  const std::vector<std::array<floatType, 3>> &getSitePositions(intType i) const;
 
   /**
    * Get site types of a multi-site molecule.
@@ -194,7 +194,7 @@ class ParticlePropertiesLibrary {
    * @param i Type Id of a multi-site molecule.
    * @return site type Ids.
    */
-  std::vector<intType> getSiteTypes(intType i) const;
+  const std::vector<intType> &getSiteTypes(intType i) const;
 
   /**
    * Get number of sites of a multi-site molecule.
@@ -514,7 +514,7 @@ std::array<floatType, 3> ParticlePropertiesLibrary<floatType, intType>::getMomen
 }
 
 template <typename floatType, typename intType>
-std::vector<std::array<floatType, 3>> ParticlePropertiesLibrary<floatType, intType>::getSitePositions(intType i) const {
+const std::vector<std::array<floatType, 3>> &ParticlePropertiesLibrary<floatType, intType>::getSitePositions(intType i) const {
 #if MD_FLEXIBLE_MODE == SINGLESITE
   AutoPasLog(WARN,
              "ParticlePropertiesLibrary::getSitePositions(): trying to get the site positions of a multi-site molecule "
@@ -525,7 +525,7 @@ std::vector<std::array<floatType, 3>> ParticlePropertiesLibrary<floatType, intTy
 }
 
 template <typename floatType, typename intType>
-std::vector<intType> ParticlePropertiesLibrary<floatType, intType>::getSiteTypes(intType i) const {
+const std::vector<intType> &ParticlePropertiesLibrary<floatType, intType>::getSiteTypes(intType i) const {
 #if MD_FLEXIBLE_MODE == SINGLESITE
   AutoPasLog(WARN,
              "ParticlePropertiesLibrary::getSiteTypes(): trying to get the site types of a multi-site molecule type "

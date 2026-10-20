@@ -5,12 +5,15 @@
  */
 
 #include "MultisiteMoleculeLJ.h"
+#include "autopas/utils/Quaternion.h"
 
 namespace mdLib {
 MultisiteMoleculeLJ::MultisiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
                                          std::array<double, 3> angularVel, unsigned long moleculeId,
-                                         unsigned long typeId)
-    : mdLib::MoleculeLJ(r, v, moleculeId, typeId), _q(q), _angularVel(angularVel), _torque({0., 0., 0.}) {}
+                                         unsigned long typeId, const static ParticlePropertiesLibrary<> &PPL)
+    : MoleculeLJ(r, v, moleculeId, typeId), _q(q), _angularVel(angularVel), _torque({0., 0., 0.}) {
+  _PPL = PPL;
+}
 
 const std::array<double, 4> &MultisiteMoleculeLJ::getQuaternion() const { return _q; }
 void MultisiteMoleculeLJ::setQuaternion(const std::array<double, 4> &q) { _q = q; }
@@ -28,6 +31,33 @@ void MultisiteMoleculeLJ::addTorque(const std::array<double, 3> &torque) {
 }
 void MultisiteMoleculeLJ::subTorque(const std::array<double, 3> &torque) {
   _torque = autopas::utils::ArrayMath::sub(_torque, torque);
+}
+
+const double MultisiteMoleculeLJ::getSitePosX(size_t i) const {
+  const auto unrotatedUntranslatedSitePos = this->PPL.getSitePositions(_typeId)[i];
+  const auto rotatedUntranslatedSitePosX = autopas::utils::quaternion::rotatePositionX(_q, unrotatedUntranslatedSitePos);
+  return rotatedUntranslatedSitePosX + _r[0];
+}
+
+const double MultisiteMoleculeLJ::getSitePosY(size_t i) const {
+  const auto unrotatedUntranslatedSitePos = PPL.getSitePositions(_typeId)[i];
+  const auto rotatedUntranslatedSitePosY = autopas::utils::quaternion::rotatePositionY(_q, unrotatedUntranslatedSitePos);
+  return rotatedUntranslatedSitePosY + _r[1];
+}
+
+const double MultisiteMoleculeLJ::getSitePosZ(size_t i) const {
+  const auto unrotatedUntranslatedSitePos = PPL.getSitePositions(_typeId)[i];
+  const auto rotatedUntranslatedSitePosZ = autopas::utils::quaternion::rotatePositionZ(_q, unrotatedUntranslatedSitePos);
+  return rotatedUntranslatedSitePosZ + _r[2];
+}
+
+const size_t &MultisiteMoleculeLJ::getSiteTypeId(size_t i) const {
+  return PPL.getSiteTypes(_typeId)[i];
+}
+
+void MultisiteMoleculeLJ::addSiteForceX(const size_t i, const double &siteForceX) {
+  _f[0] += siteForceX;
+  _torque[0] += autopas::utils::ArrayMath::
 }
 
 std::string MultisiteMoleculeLJ::toString() const {
