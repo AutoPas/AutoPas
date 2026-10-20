@@ -25,7 +25,7 @@ add_library(autopas STATIC ${MY_SRC})
 
 if (AUTOPAS_ENABLE_PYTHON_BASED_TUNING)
     # Include JSON
-    target_include_directories(autopas PRIVATE "${CMAKE_SOURCE_DIR}/libs/json")
+    target_include_directories(autopas PRIVATE "${AUTOPAS_SOURCE_DIR}/libs/json/single_include")
 endif ()
 
 # Namespaced alias so consumers (e.g. via FetchContent / add_subdirectory) can link a stable,

@@ -10,9 +10,9 @@
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
 
-#include <json.hpp>
 #include <memory>
 #include <mutex>
+#include <nlohmann/json.hpp>
 #endif
 
 #include "autopas/utils/ExceptionHandler.h"
