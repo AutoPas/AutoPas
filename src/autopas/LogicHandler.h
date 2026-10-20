@@ -584,10 +584,9 @@ class LogicHandler {
    * domain.
    * - TraversalInterface::isApplicableToDomain (via TraversalSelector::generateTraversalFromConfig) for checking
    * configuration (specifically traversal) is compatible with the domain.
-   * - OpenMPConfigurator::fallsBackToOtherKindForAllLoops for checking that the OpenMP runtime would not fall back from
-   * the configuration's schedule kind.
-   * - OpenMPConfigurator::fallsBackToChunkSize1 for checking that a balanced or golden chunk size does not duplicate
-   * the configuration with a chunk size of 1.
+   * - OpenMPConfigurator::getFallbackSchedule for checking that the OpenMP runtime would not run the configuration with
+   * another schedule. If it would and the configuration with that schedule is not in the search space, this function
+   * queues it for the current tuning phase instead (see AutoTuner::addTempConfig()).
    *
    * In addition, this function checks that the configuration is applicable to the functor.
    *
@@ -1484,38 +1483,41 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   }
   const OpenMPConfigurator ompConfig(config.ompKind, config.ompChunkSize, loopCounts, autopas_get_max_threads());
 
-  // Reject the configuration if the OpenMP runtime would fall back from the schedule kind we set to another for all
-  // loops of the traversal, as it then woudl duplicate another configuration. E.g. guided with a high chunk size
-  // becomes dynamic, and repeating an already trialled dynamic without AutoPas being aware results in redundant
-  // configurations in the search space. This is not a perfect check, but meant to eliminate the majority of "fall back"
-  // cases.
-
-  // Similarly, reject the configuration when using a "special" non-fixed chunk size if it would result in a chunk size
-  // of 1, and that chunk size is already in the search space.
+  // Reject the configuration if the OpenMP runtime would run it with another schedule for all loops of the traversal
+  // (see OpenMPConfigurator::getFallbackSchedule()), as it would duplicate the configuration with that other schedule.
+  // E.g. guided with a high chunk size becomes dynamic, and repeating an already trialled dynamic without AutoPas being
+  // aware results in redundant configurations in the search space. If the configuration with that schedule is not in
+  // the search space, it is queued for this tuning phase instead, so that the schedule is trialled under the name it
+  // actually runs as. This is not a perfect check, but meant to eliminate the majority of "fall back" cases.
 
   // This is only checked when the trial of the configuration starts, as the tuner cannot handle a configuration
   // rejected later on. We assume cases when the runtime will later "fall back" as acceptable imperfections of this
   // mechanic.
   if (traversalPtr and _tuningManager->getAutoTuners().at(config.interactionType)->isAtStartOfConfigurationTrial() and
       functor.isRelevantForTuning()) {
-    if (ompConfig.fallsBackToOtherKindForAllLoops()) {
-      AutoPasLog(DEBUG,
-                 "Configuration rejected: The OpenMP runtime would fall back from the schedule kind {} for all loops "
-                 "of the traversal!",
-                 config.ompKind);
-      return {nullptr, /*rejectIndefinitely*/ false};
-    }
-
-    // Similarly, reject a balanced or golden chunk size which falls back to a chunk size of 1, if the configuration
-    // with a chunk size of 1 is in the search space, as it then duplicates that configuration.
-    if (ompConfig.fallsBackToChunkSize1()) {
-      auto configWithChunkSize1 = config;
-      configWithChunkSize1.ompChunkSize = 1;
-      if (_tuningManager->getAutoTuners().at(config.interactionType)->getSearchSpace().contains(configWithChunkSize1)) {
+    if (const auto fallbackSchedule = ompConfig.getFallbackSchedule()) {
+      auto &autoTuner = *_tuningManager->getAutoTuners().at(config.interactionType);
+      auto fallbackConfig = config;
+      std::tie(fallbackConfig.ompKind, fallbackConfig.ompChunkSize) = fallbackSchedule.value();
+      if (autoTuner.getSearchSpace().contains(fallbackConfig)) {
         AutoPasLog(DEBUG,
-                   "Configuration rejected: The OpenMP chunk size {} falls back to a chunk size of 1, which is "
+                   "Configuration rejected: The OpenMP runtime would run the schedule {}, {} as {}, {}, which is "
                    "already in the search space!",
-                   config.ompChunkSize.to_string());
+                   config.ompKind, config.ompChunkSize.to_string(), fallbackConfig.ompKind,
+                   fallbackConfig.ompChunkSize.to_string());
+        return {nullptr, /*rejectIndefinitely*/ false};
+      }
+      // A golden chunk size stands for the fixed chunk size it evaluates to, unless that is in the search space.
+      // Replacing it instead would mean golden is never trialled under its own name.
+      const bool isGoldenItself =
+          config.ompChunkSize == OpenMPChunkSize::golden and fallbackConfig.ompKind == config.ompKind;
+      if (not isGoldenItself) {
+        autoTuner.addTempConfig(fallbackConfig);
+        AutoPasLog(DEBUG,
+                   "Configuration rejected: The OpenMP runtime would run the schedule {}, {} as {}, {}, which is "
+                   "trialled instead in this tuning phase.",
+                   config.ompKind, config.ompChunkSize.to_string(), fallbackConfig.ompKind,
+                   fallbackConfig.ompChunkSize.to_string());
         return {nullptr, /*rejectIndefinitely*/ false};
       }
     }

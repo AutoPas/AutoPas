@@ -6,6 +6,8 @@
 
 #include "LogicHandlerTest.h"
 
+#include <algorithm>
+
 #include "autopas/LogicHandler.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
@@ -246,34 +248,50 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
 
 /**
  * Tests that a configuration is rejected when its trial starts, if the OpenMP runtime would fall back from its schedule
- * kind for all loops of the traversal. Other tests handle indivdual components of this mechanic more thouroghly, this
- * test just checks that the whole mechanic gets put together by the LogicHandler correctly.
+ * kind for all loops of the traversal, and that the configuration with the fallback schedule is queued for the tuning
+ * phase if it is not in the search space. Other tests handle indivdual components of this mechanic more thouroghly,
+ * this test just checks that the whole mechanic gets put together by the LogicHandler correctly.
  */
 TEST_F(LogicHandlerTest, testRejectConfigWhoseScheduleKindFallsBack) {
   if (autopas::OpenMPKindOption::runtimeScheduleLevel == autopas::OpenMPKindOption::ScheduleLevel::gccLibgomp) {
     GTEST_SKIP() << "libgomp does not fall back from schedule kinds.";
   }
   // lc_c01 has one loop over the 3 x 3 x 3 non-halo cells of the domain which initLogicHandler() sets up. With 4
-  // threads, guided falls back if (2 * chunkSize + 1) * 4 >= 27, so not with chunk size 1, but with chunk size 4.
+  // threads, guided falls back to dynamic if (2 * chunkSize + 1) * 4 >= 27, so not with chunk size 1, but with chunk
+  // size 4.
   const NumThreadGuard numThreadGuard(4);
-  const auto getConfig = [](size_t chunkSize) {
+  const auto getConfig = [](autopas::OpenMPKindOption ompKind, size_t chunkSize) {
     return autopas::Configuration(autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01,
                                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                  autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_guided, chunkSize,
+                                  autopas::Newton3Option::disabled, ompKind, chunkSize,
                                   autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
   };
-  const auto configRunsGuided = getConfig(1);
-  const auto configFallsBack = getConfig(4);
-  initLogicHandler({configRunsGuided, configFallsBack});
+  const auto configRunsGuided = getConfig(autopas::OpenMPKindOption::omp_guided, 1);
+  const auto configFallsBack = getConfig(autopas::OpenMPKindOption::omp_guided, 4);
+  const auto configFallback = getConfig(autopas::OpenMPKindOption::omp_dynamic, 4);
   LJFunctorGlobals functor(2.5);
 
+  // If the configuration it falls back to is in the search space, it is only rejected.
+  const std::set<autopas::Configuration> searchSpaceWithFallback{configRunsGuided, configFallsBack, configFallback};
+  initLogicHandler(searchSpaceWithFallback);
   // Start a tuning phase, so that the tuner is about to trial its first configuration.
   _tuningManager->tune(0, autopas::LiveInfo{});
+  EXPECT_EQ(std::get<0>(_logicHandler->isConfigurationApplicable(configFallsBack, functor)), nullptr);
+  EXPECT_EQ(_tuningManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise)->getSearchSpace(),
+            searchSpaceWithFallback);
 
+  // If the configuration it falls back to is not in the search space, it is rejected and the configuration it falls
+  // back to is queued for this tuning phase, without being added to the search space.
+  const std::set<autopas::Configuration> searchSpaceWithoutFallback{configRunsGuided, configFallsBack};
+  initLogicHandler(searchSpaceWithoutFallback);
+  _tuningManager->tune(0, autopas::LiveInfo{});
   EXPECT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configRunsGuided, functor)), nullptr);
   const auto [traversal, rejectIndefinitely] = _logicHandler->isConfigurationApplicable(configFallsBack, functor);
   EXPECT_EQ(traversal, nullptr);
   EXPECT_FALSE(rejectIndefinitely) << "Whether the runtime falls back depends on the domain.";
+  const auto &autoTuner = *_tuningManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise);
+  EXPECT_EQ(std::ranges::count(autoTuner.getConfigQueue(), configFallback), 1);
+  EXPECT_EQ(autoTuner.getSearchSpace(), searchSpaceWithoutFallback);
 
   // Once the configuration has samples, it must not be rejected anymore.
   _tuningManager->addMeasurement(1, 1, true, 0, autopas::InteractionTypeOption::pairwise);
@@ -386,12 +404,12 @@ TEST_F(LogicHandlerTest, testSequentialConfigDoesNotSetSchedule) {
 }
 
 /**
- * Tests that a configuration with the golden chunk size is rejected when its trial starts, if the golden chunk size
- * falls back to a chunk size of 1 and the same configuration with a chunk size of 1 is in the search space. As with
- * testRejectConfigWhoseScheduleKindFallsBack, this just checks that the LogicHandler puts the mechanic together
- * correctly.
+ * Tests that a configuration with the golden chunk size is rejected when its trial starts, if the same configuration
+ * with the fixed chunk size golden evaluates to is in the search space, and that no configuration gets added to the
+ * search space when this happens. As with testRejectConfigWhoseScheduleKindFallsBack, this just checks that the
+ * LogicHandler puts the mechanic together correctly.
  */
-TEST_F(LogicHandlerTest, testRejectConfigWhoseChunkSizeFallsBackTo1) {
+TEST_F(LogicHandlerTest, testRejectGoldenChunkSizeWhoseValueIsInSearchSpace) {
 #ifndef AUTOPAS_USE_OPENMP
   GTEST_SKIP() << "Without OpenMP, there is only one thread, with which the golden chunk size is not 1 here.";
 #else
@@ -410,10 +428,14 @@ TEST_F(LogicHandlerTest, testRejectConfigWhoseChunkSizeFallsBackTo1) {
 
   // Without the configuration with a chunk size of 1 in the search space, the golden one does not duplicate anything.
   // The search space needs a second configuration, as the tuner is never in a tuning phase with only one.
-  initLogicHandler({configGolden, arbitraryConfigurations::_arbitrary_config_2B_0});
+  const std::set<autopas::Configuration> searchSpaceWithoutChunkSize1{configGolden,
+                                                                      arbitraryConfigurations::_arbitrary_config_2B_0};
+  initLogicHandler(searchSpaceWithoutChunkSize1);
   // Start a tuning phase, so that the tuner is about to trial its first configuration.
   _tuningManager->tune(0, autopas::LiveInfo{});
   EXPECT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configGolden, functor)), nullptr);
+  EXPECT_EQ(_tuningManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise)->getSearchSpace(),
+            searchSpaceWithoutChunkSize1);
 
   // With it in the search space, the golden one is rejected.
   initLogicHandler({configGolden, configChunkSize1});

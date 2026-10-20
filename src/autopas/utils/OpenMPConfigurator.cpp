@@ -11,6 +11,7 @@
 #include <ranges>
 
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
 [[maybe_unused]] OpenMPConfigurator::OpenMPConfigurator(OpenMPKindOption kind, OpenMPChunkSize chunkSize,
@@ -182,44 +183,83 @@ namespace autopas {
  */
 [[maybe_unused]] void OpenMPConfigurator::setKind(OpenMPKindOption kind) { _kind = kind; }
 
-[[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::fallsBackToOtherKindForAllLoops() const {
-  // GCC's libgomp has no fallbacks. Also skip and return false if the Configurator has no loop counts.
-  if (OpenMPKindOption::runtimeScheduleLevel == OpenMPKindOption::ScheduleLevel::gccLibgomp or _loopCounts.empty()) {
-    return false;
+[[maybe_unused]] [[nodiscard]] std::optional<std::pair<OpenMPKindOption, OpenMPChunkSize>>
+OpenMPConfigurator::getFallbackSchedule() const {
+  // Sequential traversals have no schedule.
+  if (_kind == OpenMPKindOption::sequential) {
+    return std::nullopt;
   }
 
-  // The kinds fall back for loops which are too short, so all loops fall back if the longest one does.
-  const auto longestLoopCount = std::ranges::max(_loopCounts);
-  const auto chunkSize = getActualOMPChunkSize();
-
-  switch (_kind) {
-    case OpenMPKindOption::lb4omp_static_steal: {
-      // static_steal needs more than one thread and at least one chunk per thread.
-      const auto numChunks = longestLoopCount / chunkSize + (longestLoopCount % chunkSize == 0 ? 0 : 1);
-      return _numThreads <= 1 or numChunks < _numThreads;
+  // (1) With one thread, every schedule runs the same as static, 1.
+  if (_numThreads <= 1) {
+    if (_kind == OpenMPKindOption::omp_static and _chunkSize == OpenMPChunkSize(1)) {
+      return std::nullopt;
     }
-    case OpenMPKindOption::omp_guided:
-    case OpenMPKindOption::omp_auto:
-      // guided and auto need more than one thread and more than (2 * chunkSize + 1) iterations per thread.
-      return _numThreads <= 1 or (2 * chunkSize + 1) * _numThreads >= longestLoopCount;
-    default:
-      return false;
+    return {{OpenMPKindOption::omp_static, 1}};
   }
-}
 
-[[maybe_unused]] [[nodiscard]] bool OpenMPConfigurator::fallsBackToChunkSize1() const {
+  // Without loop counts, nothing is known about the fallbacks below.
+  if (_loopCounts.empty()) {
+    if (_chunkSize == OpenMPChunkSize::golden and not OpenMPKindOption::getAuto4OMPSelectionMethods().contains(_kind)) {
+      AutoPasLog(WARN,
+                 "OpenMPConfigurator: The golden chunk size is used with a traversal that provides no loop counts, so "
+                 "it falls back to a chunk size of 1. Either modify this traversal to provide loop counts, or remove "
+                 "the golden chunk size from your search space.");
+      return {{_kind, 1}};
+    }
+    return std::nullopt;
+  }
+
+  // (2) Fallbacks of the kind. GCC's libgomp has none. For LLVM's libomp, The kinds fall back for loops which are too
+  // short, so all loops fall back if the longest one does.
+  if (OpenMPKindOption::runtimeScheduleLevel != OpenMPKindOption::ScheduleLevel::gccLibgomp) {
+    const auto longestLoopCount = std::ranges::max(_loopCounts);
+    const auto chunkSize = static_cast<size_t>(getActualOMPChunkSize());
+
+    switch (_kind) {
+      case OpenMPKindOption::lb4omp_static_steal: {
+        // static_steal needs at least one chunk per thread.
+        const auto numChunks = longestLoopCount / chunkSize + (longestLoopCount % chunkSize == 0 ? 0 : 1);
+        if (numChunks < _numThreads) {
+          if (OpenMPKindOption::runtimeScheduleLevel == OpenMPKindOption::ScheduleLevel::clangLB4OMP) {
+            return {{OpenMPKindOption::omp_static, OpenMPChunkSize::balanced}};
+          }
+          return {{OpenMPKindOption::omp_dynamic, _chunkSize}};
+        }
+        break;
+      }
+      case OpenMPKindOption::omp_guided:
+      case OpenMPKindOption::omp_auto:
+        // guided and auto need more than (2 * chunkSize + 1) iterations per thread. auto is a guided variant with a
+        // chunk size of 1, regardless of the configuration chunk size.
+        if ((2 * chunkSize + 1) * _numThreads >= longestLoopCount) {
+          return {
+              {OpenMPKindOption::omp_dynamic, _kind == OpenMPKindOption::omp_auto ? OpenMPChunkSize(1) : _chunkSize}};
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  // (3) Fallbacks of the special chunk sizes, on every runtime.
   switch (_chunkSize.getType()) {
     case OpenMPChunkSize::Type::golden:
-      return getActualOMPChunkSize() == 1;
+      if (not OpenMPKindOption::getAuto4OMPSelectionMethods().contains(_kind)) {
+        return {{_kind, static_cast<size_t>(getActualOMPChunkSize())}};
+      }
+      break;
     case OpenMPChunkSize::Type::balanced:
       // Static gives each thread one chunk of about loopCount / numThreads iterations. With at most one iteration per
       // thread, this is the same as a chunk size of 1.
-      return not _loopCounts.empty() and
-             std::ranges::all_of(_loopCounts, [&](const auto loopCount) { return loopCount <= _numThreads; });
+      if (std::ranges::all_of(_loopCounts, [&](const auto loopCount) { return loopCount <= _numThreads; })) {
+        return {{_kind, 1}};
+      }
+      break;
     case OpenMPChunkSize::Type::fixed:
     case OpenMPChunkSize::Type::notApplicable:
       break;
   }
-  return false;
+  return std::nullopt;
 }
 }  // namespace autopas

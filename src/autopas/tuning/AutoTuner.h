@@ -134,6 +134,14 @@ class AutoTuner {
   [[nodiscard]] Configuration rejectConfig(const Configuration &rejectedConfig, bool indefinitely, size_t tuningPhase);
 
   /**
+   * Queues a configuration for the current tuning phase only, without adding it to the search space, right below the
+   * current configuration, so that it is trialled next. Each configuration is queued at most once per tuning phase, so
+   * that it is not trialled again after it leaves the queue.
+   * @param configuration
+   */
+  void addTempConfig(const Configuration &configuration);
+
+  /**
    * Indicator function whether the search space consists of exactly one configuration.
    * @return
    */
@@ -423,6 +431,11 @@ class AutoTuner {
    * @note The next configuration to use is at the END of the vector.
    */
   std::vector<Configuration> _configQueue;
+
+  /**
+   * Configurations queued with addTempConfig() in this tuning phase.
+   */
+  std::set<Configuration> _configurationsAddedThisTuningPhase;
 
   /**
    * CSV logger for configurations selected at the end of each tuning phase.

@@ -56,8 +56,8 @@ class TraversalInterface {
    * vl_list_iteration_c27, which gives an upper bound: it counts all cells of a color instead of the non-empty ones,
    * which is far off in sparse or inhomogeneous domains.
    *
-   * This is used to find out whether the OpenMP runtime would fall back from the configuration's schedule kind for all
-   * loops of the traversal (see OpenMPConfigurator::fallsBackToOtherKindForAllLoops()).
+   * This is used to find out whether the OpenMP runtime would run the configuration with another schedule for all loops
+   * of the traversal (see OpenMPConfigurator::getFallbackSchedule()).
    *
    * @param traversalInfo The traversal selector info of the container the traversal will run on.
    * @param numParticles Number of particles (owned + halo).

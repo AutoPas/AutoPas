@@ -425,3 +425,27 @@ TEST_F(AutoTunerTest, testIsAtStartOfConfigurationTrial) {
   autoTuner.tuneConfiguration(iteration, 0, /*isStartOfTuningPhase*/ false);
   EXPECT_FALSE(autoTuner.isAtStartOfConfigurationTrial()) << "The tuning phase is over.";
 }
+
+/**
+ * Test that addTempConfig() queues a configuration once per tuning phase without adding it to the search space, and
+ * that it is trialled next if the current configuration is rejected.
+ */
+TEST_F(AutoTunerTest, testAddTempConfig) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  const autopas::AutoTuner::SearchSpaceType searchSpace{arbitraryConfigurations::_arbitrary_config_2B_3,
+                                                        arbitraryConfigurations::_arbitrary_config_2B_6};
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 1,
+  };
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, 10, ""};
+  const auto addedConfig = arbitraryConfigurations::_arbitrary_config_2B_0;
+
+  autoTuner.tuneConfiguration(0, 0, /*isStartOfTuningPhase*/ true);
+  const auto rejectedConfig = autoTuner.getCurrentConfig();
+  autoTuner.addTempConfig(addedConfig);
+  autoTuner.addTempConfig(addedConfig);
+  EXPECT_FALSE(autoTuner.getSearchSpace().contains(addedConfig));
+
+  EXPECT_EQ(autoTuner.rejectConfig(rejectedConfig, /*indefinitely*/ false, 0), addedConfig);
+  EXPECT_EQ(autoTuner.getConfigQueue().size(), searchSpace.size());
+}

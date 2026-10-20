@@ -7,7 +7,9 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <set>
+#include <utility>
 #include <vector>
 
 #include "autopas/options/OpenMPKindOption.h"
@@ -115,18 +117,22 @@ class OpenMPConfigurator {
   [[maybe_unused]] void setKind(OpenMPKindOption kind);
 
   /**
-   * Returns true if the OpenMP runtime would silently change the schedule kind to another "fallback" kind for all loops
-   * of the configurator (typically due to chunk size and number of threads being too large), i.e. in cases of colored
-   * traversals, if the fall back would occur for all colours. This is not problematic in the sense of producing errors,
-   * but results in AutoPas running what it thinks are different configurations but in reality are actually duplicate
-   * configurations. This function is therefore useful to eliminate such duplicate configurations from the search space.
+   * Returns the schedule the OpenMP runtime actually runs if this is different from the actually configured one, for
+   * all loops.
    *
-   * E.g. at a high chunk size and thread count and low loop length, static-steal falls back to e.g. dynamic scheduling
-   * but AutoPas may have already trialled dynamic scheduling at that chunk size. This can result in a large number of
-   * duplicate configurations being run, which AutoPas is not aware of. This function therefore manually determines if
-   * a fallback would happen.
+   * This may occur for several reasons, such as the chunk size and number of threads being too large that another
+   * schedule must be used, or when a special chunk size is used.
    *
-   * Fallbacks on LLVM-based libomp/LB4OMP:
+   * This is not problematic in the sense of producing errors, but results in AutoPas running what it thinks is a
+   * different configuration to what is actually run. This can lead to duplicate trials of the same actually run
+   * configuration, under different names, and means that configurations outputted by AutoPas, e.g. the tuning loggers,
+   * may be misleading.
+   *
+   * The following fallbacks are tested
+   *
+   * (1) With only one thread (which includes builds without OpenMP), every schedule runs the same as static, 1.
+   *
+   * (2) Fallbacks on LLVM-based libomp/LB4OMP:
    * - static_steal is only used if numThreads > 1 and ceil(loopCount / chunk) >= numThreads. Otherwise, LB4OMP and
    *   libomp < 10 use static, default chunk size, and libomp >= 10 uses dynamic, at the given chunk size.
    * - guided/auto are only used if numThreads > 1 and (2 * chunk + 1) * numThreads < loopCount. Otherwise, dynamic is
@@ -134,25 +140,20 @@ class OpenMPConfigurator {
    *
    * GCC's libgomp does not fall back from guided. This is determined from OpenMPKindOption::runtimeScheduleLevel.
    *
-   * @note This function will not work perfectly without being more invasive and high maintainence, but should help
-   * prune some duplicate configurations.
+   * (3) On every runtime, a special chunk size (balanced/golden) falls back to the fixed chunk size it evaluates to:
+   * - golden evaluates to the fixed chunk size getActualOMPChunkSize() calculates. Not for Auto4OMP's selection
+   *   methods, for which golden only marks the method.
+   * - with static-balanced, there is no more than one iteration per thread, it is a chunk size of 1.
    *
-   * @return True if the OpenMP runtime would fall back to another kind for every loop. False if there are no loops.
+   * @note This function will not work perfectly without being more invasive and high maintainence, but matches a large
+   * number of scenarios.
+   *
+   * @return The schedule kind and chunk size the OpenMP runtime falls back to. Nothing if it runs the configured
+   * schedule, or if there are no loop counts (unless there are no loop counts and golden chunk size is used, in which
+   * case we warn and provide a fallback chunk size of 1).
    */
-  [[maybe_unused]] [[nodiscard]] bool fallsBackToOtherKindForAllLoops() const;
-
-  /**
-   * Returns true if a special chunk size (balanced/golden) would simply evaluate to a chunk size of 1 for the loops of
-   * the configurator. This is the case if
-   * - the golden chunk size evaluates to 1
-   * - with static-balanced, there is no more than one iteration per thread.
-   *
-   * This function is useful for eliminating redundant duplicate configurations.
-   *
-   * @return True if the chunk size falls back to a chunk size of 1 for every loop. False for fixed and not-applicable
-   * chunk sizes.
-   */
-  [[maybe_unused]] [[nodiscard]] bool fallsBackToChunkSize1() const;
+  [[maybe_unused]] [[nodiscard]] std::optional<std::pair<OpenMPKindOption, OpenMPChunkSize>> getFallbackSchedule()
+      const;
 };  // class OpenMPConfigurator
 
 /**

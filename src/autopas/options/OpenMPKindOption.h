@@ -72,7 +72,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      * Pros: combines the pros of dynamic with a small chunk size and the pros of dynamic with a large chunk size.
      * Cons: combines the cons of dynamic with a small chunk size and the cons of dynamic with a large chunk size.
      *
-     * Falls back to dynamic for short loops (see OpenMPConfigurator::fallsBackToOtherKind()).
+     * Falls back to dynamic for short loops (see OpenMPConfigurator::getFallbackSchedule()).
      *
      * guided is rarely found to be that good a choice for AutoPas, we rarely have large enough loops.
      */
@@ -88,7 +88,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      *
      * See guided for pros and cons.
      *
-     * Similarly, falls back to dynamic for short loops (see OpenMPConfigurator::fallsBackToOtherKind()).
+     * Similarly, falls back to dynamic for short loops (see OpenMPConfigurator::getFallbackSchedule()).
      *
      * This can compare well to standard guided, but is similarly rarely found to be a good choice for AutoPas.
      */
@@ -125,7 +125,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      * come in LLVM 24. Otherwise, this schedule can be used when compiling LB4OMP as the OpenMP runtime library.
      *
      * For short loops, static_steal falls back to either static, balanced or dynamic (depends on version), so we skip
-     * this schedule in tuning when that would occur (see OpenMPConfigurator::fallsBackToOtherKind()).
+     * this schedule in tuning when that would occur (see OpenMPConfigurator::getFallbackSchedule()).
      *
      * Unlike static, a non-default chunk size does not result in round-robin loop assignment -> the assignment is
      * always balanced. The chunk size affects the granularity of the loops for the initial distribution and for
