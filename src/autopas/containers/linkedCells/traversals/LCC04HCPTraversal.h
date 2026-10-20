@@ -58,7 +58,7 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
    * Must be kept in line with traverseSingleColor().
    */
   [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
-      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+      const TraversalSelectorInfo &traversalInfo, size_t numParticles) const override {
     // starting points of the four colors, coordinates: {x,y,z}
     constexpr std::array<std::array<long, 3>, 4> startOfColors{
         {{0l, 0l, 0l}, {-4l, 0l, 1l}, {-4l, 0l, -2l}, {-2l, 0l, -1l}}};

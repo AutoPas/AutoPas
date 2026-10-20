@@ -74,7 +74,7 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
    * hopefully be merged before this branch - this means this TODO should probably be addressed before merging.
    */
   [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
-      const TraversalSelectorInfo &traversalInfo, size_t /*numParticles*/) const override {
+      const TraversalSelectorInfo &traversalInfo, size_t numParticles) const override {
     // see ClusterTowerBlock2D::resize()
     const auto towersPerColoringCell =
         std::max(std::ceil(traversalInfo.interactionLength / traversalInfo.cellLength[0]),

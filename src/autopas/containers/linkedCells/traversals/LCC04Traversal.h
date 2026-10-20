@@ -58,7 +58,7 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell_T, Functor_T>, publ
    * they do not belong to the color) are still counted, as OpenMP schedules them as well.
    */
   [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
-      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+      const TraversalSelectorInfo &traversalInfo, size_t numParticles) const override {
     std::vector<size_t> loopCounts;
     for (int color = 0; color < 4; ++color) {
       // colors 0 and 2 start at -2, colors 1 and 3 at 0

@@ -55,7 +55,7 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
    * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
    */
   [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
-      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+      const TraversalSelectorInfo &traversalInfo, size_t numParticles) const override {
     return this->c08TraversalLoopCounts();
   }
 

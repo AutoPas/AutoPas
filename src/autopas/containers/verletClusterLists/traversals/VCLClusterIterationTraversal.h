@@ -45,7 +45,7 @@ class VCLClusterIterationTraversal : public TraversalInterface,
    * neighbor lists are rebuilt. Hence, this uses the tower grid estimated in the given traversal selector info.
    */
   [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
-      const TraversalSelectorInfo &traversalInfo, size_t /*numParticles*/) const override {
+      const TraversalSelectorInfo &traversalInfo, size_t numParticles) const override {
     return std::vector<size_t>{traversalInfo.cellsPerDim[0] * traversalInfo.cellsPerDim[1]};
   }
 

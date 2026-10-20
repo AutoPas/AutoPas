@@ -72,7 +72,7 @@ class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
    * line with SlicedBasedTraversal::init(), SlicedC02BasedTraversal::initTraversal() and cSlicedTraversal().
    */
   [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
-      const TraversalSelectorInfo &traversalInfo, size_t /*numParticles*/) const override {
+      const TraversalSelectorInfo &traversalInfo, size_t numParticles) const override {
     const auto &towersPerDim = traversalInfo.cellsPerDim;
     const auto longestDim =
         std::distance(towersPerDim.begin(), std::minmax_element(towersPerDim.begin(), towersPerDim.end()).second);

@@ -47,7 +47,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * The loop runs over all particles in the neighbor list, which is estimated by the given number of particles.
    */
   [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
-      const TraversalSelectorInfo & /*traversalInfo*/, size_t numParticles) const override {
+      const TraversalSelectorInfo &traversalInfo, size_t numParticles) const override {
     return std::vector<size_t>{numParticles};
   }
 

@@ -73,7 +73,7 @@ class VCLSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
    * line with SlicedBasedTraversal::init(), SlicedBasedTraversal::initTraversal() and slicedTraversal().
    */
   [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
-      const TraversalSelectorInfo &traversalInfo, size_t /*numParticles*/) const override {
+      const TraversalSelectorInfo &traversalInfo, size_t numParticles) const override {
     const auto &towersPerDim = traversalInfo.cellsPerDim;
     const auto longestDim =
         std::distance(towersPerDim.begin(), std::minmax_element(towersPerDim.begin(), towersPerDim.end()).second);

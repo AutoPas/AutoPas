@@ -67,7 +67,7 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
    * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
    */
   [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
-      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+      const TraversalSelectorInfo &traversalInfo, size_t numParticles) const override {
     return this->template c18TraversalLoopCounts</*allCells*/ true>();
   }
 

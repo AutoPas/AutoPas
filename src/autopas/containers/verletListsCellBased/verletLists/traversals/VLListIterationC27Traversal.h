@@ -44,7 +44,7 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
    * returns the number of all cells of each color as an upper bound.
    */
   [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
-      const TraversalSelectorInfo & /*traversalInfo*/, size_t /*numParticles*/) const override {
+      const TraversalSelectorInfo &traversalInfo, size_t numParticles) const override {
     std::vector<size_t> loopCounts;
     loopCounts.reserve(27);
     for (size_t color = 0; color < 27; ++color) {
