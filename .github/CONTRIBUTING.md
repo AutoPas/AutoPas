@@ -176,6 +176,10 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * Depending on your new option, it might make sense for some tuning strategies to merge it with another option to avoid sparse dimensions.
   * Make sure it is added to the search spaces that is passed to the [`AutoTuner`](/src/autopas/tuning/AutoTuner.cpp) in `AutoPas::init()`
 * Add the new option to [`SearchSpaceGenerators::cartesianProduct()`](/src/autopas/tuning/utils/SearchSpaceGenerators.h) and its call sites. If the new option depends on others, implement it similarly to traversals, containers, and load estimators.
+* For Decision Tree Based Tuning, your option has to be integrated into the training and prediction scripts in [`decisionTreeTuning`](/src/autopas/tuning/tuningStrategy/decisionTreeTuning):
+  * Add the option's name (exactly as written by [`Configuration::getCSVHeader()`/in `Configuration::toString`](/src/autopas/tuning/Configuration.cpp)) to the `CONFIG_COLUMNS` list in [`train.py`](/src/autopas/tuning/tuningStrategy/decisionTreeTuning/train.py).
+  * Parse the new key (named exactly as in `CONFIG_COLUMNS`) from the prediction JSON in [`DecisionTreeTuning::updateConfigQueue()`](/src/autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.cpp).
+  * For the unit tests, add the option to `_VALID_LABEL_COMPONENTS` in the [dummy model generation script](/tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning/generate_test_models.py).
 * Adjust any tests that are affected by these changes. The following tests will definitely require changes:
   * [`AutoPasInterfaceTest`](/tests/testAutopas/tests/autopasInterface/AutoPasInterfaceTest.cpp)
   * [`AutoTunerTest`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp)
@@ -217,7 +221,9 @@ The table below lists the dependencies. The **Path** column currently reflects t
 | eigen      | [`libs/eigen`](/libs/eigen)                             | https://gitlab.com/libeigen/eigen                   | tag `5.0.1`            | —                                          |
 | googletest | [`libs/googletest`](/libs/googletest)                   | https://github.com/google/googletest                | tag `v1.17.0`          | —                                          |
 | highway    | [`libs/highway`](/libs/highway)                         | https://github.com/google/highway                   | tag `1.4.0`            | —                                          |
+| json       | [`libs/json`](/libs/json)                               | https://github.com/nlohmann/json                    | tag `v3.12.0`          | docs and tests pruned                      |
 | pmt        | [`libs/pmt`](/libs/pmt)                                 | https://git.astron.nl/RD/pmt                        | commit `7a56fa3a`      | AutoPas-specific patch (in `libs/patches`) |
+| pybind11   | [`libs/pybind11`](/libs/pybind11)                       | https://github.com/pybind/pybind11                  | tag `v3.1.0`           | —                                          |
 | spdlog     | [`libs/spdlog`](/libs/spdlog)                           | https://github.com/gabime/spdlog                    | tag `v1.17.0`          | —                                          |
 | yaml-cpp   | [`libs/yaml-cpp`](/libs/yaml-cpp)                       | https://github.com/jbeder/yaml-cpp                  | tag `yaml-cpp-0.9.0`   | —                                          |
 

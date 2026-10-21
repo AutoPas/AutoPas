@@ -62,6 +62,10 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * Sort the queue by Name (=Configuration::operator<()) to minimize container conversion overhead.
      */
     sortByName,
+    /**
+     * Decision tree based tuning strategy
+     */
+    decisionTreeTuning,
   };
 
   /**
@@ -111,6 +115,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::tuningStrategyLogger, "tuning-strategy-logger"},
         {TuningStrategyOption::sortByName, "sort-by-name"},
         {TuningStrategyOption::mpiDivideAndConquer, "mpi-divide-and-conquer"},
+        {TuningStrategyOption::decisionTreeTuning, "decision-tree-tuning"},
     };
   }
 
