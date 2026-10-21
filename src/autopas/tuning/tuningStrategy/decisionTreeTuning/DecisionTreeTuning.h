@@ -18,6 +18,7 @@
 
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
+#include "autopas/utils/PythonInterpreter.h"
 
 namespace autopas {
 
@@ -38,9 +39,11 @@ class DecisionTreeTuning : public TuningStrategyInterface {
    * @param modelFileName Name of the file containing the random forest models.
    * @param confidenceThreshold Minimum confidence threshold for accepting predictions.
    * @param interactionType The interaction type (used to select the appropriate pairwise/triwise model).
+   * @param pythonInterpreter The Python interpreter used for the predictions.
    */
   DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
-                     double confidenceThreshold, InteractionTypeOption interactionType);
+                     double confidenceThreshold, InteractionTypeOption interactionType,
+                     std::shared_ptr<utils::PythonInterpreter> pythonInterpreter);
 
   ~DecisionTreeTuning() override;
 
@@ -88,16 +91,17 @@ class DecisionTreeTuning : public TuningStrategyInterface {
    */
   InteractionTypeOption _interactionType;
 
-#ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   /**
-   * Keeps the embedded CPython interpreter alive while any DecisionTreeTuning exists.
-   * Shared across instances (e.g. separate pairwise/triwise tuners), since pybind11 permits only one interpreter per
-   * process.
+   * Keeps the embedded Python interpreter alive while this object exists. AutoPas passes the same interpreter to all
+   * its DecisionTreeTuning instances (e.g. separate pairwise/triwise tuners), since pybind11 permits only one
+   * interpreter per process.
    *
-   * Keep this declaration before all `pybind11::object`s to ensure the interpreter is created first and destroyed last.
+   * Keep this declaration before all `pybind11::object`s, so that they are destroyed before the interpreter is
+   * released.
    */
-  std::shared_ptr<pybind11::scoped_interpreter> _pythonInterpreter;
+  std::shared_ptr<utils::PythonInterpreter> _pythonInterpreter;
 
+#ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   /**
    * The actual python DecisionTreeTuning object which we call .predict() on. Must be created and destroyed whilst
    * there is a live python interpreter.

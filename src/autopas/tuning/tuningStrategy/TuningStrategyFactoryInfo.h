@@ -6,10 +6,12 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/InteractionTypeOption.h"
+#include "autopas/utils/PythonInterpreter.h"
 #include "autopas/utils/WrapMPI.h"
 
 namespace autopas {
@@ -68,6 +70,10 @@ struct TuningStrategyFactoryInfo {
    * Confidence threshold for decision tree tuning.
    */
   double confidenceThreshold{0.0};
+  /**
+   * Python interpreter for Python-based tuning strategies. AutoPas::init() creates one if none was set.
+   */
+  std::shared_ptr<utils::PythonInterpreter> pythonInterpreter{};
   // MPI Tuning Options
   /**
    * If MPIParallelizedStrategy is in the list of strategies this should be set to true to notify other strategies

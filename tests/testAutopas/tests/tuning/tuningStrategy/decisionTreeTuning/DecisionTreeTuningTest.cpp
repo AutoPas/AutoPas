@@ -52,7 +52,8 @@ TEST(DecisionTreeTuningTest, TestNonExistantModelLoading) {
   EXPECT_THROW(
       {
         autopas::DecisionTreeTuning tuningStrategy(searchSpace, "/nonexistant_model.pkl", 0.8,
-                                                   InteractionTypeOption::pairwise);
+                                                   InteractionTypeOption::pairwise,
+                                                   std::make_shared<utils::PythonInterpreter>());
         std::vector<autopas::Configuration> configQueue;
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
@@ -81,7 +82,8 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
   ASSERT_TRUE(std::filesystem::exists(modelPath))
       << "Test model file does not exist. Did the generate_dt_test_models target run?";
 
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise);
+  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise,
+                                             std::make_shared<utils::PythonInterpreter>());
   MockLiveInfo mockLiveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
       {"avgParticlesPerCell", 6.82}, {"maxParticlesPerCell", 33.0},    {"homogeneity", 0.42},
@@ -127,7 +129,8 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
   std::string modelPath = std::string(AUTOPAS_DT_TEST_MODEL_DIR) + "/test_model_invalid.pkl";
   ASSERT_TRUE(std::filesystem::exists(modelPath))
       << "Invalid test model file does not exist. Did the generate_dt_test_models target run?";
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise);
+  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise,
+                                             std::make_shared<utils::PythonInterpreter>());
 
   MockLiveInfo mockLiveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
@@ -163,20 +166,17 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
  */
 TEST(DecisionTreeTuningTest, TestConfigColumnsMatchCSVHeader) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
-  // Constructing a DecisionTreeTuning initializes the shared static Python interpreter and appends the script
-  // directory (containing train.py) to sys.path. We reuse it here rather than creating our own scoped_interpreter,
-  // which pybind would reject if one already exists (avoiding any test-ordering hazard).
   std::set<autopas::Configuration> searchSpace;
   const std::string modelPath = std::string(AUTOPAS_DT_TEST_MODEL_DIR) + "/test_model.pkl";
   ASSERT_TRUE(std::filesystem::exists(modelPath))
       << "Test model file does not exist. Did the generate_dt_test_models target run?";
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise);
+  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise,
+                                             std::make_shared<utils::PythonInterpreter>());
 
   // Read CONFIG_COLUMNS from train.py
   std::set<std::string> configColumns;
   try {
-    const auto configColumnsList =
-        py::module::import("train").attr("CONFIG_COLUMNS").cast<std::vector<std::string>>();
+    const auto configColumnsList = py::module::import("train").attr("CONFIG_COLUMNS").cast<std::vector<std::string>>();
     configColumns.insert(configColumnsList.begin(), configColumnsList.end());
   } catch (const py::error_already_set &e) {
     FAIL() << "Failed to read CONFIG_COLUMNS from train.py: " << e.what();

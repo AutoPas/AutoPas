@@ -1156,6 +1156,28 @@ class AutoPas {
    */
   double getConfidenceThreshold() const { return _tuningStrategyFactoryInfo.confidenceThreshold; }
   /**
+   * Set the Python interpreter that Python-based tuning strategies use, e.g. to share one with a parent project that
+   * uses Python itself. Must be called before init(), which otherwise creates one if a Python-based tuning strategy is
+   * selected.
+   * @param pythonInterpreter The Python interpreter to use.
+   */
+  void setPythonInterpreter(std::shared_ptr<utils::PythonInterpreter> pythonInterpreter) {
+#ifndef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
+    utils::ExceptionHandler::exception("setPythonInterpreter() called but AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF!");
+#endif
+    _tuningStrategyFactoryInfo.pythonInterpreter = std::move(pythonInterpreter);
+  }
+  /**
+   * Get the Python interpreter that Python-based tuning strategies use.
+   * @return The interpreter. Nullptr if none was set and init() has not created one.
+   */
+  std::shared_ptr<utils::PythonInterpreter> getPythonInterpreter() const {
+#ifndef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
+    utils::ExceptionHandler::exception("getPythonInterpreter() called but AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF!");
+#endif
+    return _tuningStrategyFactoryInfo.pythonInterpreter;
+  }
+  /**
    * Set the aos-sorting-threshold for traversals that use the CellFunctor
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.

@@ -83,6 +83,8 @@ Set the decision-tree-tuning strategy. This is not designed to be used with any 
 
 If using a HPC system, remember to, in the jobscript file, load the up-to-date version of python and activate the virtual environment.
 
+AutoPas starts its own embedded Python interpreter in `AutoPas::init()`. If your project already uses Python, AutoPas attaches to the running interpreter instead, and you can share it between AutoPas and your project with `AutoPas::getPythonInterpreter()` and `AutoPas::setPythonInterpreter()`.
+
 It is also possible to set a confidence threshold, such for that predictions in which the model's confidence is below this, the configuration queue is left untouched (e.g. typically a full search will occur, if no other tuning strategies are specified).
 This feature is largely untested, and potentially not even of value with the random forest model.
 It is left included because it may be valuable with alternative models.
