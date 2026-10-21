@@ -43,7 +43,7 @@ void LogicHandlerTest::initLogicHandler() {
       std::make_unique<autopas::LogicHandler<Molecule>>(_tuningManager, logicHandlerInfo, verletRebuildFrequency, "");
 }
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
 /**
  * Tests that a particle after moving more than half skin distance is added to the fast particle buffer without
  * triggering a rebuild.

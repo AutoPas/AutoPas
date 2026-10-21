@@ -12,7 +12,26 @@ file(
     "*.cuh"
 )
 
-option(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS  "Enables dynamic rebuilding of all containers." ON)
+
+set(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS "ON"
+    CACHE STRING "Dynamic container rebuilding: OFF, ON, or FPB")
+set_property(CACHE AUTOPAS_ENABLE_DYNAMIC_CONTAINERS PROPERTY STRINGS OFF ON FPB)
+
+if(NOT AUTOPAS_ENABLE_DYNAMIC_CONTAINERS MATCHES "^(OFF|ON|FPB)$")
+  message(FATAL_ERROR
+    "AUTOPAS_ENABLE_DYNAMIC_CONTAINERS must be OFF, ON, or FPB "
+    "(got '${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}')")
+endif()
+
+# NOTE: AUTOPAS_ENABLE_DYNAMIC_CONTAINERS must be defined for every non-OFF mode;
+# shared code guards on it. Mode-specific code must guard on exactly one of
+# AUTOPAS_DYNAMIC_CONTAINERS_{STANDARD,FPB}.
+set(_dyn_defs AUTOPAS_ENABLE_DYNAMIC_CONTAINERS)   # ← base macro, added for BOTH ON and FPB
+if(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS STREQUAL "ON")
+  list(APPEND _dyn_defs AUTOPAS_DYNAMIC_CONTAINERS_STANDARD)
+elseif(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS STREQUAL "FPB")
+  list(APPEND _dyn_defs AUTOPAS_DYNAMIC_CONTAINERS_FPB)
+endif()
 
 # If rules-based tuning and fuzzy tuning are disabled, we must remove all files which link to antlr. As this includes generated files,
 # where we can't easily change the file, we disable the files here.
@@ -20,7 +39,7 @@ if (NOT AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
     list(FILTER MY_SRC EXCLUDE REGEX ".*parser_generated.*")
     list(FILTER MY_SRC EXCLUDE REGEX ".*RuleBasedProgramParser.*")
 endif ()
-
+ 
 add_library(autopas STATIC ${MY_SRC})
 
 target_link_libraries(
@@ -54,7 +73,7 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:AUTOPAS_ENABLE_HARMONY>
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
-        $<$<BOOL:${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}>:AUTOPAS_ENABLE_DYNAMIC_CONTAINERS>
+        ${_dyn_defs}
         _USE_MATH_DEFINES
 )
 

@@ -168,7 +168,7 @@ class LogicHandler {
     ++_iteration;
     bool doDataStructureUpdate = not neighborListsAreValid();
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
 
     /*
      * Checks whether a rebuild will already be triggered for reasons other than
@@ -719,7 +719,7 @@ class LogicHandler {
     return skin / maxVelocity / deltaT / 2;
   }
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
   /**
    * Adds particle to particle buffer if it has moved more than skin/2.
    */
@@ -739,7 +739,9 @@ class LogicHandler {
    * @return _doDynamicRebuild
    */
   [[nodiscard]] bool getDoDynamicRebuild() const;
+#endif
 
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
   /**
    * getter function for testing
    * @return _rebuildDecisionContext.getNumParticlesBufferEstimate()
@@ -969,7 +971,7 @@ class LogicHandler {
    */
   size_t _numParticlesFast{0};
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
   /**
    * Aggregates all data required to decide whether a neighbor list rebuild
    * should be triggered based on estimated remainder traversal and rebuild times.
@@ -1076,14 +1078,14 @@ void LogicHandler<Particle_T>::checkMinimalSize() const {
   }
 }
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
 template <typename Particle_T>
 bool LogicHandler<Particle_T>::getDoDynamicRebuild() const {
   return _doDynamicRebuild;
 }
 #endif
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
 template <typename Particle_T>
 size_t LogicHandler<Particle_T>::getNumParticlesBufferEstimate() const {
   return _rebuildDecisionContext.getNumParticlesBufferEstimate();
@@ -1093,7 +1095,7 @@ size_t LogicHandler<Particle_T>::getNumParticlesBufferEstimate() const {
 template <typename Particle_T>
 bool LogicHandler<Particle_T>::neighborListsAreValid() {
   if (
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
       _doDynamicRebuild
 #else
       _stepsSinceLastListRebuild >= _neighborListRebuildFrequency
@@ -1105,7 +1107,7 @@ bool LogicHandler<Particle_T>::neighborListsAreValid() {
   return _neighborListsAreValid.load(std::memory_order_relaxed);
 }
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
 template <typename Particle_T>
 void LogicHandler<Particle_T>::addFastParticlesToParticleBuffer() {
   const auto skin = getContainer().getVerletSkin();
@@ -1232,7 +1234,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
     functor.initializeNeighborList(this->begin(IteratorBehavior::ownedOrHalo));
   }
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
   const size_t numParticlesBuffer = getNumberOfParticlesBuffer();
   // for logging in current iteration
   const bool doDynamicRebuild = _doDynamicRebuild;
@@ -1256,7 +1258,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   computeRemainderInteractions(functor, newton3, dataLayout);
   timerComputeRemainder.stop();
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
   if (not doRebuild) {
     _doDynamicRebuild =
         _rebuildDecisionContext.afterRemainderTraversal(timerComputeRemainder.getTotalTime(), numParticlesBuffer);
@@ -1282,7 +1284,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
           energyMeasurementsPossible ? energyTotal - energyTotalRebuild
                                      : nanL,  // ComputeInteractions + Remainder Traversal energy consumption
           energyMeasurementsPossible ? energyTotal : nanL
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
           ,
           numParticlesBuffer,
           getNumberOfParticlesOwned(),

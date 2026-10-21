@@ -219,6 +219,7 @@ double sigmoid(double x);
 
 /*
  * Finds the least squares solution for a linear regression problem.
+ * @tparam T The type of the input data points. Must be convertible to double.
  * @param x The x values of the data points.
  * @param y The y values of the data points.
  * @return A pair containing the slope and y-intercept of the best-fit line, mirroring

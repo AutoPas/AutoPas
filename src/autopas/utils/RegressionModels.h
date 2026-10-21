@@ -6,7 +6,7 @@
 
 #pragma once
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
 #include <algorithm>
 #include <climits>
 #include <iostream>
