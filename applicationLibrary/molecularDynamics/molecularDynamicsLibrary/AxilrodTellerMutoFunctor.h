@@ -264,10 +264,12 @@ class AxilrodTellerMutoFunctor
       // Division to the correct value is handled in endTraversal().
       const double potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
 
-      // As a general formula, the virial can be calculated as f_ij * r_ij
-      // The per-particle contribution can be deduced from splitting the forces:
-      // f_ij * r_ij = (f_j - f_i) * r_ij;
-      // => Particle i virial: f_i * (r_ki - r_ij)
+      // The virial in general is defined as f_i * r_i.
+      // However, to work correctly with periodic boundary conditions, we only use relative displacements.
+      // The point of reference becomes the centroid r_c = (r_i + r_j + r_k) / 3.0 instead of the origin.
+      // The per-particle contribution is then
+      // f_i * (r_i - r_c) = f_i * (r_ki - r_ij) / 3.0
+      // The division by 3 is handled in endTraversal().
       // For more information, see Thompson et al.: https://doi.org/10.1063/1.3245303
       if (i.isOwned()) {
         const auto virialI = forceI * (displacementKI - displacementIJ);
@@ -380,6 +382,9 @@ class AxilrodTellerMutoFunctor
 
       // Additionally, we have always calculated 3*potentialEnergy, so we divide by 3 again.
       _potentialEnergySum /= 3.;
+
+      // For the virial, we have also calculated 3*virial, so we divide by 3 here.
+      _virialSum *= (1. / 3.);
 
       _postProcessed = true;
 
