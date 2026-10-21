@@ -451,6 +451,8 @@ TEST_F(VerletClusterListsTest, testGridAlignmentAtBoxBoundary) {
  *
  * This led to clusters with owned particles being treated as halo particles.
  *
+ * This was fixed in #1224.
+ *
  * This test recreates that scenario.
  */
 TEST_F(VerletClusterListsTest, testInteractionsDifferentTowersPerInteractionLength) {
