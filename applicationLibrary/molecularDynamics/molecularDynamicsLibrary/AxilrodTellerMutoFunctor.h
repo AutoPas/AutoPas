@@ -264,21 +264,24 @@ class AxilrodTellerMutoFunctor
       // Division to the correct value is handled in endTraversal().
       const double potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
 
-      // Virial is calculated as f_i * r_i
-      // see Thompson et al.: https://doi.org/10.1063/1.3245303
-      const auto virialI = forceI * i.getR();
+      // As a general formula, the virial can be calculated as f_ij * r_ij
+      // The per-particle contribution can be deduced from splitting the forces:
+      // f_ij * r_ij = (f_j - f_i) * r_ij;
+      // => Particle i virial: f_i * (r_ki - r_ij)
+      // For more information, see Thompson et al.: https://doi.org/10.1063/1.3245303
       if (i.isOwned()) {
+        const auto virialI = forceI * (displacementKI - displacementIJ);
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialI;
       }
       // for non-newton3 particles j and/or k will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        const auto virialJ = forceJ * j.getR();
+        const auto virialJ = forceJ * (displacementIJ - displacementJK);
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialJ;
       }
       if (newton3 and k.isOwned()) {
-        const auto virialK = forceK * k.getR();
+        const auto virialK = forceK * (displacementJK - displacementKI);
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialK;
       }
