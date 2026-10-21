@@ -86,7 +86,7 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
   void traverseParticles() override {
     auto &clusterList = *VCLTraversalInterface<ParticleType>::_verletClusterLists;
 
-    const auto towersPerColoringCell = clusterList.getNumTowersPerInteractionLength();
+    const auto towersPerColoringCell = clusterList.getMaxNumTowersPerInteractionLength();
     std::array<unsigned long, 2> coloringCellsPerDim{};
     for (int i = 0; i < 2; i++) {
       coloringCellsPerDim[i] =

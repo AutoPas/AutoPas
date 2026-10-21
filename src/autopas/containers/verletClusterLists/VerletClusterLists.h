@@ -893,9 +893,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
 
   /**
    * Returns the towers per interaction length. That is how many towers fit into one interaction length rounded up.
+   * If this differs between x and y, the maximum is returned.
    * @return the number of towers per interaction length.
    */
-  auto getNumTowersPerInteractionLength() const { return _towerBlock.getNumTowersPerInteractionLength(); }
+  auto getMaxNumTowersPerInteractionLength() const { return _towerBlock.getMaxNumTowersPerInteractionLength(); }
 
   /**
    * Loads all particles of the container in their correct SoA and generates the SoAViews for the clusters.
