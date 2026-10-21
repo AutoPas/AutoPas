@@ -30,7 +30,7 @@ namespace autopas::utils {
  * @warning In addition to this concept, we require a markAsDeleted() function on the particle. As this is a private
  * function, accessed only through a friend function, we cannot check it in this concept. If developing a custom
  * particle derived from ParticleBase, this function will already be included, but a purely custom particle must
- * implement it and befriend internal::markParticleAsDeleted():
+ * implement it by changing the ownership state to dummy, as done by ParticleBase, and befriend internal::markParticleAsDeleted():
  * @code
  * template <autopas::utils::ParticleType T>
  * friend void autopas::internal::markParticleAsDeleted(T &);
