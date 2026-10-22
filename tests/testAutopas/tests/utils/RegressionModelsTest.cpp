@@ -6,7 +6,7 @@
 
 #include "RegressionModelsTest.h"
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
 
 using namespace autopas::utils::RegressionModels;
 
@@ -72,8 +72,8 @@ TEST(RegressionModelsTest, testMean) {
   EXPECT_DOUBLE_EQ(result._value, 20);
 }
 
-TEST(RegressionModelsTest, testSimpleLinearRegressionBoost) {
-  SimpleLinearRegressionBoost reg(2, 3);
+TEST(RegressionModelsTest, testSimpleLinearRegression) {
+  SimpleLinearRegression reg(2, 3);
 
   EXPECT_EQ(reg.addNewPoint(1, 2), RegressionBase::ReturnCode::OK_REG);
   EXPECT_EQ(reg.addNewPoint(2, 3), RegressionBase::ReturnCode::OK_REG);
@@ -176,7 +176,7 @@ TEST(RegressionModelsTest, testRebuildDecisionContext) {
   EXPECT_EQ(rebuildDecisionContext.getNumParticlesBufferEstimate(), 21);
   // Rebuild is cheaper than another remainder traversal with a full buffer
   EXPECT_TRUE(rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(rf));
-  EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 190);
+  EXPECT_NEAR(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 190, 1e-6);
   rebuildDecisionContext.afterRebuild(120, false);
 
   // Steps since rebuild: 1

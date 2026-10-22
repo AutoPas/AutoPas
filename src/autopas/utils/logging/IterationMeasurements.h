@@ -66,7 +66,7 @@ struct IterationMeasurements {
    */
   long energyTotal{};
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
   /**
    * Number of particles in the buffer during remainder Traversal
    */

@@ -6,9 +6,8 @@
 
 #pragma once
 
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
 #include <algorithm>
-#include <boost/math/statistics/linear_regression.hpp>
 #include <climits>
 #include <iostream>
 #include <limits>
@@ -196,15 +195,14 @@ class Mean : public RegressionBase {
 };
 
 /**
- * Streaming implementation of simple linear regression using the Boost library with x as predictor
- * and y as response variable.
+ * Streaming implementation of simple linear regression with x as predictor and y as response variable.
  *
  * Assumes that x values are strictly non-decreasing and positive. This property
  * is exploited to implement a lightweight ring buffer over distinct x values.
  */
-class SimpleLinearRegressionBoost : public RegressionBase {
+class SimpleLinearRegression : public RegressionBase {
  public:
-  SimpleLinearRegressionBoost() : RegressionBase(2, 5) {
+  SimpleLinearRegression() : RegressionBase(2, 5) {
     _y.reserve(_maxN);
     _x.reserve(_maxN);
   }
@@ -213,7 +211,7 @@ class SimpleLinearRegressionBoost : public RegressionBase {
    * @param minN Lower limit for the number of points considered for prediction.
    * @param maxN Upper limit for the number of points considered for prediction.
    */
-  SimpleLinearRegressionBoost(const size_t minN, const size_t maxN) : RegressionBase(minN, maxN) {
+  SimpleLinearRegression(const size_t minN, const size_t maxN) : RegressionBase(minN, maxN) {
     _y.reserve(_maxN);
     _x.reserve(_maxN);
   }
@@ -281,7 +279,7 @@ class SimpleLinearRegressionBoost : public RegressionBase {
     }
     std::pair<double, double> lin_reg_coeffs;
     try {
-      lin_reg_coeffs = boost::math::statistics::simple_ordinary_least_squares(_x, _y);
+      lin_reg_coeffs = utils::Math::simpleLeastSquares(_x, _y);
     } catch (...) {
       return Result{0, ReturnCode::UNKNOWN_ERROR_REG, false};
     }
@@ -348,7 +346,7 @@ class SimpleLinearRegressionSeparateZero {
    * Stores remainder traversal values with a filled buffer
    * and predicts remainder traversal time for a given buffer filling.
    */
-  SimpleLinearRegressionBoost _rest{};
+  SimpleLinearRegression _rest{};
 };
 
 /**
@@ -456,7 +454,6 @@ class RebuildDecisionContext {
       }
     } else if (returnCode_rebuild == RegressionBase::ReturnCode::OVERFLOW_REG ||
                returnCode_remainder == RegressionBase::ReturnCode::OVERFLOW_REG ||
-               // if the boost library linear regression implementation throws an error
                returnCode_remainder == RegressionBase::ReturnCode::UNKNOWN_ERROR_REG) {
       doDynamicRebuild = true;
     }
