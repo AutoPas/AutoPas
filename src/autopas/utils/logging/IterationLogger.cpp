@@ -32,7 +32,7 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
       "rebuildNeighborLists[ns],"
       "computeInteractionsTotal[ns],"
       "tuning[ns]"
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
       ",numParticlesBuffer,"
       "numParticlesOwned,"
       "numParticlesHalo,"
@@ -66,14 +66,14 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
 #ifdef AUTOPAS_LOG_ITERATIONS
   const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
                energyWatts, energyJoules, energyDeltaT, energyTotalRebuild, energyTotalNonRebuild, energyTotal
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
                ,
                numParticlesBuffer, numParticlesOwned, numParticlesHalo, numParticlesFast, estimateNumParticlesBuffer,
                estimateRemainderTraversalTime, estimateRebuildNeighborTime, doDynamicRebuild
 #endif
   ] = measurements;
   if (energyMeasurementsPossible) {
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
     spdlog::get(_loggerName)
         ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName,
                inTuningPhase ? "true" : "false", configuration.getCSVLine(), timeIteratePairwise,
@@ -88,7 +88,7 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                timeTuning, energyWatts, energyJoules, energyDeltaT);
 #endif
   } else {
-#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
     spdlog::get(_loggerName)
         ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName,
                inTuningPhase ? "true" : "false", configuration.getCSVLine(), timeIteratePairwise,
