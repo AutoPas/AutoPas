@@ -26,11 +26,11 @@ endif()
 # NOTE: AUTOPAS_ENABLE_DYNAMIC_CONTAINERS must be defined for every non-OFF mode;
 # shared code guards on it. Mode-specific code must guard on exactly one of
 # AUTOPAS_DYNAMIC_CONTAINERS_{STANDARD,FPB}.
-set(_dyn_defs AUTOPAS_ENABLE_DYNAMIC_CONTAINERS)   # ← base macro, added for BOTH ON and FPB
+set(_dyn_defs "")   # ← base macro, added for OFF ON and FPB
 if(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS STREQUAL "ON")
-  list(APPEND _dyn_defs AUTOPAS_DYNAMIC_CONTAINERS_STANDARD)
+  list(APPEND _dyn_defs AUTOPAS_ENABLE_DYNAMIC_CONTAINERS AUTOPAS_DYNAMIC_CONTAINERS_STANDARD)
 elseif(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS STREQUAL "FPB")
-  list(APPEND _dyn_defs AUTOPAS_DYNAMIC_CONTAINERS_FPB)
+  list(APPEND _dyn_defs AUTOPAS_ENABLE_DYNAMIC_CONTAINERS AUTOPAS_DYNAMIC_CONTAINERS_FPB)
 endif()
 
 # If rules-based tuning and fuzzy tuning are disabled, we must remove all files which link to antlr. As this includes generated files,

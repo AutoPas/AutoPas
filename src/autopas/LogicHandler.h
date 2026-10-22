@@ -765,8 +765,9 @@ class LogicHandler {
   /**
    * Checks if in the next iteration the neighbor lists have to be rebuilt.
    *
-   * This can be the case either because we hit the rebuild frequency or the dynamic rebuild criteria or because the
-   * auto tuner tests a new configuration.
+   * This can be the case either because we hit the rebuild frequency or the dynamic rebuild criteria (when dynamic
+   * rebuilding is turned ON) or because the auto tuner tests a new configuration. Dynamic rebuilding with the fast
+   * particles buffer (FPB) ignores the rebuild frequency.
    *
    * @return True iff the neighbor lists will not be rebuilt.
    */
@@ -1028,12 +1029,6 @@ class LogicHandler {
    * Logger for configuration used and time spent breakdown of iteratePairwise.
    */
   IterationLogger _iterationLogger;
-
-  /**
-   * Tells if dynamic rebuild is necessary currently
-   * neighborListInvalidDoDynamicRebuild - true if a particle has moved more than skin/2
-   */
-  bool _neighborListInvalidDoDynamicRebuild{false};
 
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
   /**

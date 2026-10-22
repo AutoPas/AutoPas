@@ -222,13 +222,16 @@ double sigmoid(double x);
  * @tparam T The type of the input data points. Must be convertible to double.
  * @param x The x values of the data points.
  * @param y The y values of the data points.
- * @return A pair containing the slope and y-intercept of the best-fit line, mirroring
+ * @return A pair containing the {y-intercept, slope} of the best-fit line, mirroring
  * boost::math::statistics::simple_ordinary_least_squares. Throws std::domain_error if fewer than 2 points or all x are
  * identical
  */
 template <class T>
 requires std::convertible_to<T, double>
 [[nodiscard]] inline std::pair<double, double> simpleLeastSquares(const std::vector<T> &x, const std::vector<T> &y) {
+  if (x.size() != y.size()) {
+    throw std::invalid_argument("x and y must have the same size");
+  }
   const std::size_t n = std::min(x.size(), y.size());
   if (n < 2) {
     throw std::domain_error("least squares requires at least 2 points");
