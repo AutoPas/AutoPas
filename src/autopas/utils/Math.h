@@ -7,7 +7,11 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <algorithm>
 #include <cmath>
+#include <concepts>
+#include <stdexcept>
+#include <utility>
 #include <vector>
 
 namespace autopas::utils::Math {
@@ -217,7 +221,7 @@ double normalCDF(double x);
  */
 double sigmoid(double x);
 
-/*
+/**
  * Finds the least squares solution for a linear regression problem.
  * @tparam T The type of the input data points. Must be convertible to double.
  * @param x The x values of the data points.
