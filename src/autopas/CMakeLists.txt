@@ -17,6 +17,14 @@ set(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS "ON"
     CACHE STRING "Dynamic container rebuilding: OFF, ON, or FPB")
 set_property(CACHE AUTOPAS_ENABLE_DYNAMIC_CONTAINERS PROPERTY STRINGS OFF ON FPB)
 
+string(TOUPPER "${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}" _dyn_mode)
+if(_dyn_mode MATCHES "^(1|TRUE|YES|Y)$")
+  set(_dyn_mode "ON")
+elseif(_dyn_mode MATCHES "^(0|FALSE|NO|N)$")
+  set(_dyn_mode "OFF")
+endif()
+set(AUTOPAS_ENABLE_DYNAMIC_CONTAINERS "${_dyn_mode}" CACHE STRING "Dynamic container rebuilding: OFF, ON, or FPB" FORCE)
+
 if(NOT AUTOPAS_ENABLE_DYNAMIC_CONTAINERS MATCHES "^(OFF|ON|FPB)$")
   message(FATAL_ERROR
     "AUTOPAS_ENABLE_DYNAMIC_CONTAINERS must be OFF, ON, or FPB "

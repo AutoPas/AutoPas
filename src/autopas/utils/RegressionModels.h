@@ -407,9 +407,11 @@ class RebuildDecisionContext {
     _lastRemainderTraversalTime = remainderTraversalTime;
 
     if (numParticlesBuffer > 0) {
-      _lastIncreaseNumParticlesBuffer = = numParticlesBuffer > _afterFastAddNumParticlesBuffer
-                                              ? numParticlesBuffer - _afterFastAddNumParticlesBuffer
-                                              : 0;
+      // numParticleBuffer should not never really decrease, but this is a safety check to avoid underflow in case of
+      // unexpected behavior.
+      _lastIncreaseNumParticlesBuffer = numParticlesBuffer > _afterFastAddNumParticlesBuffer
+                                            ? numParticlesBuffer - _afterFastAddNumParticlesBuffer
+                                            : 0;
     }
 
     return _remainderTraversalTimePredictor.addNewPoint(static_cast<long>(numParticlesBuffer),
