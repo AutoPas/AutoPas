@@ -407,7 +407,9 @@ class RebuildDecisionContext {
     _lastRemainderTraversalTime = remainderTraversalTime;
 
     if (numParticlesBuffer > 0) {
-      _lastIncreaseNumParticlesBuffer = numParticlesBuffer - _afterFastAddNumParticlesBuffer;
+      _lastIncreaseNumParticlesBuffer = = numParticlesBuffer > _afterFastAddNumParticlesBuffer
+                                              ? numParticlesBuffer - _afterFastAddNumParticlesBuffer
+                                              : 0;
     }
 
     return _remainderTraversalTimePredictor.addNewPoint(static_cast<long>(numParticlesBuffer),
@@ -427,8 +429,8 @@ class RebuildDecisionContext {
    * Updates the internal dynamic rebuild flag (_doDynamicRebuild).
    *
    * @param curr_iter current iteration, or current rebuild frequency if one would rebuild in the current iteration
-   * @return True if a dynamic rebuild should be triggered due to particle buffer fullness,if an initial rebuild time
-   * estimate is required, or if an error or overflow occurred.
+   * @return True if a dynamic rebuild should be triggered due to particle buffer fullness, or if an error or overflow
+   * occurred.
    */
   bool decideToRebuildOnParticleBufferFullness(const unsigned int curr_iter) {
     bool doDynamicRebuild{false};
@@ -442,11 +444,12 @@ class RebuildDecisionContext {
       _rebuildNeighborTimeEstimate = value_rebuild;
       _remainderTraversalTimeEstimate = value_remainder;
 
-      // Full term: value_rebuild / (curr_iter * (curr_iter + 1)), but denominator is the same, so can be ignored.
+      // First full term: value_rebuild / (curr_iter * (curr_iter + 1)), but denominator is the same, so can be ignored.
       // const double rebuildIncline = value_rebuild / (curr_iter * (curr_iter + 1));
 
-      // Full term: (value_remainder * curr_iter - static_cast<double>(_remainderTraversalTimePredictor.getSumY())) /
-      // (curr_iter * (curr_iter + 1)), but the denominator is same and can be ignored.
+      // Second full term: (value_remainder * curr_iter -
+      // static_cast<double>(_remainderTraversalTimePredictor.getSumY())) / (curr_iter * (curr_iter + 1)), but the
+      // denominator is same and can be ignored.
       const double remainderIncline =
           (value_remainder * curr_iter - static_cast<double>(_remainderTraversalTimePredictor.getSumY()));
       if (remainderIncline >= value_rebuild) {
