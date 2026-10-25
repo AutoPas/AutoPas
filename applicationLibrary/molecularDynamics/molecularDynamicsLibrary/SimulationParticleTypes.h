@@ -1,9 +1,8 @@
+//SimulationParticleTypes.h
 #pragma once
-
 namespace ParticleTypes {
 
 constexpr unsigned long FLUID = 0;
-
 constexpr unsigned long WALL_SMOOTH = 1;
 constexpr unsigned long WALL_BOSS = 2;
 constexpr unsigned long WALL_PIT = 3;

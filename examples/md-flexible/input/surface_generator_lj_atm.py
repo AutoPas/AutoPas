@@ -29,16 +29,17 @@ WALL_CENTER_Y = WALL_Y0 + WALL_SIZE // 2
 ITERATIONS = 1000000
 DELTA_T = 0.0005
 GRAVITY_Z = -0.0001
-TEMPERATURE = 0.3
+TEMPERATURE = 0.6
 VTK_WRITE_FREQUENCY = 1000
 
 EPSILON_FF = 1.0
 EPSILON_WW = 1.0
 # Fluid-wall wetting: effective_epsilon_fw = ZETA * EPSILON_FF.
 # Must match FLUID_WALL_EPSILON_SCALE in SimulationParticleTypes.h.
-ZETA = 0.6
+ZETA = 0.3
+VERLET_REBUILD_FREQUENCY= 5
 RADIUS = 17
-CUTOFF = 3
+CUTOFF = 2.5
 
 # Standard ATM nu for Argon-like fluids; fixed physical constant, not a tuning knob.
 NU_FLUID = 0.073
@@ -230,7 +231,7 @@ def generate_yaml(surface, wall_mode, is_treatment):
         atm_section = (
             "\n"
             "functor-3b                       :  axilrod-teller-muto\n"
-            "traversal-3b                     :  [lc_c01]\n"
+            "traversal-3b                     :  [vl_list_iteration]\n"
             "data-layout-3b                   :  [AoS]\n"
             "newton3-3b                       :  [disabled]\n"
         )
@@ -244,13 +245,13 @@ def generate_yaml(surface, wall_mode, is_treatment):
 
     yaml_content = (
         header + "\n"
-        f"container                        :  [LinkedCells]\n"
-        f"verlet-rebuild-frequency         :  10\n"
-        f"verlet-skin-radius               :  1.0\n"
+        f"container                        :  [VerletLists]\n"
+        f"verlet-rebuild-frequency         :  {VERLET_REBUILD_FREQUENCY}\n"
+        f"verlet-skin-radius               :  0.2\n"
         f"verlet-cluster-size              :  4\n"
         f"selector-strategy                :  Fastest-Absolute-Value\n"
         f"data-layout                      :  [AoS]\n"
-        f"traversal                        :  [lc_c01]\n"
+        f"traversal                        :  [vl_list_iteration]\n"
         f"tuning-strategies                :  []\n"
         f"tuning-interval                  :  2500\n"
         f"tuning-samples                   :  3\n"
@@ -352,3 +353,4 @@ if __name__ == "__main__":
     for surface in surfaces:
         print(f"Surface: {surface}")
         emit_pair(surface, wall_mode)
+
