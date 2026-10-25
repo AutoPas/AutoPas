@@ -150,22 +150,32 @@ template <class Particle_T>
             }
 
             void computeInteractions(TraversalInterface *traversal) override {
+                Kokkos::Timer traversalTimer;
+                const double startPrep = traversalTimer.seconds();
                 prepareTraversal(traversal);
 
                 // TODO: if this is the common structure, why isn't this generalized and called in a higher level of the hierarchy?
                 traversal->initTraversal();
-                Kokkos::Timer traversalTimer;
-                const double startTraversal=traversalTimer.seconds();
+                // fence so that any async host<->device copies from the preparation are attributed to it, not the kernel
+                Kokkos::fence();
+                const double startTraversal = traversalTimer.seconds();
+                _traversalTimings._preparation.addTiming(startTraversal - startPrep);
+
                 traversal->traverseParticles();
                 // The Kokkos kernels are launched asynchronously, so fence before stopping the timer to capture the actual compute time.
                 Kokkos::fence();
-                const double traversalTime = traversalTimer.seconds() - startTraversal;
-                _traversalTimingStats.addTiming(traversalTime);
+                const double startCleanup = traversalTimer.seconds();
+                const double traversalTime = startCleanup - startTraversal;
+                _traversalTimings._kernel.addTiming(traversalTime);
                 spdlog::info("Traversal took {} s", traversalTime);
 
                 traversal->endTraversal();
 
                 finishTraversal(traversal);
+                Kokkos::fence();
+                const double endCleanup = traversalTimer.seconds();
+                _traversalTimings._cleanup.addTiming(endCleanup - startCleanup);
+                _traversalTimings._total.addTiming(endCleanup - startPrep);
             }
 
             [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
@@ -557,6 +567,6 @@ template <class Particle_T>
 
         size_t capacityHalo {0};
 
-        TimingStats _traversalTimingStats {"KokkosDirectSum::computeInteractions"};
+        KernelTimings _traversalTimings {"KokkosDirectSum::computeInteractions"};
         };
 }

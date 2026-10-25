@@ -154,10 +154,11 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
         const double interactionLength = _cutoff + this->getVerletSkin();
         const double interactionLengthSqr = interactionLength * interactionLength;
 
-        auto buildList = [&](utils::KokkosStorage<Particle_T> &srcJ, size_t numJ,
-                             Kokkos::DualView<size_t *> &offsetsDV, Kokkos::DualView<size_t *> &entriesDV,
+        auto buildList = [&](utils::KokkosStorage<Particle_T> &srcJ, int numJ,
+                             Kokkos::DualView<int *> &offsetsDV, Kokkos::DualView<int *> &entriesDV,
                              bool skipSelf) {
-            auto inRange = [&](size_t i, size_t j) {
+            const int numI = static_cast<int>(numberOfOwned);
+            auto inRange = [&](int i, int j) {
                 const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
                 const auto &rj = srcJ.getAoS().getParticle(j).getR();
                 const double dx = ri[0] - rj[0];
@@ -173,9 +174,9 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
 
             // count neighbors per owned particle
             h_offsets(0) = 0;
-            for (size_t i = 0; i < numberOfOwned; ++i) {
-                size_t count = 0;
-                for (size_t j = 0; j < numJ; ++j) {
+            for (int i = 0; i < numI; ++i) {
+                int count = 0;
+                for (int j = 0; j < numJ; ++j) {
                     if (skipSelf && j == i) {
                         continue;
                     }
@@ -186,16 +187,16 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
                 h_offsets(i + 1) = h_offsets(i) + count;
             }
 
-            const size_t totalNeighbors = numberOfOwned == 0 ? 0 : h_offsets(numberOfOwned);
+            const int totalNeighbors = numI == 0 ? 0 : h_offsets(numI);
             Kokkos::resize(entriesDV, totalNeighbors);
             entriesDV.clear_sync_state();
             entriesDV.modify_host();
             auto h_entries = entriesDV.h_view;
 
             // fill 
-            for (size_t i = 0; i < numberOfOwned; ++i) {
-                size_t slot = h_offsets(i);
-                for (size_t j = 0; j < numJ; ++j) {
+            for (int i = 0; i < numI; ++i) {
+                int slot = h_offsets(i);
+                for (int j = 0; j < numJ; ++j) {
                     if (skipSelf && j == i) {
                         continue;
                     }
@@ -640,11 +641,11 @@ class VerletListsKokkos : public ParticleContainerInterface<Particle_T> {
 
     // h_view is written by rebuildNeighborLists; d_view is read by the traversal.
     // owned-owned neighbor list (entries index into the owned particles)
-    Kokkos::DualView<size_t*> _neighborListOffsets {"vl_neighborListOffsets", 0};
-    Kokkos::DualView<size_t*> _neighborListEntries {"vl_neighborListEntries", 0};
+    Kokkos::DualView<int*> _neighborListOffsets {"vl_neighborListOffsets", 0};
+    Kokkos::DualView<int*> _neighborListEntries {"vl_neighborListEntries", 0};
     // owned-halo neighbor list (offsets per owned particle, entries index into the halo particles)
-    Kokkos::DualView<size_t*> _haloNeighborListOffsets {"vl_haloNeighborListOffsets", 0};
-    Kokkos::DualView<size_t*> _haloNeighborListEntries {"vl_haloNeighborListEntries", 0};
+    Kokkos::DualView<int*> _haloNeighborListOffsets {"vl_haloNeighborListOffsets", 0};
+    Kokkos::DualView<int*> _haloNeighborListEntries {"vl_haloNeighborListEntries", 0};
     bool _neighborListValid {false};
     TimingStats _rebuildTimingStats {"VerletListsKokkos::rebuildNeighborLists"};
     TimingStats _traversalTimingStats {"VerletListsKokkos::computeInteractions"};

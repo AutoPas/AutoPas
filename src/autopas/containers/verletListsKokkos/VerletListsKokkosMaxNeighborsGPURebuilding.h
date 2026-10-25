@@ -183,7 +183,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                 _sectionTimes._allocation.addTiming(endAlloc-startAlloc);
                 break;
             }
-            const size_t grown = _maxNeighbors * 2;
+            const int grown = _maxNeighbors * 2;
             spdlog::info("VerletListsKokkosMaxNeighbors: neighbor overflow, growing maxNeighbors {} -> {}",
                          _maxNeighbors, grown);
             _maxNeighbors = grown;
@@ -426,13 +426,13 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
             TimingStats _totalRebuild{"total rebuild, VerletListsKokkosMaxNeighbors::rebuildNeighborLists()"};
         };
 
-        bool buildNeighborListsFlat(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
+        bool buildNeighborListsFlat(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<int*>& offsets, const Kokkos::View<int*>& entries){
             spdlog::info("buildNeighborlistflat()");
             Kokkos::Timer buildTimer;
             double startRebuilding = buildTimer.seconds();
 
-            const size_t N = soa1.size();
-            const size_t M = soa2.size();
+            const int N = static_cast<int>(soa1.size());
+            const int M = static_cast<int>(soa2.size());
             spdlog::debug("VerletListsKokkosTraversalFlat::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
                         soa2.size());
 
@@ -443,7 +443,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                     N, soa2.size());
                 return false;
             }
-            const size_t maxNeighbors = _maxNeighbors;
+            const int maxNeighbors = _maxNeighbors;
             const FloatPrecision interactionLength = _cutoff + this->getVerletSkin();
             const FloatPrecision interactionLengthSqr = interactionLength * interactionLength;
             const auto soa1Device = soa1.deviceView();
@@ -464,8 +464,8 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                 const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
                 const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
 
-                size_t count = 0;
-                for (size_t k = 0; k < M; ++k) {
+                int count = 0;
+                for (int k = 0; k < M; ++k) {
                     const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
                     const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
                     const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
@@ -480,7 +480,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                             Kokkos::atomic_store(&overflowFlag(), 1);
                             break;
                         }
-                        const size_t index = i * maxNeighbors + count;
+                        const int index = i * maxNeighbors + count;
                         entries(index) = k;
                         ++count;
                     }
@@ -509,12 +509,12 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
         }
 
         
-        bool buildNeighborListsTeams(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries){
+        bool buildNeighborListsTeams(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2, const Kokkos::View<int*>& offsets, const Kokkos::View<int*>& entries){
             spdlog::info("buildNeighborListsTeams()");
             Kokkos::Timer buildTimer;
             double startBuild= buildTimer.seconds();
-            const size_t N = soa1.size();
-            const size_t M = soa2.size();
+            const int N = static_cast<int>(soa1.size());
+            const int M = static_cast<int>(soa2.size());
             spdlog::debug("VerletListsKokkosTraversalTeams::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
                         soa2.size());
 
@@ -525,7 +525,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                     N, M);
                 return false;
             }
-            const size_t maxNeighbors = _maxNeighbors;
+            const int maxNeighbors = _maxNeighbors;
             const FloatPrecision interactionLength = _cutoff + this->getVerletSkin();
             const FloatPrecision interactionLengthSqr = interactionLength * interactionLength;
             const auto soa1Device = soa1.deviceView();
@@ -537,7 +537,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
 
             using ExecSpace = typename DeviceSpace::execution_space;
             using MemberType = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
-            using CounterView = Kokkos::View<size_t*, typename ExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
+            using CounterView = Kokkos::View<int*, typename ExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
             const size_t scratchBytes = CounterView::shmem_size(1);
 
             spdlog::info("Launching team kernel with N={} and M={}", N, M);
@@ -558,7 +558,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                 Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() { count(0) = 0; });
                 teamHandle.team_barrier();
 
-                Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, M), [&](const size_t k) {
+                Kokkos::parallel_for(Kokkos::TeamThreadRange(teamHandle, M), [&](const int k) {
                     const auto x2 = soa2Device.template operator()<Particle_T::AttributeNames::posX, true>(k);
                     const auto y2 = soa2Device.template operator()<Particle_T::AttributeNames::posY, true>(k);
                     const auto z2 = soa2Device.template operator()<Particle_T::AttributeNames::posZ, true>(k);
@@ -568,7 +568,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                     const auto distSquared = dx * dx + dy * dy + dz * dz;
 
                     if (distSquared < interactionLengthSqr) {
-                        const size_t slot = Kokkos::atomic_fetch_add(&count(0), size_t(1));
+                        const int slot = Kokkos::atomic_fetch_add(&count(0), 1);
                         if (slot >= maxNeighbors) {
                             Kokkos::atomic_store(&overflowFlag(), 1);
                         } else {
@@ -579,7 +579,7 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
                 teamHandle.team_barrier();
 
                 Kokkos::single(Kokkos::PerTeam(teamHandle), [&]() {
-                    const size_t finalCount = count(0) < maxNeighbors ? count(0) : maxNeighbors;
+                    const int finalCount = count(0) < maxNeighbors ? count(0) : maxNeighbors;
                     offsets(i) = i * maxNeighbors + finalCount;
                 });
             };
@@ -810,21 +810,21 @@ class VerletListsKokkosMaxNeighborsGPURebuilding : public ParticleContainerInter
 
     // d_view is built on the device by rebuildNeighborLists and read by the traversal.
     // owned-owned neighbor list (entries index into the owned particles)
-    Kokkos::DualView<size_t*> _neighborListOffsets {"vl_neighborListOffsets", 0};
-    Kokkos::DualView<size_t*> _neighborListEntries {"vl_neighborListEntries", 0};
+    Kokkos::DualView<int*> _neighborListOffsets {"vl_neighborListOffsets", 0};
+    Kokkos::DualView<int*> _neighborListEntries {"vl_neighborListEntries", 0};
     // owned-halo neighbor list (offsets per owned particle, entries index into the halo particles)
-    Kokkos::DualView<size_t*> _haloNeighborListOffsets {"vl_haloNeighborListOffsets", 0};
-    Kokkos::DualView<size_t*> _haloNeighborListEntries {"vl_haloNeighborListEntries", 0};
+    Kokkos::DualView<int*> _haloNeighborListOffsets {"vl_haloNeighborListOffsets", 0};
+    Kokkos::DualView<int*> _haloNeighborListEntries {"vl_haloNeighborListEntries", 0};
     bool _neighborListValid {false};
 
     // Per-owned-particle neighbor slot capacity used to size the entry buffers
     // without a separate counting pass. If any particle exceeds this during a rebuild, it is grown
     // and the lists are rebuilt (detect + grow & retry). Persists across rebuilds so the cost is
     // amortized once the value has settled.
-    size_t _maxNeighbors {64};
+    int _maxNeighbors {64};
 
     
-    bool _useTeamsRebuild {false};
+    bool _useTeamsRebuild {true};
     SectionTimings _sectionTimes{};
    
 };

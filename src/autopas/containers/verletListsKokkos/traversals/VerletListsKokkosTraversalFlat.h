@@ -48,7 +48,7 @@ explicit VerletListsKokkosTraversalFlat(Functor *functor, DataLayoutOption dataL
       [[maybe_unused]] const bool newton3 = _useNewton3;  // kept for a future newton3 implementation
       const auto func = _functor;
 
-      size_t N = VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.size();
+      const int N = static_cast<int>(VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.size());
 
       spdlog::debug("VerletListsKokkosTraversalFlat::traverseParticles: dataLayout={}, ownedParticles={}",
                     _dataLayout.to_string(), N);
@@ -68,26 +68,26 @@ explicit VerletListsKokkosTraversalFlat(Functor *functor, DataLayoutOption dataL
 #else
         const auto offsets = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListOffsets;
         const auto entries = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListEntries;
-        const size_t stride = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListStride;
+        const int stride = VerletListsKokkosTraversalInterface<Particle_T>::_neighborListStride;
         const auto haloOffsets = VerletListsKokkosTraversalInterface<Particle_T>::_haloNeighborListOffsets;
         const auto haloEntries = VerletListsKokkosTraversalInterface<Particle_T>::_haloNeighborListEntries;
-        const size_t haloStride = VerletListsKokkosTraversalInterface<Particle_T>::_haloNeighborListStride;
+        const int haloStride = VerletListsKokkosTraversalInterface<Particle_T>::_haloNeighborListStride;
 
         // Full neighbor list: each pair appears under both partners, so the gather-only
         // update of particle i is correct without newton3
         Kokkos::parallel_for("traverseParticlesAoS", Kokkos::RangePolicy<Kokkos::HostSpace::execution_space>(0, N), KOKKOS_LAMBDA(int i)  {
           auto& ownedI = VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(i);
-          for (size_t k = (stride ? static_cast<size_t>(i) * stride : offsets(i)),
+          for (int k = (stride ? i * stride : offsets(i)),
                       kEnd = (stride ? offsets(i) : offsets(i + 1)); k < kEnd; ++k) {
-            const size_t j = entries(k);
+            const int j = entries(k);
             func->AoSFunctorKokkos(
               ownedI,
               VerletListsKokkosTraversalInterface<Particle_T>::_ownedParticles.getAoS().getParticle(j),
               false);
           }
-          for (size_t k = (haloStride ? static_cast<size_t>(i) * haloStride : haloOffsets(i)),
+          for (int k = (haloStride ? i * haloStride : haloOffsets(i)),
                       kEnd = (haloStride ? haloOffsets(i) : haloOffsets(i + 1)); k < kEnd; ++k) {
-            const size_t j = haloEntries(k);
+            const int j = haloEntries(k);
             func->AoSFunctorKokkos(
               ownedI,
               VerletListsKokkosTraversalInterface<Particle_T>::_haloParticles.getAoS().getParticle(j),
@@ -137,8 +137,8 @@ private:
   // Traverse a neighbor list: each owned particle i (in soa1) gathers force from the partner
   // particles (in soa2) stored for it in the list.
   void performSoATraversal(const Particle_T::KokkosSoAArraysType& soa1, const Particle_T::KokkosSoAArraysType& soa2,
-                           const Kokkos::View<size_t*>& offsets, const Kokkos::View<size_t*>& entries, size_t stride) {
-    const size_t N = soa1.size();
+                           const Kokkos::View<int*>& offsets, const Kokkos::View<int*>& entries, int stride) {
+    const int N = static_cast<int>(soa1.size());
 
     spdlog::debug("VerletListsKokkosTraversalFlat::performSoATraversal: soa1.size()={}, soa2.size()={}", N,
                   soa2.size());
@@ -165,9 +165,9 @@ private:
       const auto y1 = soa1Device.template operator()<Particle_T::AttributeNames::posY, true>(i);
       const auto z1 = soa1Device.template operator()<Particle_T::AttributeNames::posZ, true>(i);
 
-      for (size_t k = (stride ? static_cast<size_t>(i) * stride : offsets(i)),
+      for (int k = (stride ? i * stride : offsets(i)),
                   kEnd = (stride ? offsets(i) : offsets(i + 1)); k < kEnd; ++k) {
-        const size_t j = entries(k);
+        const int j = entries(k);
         Functor::SoAKernelKokkosStatic(x1, y1, z1, soa2Device, fxAcc, fyAcc, fzAcc, cutoffSquared, i, j);
       }
 

@@ -158,9 +158,10 @@ class VerletListsKokkosMaxNeighbors : public ParticleContainerInterface<Particle
         const double interactionLengthSqr = interactionLength * interactionLength;
 
 
-        auto buildList = [&](utils::KokkosStorage<Particle_T> &srcJ, size_t numJ,
-                             Kokkos::DualView<size_t *> &offsetsDV, Kokkos::DualView<size_t *> &entriesDV,
+        auto buildList = [&](utils::KokkosStorage<Particle_T> &srcJ, int numJ,
+                             Kokkos::DualView<int *> &offsetsDV, Kokkos::DualView<int *> &entriesDV,
                              bool skipSelf) -> bool {
+            const int numI = static_cast<int>(numberOfOwned);
             Kokkos::resize(offsetsDV, numberOfOwned + 1);
             offsetsDV.clear_sync_state();
             offsetsDV.modify_host();
@@ -172,11 +173,11 @@ class VerletListsKokkosMaxNeighbors : public ParticleContainerInterface<Particle
             auto h_entries = entriesDV.h_view;
 
             h_offsets(0) = 0;
-            for (size_t i = 0; i < numberOfOwned; ++i) {
+            for (int i = 0; i < numI; ++i) {
                 const auto &ri = _ownedParticles.getAoS().getParticle(i).getR();
-                const size_t base = h_offsets(i);
-                size_t count = 0;
-                for (size_t j = 0; j < numJ; ++j) {
+                const int base = h_offsets(i);
+                int count = 0;
+                for (int j = 0; j < numJ; ++j) {
                     if (skipSelf && j == i) {
                         continue;
                     }
@@ -207,7 +208,7 @@ class VerletListsKokkosMaxNeighbors : public ParticleContainerInterface<Particle
             if (not ownedOverflow and not haloOverflow) {
                 break;
             }
-            const size_t grown = _maxNeighbors * 2;
+            const int grown = _maxNeighbors * 2;
             spdlog::info("VerletListsKokkosMaxNeighbors: neighbor overflow, growing maxNeighbors {} -> {}",
                          _maxNeighbors, grown);
             _maxNeighbors = grown;
@@ -641,18 +642,18 @@ class VerletListsKokkosMaxNeighbors : public ParticleContainerInterface<Particle
 
     // h_view is written by rebuildNeighborLists; d_view is read by the traversal.
     // owned-owned neighbor list (entries index into the owned particles)
-    Kokkos::DualView<size_t*> _neighborListOffsets {"vl_neighborListOffsets", 0};
-    Kokkos::DualView<size_t*> _neighborListEntries {"vl_neighborListEntries", 0};
+    Kokkos::DualView<int*> _neighborListOffsets {"vl_neighborListOffsets", 0};
+    Kokkos::DualView<int*> _neighborListEntries {"vl_neighborListEntries", 0};
     // owned-halo neighbor list (offsets per owned particle, entries index into the halo particles)
-    Kokkos::DualView<size_t*> _haloNeighborListOffsets {"vl_haloNeighborListOffsets", 0};
-    Kokkos::DualView<size_t*> _haloNeighborListEntries {"vl_haloNeighborListEntries", 0};
+    Kokkos::DualView<int*> _haloNeighborListOffsets {"vl_haloNeighborListOffsets", 0};
+    Kokkos::DualView<int*> _haloNeighborListEntries {"vl_haloNeighborListEntries", 0};
     bool _neighborListValid {false};
 
     // Per-owned-particle neighbor slot capacity used to size the entry buffers
     // without a separate counting pass. If any particle exceeds this during a rebuild, it is grown
     // and the lists are rebuilt (detect + grow & retry). Persists across rebuilds so the cost is
     // amortized once the value has settled.
-    size_t _maxNeighbors {64};
+    int _maxNeighbors {64};
     TimingStats _traversalTimingStats {"VerletListsKokkosMaxNeighbors::computeInteractions"};
     TimingStats _rebuildTimingStats {"VerletListsKokkosMaxNeighbors::rebuildNeighborLists"};
 
