@@ -10,6 +10,7 @@
 
 #include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
+#include "testingHelpers/ArbitraryConfigurations.h"
 
 void MPIParallelizedStrategyTest::testBucketDistribution(
     const std::array<double, numRanksExpected> &particleDependentBinDensityStdDevs,
@@ -74,7 +75,9 @@ TEST_F(MPIParallelizedStrategyTest, testDistributeOneBucket) {
   const std::array<double, numRanksExpected> particleDependentBinDensityStdDevs{1., 1., 1.};
   const std::array<size_t, numRanksExpected> expectedNumLocalConfig{2, 2, 1};
   const std::set<autopas::Configuration> searchSpace{
-      lc_c01_aos, lc_c04_aos, lc_c08_aos, lc_c01_soa, lc_c04_soa,
+      arbitraryConfigurations::_arbitrary_config_2B_0, arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_2, arbitraryConfigurations::_arbitrary_config_2B_3,
+      arbitraryConfigurations::_arbitrary_config_2B_4,
   };
   testBucketDistribution(particleDependentBinDensityStdDevs, expectedNumLocalConfig, searchSpace);
 }
@@ -86,7 +89,9 @@ TEST_F(MPIParallelizedStrategyTest, testDistributeTwoBucket) {
   const std::array<double, numRanksExpected> particleDependentBinDensityStdDevs{1., 10., 10.};
   const std::array<size_t, numRanksExpected> expectedNumLocalConfig{5, 3, 2};
   const std::set<autopas::Configuration> searchSpace{
-      lc_c01_aos, lc_c04_aos, lc_c08_aos, lc_c01_soa, lc_c04_soa,
+      arbitraryConfigurations::_arbitrary_config_2B_0, arbitraryConfigurations::_arbitrary_config_2B_1,
+      arbitraryConfigurations::_arbitrary_config_2B_2, arbitraryConfigurations::_arbitrary_config_2B_3,
+      arbitraryConfigurations::_arbitrary_config_2B_4,
   };
   testBucketDistribution(particleDependentBinDensityStdDevs, expectedNumLocalConfig, searchSpace);
 }

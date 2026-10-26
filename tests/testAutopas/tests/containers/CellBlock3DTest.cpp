@@ -7,7 +7,7 @@
 #include "CellBlock3DTest.h"
 
 #include "autopas/utils/ArrayUtils.h"
-#include "generators/src/GridGenerator.h"
+#include "autopas/utils/generators/GridGenerator.h"
 
 void CellBlock3DTest::SetUp() {
   // Initialize different cell blocks
@@ -162,8 +162,8 @@ std::vector<std::array<double, 3>> CellBlock3DTest::getMesh(std::array<double, 3
 size_t getNumberOfParticlesInBox(std::unique_ptr<autopas::internal::CellBlock3D<FMCell>> &cellBlock,
                                  std::vector<FMCell> &vec) {
   const Molecule defaultParticle;
-  autopasTools::generators::GridGenerator::fillWithParticles(
-      vec, cellBlock->getCellsPerDimensionWithHalo(), cellBlock->getCellsPerDimensionWithHalo(), defaultParticle);
+  autopas::generators::GridGenerator::fillWithParticles(vec, cellBlock->getCellsPerDimensionWithHalo(),
+                                                        cellBlock->getCellsPerDimensionWithHalo(), defaultParticle);
   cellBlock->clearHaloCells();
   return std::accumulate(vec.begin(), vec.end(), 0, [](auto acc, auto &e) { return acc + e.size(); });
 }

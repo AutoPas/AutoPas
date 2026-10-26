@@ -17,6 +17,7 @@
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/utils/EnergySensor.h"
+#include "autopas/utils/SortingThresholdBenchmark.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
@@ -276,7 +277,22 @@ class AutoTuner {
    */
   const std::set<Configuration> &getSearchSpace() const;
 
+  /**
+   * Returns the sorting-threshold benchmark owned by this tuner. getAoSThreshold()/getSoAThreshold() are always
+   * safe to read. Callers only need to consult hasRunAoS()/hasRunSoA() to decide whether a benchmark run is still
+   * needed.
+   * @return Reference to the benchmark object.
+   */
+  SortingThresholdBenchmark &getSortingThresholdBenchmark() { return _sortingThresholdBenchmark; }
+
  private:
+  /**
+   * Stores the results of the sorting threshold benchmark. Owned here since it is a tuning-derived
+   * characteristic of a (functor, hardware) pair, one per interaction type since each interaction type has its own
+   * AutoTuner. Running it and reading results is the caller's responsibility via getSortingThresholdBenchmark().
+   */
+  SortingThresholdBenchmark _sortingThresholdBenchmark;
+
   /**
    * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
    * used until the next tuning phase, as well as setting other relevant class members (_endOfTuningPhase, _isTuning,

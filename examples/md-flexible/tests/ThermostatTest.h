@@ -6,9 +6,9 @@
 #pragma once
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPasDecl.h"
+#include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "src/TypeDefinitions.h"
-#include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<ParticleType>;
 

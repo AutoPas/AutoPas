@@ -38,8 +38,11 @@ Objects:
       box-length                     :  [12, 12, 12]
       bottomLeftCorner               :  [0, 0, 0]
       particle-spacing               :  1.2
+#      particle-density               :  1.0
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
+      structure                      : fcc
+      centered                       : true
 thermostat:
   initialTemperature                 :  1.1
   targetTemperature                  :  1.1

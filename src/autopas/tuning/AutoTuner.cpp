@@ -20,7 +20,8 @@
 namespace autopas {
 AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpaceType &searchSpace,
                      const AutoTunerInfo &autoTunerInfo, unsigned int rebuildFrequency, const std::string &outputSuffix)
-    : _selectorStrategy(autoTunerInfo.selectorStrategy),
+    : _sortingThresholdBenchmark(autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold),
+      _selectorStrategy(autoTunerInfo.selectorStrategy),
       _tuningStrategies(std::move(tuningStrategies)),
       _tuningMetric(autoTunerInfo.tuningMetric),
       _useLOESSSmoothening(autoTunerInfo.useLOESSSmoothening),
