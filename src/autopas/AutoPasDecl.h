@@ -39,6 +39,29 @@ template <class Particle_T>
 class LogicHandler;
 
 /**
+ * Temporary deprecation helper struct.
+ *
+ * AutoPas::deleteParticle(Particle_T &particle) used to return a bool. As deleting a particle now only marks it as
+ * deleted, this bool is always false and thus redundant so we want to move it to a void function. As the return type is
+ * not part of the function signature, we cannot have a new void deleteParticle alongside a deprecated bool
+ * deleteParticle. So instead, we return this struct which will implicitly convert to bool with a deprecation warning,
+ * but will be treated silently where the return struct is not used.
+ *
+ * @note This type will be removed in AutoPas v3, when AutoPas::deleteParticle(Particle_T &particle) returns void.
+ */
+struct DeleteParticleResult {
+  /**
+   * Conversion to the bool that AutoPas::deleteParticle(Particle_T &particle) used to return.
+   * @return Always false.
+   */
+  [[deprecated(
+      "The return value of AutoPas::deleteParticle(Particle_T &) is always false and will be removed in AutoPas v3.")]]
+  operator bool() const {
+    return false;
+  }
+};
+
+/**
  * The AutoPas class is intended to be the main point of Interaction for the user.
  * It acts as an interface from where all features of the library can be triggered and configured.
  * @tparam Particle_T Class for particles
@@ -235,8 +258,8 @@ class AutoPas {
   /**
    * Deletes the particle behind the current iterator position and leaves the container in a valid state.
    *
-   * Internally, depending on the container, this might just mark the particle as deleted without actually removing it.
-   * If this can not be done without compromising e.g. a VerletList reference structure the particle is only marked.
+   * Internally, the particle is only marked as deleted (i.e. a dummy particle) and removed when the container
+   * is rebuilt.
    *
    * @param iter Needs to be a modify-able iterator.
    */
@@ -252,16 +275,16 @@ class AutoPas {
   /**
    * Deletes the given particle and leaves the container in a valid state.
    *
-   * Internally, depending on the container, this might just mark the particle as deleted without actually removing it.
-   * If this can not be done without compromising e.g. a VerletList reference structure the particle is only marked.
-   *
-   * @note This function might invalidate iterators.
+   * Internally, the particle is only marked as deleted (i.e. a dummy particle) and removed when the container is
+   * rebuilt.
    *
    * @param particle Reference to the particle that should be deleted.
    *
-   * @return True iff the reference still points to a valid particle.
+   * @return Deprecated: True iff the reference still points to a valid particle. After changing AutoPas to always mark
+   * deleted particles as dummies, this always returns false, and is therefore redundant. Using the return value
+   * triggers a deprecation warning. In AutoPas v3, this function will return void.
    */
-  bool deleteParticle(Particle_T &particle);
+  DeleteParticleResult deleteParticle(Particle_T &particle);
 
   /**
    * Function to iterate over all inter-particle interactions in the container

@@ -174,18 +174,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle_T> {
   CellType getParticleCellTypeAsEnum() override { return CellType::FullParticleCell; }
 
   /**
-   * Delete the given particle from the data structure.
-   * This function does not change the tree layout if the node is empty after the operation.
-   * @param particle
-   * @return True if the given pointer still points to a new, valid particle.
-   */
-  bool deleteParticle(Particle_T &particle) {
-    --_enclosedParticleCount;
-
-    return _pointer->deleteParticle(particle);
-  };
-
-  /**
    * Deletes the index-th particle.
    * @param index the index of the particle that shall be deleted
    */
