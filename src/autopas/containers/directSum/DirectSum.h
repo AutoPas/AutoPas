@@ -129,10 +129,12 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
     // Look for the particle in halo cells that are within half the skin distance of its position
     for (size_t dim = 0; dim < 3; ++dim) {
       if (pos[dim] < boxMin[dim] + skinHalf) {
+        std::lock_guard<AutoPasLock> cellLock(this->_cells[2 * dim + 1].getCellLock());
         if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[2 * dim + 1], haloParticle, skinHalf)) {
           return true;
         }
       } else if (pos[dim] >= boxMax[dim] - skinHalf) {
+        std::lock_guard<AutoPasLock> cellLock(this->_cells[2 * dim + 2].getCellLock());
         if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[2 * dim + 2], haloParticle, skinHalf)) {
           return true;
         }
