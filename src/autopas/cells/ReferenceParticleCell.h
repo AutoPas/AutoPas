@@ -289,6 +289,9 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
                    const std::array<double, 3> &higherCorner,
                    IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     Particle_T *particles = getParticleStorageBuffer();
+    if (not particles) {
+      utils::ExceptionHandler::exception("ReferenceParticleCell::forEachImpl: No particle storage has been set!");
+    }
     for (size_t index : _particles) {
       Particle_T &p = particles[index];
       if (behavior.contains(p)) {
