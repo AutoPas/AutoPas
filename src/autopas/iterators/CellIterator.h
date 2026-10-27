@@ -54,6 +54,11 @@ class CellIterator {
   using iterator_category = typename IteratorType::iterator_category;
 
   /**
+   * Default constructor, required for std::bidirectional_iterator. The result does not point to any particle.
+   */
+  CellIterator() = default;
+
+  /**
    * Constructor
    * @param iterator
    */
@@ -88,7 +93,7 @@ class CellIterator {
   }
 
   /**
-   * Increment the iterator.
+   * Prefix increment.
    * @return *this
    */
   inline CellIterator<StorageType, modifiable> &operator++() {
@@ -97,12 +102,32 @@ class CellIterator {
   }
 
   /**
-   * Decrement the iterator.
+   * Postfix increment.
+   * @return Copy of the iterator from before the increment.
+   */
+  inline CellIterator<StorageType, modifiable> operator++(int) {
+    auto copy = *this;
+    ++*this;
+    return copy;
+  }
+
+  /**
+   * Prefix decrement.
    * @return *this
    */
   inline CellIterator<StorageType, modifiable> &operator--() {
     --iterator;
     return *this;
+  }
+
+  /**
+   * Postfix decrement.
+   * @return Copy of the iterator from before the decrement.
+   */
+  inline CellIterator<StorageType, modifiable> operator--(int) {
+    auto copy = *this;
+    --*this;
+    return copy;
   }
 
   /**
@@ -136,5 +161,5 @@ class CellIterator {
   /**
    * Actual underlying iterator.
    */
-  IteratorType iterator;
+  IteratorType iterator{};
 };
