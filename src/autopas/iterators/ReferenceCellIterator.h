@@ -58,6 +58,11 @@ class ReferenceCellIterator {
   using iterator_category = std::bidirectional_iterator_tag;
 
   /**
+   * Default constructor, required for std::bidirectional_iterator. The result does not point to any particle.
+   */
+  ReferenceCellIterator() = default;
+
+  /**
    * Constructor
    * @param particles Start of the buffer of the vector the indices refer to.
    * @param iterator Iterator over the indices.
@@ -77,7 +82,7 @@ class ReferenceCellIterator {
   pointer operator->() const { return &operator*(); }
 
   /**
-   * Increment the iterator.
+   * Prefix increment.
    * @return *this
    */
   ReferenceCellIterator &operator++() {
@@ -86,12 +91,32 @@ class ReferenceCellIterator {
   }
 
   /**
-   * Decrement the iterator.
+   * Postfix increment.
+   * @return Copy of the iterator from before the increment.
+   */
+  ReferenceCellIterator operator++(int) {
+    auto copy = *this;
+    ++*this;
+    return copy;
+  }
+
+  /**
+   * Prefix decrement.
    * @return *this
    */
   ReferenceCellIterator &operator--() {
     --_iterator;
     return *this;
+  }
+
+  /**
+   * Postfix decrement.
+   * @return Copy of the iterator from before the decrement.
+   */
+  ReferenceCellIterator operator--(int) {
+    auto copy = *this;
+    --*this;
+    return copy;
   }
 
   /**
@@ -126,12 +151,12 @@ class ReferenceCellIterator {
   /**
    * Start of the buffer of the vector the indices refer to.
    */
-  pointer _particles;
+  pointer _particles{nullptr};
 
   /**
    * Actual underlying iterator over the indices.
    */
-  IteratorType _iterator;
+  IteratorType _iterator{};
 };
 
 }  // namespace autopas
