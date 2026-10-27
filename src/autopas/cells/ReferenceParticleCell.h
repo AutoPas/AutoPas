@@ -29,10 +29,6 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
    * The structure of the SoAs is defined by the particle.
    */
   using SoAArraysType = typename Particle_T::SoAArraysType;
-  /**
-   * Type that holds or refers to the actual particles: their indices in the particle storage.
-   */
-  using StorageType = std::vector<size_t>;
 
   /**
    * Constructs a new ReferenceParticleCell.
@@ -265,7 +261,7 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
   /**
    * Indices of the particles of this cell in the particle storage.
    */
-  StorageType _particles;
+  std::vector<size_t> _particles;
 
   /**
    * SoA buffer of this cell.
