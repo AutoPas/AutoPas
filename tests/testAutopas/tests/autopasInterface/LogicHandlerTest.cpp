@@ -29,8 +29,8 @@ void LogicHandlerTest::initLogicHandler() {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   constexpr double cellSizeFactor = 1.;
   constexpr unsigned int verletRebuildFrequency = 10;
-  const std::set<autopas::Configuration> searchSpace({arbitraryConfigurations::_arbitrary_config_2B_2},
-                                                     {arbitraryConfigurations::_arbitrary_config_2B_6});
+  const std::set<autopas::Configuration> searchSpace(
+      {arbitraryConfigurations::_arbitrary_config_2B_2, arbitraryConfigurations::_arbitrary_config_2B_6});
   _tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   _tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
