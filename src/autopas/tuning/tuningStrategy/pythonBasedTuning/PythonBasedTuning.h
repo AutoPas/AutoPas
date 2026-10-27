@@ -1,5 +1,5 @@
 /**
- * @file DecisionTreeTuning.h
+ * @file PythonBasedTuning.h
  * @author Abdulkadir Pazar
  * @date 20.06.24
  */
@@ -23,27 +23,28 @@
 namespace autopas {
 
 /**
- * @class DecisionTreeTuning
+ * @class PythonBasedTuning
  *
- * This class uses a decision tree model to predict the best configuration based on the current live
- * information. The decision tree model is trained using the Python scikit-learn library. The Python
- * script predict.py is used to load the model and make predictions.
+ * This class uses a model written in Python to predict the best configuration based on the current live information.
+ * The Python script randomForest/predict.py is used to load the model and make predictions. It provides a random forest
+ * model, trained with randomForest/train.py using the Python scikit-learn library. For how to use a different model,
+ * see docs/userdoc/PythonBasedMachineLearningTuning.md.
  *
  * @note This tuning strategy requires the CMake variable AUTOPAS_ENABLE_PYTHON_BASED_TUNING set to ON
  */
-class DecisionTreeTuning : public TuningStrategyInterface {
+class PythonBasedTuning : public TuningStrategyInterface {
  public:
   /**
-   * Constructor of DecisionTreeTuning.
+   * Constructor of PythonBasedTuning.
    * @param searchSpace Set of configurations to be considered.
-   * @param modelFileName Name of the file containing the random forest models.
+   * @param modelFileName Name of the file containing the models.
    * @param confidenceThreshold Minimum confidence threshold for accepting predictions.
    * @param interactionType The interaction type (used to select the appropriate pairwise/triwise model).
    */
-  DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
-                     double confidenceThreshold, InteractionTypeOption interactionType);
+  PythonBasedTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
+                    double confidenceThreshold, InteractionTypeOption interactionType);
 
-  ~DecisionTreeTuning() override;
+  ~PythonBasedTuning() override;
 
   [[nodiscard]] bool needsLiveInfo() const override;
   void receiveLiveInfo(const LiveInfo &value) override;
@@ -76,7 +77,7 @@ class DecisionTreeTuning : public TuningStrategyInterface {
    */
   std::set<Configuration> _configurations;
   /**
-   * Name of the file containing the decision tree model.
+   * Name of the file containing the model.
    */
   std::string _modelFileName;
   /**
@@ -90,7 +91,7 @@ class DecisionTreeTuning : public TuningStrategyInterface {
   InteractionTypeOption _interactionType;
 
   /**
-   * Keeps the embedded Python interpreter alive while this object exists. All DecisionTreeTuning instances (e.g.
+   * Keeps the embedded Python interpreter alive while this object exists. All PythonBasedTuning instances (e.g.
    * separate pairwise/triwise tuners) share it through PythonInterpreter::getSharedInterpreter(), since pybind11
    * permits only one interpreter per process.
    *
@@ -101,10 +102,10 @@ class DecisionTreeTuning : public TuningStrategyInterface {
 
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   /**
-   * The actual python DecisionTreeTuning object which we call .predict() on. Must be created and destroyed whilst
+   * The actual python PythonBasedTuning object which we call .predict() on. Must be created and destroyed whilst
    * there is a live python interpreter.
    */
-  pybind11::object _decisionTreeTuningPyObj;
+  pybind11::object _pythonBasedTuningPyObj;
 #endif
 };
 

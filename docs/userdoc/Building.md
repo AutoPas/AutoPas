@@ -74,9 +74,9 @@ Both tuning strategies can be enabled via the CMake option:
 cmake -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON .. 
 ```
 
-### Enabling Python-Based Tuning e.g. Decision Tree Tuning
+### Enabling Python-Based Tuning
 
-Decision Tree Tuning requires the dependencies pybind 11 and json.
+Python-based tuning requires the dependencies pybind 11 and json.
 These are bundled with AutoPas, but can take some time to compile.
 As such, this is disabled by default.
 

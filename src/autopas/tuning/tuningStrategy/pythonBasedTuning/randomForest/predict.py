@@ -8,9 +8,9 @@ import json
 import os
 import numpy as np
 
-class DecisionTreeTuning:
+class PythonBasedTuning:
     """
-    Stores and predicts with a trained Decision Tree model, label encoder, and the live info features that it
+    Stores and predicts with a trained random forest model, label encoder, and the live info features that it
     takes as input.
 
     This class is designed to mimic the C++ class, i.e. be initialized when that class is constructed, and the predict

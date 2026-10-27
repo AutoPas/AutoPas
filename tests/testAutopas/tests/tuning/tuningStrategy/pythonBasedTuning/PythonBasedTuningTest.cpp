@@ -1,11 +1,11 @@
 /**
- * @file DecisionTreeTuningTest.cpp
+ * @file PythonBasedTuningTest.cpp
  * @author
  * Abdulkadir Pazar
  * @date 20.09.2024
  */
 
-#include "DecisionTreeTuningTest.h"
+#include "PythonBasedTuningTest.h"
 
 #include <gtest/gtest.h>
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
@@ -20,7 +20,7 @@
 
 #include "autopas/options/InteractionTypeOption.h"
 #include "autopas/tuning/Configuration.h"
-#include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
+#include "autopas/tuning/tuningStrategy/pythonBasedTuning/PythonBasedTuning.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
 #include "testingHelpers/ArbitraryConfigurations.h"
@@ -36,7 +36,7 @@ namespace py = pybind11;
  */
 py::module importTestModelGenerator() {
   py::module::import("sys").attr("path").attr("append")(
-      std::string(AUTOPAS_SOURCE_DIR) + "/tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning");
+      std::string(AUTOPAS_SOURCE_DIR) + "/tests/testAutopas/tests/tuning/tuningStrategy/pythonBasedTuning");
   return py::module::import("generate_test_models");
 }
 
@@ -48,7 +48,7 @@ py::module importTestModelGenerator() {
 std::string getTestModelDir() {
   const auto dir =
       std::filesystem::temp_directory_path() /
-      (std::string("AutoPasDecisionTreeTuningTest_") + ::testing::UnitTest::GetInstance()->current_test_info()->name());
+      (std::string("AutoPasPythonBasedTuningTest_") + ::testing::UnitTest::GetInstance()->current_test_info()->name());
   std::filesystem::create_directories(dir);
   return dir.string();
 }
@@ -59,14 +59,14 @@ std::string getTestModelDir() {
  *
  * Ensures that when a non-existent Python model file is provided, a runtime error is thrown.
  */
-TEST(DecisionTreeTuningTest, TestNonExistantModelLoading) {
+TEST(PythonBasedTuningTest, TestNonExistantModelLoading) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   std::set<Configuration> searchSpace;
 
   EXPECT_THROW(
       {
-        autopas::DecisionTreeTuning tuningStrategy(searchSpace, "/nonexistant_model.pkl", 0.8,
-                                                   InteractionTypeOption::pairwise);
+        autopas::PythonBasedTuning tuningStrategy(searchSpace, "/nonexistant_model.pkl", 0.8,
+                                                  InteractionTypeOption::pairwise);
         std::vector<autopas::Configuration> configQueue;
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
@@ -82,7 +82,7 @@ TEST(DecisionTreeTuningTest, TestNonExistantModelLoading) {
  *
  * Tests that a valid Python model response updates the configuration queue correctly.
  */
-TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
+TEST(PythonBasedTuningTest, TestValidPythonResponse) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   const auto pythonInterpreter = utils::PythonInterpreter::getSharedInterpreter();
   const auto modelDir = getTestModelDir();
@@ -92,8 +92,8 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
       utils::StringUtils::tokenize(predictedConfig.getCSVLine(), ","));
 
   std::set<autopas::Configuration> searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_0};
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
-                                             InteractionTypeOption::pairwise);
+  autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
+                                            InteractionTypeOption::pairwise);
   LiveInfo liveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
       {"avgParticlesPerCell", 6.82}, {"maxParticlesPerCell", 33.0},    {"homogeneity", 0.42},
@@ -120,7 +120,7 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
  *
  * Tests that a malformed model throws an exception during `reset()`.
  */
-TEST(DecisionTreeTuningTest, TestInvalidModel) {
+TEST(PythonBasedTuningTest, TestInvalidModel) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   const auto pythonInterpreter = utils::PythonInterpreter::getSharedInterpreter();
   const auto modelDir = getTestModelDir();
@@ -128,8 +128,8 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
       modelDir, utils::StringUtils::tokenize(autopas::Configuration().getCSVHeader(), ","));
 
   std::set<autopas::Configuration> searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_2};
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelDir + "/test_model_invalid.pkl", 0.8,
-                                             InteractionTypeOption::pairwise);
+  autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model_invalid.pkl", 0.8,
+                                            InteractionTypeOption::pairwise);
 
   LiveInfo liveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
@@ -158,7 +158,7 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
  * Tests that predicting throws if the live info lacks a feature that the model was trained on.
  * E.g. because the model was trained before that live info feature was removed or renamed.
  */
-TEST(DecisionTreeTuningTest, ThrowsWithMissingLiveInfoFeature) {
+TEST(PythonBasedTuningTest, ThrowsWithMissingLiveInfoFeature) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   const auto pythonInterpreter = utils::PythonInterpreter::getSharedInterpreter();
   const auto modelDir = getTestModelDir();
@@ -167,8 +167,8 @@ TEST(DecisionTreeTuningTest, ThrowsWithMissingLiveInfoFeature) {
       utils::StringUtils::tokenize(arbitraryConfigurations::_arbitrary_config_2B_2.getCSVLine(), ","));
 
   std::set<autopas::Configuration> searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_0};
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
-                                             InteractionTypeOption::pairwise);
+  autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
+                                            InteractionTypeOption::pairwise);
 
   // The features the model was trained on, except threadCount
   LiveInfo liveInfo;
@@ -200,7 +200,7 @@ TEST(DecisionTreeTuningTest, ThrowsWithMissingLiveInfoFeature) {
  * Tests that a model which does not predict exactly the configuration components throws.
  * E.g. because it was trained before a component was added/removed to (or otherwise modified) the Configuration class.
  */
-TEST(DecisionTreeTuningTest, ThrowsWithIncompleteModel) {
+TEST(PythonBasedTuningTest, ThrowsWithIncompleteModel) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   const auto pythonInterpreter = utils::PythonInterpreter::getSharedInterpreter();
   const auto modelDir = getTestModelDir();
@@ -209,15 +209,15 @@ TEST(DecisionTreeTuningTest, ThrowsWithIncompleteModel) {
       utils::StringUtils::tokenize(arbitraryConfigurations::_arbitrary_config_2B_2.getCSVLine(), ",");
   std::set<autopas::Configuration> searchSpace;
 
-  // Writes a model that predicts the given components and values, and tries to construct a DecisionTreeTuning with it,
+  // Writes a model that predicts the given components and values, and tries to construct a PythonBasedTuning with it,
   // expecting that to throw.
   const auto expectThrowWithModel = [&](const std::vector<std::string> &modelComponents,
                                         const std::vector<std::string> &modelValues) {
     importTestModelGenerator().attr("create_valid_model")(modelDir, modelComponents, modelValues);
     EXPECT_THROW(
         {
-          autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
-                                                     InteractionTypeOption::pairwise);
+          autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
+                                                    InteractionTypeOption::pairwise);
         },
         utils::ExceptionHandler::AutoPasException);
   };

@@ -1,6 +1,6 @@
 # Training Data Generation
 
-This directory contains scripts for generating training data to be used with machine learning tuning strategies such as random forest tuning.
+This directory contains scripts for generating training data to be used with machine learning models for python-based tuning, such as the random forest.
 
 It is based on that used for dataset generation by [Newcome et al. 2025](https://doi.org/10.1007/978-3-031-97635-3_35).
 

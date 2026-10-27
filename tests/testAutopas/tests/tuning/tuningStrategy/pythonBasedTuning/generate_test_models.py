@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generates dummy pickle model files for DecisionTreeTuning unit tests.
+Generates dummy pickle model files for PythonBasedTuning unit tests.
 
 Outputs
 -------
@@ -12,7 +12,7 @@ test_model_invalid.pkl
     encoder produces a string with no semicolons, so predict() raises a
     ValueError when the number of split components does not match
     config_columns.  This exercises the error path in
-    DecisionTreeTuning::getPredictionFromPython.
+    PythonBasedTuning::getPredictionFromPython.
 """
 
 import os
@@ -22,7 +22,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 
-# Feature order must match liveInfoMap in DecisionTreeTuningTest.cpp.
+# Feature order must match liveInfoMap in PythonBasedTuningTest.cpp.
 FEATURES = [
     "avgParticlesPerCell",
     "maxParticlesPerCell",

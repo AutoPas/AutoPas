@@ -1,10 +1,10 @@
 # Python-based Machine Learning Tuning
 
-AutoPas includes a python-based machine learning tuning strategy: decision-tree-tuning. This document provides a guide on how to set this up, generate the data, training the model, and use the tuning strategy. The guide is tailored to HPC systems.
+AutoPas includes a python-based machine learning tuning strategy: python-based-tuning. It predicts the best configuration with a model written in Python. AutoPas provides a random forest model as an example of how it can be used. This document provides a guide on how to set this up, generate the data, training the random forest model, and use the tuning strategy. The guide is tailored to HPC systems.
 
 The central premise of python-based tuning strategies is to use PyBind11 is call python from within AutoPas. That allows for easier experimentation and use of Python machine learning libraries such as sklearn.
 
-We, therefore, will also discuss possibilities to modify and experiment with the python-based machine learning tuning strategy beyond the random-forest based strategy.
+We, therefore, will also discuss possibilities to modify and experiment with the python-based machine learning tuning strategy beyond the random forest model (see [Using a different model](#using-a-different-model)).
 
 ## Set-up
 
@@ -28,10 +28,10 @@ To activate the environment:
 source </path/to/new/virtual/environment>/bin/activate
 ```
 
-Install dependencies using pip. For tested dependencies required by the decision tree tuning strategy, you can install these automatically:
+Install dependencies using pip. For tested dependencies required by the random forest model, you can install these automatically:
 
 ```bash
-pip install -r <autopas_src_dir>/src/autopas/tuning/tuningStrategy/decisionTreeTuning/requirements.txt
+pip install -r <autopas_src_dir>/src/autopas/tuning/tuningStrategy/pythonBasedTuning/randomForest/requirements.txt
 ```
 
 ### Building AutoPas with the Python venv
@@ -49,7 +49,7 @@ If you do this before activating the environment, AutoPas may find the system Py
 
 ### AutoPas build
 
-For the decision tree tuning strategy, you must enable the live info and tuning results loggers (in the build directory):
+For the random forest model, you must enable the live info and tuning results loggers (in the build directory):
 
 ```bash
 cmake .. -DAUTOPAS_LOG_LIVEINFO=ON -DAUTOPAS_LOG_TUNINGRESULTS=ON
@@ -67,7 +67,7 @@ Newcome et al., 2025 pre-dated [dynamically-rebuilt containers](https://github.c
 
 ## Training the model
 
-The decision tree tuning model can be trained with the python script [`src/autopas/tuning/tuningStrategy/decisionTreeTuning/train.py`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/tuning/tuningStrategy/decisionTreeTuning/train.py).
+The random forest model can be trained with the python script [`src/autopas/tuning/tuningStrategy/pythonBasedTuning/randomForest/train.py`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/tuning/tuningStrategy/pythonBasedTuning/randomForest/train.py).
 
 For example
 
@@ -80,7 +80,7 @@ python train.py --results-dir=/path/to/results/
 The model stores the configuration components and the live info features it was trained on. If these differ configurations consist of other components, e.g. because a newer AutoPas version added one, AutoPas refuses to load the model. If a live info feature that the model was trained on is no longer available, the first prediction fails with an error. In both cases, retrain the model with data from the AutoPas version that uses it.
 ## Using the tuning strategy
 
-Set the decision-tree-tuning strategy. This is not designed to be used with any other tuning strategies.
+Set the python-based-tuning strategy. This is not designed to be used with any other tuning strategies.
 
 If using a HPC system, remember to, in the jobscript file, load the up-to-date version of python and activate the virtual environment.
 
@@ -94,6 +94,22 @@ It is also possible to set a confidence threshold, such for that predictions in 
 This feature is largely untested, and potentially not even of value with the random forest model.
 It is left included because it may be valuable with alternative models.
 We recommend therefore using the default threshold (0.0).
+
+## Using a different model
+
+Using a different model is not currently officially supported.
+It requires some modifications to AutoPas's C++ files, and the interface may still change.
+But if you wish to do so already, follow these instructions.
+
+The tuning strategy loads the model with the class `PythonBasedTuning` in [`src/autopas/tuning/tuningStrategy/pythonBasedTuning/randomForest/predict.py`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/tuning/tuningStrategy/pythonBasedTuning/randomForest/predict.py).
+To use a different model, write a `predict.py` whose class `PythonBasedTuning` provides the same interface:
+
+- `__init__(self, model_file: str, interaction_type: str)`: loads the model from the model file set in AutoPas, for the interaction type `pairwise` or `triwise`.
+- `config_columns`: the names of the configuration components that the model predicts. These must be the components in `Configuration::getCSVHeader()`, otherwise AutoPas refuses to load the model.
+- `predict(self, live_info_json: str) -> str`: takes the live info as a JSON string and returns a JSON string with a value for each configuration component, written as in the tuning results logs, and the `confidence` of the prediction.
+
+Place your scripts in a new directory next to `randomForest/`, and change the path that `PythonBasedTuning.cpp` appends to Python's `sys.path` to that directory.
+AutoPas loads the scripts from its source directory at runtime, so further changes to them take effect without rebuilding AutoPas.
 
 
 

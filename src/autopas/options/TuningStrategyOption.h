@@ -63,9 +63,9 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      */
     sortByName,
     /**
-     * Decision tree based tuning strategy
+     * Predicts the best configuration with a model written in Python, e.g. a random forest.
      */
-    decisionTreeTuning,
+    pythonBasedTuning,
   };
 
   /**
@@ -115,7 +115,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::tuningStrategyLogger, "tuning-strategy-logger"},
         {TuningStrategyOption::sortByName, "sort-by-name"},
         {TuningStrategyOption::mpiDivideAndConquer, "mpi-divide-and-conquer"},
-        {TuningStrategyOption::decisionTreeTuning, "decision-tree-tuning"},
+        {TuningStrategyOption::pythonBasedTuning, "python-based-tuning"},
     };
   }
 

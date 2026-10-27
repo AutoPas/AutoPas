@@ -13,8 +13,8 @@
 #include "autopas/tuning/tuningStrategy/SlowConfigFilter.h"
 #include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
-#include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/FuzzyTuning.h"
+#include "autopas/tuning/tuningStrategy/pythonBasedTuning/PythonBasedTuning.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/NumberSetFinite.h"
@@ -56,9 +56,9 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
       break;
     }
 
-    case TuningStrategyOption::decisionTreeTuning: {
-      tuningStrategy = std::make_unique<DecisionTreeTuning>(searchSpace, info.modelFileName, info.confidenceThreshold,
-                                                            interactionType);
+    case TuningStrategyOption::pythonBasedTuning: {
+      tuningStrategy = std::make_unique<PythonBasedTuning>(searchSpace, info.modelFileName, info.confidenceThreshold,
+                                                           interactionType);
       break;
     }
 

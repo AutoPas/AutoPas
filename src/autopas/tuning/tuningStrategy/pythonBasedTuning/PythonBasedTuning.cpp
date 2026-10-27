@@ -1,10 +1,10 @@
 /**
- * @file DecisionTreeTuning.cpp
+ * @file PythonBasedTuning.cpp
  * @author Abdulkadir Pazar
  * @date 20.06.24
  */
 
-#include "DecisionTreeTuning.h"
+#include "PythonBasedTuning.h"
 
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
 #include <pybind11/embed.h>
@@ -23,8 +23,8 @@ namespace autopas {
 namespace py = pybind11;
 #endif
 
-DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
-                                       double confidenceThreshold, InteractionTypeOption interactionType)
+PythonBasedTuning::PythonBasedTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
+                                     double confidenceThreshold, InteractionTypeOption interactionType)
     : _configurations(searchSpace),
       _modelFileName(modelFileName),
       _confidenceThreshold(confidenceThreshold),
@@ -33,18 +33,18 @@ DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpac
   _pythonInterpreter = utils::PythonInterpreter::getSharedInterpreter();
   try {
     // Add the script directory to Python's path
-    py::module::import("sys").attr("path").attr("append")(std::string(AUTOPAS_SOURCE_DIR) +
-                                                          "/src/autopas/tuning/tuningStrategy/decisionTreeTuning");
+    py::module::import("sys").attr("path").attr("append")(
+        std::string(AUTOPAS_SOURCE_DIR) + "/src/autopas/tuning/tuningStrategy/pythonBasedTuning/randomForest");
 
     // Import the Python module and retrieve the 'load_model_and_encoder' and 'predict' functions
     py::module predictModule = py::module::import("predict");
 
     // Initialize the python object.
-    _decisionTreeTuningPyObj = predictModule.attr("DecisionTreeTuning")(_modelFileName, _interactionType.to_string());
+    _pythonBasedTuningPyObj = predictModule.attr("PythonBasedTuning")(_modelFileName, _interactionType.to_string());
 
     // The model must predict exactly the components that configurations consist of. Otherwise, it was trained before a
     // component was added, removed, or renamed.
-    const auto modelComponentsList = _decisionTreeTuningPyObj.attr("config_columns").cast<std::vector<std::string>>();
+    const auto modelComponentsList = _pythonBasedTuningPyObj.attr("config_columns").cast<std::vector<std::string>>();
     const std::set<std::string> modelComponents(modelComponentsList.begin(), modelComponentsList.end());
     std::set<std::string> configComponents;
     std::istringstream configHeader(Configuration().getCSVHeader());
@@ -64,16 +64,16 @@ DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpac
   }
 #else
   utils::ExceptionHandler::exception(
-      "DecisionTreeTuning constructed but AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF! "
+      "PythonBasedTuning constructed but AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF! "
       "Set this CMake variable to ON to use this tuning strategy.");
 #endif
 }
 
-DecisionTreeTuning::~DecisionTreeTuning() = default;
+PythonBasedTuning::~PythonBasedTuning() = default;
 
-bool DecisionTreeTuning::needsLiveInfo() const { return true; }
+bool PythonBasedTuning::needsLiveInfo() const { return true; }
 
-void DecisionTreeTuning::receiveLiveInfo(const LiveInfo &info) {
+void PythonBasedTuning::receiveLiveInfo(const LiveInfo &info) {
   _currentLiveInfo.clear();
   for (const auto &infoEntry : info.get()) {
     const auto &name = infoEntry.first;
@@ -88,21 +88,21 @@ void DecisionTreeTuning::receiveLiveInfo(const LiveInfo &info) {
   }
 }
 
-bool DecisionTreeTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-                               const EvidenceCollection &evidenceCollection) {
+bool PythonBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+                              const EvidenceCollection &evidenceCollection) {
   std::string configPrediction = getPredictionFromPython();
   updateConfigQueue(configQueue, configPrediction);
   return true;
 }
 
-bool DecisionTreeTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                             const EvidenceCollection &evidenceCollection) {
+bool PythonBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                            const EvidenceCollection &evidenceCollection) {
   return true;
 }
 
-TuningStrategyOption DecisionTreeTuning::getOptionType() const { return TuningStrategyOption::decisionTreeTuning; }
+TuningStrategyOption PythonBasedTuning::getOptionType() const { return TuningStrategyOption::pythonBasedTuning; }
 
-std::string DecisionTreeTuning::getPredictionFromPython() {
+std::string PythonBasedTuning::getPredictionFromPython() {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   try {
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
@@ -112,7 +112,7 @@ std::string DecisionTreeTuning::getPredictionFromPython() {
     // Convert live info to JSON string
     const nlohmann::json liveInfoJson = _currentLiveInfo;  // todo make this a reference
     // Call the Python function and get the result
-    const py::object result = _decisionTreeTuningPyObj.attr("predict")(liveInfoJson.dump());
+    const py::object result = _pythonBasedTuningPyObj.attr("predict")(liveInfoJson.dump());
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
     pythonPredictionTimer.stop();
     AutoPasLog(TRACE, "Python prediction took {} ms.", pythonPredictionTimer.getTotalTime());
@@ -128,7 +128,7 @@ std::string DecisionTreeTuning::getPredictionFromPython() {
 #endif
 }
 
-void DecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQueue, const std::string &prediction) {
+void PythonBasedTuning::updateConfigQueue(std::vector<Configuration> &configQueue, const std::string &prediction) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   try {
     nlohmann::json predictionJson = nlohmann::json::parse(prediction);
