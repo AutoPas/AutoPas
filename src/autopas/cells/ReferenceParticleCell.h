@@ -289,7 +289,8 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
                    const std::array<double, 3> &higherCorner,
                    IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     Particle_T *particles = getParticleStorageBuffer();
-    if (not particles) {
+    // Check the storage rather than its buffer, which may legitimately be nullptr if the storage is empty.
+    if (_particleStorage == nullptr) {
       utils::ExceptionHandler::exception("ReferenceParticleCell::forEachImpl: No particle storage has been set!");
     }
     for (size_t index : _particles) {
