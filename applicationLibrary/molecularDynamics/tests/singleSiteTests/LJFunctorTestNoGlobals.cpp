@@ -19,14 +19,14 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
   particlePropertiesLibrary.addSiteType(0, 1.0);
   particlePropertiesLibrary.addLJParametersToSite(0, this->epsilon, this->sigma);
   if constexpr (mixing) {
-    functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
     particlePropertiesLibrary.addSiteType(1, 1.0);
     particlePropertiesLibrary.addLJParametersToSite(1, this->epsilon2, this->sigma2);
+    particlePropertiesLibrary.calculateMixingCoefficients();
+    functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
   } else {
     functor = std::make_unique<FuncType>(this->cutoff);
     functor->setParticleProperties(this->epsilon * 24, 1);
   }
-  particlePropertiesLibrary.calculateMixingCoefficients();
 
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
