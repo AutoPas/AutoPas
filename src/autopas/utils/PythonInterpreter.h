@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <memory>
+
 namespace autopas::utils {
 
 /**
@@ -17,14 +19,6 @@ namespace autopas::utils {
  */
 class PythonInterpreter {
  public:
-  /**
-   * Starts the embedded Python interpreter, or attaches to one that is already running in this process. Only an
-   * interpreter started here is finalized on destruction.
-   *
-   * Causes an exception if AutoPas was compiled with AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF.
-   */
-  PythonInterpreter();
-
   /**
    * Destructor. Finalizes the interpreter only if the constructor started it. An interpreter that was already running
    * is left to its owner.
@@ -54,7 +48,32 @@ class PythonInterpreter {
    */
   PythonInterpreter &operator=(PythonInterpreter &&other) = delete;
 
+  /**
+   * Get the interpreter that all callers in this process share, and create it if none is alive. It is finalized when
+   * the last caller releases it.
+   *
+   * To use Python in multiple AutoPas objects or for some separate use case, one interpreter must be kept alive.
+   * AutoPas internally handles this if the multiple AutoPas objects are kept alive at the same time. But if creating
+   * and destroying AutoPas objects serially (e.g. in tests), an interpreter must be otherwise kept alive independently
+   * of AutoPas, by holding the shared pointer returned here.
+   *
+   * Causes an exception in the cases listed at the constructor.
+   * @return Shared pointer to the interpreter.
+   */
+  static std::shared_ptr<PythonInterpreter> getSharedInterpreter();
+
  private:
+  /**
+   * Starts the embedded Python interpreter, or attaches to one that is already running in this process. Only an
+   * interpreter started here is finalized on destruction.
+   *
+   * Causes an exception if AutoPas was compiled with AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF, or if a PythonInterpreter
+   * already finalized the interpreter in this process.
+   *
+   * Private, so that the only way to get an interpreter is getSharedInterpreter().
+   */
+  PythonInterpreter();
+
   /**
    * Whether the constructor started the interpreter, so that the destructor has to finalize it.
    */

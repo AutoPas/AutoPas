@@ -58,7 +58,7 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
 
     case TuningStrategyOption::decisionTreeTuning: {
       tuningStrategy = std::make_unique<DecisionTreeTuning>(searchSpace, info.modelFileName, info.confidenceThreshold,
-                                                            interactionType, info.pythonInterpreter);
+                                                            interactionType);
       break;
     }
 

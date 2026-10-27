@@ -23,29 +23,6 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_ENABLE_PYTHON_BASED_TUNING}>:pybind11::embed>
 )
 
-# Generate python-based tuning dummy models for tests
-if (AUTOPAS_ENABLE_PYTHON_BASED_TUNING)
-    set(DT_TEST_MODEL_DIR "${CMAKE_CURRENT_BINARY_DIR}/decisionTreeTuning")
-    set(DT_TEST_GENERATE_SCRIPT
-        "${CMAKE_CURRENT_SOURCE_DIR}/tests/tuning/tuningStrategy/decisionTreeTuning/generate_test_models.py"
-    )
-
-    add_custom_command(TARGET runTests POST_BUILD
-        COMMAND "${CMAKE_COMMAND}"
-            -DPYTHON="${Python3_EXECUTABLE}"
-            -DSCRIPT="${DT_TEST_GENERATE_SCRIPT}"
-            -DOUTPUT_DIR="${DT_TEST_MODEL_DIR}"
-            -P "${CMAKE_CURRENT_SOURCE_DIR}/GenerateDTTestModelsIfMissing.cmake"
-        BYPRODUCTS
-            "${DT_TEST_MODEL_DIR}/test_model.pkl"
-            "${DT_TEST_MODEL_DIR}/test_model_invalid.pkl"
-    )
-
-    target_compile_definitions(runTests PRIVATE
-        AUTOPAS_DT_TEST_MODEL_DIR="${DT_TEST_MODEL_DIR}"
-    )
-endif ()
-
 include(GoogleTest)
 # queries the compiled executable for tests, this requires the executable to be runnable. if you are
 # cross compiling, make sure to properly set CMAKE_CROSSCOMPILING_EMULATOR.

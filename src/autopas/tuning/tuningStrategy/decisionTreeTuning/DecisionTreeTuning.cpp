@@ -11,8 +11,10 @@
 #include <pybind11/stl.h>
 
 #include <nlohmann/json.hpp>
+#include <sstream>
 #endif
 
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
@@ -22,17 +24,13 @@ namespace py = pybind11;
 #endif
 
 DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
-                                       double confidenceThreshold, InteractionTypeOption interactionType,
-                                       std::shared_ptr<utils::PythonInterpreter> pythonInterpreter)
+                                       double confidenceThreshold, InteractionTypeOption interactionType)
     : _configurations(searchSpace),
       _modelFileName(modelFileName),
       _confidenceThreshold(confidenceThreshold),
-      _interactionType(interactionType),
-      _pythonInterpreter(std::move(pythonInterpreter)) {
+      _interactionType(interactionType) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
-  if (not _pythonInterpreter) {
-    utils::ExceptionHandler::exception("DecisionTreeTuning constructed without a Python interpreter!");
-  }
+  _pythonInterpreter = utils::PythonInterpreter::getSharedInterpreter();
   try {
     // Add the script directory to Python's path
     py::module::import("sys").attr("path").attr("append")(std::string(AUTOPAS_SOURCE_DIR) +
@@ -43,6 +41,23 @@ DecisionTreeTuning::DecisionTreeTuning(const std::set<Configuration> &searchSpac
 
     // Initialize the python object.
     _decisionTreeTuningPyObj = predictModule.attr("DecisionTreeTuning")(_modelFileName, _interactionType.to_string());
+
+    // The model must predict exactly the components that configurations consist of. Otherwise, it was trained before a
+    // component was added, removed, or renamed.
+    const auto modelComponentsList = _decisionTreeTuningPyObj.attr("config_columns").cast<std::vector<std::string>>();
+    const std::set<std::string> modelComponents(modelComponentsList.begin(), modelComponentsList.end());
+    std::set<std::string> configComponents;
+    std::istringstream configHeader(Configuration().getCSVHeader());
+    for (std::string component; std::getline(configHeader, component, ',');) {
+      configComponents.insert(component);
+    }
+    if (modelComponents != configComponents) {
+      utils::ExceptionHandler::exception(
+          "The model {} predicts the configuration components {}, but AutoPas configurations consist of {}. Retrain "
+          "the model with the current train.py.",
+          _modelFileName, utils::ArrayUtils::to_string(modelComponents),
+          utils::ArrayUtils::to_string(configComponents));
+    }
 
   } catch (const py::error_already_set &e) {
     utils::ExceptionHandler::exception("Failed to initialize Python environment: {}", e.what());
@@ -123,22 +138,13 @@ void DecisionTreeTuning::updateConfigQueue(std::vector<Configuration> &configQue
       return;
     }
 
-    Configuration config;
-    config.container = ContainerOption::parseOptionExact(predictionJson["Container"]);
-    config.traversal = TraversalOption::parseOptionExact(predictionJson["Traversal"]);
-    config.dataLayout = DataLayoutOption::parseOptionExact(predictionJson["Data Layout"]);
-    config.newton3 = Newton3Option::parseOptionExact(predictionJson["Newton 3"]);
-    // Sanity check that was stored as the expected type (i.e. a string).
-    if (predictionJson["CellSizeFactor"].is_string()) {
-      config.cellSizeFactor = std::stod(static_cast<std::string>(predictionJson["CellSizeFactor"]));
-    } else {
-      AutoPasLog(ERROR, "The Python predict.py script expected a string for CellSizeFactor, but a {} was returned.",
-                 predictionJson["CellSizeFactor"].type_name());
+    std::stringstream configStream;
+    std::istringstream configHeader(Configuration().getCSVHeader());
+    for (std::string component; std::getline(configHeader, component, ',');) {
+      configStream << component << ": " << predictionJson.at(component).get<std::string>() << " , ";
     }
-    config.loadEstimator = LoadEstimatorOption::parseOptionExact(predictionJson["Load Estimator"]);
-    config.vecPattern = VectorizationPatternOption::parseOptionExact(predictionJson["VectorizationPattern"]);
-
-    config.interactionType = _interactionType;
+    Configuration config;
+    configStream >> config;
 
     configQueue.clear();
     configQueue.push_back(config);

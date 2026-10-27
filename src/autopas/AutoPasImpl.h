@@ -69,12 +69,6 @@ void AutoPas<Particle_T>::init() {
                 TuningStrategyOption::mpiDivideAndConquer) != _tuningStrategyOptions.end()) {
     _tuningStrategyFactoryInfo.mpiDivideAndConquer = true;
   }
-  // Python-based tuning strategies need a Python interpreter. Create one, unless one was set.
-  if (std::find(_tuningStrategyOptions.begin(), _tuningStrategyOptions.end(),
-                TuningStrategyOption::decisionTreeTuning) != _tuningStrategyOptions.end() and
-      not _tuningStrategyFactoryInfo.pythonInterpreter) {
-    _tuningStrategyFactoryInfo.pythonInterpreter = std::make_shared<utils::PythonInterpreter>();
-  }
 
   // If an interval was given for the cell size factor, change it to the relevant values.
   // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.

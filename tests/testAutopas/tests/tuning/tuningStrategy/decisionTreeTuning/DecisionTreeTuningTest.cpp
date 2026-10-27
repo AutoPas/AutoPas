@@ -14,7 +14,8 @@
 #include <pybind11/stl.h>
 #endif
 
-#include <filesystem>  // For checking the existence of test files
+#include <filesystem>
+#include <memory>
 #include <set>
 #include <string>
 
@@ -23,11 +24,35 @@
 #include "autopas/tuning/tuningStrategy/decisionTreeTuning/DecisionTreeTuning.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
+#include "testingHelpers/ArbitraryConfigurations.h"
 
 namespace autopas {
 
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
 namespace py = pybind11;
+
+/**
+ * Imports generate_test_models.py, which writes the dummy models for these tests. Needs a running Python interpreter.
+ * @return The imported module.
+ */
+py::module importTestModelGenerator() {
+  py::module::import("sys").attr("path").attr("append")(
+      std::string(AUTOPAS_SOURCE_DIR) + "/tests/testAutopas/tests/tuning/tuningStrategy/decisionTreeTuning");
+  return py::module::import("generate_test_models");
+}
+
+/**
+ * Get the directory for the dummy models of the current test, and create it if needed. Each test gets its own, so that
+ * tests running in parallel do not overwrite each other's models.
+ * @return Path of the directory.
+ */
+std::string getTestModelDir() {
+  const auto dir =
+      std::filesystem::temp_directory_path() /
+      (std::string("AutoPasDecisionTreeTuningTest_") + ::testing::UnitTest::GetInstance()->current_test_info()->name());
+  std::filesystem::create_directories(dir);
+  return dir.string();
+}
 #endif
 
 /**
@@ -52,8 +77,7 @@ TEST(DecisionTreeTuningTest, TestNonExistantModelLoading) {
   EXPECT_THROW(
       {
         autopas::DecisionTreeTuning tuningStrategy(searchSpace, "/nonexistant_model.pkl", 0.8,
-                                                   InteractionTypeOption::pairwise,
-                                                   std::make_shared<utils::PythonInterpreter>());
+                                                   InteractionTypeOption::pairwise);
         std::vector<autopas::Configuration> configQueue;
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
@@ -71,19 +95,16 @@ TEST(DecisionTreeTuningTest, TestNonExistantModelLoading) {
  */
 TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
-  // Define the search space for configurations
-  std::set<autopas::Configuration> searchSpace = {
-      autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.0, autopas::TraversalOption::lc_c18,
-                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                             autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise)};
+  const auto pythonInterpreter = utils::PythonInterpreter::getSharedInterpreter();
+  const auto modelDir = getTestModelDir();
+  const auto predictedConfig = arbitraryConfigurations::_arbitrary_config_2B_2;
+  importTestModelGenerator().attr("create_valid_model")(
+      modelDir, utils::StringUtils::tokenize(autopas::Configuration().getCSVHeader(), ","),
+      utils::StringUtils::tokenize(predictedConfig.getCSVLine(), ","));
 
-  std::string modelPath = std::string(AUTOPAS_DT_TEST_MODEL_DIR) + "/test_model.pkl";
-
-  ASSERT_TRUE(std::filesystem::exists(modelPath))
-      << "Test model file does not exist. Did the generate_dt_test_models target run?";
-
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise,
-                                             std::make_shared<utils::PythonInterpreter>());
+  std::set<autopas::Configuration> searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_0};
+  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
+                                             InteractionTypeOption::pairwise);
   MockLiveInfo mockLiveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
       {"avgParticlesPerCell", 6.82}, {"maxParticlesPerCell", 33.0},    {"homogeneity", 0.42},
@@ -92,24 +113,14 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
   EXPECT_CALL(mockLiveInfo, get()).WillRepeatedly(::testing::ReturnRef(liveInfoMap));
 
   tuningStrategy.receiveLiveInfo(mockLiveInfo);
-  std::vector<autopas::Configuration> configQueue;
-  configQueue.push_back(autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.0,
-                                               autopas::TraversalOption::lc_c18, autopas::LoadEstimatorOption::none,
-                                               autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-                                               autopas::InteractionTypeOption::pairwise));
+  std::vector<autopas::Configuration> configQueue{arbitraryConfigurations::_arbitrary_config_2B_0};
 
   autopas::EvidenceCollection evidenceCollection;
 
   tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
 
-  ASSERT_FALSE(configQueue.empty());
-
-  const autopas::Configuration &predictedConfig = configQueue.front();
-
-  EXPECT_EQ(predictedConfig.container, autopas::ContainerOption::linkedCells);
-  EXPECT_EQ(predictedConfig.traversal, autopas::TraversalOption::lc_c08);
-  EXPECT_EQ(predictedConfig.dataLayout, autopas::DataLayoutOption::soa);
-  EXPECT_EQ(predictedConfig.newton3, autopas::Newton3Option::enabled);
+  ASSERT_EQ(configQueue.size(), 1);
+  EXPECT_EQ(configQueue.front(), predictedConfig);
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF";
 #endif
@@ -122,15 +133,14 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
  */
 TEST(DecisionTreeTuningTest, TestInvalidModel) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
-  std::set<autopas::Configuration> searchSpace = {autopas::Configuration(
-      autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise)};
+  const auto pythonInterpreter = utils::PythonInterpreter::getSharedInterpreter();
+  const auto modelDir = getTestModelDir();
+  importTestModelGenerator().attr("create_invalid_model")(
+      modelDir, utils::StringUtils::tokenize(autopas::Configuration().getCSVHeader(), ","));
 
-  std::string modelPath = std::string(AUTOPAS_DT_TEST_MODEL_DIR) + "/test_model_invalid.pkl";
-  ASSERT_TRUE(std::filesystem::exists(modelPath))
-      << "Invalid test model file does not exist. Did the generate_dt_test_models target run?";
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise,
-                                             std::make_shared<utils::PythonInterpreter>());
+  std::set<autopas::Configuration> searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_2};
+  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelDir + "/test_model_invalid.pkl", 0.8,
+                                             InteractionTypeOption::pairwise);
 
   MockLiveInfo mockLiveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
@@ -141,11 +151,7 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
 
   EXPECT_THROW(
       {
-        std::vector<autopas::Configuration> configQueue;
-        configQueue.push_back(
-            autopas::Configuration(autopas::ContainerOption::verletClusterLists, 1.0, autopas::TraversalOption::lc_c18,
-                                   autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                   autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise));
+        std::vector<autopas::Configuration> configQueue{arbitraryConfigurations::_arbitrary_config_2B_0};
         autopas::EvidenceCollection evidenceCollection;
         tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
       },
@@ -156,45 +162,58 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
 }
 
 /**
- * @test TestConfigColumnsMatchCSVHeader
+ * @test ThrowsWithIncompleteModel
  *
- * Guards against a configuration component being added to (or removed from) the C++ `Configuration` class without
- * `CONFIG_COLUMNS` in train.py being updated to match. The training/prediction scripts rely on `CONFIG_COLUMNS` being
- * exactly the set of configuration components written to the tuning results CSV. That CSV header is produced by
- * `Configuration::getCSVHeader()`, so this test asserts that the names in the header (minus `Interaction Type`, which
- * is deliberately handled separately) equal `CONFIG_COLUMNS`.
+ * Tests that a model which does not predict exactly the configuration components throws.
+ * E.g. because it was trained before a component was added/removed to (or otherwise modified) the Configuration class.
  */
-TEST(DecisionTreeTuningTest, TestConfigColumnsMatchCSVHeader) {
+TEST(DecisionTreeTuningTest, ThrowsWithIncompleteModel) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
+  const auto pythonInterpreter = utils::PythonInterpreter::getSharedInterpreter();
+  const auto modelDir = getTestModelDir();
+  const auto configComponents = utils::StringUtils::tokenize(autopas::Configuration().getCSVHeader(), ",");
+  const auto configValues =
+      utils::StringUtils::tokenize(arbitraryConfigurations::_arbitrary_config_2B_2.getCSVLine(), ",");
   std::set<autopas::Configuration> searchSpace;
-  const std::string modelPath = std::string(AUTOPAS_DT_TEST_MODEL_DIR) + "/test_model.pkl";
-  ASSERT_TRUE(std::filesystem::exists(modelPath))
-      << "Test model file does not exist. Did the generate_dt_test_models target run?";
-  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelPath, 0.8, InteractionTypeOption::pairwise,
-                                             std::make_shared<utils::PythonInterpreter>());
 
-  // Read CONFIG_COLUMNS from train.py
-  std::set<std::string> configColumns;
-  try {
-    const auto configColumnsList = py::module::import("train").attr("CONFIG_COLUMNS").cast<std::vector<std::string>>();
-    configColumns.insert(configColumnsList.begin(), configColumnsList.end());
-  } catch (const py::error_already_set &e) {
-    FAIL() << "Failed to read CONFIG_COLUMNS from train.py: " << e.what();
+  // Writes a model that predicts the given components and values, and tries to construct a DecisionTreeTuning with it,
+  // expecting that to throw.
+  const auto expectThrowWithModel = [&](const std::vector<std::string> &modelComponents,
+                                        const std::vector<std::string> &modelValues) {
+    importTestModelGenerator().attr("create_valid_model")(modelDir, modelComponents, modelValues);
+    EXPECT_THROW(
+        {
+          autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
+                                                     InteractionTypeOption::pairwise);
+        },
+        utils::ExceptionHandler::AutoPasException);
+  };
+
+  {
+    SCOPED_TRACE("Removed component");
+    // Remove a component, e.g. like the model was trained before that component existed
+    auto modelComponents = configComponents;
+    auto modelValues = configValues;
+    modelComponents.pop_back();
+    modelValues.pop_back();
+    expectThrowWithModel(modelComponents, modelValues);
   }
-
-  // Build the expected set from the CSV header
-  std::set<std::string> expectedColumns;
-  for (const auto &column : autopas::utils::StringUtils::tokenize(autopas::Configuration().getCSVHeader(), ",")) {
-    if (column != "Interaction Type") {
-      expectedColumns.insert(column);
-    }
+  {
+    SCOPED_TRACE("Added component");
+    // Add a fake component, e.g. like the model was trained before a component was removed
+    auto modelComponents = configComponents;
+    auto modelValues = configValues;
+    modelComponents.push_back("FakeComponent");
+    modelValues.push_back("FakeValue");
+    expectThrowWithModel(modelComponents, modelValues);
   }
-
-  EXPECT_EQ(expectedColumns, configColumns)
-      << "CONFIG_COLUMNS in train.py does not match the configuration components written by "
-         "Configuration::getCSVHeader(). A configuration component was likely added to or removed from the "
-         "Configuration class without updating CONFIG_COLUMNS (and the C++ DecisionTreeTuning::updateConfigQueue) "
-         "accordingly.";
+  {
+    SCOPED_TRACE("Renamed component");
+    // Replace a component with a fake one, e.g. like the model was trained before that component was renamed
+    auto modelComponents = configComponents;
+    modelComponents.back() = "FakeComponent";
+    expectThrowWithModel(modelComponents, configValues);
+  }
 #else
   GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF";
 #endif

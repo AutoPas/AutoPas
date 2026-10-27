@@ -39,11 +39,9 @@ class DecisionTreeTuning : public TuningStrategyInterface {
    * @param modelFileName Name of the file containing the random forest models.
    * @param confidenceThreshold Minimum confidence threshold for accepting predictions.
    * @param interactionType The interaction type (used to select the appropriate pairwise/triwise model).
-   * @param pythonInterpreter The Python interpreter used for the predictions.
    */
   DecisionTreeTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
-                     double confidenceThreshold, InteractionTypeOption interactionType,
-                     std::shared_ptr<utils::PythonInterpreter> pythonInterpreter);
+                     double confidenceThreshold, InteractionTypeOption interactionType);
 
   ~DecisionTreeTuning() override;
 
@@ -92,9 +90,9 @@ class DecisionTreeTuning : public TuningStrategyInterface {
   InteractionTypeOption _interactionType;
 
   /**
-   * Keeps the embedded Python interpreter alive while this object exists. AutoPas passes the same interpreter to all
-   * its DecisionTreeTuning instances (e.g. separate pairwise/triwise tuners), since pybind11 permits only one
-   * interpreter per process.
+   * Keeps the embedded Python interpreter alive while this object exists. All DecisionTreeTuning instances (e.g.
+   * separate pairwise/triwise tuners) share it through PythonInterpreter::getSharedInterpreter(), since pybind11
+   * permits only one interpreter per process.
    *
    * Keep this declaration before all `pybind11::object`s, so that they are destroyed before the interpreter is
    * released.

@@ -15,39 +15,69 @@ from sklearn.multioutput import MultiOutputClassifier
 import pickle
 import numpy as np
 
-# Ordered list of the tuning-result CSV columns that, joined together, make up a single algorithmic configuration.
-# This is the single source of truth for the configuration components: it defines the order in which they are
-# concatenated into the 'alg_config' target label here, and it is stored in the model file so that predict.py can
-# split a prediction back into the same components (and the C++ side reads these exact names as JSON keys). To add a
-# new tunable component in the future, add its CSV column name here (and to the C++ DecisionTreeTuning::updateConfigQueue).
-CONFIG_COLUMNS = ['Container', 'Traversal', 'Load Estimator', 'Data Layout', 'Newton 3', 'CellSizeFactor',
-                  'VectorizationPattern']
-
-
-def build_alg_config(tuning_results_df: pd.DataFrame) -> pd.Series:
+def get_config_columns(tuning_results_df: pd.DataFrame) -> list:
     """
-    Build the combined 'alg_config' target label by joining the configuration component columns of a tuning results
-    DataFrame, in the order given by CONFIG_COLUMNS.
+    Get the names of the configuration components from a tuning results DataFrame.
 
-    Column names are stripped before lookup so the join is robust to header spacing in the CSV.
+    These are the columns AutoPas writes from Configuration::getCSVHeader(), which the TuningResultLogger places between
+    'Iteration' and the tuning time (e.g. 'tuning[ns]'). 
 
     Args:
         tuning_results_df (pd.DataFrame): A DataFrame loaded from a tuning results CSV.
 
     Returns:
-        pd.Series: A Series with the components joined by ';' for each row.
+        list: The ordered names of the configuration components.
+    """
+    columns = [column.strip() for column in tuning_results_df.columns]
+    first = columns.index('Iteration') + 1
+    end = next(index for index, column in enumerate(columns) if column.startswith('tuning['))
+    return columns[first:end]
+
+
+def get_consistent_config_columns(tuning_results_df: pd.DataFrame, tuning_results_file: str,
+                                  config_columns: list) -> list:
+    """
+    Get the configuration components of a tuning results file, and check that they are the same as those of the files
+    loaded before it. The model predicts one set of components, so all files must share them.
+
+    Args:
+        tuning_results_df (pd.DataFrame): A DataFrame loaded from a tuning results CSV.
+        tuning_results_file (str): The file the DataFrame was loaded from.
+        config_columns (list): The configuration components of the files loaded before, or None for the first file.
+
+    Returns:
+        list: The ordered names of the configuration components.
 
     Raises:
-        KeyError: If any column in CONFIG_COLUMNS is missing from the DataFrame. This typically means a new
-            configuration component was added to AutoPas but not to CONFIG_COLUMNS (or vice versa).
+        ValueError: If the file lacks components that the files before it have, or has components that they lack.
+    """
+    file_config_columns = get_config_columns(tuning_results_df)
+    if config_columns is None:
+        return file_config_columns
+    missing_columns = [column for column in config_columns if column not in file_config_columns]
+    extra_columns = [column for column in file_config_columns if column not in config_columns]
+    if missing_columns or extra_columns:
+        raise ValueError(f"{tuning_results_file} lacks the configuration components {missing_columns} and/or has the extra "
+                         f"components {extra_columns}, compared to the tuning results files loaded before it.")
+    return config_columns
+
+
+def build_alg_config(tuning_results_df: pd.DataFrame, config_columns: list) -> pd.Series:
+    """
+    Build the combined 'alg_config' target label by joining the configuration component columns of a tuning results
+    DataFrame, in the order given by config_columns.
+
+    Column names are stripped before lookup so the join is robust to header spacing in the CSV.
+
+    Args:
+        tuning_results_df (pd.DataFrame): A DataFrame loaded from a tuning results CSV.
+        config_columns (list): The names of the configuration components.
+
+    Returns:
+        pd.Series: A Series with the components joined by ';' for each row.
     """
     tuning_results_df.columns = tuning_results_df.columns.str.strip()
-    missing_columns = [column for column in CONFIG_COLUMNS if column not in tuning_results_df.columns]
-    if missing_columns:
-        raise KeyError(f"The following configuration component columns are missing from the tuning results CSV: "
-                       f"{missing_columns}. Available columns: {list(tuning_results_df.columns)}. Make sure "
-                       f"CONFIG_COLUMNS in train.py matches the columns written by AutoPas.")
-    return tuning_results_df[CONFIG_COLUMNS].astype(str).agg(';'.join, axis=1)
+    return tuning_results_df[config_columns].astype(str).agg(';'.join, axis=1)
 
 
 def extract_filename(path_to_file: str) -> str:
@@ -108,9 +138,11 @@ def load_data_from_directory(results_dir: str) -> tuple:
     Returns:
         final_merged_df_pairwise (pd.DataFrame): A merged DataFrame containing the combined live info and pairwise tuning results from all files.
         final_merged_df_triwise (pd.DataFrame): A merged DataFrame containing the combined live info and triwise tuning results from all files.
+        config_columns (list): The names of the configuration components, which all tuning results files share.
     """
     merged_dfs_pairwise = []
     merged_dfs_triwise = []
+    config_columns = None
 
     # Loop through all leaf folders i.e. the ones in which the csv files are outputted in
 
@@ -148,7 +180,8 @@ def load_data_from_directory(results_dir: str) -> tuple:
                 tuning_results_df = pd.read_csv(tuning_results_file)
 
                 # Combine the algorithmic configuration into one column
-                tuning_results_df['alg_config'] = build_alg_config(tuning_results_df)
+                config_columns = get_consistent_config_columns(tuning_results_df, tuning_results_file, config_columns)
+                tuning_results_df['alg_config'] = build_alg_config(tuning_results_df, config_columns)
 
                 # Merge them on 'Iteration' column
                 merged_df = pd.merge(live_info_df, tuning_results_df, on='Iteration', how='right')
@@ -166,7 +199,8 @@ def load_data_from_directory(results_dir: str) -> tuple:
                 tuning_results_df = pd.read_csv(tuning_results_file)
 
                 # Combine the algorithmic configuration into one column
-                tuning_results_df['alg_config'] = build_alg_config(tuning_results_df)
+                config_columns = get_consistent_config_columns(tuning_results_df, tuning_results_file, config_columns)
+                tuning_results_df['alg_config'] = build_alg_config(tuning_results_df, config_columns)
 
                 # Merge them on 'Iteration' column
                 merged_df = pd.merge(live_info_df, tuning_results_df, on='Iteration', how='right')
@@ -188,7 +222,7 @@ def load_data_from_directory(results_dir: str) -> tuple:
     else:
         final_merged_df_triwise = None
 
-    return final_merged_df_pairwise, final_merged_df_triwise
+    return final_merged_df_pairwise, final_merged_df_triwise, config_columns
 
 
 def preprocess_data(merged_df: pd.DataFrame, features: list) -> tuple:
@@ -247,14 +281,13 @@ def train_model(X: pd.DataFrame, y: pd.DataFrame, test_size: float, n_estimators
 
 def save_models_and_encoders(pairwise_model: RandomForestClassifier, triwise_model: RandomForestClassifier,
                              pairwise_label_encoder: dict, triwise_label_encoder: dict, features: list,
-                             output_file: str) -> None:
+                             config_columns: list, output_file: str) -> None:
     """
     Save the trained models, LabelEncoder, and feature list to a file.
 
     This function saves the trained RandomForestClassifier models and LabelEncoders for both pairwise and triwise
-    interactions, the list of features used, and the ordered configuration component names (CONFIG_COLUMNS) used to
-    build the prediction labels, as a dictionary in a pickle file so they can be loaded together later for making
-    predictions.
+    interactions, the list of features used, and the ordered configuration component names used to build the
+    prediction labels, as a dictionary in a pickle file so they can be loaded together later for making predictions.
 
     Args:
         pairwise_model (RandomForestClassifier): The trained RandomForestClassifier model for pairwise interactions.
@@ -264,6 +297,7 @@ def save_models_and_encoders(pairwise_model: RandomForestClassifier, triwise_mod
         triwise_label_encoder (LabelEncoder): The LabelEncoder used for encoding the target variable (i.e. alg.
         config.).
         features (list): The list of feature column names.
+        config_columns (list): The names of the configuration components.
         output_file (str): Path to save the model, encoders, and features.
     """
     combined_data = {
@@ -272,7 +306,7 @@ def save_models_and_encoders(pairwise_model: RandomForestClassifier, triwise_mod
         'pairwise_label_encoder': pairwise_label_encoder,
         'triwise_label_encoder': triwise_label_encoder,
         'features': features,
-        'config_columns': CONFIG_COLUMNS
+        'config_columns': config_columns
     }
     print(combined_data)
     with open(output_file, 'wb') as f:
@@ -299,7 +333,7 @@ def main():
     args = parser.parse_args()
 
     print("Loading and merging data...")
-    merged_df_pairwise, merged_df_triwise = load_data_from_directory(args.results_dir)
+    merged_df_pairwise, merged_df_triwise, config_columns = load_data_from_directory(args.results_dir)
 
     if merged_df_pairwise is None:
         print("No tuning results were found for pairwise interactions. Skipping the training of a pairwise model.")
@@ -325,7 +359,8 @@ def main():
 
 
     print(f"Saving models and encoders to {args.output_file}...")
-    save_models_and_encoders(model_pairwise, model_triwise, label_encoder_pairwise, label_encoder_triwise, args.features, args.output_file)
+    save_models_and_encoders(model_pairwise, model_triwise, label_encoder_pairwise, label_encoder_triwise, args.features,
+                             config_columns, args.output_file)
 
     print("Model training and saving complete.")
 

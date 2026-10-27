@@ -14,14 +14,6 @@ endif ()
 # includes the gtest modules
 include(autopas_gtest)
 
-if (AUTOPAS_ENABLE_PYTHON_BASED_TUNING)
-    # Find and include Python headers and libraries
-    find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-
-    # Include the Python headers
-    include_directories(${Python3_INCLUDE_DIRS})
-endif ()
-
 # add AutoPas tests:
 add_subdirectory(testAutopas)
 add_subdirectory(MPIParallelAutoPasTests)

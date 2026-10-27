@@ -77,13 +77,19 @@ python train.py --results-dir=/path/to/results/
 
 `/path/to/results/` should be a single directory containing all result files. Live Info and Tuning Result logs will be matched together based on their shared time-and-rank-stamps. As it is possible for multiple experiments to run with the same time stamp, we therefore recommend running a single experiment per root directory, such as with the example training data generators.
 
+// TODO Claude: Have predict.py error on such cases. Can be enacted after finishing this plan/
+The model stores the configuration components and the live info features it was trained on. If these differ configurations consist of other components, e.g. because a newer AutoPas version added one, AutoPas refuses to load the model. If a live info feature is no longer available, `predict.py` silently uses 0.0 in its place, which makes the predictions unreliable. In both cases, retrain the model with data from the AutoPas version that uses it.
 ## Using the tuning strategy
 
 Set the decision-tree-tuning strategy. This is not designed to be used with any other tuning strategies.
 
 If using a HPC system, remember to, in the jobscript file, load the up-to-date version of python and activate the virtual environment.
 
-AutoPas starts its own embedded Python interpreter in `AutoPas::init()`. If your project already uses Python, AutoPas attaches to the running interpreter instead, and you can share it between AutoPas and your project with `AutoPas::getPythonInterpreter()` and `AutoPas::setPythonInterpreter()`.
+AutoPas starts its own embedded Python interpreter in `AutoPas::init()`. If your project already uses Python, AutoPas attaches to the running interpreter instead.
+
+AutoPas objects that are alive at the same time share one interpreter automatically. 
+Python is finalized when the last of them is destroyed, and it cannot be started again in the same process, because libraries like numpy do not support that. 
+So if you create AutoPas objects one after another, or you otherwise need an embedded Python interpreter, keep the interpreter alive in between by holding the shared pointer returned by `autopas::utils::PythonInterpreter::getSharedInterpreter()`.
 
 It is also possible to set a confidence threshold, such for that predictions in which the model's confidence is below this, the configuration queue is left untouched (e.g. typically a full search will occur, if no other tuning strategies are specified).
 This feature is largely untested, and potentially not even of value with the random forest model.
