@@ -52,6 +52,26 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
    */
   template <bool allCells, typename LoopBody>
   inline void c18Traversal(LoopBody &&loopBody);
+
+  /**
+   * Returns the number of iterations of each loop c18Traversal() runs with OpenMP's schedule(runtime). Must be kept in
+   * line with c18Traversal().
+   * @tparam allCells see c18Traversal()
+   * @return see ColorBasedTraversal::colorTraversalLoopCounts()
+   */
+  template <bool allCells>
+  [[nodiscard]] std::vector<size_t> c18TraversalLoopCounts() const {
+    const std::array<unsigned long, 3> stride = {
+        2ul * this->_overlap[0] + 1ul,
+        2ul * this->_overlap[1] + 1ul,
+        this->_overlap[2] + 1ul,
+    };
+    auto end(this->_cellsPerDimension);
+    if (not allCells) {
+      end[2] -= this->_overlap[2];
+    }
+    return this->colorTraversalLoopCounts(end, stride);
+  }
 };
 
 template <class ParticleCell, class Functor>

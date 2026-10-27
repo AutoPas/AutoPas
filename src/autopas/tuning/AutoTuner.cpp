@@ -132,6 +132,7 @@ bool AutoTuner::tuneConfiguration(const size_t currentIteration, const size_t tu
     _configQueue.clear();
     _configQueue.reserve(_searchSpace.size());
     std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(_configQueue));
+    _configurationsAddedThisTuningPhase.clear();
     AutoPasLog(DEBUG, "ConfigQueue at tuneConfiguration before reset: (Size={}) {}", _configQueue.size(),
                utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                             [](const auto &conf) { return conf.toShortString(false); }));
@@ -246,6 +247,14 @@ Configuration AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool 
   }
 
   return getCurrentConfig();
+}
+
+void AutoTuner::addTempConfig(const Configuration &configuration) {
+  if (_configurationsAddedThisTuningPhase.contains(configuration)) {
+    return;
+  }
+  _configurationsAddedThisTuningPhase.insert(configuration);
+  _configQueue.insert(_configQueue.empty() ? _configQueue.end() : std::prev(_configQueue.end()), configuration);
 }
 
 void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles, const bool neighborListRebuilt,
@@ -418,6 +427,8 @@ bool AutoTuner::inTuningPhase() const {
   // been called yet.
   return (_isTuning or _forceRetune) and not searchSpaceIsTrivial();
 }
+
+bool AutoTuner::isAtStartOfConfigurationTrial() const { return inTuningPhase() and getCurrentNumSamples() == 0; }
 
 bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
 

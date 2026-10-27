@@ -35,7 +35,9 @@ target_link_libraries(
     PUBLIC
         $<$<NOT:$<PLATFORM_ID:Darwin>>:rt> # required for Time.h, on macOS not needed
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
-        $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
+        # Link against OpenMP_CXX, unless not compiling OpenMP, or if we link against the LB4OMP runtime
+        $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${AUTOPAS_LB4OMP}>>>:OpenMP::OpenMP_CXX>
+        $<$<BOOL:${AUTOPAS_LB4OMP}>:lb4omp::omp>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
@@ -53,6 +55,7 @@ target_compile_definitions(
     PUBLIC
         $<$<BOOL:${AUTOPAS_OPENMP}>:AUTOPAS_USE_OPENMP>
         $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
+        AUTOPAS_OPENMP_SCHEDULE_LEVEL=${AUTOPAS_OPENMP_SCHEDULE_LEVEL}
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING>
@@ -63,3 +66,4 @@ target_compile_definitions(
 
 target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)
+

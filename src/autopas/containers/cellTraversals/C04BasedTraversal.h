@@ -47,6 +47,20 @@ class C04BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, coll
    */
   template <typename LoopBody>
   inline void c04Traversal(LoopBody &&loopBody);
+
+  /**
+   * Returns the number of iterations of each loop c04Traversal() runs with OpenMP's schedule(runtime). Must be kept in
+   * line with c04Traversal().
+   * @return see ColorBasedTraversal::colorTraversalLoopCounts()
+   */
+  [[nodiscard]] std::vector<size_t> c04TraversalLoopCounts() const {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    const auto end = this->_cellsPerDimension - this->_overlap;
+    auto stride = this->_overlap + 1ul;
+    stride[0] = 1;
+    return this->colorTraversalLoopCounts(end, stride);
+  }
 };
 
 template <class ParticleCell, class Functor, int collapseDepth>

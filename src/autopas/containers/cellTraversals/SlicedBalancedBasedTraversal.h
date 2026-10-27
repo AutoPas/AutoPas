@@ -37,10 +37,7 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
                                         const double interactionLength, const std::array<double, 3> &cellLength,
                                         DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
       : SlicedLockBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
-                                                        useNewton3, spaciallyForward) {
-    // As we create exactly one slice per thread, dynamic scheduling makes little sense.
-    this->_dynamic = false;
-  }
+                                                        useNewton3, spaciallyForward) {}
 
   /**
    * Calculates slice thickness according to estimates loads
