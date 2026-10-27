@@ -5,3 +5,8 @@ leak:libmpi
 leak:openmpi
 leak:mpich
 leak:MPIDIU_avt_init
+# Python and its extension modules (e.g. numpy) do not free everything when the embedded interpreter is finalized.
+# leak:libpython misses leaks whose stacks stop inside an extension module (e.g. numpy). leak:cpython- matches those
+# modules by filename (*.cpython-3*.so).
+leak:libpython
+leak:cpython-
