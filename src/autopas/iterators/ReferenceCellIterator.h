@@ -33,23 +33,27 @@ class ReferenceCellIterator {
       std::conditional_t<modifiable, std::vector<size_t>::iterator, std::vector<size_t>::const_iterator>;
 
   /**
-   * Type trait to be compatible with std::iterator.
+   * Type trait for std::iterator_traits, to enable use of standard library algorithms. Must be of the name expected by
+   * the standard library, hence not camel case like the rest of the project.
    */
   using difference_type = IteratorType::difference_type;
   /**
-   * Type trait to be compatible with std::iterator.
+   * Type trait for std::iterator_traits, to enable use of standard library algorithms. The particle type rather than
+   * the stored index type, and non-const even for const iterators. Must be of the name expected by the standard
+   * library, hence not camel case like the rest of the project.
    */
   using value_type = Particle_T;
   /**
-   * Type trait to be compatible with std::iterator.
+   * Type trait for std::iterator_traits, to enable use of standard library algorithms.
    */
   using pointer = std::conditional_t<modifiable, Particle_T *, const Particle_T *>;
   /**
-   * Type trait to be compatible with std::iterator.
+   * Type trait for std::iterator_traits, to enable use of standard library algorithms.
    */
   using reference = std::conditional_t<modifiable, Particle_T &, const Particle_T &>;
   /**
-   * Type trait to be compatible with std::iterator.
+   * Type trait for std::iterator_traits, to enable use of standard library algorithms. Must be of the name expected by
+   * the standard library, hence not camel case like the rest of the project.
    */
   using iterator_category = std::bidirectional_iterator_tag;
 
