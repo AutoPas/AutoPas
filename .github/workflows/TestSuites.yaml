@@ -283,7 +283,7 @@ jobs:
     name: Run tests ${{ matrix.config.name }} (${{ matrix.part }}/4)
     container:
       image: autopas/${{ matrix.config.container }}
-      options: --entrypoint /bin/bash
+      options: --entrypoint /bin/bash ${{ matrix.config.container == 'autopas-build-archer' && '--security-opt seccomp=unconfined' || '' }}
 
     env:
       TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
