@@ -73,7 +73,7 @@ class VectorizationPatternOption : public Option<VectorizationPatternOption> {
      * | j | j | j | j | j | j | j | j |
      *  --------------------------------
      */
-    pVecx1
+    pVecx1,
   };
 
   /**
