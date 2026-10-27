@@ -7,8 +7,8 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
-#include "generators/src/GaussianGenerator.h"
-#include "generators/src/PseudoContainer.h"
+#include "autopas/utils/generators/GaussianGenerator.h"
+#include "autopas/utils/generators/PseudoContainer.h"
 
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.
@@ -34,6 +34,8 @@ class CubeGauss : public Object {
         _distributionMean(distributionMean),
         _distributionStdDev(distributionStdDev),
         _bottomLeftCorner(bottomLeftCorner) {}
+
+  [[nodiscard]] std::string getObjectType() const override { return "CubeGauss"; }
 
   /**
    * Getter for distribution mean.
@@ -95,7 +97,7 @@ class CubeGauss : public Object {
    */
   void generate(std::vector<ParticleType> &particles) const override {
     // Wrapper so that std::vector can be used as an AutoPas::ParticleContainer
-    auto particlesWrapper = autopasTools::PseudoContainer(particles);
+    auto particlesWrapper = autopas::generators::PseudoContainer(particles);
 
     using namespace autopas::utils::ArrayMath::literals;
     const auto boxMax = _bottomLeftCorner + _boxLength;
@@ -103,9 +105,9 @@ class CubeGauss : public Object {
     // dummy particle used as a template with id of the first newly generated one
     const ParticleType dummyParticle = getDummyParticle(particles.size());
 
-    autopasTools::generators::GaussianGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, boxMax,
-                                                                   _numParticles, dummyParticle, _distributionMean,
-                                                                   _distributionStdDev);
+    autopas::generators::GaussianGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, boxMax,
+                                                              _numParticles, dummyParticle, _distributionMean,
+                                                              _distributionStdDev);
   }
 
  private:

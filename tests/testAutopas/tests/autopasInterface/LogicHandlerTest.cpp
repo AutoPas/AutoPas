@@ -8,6 +8,7 @@
 
 #include "autopas/LogicHandler.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
+#include "testingHelpers/ArbitraryConfigurations.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
@@ -29,18 +30,14 @@ void LogicHandlerTest::initLogicHandler() {
   constexpr double cellSizeFactor = 1.;
   constexpr unsigned int verletRebuildFrequency = 10;
   const std::set<autopas::Configuration> searchSpace(
-      {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
-        autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::p1xVec},
-       {autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c18,
-        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
-        autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::p1xVec}});
+      {arbitraryConfigurations::_arbitrary_config_2B_2, arbitraryConfigurations::_arbitrary_config_2B_6});
   _tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   _tuningManager->addAutoTuner(
       std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""),
       autopas::InteractionTypeOption::pairwise);
-  _logicHandler =
-      std::make_unique<autopas::LogicHandler<Molecule>>(_tuningManager, logicHandlerInfo, verletRebuildFrequency, "");
+  _logicHandler = std::make_unique<autopas::LogicHandler<Molecule>>(
+      _tuningManager, logicHandlerInfo, verletRebuildFrequency, "", autoTunerInfo.aosSortingThreshold,
+      autoTunerInfo.soaSortingThreshold);
 }
 
 #ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB

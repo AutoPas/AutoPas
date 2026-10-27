@@ -11,7 +11,6 @@
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options//ExtrapolationMethodOption.h"
-#include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/EnergySensorOption.h"
@@ -30,6 +29,7 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
 
@@ -797,24 +797,6 @@ class AutoPas {
   }
 
   /**
-   * Get acquisition function used for tuning
-   * @return
-   */
-  [[nodiscard]] AcquisitionFunctionOption getAcquisitionFunction() const {
-    return _tuningStrategyFactoryInfo.acquisitionFunctionOption;
-  }
-
-  /**
-   * Set acquisition function for tuning.
-   * For possible acquisition function choices see options::AcquisitionFunctionOption::Value.
-   * @note This function is only relevant for the bayesian based searches.
-   * @param acqFun acquisition function
-   */
-  void setAcquisitionFunction(AcquisitionFunctionOption acqFun) {
-    _tuningStrategyFactoryInfo.acquisitionFunctionOption = acqFun;
-  }
-
-  /**
    * Get extrapolation method for the prediction of the configuration performance.
    * @return
    */
@@ -964,6 +946,9 @@ class AutoPas {
 
   /**
    * Get the list of allowed vectorization pattern options.
+   *
+   * @note This is only relevant for SoA. The not-applicable (N/A) pattern, which every AoS configuration uses, is
+   * always allowed implicitly and therefore never part of the returned set.
    * @param interactionType Get allowed vectorization pattern options for this interaction type. Defaults to
    * InteractionTypeOption::pairwise.
    * @return
@@ -976,18 +961,29 @@ class AutoPas {
   /**
    * Set the list of allowed vectorization pattern options
    * For possible options, see options::VectorizationOption::Value
+   *
+   * @note This is only relevant for SoA. The not-applicable (N/A) pattern, which every AoS configuration uses, is
+   * always included implicitly when generating the search space, so it does not need to be set. If it is given, it is
+   * removed with a warning. To allow SoA configurations, at least one applicable pattern (see
+   * VectorizationPatternOption::getAllApplicablePatterns()) must be given.
    * @param allowedVecPatterns
    * @param interactionType Set allowed vectorization pattern options for this interaction type. Defaults to
    * InteractionTypeOption::pairwise
    */
   void setAllowedVecPatterns(const std::set<VectorizationPatternOption> &allowedVecPatterns,
                              const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    auto applicableVecPatterns = allowedVecPatterns;
+    if (applicableVecPatterns.erase(VectorizationPatternOption::NA) > 0) {
+      AutoPasLog(WARN,
+                 "The not-applicable (N/A) vectorization pattern is always included implicitly and does not need to "
+                 "be set. It is removed from the allowed vectorization patterns.");
+    }
     if (interactionType == InteractionTypeOption::all) {
       for (auto iType : InteractionTypeOption::getMostOptions()) {
-        _allowedVecPatternsOptions[iType] = allowedVecPatterns;
+        _allowedVecPatternsOptions[iType] = applicableVecPatterns;
       }
     } else {
-      _allowedVecPatternsOptions[interactionType] = allowedVecPatterns;
+      _allowedVecPatternsOptions[interactionType] = applicableVecPatterns;
     }
   }
 
@@ -1142,30 +1138,37 @@ class AutoPas {
    * sorted view of the particles to avoid unnecessary distance checks.
    * @param aosSortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
-  void setAoSSortingThreshold(size_t aosSortingThreshold) {
-    _logicHandlerInfo.aosSortingThreshold = aosSortingThreshold;
-  }
+  void setAoSSortingThreshold(size_t aosSortingThreshold) { _autoTunerInfo.aosSortingThreshold = aosSortingThreshold; }
 
   /**
    * Get the aos-sorting-threshold for traversals that use the CellFunctor.
    * @return aos-sorting-threshold
    */
-  size_t getAoSSortingThreshold() const { return _logicHandlerInfo.aosSortingThreshold; }
+  size_t getAoSSortingThreshold() const { return _autoTunerInfo.aosSortingThreshold; }
 
   /**
    * Set the SoA sorting-threshold.
    * If the sum of the SoA buffer sizes of two cells exceeds this value, the SoA path uses SoAFunctorPairSorted.
    * @param soaSortingThreshold Sum of the SoA buffer sizes from which SoA sorting should be enabled.
    */
-  void setSoASortingThreshold(size_t soaSortingThreshold) {
-    _logicHandlerInfo.soaSortingThreshold = soaSortingThreshold;
-  }
+  void setSoASortingThreshold(size_t soaSortingThreshold) { _autoTunerInfo.soaSortingThreshold = soaSortingThreshold; }
 
   /**
    * Get the SoA sorting-threshold.
    * @return SoA sorting-threshold
    */
-  size_t getSoASortingThreshold() const { return _logicHandlerInfo.soaSortingThreshold; }
+  size_t getSoASortingThreshold() const { return _autoTunerInfo.soaSortingThreshold; }
+
+  /**
+   * Enable or disable benchmark-based AoS/SoA pair-sorting threshold selection.
+   * When enabled, AutoPas runs a micro-benchmark (once per interaction type) to determine per-direction-type
+   * thresholds. SoA thresholds are only benchmarked for functors that support SoA sorting; otherwise the fixed fallback
+   * remains.
+   * @param useSortingThresholdBenchmark
+   */
+  void setUseSortingThresholdBenchmark(bool useSortingThresholdBenchmark) {
+    _logicHandlerInfo.useSortingThresholdBenchmark = useSortingThresholdBenchmark;
+  }
 
  private:
   autopas::ParticleContainerInterface<Particle_T> &getContainer();
@@ -1226,7 +1229,7 @@ class AutoPas {
    * Vector Interaction Patterns
    */
   std::unordered_map<InteractionTypeOption::Value, std::set<VectorizationPatternOption>> _allowedVecPatternsOptions{
-      {InteractionTypeOption::pairwise, VectorizationPatternOption::getMostOptions()},
+      {InteractionTypeOption::pairwise, VectorizationPatternOption::getAllApplicablePatterns()},
       // Note: Currently Vectorization Patterns are not implemented for threebody interactions. p1xVec is used as
       // default.
       {InteractionTypeOption::triwise, std::set<VectorizationPatternOption>{VectorizationPatternOption::p1xVec}}};
