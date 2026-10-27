@@ -14,8 +14,8 @@ namespace autopas {
 
 /**
  * Iterator for "references"-based cells, i.e. where the cell itself does not contain the particles, but all particles
- * are instead stored in a global std::vector, and a cell's particles occupy a contiguous segment of that vector. It
- * provides the same interface as CellIterator.
+ * are instead stored in a global std::vector, and a cell simply containers the indices of its particles. It provides
+ * the same interface as CellIterator.
  *
  * @note The iterator stores the address of the particle vector's buffer, so adding particles to that vector while
  * iterating invalidates the iterator (this typically holds for all containers).
