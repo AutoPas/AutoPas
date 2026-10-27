@@ -10,6 +10,7 @@
 #include "autopas/particles/ParticleDefinitions.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "mocks/MockTriwiseFunctor.h"
+#include "molecularDynamicsLibrary/AxilrodTellerMutoFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
@@ -58,3 +59,11 @@ using LJFunctorType =
  */
 using LJFunctorGlobals = LJFunctorType</* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                                        /*globals*/ true>;
+
+/**
+ * Helper alias for ATMFunctor, with more defaults geared towards testing.
+ * This facilitates writing tests and tries to reduce the number of template instantiations.
+ */
+template <bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+          bool calculateGlobals = false, bool countFLOPs = false>
+using ATMFunctorType = mdLib::AxilrodTellerMutoFunctor<Molecule, useMixing, useNewton3, calculateGlobals, countFLOPs>;
