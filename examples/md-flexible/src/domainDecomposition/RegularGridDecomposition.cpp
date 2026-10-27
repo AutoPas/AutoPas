@@ -161,7 +161,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
   using namespace autopas::utils::ArrayMath::literals;
 
   _haloParticles.clear();
-  const double haloWidth = _cutoffWidth + _skinWidth;
+  const double haloWidth = _cutoffWidth + 2 * _skinWidth;
 
   // since we currently don't have any halo particles, estimate the number by comparing box and halo volume and add 10%
   const auto localBoxDimensions = _localBoxMax - _localBoxMin;
@@ -513,7 +513,7 @@ void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(
   using autopas::utils::Math::isNearRel;
   using namespace autopas::utils::ArrayMath::literals;
 
-  const std::array<double, _dimensionCount> boxMin = _localBoxMin;
+  const std::array<double, _dimensionCount> boxMin = _localBoxMin - _skinWidth;
   const std::array<double, _dimensionCount> boxMax = [&]() {
     auto boxMax = _localBoxMax;
     boxMax[direction] = _localBoxMin[direction] + _cutoffWidth + _skinWidth;
@@ -530,7 +530,7 @@ void RegularGridDecomposition::collectHaloParticlesForRightNeighbor(
   using autopas::utils::Math::isNearRel;
   using namespace autopas::utils::ArrayMath::literals;
 
-  const std::array<double, _dimensionCount> boxMax = _localBoxMax;
+  const std::array<double, _dimensionCount> boxMax = _localBoxMax + _skinWidth;
   const std::array<double, _dimensionCount> boxMin = [&]() {
     auto boxMin = _localBoxMin;
     boxMin[direction] = _localBoxMax[direction] - _cutoffWidth - _skinWidth;
