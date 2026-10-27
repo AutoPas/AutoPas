@@ -77,8 +77,7 @@ python train.py --results-dir=/path/to/results/
 
 `/path/to/results/` should be a single directory containing all result files. Live Info and Tuning Result logs will be matched together based on their shared time-and-rank-stamps. As it is possible for multiple experiments to run with the same time stamp, we therefore recommend running a single experiment per root directory, such as with the example training data generators.
 
-// TODO Claude: Have predict.py error on such cases. Can be enacted after finishing this plan/
-The model stores the configuration components and the live info features it was trained on. If these differ configurations consist of other components, e.g. because a newer AutoPas version added one, AutoPas refuses to load the model. If a live info feature is no longer available, `predict.py` silently uses 0.0 in its place, which makes the predictions unreliable. In both cases, retrain the model with data from the AutoPas version that uses it.
+The model stores the configuration components and the live info features it was trained on. If these differ configurations consist of other components, e.g. because a newer AutoPas version added one, AutoPas refuses to load the model. If a live info feature that the model was trained on is no longer available, the first prediction fails with an error. In both cases, retrain the model with data from the AutoPas version that uses it.
 ## Using the tuning strategy
 
 Set the decision-tree-tuning strategy. This is not designed to be used with any other tuning strategies.

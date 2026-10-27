@@ -7,7 +7,6 @@
 
 #include "DecisionTreeTuningTest.h"
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
 #include <pybind11/embed.h>
@@ -56,16 +55,6 @@ std::string getTestModelDir() {
 #endif
 
 /**
- * @class MockLiveInfo
- *
- * Mock class for LiveInfo to simulate system states for testing purposes.
- */
-class MockLiveInfo : public LiveInfo {
- public:
-  MOCK_METHOD((const std::map<std::string, InfoType> &), get, (), (const));
-};
-
-/**
  * @test TestScriptLoading
  *
  * Ensures that when a non-existent Python model file is provided, a runtime error is thrown.
@@ -105,14 +94,14 @@ TEST(DecisionTreeTuningTest, TestValidPythonResponse) {
   std::set<autopas::Configuration> searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_0};
   autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
                                              InteractionTypeOption::pairwise);
-  MockLiveInfo mockLiveInfo;
+  LiveInfo liveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
       {"avgParticlesPerCell", 6.82}, {"maxParticlesPerCell", 33.0},    {"homogeneity", 0.42},
       {"maxDensity", 1.17},          {"particlesPerCellStdDev", 0.03}, {"threadCount", 1.0}};
 
-  EXPECT_CALL(mockLiveInfo, get()).WillRepeatedly(::testing::ReturnRef(liveInfoMap));
+  liveInfo.set(liveInfoMap);
 
-  tuningStrategy.receiveLiveInfo(mockLiveInfo);
+  tuningStrategy.receiveLiveInfo(liveInfo);
   std::vector<autopas::Configuration> configQueue{arbitraryConfigurations::_arbitrary_config_2B_0};
 
   autopas::EvidenceCollection evidenceCollection;
@@ -142,12 +131,56 @@ TEST(DecisionTreeTuningTest, TestInvalidModel) {
   autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelDir + "/test_model_invalid.pkl", 0.8,
                                              InteractionTypeOption::pairwise);
 
-  MockLiveInfo mockLiveInfo;
+  LiveInfo liveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
       {"avgParticlesPerCell", 6.82}, {"maxParticlesPerCell", 33.0},    {"homogeneity", 0.42},
       {"maxDensity", 1.17},          {"particlesPerCellStdDev", 0.03}, {"threadCount", 1.0}};
 
-  EXPECT_CALL(mockLiveInfo, get()).WillRepeatedly(::testing::ReturnRef(liveInfoMap));
+  liveInfo.set(liveInfoMap);
+
+  tuningStrategy.receiveLiveInfo(liveInfo);
+
+  EXPECT_THROW(
+      {
+        std::vector<autopas::Configuration> configQueue{arbitraryConfigurations::_arbitrary_config_2B_0};
+        autopas::EvidenceCollection evidenceCollection;
+        tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
+      },
+      utils::ExceptionHandler::AutoPasException);
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF";
+#endif
+}
+
+/**
+ * @test ThrowsWithMissingLiveInfoFeature
+ *
+ * Tests that predicting throws if the live info lacks a feature that the model was trained on.
+ * E.g. because the model was trained before that live info feature was removed or renamed.
+ */
+TEST(DecisionTreeTuningTest, ThrowsWithMissingLiveInfoFeature) {
+#ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
+  const auto pythonInterpreter = utils::PythonInterpreter::getSharedInterpreter();
+  const auto modelDir = getTestModelDir();
+  importTestModelGenerator().attr("create_valid_model")(
+      modelDir, utils::StringUtils::tokenize(autopas::Configuration().getCSVHeader(), ","),
+      utils::StringUtils::tokenize(arbitraryConfigurations::_arbitrary_config_2B_2.getCSVLine(), ","));
+
+  std::set<autopas::Configuration> searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_0};
+  autopas::DecisionTreeTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
+                                             InteractionTypeOption::pairwise);
+
+  // The features the model was trained on, except threadCount
+  LiveInfo liveInfo;
+  std::map<std::string, LiveInfo::InfoType> liveInfoMap = {{"avgParticlesPerCell", 6.82},
+                                                           {"maxParticlesPerCell", 33.0},
+                                                           {"homogeneity", 0.42},
+                                                           {"maxDensity", 1.17},
+                                                           {"particlesPerCellStdDev", 0.03}};
+
+  liveInfo.set(liveInfoMap);
+
+  tuningStrategy.receiveLiveInfo(liveInfo);
 
   EXPECT_THROW(
       {

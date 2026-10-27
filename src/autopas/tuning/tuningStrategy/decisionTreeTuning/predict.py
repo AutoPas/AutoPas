@@ -59,8 +59,8 @@ class DecisionTreeTuning:
             raise Exception("The Features were not found.")
 
         # The ordered list of configuration component names that make up a prediction label. This is stored by train.py
-        # so that the components (and their order) stay in sync between training and prediction. See CONFIG_COLUMNS in
-        # train.py.
+        # so that the components (and their order) stay in sync between training and prediction. See
+        # get_config_columns in train.py.
         try:
             self.config_columns = combined_data['config_columns']
         except KeyError:
@@ -86,12 +86,22 @@ class DecisionTreeTuning:
 
         Returns:
             pd.DataFrame: A DataFrame containing the processed features ready for prediction.
+
+        Raises:
+            ValueError: If the live info lacks a feature that the model was trained on.
         """
         # Convert the live info JSON string into a dictionary
         live_info = json.loads(live_info_json)
 
+        # The model cannot predict reliably without all features it was trained on, e.g. if a newer AutoPas version
+        # removed or renamed one.
+        missing_features = [feature for feature in self.features if feature not in live_info]
+        if missing_features:
+            raise ValueError(f"The live info lacks the features {missing_features}, which the model was trained on. "
+                             f"Retrain the model with data from the current AutoPas version.")
+
         # Extract the relevant features from live info
-        live_info_input = {feature: live_info.get(feature, 0.0) for feature in self.features}
+        live_info_input = {feature: live_info[feature] for feature in self.features}
 
         # Convert the input into a pandas DataFrame with one row
         live_info_df = pd.DataFrame([live_info_input])
