@@ -44,6 +44,10 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:pmt>
         Eigen3
         hwy
+    PRIVATE
+        # pybind11 and json are only needed privately when building AutoPas.
+        $<$<BOOL:${AUTOPAS_ENABLE_PYTHON_BASED_TUNING}>:pybind11::embed>
+        $<$<BOOL:${AUTOPAS_ENABLE_PYTHON_BASED_TUNING}>:nlohmann_json::nlohmann_json>
 )
 
 # OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
@@ -56,8 +60,10 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING>
+        $<$<BOOL:${AUTOPAS_ENABLE_PYTHON_BASED_TUNING}>:AUTOPAS_ENABLE_PYTHON_BASED_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
         $<$<BOOL:${AUTOPAS_ENABLE_DYNAMIC_CONTAINERS}>:AUTOPAS_ENABLE_DYNAMIC_CONTAINERS>
+        AUTOPAS_SOURCE_DIR="${AUTOPAS_SOURCE_DIR}"
         _USE_MATH_DEFINES
 )
 

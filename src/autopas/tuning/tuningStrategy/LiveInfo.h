@@ -429,6 +429,18 @@ class LiveInfo {
   [[nodiscard]] const auto &get() const { return infos; }
 
   /**
+   * Replaces all infos with the given ones, e.g. to provide live info without gathering it from a container. Warns if
+   * there already were infos.
+   * @param newInfos The infos to replace the existing ones with.
+   */
+  void set(const std::map<std::string, InfoType> &newInfos) {
+    if (not infos.empty()) {
+      AutoPasLog(WARN, "LiveInfo::set() replaces {} existing infos.", infos.size());
+    }
+    infos = newInfos;
+  }
+
+  /**
    * Gets a single value from the infos that corresponds to the given string.
    * @tparam T return type
    * @param key string key for the infos map
