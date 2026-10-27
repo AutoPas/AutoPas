@@ -117,6 +117,10 @@ TEST_F(LoggerTest, CreateWithStream) {
     logger->flush();
     EXPECT_TRUE(oss.str().find("Test warning message") != std::string::npos);
   });
+
+  // The logger holds a reference to `oss`; unregister it before `oss` goes out
+  // of scope, or a later test in the same binary touches a dangling stream.
+  autopas::Logger::unregister();
 }
 
 /**
