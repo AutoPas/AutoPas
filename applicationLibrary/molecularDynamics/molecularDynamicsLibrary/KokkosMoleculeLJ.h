@@ -343,10 +343,6 @@ class KokkosMoleculeLJ {
 
   void setID(unsigned long id) { _id = id; };
 
-  void setOwnershipState(autopas::OwnershipState value) {
-    _ownershipState = autopas::OwnershipState::fromOwnershipState(value);
-  }
-
   void setOwnershipState(autopas::OwnershipState value) { _ownershipState = value; }
 
   void setV(const std::array<ParticleFloatPrecision, 3> &v) {
@@ -420,7 +416,7 @@ class KokkosMoleculeLJ {
 
   std::array<ParticleFloatPrecision, 3> getOldF() const { return {_oldF[0], _oldF[1], _oldF[2]}; }
 
-  autopas::OwnershipState getOwnershipState() const { return autopas::OwnershipState::toOwnershipState(_ownershipState); }
+  autopas::OwnershipState getOwnershipState() const { return _ownershipState; }
 
   void addV(const std::array<ParticleFloatPrecision, 3> &increment) {
     _v[0] += increment[0];
