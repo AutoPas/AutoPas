@@ -27,6 +27,8 @@
 #include "autopas/tuning/TuningManager.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/OpenMPChunkSize.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/logging/Logger.h"
@@ -970,6 +972,42 @@ class AutoPas {
   }
 
   /**
+   * Set allowed OpenMP chunk sizes.
+   *
+   * @note The not-applicable chunk size (used for sequential traversals) is always included implicitly and does not
+   * need to be set.
+   *
+   * @param allowedChunkSizes A set of allowed OpenMP chunk sizes. If 1 is not included, some traversals which must
+   * use static, 1 scheduling, and the auto schedule kind, will never be selected.
+   */
+  void setAllowedOpenMPChunkSizes(const std::set<OpenMPChunkSize> &allowedChunkSizes) {
+    _allowedOpenMPChunkSizes = allowedChunkSizes;
+    if (_allowedOpenMPChunkSizes.erase(OpenMPChunkSize::notApplicable) > 0) {
+      AutoPasLog(WARN,
+                 "The not-applicable OpenMP chunk size is always included implicitly and does not need to be set. It "
+                 "is removed from the allowed OpenMP chunk sizes.");
+    }
+  }
+
+  /**
+   * Set allowed OpenMP scheduling kind.
+   *
+   * @note The sequential kind (used for sequential traversals) is always included implicitly and does not need to be
+   * set.
+   *
+   * @param allowedKinds A set of allowed OpenMP Scheduler kinds. If static is not included, some traversals which must
+   * use static, 1 scheduling will never be selected. (It is highly recommended to not include only static.)
+   */
+  void setAllowedOpenMPScheduleKinds(const std::set<OpenMPKindOption> &allowedKinds) {
+    _allowedOpenMPKinds = allowedKinds;
+    if (_allowedOpenMPKinds.erase(OpenMPKindOption::sequential) > 0) {
+      AutoPasLog(WARN,
+                 "The sequential OpenMP schedule kind is always included implicitly and does not need to be set. It is "
+                 "removed from the allowed OpenMP schedule kinds.");
+    }
+  }
+
+  /**
    * Get the list of allowed vectorization pattern options.
    *
    * @note This is only relevant for SoA. The not-applicable (N/A) pattern, which every AoS configuration uses, is
@@ -1296,6 +1334,15 @@ class AutoPas {
    * VLCSlicedBalancedTraversal).
    */
   std::set<LoadEstimatorOption> _allowedLoadEstimators{LoadEstimatorOption::getAllOptions()};
+  /**
+   * Allowed OpenMP Schedule Kind options. May include options that may not be usable with a given version of OpenMP.
+   * These should be filtered out as invalid configurations during tuning.
+   */
+  std::set<OpenMPKindOption> _allowedOpenMPKinds{OpenMPKindOption::getMostOptions()};
+  /**
+   * Allowed OpenMP chunks sizes.
+   */
+  std::set<OpenMPChunkSize> _allowedOpenMPChunkSizes{1, OpenMPChunkSize::balanced, OpenMPChunkSize::golden};
   /**
    * LogicHandler of autopas.
    */

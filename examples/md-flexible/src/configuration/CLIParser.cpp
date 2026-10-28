@@ -81,6 +81,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.MPITuningWeightForMaxDensity,
       config.newton3Options,
       config.newton3Options3B,
+      config.openMPChunkSizes,
+      config.openMPKindOptions,
       config.outputSuffix,
       config.particleSpacing,
       config.particleDensity,
@@ -175,7 +177,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.cellSizeFactors)::getoptChar: {
-        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet(strArg);
+        config.cellSizeFactors.value = autopas::utils::StringUtils::parseNumberSet<double>(strArg);
         if (config.cellSizeFactors.value->isEmpty()) {
           cerr << "Error parsing cell size factors: " << optarg << endl;
           displayHelp = true;
@@ -460,6 +462,22 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           }
         } catch (const exception &) {
           cerr << "Error parsing max tuning phases without test: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.openMPChunkSizes)::getoptChar: {
+        config.openMPChunkSizes.value = autopas::OpenMPChunkSize::parseChunkSizes(strArg);
+        if (config.openMPChunkSizes.value.empty()) {
+          cerr << "Error parsing OpenMP Chunk Sizes (must have a least one chunk size)" << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.openMPKindOptions)::getoptChar: {
+        config.openMPKindOptions.value = autopas::OpenMPKindOption::parseOptions(strArg);
+        if (config.openMPKindOptions.value.empty()) {
+          cerr << "Unknown OpenMP Schedule Kind: " << strArg << endl;
           displayHelp = true;
         }
         break;

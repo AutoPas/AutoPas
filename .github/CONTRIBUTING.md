@@ -175,6 +175,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Adjust the individual tuning strategies accordingly; the exact implementation will depend on the purpose of your option, but some general advice is:
   * Depending on your new option, it might make sense for some tuning strategies to merge it with another option to avoid sparse dimensions.
   * Make sure it is added to the search spaces that is passed to the [`AutoTuner`](/src/autopas/tuning/AutoTuner.cpp) in `AutoPas::init()`
+  * Update the `fallBackConfig` in [`MPIParallelizedStrategy::createFallBackConfiguration`](/src/autopas/tuning/tuningStrategy/MPIParallelizedStrategy.cpp).
 * Add the new option to [`SearchSpaceGenerators::cartesianProduct()`](/src/autopas/tuning/utils/SearchSpaceGenerators.h) and its call sites. If the new option depends on others, implement it similarly to traversals, containers, and load estimators.
 * Adjust any tests that are affected by these changes. The following tests will definitely require changes:
   * [`AutoPasInterfaceTest`](/tests/testAutopas/tests/autopasInterface/AutoPasInterfaceTest.cpp)
@@ -218,6 +219,7 @@ The table below lists the dependencies. The **Path** column currently reflects t
 | googletest | [`libs/googletest`](/libs/googletest)                   | https://github.com/google/googletest                | tag `v1.17.0`          | —                                          |
 | highway    | [`libs/highway`](/libs/highway)                         | https://github.com/google/highway                   | tag `1.4.0`            | —                                          |
 | json       | [`libs/json`](/libs/json)                               | https://github.com/nlohmann/json                    | tag `v3.12.0`          | docs and tests pruned                      |
+| lb4omp     | [`libs/lb4omp`](/libs/lb4omp)                           | https://github.com/unibas-dmi-hpc/LB4OMP            | commit `b9d25eca`      | AutoPas-specific fixes (2 commits)         |
 | pmt        | [`libs/pmt`](/libs/pmt)                                 | https://git.astron.nl/RD/pmt                        | commit `7a56fa3a`      | AutoPas-specific patch (in `libs/patches`) |
 | pybind11   | [`libs/pybind11`](/libs/pybind11)                       | https://github.com/pybind/pybind11                  | tag `v3.1.0`           | —                                          |
 | spdlog     | [`libs/spdlog`](/libs/spdlog)                           | https://github.com/gabime/spdlog                    | tag `v1.17.0`          | —                                          |
