@@ -85,8 +85,8 @@ class LJFunctorHWY
   explicit LJFunctorHWY(double cutoff, std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>>
                                            particlePropertiesLibrary = std::nullopt)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
-        _cutoffSquareAoS{cutoff * cutoff},
-        _PPLibrary{particlePropertiesLibrary} {
+        _cutoffSquareAoS{cutoff * cutoff}
+  {
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
@@ -95,11 +95,12 @@ class LJFunctorHWY
     }
 
     if constexpr (useMixing) {
-      if (not _PPLibrary.has_value()) {
+      if (not particlePropertiesLibrary.has_value()) {
         throw std::runtime_error("Mixing is enabled but no ParticlePropertiesLibrary was provided!");
       }
+      initFromPPL(particlePropertiesLibrary);
     } else {
-      if (_PPLibrary.has_value()) {
+      if (particlePropertiesLibrary.has_value()) {
         throw std::runtime_error("Mixing is disabled but a ParticlePropertiesLibrary was provided!");
       }
     }
@@ -140,10 +141,13 @@ class LJFunctorHWY
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
-      sigmaSquare = _PPLibrary->get().getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->get().getMixing24Epsilon(i.getTypeId(), j.getTypeId());
+      const auto typeI = i.getTypeId();
+      const auto typeJ = j.getTypeId();
+      const auto sigma = _halfSigmaPerType[typeI] + _halfSigmaPerType[typeJ];
+      sigmaSquare = sigma * sigma;
+      epsilon24 = 24.0 * _sqrtEpsilonPerType[typeI] * _sqrtEpsilonPerType[typeJ];
       if constexpr (applyShift) {
-        shift6 = _PPLibrary->get().getMixingShift6(i.getTypeId(), j.getTypeId());
+        shift6 = _shift6PerType[typeI] + _shift6PerType[typeJ];
       }
     }
     const auto dr = i.getR() - j.getR();
@@ -188,7 +192,8 @@ class LJFunctorHWY
    * This functor will always do a newton3 like traversal of the SoA using only the 1xVec Pattern.
    */
   inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, const bool newton3) final {
-    if (soa.size() == 0) return;
+    const auto soaSize = soa.size();
+    if (soaSize == 0) return;
 
     // obtain iterators for the various values
     const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
@@ -201,7 +206,7 @@ class LJFunctorHWY
     auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeIDptr = soa.template begin<Particle_T::AttributeNames::typeId>();
+    const auto *const __restrict typeIDPtr = soa.template begin<Particle_T::AttributeNames::typeId>();
 
     // initialize and declare vector variables
     auto virialSumX = highway::Zero(tag_double);
@@ -209,13 +214,35 @@ class LJFunctorHWY
     auto virialSumZ = highway::Zero(tag_double);
     auto uPotSum = highway::Zero(tag_double);
 
+    bool isHomogeneous = true;
+    if constexpr (useMixing) {
+      const size_t firstType = typeIDPtr[0];
+      for (size_t i = 1; i < soaSize; ++i) {
+        if (typeIDPtr[i] != firstType) {
+          isHomogeneous = false;
+          break;
+        }
+      }
+    }
+
+    if (isHomogeneous) {
+      for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soa.size()) - 1; i >= 0; i -= 1) {
+        static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
+                      "OwnershipStates underlying type should be int64_t!");
+
+        handleILoopBody<true, true, false, VectorizationPattern::p1xVec>(
+            i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr,
+            typeIDPtr, typeIDPtr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0, i);
+      }
+    }
+
     for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soa.size()) - 1; i >= 0; i -= 1) {
       static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
 
       handleILoopBody<true, true, false, VectorizationPattern::p1xVec>(
           i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr,
-          typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0, i);
+          typeIDPtr, typeIDPtr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0, i);
     }
 
     if constexpr (calculateGlobals) {
@@ -313,6 +340,18 @@ class LJFunctorHWY
   }
 
  private:
+
+  void initFromPPL(ParticlePropertiesLibrary<double, size_t> &ppl) {
+    const size_t nTypes = ppl.getNumberRegisteredSiteTypes();
+    _halfSigmaPerType.resize(nTypes);
+    _sqrtEpsilonPerType.resize(nTypes);
+    for (size_t t = 0; t < nTypes; ++t) {
+      _halfSigmaPerType[t] = ppl.getSigma(t) * 0.5;
+      _sqrtEpsilonPerType[t] = std::sqrt(ppl.getEpsilon(t));
+      _shift6PerType[t] = ppl.calcShift6(24.0 * ppl.getEpsilon(t), ppl.getSigma(t) * ppl.getSigma(t), _cutoffSquareAoS);
+    }
+  }
+
   /**
    * Number of i-particles processed per outer-loop step for the given vectorization pattern.
    * @tparam vecPattern
@@ -1518,12 +1557,14 @@ class LJFunctorHWY
 
   // cutoff squared used in the AoS functor.
   const double _cutoffSquareAoS{0.};
-  // epsilon, sigma and shift6 used in the AoS functor.
-  double _epsilon24AoS{0.}, _sigmaSquareAoS{0.}, _shift6AoS{0.};
 
-  // optional to hold a reference to the ParticlePropertiesLibrary. If a ParticlePropertiesLibrary is not used the
-  // optional is empty.
-  std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>> _PPLibrary;
+  // epsilon, sigma and shift6 used in the AoS functor.
+  double _sigmaSquareAoS{0.};
+  double _epsilon24AoS{0.};
+  double _shift6AoS{0.};
+  std::vector<double> _halfSigmaPerType{};
+  std::vector<double> _sqrtEpsilonPerType{};
+  std::vector<double> _shift6PerType{};
 
   // accumulators for the globals (potential energy and virial).
   double _potentialEnergySum{0.};
