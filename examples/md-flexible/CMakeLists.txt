@@ -14,6 +14,11 @@ include(autopas_all)
 
 option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
+option(MD_FLEXIBLE_USE_TUNED_THREADS "Use tuned thread count in md-flexible loops (and not just internally in AutoPas)." OFF)
+if(MD_FLEXIBLE_USE_TUNED_THREADS)
+    target_compile_definitions(md-flexible PRIVATE MD_FLEXIBLE_USE_TUNED_THREADS)
+endif()
+
 target_link_libraries(md-flexible PUBLIC autopas molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor." OFF)

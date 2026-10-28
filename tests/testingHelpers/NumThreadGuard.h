@@ -6,7 +6,23 @@
 
 #pragma once
 
+#include <stdexcept>
+
 #include "autopas/utils/WrapOpenMP.h"
+
+/**
+ * Thread setting to guard with \ref NumThreadGuard
+ */
+enum RestoreType {
+  /**
+   * Guard \ref autopas::autopas_set_num_threads
+   */
+  USED_THREADS,
+  /**
+   * Guard \ref autopas::autopas_set_tuned_num_threads
+   */
+  TUNED_THREADS,
+};
 
 /**
  * NumThreadGuard sets current number of threads to newNum and resets number of threads during destruction.
@@ -16,15 +32,22 @@ class NumThreadGuard final {
   /**
    * Construct a new NumThreadGuard object and sets current number of threads to newNum.
    * @param newNum new number of threads
+   * @param restoreType Type of thread setting to set/restore (Defaults to USED_THREADS)
    */
-  explicit NumThreadGuard(const int newNum) : numThreadsBefore(autopas::autopas_get_max_threads()) {
-    autopas::autopas_set_num_threads(newNum);
+  explicit NumThreadGuard(const int newNum, const RestoreType restoreType = USED_THREADS) : _restoreType(restoreType) {
+    if (_restoreType == USED_THREADS)
+      numThreadsBefore = autopas::autopas_get_num_threads();
+    else if (_restoreType == TUNED_THREADS)
+      numThreadsBefore = autopas::autopas_get_tuned_num_threads();
+    else
+      std::runtime_error("Unknown RestoreType!");
+    set_num_threads(newNum);
   }
 
   /**
    * Destroy the NumThreadGuard object and reset number of threads.
    */
-  ~NumThreadGuard() { autopas::autopas_set_num_threads(numThreadsBefore); }
+  ~NumThreadGuard() { set_num_threads(numThreadsBefore); }
 
   /**
    * delete copy constructor.
@@ -38,5 +61,15 @@ class NumThreadGuard final {
   NumThreadGuard &operator=(const NumThreadGuard &) = delete;
 
  private:
+  void set_num_threads(const int newNum) {
+    if (_restoreType == USED_THREADS)
+      autopas::autopas_set_num_threads(newNum);
+    else if (_restoreType == TUNED_THREADS)
+      autopas::autopas_set_tuned_num_threads(newNum);
+    else
+      std::runtime_error("Unknown RestoreType!");
+  }
+
   int numThreadsBefore;
+  RestoreType _restoreType;
 };

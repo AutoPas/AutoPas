@@ -7,4 +7,10 @@
 
 #include <gtest/gtest.h>
 
-class AutoPasTestBase : public testing::Test {};
+#include "NumThreadGuard.h"
+#include "autopas/utils/WrapOpenMP.h"
+
+class AutoPasTestBase : public testing::Test {
+ protected:
+  NumThreadGuard _numThreadGuard{autopas::autopas_get_max_threads(), TUNED_THREADS};
+};

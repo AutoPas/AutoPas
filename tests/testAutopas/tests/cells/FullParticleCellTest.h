@@ -8,4 +8,10 @@
 
 #include <gtest/gtest.h>
 
-class FullParticleCellTest : public testing::Test {};
+#include "NumThreadGuard.h"
+#include "autopas/utils/WrapOpenMP.h"
+
+class FullParticleCellTest : public testing::Test {
+ protected:
+  NumThreadGuard _numThreadGuard{autopas::autopas_get_max_threads(), TUNED_THREADS};
+};

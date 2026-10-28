@@ -157,7 +157,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle_
     this->deleteHaloParticles();
 
     std::vector<Particle_T> invalidParticles;
-    AUTOPAS_OPENMP(parallel) {
+    AUTOPAS_OPENMP(parallel AUTOPAS_NUM_THREADS) {
       // private for each thread!
       std::vector<Particle_T> myInvalidParticles{}, myInvalidNotOwnedParticles{};
       // TODO: needs smarter heuristic than this.
