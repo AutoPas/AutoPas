@@ -295,9 +295,6 @@ class LogicHandler {
     const auto interactionLengthInv = 1. / _currentContainer->getInteractionLength();
     initSpatialLocks(boxLength, interactionLengthInv);
 
-    // Set this flag, s.t., the container is rebuilt!
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
-
     return particlesNowOutside;
   }
 
@@ -782,6 +779,7 @@ class LogicHandler {
 
   /**
    * Sets the current container to the given one and transfers all particles from the old container to the new one.
+   * Invalidates the neighbor lists, so the new container is rebuilt before the next traversal.
    * @param newContainer The new container to set.
    */
   void setCurrentContainer(std::unique_ptr<ParticleContainerInterface<Particle_T>> newContainer);
@@ -1268,6 +1266,7 @@ void LogicHandler<Particle_T>::setCurrentContainer(
   }
 
   _currentContainer = std::move(newContainer);
+  _neighborListsAreValid.store(false, std::memory_order_relaxed);
 }
 
 template <typename Particle_T>
