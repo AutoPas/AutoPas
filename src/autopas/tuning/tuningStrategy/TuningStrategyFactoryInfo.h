@@ -60,6 +60,14 @@ struct TuningStrategyFactoryInfo {
    */
   std::string fuzzyRuleFileName{"fuzzyRulesSuitability.frule"};
 
+  /**
+   * The name and path of the file where the model is stored for python-based tuning.
+   */
+  std::string modelFileName{"model.pkl"};
+  /**
+   * Confidence threshold for python-based tuning.
+   */
+  double confidenceThreshold{0.0};
   // MPI Tuning Options
   /**
    * If MPIParallelizedStrategy is in the list of strategies this should be set to true to notify other strategies

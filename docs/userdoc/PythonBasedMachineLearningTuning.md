@@ -1,0 +1,115 @@
+# Python-based Machine Learning Tuning
+
+AutoPas includes a python-based machine learning tuning strategy: python-based-tuning. It predicts the best configuration with a model written in Python. AutoPas provides a random forest model as an example of how it can be used. This document provides a guide on how to set this up, generate the data, training the random forest model, and use the tuning strategy. The guide is tailored to HPC systems.
+
+The central premise of python-based tuning strategies is to use PyBind11 is call python from within AutoPas. That allows for easier experimentation and use of Python machine learning libraries such as sklearn.
+
+We, therefore, will also discuss possibilities to modify and experiment with the python-based machine learning tuning strategy beyond the random forest model (see [Using a different model](#using-a-different-model)).
+
+## Set-up
+
+### Python
+
+To use this tuning strategy, you will need a suitable version of Python, compatible with the version of PyBind11 being used. This means, currently, at least v3.9. (See [PyBind11 releases](https://github.com/pybind/pybind11/releases) and cross-reference against the version bundled under `./libs` or your own version for the most-up-to-date information.) On HPC systems, this sometimes means the loading a module for a more up-to-date version of Python.
+
+We have tested this with Python 3.11.7.
+
+### Python Virtual Enviroment and Dependencies
+
+We recommend using a Python virtual enviroment to handle dependencies. You can find details of this [here](https://docs.python.org/3/library/venv.html).
+
+To create the enviroment:
+```bash
+python -m venv </path/to/new/virtual/environment>
+```
+
+To activate the environment:
+```bash
+source </path/to/new/virtual/environment>/bin/activate
+```
+
+Install dependencies using pip. For tested dependencies required by the random forest model, you can install these automatically:
+
+```bash
+pip install -r <autopas_src_dir>/src/autopas/tuning/tuningStrategy/pythonBasedTuning/randomForest/requirements.txt
+```
+
+### Building AutoPas with the Python venv
+
+**After** activating the environment on the CLI, you can enable python-based tuning with
+
+```bash
+cmake .. -DAUTOPAS_ENABLE_PYTHON_BASED_TUNING=ON
+```
+
+If you do this before activating the environment, AutoPas may find the system Python instead, potentially without the necessary dependencies.
+
+
+## Generate the data
+
+### AutoPas build
+
+For the random forest model, you must enable the live info and tuning results loggers (in the build directory):
+
+```bash
+cmake .. -DAUTOPAS_LOG_LIVEINFO=ON -DAUTOPAS_LOG_TUNINGRESULTS=ON
+```
+
+Be careful of keeping the live info logger enabled beyond data generation, as it can have a significant negative performance impact.
+
+### Training data scenarios
+
+How to generate the data is ultimately application dependent. It is potentially challenging to generate appropriate training data through real simulation, as a large range of data is required for successful training. Therefore, [Newcome et al., 2025](https://doi.org/10.1007/978-3-031-97635-3_35) proposed creating fake simulation data by artifically distributing particles in such a way that, whilst physically inaccurate, recreated a wide range of computationally realistic scenarios (e.g. realistic numbers of particles per cell, but some unrealistically close together - which makes no impact on algorithmic performance). 
+
+We provide an example for generating data for the md-flexible example code. See the directory [`examples/md-flexible/input/trainingDataGeneration`](https://github.com/AutoPas/AutoPas/tree/master/examples/md-flexible/input/trainingDataGeneration) and in particular its `README.md`, where more details are given.
+
+Newcome et al., 2025 pre-dated [dynamically-rebuilt containers](https://github.com/AutoPas/AutoPas/pull/821), and so the effects of variable rebuild frequencies was not considered. Therefore, the success of the above methodology may be limited, and will be addressed in the future.
+
+## Training the model
+
+The random forest model can be trained with the python script [`src/autopas/tuning/tuningStrategy/pythonBasedTuning/randomForest/train.py`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/tuning/tuningStrategy/pythonBasedTuning/randomForest/train.py).
+
+For example
+
+```bash
+python train.py --results-dir=/path/to/results/
+```
+
+`/path/to/results/` should be a single directory containing all result files. Live Info and Tuning Result logs will be matched together based on their shared time-and-rank-stamps. As it is possible for multiple experiments to run with the same time stamp, we therefore recommend running a single experiment per root directory, such as with the example training data generators.
+
+The model stores the configuration components and the live info features it was trained on. If these differ configurations consist of other components, e.g. because a newer AutoPas version added one, AutoPas refuses to load the model. If a live info feature that the model was trained on is no longer available, the first prediction fails with an error. In both cases, retrain the model with data from the AutoPas version that uses it.
+## Using the tuning strategy
+
+Set the python-based-tuning strategy. This is not designed to be used with any other tuning strategies.
+
+If using a HPC system, remember to, in the jobscript file, load the up-to-date version of python and activate the virtual environment.
+
+AutoPas starts its own embedded Python interpreter in `AutoPas::init()`. If your project already uses Python, AutoPas attaches to the running interpreter instead.
+
+AutoPas objects that are alive at the same time share one interpreter automatically. 
+Python is finalized when the last of them is destroyed, and it cannot be started again in the same process, because libraries like numpy do not support that. 
+So if you create AutoPas objects one after another, or you otherwise need an embedded Python interpreter, keep the interpreter alive in between by holding the shared pointer returned by `autopas::utils::PythonInterpreter::getSharedInterpreter()`.
+
+It is also possible to set a confidence threshold, such for that predictions in which the model's confidence is below this, the configuration queue is left untouched (e.g. typically a full search will occur, if no other tuning strategies are specified).
+This feature is largely untested, and potentially not even of value with the random forest model.
+It is left included because it may be valuable with alternative models.
+We recommend therefore using the default threshold (0.0).
+
+## Using a different model
+
+Using a different model is not currently officially supported.
+It requires some modifications to AutoPas's C++ files, and the interface may still change.
+But if you wish to do so already, follow these instructions.
+
+The tuning strategy loads the model with the class `PythonBasedTuning` in [`src/autopas/tuning/tuningStrategy/pythonBasedTuning/randomForest/predict.py`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/tuning/tuningStrategy/pythonBasedTuning/randomForest/predict.py).
+To use a different model, write a `predict.py` whose class `PythonBasedTuning` provides the same interface:
+
+- `__init__(self, model_file: str, interaction_type: str)`: loads the model from the model file set in AutoPas, for the interaction type `pairwise` or `triwise`.
+- `config_columns`: the names of the configuration components that the model predicts. These must be the components in `Configuration::getCSVHeader()`, otherwise AutoPas refuses to load the model.
+- `predict(self, live_info_json: str) -> str`: takes the live info as a JSON string and returns a JSON string with a value for each configuration component, written as in the tuning results logs, and the `confidence` of the prediction.
+
+Place your scripts in a new directory next to `randomForest/`, and change the path that `PythonBasedTuning.cpp` appends to Python's `sys.path` to that directory.
+AutoPas loads the scripts from its source directory at runtime, so further changes to them take effect without rebuilding AutoPas.
+
+
+
