@@ -48,7 +48,7 @@ class CellIterator {
   /**
    * Type trait to be compatible with std::iterator.
    */
-  using iterator_category = typename IteratorType::iterator_category;
+  using iterator_category = std::bidirectional_iterator_tag;
 
   /**
    * Constructor
@@ -102,6 +102,26 @@ class CellIterator {
     return *this;
   }
 
+    /**
+   * Increment the iterator (postfix).
+   * @return Copy of *this before incrementing.
+   */
+  inline CellIterator<StorageType, modifiable> operator++(int) {
+    auto tmp = *this;
+    ++(*this);
+    return tmp;
+  }
+
+  /**
+   * Decrement the iterator (postfix).
+   * @return Copy of *this before decrementing.
+   */
+  inline CellIterator<StorageType, modifiable> operator--(int) {
+    auto tmp = *this;
+    --(*this);
+    return tmp;
+  }
+
   /**
    * Equality operator
    * @param rhs
@@ -127,7 +147,7 @@ class CellIterator {
    * @param rhs
    * @return True if this is before (in -- direction) rhs.
    */
-  bool operator<(const CellIterator &rhs) const { return iterator < rhs; }
+  bool operator<(const CellIterator &rhs) const { return iterator < rhs.iterator; }
 
  private:
   /**
