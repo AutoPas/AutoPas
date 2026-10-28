@@ -102,6 +102,26 @@ class CellIterator {
     return *this;
   }
 
+    /**
+   * Increment the iterator (postfix).
+   * @return Copy of *this before incrementing.
+   */
+  inline CellIterator<StorageType, modifiable> operator++(int) {
+    auto tmp = *this;
+    ++(*this);
+    return tmp;
+  }
+
+  /**
+   * Decrement the iterator (postfix).
+   * @return Copy of *this before decrementing.
+   */
+  inline CellIterator<StorageType, modifiable> operator--(int) {
+    auto tmp = *this;
+    --(*this);
+    return tmp;
+  }
+
   /**
    * Equality operator
    * @param rhs
