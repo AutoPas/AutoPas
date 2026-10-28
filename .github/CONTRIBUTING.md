@@ -3,6 +3,7 @@
 **Thanks for contributing to AutoPas!** 
 
 Please keep in mind the following notes while working.
+New developers should particularly take note of the [GenAI guidelines](#use-of-genai-agents).
 
 ## C++
 ### General Notes
@@ -260,3 +261,37 @@ Update the above table when you do this.
 * Include the new CMake module** from [`cmake/modules/AutoPasCMakeOptions.cmake`](/cmake/modules/AutoPasCMakeOptions.cmake) (or whichever options module is appropriate).
 * Mark the new path `linguist-vendored` in [`.gitattributes`](/.gitattributes) so it stays out of PR diffs and language stats.
 * Add a row to the dependency table above with the upstream URL, pinned ref, and a note about any post-import commits.
+
+## Use of GenAI agents
+
+The use of any kind of tools, including GenAI/LLMs, is welcomed in this project.
+However, as all contributions to this project are reviewed ultimately by humans, we want to avoid wasting our time on low-effort GenAI contributions, and feel that the code we review has had human insight in addition to GenAI usage or that our reviews will aid in the learning of a human.
+We therefore have the following requirements.
+
+### No drive-by GenAI pull requests
+
+We discourage so-called drive-by GenAI pull requests, where a pull request is written with a GenAI tool by somebody who has no stake in AutoPas.
+**If you are a first-time contributor, add to your PR description briefly why you are making this PR.**
+This includes, but is not limited to:
+* You use or develop an AutoPas-supported simulator.
+* You wish to add a feature or otherwise develop AutoPas as part of a research paper, thesis, or general scientific/technical curiosity.
+* You develop a library, tool, or other dependency that we use.
+* You've used some AutoPas code in your own codebase, discovered an improvement, and wish to add that improvement to this repository.
+* You intend to do one of the above, but are starting off with a smaller/practice/other contribution.
+* You have no stake in AutoPas, but you wish to improve your C++ or other skills, by contributing a human-written no-GenAI PR to the project.
+
+Issues marked as `good-first-issue` are intended for humans to get familiar with the codebase, and should not be given to an agent. 
+
+If you have write-access already, e.g. you are already a member of the developers or students team, the above does not apply.
+
+### General principles
+
+* Pull request descriptions and review comments must be human-written.
+  This is useful as a self-review, they are typically more concise and useful to reviewers, and they help us trust you that this isn't a low-effort GenAI contribution.
+  Spelling, grammar, and translation GenAI tools are fine, but we prefer imperfect Englisch to excessively generated text.
+* We do not expect you to be a perfect developer, but we want you and us to understand your code upon merging.
+* Communicate clearly if there is some code change you do not fully understand, even if that was a GenAI code change.
+  We can therefore focus our review on those sections, help explain that code, and hopefully improve your programming abilities.
+  There is, of course, a limit to how much of such code we can review, but the more open you are about this, the better for all of us.
+* Generated commit messages are tolerated, but we prefer human written messages.
+
