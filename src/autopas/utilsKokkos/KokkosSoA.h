@@ -15,8 +15,10 @@
 
 namespace autopas::utilsKokkos {
 
-template <typename Particle_T, typename ... AttributeTypes>
+template <typename ... AttributeTypes>
 class KokkosSoA {
+public:
+  using Type = std::tuple<Kokkos::DualView<AttributeTypes, DeviceExecSpace::device_type>...>;
 
   template <size_t Attribute, bool useDeviceView = true>
   KOKKOS_INLINE_FUNCTION auto& operator() (size_t index) const {
@@ -33,7 +35,7 @@ class KokkosSoA {
     resizeImpl(size, I);
   }
 
-  template <bool useDeviceView>
+  template <class Particle_T, bool useDeviceView>
   void addParticle(Particle_T& particle) {
     constexpr auto tupleSize = std::tuple_size<decltype(particleData)>::value;
     constexpr auto I = std::make_index_sequence<tupleSize>{};
@@ -47,13 +49,13 @@ private:
     (std::get<I>(particleData).resize(Kokkos::WithoutInitializing, size), ...);
   }
 
-  template <bool useDeviceView, std::size_t... I>
+  template <class Particle_T, bool useDeviceView, std::size_t... I>
   void addParticleImpl(size_t index, Particle_T& particle, std::index_sequence<I...>) {
     // I+1 is required since we do not want to store the Particle Pointer which is the result of particle.get<0>()
     ((operator()<I, useDeviceView>(index) = particle.template get<static_cast<Particle_T::AttributeNames>(I+1)>()), ...);
   }
 
-  Kokkos::DualView<AttributeTypes..., DeviceExecSpace::device_type> particleData {};
+  Type particleData {};
 };
 
 } // utilsKokkos

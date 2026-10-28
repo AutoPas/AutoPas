@@ -17,6 +17,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
+#include "autopas/utilsKokkos/KokkosSoA.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
@@ -337,6 +338,21 @@ class ParticleBase {
       typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
                                        floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
+
+#ifdef AUTOPAS_ENABLE_KOKKOS
+  using KokkosSoAArraysType = autopas::utilsKokkos::KokkosSoA<
+    size_t * /*id*/, floatType * /*x*/, floatType * /*y*/,
+    floatType * /*z*/,
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    floatType * /*rebuildX*/, floatType * /*rebuildY*/,
+    floatType * /*rebuildZ*/,
+#endif
+    floatType * /*vx*/, floatType * /*vy*/, floatType * /*vz*/,
+    floatType * /*fx*/, floatType * /*fy*/, floatType * /*fz*/,
+    floatType * /*oldFx*/, floatType * /*oldFy*/,
+    floatType * /*oldFz*/, floatType * /*mass*/, idType * /*typeid*/,
+    autopas::OwnershipState * /*ownershipState*/>;
+#endif
 
   /**
    * Non-const getter for the pointer of this object.
