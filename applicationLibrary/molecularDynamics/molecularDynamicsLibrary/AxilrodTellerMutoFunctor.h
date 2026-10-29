@@ -264,21 +264,26 @@ class AxilrodTellerMutoFunctor
       // Division to the correct value is handled in endTraversal().
       const double potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
 
-      // Virial is calculated as f_i * r_i
-      // see Thompson et al.: https://doi.org/10.1063/1.3245303
-      const auto virialI = forceI * i.getR();
+      // The virial in general is defined as f_i * r_i.
+      // However, to work correctly with periodic boundary conditions, we only use relative displacements.
+      // The point of reference becomes the centroid r_c = (r_i + r_j + r_k) / 3.0 instead of the origin.
+      // The per-particle contribution is then
+      // f_i * (r_i - r_c) = f_i * (r_ki - r_ij) / 3.0
+      // The division by 3 is handled in endTraversal().
+      // For more information, see Thompson et al.: https://doi.org/10.1063/1.3245303
       if (i.isOwned()) {
+        const auto virialI = forceI * (displacementKI - displacementIJ);
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialI;
       }
       // for non-newton3 particles j and/or k will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        const auto virialJ = forceJ * j.getR();
+        const auto virialJ = forceJ * (displacementIJ - displacementJK);
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialJ;
       }
       if (newton3 and k.isOwned()) {
-        const auto virialK = forceK * k.getR();
+        const auto virialK = forceK * (displacementJK - displacementKI);
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialK;
       }
@@ -377,6 +382,9 @@ class AxilrodTellerMutoFunctor
 
       // Additionally, we have always calculated 3*potentialEnergy, so we divide by 3 again.
       _potentialEnergySum /= 3.;
+
+      // For the virial, we have also calculated 3*virial, so we divide by 3 here.
+      _virialSum *= (1. / 3.);
 
       _postProcessed = true;
 
