@@ -317,7 +317,22 @@ class ParticleBase {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { ptr, id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
+  enum AttributeNames : int {
+    ptr,
+    id,
+    posX,
+    posY,
+    posZ,
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    rebuildX,
+    rebuildY,
+    rebuildZ,
+#endif
+    forceX,
+    forceY,
+    forceZ,
+    ownershipState
+  };
 
   /**
    * Floating Point Type used for this particle
@@ -330,13 +345,24 @@ class ParticleBase {
   using ParticleIdType = idType;
 
   /**
+   * The type for the soa storage with a custom type for the pointer column.
+   * Derived particle classes that only need a different pointer type should use this instead of redefining all
+   * columns, so that their SoA stays consistent with AttributeNames.
+   * @tparam Ptr_T Type stored in the ptr column.
+   */
+  template <typename Ptr_T>
+  using SoAArraysTypeWithPtr = typename autopas::utils::SoAType<
+      Ptr_T, idType /*id*/, floatType /*x*/, floatType /*y*/, floatType /*z*/,
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+      floatType /*rebuildX*/, floatType /*rebuildY*/, floatType /*rebuildZ*/,
+#endif
+      floatType /*fx*/, floatType /*fy*/, floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
+
+  /**
    * The type for the soa storage.
    * owned is currently used as a floatType to ease calculations within the functors.
    */
-  using SoAArraysType =
-      typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
-                                       floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                       floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
+  using SoAArraysType = SoAArraysTypeWithPtr<ParticleBase<floatType, idType> *>;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -364,7 +390,17 @@ class ParticleBase {
       return getR()[1];
     } else if constexpr (attribute == AttributeNames::posZ) {
       return getR()[2];
-    } else if constexpr (attribute == AttributeNames::forceX) {
+    }
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    else if constexpr (attribute == AttributeNames::rebuildX) {
+      return getRAtRebuild()[0];
+    } else if constexpr (attribute == AttributeNames::rebuildY) {
+      return getRAtRebuild()[1];
+    } else if constexpr (attribute == AttributeNames::rebuildZ) {
+      return getRAtRebuild()[2];
+    }
+#endif
+    else if constexpr (attribute == AttributeNames::forceX) {
       return getF()[0];
     } else if constexpr (attribute == AttributeNames::forceY) {
       return getF()[1];
@@ -393,7 +429,17 @@ class ParticleBase {
       _r[1] = value;
     } else if constexpr (attribute == AttributeNames::posZ) {
       _r[2] = value;
-    } else if constexpr (attribute == AttributeNames::forceX) {
+    }
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    else if constexpr (attribute == AttributeNames::rebuildX) {
+      _rAtRebuild[0] = value;
+    } else if constexpr (attribute == AttributeNames::rebuildY) {
+      _rAtRebuild[1] = value;
+    } else if constexpr (attribute == AttributeNames::rebuildZ) {
+      _rAtRebuild[2] = value;
+    }
+#endif
+    else if constexpr (attribute == AttributeNames::forceX) {
       _f[0] = value;
     } else if constexpr (attribute == AttributeNames::forceY) {
       _f[1] = value;
@@ -402,7 +448,7 @@ class ParticleBase {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
-      utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
+      utils::ExceptionHandler::exception("ParticleBase::set() unknown attribute {}", attribute);
     }
   }
 

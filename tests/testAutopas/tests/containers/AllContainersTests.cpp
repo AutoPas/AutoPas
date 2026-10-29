@@ -167,9 +167,9 @@ class TestParticle : public ParticleFP64 {
   }
   TestParticle(const TestParticle &testParticle) : ParticleFP64(testParticle) { ++numParticles; }
   ~TestParticle() override { --numParticles; }
-  using SoAArraysType = autopas::utils::SoAType<TestParticle *, unsigned long /*id*/, double /*x*/, double /*y*/,
-                                                double /*z*/, double /*fx*/, double /*fy*/, double /*fz*/,
-                                                autopas::OwnershipState /*ownershipState*/>::Type;
+  using SoAArraysType = ParticleFP64::SoAArraysTypeWithPtr<TestParticle *>;
+  static_assert(std::tuple_size_v<SoAArraysType> == AttributeNames::ownershipState + 1,
+                "TestParticle::SoAArraysType does not match ParticleFP64::AttributeNames.");
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
     return this;

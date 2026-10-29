@@ -12,10 +12,14 @@ This provides basic features like ID, 3D position, 3D force, and an [`OwnershipS
 For this to work, the new particle type has to define a few things to help the code generation:
 - `enum AttributeNames`:
   This enum has to have an entry for (at least) all class members that are used inside the functor.
-  The minimal set of values is what is defined in [`ParticleBase`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/particles/ParticleBase.h).
-  Hence, it is best practice to copy this definition in the new class and extend it as necessary.
+  The minimal set of values is `ptr`, `id`, `posX`, `posY`, `posZ`, `forceX`, `forceY`, `forceZ`, and `ownershipState`.
+  It is best practice to copy this set into the new class and extend it as necessary.
+  Note that [`ParticleBase`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/particles/ParticleBase.h) additionally defines `rebuildX`, `rebuildY`, and `rebuildZ` (the position at the last neighbor list rebuild) if `AUTOPAS_ENABLE_DYNAMIC_CONTAINERS` is enabled.
+  These entries are optional for custom particles and only needed if a functor requires them.
 - `SoAArraysType`:
-  This type definition is a type alias for `autopas::utils::SoAType<...>`, which expects as templates the respective types for the aforementioned `AttributeNames`.
+  This type definition is a type alias for `autopas::utils::SoAType<...>`, which expects as templates the respective types for the aforementioned `AttributeNames`, in the same order.
+  If your particle only differs from `ParticleBase` in the type of the `ptr` column (e.g. a test particle that does not add any members), do not redefine `AttributeNames` and all columns manually.
+  Instead, reuse the inherited `AttributeNames` and use `ParticleBase::SoAArraysTypeWithPtr<YourParticle *>`, which keeps the SoA consistent with `ParticleBase::AttributeNames` regardless of the build configuration.
 - `get()` and `set()` methods templated with the previously defined `AttributeNames`.
 
 As an example see [`MoleculeLJ`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/MoleculeLJ.h).
