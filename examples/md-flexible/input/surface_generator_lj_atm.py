@@ -26,7 +26,7 @@ WALL_Y0 = (BOX_SIZE_Y - WALL_SIZE) // 2
 WALL_CENTER_X = WALL_X0 + WALL_SIZE // 2
 WALL_CENTER_Y = WALL_Y0 + WALL_SIZE // 2
 
-ITERATIONS = 1000000
+ITERATIONS = 150000
 DELTA_T = 0.0005
 GRAVITY_Z = -0.0001
 TEMPERATURE = 0.6
@@ -37,7 +37,7 @@ EPSILON_WW = 1.0
 # Fluid-wall wetting: effective_epsilon_fw = ZETA * EPSILON_FF.
 # Must match FLUID_WALL_EPSILON_SCALE in SimulationParticleTypes.h.
 ZETA = 0.3
-VERLET_REBUILD_FREQUENCY= 5
+VERLET_REBUILD_FREQUENCY= 1
 RADIUS = 17
 CUTOFF = 2.5
 
@@ -45,7 +45,7 @@ CUTOFF = 2.5
 NU_FLUID = 0.073
 
 DROPLET_CENTER_Z = {
-    "smooth": 24,
+    "smooth": 26,
     "boss": 34,
     "grid": 36,
     "pit": 30,
@@ -294,7 +294,7 @@ def generate_yaml(surface, wall_mode, is_treatment):
         f"   targetTemperature             :  {TEMPERATURE}\n"
         f"   deltaTemperature              :  0.1\n"
         f"   thermostatInterval            :  10\n"
-        f"   addBrownianMotion             :  false\n"
+        f"   addBrownianMotion             :  true\n"
         f"\n"
         f"vtk-filename                     :  {run_name}\n"
         f"vtk-write-frequency              :  {VTK_WRITE_FREQUENCY}\n"
