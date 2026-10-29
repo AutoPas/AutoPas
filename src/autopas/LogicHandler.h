@@ -170,6 +170,13 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   std::vector<Particle_T> updateContainer() {
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+    if (_totalRemainderTraversalTimeCurrentIter > 0) {
+      _doDynamicRebuild = _rebuildDecisionContext.afterRemainderTraversal(_totalRemainderTraversalTimeCurrentIter,
+                                                                          getNumberOfParticlesBuffer());
+      _totalRemainderTraversalTimeCurrentIter = 0;
+    }
+#endif
     ++_iteration;
 
 #ifdef AUTOPAS_DYNAMIC_CONTAINERS_STANDARD
@@ -992,6 +999,12 @@ class LogicHandler {
   size_t _numParticlesFast{0};
 
 #ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+
+  /**
+   * The total time spent in the remainder traversal for the current iteration over multiple computeInteraction calls.
+   */
+  size_t _totalRemainderTraversalTimeCurrentIter{0};
+
   /**
    * Aggregates all data required to decide whether a neighbor list rebuild
    * should be triggered based on estimated remainder traversal and rebuild times.
@@ -1295,8 +1308,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
 
 #ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
   if (not doRebuild) {
-    _doDynamicRebuild =
-        _rebuildDecisionContext.afterRemainderTraversal(timerComputeRemainder.getTotalTime(), numParticlesBuffer);
+    _totalRemainderTraversalTimeCurrentIter += timerComputeRemainder.getTotalTime();
   }
 #endif
 
