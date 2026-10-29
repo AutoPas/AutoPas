@@ -3,6 +3,7 @@
  * @author Luis Gall
  * @date 28.10.2026
  *
+ * Currently covered methods of KokkosSoA: operator()(index), addParticle(index, Particle)
  */
 
 #ifdef AUTOPAS_ENABLE_KOKKOS

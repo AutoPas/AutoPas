@@ -387,6 +387,75 @@ class KokkosParticleBase {
 #endif
 
   /**
+   * Non-const accessor used by KokkosAoS, which allows modifying an attribute in place.
+   * @tparam attribute Attribute name.
+   * @return this for AttributeNames::ptr, otherwise a reference to the requested attribute.
+   */
+  template <AttributeNames attribute>
+  constexpr decltype(auto) operator()() {
+    if constexpr (attribute == AttributeNames::ptr) {
+      return this;
+    } else {
+      return getRef<attribute>();
+    }
+  }
+
+  /**
+   * Const accessor used by KokkosAoS.
+   * @tparam attribute Attribute name.
+   * @return Value of the requested attribute.
+   */
+  template <AttributeNames attribute>
+  constexpr auto operator()() const {
+    return get<attribute>();
+  }
+
+  /**
+   * Getter, which returns a reference to an attribute using the corresponding attribute name (defined in
+   * AttributeNames).
+   * @tparam attribute Attribute name.
+   * @return Reference to the requested attribute.
+   */
+  template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
+  constexpr decltype(auto) getRef() {
+    if constexpr (attribute == AttributeNames::id) {
+      return (_id);
+    } else if constexpr (attribute == AttributeNames::posX) {
+      return (_r[0]);
+    } else if constexpr (attribute == AttributeNames::posY) {
+      return (_r[1]);
+    } else if constexpr (attribute == AttributeNames::posZ) {
+      return (_r[2]);
+    }
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    else if constexpr (attribute == AttributeNames::rebuildX) {
+      return (_rAtRebuild[0]);
+    } else if constexpr (attribute == AttributeNames::rebuildY) {
+      return (_rAtRebuild[1]);
+    } else if constexpr (attribute == AttributeNames::rebuildZ) {
+      return (_rAtRebuild[2]);
+    }
+#endif
+    else if constexpr (attribute == AttributeNames::velX) {
+      return (_v[0]);
+    } else if constexpr (attribute == AttributeNames::velY) {
+      return (_v[1]);
+    } else if constexpr (attribute == AttributeNames::velZ) {
+      return (_v[2]);
+    } else if constexpr (attribute == AttributeNames::forceX) {
+      return (_f[0]);
+    } else if constexpr (attribute == AttributeNames::forceY) {
+      return (_f[1]);
+    } else if constexpr (attribute == AttributeNames::forceZ) {
+      return (_f[2]);
+    } else if constexpr (attribute == AttributeNames::ownershipState) {
+      return (_ownershipState);
+    } else {
+      utils::ExceptionHandler::exception("KokkosParticleBase::getRef() unknown attribute {}", attribute);
+    }
+  }
+
+  /**
    * Non-const getter for the pointer of this object.
    * @tparam attribute Attribute name.
    * @return this.
