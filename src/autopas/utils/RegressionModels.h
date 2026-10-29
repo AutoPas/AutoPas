@@ -270,7 +270,7 @@ class SimpleLinearRegression : public RegressionBase {
    * Predicts the y value for a given x using a linear regression over the collected data.
    *
    * @param x Value for which the y value should be returned.
-   * @return y' a linear regression estimate for x based on the collected data, returned if no error occurred during
+   * @return y A linear regression estimate for x based on the collected data, returned if no error occurred during
    * calculation.
    */
   [[nodiscard]] Result predict(const long x) const {
@@ -367,18 +367,10 @@ class RebuildDecisionContext {
    * register the latest rebuild time.
    *
    * @param rebuildTime Measured remainder traversal time
-   * @param doTuningRebuild
    */
-  void afterRebuild(const long rebuildTime, const bool doTuningRebuild) {
-    // @todo: remove the commented parts.
-    // tuning iterations distort the rebuild time estimate
-    // was commented out as in case of a single AC, this ignores the first rebuild, and then rebuild is never triggered.
-    // if (not doTuningRebuild) {
+  void afterRebuild(const long rebuildTime) {
     _rebuildNeighborTimeMean.addNewPoint(rebuildTime);
-    //}
-
     _remainderTraversalTimePredictor.reset();
-
     _remainderTraversalTimeEstimate = std::numeric_limits<double>::quiet_NaN();
   }
 
@@ -457,7 +449,8 @@ class RebuildDecisionContext {
       if (remainderIncline >= value_rebuild) {
         doDynamicRebuild = true;
       }
-    } else if (returnCode_rebuild == RegressionBase::ReturnCode::OVERFLOW_REG ||
+    } else if (returnCode_rebuild == RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG ||
+               returnCode_rebuild == RegressionBase::ReturnCode::OVERFLOW_REG ||
                returnCode_remainder == RegressionBase::ReturnCode::OVERFLOW_REG ||
                returnCode_remainder == RegressionBase::ReturnCode::UNKNOWN_ERROR_REG) {
       doDynamicRebuild = true;
