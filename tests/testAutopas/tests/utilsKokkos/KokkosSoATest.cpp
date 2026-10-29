@@ -48,15 +48,16 @@ TEST_F(KokkosSoATest, SoAStorageTestGet) {
   Kokkos::finalize();
 }
 
-TEST_F(KokkosSoATest, SoATestAddParticl) {
+TEST_F(KokkosSoATest, SoATestAddParticle) {
   Kokkos::initialize();
   {
-    autopas::utilsKokkos::KokkosSoA<autopas::ParticleBaseFP32::KokkosSoAArraysType,
-      autopas::utilsKokkos::DeviceMemSpace::device_type> soa {};
+    autopas::KokkosParticleBaseFP32::KokkosSoAArraysType soa;
+    soa.resize(1);
 
+    autopas::KokkosParticleBaseFP32 particle {};
 
+    soa.template addParticle<autopas::KokkosParticleBaseFP32, false>(0, particle);l
 
-    soa.addParticle<autopas::ParticleBaseFP32, false>()
   }
   Kokkos::finalize();
 }

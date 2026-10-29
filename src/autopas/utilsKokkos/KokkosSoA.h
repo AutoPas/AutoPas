@@ -36,11 +36,11 @@ public:
   }
 
   template <class Particle_T, bool useDeviceView>
-  void addParticle(Particle_T& particle) {
+  void addParticle(size_t index, Particle_T& particle) {
     constexpr auto tupleSize = std::tuple_size<decltype(particleData)>::value;
     constexpr auto I = std::make_index_sequence<tupleSize>{};
 
-    addParticleImpl<useDeviceView>(particle, I);
+    addParticleImpl<Particle_T, useDeviceView>(index, particle, I);
   }
 
 private:

@@ -12,6 +12,7 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/SoAType.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 #include "autopas/utilsKokkos/KokkosSoA.h"
 
@@ -114,7 +115,7 @@ class KokkosParticleBase {
    * get the force acting on the particle
    * @return force
    */
-  [[nodiscard]] const std::array<floatType, 3> &getF() const { return {_f[0], _f[1], _f[2]}; }
+  [[nodiscard]] std::array<floatType, 3> getF() const { return {_f[0], _f[1], _f[2]}; }
 
   /**
    * Set the force acting on the particle
@@ -162,7 +163,7 @@ class KokkosParticleBase {
    * Get the position of the particle
    * @return current position
    */
-  [[nodiscard]] const std::array<floatType, 3> &getR() const { return {_r[0], _r[1], _r[2]}; }
+  [[nodiscard]] std::array<floatType, 3> getR() const { return {_r[0], _r[1], _r[2]}; }
 
   /**
    * Set the position of the particle
@@ -179,7 +180,7 @@ class KokkosParticleBase {
    * Get the last rebuild position of the particle
    * @return current rebuild position
    */
-  [[nodiscard]] const std::array<floatType, 3> &getRAtRebuild() const {
+  [[nodiscard]] std::array<floatType, 3> getRAtRebuild() const {
     return {_rAtRebuild[0], _rAtRebuild[1], _rAtRebuild[2]};
   }
   /**
@@ -261,9 +262,7 @@ class KokkosParticleBase {
    * Get the velocity of the particle
    * @return current velocity
    */
-  [[nodiscard]] const std::array<floatType, 3> &getV() const {
-    return {_v[0], _v[1], _v[2]};
-  }
+  [[nodiscard]] std::array<floatType, 3> getV() const { return {_v[0], _v[1], _v[2]}; }
 
   /**
    * Set the velocity of the particle
@@ -339,7 +338,11 @@ class KokkosParticleBase {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { ptr, id, posX, posY, posZ, velX, velY, velZ, forceX, forceY, forceZ, ownershipState };
+  enum AttributeNames : int { ptr, id, posX, posY, posZ,
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    rebuildX, rebuildY, rebuildZ,
+#endif
+    velX, velY, velZ, forceX, forceY, forceZ, ownershipState };
 
   /**
    * Floating Point Type used for this particle
@@ -351,9 +354,25 @@ class KokkosParticleBase {
    */
   using ParticleIdType = idType;
 
+  /**
+   * The type for the host-side SoA storage. Its column order matches AttributeNames (including ptr) and it determines
+   * the types of get() and set().
+   */
+  using SoAArraysType = typename autopas::utils::SoAType<
+      KokkosParticleBase<floatType, idType> * /*ptr*/, idType /*id*/, floatType /*x*/, floatType /*y*/,
+      floatType /*z*/,
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+      floatType /*rebuildX*/, floatType /*rebuildY*/, floatType /*rebuildZ*/,
+#endif
+      floatType /*vx*/, floatType /*vy*/, floatType /*vz*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
+      OwnershipState /*ownershipState*/>::Type;
+
 #ifdef AUTOPAS_ENABLE_KOKKOS
+  /**
+   * The type for the Kokkos SoA storage. Same columns as SoAArraysType but without ptr.
+   */
   using KokkosSoAArraysType = autopas::utilsKokkos::KokkosSoA<
-    size_t * /*id*/, floatType * /*x*/, floatType * /*y*/,
+    idType * /*id*/, floatType * /*x*/, floatType * /*y*/,
     floatType * /*z*/,
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
     floatType * /*rebuildX*/, floatType * /*rebuildY*/,
@@ -361,9 +380,10 @@ class KokkosParticleBase {
 #endif
     floatType * /*vx*/, floatType * /*vy*/, floatType * /*vz*/,
     floatType * /*fx*/, floatType * /*fy*/, floatType * /*fz*/,
-    floatType * /*oldFx*/, floatType * /*oldFy*/,
-    floatType * /*oldFz*/, floatType * /*mass*/, idType * /*typeid*/,
     autopas::OwnershipState * /*ownershipState*/>;
+
+  static_assert(std::tuple_size_v<SoAArraysType> == std::tuple_size_v<typename KokkosSoAArraysType::Type> + 1,
+                "KokkosSoAArraysType must have the same columns as SoAArraysType, except for ptr.");
 #endif
 
   /**
@@ -372,7 +392,7 @@ class KokkosParticleBase {
    * @return this.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, KokkosSoAArraysType>::type::value_type get() {
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
     return this;
   }
 
@@ -383,7 +403,7 @@ class KokkosParticleBase {
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, KokkosSoAArraysType>::type::value_type get() const {
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
@@ -392,7 +412,17 @@ class KokkosParticleBase {
       return getR()[1];
     } else if constexpr (attribute == AttributeNames::posZ) {
       return getR()[2];
-    } else if constexpr (attribute == AttributeNames::velX) {
+    }
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    else if constexpr (attribute == AttributeNames::rebuildX) {
+      return getRAtRebuild()[0];
+    } else if constexpr (attribute == AttributeNames::rebuildY) {
+      return getRAtRebuild()[1];
+    } else if constexpr (attribute == AttributeNames::rebuildZ) {
+      return getRAtRebuild()[2];
+    }
+#endif
+    else if constexpr (attribute == AttributeNames::velX) {
       return getV()[0];
     } else if constexpr (attribute == AttributeNames::velY) {
       return getV()[1];
@@ -418,7 +448,7 @@ class KokkosParticleBase {
    * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, KokkosSoAArraysType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {
@@ -427,7 +457,17 @@ class KokkosParticleBase {
       _r[1] = value;
     } else if constexpr (attribute == AttributeNames::posZ) {
       _r[2] = value;
-    } else if constexpr (attribute == AttributeNames::velX) {
+    }
+#ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
+    else if constexpr (attribute == AttributeNames::rebuildX) {
+      _rAtRebuild[0] = value;
+    } else if constexpr (attribute == AttributeNames::rebuildY) {
+      _rAtRebuild[1] = value;
+    } else if constexpr (attribute == AttributeNames::rebuildZ) {
+      _rAtRebuild[2] = value;
+    }
+#endif
+    else if constexpr (attribute == AttributeNames::velX) {
       _v[0] = value;
     } else if constexpr (attribute == AttributeNames::velY) {
       _v[1] = value;
