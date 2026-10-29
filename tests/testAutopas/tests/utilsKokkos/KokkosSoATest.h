@@ -8,11 +8,11 @@
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
 
-#include "AutoPasTestBase.h"
+#include "KokkosTestBase.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utilsKokkos/KokkosSoA.h"
 
 
-class KokkosSoATest : public AutoPasTestBase {};
+class KokkosSoATest : public KokkosTestBase {};
 
 #endif
