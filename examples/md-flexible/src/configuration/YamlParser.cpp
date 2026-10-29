@@ -738,8 +738,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         std::ranges::for_each(siteErrors, pushSiteError);
 
       } else if (key == MDFlexConfig::moleculesStr) {
-        // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion
-        // update)
+        // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the
+        // quaternion update)
         expected = "See AllOptions.yaml for examples.";
         description = "";
 
