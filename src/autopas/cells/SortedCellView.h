@@ -33,10 +33,6 @@ class SortedCellView : public ParticleCell<typename ParticleCellType::ParticleTy
    */
   using ParticleType = typename ParticleCellType::ParticleType;
   /**
-   * Type that holds or refers to the actual particles.
-   */
-  using StorageType = std::vector<ParticleType *>;
-  /**
    * Constructs a FullSortedParticleCell.
    * @param cell Cell whose particles are sorted.
    * @param r Normalized vector along particles are sorted.

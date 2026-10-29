@@ -30,25 +30,33 @@ class CellIterator {
   using ParticleType = std::remove_pointer_t<typename StorageType::value_type>;
 
   /**
-   * Type trait to be compatible with std::iterator.
+   * Type trait for std::iterator_traits, to enable use of standard library algorithms. Must be of the name expected by
+   * the standard library, hence not camel case like the rest of the project.
    */
   using difference_type = typename IteratorType::difference_type;
   /**
-   * Type trait to be compatible with std::iterator.
+   * Type trait for std::iterator_traits, to enable use of standard library algorithms. Must be of the name expected by
+   * the standard library, hence not camel case like the rest of the project.
    */
   using value_type = typename IteratorType::value_type;
   /**
-   * Type trait to be compatible with std::iterator.
+   * Type trait for std::iterator_traits, to enable use of standard library algorithms.
    */
   using pointer = typename IteratorType::pointer;
   /**
-   * Type trait to be compatible with std::iterator.
+   * Type trait for std::iterator_traits, to enable use of standard library algorithms.
    */
   using reference = typename IteratorType::reference;
   /**
-   * Type trait to be compatible with std::iterator.
+   * Type trait for std::iterator_traits, to enable use of standard library algorithms. Must be of the name expected by
+   * the standard library, hence not camel case like the rest of the project.
    */
   using iterator_category = typename IteratorType::iterator_category;
+
+  /**
+   * Default constructor, required for std::bidirectional_iterator. The result does not point to any particle.
+   */
+  CellIterator() = default;
 
   /**
    * Constructor
@@ -85,7 +93,7 @@ class CellIterator {
   }
 
   /**
-   * Increment the iterator.
+   * Prefix increment.
    * @return *this
    */
   inline CellIterator<StorageType, modifiable> &operator++() {
@@ -94,12 +102,32 @@ class CellIterator {
   }
 
   /**
-   * Decrement the iterator.
+   * Postfix increment.
+   * @return Copy of the iterator from before the increment.
+   */
+  inline CellIterator<StorageType, modifiable> operator++(int) {
+    auto copy = *this;
+    ++*this;
+    return copy;
+  }
+
+  /**
+   * Prefix decrement.
    * @return *this
    */
   inline CellIterator<StorageType, modifiable> &operator--() {
     --iterator;
     return *this;
+  }
+
+  /**
+   * Postfix decrement.
+   * @return Copy of the iterator from before the decrement.
+   */
+  inline CellIterator<StorageType, modifiable> operator--(int) {
+    auto copy = *this;
+    --*this;
+    return copy;
   }
 
   /**
@@ -133,5 +161,5 @@ class CellIterator {
   /**
    * Actual underlying iterator.
    */
-  IteratorType iterator;
+  IteratorType iterator{};
 };

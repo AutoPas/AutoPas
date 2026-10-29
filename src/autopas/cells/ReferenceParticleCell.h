@@ -29,10 +29,6 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
    * The structure of the SoAs is defined by the particle.
    */
   using SoAArraysType = typename Particle_T::SoAArraysType;
-  /**
-   * Type that holds or refers to the actual particles: their indices in the particle storage.
-   */
-  using StorageType = std::vector<size_t>;
 
   /**
    * Constructs a new ReferenceParticleCell.
@@ -177,6 +173,10 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
    */
   [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     std::lock_guard<AutoPasLock> guard(this->_cellLock);
+    if (_particleStorage == nullptr) {
+      utils::ExceptionHandler::exception(
+          "ReferenceParticleCell::getNumberOfParticles: No particle storage has been set!");
+    }
 
     size_t numParticles{0};
     numParticles = std::count_if(_particles.begin(), _particles.end(),
@@ -209,20 +209,34 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  [[nodiscard]] Particle_T &at(size_t index) { return (*_particleStorage)[_particles.at(index)]; }
+  [[nodiscard]] Particle_T &at(size_t index) {
+    if (_particleStorage == nullptr) {
+      utils::ExceptionHandler::exception("ReferenceParticleCell::at: No particle storage has been set!");
+    }
+    return (*_particleStorage)[_particles.at(index)];
+  }
 
   /**
    * Returns the const particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  [[nodiscard]] const Particle_T &at(size_t index) const { return (*_particleStorage)[_particles.at(index)]; }
+  [[nodiscard]] const Particle_T &at(size_t index) const {
+    if (_particleStorage == nullptr) {
+      utils::ExceptionHandler::exception("ReferenceParticleCell::at: No particle storage has been set!");
+    }
+    return (*_particleStorage)[_particles.at(index)];
+  }
 
   [[nodiscard]] bool isEmpty() const override { return size() == 0; }
 
   void clear() override { _particles.clear(); }
 
   void deleteDummyParticles() override {
+    if (_particleStorage == nullptr) {
+      utils::ExceptionHandler::exception(
+          "ReferenceParticleCell::deleteDummyParticles: No particle storage has been set!");
+    }
     _particles.erase(std::remove_if(_particles.begin(), _particles.end(),
                                     [&](size_t index) { return (*_particleStorage)[index].isDummy(); }),
                      _particles.end());
@@ -232,6 +246,9 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
     std::lock_guard<AutoPasLock> lock(this->_cellLock);
     if (index >= size()) {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", size(), index);
+    }
+    if (_particleStorage == nullptr) {
+      utils::ExceptionHandler::exception("ReferenceParticleCell::deleteByIndex: No particle storage has been set!");
     }
 
     (*_particleStorage)[_particles[index]].setOwnershipState(OwnershipState::dummy);
@@ -251,6 +268,9 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
    * @param dim dimension to sort
    */
   void sortByDim(const size_t dim) {
+    if (_particleStorage == nullptr) {
+      utils::ExceptionHandler::exception("ReferenceParticleCell::sortByDim: No particle storage has been set!");
+    }
     std::sort(_particles.begin(), _particles.end(), [&](size_t a, size_t b) -> bool {
       return (*_particleStorage)[a].getR()[dim] < (*_particleStorage)[b].getR()[dim];
     });
@@ -265,7 +285,7 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
   /**
    * Indices of the particles of this cell in the particle storage.
    */
-  StorageType _particles;
+  std::vector<size_t> _particles;
 
   /**
    * SoA buffer of this cell.
@@ -293,6 +313,10 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
                    const std::array<double, 3> &higherCorner,
                    IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     Particle_T *particles = getParticleStorageBuffer();
+    // Check the storage rather than its buffer, which may legitimately be nullptr if the storage is empty.
+    if (_particleStorage == nullptr) {
+      utils::ExceptionHandler::exception("ReferenceParticleCell::forEachImpl: No particle storage has been set!");
+    }
     for (size_t index : _particles) {
       Particle_T &p = particles[index];
       if (behavior.contains(p)) {
@@ -308,6 +332,10 @@ class ReferenceParticleCell : public ParticleCell<Particle_T> {
                   const std::array<double, 3> &higherCorner,
                   IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
     Particle_T *particles = getParticleStorageBuffer();
+    // Check the storage rather than its buffer, which may legitimately be nullptr if the storage is empty.
+    if (_particleStorage == nullptr) {
+      utils::ExceptionHandler::exception("ReferenceParticleCell::reduceImpl: No particle storage has been set!");
+    }
     for (size_t index : _particles) {
       Particle_T &p = particles[index];
       if ((not ownershipCheck) or behavior.contains(p)) {
