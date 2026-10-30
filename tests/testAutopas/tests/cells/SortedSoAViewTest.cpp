@@ -7,6 +7,7 @@
 #include "SortedSoAViewTest.h"
 
 #include "autopas/utils/SortedSoAView.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/generators/UniformGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -143,4 +144,35 @@ TEST_F(SortedSoAViewTest, testEmptySoA) {
     view.scatterBack();
   });
   EXPECT_EQ(projIdx.size(), 0);
+}
+
+/**
+ * In traversals without Newton3, e.g. lc_c01, one thread constructs a SortedSoAView of a neighbor cell while another
+ * thread writes the forces of that cell. The view must not read the computed attributes from the source, as this would
+ * be a data race. This test can therefore only fail under ThreadSanitizer.
+ */
+TEST_F(SortedSoAViewTest, testConcurrentForceWritesToSource) {
+  FMCell cell = makeLineCell(8);
+  loadSoA(cell);
+
+  autopas::SoA<Molecule::SoAArraysType> sortedSoa;
+  std::vector<std::pair<double, size_t>> projIdx;
+
+  AUTOPAS_OPENMP(parallel sections num_threads(2)) {
+    // Thread 1: constructs a view. Should not read attributes that could be written to.
+    AUTOPAS_OPENMP(section) {
+      TestView view(cell._particleSoABuffer.constructView(), {1.0, 0.0, 0.0}, sortedSoa, projIdx);
+    }
+    // Thread 2: Write to those attributes which should not be read.
+    AUTOPAS_OPENMP(section) {
+      auto *fxPtr = cell._particleSoABuffer.template begin<Molecule::AttributeNames::forceX>();
+      auto *fyPtr = cell._particleSoABuffer.template begin<Molecule::AttributeNames::forceY>();
+      auto *fzPtr = cell._particleSoABuffer.template begin<Molecule::AttributeNames::forceZ>();
+      for (size_t i = 0; i < cell._particleSoABuffer.size(); ++i) {
+        fxPtr[i] += 1.;
+        fyPtr[i] += 1.;
+        fzPtr[i] += 1.;
+      }
+    }
+  }
 }

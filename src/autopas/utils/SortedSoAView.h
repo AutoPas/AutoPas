@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -21,14 +22,14 @@ namespace autopas {
  * ascending by projection, and packed into a contiguous internal SoA, similar to SortedCellView
  * for AoS.
  *
- * Only the attributes declared by Functor_T::getNeededAttr() are packed from source.
+ * Only the attributes declared by Functor_T::getNeededAttr(std::false_type) are packed from source.
  * Attributes declared by Functor_T::getComputedAttr() are zero-initialized so the functor can
  * accumulate into them. Call scatterBack() after the functor to add the accumulated values back to
  * the source via +=.
  *
  * @note Modifications to the source SoA invalidate the view.
  * @tparam Particle_T Particle type providing AttributeNames and SoAArraysType.
- * @tparam Functor_T Functor type providing getNeededAttr() and getComputedAttr().
+ * @tparam Functor_T Functor type providing getNeededAttr(std::false_type) and getComputedAttr().
  */
 template <class Particle_T, class Functor_T>
 class SortedSoAView {
@@ -65,8 +66,8 @@ class SortedSoAView {
     // Step 2: resize all arrays (value-initializes to 0, covering the computed attributes).
     _sortedSoa.resizeArrays(n);
 
-    // Step 3: pack getNeededAttr() attributes from source in sorted order.
-    packNeededImpl(std::make_index_sequence<Functor_T::getNeededAttr().size()>{}, n);
+    // Step 3: pack getNeededAttr(std::false_type) attributes from source in sorted order.
+    packNeededImpl(std::make_index_sequence<Functor_T::getNeededAttr(std::false_type()).size()>{}, n);
 
     // Step 4: zero getComputedAttr() attributes so the functor accumulates from 0.
     zeroComputedImpl(std::make_index_sequence<Functor_T::getComputedAttr().size()>{}, n);
@@ -89,12 +90,12 @@ class SortedSoAView {
  private:
   /**
    * Copies the attribute at compile-time index AttrIdx from _source into _sortedSoa in sorted order.
-   * @tparam AttrIdx Index into Functor_T::getNeededAttr().
+   * @tparam AttrIdx Index into Functor_T::getNeededAttr(std::false_type).
    * @param n Number of particles.
    */
   template <size_t AttrIdx>
   void packAttr(size_t n) {
-    constexpr size_t attr = static_cast<size_t>(Functor_T::getNeededAttr()[AttrIdx]);
+    constexpr size_t attr = static_cast<size_t>(Functor_T::getNeededAttr(std::false_type())[AttrIdx]);
     auto *dst = _sortedSoa.template begin<attr>();
     const auto *src = _source.template begin<attr>();
     for (size_t i = 0; i < n; ++i) {
@@ -104,7 +105,7 @@ class SortedSoAView {
 
   /**
    * Expands the index sequence and calls packAttr for each needed attribute.
-   * @tparam AttrIdxs Indices into Functor_T::getNeededAttr().
+   * @tparam AttrIdxs Indices into Functor_T::getNeededAttr(std::false_type).
    * @param n Number of particles.
    */
   template <size_t... AttrIdxs>
