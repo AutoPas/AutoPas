@@ -11,6 +11,7 @@
 
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/inBox.h"
 #include "testingHelpers/PeriodicBoundariesHelpers.h"
 
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests,
@@ -318,9 +319,11 @@ TEST_P(AllContainersTests, testUpdateContainerKeepsNeighborListsValidIfSpecified
 /**
  * Checks that updateHaloParticle() updates the correct particle if several periodic images of the same particle are
  * stored for the case that the domain is so thin that these images would be stored in neighboring cells.
- * All images are added, the owned particles are moved, some of them across the periodic boundaries, and the images of
- * the new positions are updated as in an iteration without a rebuild. This test then checks that:
- * a) An image is updated exactly if the same image was stored less than half the skin away.
+ * All images are added and the container is built, the owned particles are moved, some of them across the periodic
+ * boundaries, and the images of the new positions are updated as in an iteration without a rebuild.
+ * This test then checks that:
+ * a) An image is updated always if the same image was stored less than half the skin away, or a dummy particle that
+ * arose from an owned particle leaving the box and being deleted may be used as an update candidate by some containers.
  * b) Exactly the updated images are stored afterwards, i.e. no image is lost.
  */
 TEST_P(AllContainersTests, testUpdateHaloParticlePeriodicImagesInThinDomain) {
@@ -362,6 +365,7 @@ TEST_P(AllContainersTests, testUpdateHaloParticlePeriodicImagesInThinDomain) {
       container->addHaloParticle(image);
     }
   }
+  rebuildNeighborLists(*container, std::get<0>(GetParam()));
 
   // Move the owned particles.
   for (auto iter = container->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
@@ -378,17 +382,28 @@ TEST_P(AllContainersTests, testUpdateHaloParticlePeriodicImagesInThinDomain) {
     const auto previousImages = generateHaloImages(startPosition, id);
     // Particles that left the box reenter it through the opposite periodic boundary.
     const auto newPosition = wrapIntoBox(startPosition + displacement, boxMin, boxMax);
+    // A particle that left the box is still stored as a dummy at the position it moved to, and can in some containers
+    // e.g. VCL be a valid update candidate.
+    const auto leavingDummyPosition = startPosition + displacement;
+    const bool leftBox = not autopas::utils::inBox(leavingDummyPosition, boxMin, boxMax);
     for (const auto &image : generateHaloImages(newPosition, id)) {
       const bool sameImageWasStored =
           std::any_of(previousImages.begin(), previousImages.end(), [&](const auto &previousImage) {
             const auto distance = previousImage.getR() - image.getR();
             return dot(distance, distance) < skin * skin / 4.;
           });
+      const auto distanceToLeavingDummy = leavingDummyPosition - image.getR();
+      const bool leavingDummyIsNearby =
+          leftBox and dot(distanceToLeavingDummy, distanceToLeavingDummy) < skin * skin / 4.;
       const bool updated = container->updateHaloParticle(image);
-      // VerletClusterLists currently never updates an image, because it does not find the dummies of the stored images.
-      // Todo fix this and then change the test
-      if (updated or std::get<0>(GetParam()).container != autopas::ContainerOption::verletClusterLists) {
-        EXPECT_EQ(updated, sameImageWasStored) << "Image of particle " << id << " at " << to_string(image.getR());
+      if (sameImageWasStored) {
+        EXPECT_TRUE(updated) << "Image of particle " << id << " at " << to_string(image.getR());
+      } else if (leavingDummyIsNearby) {
+        // If no same image was stored but leavingDummyIsNearby, we allow either updated to be true or false, as some
+        // containers may legitimately update an owned particle that left the box, became a dummy, and is therefore a
+        // valid candidate for the halo update of itself.
+      } else {
+        EXPECT_FALSE(updated) << "Image of particle " << id << " at " << to_string(image.getR());
       }
       if (updated) {
         updatedPositions.push_back(image.getR());
@@ -401,6 +416,124 @@ TEST_P(AllContainersTests, testUpdateHaloParticlePeriodicImagesInThinDomain) {
     storedPositions.push_back(iter->getR());
   }
   EXPECT_THAT(storedPositions, ::testing::UnorderedElementsAreArray(updatedPositions));
+}
+
+/**
+ * Particle with an attribute that the base particle does not have, like the custom attributes a functor might need.
+ */
+class ParticleWithFakeAttribute : public ParticleFP64 {
+ public:
+  ParticleWithFakeAttribute(const std::array<double, 3> &r, const std::array<double, 3> &v, unsigned long id,
+                            double fakeAttribute, autopas::OwnershipState ownershipState)
+      : ParticleFP64(r, v, id, ownershipState), _fakeAttribute(fakeAttribute) {}
+
+  enum AttributeNames : int { ptr, id, posX, posY, posZ, forceX, forceY, forceZ, fakeAttribute, ownershipState };
+
+  using SoAArraysType =
+      autopas::utils::SoAType<ParticleWithFakeAttribute *, unsigned long /*id*/, double /*x*/, double /*y*/,
+                              double /*z*/, double /*fx*/, double /*fy*/, double /*fz*/, double /*fakeAttribute*/,
+                              autopas::OwnershipState /*ownershipState*/>::Type;
+
+  template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+    return this;
+  }
+
+  template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    if constexpr (attribute == AttributeNames::id) {
+      return getID();
+    } else if constexpr (attribute == AttributeNames::posX) {
+      return getR()[0];
+    } else if constexpr (attribute == AttributeNames::posY) {
+      return getR()[1];
+    } else if constexpr (attribute == AttributeNames::posZ) {
+      return getR()[2];
+    } else if constexpr (attribute == AttributeNames::forceX) {
+      return getF()[0];
+    } else if constexpr (attribute == AttributeNames::forceY) {
+      return getF()[1];
+    } else if constexpr (attribute == AttributeNames::forceZ) {
+      return getF()[2];
+    } else if constexpr (attribute == AttributeNames::fakeAttribute) {
+      return _fakeAttribute;
+    } else if constexpr (attribute == AttributeNames::ownershipState) {
+      return this->_ownershipState;
+    } else {
+      autopas::utils::ExceptionHandler::exception("ParticleWithFakeAttribute::get() unknown attribute {}", attribute);
+    }
+  }
+
+  template <AttributeNames attribute>
+  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+    if constexpr (attribute == AttributeNames::id) {
+      setID(value);
+    } else if constexpr (attribute == AttributeNames::posX) {
+      this->_r[0] = value;
+    } else if constexpr (attribute == AttributeNames::posY) {
+      this->_r[1] = value;
+    } else if constexpr (attribute == AttributeNames::posZ) {
+      this->_r[2] = value;
+    } else if constexpr (attribute == AttributeNames::forceX) {
+      this->_f[0] = value;
+    } else if constexpr (attribute == AttributeNames::forceY) {
+      this->_f[1] = value;
+    } else if constexpr (attribute == AttributeNames::forceZ) {
+      this->_f[2] = value;
+    } else if constexpr (attribute == AttributeNames::fakeAttribute) {
+      _fakeAttribute = value;
+    } else if constexpr (attribute == AttributeNames::ownershipState) {
+      this->_ownershipState = value;
+    } else {
+      autopas::utils::ExceptionHandler::exception("ParticleWithFakeAttribute::set() unknown attribute {}", attribute);
+    }
+  }
+
+  [[nodiscard]] double getFakeAttribute() const { return _fakeAttribute; }
+
+ private:
+  double _fakeAttribute;
+};
+
+/**
+ * Checks that updateHaloParticle() overwrites the stored halo particle with all attributes of the given particle,
+ * including those that only a derived particle class has, and that the stored particle is a halo particle again.
+ *
+ * Strictly speaking, AutoPas only needs to make sure that all potential attributes listed by getNeededAttribute e.g.
+ * something like velocity is not needed. For now, this isn't possible so this test is overly strict.
+ */
+TEST_P(AllContainersTests, testUpdateHaloParticleUpdatesAllAttributes) {
+  using namespace autopas::utils::ArrayMath::literals;
+
+  const auto containerConfig = std::get<0>(GetParam());
+  auto container = getInitializedContainer<ParticleWithFakeAttribute>(containerConfig);
+
+  constexpr unsigned long id = 0;
+  const std::array<double, 3> position{boxMin[0] - 0.1, 0.5, 0.5};
+  container->addHaloParticle(ParticleWithFakeAttribute(position, {0., 0., 0.}, id, 1., autopas::OwnershipState::halo));
+  rebuildNeighborLists(*container, containerConfig);
+
+  // As in an iteration without a rebuild, this marks the halo particle as a dummy.
+  ASSERT_TRUE(container->updateContainer(true).empty());
+  ASSERT_FALSE(container->begin(autopas::IteratorBehavior::halo).isValid());
+
+  // New values for all attributes except id and ownership state. The particle moved less than skin/2, as it would
+  // between two rebuilds.
+  ParticleWithFakeAttribute updatedParticle(position + std::array<double, 3>{0., 0.4 * skin, 0.}, {1., 2., 3.}, id, 2.,
+                                            autopas::OwnershipState::halo);
+  updatedParticle.setF({4., 5., 6.});
+  EXPECT_TRUE(container->updateHaloParticle(updatedParticle));
+
+  size_t numHalosFound = 0;
+  for (auto iter = container->begin(autopas::IteratorBehavior::halo); iter.isValid(); ++iter) {
+    ++numHalosFound;
+    EXPECT_EQ(iter->getID(), id);
+    EXPECT_EQ(iter->getR(), updatedParticle.getR());
+    EXPECT_EQ(iter->getV(), updatedParticle.getV());
+    EXPECT_EQ(iter->getF(), updatedParticle.getF());
+    EXPECT_EQ(iter->getFakeAttribute(), updatedParticle.getFakeAttribute());
+  }
+  EXPECT_EQ(numHalosFound, 1);
 }
 
 /**
