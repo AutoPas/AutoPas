@@ -19,6 +19,14 @@ namespace autopas::utilsKokkos {
 template <typename Particle_T>
 class KokkosList {
 
+public:
+
+  KokkosList() {}
+
+  KokkosList(DataLayoutOption activeDataLayout, size_t size) : _activeDataLayout(activeDataLayout) {
+    resize(size);
+  }
+
   template <size_t Attribute, bool useDeviceView = true>
   KOKKOS_INLINE_FUNCTION auto& operator() (size_t index) const {
     switch (_activeDataLayout) {
@@ -52,14 +60,18 @@ class KokkosList {
   void addParticle(Particle_T& p) {
     switch (_activeDataLayout) {
       case DataLayoutOption::Value::aos: {
-        return _soa.addParticle<true>(p);
+        return _aos.addParticle(p);
       }
       case DataLayoutOption::Value::soa: {
-        return _soa.addParticle<true>(p);
+        return _soa.addParticle(p);
       }
       default:
         break; // todo: throw exception although this should currently not happen
     }
+  }
+
+  DataLayoutOption getActiveDataLayout() const {
+    return _activeDataLayout;
   }
 
 private:
@@ -69,7 +81,7 @@ private:
   DataLayoutOption _activeDataLayout {};
 
   KokkosAoS<Particle_T> _aos {};
-  KokkosSoA<typename Particle_T::KokkosSoAArraysType> _soa {};
+  Particle_T::KokkosSoAArraysType _soa {};
 
 };
 

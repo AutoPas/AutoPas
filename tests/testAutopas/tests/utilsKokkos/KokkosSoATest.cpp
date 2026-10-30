@@ -3,14 +3,14 @@
  * @author Luis Gall
  * @date 28.10.2026
  *
- * Currently covered methods of KokkosSoA: operator()(index), addParticle(index, Particle)
+ * Currently covered methods of KokkosSoA: operator<useDeviceView=false>()(index), addParticle(index, Particle)
  */
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
 
 #include "KokkosSoATest.h"
 
-TEST_F(KokkosSoATest, testInitialization) { autopas::utilsKokkos::KokkosSoA<autopas::ParticleBaseFP32::SoAArraysType> soa; }
+TEST_F(KokkosSoATest, testInitialization) { autopas::utilsKokkos::KokkosSoA<autopas::KokkosParticleBaseFP32::KokkosSoAArraysType> soa; }
 
 TEST_F(KokkosSoATest, SoATypeTest) {
   static_assert(std::is_same<autopas::utilsKokkos::KokkosSoA<unsigned int*, float*, float*, float*>::Type,

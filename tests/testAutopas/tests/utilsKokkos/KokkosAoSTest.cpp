@@ -3,7 +3,7 @@
  * @author Luis Gall
  * @date 28.10.2026
  *
- * Currently covered methods of KokkosAoS: operator()(index), addParticle(index, Particle), resize(size)
+ * Currently covered methods of KokkosAoS: operator<useDeviceView=false>()(index), addParticle(index, Particle), resize(size)
  */
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
