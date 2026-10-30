@@ -125,7 +125,7 @@ class LJFunctorHWY
    */
   explicit LJFunctorHWY(double cutoff, std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>>
                                            particlePropertiesLibrary = std::nullopt)
-      : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff), _cutoffSquareAoS{cutoff * cutoff} {
+      : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff), _cutoffSquareAoS{cutoff * cutoff}, _invCutoffSquareAoS(1. / (cutoff * cutoff)) {
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
@@ -371,8 +371,8 @@ class LJFunctorHWY
       double *sqrtEpsPtr = nullptr;
       mixingBuffers.getMixingPointers(typeIDPtr, soaSize, _halfSigmaPerType, _sqrtEpsilonPerType, halfSigPtr, sqrtEpsPtr);
 
-      HeterogeneousParameters physics{halfSigPtr, sqrtEpsPtr, halfSigPtr, sqrtEpsPtr, _cutoffSquareAoS};
-      runSingleLoop(physics);
+      HeterogeneousParameters heterogeneousParams{halfSigPtr, sqrtEpsPtr, halfSigPtr, sqrtEpsPtr, _invCutoffSquareAoS};
+      runSingleLoop(heterogeneousParams);
     }
 
     if constexpr (calculateGlobals) {
@@ -828,20 +828,19 @@ class LJFunctorHWY
     VectorDouble shift6;
   };
 
-  [[gnu::always_inline]] static inline VectorDouble computeShift6SIMDStatic(const VectorDouble &sigmaSquareds,
+  static inline VectorDouble computeShift6SIMDStatic(const VectorDouble &sigmaSquareds,
                                                                             const VectorDouble &epsilon24s,
-                                                                            const double cutoffSquareAoS) {
-    const auto invCutoffSq = highway::Set(tag_double, 1.0 / cutoffSquareAoS);
-    const auto sig2Cut2 = highway::Mul(sigmaSquareds, invCutoffSq);
+                                                                            const VectorDouble &invCutoffSquared) {
+    const auto sig2Cut2 = highway::Mul(sigmaSquareds, invCutoffSquared);
     const auto sig4Cut4 = highway::Mul(sig2Cut2, sig2Cut2);
     const auto sig6Cut6 = highway::Mul(sig4Cut4, sig2Cut2);
     const auto sig12Cut12 = highway::Mul(sig6Cut6, sig6Cut6);
     return highway::Mul(epsilon24s, highway::Sub(sig6Cut6, sig12Cut12));
   }
 
-  [[gnu::always_inline]] inline VectorDouble computeShift6SIMD(const VectorDouble &sigmaSquareds,
+  inline VectorDouble computeShift6SIMD(const VectorDouble &sigmaSquareds,
                                                                const VectorDouble &epsilon24s) const {
-    return computeShift6SIMDStatic(sigmaSquareds, epsilon24s, _cutoffSquareAoS);
+    return computeShift6SIMDStatic(sigmaSquareds, epsilon24s, highway::Set(tag_double,_invCutoffSquareAoS));
   }
 
   struct HomogeneousParameters {
@@ -864,68 +863,87 @@ class LJFunctorHWY
     const double *const __restrict sqrtEpsilon1Ptr;
     const double *const __restrict halfSigma2Ptr;
     const double *const __restrict sqrtEpsilon2Ptr;
-    const double cutoffSquareAoS;
+    VectorDouble invCutoffSquaredVec;
 
     VectorDouble halfSigmaI{highway::Zero(tag_double)};
-    VectorDouble sqrtEpsilonI{highway::Zero(tag_double)};
+    VectorDouble sqrtEpsilon24I{highway::Zero(tag_double)};
+
+    HeterogeneousParameters(const double *const __restrict halfSig1, const double *const __restrict sqrtEps1,
+                        const double *const __restrict halfSig2, const double *const __restrict sqrtEps2,
+                        const double invCutoffSquared)
+    : halfSigma1Ptr{halfSig1},
+      sqrtEpsilon1Ptr{sqrtEps1},
+      halfSigma2Ptr{halfSig2},
+      sqrtEpsilon2Ptr{sqrtEps2},
+      invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)} {}
 
     template <bool remainderI, bool reversed, VectorizationPattern vecPattern>
-    [[gnu::always_inline]] inline void prepareI(const size_t i, const size_t restI) {
-      fillIPhysicsRegisters<remainderI, reversed, vecPattern>(i, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigmaI, sqrtEpsilonI, restI);
+    inline void prepareI(const size_t i, const size_t restI) {
+      fillIPhysicsRegisters<remainderI, reversed, vecPattern>(i, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigmaI, sqrtEpsilon24I, restI);
+      sqrtEpsilon24I = highway::Mul(highway::Set(tag_double, 24.0), sqrtEpsilon24I);
     }
 
     template <bool remainderJ, VectorizationPattern vecPattern>
-    [[gnu::always_inline]] inline LJParameters getJ(const size_t j, const size_t restJ) const {
-      VectorDouble halfSigJ, sqrtEpsJ;
+    inline LJParameters getJ(const size_t j, const size_t restJ) const {
+      VectorDouble halfSigJ;
+      VectorDouble sqrtEpsJ;
       fillJPhysicsRegisters<remainderJ, vecPattern>(j, halfSigma2Ptr, sqrtEpsilon2Ptr, halfSigJ, sqrtEpsJ, restJ);
-      const auto sig = highway::Add(halfSigmaI, halfSigJ);
-      const auto sigSq = highway::Mul(sig, sig);
-      const auto eps24 = highway::Mul(highway::Set(tag_double, 24.0), highway::Mul(sqrtEpsilonI, sqrtEpsJ));
+      const auto sigma = highway::Add(halfSigmaI, halfSigJ);
+      const auto sigSq = highway::Mul(sigma, sigma);
+      const auto eps24 = highway::Mul(sqrtEpsilon24I, sqrtEpsJ);
       VectorDouble shift6 = highway::Zero(tag_double);
       if constexpr (calculateGlobals and applyShift) {
-        shift6 = computeShift6SIMDStatic(sigSq, eps24, cutoffSquareAoS);
+        shift6 = computeShift6SIMDStatic(sigSq, eps24, invCutoffSquaredVec);
       }
       return {sigSq, eps24, shift6};
     }
   };
 
-  struct HomogeneousVerletPhysics {
+  struct HomogeneousVerletParameters {
     VectorDouble sigSqConst;
     VectorDouble eps24Const;
     VectorDouble shift6Const;
 
     template <bool remainder>
     [[gnu::always_inline]] inline LJParameters getJ([[maybe_unused]] const VectorLong &indices,
-                                                          [[maybe_unused]] const MaskDouble &restMaskDouble,
-                                                          [[maybe_unused]] size_t rest) const {
+                                                          [[maybe_unused]] const MaskDouble &restMaskDouble) const {
       return {sigSqConst, eps24Const, shift6Const};
     }
   };
 
-  struct HeterogeneousVerletPhysics {
-    VectorDouble halfSigI;
-    VectorDouble sqrtEpsI;
-    const double *const __restrict halfSigPtr;
-    const double *const __restrict sqrtEpsPtr;
-    const double cutoffSquareAoS;
+  struct HeterogeneousVerletParameters {
+    VectorDouble halfSigmaI;
+    VectorDouble sqrtEpsilon24I;
+    const double *const __restrict halfSigmaPtr;
+    const double *const __restrict sqrtEpsilonPtr;
+    const VectorDouble invCutoffSquaredVec;
+
+    HeterogeneousVerletParameters(const double halfSigmaIScalar, const double sqrtEpsilonIScalar,
+                           const double *const __restrict halfSig, const double *const __restrict sqrtEps,
+                           const double invCutoffSquared)
+    : halfSigmaI{highway::Set(tag_double, halfSigmaIScalar)},
+      sqrtEpsilon24I{highway::Set(tag_double, 24.0 * sqrtEpsilonIScalar)},
+      halfSigmaPtr{halfSig},
+      sqrtEpsilonPtr{sqrtEps},
+      invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)} {}
 
     template <bool remainder>
-    [[gnu::always_inline]] inline LJParameters getJ(const VectorLong &indices, const MaskDouble &restMaskDouble,
-                                                          [[maybe_unused]] size_t rest) const {
-      VectorDouble halfSigJ, sqrtEpsJ;
+    inline LJParameters getJ(const VectorLong &indices, const MaskDouble &restMaskDouble) const {
+      VectorDouble halfSigmaJ;
+      VectorDouble sqrtEpsilonJ;
       if constexpr (remainder) {
-        halfSigJ = highway::MaskedGatherIndex(restMaskDouble, tag_double, halfSigPtr, indices);
-        sqrtEpsJ = highway::MaskedGatherIndex(restMaskDouble, tag_double, sqrtEpsPtr, indices);
+        halfSigmaJ = highway::MaskedGatherIndex(restMaskDouble, tag_double, halfSigmaPtr, indices);
+        sqrtEpsilonJ = highway::MaskedGatherIndex(restMaskDouble, tag_double, sqrtEpsilonPtr, indices);
       } else {
-        halfSigJ = highway::GatherIndex(tag_double, halfSigPtr, indices);
-        sqrtEpsJ = highway::GatherIndex(tag_double, sqrtEpsPtr, indices);
+        halfSigmaJ = highway::GatherIndex(tag_double, halfSigmaPtr, indices);
+        sqrtEpsilonJ = highway::GatherIndex(tag_double, sqrtEpsilonPtr, indices);
       }
-      const auto sig = highway::Add(halfSigI, halfSigJ);
-      const auto sigSq = highway::Mul(sig, sig);
-      const auto eps24 = highway::Mul(highway::Set(tag_double, 24.0), highway::Mul(sqrtEpsI, sqrtEpsJ));
+      const auto sigma = highway::Add(halfSigmaI, halfSigmaJ);
+      const auto sigSq = highway::Mul(sigma, sigma);
+      const auto eps24 = highway::Mul(sqrtEpsilon24I, sqrtEpsilonJ);
       VectorDouble shift6 = highway::Zero(tag_double);
       if constexpr (calculateGlobals and applyShift) {
-        shift6 = computeShift6SIMDStatic(sigSq, eps24, cutoffSquareAoS);
+        shift6 = computeShift6SIMDStatic(sigSq, eps24, invCutoffSquaredVec);
       }
       return {sigSq, eps24, shift6};
     }
@@ -1191,7 +1209,7 @@ class LJFunctorHWY
       mixingBuffers1.getMixingPointers(typeID1Ptr, soaSize1, _halfSigmaPerType, _sqrtEpsilonPerType, halfSig1Ptr, sqrtEps1Ptr);
       mixingBuffers2.getMixingPointers(typeID2Ptr, soaSize2, _halfSigmaPerType, _sqrtEpsilonPerType, halfSig2Ptr, sqrtEps2Ptr);
 
-      HeterogeneousParameters heterogeneousParams{halfSig1Ptr, sqrtEps1Ptr, halfSig2Ptr, sqrtEps2Ptr, _cutoffSquareAoS};
+      HeterogeneousParameters heterogeneousParams{halfSig1Ptr, sqrtEps1Ptr, halfSig2Ptr, sqrtEps2Ptr, _invCutoffSquareAoS};
       runPairLoop(heterogeneousParams);
     }
 
@@ -1309,7 +1327,7 @@ class LJFunctorHWY
       indices = highway::LoadU(tag_long, reinterpret_cast<const int64_t *>(neighborList + j));
     }
 
-    const auto [sigmaSquareds, epsilon24s, shift6s] = physics.template getJ<remainder>(indices, restMaskDouble, rest);
+    const auto [sigmaSquareds, epsilon24s, shift6s] = physics.template getJ<remainder>(indices, restMaskDouble);
 
     VectorDouble x2;
     VectorDouble y2;
@@ -1512,17 +1530,17 @@ class LJFunctorHWY
           shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(eps24, sigSq, _cutoffSquareAoS);
         }
       }
-      HomogeneousVerletPhysics physics{highway::Set(tag_double, sigSq), highway::Set(tag_double, eps24),
+      HomogeneousVerletParameters physics{highway::Set(tag_double, sigSq), highway::Set(tag_double, eps24),
                                        highway::Set(tag_double, shift6)};
       runVerletLoop(physics);
     } else {
       MixingBuffers<512> mixingBuffers;
       double *halfSigPtr = nullptr, *sqrtEpsPtr = nullptr;
       mixingBuffers.getMixingPointers(typeIDPtr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigPtr, sqrtEpsPtr);
-      HeterogeneousVerletPhysics physics{highway::Set(tag_double, halfSigPtr[indexFirst]),
-                                         highway::Set(tag_double, sqrtEpsPtr[indexFirst]), halfSigPtr, sqrtEpsPtr,
-                                         _cutoffSquareAoS};
-      runVerletLoop(physics);
+      HeterogeneousVerletParameters heterogeneousParams{halfSigPtr[indexFirst],
+                                         sqrtEpsPtr[indexFirst], halfSigPtr, sqrtEpsPtr,
+                                         _invCutoffSquareAoS};
+      runVerletLoop(heterogeneousParams);
     }
 
     fxPtr[indexFirst] += highway::ReduceSum(tag_double, fxAcc);
@@ -1699,6 +1717,7 @@ class LJFunctorHWY
 
   // cutoff squared used in the AoS functor.
   const double _cutoffSquareAoS{0.};
+  const double _invCutoffSquareAoS{0.};
 
   // epsilon, sigma and shift6 used in the AoS functor.
   double _sigmaSquareAoS{0.};
