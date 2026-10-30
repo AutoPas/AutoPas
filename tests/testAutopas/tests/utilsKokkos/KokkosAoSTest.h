@@ -1,5 +1,5 @@
 /**
-* @file KokkosAoSTest.h
+ * @file KokkosAoSTest.h
  * @author Luis Gall
  * @date 29.10.2026
  */
@@ -11,7 +11,6 @@
 #include "KokkosTestBase.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utilsKokkos/KokkosAoS.h"
-
 
 class KokkosAoSTest : public KokkosTestBase {};
 

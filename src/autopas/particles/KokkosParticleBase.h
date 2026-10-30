@@ -8,15 +8,14 @@
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
 
+#include "Kokkos_Core.hpp"
 #include "autopas/particles/OwnershipState.h"
-#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAType.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 #include "autopas/utilsKokkos/KokkosSoA.h"
-
-#include "Kokkos_Core.hpp"
 
 namespace autopas {
 
@@ -52,7 +51,7 @@ class KokkosParticleBase {
    * @param ownershipState OwnershipState of the particle (can be either owned, halo, or dummy)
    */
   KokkosParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id,
-               OwnershipState ownershipState = OwnershipState::owned)
+                     OwnershipState ownershipState = OwnershipState::owned)
       : _r(r),
         _v(v),
         _f({0.0, 0.0, 0.0}),
@@ -204,8 +203,7 @@ class KokkosParticleBase {
    * @return displacement vector of particle since rebuild
    */
   const std::array<floatType, 3> calculateDisplacementSinceRebuild() const {
-
-    return {_rAtRebuild[0]-_r[0], _rAtRebuild[1]-_r[1], _rAtRebuild[2]-_r[2]};
+    return {_rAtRebuild[0] - _r[0], _rAtRebuild[1] - _r[1], _rAtRebuild[2] - _r[2]};
   }
 #endif
 
@@ -338,11 +336,25 @@ class KokkosParticleBase {
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.
    */
-  enum AttributeNames : int { ptr, id, posX, posY, posZ,
+  enum AttributeNames : int {
+    ptr,
+    id,
+    posX,
+    posY,
+    posZ,
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    rebuildX, rebuildY, rebuildZ,
+    rebuildX,
+    rebuildY,
+    rebuildZ,
 #endif
-    velX, velY, velZ, forceX, forceY, forceZ, ownershipState };
+    velX,
+    velY,
+    velZ,
+    forceX,
+    forceY,
+    forceZ,
+    ownershipState
+  };
 
   /**
    * Floating Point Type used for this particle
@@ -358,29 +370,27 @@ class KokkosParticleBase {
    * The type for the host-side SoA storage. Its column order matches AttributeNames (including ptr) and it determines
    * the types of get() and set().
    */
-  using SoAArraysType = typename autopas::utils::SoAType<
-      KokkosParticleBase<floatType, idType> * /*ptr*/, idType /*id*/, floatType /*x*/, floatType /*y*/,
-      floatType /*z*/,
+  using SoAArraysType =
+      typename autopas::utils::SoAType<KokkosParticleBase<floatType, idType> * /*ptr*/, idType /*id*/, floatType /*x*/,
+                                       floatType /*y*/, floatType /*z*/,
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-      floatType /*rebuildX*/, floatType /*rebuildY*/, floatType /*rebuildZ*/,
+                                       floatType /*rebuildX*/, floatType /*rebuildY*/, floatType /*rebuildZ*/,
 #endif
-      floatType /*vx*/, floatType /*vy*/, floatType /*vz*/, floatType /*fx*/, floatType /*fy*/, floatType /*fz*/,
-      OwnershipState /*ownershipState*/>::Type;
+                                       floatType /*vx*/, floatType /*vy*/, floatType /*vz*/, floatType /*fx*/,
+                                       floatType /*fy*/, floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
   /**
    * The type for the Kokkos SoA storage. Same columns as SoAArraysType but without ptr.
    */
-  using KokkosSoAArraysType = autopas::utilsKokkos::KokkosSoA<
-    idType * /*id*/, floatType * /*x*/, floatType * /*y*/,
-    floatType * /*z*/,
+  using KokkosSoAArraysType =
+      autopas::utilsKokkos::KokkosSoA<idType * /*id*/, floatType * /*x*/, floatType * /*y*/, floatType * /*z*/,
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-    floatType * /*rebuildX*/, floatType * /*rebuildY*/,
-    floatType * /*rebuildZ*/,
+                                      floatType * /*rebuildX*/, floatType * /*rebuildY*/, floatType * /*rebuildZ*/,
 #endif
-    floatType * /*vx*/, floatType * /*vy*/, floatType * /*vz*/,
-    floatType * /*fx*/, floatType * /*fy*/, floatType * /*fz*/,
-    autopas::OwnershipState * /*ownershipState*/>;
+                                      floatType * /*vx*/, floatType * /*vy*/, floatType * /*vz*/, floatType * /*fx*/,
+                                      floatType * /*fy*/, floatType * /*fz*/,
+                                      autopas::OwnershipState * /*ownershipState*/>;
 
   static_assert(std::tuple_size_v<SoAArraysType> == std::tuple_size_v<typename KokkosSoAArraysType::Type> + 1,
                 "KokkosSoAArraysType must have the same columns as SoAArraysType, except for ptr.");

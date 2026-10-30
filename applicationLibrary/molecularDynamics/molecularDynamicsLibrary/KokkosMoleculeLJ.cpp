@@ -1,5 +1,5 @@
 /**
-* @file KokkosMoleculeLJ.cpp
+ * @file KokkosMoleculeLJ.cpp
  * @date 23 Jan 2026 copied from MoleculeLJ.cpp
  * @author Luis Gall
  */

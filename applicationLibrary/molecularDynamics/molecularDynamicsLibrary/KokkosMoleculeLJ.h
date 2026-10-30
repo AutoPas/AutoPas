@@ -28,8 +28,8 @@ class KokkosMoleculeLJ {
                          Kokkos::Array<ParticleFloatPrecision, 3>{0., 0., 0.}, 0, 0) {}
 
   KOKKOS_INLINE_FUNCTION KokkosMoleculeLJ(const Kokkos::Array<ParticleFloatPrecision, 3> &pos,
-                                          const Kokkos::Array<ParticleFloatPrecision, 3> &v,
-                                          unsigned long moleculeId, unsigned long typeId)
+                                          const Kokkos::Array<ParticleFloatPrecision, 3> &v, unsigned long moleculeId,
+                                          unsigned long typeId)
       : _r{pos},
         _v{v},
         _id{moleculeId},
@@ -44,8 +44,8 @@ class KokkosMoleculeLJ {
   {
   }
 
-  KokkosMoleculeLJ(const std::array<ParticleFloatPrecision, 3> &pos,
-                   const std::array<ParticleFloatPrecision, 3> &v, unsigned long moleculeId, unsigned long typeId)
+  KokkosMoleculeLJ(const std::array<ParticleFloatPrecision, 3> &pos, const std::array<ParticleFloatPrecision, 3> &v,
+                   unsigned long moleculeId, unsigned long typeId)
       : _r{pos.at(0), pos.at(1), pos.at(2)},
         _v{v.at(0), v.at(1), v.at(2)},
         _f{0., 0., 0.}
@@ -101,8 +101,7 @@ class KokkosMoleculeLJ {
       KokkosMoleculeLJ *, size_t /*id*/, ParticleFloatPrecision /*x*/, ParticleFloatPrecision /*y*/,
       ParticleFloatPrecision /*z*/,
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-      ParticleFloatPrecision /*rebuildX*/, ParticleFloatPrecision /*rebuildY*/,
-      ParticleFloatPrecision /*rebuildZ*/,
+      ParticleFloatPrecision /*rebuildX*/, ParticleFloatPrecision /*rebuildY*/, ParticleFloatPrecision /*rebuildZ*/,
 #endif
       ParticleFloatPrecision /*vx*/, ParticleFloatPrecision /*vy*/, ParticleFloatPrecision /*vz*/,
       ParticleFloatPrecision /*fx*/, ParticleFloatPrecision /*fy*/, ParticleFloatPrecision /*fz*/,
@@ -110,17 +109,15 @@ class KokkosMoleculeLJ {
       ParticleFloatPrecision /*mass*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
   using KokkosSoAArraysType = autopas::utilsKokkos::KokkosSoA<
-      size_t * /*id*/, ParticleFloatPrecision * /*x*/, ParticleFloatPrecision * /*y*/,
-      ParticleFloatPrecision * /*z*/,
+      size_t * /*id*/, ParticleFloatPrecision * /*x*/, ParticleFloatPrecision * /*y*/, ParticleFloatPrecision * /*z*/,
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
       ParticleFloatPrecision * /*rebuildX*/, ParticleFloatPrecision * /*rebuildY*/,
       ParticleFloatPrecision * /*rebuildZ*/,
 #endif
       ParticleFloatPrecision * /*vx*/, ParticleFloatPrecision * /*vy*/, ParticleFloatPrecision * /*vz*/,
       ParticleFloatPrecision * /*fx*/, ParticleFloatPrecision * /*fy*/, ParticleFloatPrecision * /*fz*/,
-      ParticleFloatPrecision * /*oldFx*/, ParticleFloatPrecision * /*oldFy*/,
-      ParticleFloatPrecision * /*oldFz*/, ParticleFloatPrecision * /*mass*/, size_t * /*typeid*/,
-      autopas::OwnershipState * /*ownershipState*/>;
+      ParticleFloatPrecision * /*oldFx*/, ParticleFloatPrecision * /*oldFy*/, ParticleFloatPrecision * /*oldFz*/,
+      ParticleFloatPrecision * /*mass*/, size_t * /*typeid*/, autopas::OwnershipState * /*ownershipState*/>;
 
   template <AttributeNames attribute>
   constexpr decltype(auto) operator()() {
@@ -463,8 +460,8 @@ class KokkosMoleculeLJ {
   friend std::ostream &operator<<(std::ostream &os, const KokkosMoleculeLJ &particle) {
     using autopas::utils::ArrayUtils::operator<<;
     os << "Particle"
-       << "\nID      : " << particle._id << "\nOwnershipState : " << particle._ownershipState
-       << "\nPosition: " << "[ " << particle._r[0] << ", " << particle._r[1] << ", " << particle._r[2] << "]";
+       << "\nID      : " << particle._id << "\nOwnershipState : " << particle._ownershipState << "\nPosition: "
+       << "[ " << particle._r[0] << ", " << particle._r[1] << ", " << particle._r[2] << "]";
     // clang-format on
     return os;
   }

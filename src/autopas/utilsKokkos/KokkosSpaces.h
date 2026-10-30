@@ -20,6 +20,6 @@ using HostExecSpace = Kokkos::HostSpace::execution_space;
 
 using HostMemSpace = HostExecSpace::memory_space;
 
-}
+}  // namespace autopas::utilsKokkos
 
 #endif

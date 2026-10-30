@@ -12,7 +12,6 @@
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utilsKokkos/KokkosSoA.h"
 
-
 class KokkosSoATest : public KokkosTestBase {};
 
 #endif

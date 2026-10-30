@@ -29,8 +29,8 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
-#include "autopas/utilsKokkos/WrapKokkos.h"
 #include "autopas/utils/logging/Logger.h"
+#include "autopas/utilsKokkos/WrapKokkos.h"
 
 namespace autopas {
 
