@@ -67,6 +67,8 @@ class SortedSoAView {
     _sortedSoa.resizeArrays(n);
 
     // Step 3: pack getNeededAttr(std::false_type) attributes from source in sorted order.
+    // std::false_type as this variant of getNeededAttr includes only the read only attributes, preventing race
+    // conditions.
     packNeededImpl(std::make_index_sequence<Functor_T::getNeededAttr(std::false_type()).size()>{}, n);
 
     // Step 4: zero getComputedAttr() attributes so the functor accumulates from 0.
@@ -95,6 +97,8 @@ class SortedSoAView {
    */
   template <size_t AttrIdx>
   void packAttr(size_t n) {
+    // std::false_type as this variant of getNeededAttr includes only the read only attributes, preventing race
+    // conditions.
     constexpr size_t attr = static_cast<size_t>(Functor_T::getNeededAttr(std::false_type())[AttrIdx]);
     auto *dst = _sortedSoa.template begin<attr>();
     const auto *src = _source.template begin<attr>();
