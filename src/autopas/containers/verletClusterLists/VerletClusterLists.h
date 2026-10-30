@@ -223,6 +223,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     const auto [highX, highY] = _towerBlock.getTowerIndex2DAtPosition(haloPos + skinHalf);
     for (size_t y = lowY; y <= highY; ++y) {
       for (size_t x = lowX; x <= highX; ++x) {
+        // It's possible that a tower includes the owned version and a halo version of a particle. But they will be far
+        // enough apart that the position check will ensure no incorrect updates.
         if (internal::checkParticleInCellAndUpdateByIDAndPosition(_towerBlock.getTowerByIndex2D(x, y), haloParticle,
                                                                   skinHalf)) {
           return true;
