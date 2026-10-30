@@ -1243,7 +1243,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     }
     numRejectedConfigs++;
     // if no config is left after rejecting this one, an exception is thrown here.
-    configuration = _tuningManager->rejectConfiguration(configuration, rejectIndefinitely, interactionType);
+    std::tie(configuration, stillTuning) =
+        _tuningManager->rejectConfiguration(configuration, rejectIndefinitely, interactionType);
   } while (true);
 }
 
