@@ -1067,7 +1067,7 @@ class LJFunctorHWY
           sqrtEpsI = _sqrtEpsilonPerType[ti];
         }
         double fxi = 0., fyi = 0., fzi = 0.;
-        for (size_t j = 0; j < i; ++j) {
+        for (size_t j = 0; j < soaSize2; ++j) {
           if (ownedStatePtr2[j] == autopas::OwnershipState::dummy) continue;
           const double dx = xi - x2Ptr[j];
           const double dy = yi - y2Ptr[j];
@@ -1097,9 +1097,11 @@ class LJFunctorHWY
             fxi += fx;
             fyi += fy;
             fzi += fz;
-            fx2Ptr[j] -= fx;
-            fy2Ptr[j] -= fy;
-            fz2Ptr[j] -= fz;
+            if constexpr (newton3) {
+              fx2Ptr[j] -= fx;
+              fy2Ptr[j] -= fy;
+              fz2Ptr[j] -= fz;
+            }
             if constexpr (calculateGlobals) {
               const double pot6 = eps24 * lj12m6 + shift6;
               const int tid = autopas::autopas_get_thread_num();
@@ -1109,11 +1111,13 @@ class LJFunctorHWY
                 _aosThreadData[tid].virialSum[1] += fy * dy;
                 _aosThreadData[tid].virialSum[2] += fz * dz;
               }
-              if (ownedStatePtr2[j] == autopas::OwnershipState::owned) {
-                _aosThreadData[tid].potentialEnergySum += pot6;
-                _aosThreadData[tid].virialSum[0] += fx * dx;
-                _aosThreadData[tid].virialSum[1] += fy * dy;
-                _aosThreadData[tid].virialSum[2] += fz * dz;
+              if constexpr (newton3) {
+                if (ownedStatePtr2[j] == autopas::OwnershipState::owned) {
+                  _aosThreadData[tid].potentialEnergySum += pot6;
+                  _aosThreadData[tid].virialSum[0] += fx * dx;
+                  _aosThreadData[tid].virialSum[1] += fy * dy;
+                  _aosThreadData[tid].virialSum[2] += fz * dz;
+                }
               }
             }
           }
