@@ -324,17 +324,7 @@ class LJFunctorHWY
     auto uPotSum = highway::Zero(tag_double);
 
     // Check if all particles in the cell are of the same type
-    bool isHomogeneous = true;
-    size_t firstType = 0;
-    if constexpr (useMixing) {
-      firstType = typeIDPtr[0];
-      for (size_t i = 1; i < soaSize; ++i) {
-        if (typeIDPtr[i] != firstType) {
-          isHomogeneous = false;
-          break;
-        }
-      }
-    }
+    const bool isHomogeneous = soaIsHomogeneous(typeIDPtr, soaSize);
 
     auto runSingleLoop = [&](auto &ljParams) {
       for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soaSize) - 1; i >= 0; i -= 1) {
@@ -348,6 +338,7 @@ class LJFunctorHWY
     // Fast path for a homogeneous cell
     // -------------------------------------------------------------------------
     if (isHomogeneous) {
+      const size_t firstType = useMixing ? typeIDPtr[0] : 0;
       double sigmaSquare = _sigmaSquareAoS;
       double epsilon24 = _epsilon24AoS;
       double shift6 = _shift6AoS;
@@ -488,6 +479,21 @@ class LJFunctorHWY
         _shift6AoS = ppl.getMixingShift6(0, 0);
       }
     }
+  }
+
+  /**
+ * Checks whether all particles in an SoA buffer share the same typeId.
+ */
+  static inline bool soaIsHomogeneous(const size_t *const __restrict typeIDPtr, const size_t soaSize) {
+    if constexpr (useMixing) {
+      const size_t firstType = typeIDPtr[0];
+      for (size_t k = 1; k < soaSize; ++k) {
+        if (typeIDPtr[k] != firstType) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   /**
@@ -1116,27 +1122,7 @@ class LJFunctorHWY
     const size_t iStep = iStepSize<vecPattern>();
     const size_t jStep = jStepSize<vecPattern>();
 
-    bool isHomogeneous = true;
-    size_t firstType1 = 0;
-    size_t fisrtType2 = 0;
-    if constexpr (useMixing) {
-      firstType1 = typeID1Ptr[0];
-      for (size_t k = 1; k < soaSize1; ++k) {
-        if (typeID1Ptr[k] != firstType1) {
-          isHomogeneous = false;
-          break;
-        }
-      }
-      if (isHomogeneous) {
-        fisrtType2 = typeID2Ptr[0];
-        for (size_t k = 1; k < soaSize2; ++k) {
-          if (typeID2Ptr[k] != fisrtType2) {
-            isHomogeneous = false;
-            break;
-          }
-        }
-      }
-    }
+    const bool isHomogeneous = soaIsHomogeneous(typeID1Ptr, soaSize1) and soaIsHomogeneous(typeID2Ptr, soaSize2);
 
     auto runPairLoop = [&](auto &ljParameters) {
       std::ptrdiff_t i = startI;
@@ -1187,13 +1173,15 @@ class LJFunctorHWY
     };
 
     if (isHomogeneous) {
+      const size_t firstType1 = useMixing ? typeID1Ptr[0] : 0;
+      const size_t firstType2 = useMixing ? typeID2Ptr[0] : 0;
       double sigSq = _sigmaSquareAoS;
       double eps24 = _epsilon24AoS;
       double shift6 = _shift6AoS;
       if constexpr (useMixing) {
-        const double sig = _halfSigmaPerType[firstType1] + _halfSigmaPerType[fisrtType2];
+        const double sig = _halfSigmaPerType[firstType1] + _halfSigmaPerType[firstType2];
         sigSq = sig * sig;
-        eps24 = 24.0 * _sqrtEpsilonPerType[firstType1] * _sqrtEpsilonPerType[fisrtType2];
+        eps24 = 24.0 * _sqrtEpsilonPerType[firstType1] * _sqrtEpsilonPerType[firstType2];
         if constexpr (applyShift) {
           shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(eps24, sigSq, _cutoffSquareAoS);
         }
@@ -1485,17 +1473,7 @@ class LJFunctorHWY
     const VectorDouble ownedStateI = highway::Set(tag_double, static_cast<double>(ownedI));
     const MaskDouble ownedMaskI = highway::Ne(ownedStateI, highway::Zero(tag_double));
 
-    bool isHomogeneous = true;
-    size_t firstType = 0;
-    if constexpr (useMixing) {
-      firstType = typeIDPtr[0];
-      for (size_t k = 1; k < soa.size(); ++k) {
-        if (typeIDPtr[k] != firstType) {
-          isHomogeneous = false;
-          break;
-        }
-      }
-    }
+    const bool isHomogeneous = soaIsHomogeneous(typeIDPtr, soa.size());
 
     auto runVerletLoop = [&](const auto &physics) {
       size_t j = 0;
@@ -1519,6 +1497,7 @@ class LJFunctorHWY
     };
 
     if (isHomogeneous) {
+      const size_t firstType = useMixing ? typeIDPtr[indexFirst] : 0;
       double sigSq = _sigmaSquareAoS;
       double eps24 = _epsilon24AoS;
       double shift6 = _shift6AoS;
