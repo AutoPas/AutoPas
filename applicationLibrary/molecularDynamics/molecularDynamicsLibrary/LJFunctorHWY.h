@@ -376,44 +376,10 @@ class LJFunctorHWY
    */
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              const bool newton3) final {
-    if (soa1.size() == 0 or soa2.size() == 0) {
-      return;
-    }
-    switch (_vecPattern) {
-      case VectorizationPattern::p1xVec: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::p1xVec>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::p1xVec>(soa1, soa2);
-        }
-        break;
-      }
-      case VectorizationPattern::p2xVecDiv2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
-        }
-        break;
-      }
-      case VectorizationPattern::pVecDiv2x2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
-        }
-        break;
-      }
-      case VectorizationPattern::pVecx1: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecx1>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecx1>(soa1, soa2);
-        }
-        break;
-      }
-      default:
-        autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
+    if (newton3) {
+      SoAFunctorPairDispatch<true, false>(soa1, soa2);
+    } else {
+      SoAFunctorPairDispatch<false, false>(soa1, soa2);
     }
   }
 
@@ -421,49 +387,46 @@ class LJFunctorHWY
    * @copydoc autopas::PairwiseFunctor::SoAFunctorPairSorted()
    */
   inline void SoAFunctorPairSorted(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                   const autopas::SoASortingData &sortingData, bool newton3) final {
-    if (soa1.size() == 0 or soa2.size() == 0) {
-      return;
-    }
-    switch (_vecPattern) {
-      case VectorizationPattern::p1xVec: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
-        } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
-        }
-        break;
-      }
-      case VectorizationPattern::p2xVecDiv2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
-        } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
-        }
-        break;
-      }
-      case VectorizationPattern::pVecDiv2x2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
-        } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
-        }
-        break;
-      }
-      case VectorizationPattern::pVecx1: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
-        } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
-        }
-        break;
-      }
-      default:
-        autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
+                                   const autopas::SoASortingData &sortingData, const bool newton3) final {
+    if (newton3) {
+      SoAFunctorPairDispatch<true, true>(soa1, soa2, sortingData);
+    } else {
+      SoAFunctorPairDispatch<false, true>(soa1, soa2, sortingData);
     }
   }
 
  private:
+  template <bool newton3, bool sorted>
+  inline void SoAFunctorPairDispatch(
+            autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+      const autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
+    if (soa1.size() == 0 or soa2.size() == 0) {
+      return;
+    }
+
+    switch (_vecPattern) {
+      case VectorizationPattern::p1xVec: {
+        SoAFunctorPairImpl<newton3, sorted, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
+        break;
+      }
+      case VectorizationPattern::p2xVecDiv2: {
+        SoAFunctorPairImpl<newton3, sorted, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
+        break;
+      }
+      case VectorizationPattern::pVecDiv2x2: {
+        SoAFunctorPairImpl<newton3, sorted, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
+        break;
+      }
+      case VectorizationPattern::pVecx1: {
+        SoAFunctorPairImpl<newton3, sorted, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
+        break;
+      }
+      default: {
+        autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
+      }
+    }
+  }
+
   void initFromPPL(ParticlePropertiesLibrary<double, size_t> &ppl) {
     const size_t nTypes = ppl.getNumberRegisteredSiteTypes();
     _halfSigmaPerType.resize(nTypes);
