@@ -641,23 +641,23 @@ class LJFunctorHWY
                                      double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
                                      double *const __restrict fz2Ptr, const size_t j, const size_t rest) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      const VectorDouble fx2 =
-          remainder ? highway::LoadN(tag_double, &fx2Ptr[j], rest) : highway::LoadU(tag_double, &fx2Ptr[j]);
-      const VectorDouble fy2 =
-          remainder ? highway::LoadN(tag_double, &fy2Ptr[j], rest) : highway::LoadU(tag_double, &fy2Ptr[j]);
-      const VectorDouble fz2 =
-          remainder ? highway::LoadN(tag_double, &fz2Ptr[j], rest) : highway::LoadU(tag_double, &fz2Ptr[j]);
+      if constexpr (remainder) {
+        const VectorDouble fx2 = highway::LoadN(tag_double, &fx2Ptr[j], rest);
+        const VectorDouble fy2 = highway::LoadN(tag_double, &fy2Ptr[j], rest);
+        const VectorDouble fz2 = highway::LoadN(tag_double, &fz2Ptr[j], rest);
 
-      const VectorDouble fx2New = highway::Sub(fx2, fx);
-      const VectorDouble fy2New = highway::Sub(fy2, fy);
-      const VectorDouble fz2New = highway::Sub(fz2, fz);
+        highway::StoreN(highway::Sub(fx2, fx), tag_double, &fx2Ptr[j], rest);
+        highway::StoreN(highway::Sub(fy2, fy), tag_double, &fy2Ptr[j], rest);
+        highway::StoreN(highway::Sub(fz2, fz), tag_double, &fz2Ptr[j], rest);
+      } else {
+        const VectorDouble fx2 = highway::LoadU(tag_double, &fx2Ptr[j]);
+        const VectorDouble fy2 = highway::LoadU(tag_double, &fy2Ptr[j]);
+        const VectorDouble fz2 = highway::LoadU(tag_double, &fz2Ptr[j]);
 
-      remainder ? highway::StoreN(fx2New, tag_double, &fx2Ptr[j], rest)
-                : highway::StoreU(fx2New, tag_double, &fx2Ptr[j]);
-      remainder ? highway::StoreN(fy2New, tag_double, &fy2Ptr[j], rest)
-                : highway::StoreU(fy2New, tag_double, &fy2Ptr[j]);
-      remainder ? highway::StoreN(fz2New, tag_double, &fz2Ptr[j], rest)
-                : highway::StoreU(fz2New, tag_double, &fz2Ptr[j]);
+        highway::StoreU(highway::Sub(fx2, fx), tag_double, &fx2Ptr[j]);
+        highway::StoreU(highway::Sub(fy2, fy), tag_double, &fy2Ptr[j]);
+        highway::StoreU(highway::Sub(fz2, fz), tag_double, &fz2Ptr[j]);
+      }
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
       const auto lowerFx = highway::LowerHalf(tag_double_half, fx);
       const auto lowerFy = highway::LowerHalf(tag_double_half, fy);
@@ -671,19 +671,15 @@ class LJFunctorHWY
       const auto fyCombined = highway::Add(lowerFy, upperFy);
       const auto fzCombined = highway::Add(lowerFz, upperFz);
 
-      const int lanes = remainder ? rest : _vecLengthDouble / 2;
+      const size_t lanes = remainder ? rest : _vecLengthDouble / 2;
 
       const auto fx2 = highway::LoadN(tag_double_half, &fx2Ptr[j], lanes);
       const auto fy2 = highway::LoadN(tag_double_half, &fy2Ptr[j], lanes);
       const auto fz2 = highway::LoadN(tag_double_half, &fz2Ptr[j], lanes);
 
-      const auto newFx = highway::Sub(fx2, fxCombined);
-      const auto newFy = highway::Sub(fy2, fyCombined);
-      const auto newFz = highway::Sub(fz2, fzCombined);
-
-      highway::StoreN(newFx, tag_double_half, &fx2Ptr[j], lanes);
-      highway::StoreN(newFy, tag_double_half, &fy2Ptr[j], lanes);
-      highway::StoreN(newFz, tag_double_half, &fz2Ptr[j], lanes);
+      highway::StoreN(highway::Sub(fx2, fxCombined), tag_double_half, &fx2Ptr[j], lanes);
+      highway::StoreN(highway::Sub(fy2, fyCombined), tag_double_half, &fy2Ptr[j], lanes);
+      highway::StoreN(highway::Sub(fz2, fzCombined), tag_double_half, &fz2Ptr[j], lanes);
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
       const auto lowerFx = highway::LowerHalf(tag_double_half, fx);
       const auto lowerFy = highway::LowerHalf(tag_double_half, fy);
@@ -764,20 +760,24 @@ class LJFunctorHWY
       highway::StoreN(newFy, tag_double_half, &fyPtr[index], lanes);
       highway::StoreN(newFz, tag_double_half, &fzPtr[index], lanes);
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-      const VectorDouble oldFx =
-          remainder ? highway::LoadN(tag_double, &fxPtr[i], restI) : highway::LoadU(tag_double, &fxPtr[i]);
-      const VectorDouble oldFy =
-          remainder ? highway::LoadN(tag_double, &fyPtr[i], restI) : highway::LoadU(tag_double, &fyPtr[i]);
-      const VectorDouble oldFz =
-          remainder ? highway::LoadN(tag_double, &fzPtr[i], restI) : highway::LoadU(tag_double, &fzPtr[i]);
+      const size_t index = reversed ? (remainder ? 0 : i - _vecLengthDouble + 1) : i;
+      if constexpr (remainder) {
+        const VectorDouble oldFx = highway::LoadN(tag_double, &fxPtr[index], restI);
+        const VectorDouble oldFy = highway::LoadN(tag_double, &fyPtr[index], restI);
+        const VectorDouble oldFz = highway::LoadN(tag_double, &fzPtr[index], restI);
 
-      const VectorDouble fxNew = highway::Add(oldFx, fxAcc);
-      const VectorDouble fyNew = highway::Add(oldFy, fyAcc);
-      const VectorDouble fzNew = highway::Add(oldFz, fzAcc);
+        highway::StoreN(highway::Add(oldFx, fxAcc), tag_double, &fxPtr[index], restI);
+        highway::StoreN(highway::Add(oldFy, fyAcc), tag_double, &fyPtr[index], restI);
+        highway::StoreN(highway::Add(oldFz, fzAcc), tag_double, &fzPtr[index], restI);
+      } else {
+        const VectorDouble oldFx = highway::LoadU(tag_double, &fxPtr[index]);
+        const VectorDouble oldFy = highway::LoadU(tag_double, &fyPtr[index]);
+        const VectorDouble oldFz = highway::LoadU(tag_double, &fzPtr[index]);
 
-      remainder ? highway::StoreN(fxNew, tag_double, &fxPtr[i], restI) : highway::StoreU(fxNew, tag_double, &fxPtr[i]);
-      remainder ? highway::StoreN(fyNew, tag_double, &fyPtr[i], restI) : highway::StoreU(fyNew, tag_double, &fyPtr[i]);
-      remainder ? highway::StoreN(fzNew, tag_double, &fzPtr[i], restI) : highway::StoreU(fzNew, tag_double, &fzPtr[i]);
+        highway::StoreU(highway::Add(oldFx, fxAcc), tag_double, &fxPtr[index]);
+        highway::StoreU(highway::Add(oldFy, fyAcc), tag_double, &fyPtr[index]);
+        highway::StoreU(highway::Add(oldFz, fzAcc), tag_double, &fzPtr[index]);
+      }
     }
   }
 
@@ -797,7 +797,7 @@ class LJFunctorHWY
     VectorDouble shift6;
   };
 
-  static inline VectorDouble computeShift6SIMDStatic(const VectorDouble &sigmaSquareds,
+  static inline VectorDouble computeShift6SIMD(const VectorDouble &sigmaSquareds,
                                                                             const VectorDouble &epsilon24s,
                                                                             const VectorDouble &invCutoffSquared) {
     const auto sig2Cut2 = highway::Mul(sigmaSquareds, invCutoffSquared);
@@ -805,11 +805,6 @@ class LJFunctorHWY
     const auto sig6Cut6 = highway::Mul(sig4Cut4, sig2Cut2);
     const auto sig12Cut12 = highway::Mul(sig6Cut6, sig6Cut6);
     return highway::Mul(epsilon24s, highway::Sub(sig6Cut6, sig12Cut12));
-  }
-
-  inline VectorDouble computeShift6SIMD(const VectorDouble &sigmaSquareds,
-                                                               const VectorDouble &epsilon24s) const {
-    return computeShift6SIMDStatic(sigmaSquareds, epsilon24s, highway::Set(tag_double,_invCutoffSquareAoS));
   }
 
   struct HomogeneousParameters {
@@ -862,7 +857,7 @@ class LJFunctorHWY
       const auto eps24 = highway::Mul(sqrtEpsilon24I, sqrtEpsJ);
       VectorDouble shift6 = highway::Zero(tag_double);
       if constexpr (calculateGlobals and applyShift) {
-        shift6 = computeShift6SIMDStatic(sigSq, eps24, invCutoffSquaredVec);
+        shift6 = computeShift6SIMD(sigSq, eps24, invCutoffSquaredVec);
       }
       return {sigSq, eps24, shift6};
     }
@@ -912,7 +907,7 @@ class LJFunctorHWY
       const auto eps24 = highway::Mul(sqrtEpsilon24I, sqrtEpsilonJ);
       VectorDouble shift6 = highway::Zero(tag_double);
       if constexpr (calculateGlobals and applyShift) {
-        shift6 = computeShift6SIMDStatic(sigSq, eps24, invCutoffSquaredVec);
+        shift6 = computeShift6SIMD(sigSq, eps24, invCutoffSquaredVec);
       }
       return {sigSq, eps24, shift6};
     }
