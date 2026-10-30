@@ -107,8 +107,8 @@ class NeighborListsBuffer {
   }
 
   /**
-   * Resize the internal buffer so that there are new spare lists.
-   * If n is not larger than the current capacity nothing happens.
+   * Resize the internal buffer to n lists.
+   * This also shrinks the buffer if it held more than n lists.
    *
    * @param n Number of lists to allocate space for.
    */

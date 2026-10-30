@@ -70,6 +70,43 @@ TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
   EXPECT_EQ(verletClusterLists.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo), numParticles);
 }
 
+/**
+ * Tests that a cluster which was owned in one rebuild and is halo in the next does not keep its old neighbor list when
+ * newton3 is off.
+ */
+TEST_F(VerletClusterListsTest, testHaloClusterHasNoNeighborListAfterRebuild) {
+  const std::array<double, 3> boxMin = {0, 0, 0};
+  const std::array<double, 3> boxMax = {3, 3, 3};
+  const double cutoff = 1.;
+  const double skin = 0.2;
+  const size_t clusterSize = 4;
+  autopas::VerletClusterLists<ParticleFP64> verletClusterLists(boxMin, boxMax, cutoff, skin, clusterSize);
+
+  MPairwiseFunctor emptyFunctor;
+  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletClusterTraversal(
+      emptyFunctor, clusterSize, autopas::DataLayoutOption::aos, false);
+
+  // Two owned clusters stacked in one tower.
+  const std::array<double, 3> towerPosition = {1., 1., 1.};
+  size_t id = 0;
+  for (const double z : {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6}) {
+    verletClusterLists.addParticle(ParticleFP64({1., 1., z}, {0., 0., 0.}, id++));
+  }
+  verletClusterLists.rebuildNeighborLists(&verletClusterTraversal);
+  ASSERT_NE(verletClusterLists.getTowerBlock().getTowerAtPosition(towerPosition).getCluster(0).getNeighbors(), nullptr);
+
+  // A halo cluster below them, which takes over the lowest cluster of the tower.
+  for (const double z : {-0.8, -0.6, -0.4, -0.2}) {
+    ParticleFP64 haloParticle({1., 1., z}, {0., 0., 0.}, id++);
+    haloParticle.setOwnershipState(autopas::OwnershipState::halo);
+    verletClusterLists.addHaloParticle(haloParticle);
+  }
+  verletClusterLists.rebuildNeighborLists(&verletClusterTraversal);
+  auto &tower = verletClusterLists.getTowerBlock().getTowerAtPosition(towerPosition);
+  ASSERT_EQ(tower.getFirstOwnedCluster(), tower.getClusters().begin() + 1);
+  EXPECT_EQ(tower.getCluster(0).getNeighbors(), nullptr);
+}
+
 TEST_F(VerletClusterListsTest, testIterator) {
   const std::array<double, 3> boxMin = {1, 1, 1};
   const std::array<double, 3> boxMax = {3, 3, 3};

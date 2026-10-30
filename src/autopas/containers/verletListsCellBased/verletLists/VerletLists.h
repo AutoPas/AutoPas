@@ -106,7 +106,7 @@ class VerletLists : public VerletListsLinkedBase<Particle_T> {
   /**
    * Rebuilds the neighbor lists, marks them valid and resets the internal counter.
    * Builds the CRS directly — no separate AoS→SoA conversion pass needed.
-   * @note This function will be called in computeInteractions()!
+   * @note This function is called by the LogicHandler before computeInteractions().
    * @param traversal
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {

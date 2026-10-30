@@ -109,7 +109,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle_T> {
 
   /**
    * Rebuilds the neighbor lists and marks them valid
-   * @note This function will be called in computeInteractions()!
+   * @note This function is called by the LogicHandler before computeInteractions().
    * @param traversal The traversal currently used
    */
   void rebuildNeighborLists(TraversalInterface *traversal) override {
