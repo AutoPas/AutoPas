@@ -330,7 +330,7 @@ class LJFunctorHWY
     const bool isHomogeneous = soaIsHomogeneous(typeIDPtr, soaSize);
 
     auto runSingleLoop = [&](auto &ljParams) {
-      for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soaSize) - 1; i >= 0; i -= 1) {
+      for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soaSize) - 1; i > 0; i -= 1) {
         handleILoopBody<true, true, false, VectorizationPattern::p1xVec>(
             i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr,
             fzPtr, ljParams, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0, i);
@@ -625,28 +625,35 @@ class LJFunctorHWY
     sqrtEpsJ = loadJRegister<remainder, vecPattern>(tag_double, sqrtEpsPtr, j, restJ);
   }
 
+template <bool remainder, bool subtract, typename Tag>
+static inline void updateForceArrays(const Tag tag, const size_t offset, double *const __restrict fxPtr, double *const __restrict fyPtr,
+double *const __restrict fzPtr, const highway::VFromD<Tag> &dfx, const highway::VFromD<Tag> &dfy,
+const highway::VFromD<Tag> &dfz, const size_t lanes) {
+    const auto oldFx = remainder ? highway::LoadN(tag, &fxPtr[offset], lanes) : highway::LoadU(tag, &fxPtr[offset]);
+    const auto oldFy = remainder ? highway::LoadN(tag, &fyPtr[offset], lanes) : highway::LoadU(tag, &fyPtr[offset]);
+    const auto oldFz = remainder ? highway::LoadN(tag, &fzPtr[offset], lanes) : highway::LoadU(tag, &fzPtr[offset]);
+
+    const auto newFx = subtract ? highway::Sub(oldFx, dfx) : highway::Add(oldFx, dfx);
+    const auto newFy = subtract ? highway::Sub(oldFy, dfy) : highway::Add(oldFy, dfy);
+    const auto newFz = subtract ? highway::Sub(oldFz, dfz) : highway::Add(oldFz, dfz);
+
+    if constexpr (remainder) {
+      highway::StoreN(newFx, tag, &fxPtr[offset], lanes);
+      highway::StoreN(newFy, tag, &fyPtr[offset], lanes);
+      highway::StoreN(newFz, tag, &fzPtr[offset], lanes);
+    } else {
+      highway::StoreU(newFx, tag, &fxPtr[offset]);
+      highway::StoreU(newFy, tag, &fyPtr[offset]);
+      highway::StoreU(newFz, tag, &fzPtr[offset]);
+    }
+  }
+
   template <bool remainder, VectorizationPattern vecPattern>
   static void handleNewton3Reduction(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
                                      double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
                                      double *const __restrict fz2Ptr, const size_t j, const size_t rest) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      if constexpr (remainder) {
-        const VectorDouble fx2 = highway::LoadN(tag_double, &fx2Ptr[j], rest);
-        const VectorDouble fy2 = highway::LoadN(tag_double, &fy2Ptr[j], rest);
-        const VectorDouble fz2 = highway::LoadN(tag_double, &fz2Ptr[j], rest);
-
-        highway::StoreN(highway::Sub(fx2, fx), tag_double, &fx2Ptr[j], rest);
-        highway::StoreN(highway::Sub(fy2, fy), tag_double, &fy2Ptr[j], rest);
-        highway::StoreN(highway::Sub(fz2, fz), tag_double, &fz2Ptr[j], rest);
-      } else {
-        const VectorDouble fx2 = highway::LoadU(tag_double, &fx2Ptr[j]);
-        const VectorDouble fy2 = highway::LoadU(tag_double, &fy2Ptr[j]);
-        const VectorDouble fz2 = highway::LoadU(tag_double, &fz2Ptr[j]);
-
-        highway::StoreU(highway::Sub(fx2, fx), tag_double, &fx2Ptr[j]);
-        highway::StoreU(highway::Sub(fy2, fy), tag_double, &fy2Ptr[j]);
-        highway::StoreU(highway::Sub(fz2, fz), tag_double, &fz2Ptr[j]);
-      }
+      updateForceArrays<remainder, true>(tag_double, j, fx2Ptr, fy2Ptr, fz2Ptr, fx, fy, fz, rest);
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
       const auto lowerFx = highway::LowerHalf(tag_double_half, fx);
       const auto lowerFy = highway::LowerHalf(tag_double_half, fy);
@@ -661,14 +668,7 @@ class LJFunctorHWY
       const auto fzCombined = highway::Add(lowerFz, upperFz);
 
       const size_t lanes = remainder ? rest : _vecLengthDouble / 2;
-
-      const auto fx2 = highway::LoadN(tag_double_half, &fx2Ptr[j], lanes);
-      const auto fy2 = highway::LoadN(tag_double_half, &fy2Ptr[j], lanes);
-      const auto fz2 = highway::LoadN(tag_double_half, &fz2Ptr[j], lanes);
-
-      highway::StoreN(highway::Sub(fx2, fxCombined), tag_double_half, &fx2Ptr[j], lanes);
-      highway::StoreN(highway::Sub(fy2, fyCombined), tag_double_half, &fy2Ptr[j], lanes);
-      highway::StoreN(highway::Sub(fz2, fzCombined), tag_double_half, &fz2Ptr[j], lanes);
+      updateForceArrays<remainder, true>(tag_double_half, j, fx2Ptr, fy2Ptr, fz2Ptr, fxCombined, fyCombined, fzCombined, lanes);
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
       const auto lowerFx = highway::LowerHalf(tag_double_half, fx);
       const auto lowerFy = highway::LowerHalf(tag_double_half, fy);
@@ -734,39 +734,14 @@ class LJFunctorHWY
       const auto fyAccCombined = highway::Add(lowerFyAcc, upperFyAcc);
       const auto fzAccCombined = highway::Add(lowerFzAcc, upperFzAcc);
 
-      const int index = reversed ? (remainder ? 0 : i - _vecLengthDouble / 2 + 1) : i;
-      const int lanes = remainder ? restI : _vecLengthDouble / 2;
+      const size_t index = reversed ? (remainder ? 0 : i - _vecLengthDouble / 2 + 1) : i;
+      const size_t lanes = remainder ? restI : _vecLengthDouble / 2;
 
-      const auto oldFx = highway::LoadN(tag_double_half, &fxPtr[index], lanes);
-      const auto oldFy = highway::LoadN(tag_double_half, &fyPtr[index], lanes);
-      const auto oldFz = highway::LoadN(tag_double_half, &fzPtr[index], lanes);
-
-      const auto newFx = highway::Add(oldFx, fxAccCombined);
-      const auto newFy = highway::Add(oldFy, fyAccCombined);
-      const auto newFz = highway::Add(oldFz, fzAccCombined);
-
-      highway::StoreN(newFx, tag_double_half, &fxPtr[index], lanes);
-      highway::StoreN(newFy, tag_double_half, &fyPtr[index], lanes);
-      highway::StoreN(newFz, tag_double_half, &fzPtr[index], lanes);
+      updateForceArrays<remainder, false>(tag_double_half, index, fxPtr, fyPtr, fzPtr, fxAccCombined, fyAccCombined,
+                                          fzAccCombined, lanes);
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       const size_t index = reversed ? (remainder ? 0 : i - _vecLengthDouble + 1) : i;
-      if constexpr (remainder) {
-        const VectorDouble oldFx = highway::LoadN(tag_double, &fxPtr[index], restI);
-        const VectorDouble oldFy = highway::LoadN(tag_double, &fyPtr[index], restI);
-        const VectorDouble oldFz = highway::LoadN(tag_double, &fzPtr[index], restI);
-
-        highway::StoreN(highway::Add(oldFx, fxAcc), tag_double, &fxPtr[index], restI);
-        highway::StoreN(highway::Add(oldFy, fyAcc), tag_double, &fyPtr[index], restI);
-        highway::StoreN(highway::Add(oldFz, fzAcc), tag_double, &fzPtr[index], restI);
-      } else {
-        const VectorDouble oldFx = highway::LoadU(tag_double, &fxPtr[index]);
-        const VectorDouble oldFy = highway::LoadU(tag_double, &fyPtr[index]);
-        const VectorDouble oldFz = highway::LoadU(tag_double, &fzPtr[index]);
-
-        highway::StoreU(highway::Add(oldFx, fxAcc), tag_double, &fxPtr[index]);
-        highway::StoreU(highway::Add(oldFy, fyAcc), tag_double, &fyPtr[index]);
-        highway::StoreU(highway::Add(oldFz, fzAcc), tag_double, &fzPtr[index]);
-      }
+      updateForceArrays<remainder, false>(tag_double, index, fxPtr, fyPtr, fzPtr,fxAcc, fyAcc, fzAcc, restI);
     }
   }
 
