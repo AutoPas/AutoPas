@@ -625,10 +625,11 @@ class LJFunctorHWY
     sqrtEpsJ = loadJRegister<remainder, vecPattern>(tag_double, sqrtEpsPtr, j, restJ);
   }
 
-template <bool remainder, bool subtract, typename Tag>
-static inline void updateForceArrays(const Tag tag, const size_t offset, double *const __restrict fxPtr, double *const __restrict fyPtr,
-double *const __restrict fzPtr, const highway::VFromD<Tag> &dfx, const highway::VFromD<Tag> &dfy,
-const highway::VFromD<Tag> &dfz, const size_t lanes) {
+  template <bool remainder, bool subtract, typename Tag>
+  static inline void updateForceArrays(const Tag tag, const size_t offset, double *const __restrict fxPtr,
+                                       double *const __restrict fyPtr, double *const __restrict fzPtr,
+                                       const highway::VFromD<Tag> &dfx, const highway::VFromD<Tag> &dfy,
+                                       const highway::VFromD<Tag> &dfz, const size_t lanes) {
     const auto oldFx = remainder ? highway::LoadN(tag, &fxPtr[offset], lanes) : highway::LoadU(tag, &fxPtr[offset]);
     const auto oldFy = remainder ? highway::LoadN(tag, &fyPtr[offset], lanes) : highway::LoadU(tag, &fyPtr[offset]);
     const auto oldFz = remainder ? highway::LoadN(tag, &fzPtr[offset], lanes) : highway::LoadU(tag, &fzPtr[offset]);
@@ -668,7 +669,8 @@ const highway::VFromD<Tag> &dfz, const size_t lanes) {
       const auto fzCombined = highway::Add(lowerFz, upperFz);
 
       const size_t lanes = remainder ? rest : _vecLengthDouble / 2;
-      updateForceArrays<remainder, true>(tag_double_half, j, fx2Ptr, fy2Ptr, fz2Ptr, fxCombined, fyCombined, fzCombined, lanes);
+      updateForceArrays<remainder, true>(tag_double_half, j, fx2Ptr, fy2Ptr, fz2Ptr, fxCombined, fyCombined, fzCombined,
+                                         lanes);
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
       const auto lowerFx = highway::LowerHalf(tag_double_half, fx);
       const auto lowerFy = highway::LowerHalf(tag_double_half, fy);
@@ -741,7 +743,7 @@ const highway::VFromD<Tag> &dfz, const size_t lanes) {
                                           fzAccCombined, lanes);
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       const size_t index = reversed ? (remainder ? 0 : i - _vecLengthDouble + 1) : i;
-      updateForceArrays<remainder, false>(tag_double, index, fxPtr, fyPtr, fzPtr,fxAcc, fyAcc, fzAcc, restI);
+      updateForceArrays<remainder, false>(tag_double, index, fxPtr, fyPtr, fzPtr, fxAcc, fyAcc, fzAcc, restI);
     }
   }
 
@@ -843,30 +845,34 @@ const highway::VFromD<Tag> &dfz, const size_t lanes) {
   struct HeterogeneousVerletParameters {
     VectorDouble halfSigmaI;
     VectorDouble sqrtEpsilon24I;
-    const double *const __restrict halfSigmaPtr;
-    const double *const __restrict sqrtEpsilonPtr;
+    const int64_t *const __restrict typeIDPtr;
+    const double *const __restrict halfSigmaPerTypePtr;
+    const double *const __restrict sqrtEpsilonPerTypePtr;
     const VectorDouble invCutoffSquaredVec;
 
     HeterogeneousVerletParameters(const double halfSigmaIScalar, const double sqrtEpsilonIScalar,
-                                  const double *const __restrict halfSig, const double *const __restrict sqrtEps,
-                                  const double invCutoffSquared)
+                                  const int64_t *const __restrict typeIDPtr,
+                                  const double *const __restrict halfSigmaPerType,
+                                  const double *const __restrict sqrtEpsilonPerType, const double invCutoffSquared)
         : halfSigmaI{highway::Set(tag_double, halfSigmaIScalar)},
           sqrtEpsilon24I{highway::Set(tag_double, 24.0 * sqrtEpsilonIScalar)},
-          halfSigmaPtr{halfSig},
-          sqrtEpsilonPtr{sqrtEps},
+          typeIDPtr{typeIDPtr},
+          halfSigmaPerTypePtr{halfSigmaPerType},
+          sqrtEpsilonPerTypePtr{sqrtEpsilonPerType},
           invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)} {}
 
     template <bool remainder>
     inline LJParameters getJ(const VectorLong &indices, const MaskDouble &restMaskDouble) const {
-      VectorDouble halfSigmaJ;
-      VectorDouble sqrtEpsilonJ;
+      VectorLong typeJ;
       if constexpr (remainder) {
-        halfSigmaJ = highway::MaskedGatherIndex(restMaskDouble, tag_double, halfSigmaPtr, indices);
-        sqrtEpsilonJ = highway::MaskedGatherIndex(restMaskDouble, tag_double, sqrtEpsilonPtr, indices);
+        const MaskLong restMaskLong = highway::RebindMask(tag_long, restMaskDouble);
+        typeJ = highway::MaskedGatherIndex(restMaskLong, tag_long, typeIDPtr, indices);
       } else {
-        halfSigmaJ = highway::GatherIndex(tag_double, halfSigmaPtr, indices);
-        sqrtEpsilonJ = highway::GatherIndex(tag_double, sqrtEpsilonPtr, indices);
+        typeJ = highway::GatherIndex(tag_long, typeIDPtr, indices);
       }
+      const VectorDouble halfSigmaJ = highway::GatherIndex(tag_double, halfSigmaPerTypePtr, typeJ);
+      const VectorDouble sqrtEpsilonJ = highway::GatherIndex(tag_double, sqrtEpsilonPerTypePtr, typeJ);
+
       const auto sigma = highway::Add(halfSigmaI, halfSigmaJ);
       const auto sigSq = highway::Mul(sigma, sigma);
       const auto eps24 = highway::Mul(sqrtEpsilon24I, sqrtEpsilonJ);
@@ -1437,12 +1443,10 @@ const highway::VFromD<Tag> &dfz, const size_t lanes) {
                                           highway::Set(tag_double, shift6)};
       runVerletLoop(physics);
     } else {
-      MixingBuffers<512> mixingBuffers;
-      double *halfSigPtr = nullptr, *sqrtEpsPtr = nullptr;
-      mixingBuffers.getMixingPointers(typeIDPtr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigPtr,
-                                      sqrtEpsPtr);
-      HeterogeneousVerletParameters heterogeneousParams{halfSigPtr[indexFirst], sqrtEpsPtr[indexFirst], halfSigPtr,
-                                                        sqrtEpsPtr, _invCutoffSquareAoS};
+      const size_t typeI = typeIDPtr[indexFirst];
+      HeterogeneousVerletParameters heterogeneousParams{
+          _halfSigmaPerType[typeI], _sqrtEpsilonPerType[typeI], reinterpret_cast<const int64_t *>(typeIDPtr),
+          _halfSigmaPerType.data(), _sqrtEpsilonPerType.data(), _invCutoffSquareAoS};
       runVerletLoop(heterogeneousParams);
     }
 
