@@ -84,6 +84,13 @@ class TraversalOption : public Option<TraversalOption> {
      * OTC01Traversal : Simple DFS traversal without newton 3 optimization
      */
     ot_c01,
+
+    /**
+    * OTC01ParallelTraversal: Parallel octree traversal
+    * using OpenMP, without Newton3.
+    */
+    ot_c01_parallel,
+
     /**
      * OTC18Traversal : DFS traversal with newton 3 optimization that checks whether a neighbor has already been
      * processed via ID comparison
@@ -339,6 +346,7 @@ class TraversalOption : public Option<TraversalOption> {
         // Octree Traversals:
         {TraversalOption::ot_c18, "ot_c18"},
         {TraversalOption::ot_c01, "ot_c01"},
+          {TraversalOption::ot_c01_parallel, "ot_c01_parallel"},
     };
   };
 

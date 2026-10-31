@@ -144,6 +144,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
           TraversalOption::lc_c01_combined_SoA,
           TraversalOption::vl_list_iteration,
           TraversalOption::ot_c01,
+            TraversalOption::ot_c01_parallel,
           TraversalOption::vcl_c01_balanced,
           TraversalOption::vcl_cluster_iteration,
           TraversalOption::vlc_c01,

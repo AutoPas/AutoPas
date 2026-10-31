@@ -23,6 +23,7 @@
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
 #include "autopas/containers/octree/traversals/OTC01Traversal.h"
 #include "autopas/containers/octree/traversals/OTC18Traversal.h"
+#include "autopas/containers/octree/traversals/OTC01ParallelTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
@@ -347,6 +348,20 @@ std::unique_ptr<TraversalInterface> TraversalSelector::generatePairwiseTraversal
       using ParticleType = typename ParticleCell_T::ParticleType;
       traversal = std::make_unique<OTC01Traversal<ParticleType, PairwiseFunctor_T>>(
           pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.interactionLength, dataLayout, useNewton3);
+      break;
+    }
+
+    case TraversalOption::ot_c01_parallel: {
+      using ParticleType = typename ParticleCell_T::ParticleType;
+
+      traversal = std::make_unique<
+          OTC01ParallelTraversal<ParticleType, PairwiseFunctor_T>>(
+              pairwiseFunctor,
+              traversalInfo.interactionLength,
+              traversalInfo.interactionLength,
+              dataLayout,
+              useNewton3);
+
       break;
     }
     default: {

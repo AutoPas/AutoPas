@@ -11,6 +11,9 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <cmath>
+#include <memory>
+#include <stdexcept>
 
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/octree/OctreeDirection.h"
@@ -21,8 +24,207 @@
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "mocks/MockPairwiseFunctor.h"
+#include "autopas/cells/FullParticleCell.h"
+#include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/octree/traversals/OTC01ParallelTraversal.h"
+#include "autopas/options/DataLayoutOption.h"
 
 using ::testing::_;
+
+TEST_F(OctreeTest, testParallelTraversalForces) {
+  using namespace autopas;
+
+  constexpr double cutoff = 1.0;
+  constexpr double skin = 0.1;
+  constexpr size_t numParticles = 500;
+  constexpr size_t numHaloParticles = 50;
+
+  const std::array<double, 3> boxMin{0., 0., 0.};
+  const std::array<double, 3> boxMax{10., 10., 10.};
+
+  // Use deterministic particle positions.
+  std::vector<std::array<double, 3>> positions;
+  positions.reserve(numParticles);
+
+  for (size_t i = 0; i < numParticles; ++i) {
+    positions.push_back({
+        0.5 + (i % 10) * 0.85,
+        0.5 + ((i / 10) % 10) * 0.85,
+        0.5 + (i / 100) * 0.85
+    });
+  }
+
+  // Halo particles near the positive x-boundary.
+  std::vector<std::array<double, 3>> haloPositions;
+  haloPositions.reserve(numHaloParticles);
+
+  for (size_t i = 0; i < numHaloParticles; ++i) {
+    haloPositions.push_back({
+        10.2,
+        0.5 + (i % 10) * 0.85,
+        0.5 + (i / 10) * 0.85
+    });
+  }
+
+  // Runs either traversal and returns forces indexed by particle ID.
+  auto calculateForces = [&](TraversalOption traversalOption,
+                             DataLayoutOption dataLayout) {
+
+    auto container = ContainerSelector<Molecule>::generateContainer(
+        ContainerOption::octree,
+        ContainerSelectorInfo{
+            boxMin, boxMax, cutoff, 1.0, skin,
+            32, 8, 8, LoadEstimatorOption::none
+        });
+
+    // Use the production LJ functor, not Google Mock.
+    LJFunctorType<true, false, FunctorN3Modes::Both, false>
+        functor{cutoff};
+
+    functor.setParticleProperties(24.0, 1.0);
+
+    // Insert identical owned particles.
+    for (size_t i = 0; i < positions.size(); ++i) {
+      container->addParticle(
+          Molecule(positions[i], {0., 0., 0.}, i));
+    }
+
+    // Insert identical halo particles.
+    for (size_t i = 0; i < haloPositions.size(); ++i) {
+      Molecule particle(
+          haloPositions[i], {0., 0., 0.},
+          numParticles + i);
+
+      particle.setOwnershipState(OwnershipState::halo);
+      container->addHaloParticle(particle);
+    }
+
+    // Select the requested traversal.
+    auto traversal = TraversalSelector::generateTraversal<
+        FullParticleCell<Molecule>, decltype(functor)>(
+            traversalOption,
+            functor,
+            container->getTraversalSelectorInfo(),
+            dataLayout,
+            false  // Newton3 disabled
+        );
+
+    if (not traversal) {
+      throw std::runtime_error("Traversal creation failed");
+    }
+
+    // Execute interactions.
+    functor.initTraversal();
+    container->computeInteractions(traversal.get());
+    functor.endTraversal(false);
+
+    // Collect owned-particle forces.
+    std::vector<std::array<double, 3>> forces(numParticles);
+
+    size_t collected = 0;
+    for (auto it = container->begin(IteratorBehavior::owned);
+         it.isValid(); ++it) {
+      forces.at(it->getID()) = it->getF();
+      ++collected;
+    }
+
+    if (collected != numParticles) {
+      throw std::runtime_error("Incorrect owned-particle count");
+    }
+
+    return forces;
+  };
+
+  // Test both AoS and SoA data layouts.
+  for (auto layout : {DataLayoutOption::aos, DataLayoutOption::soa}) {
+
+    const auto sequentialForces =
+        calculateForces(TraversalOption::ot_c01, layout);
+
+    const auto parallelForces =
+        calculateForces(TraversalOption::ot_c01_parallel, layout);
+
+    ASSERT_EQ(sequentialForces.size(), parallelForces.size());
+
+    // Compare every force component.
+    for (size_t i = 0; i < sequentialForces.size(); ++i) {
+      for (size_t d = 0; d < 3; ++d) {
+        const double expected = sequentialForces[i][d];
+        const double actual = parallelForces[i][d];
+
+        const double tolerance =
+            1e-10 * std::max(1.0, std::abs(expected));
+
+        EXPECT_NEAR(actual, expected, tolerance)
+            << "Particle: " << i
+            << ", dimension: " << d
+            << ", layout: " << (layout == DataLayoutOption::aos ? "AoS" : "SoA");
+      }
+    }
+  }
+}
+
+
+TEST_F(OctreeTest, testParallelTraversalSelection) {
+  using namespace autopas;
+
+  // Check that the new traversal option is registered.
+  const TraversalOption option = TraversalOption::ot_c01_parallel;
+
+  EXPECT_EQ(option.to_string(), "ot_c01_parallel");
+
+  // Check that the traversal is compatible with the octree.
+  const auto compatible =
+      compatibleTraversals::allCompatibleTraversals(
+          ContainerOption::octree,
+          InteractionTypeOption::pairwise);
+
+  EXPECT_TRUE(compatible.count(option) > 0);
+
+  // Create a small octree container.
+  constexpr double cutoff = 1.0;
+  constexpr double skin = 0.1;
+
+  auto container = ContainerSelector<Molecule>::generateContainer(
+      ContainerOption::octree,
+      ContainerSelectorInfo{
+          {0., 0., 0.},
+          {10., 10., 10.},
+          cutoff,
+          1.0,
+          skin,
+          32, 8, 8,
+          LoadEstimatorOption::none
+      });
+
+  // Generate the traversal through AutoPas's selector.
+  auto traversal =
+      TraversalSelector::generateTraversal<
+          FullParticleCell<Molecule>,
+          MockPairwiseFunctor<Molecule>>(
+              option,
+              mockFunctor,
+              container->getTraversalSelectorInfo(),
+              DataLayoutOption::aos,
+              false
+          );
+
+  ASSERT_NE(traversal, nullptr);
+
+  // Check that it reports the correct traversal option.
+  EXPECT_EQ(traversal->getTraversalType(), option);
+
+  // Check that the selector created our actual class.
+  auto *parallelTraversal =
+      dynamic_cast<
+          OTC01ParallelTraversal<
+              Molecule,
+              MockPairwiseFunctor<Molecule>> *>(
+                  traversal.get());
+
+  EXPECT_NE(parallelTraversal, nullptr);
+}
+
 
 /**
  * This test checks (pairwise) whether the boxes split on one layer are correctly aligned with themselves.

@@ -21,7 +21,10 @@ if (NOT AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
     list(FILTER MY_SRC EXCLUDE REGEX ".*RuleBasedProgramParser.*")
 endif ()
 
-add_library(autopas STATIC ${MY_SRC})
+add_library(autopas STATIC ${MY_SRC}
+        containers/octree/traversals/OTC01ParallelTraversal.h
+        containers/octree/traversals/OTC01ParallelTraversal.h
+        containers/octree/traversals/OTC01ParallelTraversal.h)
 
 # Namespaced alias so consumers (e.g. via FetchContent / add_subdirectory) can link a stable,
 # collision-safe target name and use `if (NOT TARGET AutoPas::autopas)` guards
