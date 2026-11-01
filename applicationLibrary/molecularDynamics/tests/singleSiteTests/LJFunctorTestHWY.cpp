@@ -143,6 +143,9 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
                                                            numParticles);
 
   for (auto &particle : cell1Ref) {
+    if (particle.getID() % 4 == 1) {
+      particle.setOwnershipState(autopas::OwnershipState::halo);
+    }
     if (doDeleteSomeParticles) {
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
@@ -151,6 +154,9 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCells(bool newton3, bool do
     if constexpr (mixing) particle.setTypeId(particle.getID() % 5);
   }
   for (auto &particle : cell2Ref) {
+    if (particle.getID() % 4 == 2) {
+      particle.setOwnershipState(autopas::OwnershipState::halo);
+    }
     if (doDeleteSomeParticles) {
       if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 20) autopas::internal::markParticleAsDeleted(particle);
@@ -233,6 +239,9 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsUseUnalignedViews(bool
                                                            numParticles);
 
   for (auto &particle : cell1Ref) {
+    if (particle.getID() % 4 == 1) {
+      particle.setOwnershipState(autopas::OwnershipState::halo);
+    }
     if (doDeleteSomeParticles) {
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
@@ -241,6 +250,9 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYTwoCellsUseUnalignedViews(bool
     if constexpr (mixing) particle.setTypeId(particle.getID() % 5);
   }
   for (auto &particle : cell2Ref) {
+    if (particle.getID() % 4 == 2) {
+      particle.setOwnershipState(autopas::OwnershipState::halo);
+    }
     if (doDeleteSomeParticles) {
       if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
       if (particle.getID() == 20) autopas::internal::markParticleAsDeleted(particle);
@@ -316,6 +328,9 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYOneCell(bool newton3, bool doD
                                                            numParticles);
 
   for (auto &particle : cellHWY) {
+    if (particle.getID() % 4 == 1) {
+      particle.setOwnershipState(autopas::OwnershipState::halo);
+    }
     if (doDeleteSomeParticles) {
       // pick some arbitrary particles to be marked as deleted
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
@@ -400,6 +415,9 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYVerlet(bool newton3, bool doDe
                                                            numParticles);
 
   for (auto &particle : cellAVX) {
+    if (particle.getID() % 4 == 1) {
+      particle.setOwnershipState(autopas::OwnershipState::halo);
+    }
     if (doDeleteSomeParticles) {
       // pick some arbitrary particles to be marked as deleted
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
@@ -493,6 +511,9 @@ void LJFunctorTestHWY::testLJFunctorvsLJFunctorHWYAoS(bool newton3, bool doDelet
                                                            numParticles);
 
   for (auto &particle : cellHWY) {
+    if (particle.getID() % 4 == 1) {
+      particle.setOwnershipState(autopas::OwnershipState::halo);
+    }
     if (doDeleteSomeParticles) {
       // pick some arbitrary particles to be marked as deleted
       if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
