@@ -83,23 +83,38 @@ class LJFunctorHWY
                                                                calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle_T::SoAArraysType;
 
-  template <size_t StackCapacity = 512>
+  template <size_t StackCapacity = 256>
   struct MixingBuffers {
-    // Aligned buffers to make sure we can use hwy::Load instead of hwy::LoadU
     alignas(64) std::array<double, StackCapacity> halfSigmaStack;
     alignas(64) std::array<double, StackCapacity> sqrtEpsStack;
-    std::vector<double, autopas::AlignedAllocator<double, 64>> halfSigmaHeap;
-    std::vector<double, autopas::AlignedAllocator<double, 64>> sqrtEpsHeap;
 
+    /**
+     * Fills the provided pointers with the projected halfSigma and sqrtEpsilon values for the given typeIDs.
+     * If the number of particles is less than or equal to StackCapacity, the values are stored in the stack buffer.
+     * Otherwise, they are stored in a thread-local heap buffer.
+     *
+     * @tparam BufferIndex An optional template parameter to differentiate between multiple MixingBuffers instances.
+     * @param typeIDs Pointer to the array of type IDs for the particles.
+     * @param soaSize The number of particles in the SoA.
+     * @param halfSigmaPerType Vector containing halfSigma values for each particle type.
+     * @param sqrtEpsilonPerType Vector containing sqrtEpsilon values for each particle type.
+     * @param halfSigmaPtr Reference to a pointer that will be set to point to the projected halfSigma values.
+     * @param sqrtEpsilonPtr Reference to a pointer that will be set to point to the projected sqrtEpsilon values.
+     */
+    template <size_t BufferIndex = 0>
     void getMixingPointers(const size_t *__restrict typeIDs, const size_t soaSize,
                            const std::vector<double> &halfSigmaPerType, const std::vector<double> &sqrtEpsilonPerType,
                            double *&halfSigmaPtr, double *&sqrtEpsilonPtr) {
-      if (soaSize <= StackCapacity) {
+      if (soaSize <= StackCapacity) [[likely]] {
         halfSigmaPtr = halfSigmaStack.data();
         sqrtEpsilonPtr = sqrtEpsStack.data();
-      } else {
-        halfSigmaHeap.resize(soaSize);
-        sqrtEpsHeap.resize(soaSize);
+      } else [[unlikely]] {
+        thread_local std::vector<double, autopas::AlignedAllocator<double, 64>> halfSigmaHeap;
+        thread_local std::vector<double, autopas::AlignedAllocator<double, 64>> sqrtEpsHeap;
+        if (halfSigmaHeap.size() < soaSize) {
+          halfSigmaHeap.resize(soaSize);
+          sqrtEpsHeap.resize(soaSize);
+        }
         halfSigmaPtr = halfSigmaHeap.data();
         sqrtEpsilonPtr = sqrtEpsHeap.data();
       }
@@ -341,7 +356,7 @@ class LJFunctorHWY
     // -------------------------------------------------------------------------
     // Fast path for a homogeneous cell
     // -------------------------------------------------------------------------
-    if (isHomogeneous) {
+    if (not useMixing or isHomogeneous) {
       const size_t firstType = useMixing ? typeIDPtr[0] : 0;
       double sigmaSquare = _sigmaSquareAoS;
       double epsilon24 = _epsilon24AoS;
@@ -356,7 +371,7 @@ class LJFunctorHWY
       }
       HomogeneousParameters homogeneousParams{sigmaSquare, epsilon24, shift6};
       runSingleLoop(homogeneousParams);
-    } else {
+    } else if constexpr (useMixing) {
       // -------------------------------------------------------------------------
       // Cell consists of multiple particle types
       // -------------------------------------------------------------------------
@@ -1115,7 +1130,7 @@ class LJFunctorHWY
       }
     };
 
-    if (isHomogeneous) {
+    if (not useMixing or isHomogeneous) {
       const size_t firstType1 = useMixing ? typeID1Ptr[0] : 0;
       const size_t firstType2 = useMixing ? typeID2Ptr[0] : 0;
       double sigSq = _sigmaSquareAoS;
@@ -1131,15 +1146,15 @@ class LJFunctorHWY
       }
       HomogeneousParameters homogeneousParams{sigSq, eps24, shift6};
       runPairLoop(homogeneousParams);
-    } else {
+    } else if constexpr (useMixing) {
       MixingBuffers<512> mixingBuffers1;
       MixingBuffers<512> mixingBuffers2;
       double *halfSig1Ptr = nullptr, *sqrtEps1Ptr = nullptr;
       double *halfSig2Ptr = nullptr, *sqrtEps2Ptr = nullptr;
-      mixingBuffers1.getMixingPointers(typeID1Ptr, soaSize1, _halfSigmaPerType, _sqrtEpsilonPerType, halfSig1Ptr,
-                                       sqrtEps1Ptr);
-      mixingBuffers2.getMixingPointers(typeID2Ptr, soaSize2, _halfSigmaPerType, _sqrtEpsilonPerType, halfSig2Ptr,
-                                       sqrtEps2Ptr);
+      mixingBuffers1.getMixingPointers<0>(typeID1Ptr, soaSize1, _halfSigmaPerType, _sqrtEpsilonPerType, halfSig1Ptr,
+                                          sqrtEps1Ptr);
+      mixingBuffers2.getMixingPointers<1>(typeID2Ptr, soaSize2, _halfSigmaPerType, _sqrtEpsilonPerType, halfSig2Ptr,
+                                          sqrtEps2Ptr);
 
       HeterogeneousParameters heterogeneousParams{halfSig1Ptr, sqrtEps1Ptr, halfSig2Ptr, sqrtEps2Ptr,
                                                   _invCutoffSquareAoS};
@@ -1438,7 +1453,7 @@ class LJFunctorHWY
       }
     };
 
-    if (isHomogeneous) {
+    if (not useMixing or isHomogeneous) {
       const size_t firstType = useMixing ? typeIDPtr[indexFirst] : 0;
       double sigSq = _sigmaSquareAoS;
       double eps24 = _epsilon24AoS;
@@ -1453,7 +1468,7 @@ class LJFunctorHWY
       }
       HomogeneousVerletParameters homogeneousVerletParams{sigSq, eps24, shift6};
       runVerletLoop(homogeneousVerletParams);
-    } else {
+    } else if constexpr (useMixing) {
       const size_t typeI = typeIDPtr[indexFirst];
       HeterogeneousVerletParameters heterogeneousVerletParams{
           _halfSigmaPerType[typeI], _sqrtEpsilonPerType[typeI], reinterpret_cast<const int64_t *>(typeIDPtr),
