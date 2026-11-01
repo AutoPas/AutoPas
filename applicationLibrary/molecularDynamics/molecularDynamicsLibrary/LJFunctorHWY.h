@@ -1151,9 +1151,9 @@ class LJFunctorHWY
       MixingBuffers<512> mixingBuffers2;
       double *halfSig1Ptr = nullptr, *sqrtEps1Ptr = nullptr;
       double *halfSig2Ptr = nullptr, *sqrtEps2Ptr = nullptr;
-      mixingBuffers1.getMixingPointers<0>(typeID1Ptr, soaSize1, _halfSigmaPerType, _sqrtEpsilonPerType, halfSig1Ptr,
+      mixingBuffers1.template getMixingPointers<0>(typeID1Ptr, soaSize1, _halfSigmaPerType, _sqrtEpsilonPerType, halfSig1Ptr,
                                           sqrtEps1Ptr);
-      mixingBuffers2.getMixingPointers<1>(typeID2Ptr, soaSize2, _halfSigmaPerType, _sqrtEpsilonPerType, halfSig2Ptr,
+      mixingBuffers2.template getMixingPointers<1>(typeID2Ptr, soaSize2, _halfSigmaPerType, _sqrtEpsilonPerType, halfSig2Ptr,
                                           sqrtEps2Ptr);
 
       HeterogeneousParameters heterogeneousParams{halfSig1Ptr, sqrtEps1Ptr, halfSig2Ptr, sqrtEps2Ptr,
