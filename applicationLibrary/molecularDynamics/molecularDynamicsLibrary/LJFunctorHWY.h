@@ -128,7 +128,8 @@ class LJFunctorHWY
                                            particlePropertiesLibrary = std::nullopt)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
         _cutoffSquareAoS{cutoff * cutoff},
-        _invCutoffSquareAoS(1. / (cutoff * cutoff)) {
+        _invCutoffSquareAoS(1. / (cutoff * cutoff)),
+        _cutoffSquaredVec{highway::Set(tag_double, cutoff * cutoff)} {
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
@@ -252,6 +253,7 @@ class LJFunctorHWY
     // Scalar computations for low particle counts
     // -------------------------------------------------------------------------
     if (soaSize <= 7) {
+      const int threadID = autopas::autopas_get_thread_num();
       for (size_t i = 1; i < soaSize; ++i) {
         if (ownedStatePtr[i] == autopas::OwnershipState::dummy) continue;
         const double xi = xPtr[i], yi = yPtr[i], zi = zPtr[i];
@@ -297,18 +299,17 @@ class LJFunctorHWY
             fzPtr[j] -= fz;
             if constexpr (calculateGlobals) {
               const double pot6 = eps24 * lj12m6 + shift6;
-              const int tid = autopas::autopas_get_thread_num();
               if (ownedStatePtr[i] == autopas::OwnershipState::owned) {
-                _aosThreadData[tid].potentialEnergySum += pot6;
-                _aosThreadData[tid].virialSum[0] += fx * dx;
-                _aosThreadData[tid].virialSum[1] += fy * dy;
-                _aosThreadData[tid].virialSum[2] += fz * dz;
+                _aosThreadData[threadID].potentialEnergySum += pot6;
+                _aosThreadData[threadID].virialSum[0] += fx * dx;
+                _aosThreadData[threadID].virialSum[1] += fy * dy;
+                _aosThreadData[threadID].virialSum[2] += fz * dz;
               }
               if (ownedStatePtr[j] == autopas::OwnershipState::owned) {
-                _aosThreadData[tid].potentialEnergySum += pot6;
-                _aosThreadData[tid].virialSum[0] += fx * dx;
-                _aosThreadData[tid].virialSum[1] += fy * dy;
-                _aosThreadData[tid].virialSum[2] += fz * dz;
+                _aosThreadData[threadID].potentialEnergySum += pot6;
+                _aosThreadData[threadID].virialSum[0] += fx * dx;
+                _aosThreadData[threadID].virialSum[1] += fy * dy;
+                _aosThreadData[threadID].virialSum[2] += fz * dz;
               }
             }
           }
@@ -430,7 +431,7 @@ class LJFunctorHWY
     }
   }
 
-  void initFromPPL(ParticlePropertiesLibrary<double, size_t> &ppl) {
+  void initFromPPL(const ParticlePropertiesLibrary<double, size_t> &ppl) {
     const size_t nTypes = ppl.getNumberRegisteredSiteTypes();
     _halfSigmaPerType.resize(nTypes);
     _sqrtEpsilonPerType.resize(nTypes);
@@ -923,15 +924,15 @@ class LJFunctorHWY
     const size_t jMainEnd = jVecEnd - restJ;
     size_t j = jVecStart;
     for (; j < jMainEnd; j += jStep) {
-      SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
-          i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
-          fyPtr2, fzPtr2, ljParameters, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
+      SoAKernel<newton3, false, vecPattern>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1,
+                                            z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, ljParameters, fxAcc, fyAcc,
+                                            fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0);
     }
 
     if (restJ > 0) {
-      SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
-          i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2,
-          fyPtr2, fzPtr2, ljParameters, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
+      SoAKernel<newton3, true, vecPattern>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1,
+                                           xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, ljParameters, fxAcc, fyAcc,
+                                           fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restJ);
     }
 
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
@@ -967,6 +968,7 @@ class LJFunctorHWY
     // Scalar computations for low particle counts
     // -------------------------------------------------------------------------
     if (soaSize1 <= 7 and soaSize2 <= 7) {
+      const int threadID = autopas::autopas_get_thread_num();
       for (size_t i = 0; i < soaSize1; ++i) {
         if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) continue;
         const double xi = x1Ptr[i], yi = y1Ptr[i], zi = z1Ptr[i];
@@ -1014,19 +1016,18 @@ class LJFunctorHWY
             }
             if constexpr (calculateGlobals) {
               const double pot6 = eps24 * lj12m6 + shift6;
-              const int tid = autopas::autopas_get_thread_num();
               if (ownedStatePtr1[i] == autopas::OwnershipState::owned) {
-                _aosThreadData[tid].potentialEnergySum += pot6;
-                _aosThreadData[tid].virialSum[0] += fx * dx;
-                _aosThreadData[tid].virialSum[1] += fy * dy;
-                _aosThreadData[tid].virialSum[2] += fz * dz;
+                _aosThreadData[threadID].potentialEnergySum += pot6;
+                _aosThreadData[threadID].virialSum[0] += fx * dx;
+                _aosThreadData[threadID].virialSum[1] += fy * dy;
+                _aosThreadData[threadID].virialSum[2] += fz * dz;
               }
               if constexpr (newton3) {
                 if (ownedStatePtr2[j] == autopas::OwnershipState::owned) {
-                  _aosThreadData[tid].potentialEnergySum += pot6;
-                  _aosThreadData[tid].virialSum[0] += fx * dx;
-                  _aosThreadData[tid].virialSum[1] += fy * dy;
-                  _aosThreadData[tid].virialSum[2] += fz * dz;
+                  _aosThreadData[threadID].potentialEnergySum += pot6;
+                  _aosThreadData[threadID].virialSum[0] += fx * dx;
+                  _aosThreadData[threadID].virialSum[1] += fy * dy;
+                  _aosThreadData[threadID].virialSum[2] += fz * dz;
                 }
               }
             }
@@ -1066,7 +1067,7 @@ class LJFunctorHWY
           if (jVecStart >= jVecEnd) {
             continue;
           }
-          jVecStart = jVecStart - (jVecStart % jStep);
+          jVecStart &= ~(jStep - 1);
           if constexpr (vecPattern == VectorizationPattern::p1xVec) {
             if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
               continue;
@@ -1116,8 +1117,7 @@ class LJFunctorHWY
           shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(eps24, sigSq, _cutoffSquareAoS);
         }
       }
-      HomogeneousParameters homogeneousParams{highway::Set(tag_double, sigSq), highway::Set(tag_double, eps24),
-                                              highway::Set(tag_double, shift6)};
+      HomogeneousParameters homogeneousParams{sigSq, eps24, shift6};
       runPairLoop(homogeneousParams);
     } else {
       MixingBuffers<512> mixingBuffers1;
@@ -1142,16 +1142,14 @@ class LJFunctorHWY
   /**
    * Actual inner kernel of the SoAFunctors
    */
-  template <bool newton3, bool remainderI, bool remainderJ, bool reversed, VectorizationPattern vecPattern,
-            typename LJParametersType>
-  inline void SoAKernel(const size_t i, const size_t j, const MaskDouble &ownedMaskI,
-                        const int64_t *const __restrict ownedStatePtr2, const VectorDouble &x1, const VectorDouble &y1,
-                        const VectorDouble &z1, const double *const __restrict x2Ptr,
-                        const double *const __restrict y2Ptr, const double *const __restrict z2Ptr,
-                        double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
-                        double *const __restrict fz2Ptr, LJParametersType &ljParams, VectorDouble &fxAcc,
-                        VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
-                        VectorDouble &virialSumZ, VectorDouble &uPotSum, const unsigned int restI,
+  template <bool newton3, bool remainderJ, VectorizationPattern vecPattern, typename LJParametersType>
+  inline void SoAKernel(const size_t j, const MaskDouble &ownedMaskI, const int64_t *const __restrict ownedStatePtr2,
+                        const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1,
+                        const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
+                        const double *const __restrict z2Ptr, double *const __restrict fx2Ptr,
+                        double *const __restrict fy2Ptr, double *const __restrict fz2Ptr, LJParametersType &ljParams,
+                        VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
+                        VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &uPotSum,
                         const unsigned int restJ) {
     VectorDouble x2;
     VectorDouble y2;
@@ -1165,22 +1163,16 @@ class LJFunctorHWY
     const auto drY = highway::Sub(y1, y2);
     const auto drZ = highway::Sub(z1, z2);
 
-    const auto drX2 = highway::Mul(drX, drX);
-    const auto drY2 = highway::Mul(drY, drY);
-    const auto drZ2 = highway::Mul(drZ, drZ);
-
-    const auto dr2 = highway::Add(highway::Add(drX2, drY2), drZ2);
-
-    const VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
+    const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, highway::Mul(drX, drX)));
 
     const auto dummyMask = highway::And(ownedMaskI, ownedMaskJ);
-    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, cutoffSquared);
+    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, _cutoffSquaredVec);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
       return;
     }
 
-    const auto [sigmaSquareds, epsilon24s, shift6s] = ljParams.template getJ<remainderJ, vecPattern>(j, 0);
+    const auto [sigmaSquareds, epsilon24s, shift6s] = ljParams.template getJ<remainderJ, vecPattern>(j, restJ);
 
     // compute LJ Potential
     const auto invDr2 = highway::Div(highway::Set(tag_double, 1.0), dr2);
@@ -1274,16 +1266,10 @@ class LJFunctorHWY
     const auto drY = highway::Sub(y1, y2);
     const auto drZ = highway::Sub(z1, z2);
 
-    const auto drX2 = highway::Mul(drX, drX);
-    const auto drY2 = highway::Mul(drY, drY);
-    const auto drZ2 = highway::Mul(drZ, drZ);
-
-    const auto dr2 = highway::Add(highway::Add(drX2, drY2), drZ2);
-
-    const VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
+    const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, highway::Mul(drX, drX)));
 
     const auto dummyMask = highway::And(ownedMaskI, ownedMaskJ);
-    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, cutoffSquared);
+    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, _cutoffSquaredVec);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
       return;
@@ -1551,7 +1537,7 @@ class LJFunctorHWY
    * Get the potential Energy
    * @return the potential Energy
    */
-  double getPotentialEnergy() const {
+  [[nodiscard]] double getPotentialEnergy() const {
     if (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
@@ -1567,7 +1553,7 @@ class LJFunctorHWY
    * Get the virial
    * @return the virial
    */
-  double getVirial() const {
+  [[nodiscard]] double getVirial() const {
     if (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
@@ -1628,6 +1614,8 @@ class LJFunctorHWY
   // cutoff squared used in the AoS functor.
   const double _cutoffSquareAoS{0.};
   const double _invCutoffSquareAoS{0.};
+
+  const VectorDouble _cutoffSquaredVec{highway::Set(tag_double, 0.)};
 
   // epsilon, sigma and shift6 used in the AoS functor.
   double _sigmaSquareAoS{0.};
