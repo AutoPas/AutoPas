@@ -100,6 +100,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.tuningPhases,
       config.tuningSamples,
       config.tuningStrategyOptions,
+      config.tuningStrategySeed,
       config.useLOESSSmoothening,
       config.useThermostat,
       config.useTuningLogger,
@@ -279,6 +280,15 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           }
         } catch (const exception &) {
           cerr << "Error parsing number of tuning max evidence: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.tuningStrategySeed)::getoptChar: {
+        try {
+          config.tuningStrategySeed.value = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing tuning strategy seed: " << optarg << endl;
           displayHelp = true;
         }
         break;

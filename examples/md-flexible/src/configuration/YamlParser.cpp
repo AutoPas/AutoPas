@@ -492,6 +492,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.tuningMaxEvidence.value < 1) {
           throw std::runtime_error("Tuning max evidence has to be a positive integer >= 1!");
         }
+      } else if (key == config.tuningStrategySeed.name) {
+        expected = "Unsigned Integer";
+        description = config.tuningStrategySeed.description;
+
+        config.tuningStrategySeed.value = node[key].as<unsigned long>();
       } else if (key == config.relativeOptimumRange.name) {
         expected = "Floating point value >= 1";
         description = config.relativeOptimumRange.description;

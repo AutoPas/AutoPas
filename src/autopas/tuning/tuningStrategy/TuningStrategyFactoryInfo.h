@@ -24,6 +24,11 @@ struct TuningStrategyFactoryInfo {
    * Strategies that don't converge (or not quickly enough) can be told to limit the number of evidence to this number.
    */
   unsigned int maxEvidence{10};
+  /**
+   * Seed for tuning strategies using random number generators.
+   * If 0, a non-deterministic seed is chosen at runtime.
+   */
+  unsigned long tuningStrategySeed{0};
   // Predictive Tuning Options
   /**
    * Function option used for extrapolating performance from observed evidence.

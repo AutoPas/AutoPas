@@ -734,6 +734,20 @@ class AutoPas {
   void setMaxEvidence(unsigned int maxEvidence) { _tuningStrategyFactoryInfo.maxEvidence = maxEvidence; }
 
   /**
+   * Get the seed for stochastic tuning strategies
+   * @return
+   */
+  [[nodiscard]] unsigned long getTuningStrategySeed() const { return _tuningStrategyFactoryInfo.tuningStrategySeed; }
+
+  /**
+   * Set the seed for stochastic tuning strategies. If 0, a non-deterministic seed is used.
+   * @param tuningStrategySeed
+   */
+  void setTuningStrategySeed(unsigned long tuningStrategySeed) {
+    _tuningStrategyFactoryInfo.tuningStrategySeed = tuningStrategySeed;
+  }
+
+  /**
    * Get the range for the optimum in which has to be to be tested
    * @return
    */

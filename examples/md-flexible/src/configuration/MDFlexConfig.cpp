@@ -265,6 +265,7 @@ std::string MDFlexConfig::to_string() const {
   printOption(useLOESSSmoothening);
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::randomSearch})) {
     printOption(tuningMaxEvidence);
+    printOption(tuningStrategySeed);
   }
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::predictiveTuning})) {
     printOption(relativeOptimumRange);

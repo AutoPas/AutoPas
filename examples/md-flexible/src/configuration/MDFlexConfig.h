@@ -419,6 +419,13 @@ class MDFlexConfig {
       "For Bayesian based tuning strategies: Maximum number of evidences "
       "tuning strategies that have no finishing indicator take."};
   /**
+   * tuningStrategySeed
+   */
+  MDFlexOption<unsigned long, __LINE__> tuningStrategySeed{
+      0, "tuning-strategy-seed", true,
+      "Seed for stochastic tuning strategies. A value of 0 results in a non-deterministic seed chosen at runtime."
+      "Set to a non-zero value for reproducible experiments."};
+  /**
    * relativeOptimumRange
    */
   MDFlexOption<double, __LINE__> relativeOptimumRange{

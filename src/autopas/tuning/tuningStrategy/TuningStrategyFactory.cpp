@@ -28,7 +28,8 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
   std::unique_ptr<TuningStrategyInterface> tuningStrategy = nullptr;
   switch (static_cast<TuningStrategyOption>(tuningStrategyOption)) {
     case TuningStrategyOption::randomSearch: {
-      tuningStrategy = std::make_unique<RandomSearch>(info.maxEvidence, std::random_device()());
+      const auto seed = info.tuningStrategySeed == 0 ? std::random_device()() : info.tuningStrategySeed;
+      tuningStrategy = std::make_unique<RandomSearch>(info.maxEvidence, seed);
       break;
     }
 
