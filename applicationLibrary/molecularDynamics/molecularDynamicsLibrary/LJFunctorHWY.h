@@ -181,6 +181,13 @@ class LJFunctorHWY
     if (i.isDummy() or j.isDummy()) {
       return;
     }
+    const auto dr = i.getR() - j.getR();
+    const double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+
+    if (dr2 > _cutoffSquared) {
+      return;
+    }
+
     auto sigmaSquared = _sigmaSquared;
     auto epsilon24 = _epsilon24;
     auto shift6 = _shift6;
@@ -193,12 +200,6 @@ class LJFunctorHWY
       if constexpr (calculateGlobals and applyShift) {
         shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
       }
-    }
-    const auto dr = i.getR() - j.getR();
-    const double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
-
-    if (dr2 > _cutoffSquared) {
-      return;
     }
 
     const double invdr2 = 1. / dr2;
@@ -1017,7 +1018,7 @@ class LJFunctorHWY
         const auto epsilon24 = 24.0 * se1 * se2;
         epsilons[j] = epsilon24;
         sigmas[j] = sigmaSquared;
-        if constexpr (applyShift) {
+        if constexpr (calculateGlobals and applyShift) {
           shifts[j] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
         }
       }
@@ -1035,7 +1036,7 @@ class LJFunctorHWY
           epsilons[index] = epsilon24;
           sigmas[index] = sigmaSquared;
 
-          if constexpr (applyShift) {
+          if constexpr (calculateGlobals and applyShift) {
             shifts[index] =
                 ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
           }
@@ -1056,7 +1057,7 @@ class LJFunctorHWY
           epsilons[index] = epsilon24;
           sigmas[index] = sigmaSquared;
 
-          if constexpr (applyShift) {
+          if constexpr (calculateGlobals and applyShift) {
             shifts[index] =
                 ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
           }
@@ -1074,7 +1075,7 @@ class LJFunctorHWY
         epsilons[i] = epsilon24;
         sigmas[i] = sigmaSquared;
 
-        if constexpr (applyShift) {
+        if constexpr (calculateGlobals and applyShift) {
           shifts[i] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
         }
       }
@@ -1082,8 +1083,10 @@ class LJFunctorHWY
 
     epsilon24s = highway::Load(tag_double, epsilons.data());
     sigmaSquareds = highway::Load(tag_double, sigmas.data());
-    if constexpr (applyShift) {
+    if constexpr (calculateGlobals and applyShift) {
       shift6s = highway::Load(tag_double, shifts.data());
+    } else {
+      shift6s = highway::Zero(tag_double);
     }
   }
 
@@ -1135,24 +1138,6 @@ class LJFunctorHWY
                         VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
                         VectorDouble &virialSumZ, VectorDouble &potentialEnergySum, const unsigned int restI,
                         const unsigned int restJ) {
-    VectorDouble epsilon24s = highway::Undefined(tag_double);
-    VectorDouble sigmaSquareds = highway::Undefined(tag_double);
-    VectorDouble shift6s = highway::Undefined(tag_double);
-
-    if constexpr (useMixing) {
-      fillPhysicsRegisters<remainderI, remainderJ, reversed, vecPattern>(halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigma2Ptr,
-                                                                         sqrtEpsilon2Ptr, epsilon24s, sigmaSquareds,
-                                                                         shift6s, restI, restJ);
-    } else {
-      epsilon24s = highway::Set(tag_double, _epsilon24);
-      sigmaSquareds = highway::Set(tag_double, _sigmaSquared);
-      if constexpr (applyShift) {
-        shift6s = highway::Set(tag_double, _shift6);
-      } else {
-        shift6s = highway::Zero(tag_double);
-      }
-    }
-
     VectorDouble x2;
     VectorDouble y2;
     VectorDouble z2;
@@ -1180,6 +1165,24 @@ class LJFunctorHWY
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
       return;
+    }
+
+    VectorDouble epsilon24s = highway::Undefined(tag_double);
+    VectorDouble sigmaSquareds = highway::Undefined(tag_double);
+    VectorDouble shift6s = highway::Undefined(tag_double);
+
+    if constexpr (useMixing) {
+      fillPhysicsRegisters<remainderI, remainderJ, reversed, vecPattern>(halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigma2Ptr,
+                                                                         sqrtEpsilon2Ptr, epsilon24s, sigmaSquareds,
+                                                                         shift6s, restI, restJ);
+    } else {
+      epsilon24s = highway::Set(tag_double, _epsilon24);
+      sigmaSquareds = highway::Set(tag_double, _sigmaSquared);
+      if constexpr (calculateGlobals and applyShift) {
+        shift6s = highway::Set(tag_double, _shift6);
+      } else {
+        shift6s = highway::Zero(tag_double);
+      }
     }
 
     // compute LJ Potential
@@ -1238,10 +1241,6 @@ class LJFunctorHWY
       const double *const halfSigmaPtr, const double *const sqrtEpsilonPtr, const size_t *const __restrict neighborList,
       VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
       VectorDouble &virialSumZ, VectorDouble &potentialEnergySum, [[maybe_unused]] const size_t rest = 0) const {
-    VectorDouble epsilon24s = highway::Undefined(tag_double);
-    VectorDouble sigmaSquareds = highway::Undefined(tag_double);
-    VectorDouble shift6s = highway::Undefined(tag_double);
-
     [[maybe_unused]] MaskDouble restMaskDouble;
     [[maybe_unused]] MaskLong restMaskLong;
     VectorLong indices;
@@ -1252,43 +1251,6 @@ class LJFunctorHWY
       indices = highway::LoadN(tag_long, reinterpret_cast<const int64_t *>(neighborList + j), rest);
     } else {
       indices = highway::LoadU(tag_long, reinterpret_cast<const int64_t *>(neighborList + j));
-    }
-
-    if constexpr (useMixing) {
-      HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
-      HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
-      HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
-      const size_t kMax = remainder ? rest : _vecLengthDouble;
-      const auto hs1 = *halfSigma1Ptr;
-      const auto se1 = *sqrtEpsilon1Ptr;
-      for (size_t k = 0; k < kMax; ++k) {
-        const auto neighborIdx = neighborList[j + k];
-        const auto hs2 = halfSigmaPtr[neighborIdx];
-        const auto se2 = sqrtEpsilonPtr[neighborIdx];
-        const auto sigma = hs1 + hs2;
-        const auto sigmaSquared = sigma * sigma;
-        const auto epsilon24 = 24.0 * se1 * se2;
-        epsilons[k] = epsilon24;
-        sigmas[k] = sigmaSquared;
-        if constexpr (applyShift) {
-          shifts[k] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
-        }
-      }
-      epsilon24s = highway::Load(tag_double, epsilons.data());
-      sigmaSquareds = highway::Load(tag_double, sigmas.data());
-      if constexpr (applyShift) {
-        shift6s = highway::Load(tag_double, shifts.data());
-      } else {
-        shift6s = highway::Zero(tag_double);
-      }
-    } else {
-      epsilon24s = highway::Set(tag_double, _epsilon24);
-      sigmaSquareds = highway::Set(tag_double, _sigmaSquared);
-      if constexpr (applyShift) {
-        shift6s = highway::Set(tag_double, _shift6);
-      } else {
-        shift6s = highway::Zero(tag_double);
-      }
     }
 
     VectorDouble x2;
@@ -1328,6 +1290,47 @@ class LJFunctorHWY
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
       return;
+    }
+
+    VectorDouble epsilon24s = highway::Undefined(tag_double);
+    VectorDouble sigmaSquareds = highway::Undefined(tag_double);
+    VectorDouble shift6s = highway::Undefined(tag_double);
+
+    if constexpr (useMixing) {
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
+      HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
+      const size_t kMax = remainder ? rest : _vecLengthDouble;
+      const auto hs1 = *halfSigma1Ptr;
+      const auto se1 = *sqrtEpsilon1Ptr;
+      for (size_t k = 0; k < kMax; ++k) {
+        const auto neighborIdx = neighborList[j + k];
+        const auto hs2 = halfSigmaPtr[neighborIdx];
+        const auto se2 = sqrtEpsilonPtr[neighborIdx];
+        const auto sigma = hs1 + hs2;
+        const auto sigmaSquared = sigma * sigma;
+        const auto epsilon24 = 24.0 * se1 * se2;
+        epsilons[k] = epsilon24;
+        sigmas[k] = sigmaSquared;
+        if constexpr (calculateGlobals and applyShift) {
+          shifts[k] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
+        }
+      }
+      epsilon24s = highway::Load(tag_double, epsilons.data());
+      sigmaSquareds = highway::Load(tag_double, sigmas.data());
+      if constexpr (calculateGlobals and applyShift) {
+        shift6s = highway::Load(tag_double, shifts.data());
+      } else {
+        shift6s = highway::Zero(tag_double);
+      }
+    } else {
+      epsilon24s = highway::Set(tag_double, _epsilon24);
+      sigmaSquareds = highway::Set(tag_double, _sigmaSquared);
+      if constexpr (calculateGlobals and applyShift) {
+        shift6s = highway::Set(tag_double, _shift6);
+      } else {
+        shift6s = highway::Zero(tag_double);
+      }
     }
 
     const auto invDr2 = highway::Div(highway::Set(tag_double, 1.0), dr2);

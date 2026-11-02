@@ -180,6 +180,13 @@ class LJFunctor
       ++_threadDataFLOPs[threadID].numDistCalls;
     }
 
+    auto dr = i.getR() - j.getR();
+    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+
+    if (dr2 > _cutoffSquared) {
+      return;
+    }
+
     auto sigmaSquared = _sigmaSquared;
     auto epsilon24 = _epsilon24;
     auto shift6 = _shift6;
@@ -192,12 +199,6 @@ class LJFunctor
       if constexpr (calculateGlobals and applyShift) {
         shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
       }
-    }
-    auto dr = i.getR() - j.getR();
-    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
-
-    if (dr2 > _cutoffSquared) {
-      return;
     }
 
     double invdr2 = 1. / dr2;
