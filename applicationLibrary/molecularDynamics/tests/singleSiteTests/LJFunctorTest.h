@@ -13,6 +13,7 @@
 #include "commonTypedefs.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
+#include "molecularDynamicsLibrary/LJFunctorHWY.h"
 
 class LJFunctorTest : public AutoPasTestBase {
  public:
@@ -49,6 +50,8 @@ template <bool shift, bool mixing, bool globals>
 using LJFunMol = mdLib::LJFunctor<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
 template <bool shift, bool mixing, bool globals>
 using LJFunAVXMol = mdLib::LJFunctorAVX<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
+template <bool shift, bool mixing, bool globals>
+using LJFunHWYMol = mdLib::LJFunctorHWY<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
 
 // struct aliasing for readable names
 struct LJFunShiftMixNoGlob : public LJFunMol<true, true, false> {
@@ -63,6 +66,17 @@ struct LJFunAVXShiftMixNoGlob : public LJFunAVXMol<true, true, false> {
 struct LJFunAVXShiftNoMixNoGlob : public LJFunAVXMol<true, false, false> {
   using LJFunAVXMol<true, false, false>::LJFunctorAVX;
 };
+struct LJFunHWYShiftMixNoGlob : public LJFunHWYMol<true, true, false> {
+  explicit LJFunHWYShiftMixNoGlob(double cutoff, ParticlePropertiesLibrary<double, size_t> &ppl)
+      : LJFunHWYMol<true, true, false>(cutoff, std::ref(ppl)) {
+    this->setVecPattern(autopas::VectorizationPatternOption::p1xVec);
+  }
+};
+struct LJFunHWYShiftNoMixNoGlob : public LJFunHWYMol<true, false, false> {
+  explicit LJFunHWYShiftNoMixNoGlob(double cutoff) : LJFunHWYMol<true, false, false>(cutoff) {
+    this->setVecPattern(autopas::VectorizationPatternOption::p1xVec);
+  }
+};
 struct LJFunShiftMixGlob : public LJFunMol<true, true, true> {
   using LJFunMol<true, true, true>::LJFunctor;
 };
@@ -74,6 +88,17 @@ struct LJFunAVXShiftMixGlob : public LJFunAVXMol<true, true, true> {
 };
 struct LJFunAVXShiftNoMixGlob : public LJFunAVXMol<true, false, true> {
   using LJFunAVXMol<true, false, true>::LJFunctorAVX;
+};
+struct LJFunHWYShiftMixGlob : public LJFunHWYMol<true, true, true> {
+  explicit LJFunHWYShiftMixGlob(double cutoff, ParticlePropertiesLibrary<double, size_t> &ppl)
+      : LJFunHWYMol<true, true, true>(cutoff, std::ref(ppl)) {
+    this->setVecPattern(autopas::VectorizationPatternOption::p1xVec);
+  }
+};
+struct LJFunHWYShiftNoMixGlob : public LJFunHWYMol<true, false, true> {
+  explicit LJFunHWYShiftNoMixGlob(double cutoff) : LJFunHWYMol<true, false, true>(cutoff) {
+    this->setVecPattern(autopas::VectorizationPatternOption::p1xVec);
+  }
 };
 #ifdef __ARM_FEATURE_SVE
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
