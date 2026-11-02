@@ -81,14 +81,11 @@ inline double optimizeSpacingForDensity(const std::array<double, 3> &boxMin, con
   // targetParticles.
   double spacingLow = spacingExact;
   double spacingHigh = spacingExact * 1.2;
-  size_t countAtHighSpacing = countAtExactSpacing;
-  while (countAtHighSpacing > targetParticles) {
-    countAtHighSpacing = calculateParticleCount(boxMin, boxMax, spacingHigh, structure, centered);
+  size_t countAtHighSpacing = calculateParticleCount(boxMin, boxMax, spacingHigh, structure, centered);
+  while (countAtHighSpacing > targetParticles and countAtHighSpacing > 1) {
     spacingLow = spacingHigh;
     spacingHigh *= 1.2;
-    if (countAtHighSpacing <= 1) {
-      break;
-    }
+    countAtHighSpacing = calculateParticleCount(boxMin, boxMax, spacingHigh, structure, centered);
   }
 
   // Binary search for the transition around targetParticles
