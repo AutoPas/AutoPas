@@ -579,8 +579,9 @@ class LogicHandler {
    * - TraversalInterface::isApplicableToDomain (via TraversalSelector::generateTraversalFromConfig) for checking
    * configuration (specifically traversal) is compatible with the domain.
    * - OpenMPConfigurator::getFallbackSchedule for checking that the OpenMP runtime would not run the configuration with
-   * another schedule. If it would and the configuration with that schedule is not in the search space, this function
-   * queues it for the current tuning phase instead (see AutoTuner::addTempConfig()).
+   * another schedule. If it would and the configuration with that schedule is not trialled in the current tuning phase
+   * (see AutoTuner::isTrialledInTuningPhase()), this function queues it for the current tuning phase instead (see
+   * AutoTuner::addTempConfig()).
    *
    * In addition, this function checks that the configuration is applicable to the functor.
    *
@@ -1483,9 +1484,10 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
   // Reject the configuration if the OpenMP runtime would run it with another schedule for all loops of the traversal
   // (see OpenMPConfigurator::getFallbackSchedule()), as it would duplicate the configuration with that other schedule.
   // E.g. guided with a high chunk size becomes dynamic, and repeating an already trialled dynamic without AutoPas being
-  // aware results in redundant configurations in the search space. If the configuration with that schedule is not in
-  // the search space, it is queued for this tuning phase instead, so that the schedule is trialled under the name it
-  // actually runs as. This is not a perfect check, but meant to eliminate the majority of "fall back" cases.
+  // aware results in redundant configurations in the search space. If the configuration with that schedule is not
+  // trialled in this tuning phase, it is queued instead, so that the schedule is trialled under the name it actually
+  // runs as. Whether it is in the search space does not matter, as tuning strategies can narrow the queue down to a
+  // part of the search space. This is not a perfect check, but meant to eliminate the majority of "fall back" cases.
 
   // This is only checked when the trial of the configuration starts, as the tuner cannot handle a configuration
   // rejected later on. We assume cases when the runtime will later "fall back" as acceptable imperfections of this
@@ -1496,16 +1498,17 @@ std::tuple<std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle_T>::
       auto &autoTuner = *_tuningManager->getAutoTuners().at(config.interactionType);
       auto fallbackConfig = config;
       std::tie(fallbackConfig.ompKind, fallbackConfig.ompChunkSize) = fallbackSchedule.value();
-      if (autoTuner.getSearchSpace().contains(fallbackConfig)) {
+      if (autoTuner.isTrialledInTuningPhase(fallbackConfig, _tuningManager->getTuningPhase())) {
         AutoPasLog(DEBUG,
-                   "Configuration rejected: The OpenMP runtime would run the schedule {}, {} as {}, {}, which is "
-                   "already in the search space!",
+                   "Configuration rejected: The OpenMP runtime would run the schedule {}, {} as {}, {}, which "
+                   "has already been or will be trialled in this tuning phase!",
                    config.ompKind, config.ompChunkSize.to_string(), fallbackConfig.ompKind,
                    fallbackConfig.ompChunkSize.to_string());
         return {nullptr, /*rejectIndefinitely*/ false};
       }
-      // A golden chunk size stands for the fixed chunk size it evaluates to, unless that is in the search space.
-      // Replacing it instead would mean golden is never trialled under its own name.
+      // In the case where we only "fall back" because the chunk size is golden, and the config it would fall back to
+      // has not been/will not be trialled this tuning phase, we leave the config as it is, instead of replacing the
+      // config with the actually run config.
       const bool isGoldenItself =
           config.ompChunkSize == OpenMPChunkSize::golden and fallbackConfig.ompKind == config.ompKind;
       if (not isGoldenItself) {

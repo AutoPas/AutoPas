@@ -6,7 +6,9 @@
 
 #include "TuningManagerTest.h"
 
+#include <algorithm>
 #include <ranges>
+#include <tuple>
 
 #include "autopas/LogicHandler.h"
 #include "autopas/tuning/AutoTuner.h"
@@ -17,7 +19,9 @@
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "testingHelpers/ArbitraryConfigurations.h"
+#include "testingHelpers/EmptyPairwiseFunctor.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
+#include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
@@ -1107,6 +1111,142 @@ TEST_F(TuningManagerTest, testLastConfigThrownOut) {
 
   EXPECT_THROW((logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)),
                autopas::utils::ExceptionHandler::AutoPasException);
+}
+
+/**
+ * Tests that a configuration with a fallback OpenMP schedule gets queued unless the fallback version of the
+ * configuration was trialled already this tuning phase or is already in the queue. With one thread, every schedule
+ * falls back to static, 1, so the test makes use of this case.
+ */
+TEST_F(TuningManagerTest, testFallbackConfigIsQueuedUnlessTrialled) {
+  const NumThreadGuard numThreadGuard(1);
+  auto configFallback = arbitraryConfigurations::_arbitrary_config_2B_allOpenMPSchedules;
+  configFallback.ompKind = autopas::OpenMPKindOption::omp_static;
+  configFallback.ompChunkSize = 1;
+  auto configThatFallsBack = configFallback;
+  configThatFallsBack.ompKind = autopas::OpenMPKindOption::omp_dynamic;
+
+  constexpr unsigned int rebuildFrequency = 20;
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
+      .boxMin{0., 0., 0.},
+      .boxMax{10., 10., 10.},
+  };
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .tuningInterval = 1000,
+      .maxSamples = 3,
+  };
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  const auto searchSpace = {configFallback, configThatFallsBack};
+  const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tuningManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
+  const auto &autoTuner = *tuningManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise);
+
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
+  EmptyPairwiseFunctor<Molecule> functor;
+
+  // Adds all samples of the current configuration, which gives it evidence. It leaves the queue in the next tune().
+  const auto finishTrial = [&]() {
+    for (size_t sample = 0; sample < autoTunerInfo.maxSamples; ++sample) {
+      tuningManager->addMeasurement(1, 1, true, 0, autopas::InteractionTypeOption::pairwise);
+    }
+  };
+  const auto numTimesFallbackIsQueued = [&]() {
+    return std::ranges::count(autoTuner.getConfigQueue(), configFallback);
+  };
+
+  // Case 1: The fallback has not been trialled yet, but it is in the queue, so it must not be queued a second time.
+  // The queue follows the order of the search space, in which static is before dynamic.
+  tuningManager->tune(0, autopas::LiveInfo{});
+  ASSERT_EQ(autoTuner.getCurrentConfig(), configFallback);
+  // A traversal that is a nullptr means that the configuration is rejected.
+  EXPECT_EQ(std::get<0>(logicHandler.isConfigurationApplicable(configThatFallsBack, functor)), nullptr);
+  EXPECT_EQ(numTimesFallbackIsQueued(), 1);
+
+  // Case 2: The fallback has been trialled in this tuning phase, so it has left the queue and has evidence. Queuing it
+  // again would only repeat that measurement.
+  finishTrial();
+  tuningManager->tune(1, autopas::LiveInfo{});
+  ASSERT_EQ(autoTuner.getCurrentConfig(), configThatFallsBack);
+  EXPECT_EQ(std::get<0>(logicHandler.isConfigurationApplicable(configThatFallsBack, functor)), nullptr);
+  EXPECT_EQ(numTimesFallbackIsQueued(), 0);
+
+  // End this tuning phase.
+  finishTrial();
+  tuningManager->tune(2, autopas::LiveInfo{});
+  ASSERT_FALSE(autoTuner.inTuningPhase());
+
+  // Case 3: The fallback is in the search space, but it is not in the queue and has no evidence from this tuning phase.
+  // Nothing else would trial it in this tuning phase, so it has to be queued. A tuning strategy would typically remove
+  // it from the queue, which we recreate with rejectConfiguration.
+  tuningManager->tune(autoTunerInfo.tuningInterval, autopas::LiveInfo{});
+  std::ignore = tuningManager->rejectConfiguration(configFallback, /*indefinitely*/ false,
+                                                   autopas::InteractionTypeOption::pairwise);
+  ASSERT_EQ(autoTuner.getCurrentConfig(), configThatFallsBack);
+  ASSERT_EQ(numTimesFallbackIsQueued(), 0);
+  const auto [traversal, rejectIndefinitely] = logicHandler.isConfigurationApplicable(configThatFallsBack, functor);
+  EXPECT_EQ(traversal, nullptr);
+  EXPECT_FALSE(rejectIndefinitely);
+  EXPECT_EQ(numTimesFallbackIsQueued(), 1);
+}
+
+/**
+ * Tests a whole tuning phase in which the only queued configuration falls back. This would typically occur due to a
+ * tuning strategy removing other configurations, but we recreate this with rejectConfiguration.
+ */
+TEST_F(TuningManagerTest, testFallbackIsTrialledIfOnlyQueuedConfigFallsBack) {
+  // With one thread, every schedule falls back to static, 1.
+  const NumThreadGuard numThreadGuard(1);
+  auto configFallback = arbitraryConfigurations::_arbitrary_config_2B_allOpenMPSchedules;
+  configFallback.ompKind = autopas::OpenMPKindOption::omp_static;
+  configFallback.ompChunkSize = 1;
+  auto configThatFallsBack = configFallback;
+  configThatFallsBack.ompKind = autopas::OpenMPKindOption::omp_dynamic;
+
+  constexpr unsigned int rebuildFrequency = 20;
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
+      .boxMin{0., 0., 0.},
+      .boxMax{10., 10., 10.},
+  };
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .tuningInterval = 1000,
+      .maxSamples = 3,
+  };
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  const auto searchSpace = {configFallback, configThatFallsBack};
+  const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tuningManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
+  const auto &autoTuner = *tuningManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise);
+
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
+  EmptyPairwiseFunctor<Molecule> functor;
+
+  // Start the tuning phase and remove the fallback from the queue, so that only the configuration that falls back is
+  // left.
+  tuningManager->tune(0, autopas::LiveInfo{});
+  std::ignore = tuningManager->rejectConfiguration(configFallback, /*indefinitely*/ false,
+                                                   autopas::InteractionTypeOption::pairwise);
+  ASSERT_EQ(autoTuner.getConfigQueue().size(), 1);
+  ASSERT_EQ(autoTuner.getCurrentConfig(), configThatFallsBack);
+
+  // In the first iteration, the configuration that falls back gets rejected and the fallback runs in its place.
+  for (size_t iteration = 0; iteration < autoTunerInfo.maxSamples + 1; ++iteration) {
+    logicHandler.updateContainer();
+    logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+  }
+
+  // The tuning phase has to end with evidence for the fallback, which is what the tuner selects as a result.
+  const auto *evidenceFallback = autoTuner.getEvidenceCollection().getEvidence(configFallback);
+  ASSERT_NE(evidenceFallback, nullptr);
+  EXPECT_EQ(evidenceFallback->back().tuningPhase, tuningManager->getTuningPhase());
+  EXPECT_EQ(autoTuner.getEvidenceCollection().getEvidence(configThatFallsBack), nullptr);
+  EXPECT_FALSE(autoTuner.inTuningPhase());
+  EXPECT_EQ(autoTuner.getCurrentConfig(), configFallback);
 }
 
 /**

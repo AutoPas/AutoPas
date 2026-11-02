@@ -250,6 +250,14 @@ void AutoTuner::addTempConfig(const Configuration &configuration) {
   _configQueue.insert(_configQueue.empty() ? _configQueue.end() : std::prev(_configQueue.end()), configuration);
 }
 
+bool AutoTuner::isTrialledInTuningPhase(const Configuration &configuration, const size_t tuningPhase) const {
+  if (std::ranges::find(_configQueue, configuration) != _configQueue.end()) {
+    return true;
+  }
+  const auto *evidence = _evidenceCollection.getEvidence(configuration);
+  return evidence != nullptr and evidence->back().tuningPhase == tuningPhase;
+}
+
 void AutoTuner::addMeasurement(long sampleRebuild, long sampleTraverseParticles, const bool neighborListRebuilt,
                                const size_t iteration, const size_t tuningPhase) {
   const auto &currentConfig = _configQueue.back();

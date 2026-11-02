@@ -79,6 +79,16 @@ inline constexpr autopas::Configuration _arbitrary_config_2B_6 = autopas::Config
     autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
     autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_dynamic, 4,
     autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
+/**
+ * Arbitrary pairwise configuration which allows all OpenMP scheduling options, for tests which set the schedule
+ * themselves.
+ *
+ * @note This configuration may change, but it must keep allowing all OpenMP schedule kinds and chunk sizes.
+ */
+inline constexpr autopas::Configuration _arbitrary_config_2B_allOpenMPSchedules = autopas::Configuration(
+    autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01, autopas::LoadEstimatorOption::none,
+    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_dynamic, 1,
+    autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA);
 
 // Triwise (three-body) configurations:
 /**
