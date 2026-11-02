@@ -465,7 +465,9 @@ class LJFunctor
    */
   template <bool newton3>
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
-    if (soa1.size() == 0 || soa2.size() == 0) return;
+    const size_t n1 = soa1.size();
+    const size_t n2 = soa2.size();
+    if (n1 == 0 || n2 == 0) return;
 
     const auto *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
     const auto *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
@@ -500,32 +502,43 @@ class LJFunctor
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
     [[maybe_unused]] const SoAFloatPrecision invCutoffSquared = _invCutoffSquared;
 
-    const bool isSoA2Homogeneous = soaIsHomogeneous(typeptr2, soa2.size());
-    MixingBuffers<512> mixingBuffers2;
-    const SoAFloatPrecision *__restrict halfSigma2Ptr = nullptr;
-    const SoAFloatPrecision *__restrict sqrtEpsilon2Ptr = nullptr;
-    [[maybe_unused]] SoAFloatPrecision halfSigmaJConst = 0.;
-    [[maybe_unused]] SoAFloatPrecision sqrtEpsilonJConst = 0.;
-
+    // Check pair homogeneity
+    bool isPairHomogeneous = true;
     if constexpr (useMixing) {
-      if (isSoA2Homogeneous) {
-        const size_t firstType2 = typeptr2[0];
-        halfSigmaJConst = _halfSigmaPerType[firstType2];
-        sqrtEpsilonJConst = _sqrtEpsilonPerType[firstType2];
-      } else {
-        const auto mixingPtrs2 =
-            mixingBuffers2.getMixingPointers(typeptr2, soa2.size(), _halfSigmaPerType, _sqrtEpsilonPerType);
-        halfSigma2Ptr = mixingPtrs2.halfSigmaPtr;
-        sqrtEpsilon2Ptr = mixingPtrs2.sqrtEpsilonPtr;
+      const size_t firstType = typeptr1[0];
+      for (size_t k = 0; k < n1; ++k) {
+        if (typeptr1[k] != firstType) {
+          isPairHomogeneous = false;
+          break;
+        }
+      }
+      if (isPairHomogeneous) {
+        for (size_t k = 0; k < n2; ++k) {
+          if (typeptr2[k] != firstType) {
+            isPairHomogeneous = false;
+            break;
+          }
+        }
       }
     }
 
-    auto runPairLoop = [&]<bool homogeneousJ>() {
-      for (unsigned int i = 0; i < soa1.size(); ++i) {
-        SoAFloatPrecision fxacc = 0;
-        SoAFloatPrecision fyacc = 0;
-        SoAFloatPrecision fzacc = 0;
+    if (not useMixing or isPairHomogeneous) {
+      SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
+      SoAFloatPrecision const_epsilon24 = _epsilon24;
+      SoAFloatPrecision const_shift6 = _shift6;
 
+      if constexpr (useMixing) {
+        const size_t firstType = typeptr1[0];
+        const auto halfSig = _halfSigmaPerType[firstType];
+        const auto sqrtEps = _sqrtEpsilonPerType[firstType];
+        const_sigmaSquared = static_cast<SoAFloatPrecision>(4.0) * halfSig * halfSig;
+        const_epsilon24 = static_cast<SoAFloatPrecision>(24.0) * sqrtEps * sqrtEps;
+        if constexpr (calculateGlobals and applyShift) {
+          const_shift6 = computeShift6(const_epsilon24, const_sigmaSquared, invCutoffSquared);
+        }
+      }
+
+      for (unsigned int i = 0; i < n1; ++i) {
         const auto ownedStateI = ownedStatePtr1[i];
         if (ownedStateI == autopas::OwnershipState::dummy) {
           continue;
@@ -537,110 +550,107 @@ class LJFunctor
         [[maybe_unused]] const SoAFloatPrecision ownedFactorI =
             (ownedStateI == autopas::OwnershipState::owned) ? 1. : 0.;
 
-        [[maybe_unused]] const SoAFloatPrecision *const __restrict halfSigma2PtrLocal = halfSigma2Ptr;
-        [[maybe_unused]] const SoAFloatPrecision *const __restrict sqrtEpsilon2PtrLocal = sqrtEpsilon2Ptr;
+        SoAFloatPrecision fxacc = 0.;
+        SoAFloatPrecision fyacc = 0.;
+        SoAFloatPrecision fzacc = 0.;
 
-        SoAFloatPrecision shift6 = _shift6;
-        SoAFloatPrecision sigmaSquared = _sigmaSquared;
-        SoAFloatPrecision epsilon24 = _epsilon24;
-        [[maybe_unused]] SoAFloatPrecision halfSigmaI = 0.;
-        [[maybe_unused]] SoAFloatPrecision sqrtEpsilon24I = 0.;
+        if constexpr (not calculateGlobals and not countFLOPs) {
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
+          for (unsigned int j = 0; j < n2; ++j) {
+            const auto ownedStateJ = ownedStatePtr2[j];
 
-        if constexpr (useMixing) {
-          const size_t typeI = typeptr1[i];
-          halfSigmaI = _halfSigmaPerType[typeI];
-          sqrtEpsilon24I = 24.0 * _sqrtEpsilonPerType[typeI];
-          if constexpr (homogeneousJ) {
-            const SoAFloatPrecision sigma = halfSigmaI + halfSigmaJConst;
-            sigmaSquared = sigma * sigma;
-            epsilon24 = sqrtEpsilon24I * sqrtEpsilonJConst;
-            if constexpr (calculateGlobals and applyShift) {
-              shift6 = computeShift6(epsilon24, sigmaSquared, invCutoffSquared);
+            const SoAFloatPrecision drx = xi - x2ptr[j];
+            const SoAFloatPrecision dry = yi - y2ptr[j];
+            const SoAFloatPrecision drz = zi - z2ptr[j];
+
+            const SoAFloatPrecision dr2 = drx * drx + dry * dry + drz * drz;
+
+            const bool mask = (dr2 <= cutoffSquared) & (ownedStateJ != autopas::OwnershipState::dummy);
+
+            const SoAFloatPrecision invdr2 = 1. / dr2;
+            const SoAFloatPrecision lj2 = const_sigmaSquared * invdr2;
+            const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
+            const SoAFloatPrecision lj12 = lj6 * lj6;
+            const SoAFloatPrecision lj12m6 = lj12 - lj6;
+            const SoAFloatPrecision fac = mask ? const_epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+
+            const SoAFloatPrecision fx = drx * fac;
+            const SoAFloatPrecision fy = dry * fac;
+            const SoAFloatPrecision fz = drz * fac;
+
+            fxacc += fx;
+            fyacc += fy;
+            fzacc += fz;
+            if constexpr (newton3) {
+              fx2ptr[j] -= fx;
+              fy2ptr[j] -= fy;
+              fz2ptr[j] -= fz;
             }
           }
-        }
-
-// icpc vectorizes this.
-// g++ only with -ffast-math or -funsafe-math-optimizations
+        } else {
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
-        for (unsigned int j = 0; j < soa2.size(); ++j) {
-          if constexpr (not homogeneousJ) {
-            const SoAFloatPrecision sigma = halfSigmaI + halfSigma2PtrLocal[j];
-            sigmaSquared = sigma * sigma;
-            epsilon24 = sqrtEpsilon24I * sqrtEpsilon2PtrLocal[j];
-            if constexpr (calculateGlobals and applyShift) {
-              shift6 = computeShift6(epsilon24, sigmaSquared, invCutoffSquared);
-            }
-          }
+          for (unsigned int j = 0; j < n2; ++j) {
+            const auto ownedStateJ = ownedStatePtr2[j];
 
-          const auto ownedStateJ = ownedStatePtr2[j];
+            const SoAFloatPrecision drx = xi - x2ptr[j];
+            const SoAFloatPrecision dry = yi - y2ptr[j];
+            const SoAFloatPrecision drz = zi - z2ptr[j];
 
-          const SoAFloatPrecision drx = xi - x2ptr[j];
-          const SoAFloatPrecision dry = yi - y2ptr[j];
-          const SoAFloatPrecision drz = zi - z2ptr[j];
+            const SoAFloatPrecision dr2 = drx * drx + dry * dry + drz * drz;
 
-          const SoAFloatPrecision drx2 = drx * drx;
-          const SoAFloatPrecision dry2 = dry * dry;
-          const SoAFloatPrecision drz2 = drz * drz;
+            const bool mask = (dr2 <= cutoffSquared) & (ownedStateJ != autopas::OwnershipState::dummy);
 
-          const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
+            const SoAFloatPrecision invdr2 = 1. / dr2;
+            const SoAFloatPrecision lj2 = const_sigmaSquared * invdr2;
+            const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
+            const SoAFloatPrecision lj12 = lj6 * lj6;
+            const SoAFloatPrecision lj12m6 = lj12 - lj6;
+            const SoAFloatPrecision fac = mask ? const_epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
 
-          // Mask away if distance is too large or any particle is a dummy.
-          // Particle ownedStateI was already checked previously.
-          const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+            const SoAFloatPrecision fx = drx * fac;
+            const SoAFloatPrecision fy = dry * fac;
+            const SoAFloatPrecision fz = drz * fac;
 
-          const SoAFloatPrecision invdr2 = 1. / dr2;
-          const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
-          const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
-          const SoAFloatPrecision lj12 = lj6 * lj6;
-          const SoAFloatPrecision lj12m6 = lj12 - lj6;
-          const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * invdr2;
-
-          const SoAFloatPrecision fx = drx * fac;
-          const SoAFloatPrecision fy = dry * fac;
-          const SoAFloatPrecision fz = drz * fac;
-
-          fxacc += fx;
-          fyacc += fy;
-          fzacc += fz;
-          if constexpr (newton3) {
-            fx2ptr[j] -= fx;
-            fy2ptr[j] -= fy;
-            fz2ptr[j] -= fz;
-          }
-
-          if constexpr (countFLOPs) {
-            numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
+            fxacc += fx;
+            fyacc += fy;
+            fzacc += fz;
             if constexpr (newton3) {
-              numKernelCallsN3Sum += mask;
-            } else {
-              numKernelCallsNoN3Sum += mask;
+              fx2ptr[j] -= fx;
+              fy2ptr[j] -= fy;
+              fz2ptr[j] -= fz;
             }
-          }
-
-          if constexpr (calculateGlobals) {
-            SoAFloatPrecision virialx = drx * fx;
-            SoAFloatPrecision virialy = dry * fy;
-            SoAFloatPrecision virialz = drz * fz;
-            SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
-
-            // We add 6 times the potential energy for each owned particle. The total sum is corrected in
-            // endTraversal().
-            const SoAFloatPrecision energyFactor = ownedFactorI;
-            if constexpr (newton3) {
-              energyFactor += (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
-            }
-
-            potentialEnergySum += potentialEnergy6 * energyFactor;
-            virialSumX += virialx * energyFactor;
-            virialSumY += virialy * energyFactor;
-            virialSumZ += virialz * energyFactor;
 
             if constexpr (countFLOPs) {
+              numDistanceCalculationSum += (ownedStateJ != autopas::OwnershipState::dummy) ? 1 : 0;
               if constexpr (newton3) {
-                numGlobalCalcsN3Sum += mask;
+                numKernelCallsN3Sum += mask ? 1 : 0;
               } else {
-                numGlobalCalcsNoN3Sum += mask;
+                numKernelCallsNoN3Sum += mask ? 1 : 0;
+              }
+            }
+
+            if constexpr (calculateGlobals) {
+              const SoAFloatPrecision virialx = drx * fx;
+              const SoAFloatPrecision virialy = dry * fy;
+              const SoAFloatPrecision virialz = drz * fz;
+              const SoAFloatPrecision potentialEnergy6 = mask ? (const_epsilon24 * lj12m6 + const_shift6) : 0.;
+
+              SoAFloatPrecision energyFactor = ownedFactorI;
+              if constexpr (newton3) {
+                energyFactor += (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
+              }
+
+              potentialEnergySum += potentialEnergy6 * energyFactor;
+              virialSumX += virialx * energyFactor;
+              virialSumY += virialy * energyFactor;
+              virialSumZ += virialz * energyFactor;
+
+              if constexpr (countFLOPs) {
+                if constexpr (newton3) {
+                  numGlobalCalcsN3Sum += mask ? 1 : 0;
+                } else {
+                  numGlobalCalcsNoN3Sum += mask ? 1 : 0;
+                }
               }
             }
           }
@@ -649,12 +659,156 @@ class LJFunctor
         fy1ptr[i] += fyacc;
         fz1ptr[i] += fzacc;
       }
-    };
-
-    if (not useMixing or isSoA2Homogeneous) {
-      runPairLoop.template operator()<true>();
     } else if constexpr (useMixing) {
-      runPairLoop.template operator()<false>();
+      MixingBuffers<512> mixingBuffers1;
+      MixingBuffers<512> mixingBuffers2;
+
+      const auto mixingPtrs1 =
+          mixingBuffers1.template getMixingPointers<0>(typeptr1, n1, _halfSigmaPerType, _sqrtEpsilonPerType);
+      const auto *const __restrict halfSigma1Ptr = mixingPtrs1.halfSigmaPtr;
+      const auto *const __restrict sqrtEpsilon1Ptr = mixingPtrs1.sqrtEpsilonPtr;
+
+      const auto mixingPtrs2 =
+          mixingBuffers2.template getMixingPointers<1>(typeptr2, n2, _halfSigmaPerType, _sqrtEpsilonPerType);
+      const auto *const __restrict halfSigma2Ptr = mixingPtrs2.halfSigmaPtr;
+      const auto *const __restrict sqrtEpsilon2Ptr = mixingPtrs2.sqrtEpsilonPtr;
+
+      for (unsigned int i = 0; i < n1; ++i) {
+        const auto ownedStateI = ownedStatePtr1[i];
+        if (ownedStateI == autopas::OwnershipState::dummy) {
+          continue;
+        }
+
+        const SoAFloatPrecision xi = x1ptr[i];
+        const SoAFloatPrecision yi = y1ptr[i];
+        const SoAFloatPrecision zi = z1ptr[i];
+        [[maybe_unused]] const SoAFloatPrecision ownedFactorI =
+            (ownedStateI == autopas::OwnershipState::owned) ? 1. : 0.;
+
+        const SoAFloatPrecision halfSigmaI = halfSigma1Ptr[i];
+        const SoAFloatPrecision sqrtEpsilon24I = 24.0 * sqrtEpsilon1Ptr[i];
+
+        SoAFloatPrecision fxacc = 0.;
+        SoAFloatPrecision fyacc = 0.;
+        SoAFloatPrecision fzacc = 0.;
+
+        if constexpr (not calculateGlobals and not countFLOPs) {
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc)
+          for (unsigned int j = 0; j < n2; ++j) {
+            const SoAFloatPrecision sig = halfSigmaI + halfSigma2Ptr[j];
+            const SoAFloatPrecision sigmaSquared = sig * sig;
+            const SoAFloatPrecision epsilon24 = sqrtEpsilon24I * sqrtEpsilon2Ptr[j];
+
+            const auto ownedStateJ = ownedStatePtr2[j];
+
+            const SoAFloatPrecision drx = xi - x2ptr[j];
+            const SoAFloatPrecision dry = yi - y2ptr[j];
+            const SoAFloatPrecision drz = zi - z2ptr[j];
+
+            const SoAFloatPrecision dr2 = drx * drx + dry * dry + drz * drz;
+
+            const bool mask = (dr2 <= cutoffSquared) & (ownedStateJ != autopas::OwnershipState::dummy);
+
+            const SoAFloatPrecision invdr2 = 1. / dr2;
+            const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
+            const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
+            const SoAFloatPrecision lj12 = lj6 * lj6;
+            const SoAFloatPrecision lj12m6 = lj12 - lj6;
+            const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+
+            const SoAFloatPrecision fx = drx * fac;
+            const SoAFloatPrecision fy = dry * fac;
+            const SoAFloatPrecision fz = drz * fac;
+
+            fxacc += fx;
+            fyacc += fy;
+            fzacc += fz;
+            if constexpr (newton3) {
+              fx2ptr[j] -= fx;
+              fy2ptr[j] -= fy;
+              fz2ptr[j] -= fz;
+            }
+          }
+        } else {
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
+          for (unsigned int j = 0; j < n2; ++j) {
+            const SoAFloatPrecision sig = halfSigmaI + halfSigma2Ptr[j];
+            const SoAFloatPrecision sigmaSquared = sig * sig;
+            const SoAFloatPrecision epsilon24 = sqrtEpsilon24I * sqrtEpsilon2Ptr[j];
+            SoAFloatPrecision shift6 = 0.;
+            if constexpr (calculateGlobals and applyShift) {
+              shift6 = computeShift6(epsilon24, sigmaSquared, invCutoffSquared);
+            }
+
+            const auto ownedStateJ = ownedStatePtr2[j];
+
+            const SoAFloatPrecision drx = xi - x2ptr[j];
+            const SoAFloatPrecision dry = yi - y2ptr[j];
+            const SoAFloatPrecision drz = zi - z2ptr[j];
+
+            const SoAFloatPrecision dr2 = drx * drx + dry * dry + drz * drz;
+
+            const bool mask = (dr2 <= cutoffSquared) & (ownedStateJ != autopas::OwnershipState::dummy);
+
+            const SoAFloatPrecision invdr2 = 1. / dr2;
+            const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
+            const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
+            const SoAFloatPrecision lj12 = lj6 * lj6;
+            const SoAFloatPrecision lj12m6 = lj12 - lj6;
+            const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+
+            const SoAFloatPrecision fx = drx * fac;
+            const SoAFloatPrecision fy = dry * fac;
+            const SoAFloatPrecision fz = drz * fac;
+
+            fxacc += fx;
+            fyacc += fy;
+            fzacc += fz;
+            if constexpr (newton3) {
+              fx2ptr[j] -= fx;
+              fy2ptr[j] -= fy;
+              fz2ptr[j] -= fz;
+            }
+
+            if constexpr (countFLOPs) {
+              numDistanceCalculationSum += (ownedStateJ != autopas::OwnershipState::dummy) ? 1 : 0;
+              if constexpr (newton3) {
+                numKernelCallsN3Sum += mask ? 1 : 0;
+              } else {
+                numKernelCallsNoN3Sum += mask ? 1 : 0;
+              }
+            }
+
+            if constexpr (calculateGlobals) {
+              const SoAFloatPrecision virialx = drx * fx;
+              const SoAFloatPrecision virialy = dry * fy;
+              const SoAFloatPrecision virialz = drz * fz;
+              const SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
+
+              SoAFloatPrecision energyFactor = ownedFactorI;
+              if constexpr (newton3) {
+                energyFactor += (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
+              }
+
+              potentialEnergySum += potentialEnergy6 * energyFactor;
+              virialSumX += virialx * energyFactor;
+              virialSumY += virialy * energyFactor;
+              virialSumZ += virialz * energyFactor;
+
+              if constexpr (countFLOPs) {
+                if constexpr (newton3) {
+                  numGlobalCalcsN3Sum += mask ? 1 : 0;
+                } else {
+                  numGlobalCalcsNoN3Sum += mask ? 1 : 0;
+                }
+              }
+            }
+          }
+        }
+        fx1ptr[i] += fxacc;
+        fy1ptr[i] += fyacc;
+        fz1ptr[i] += fzacc;
+      }
     }
     if constexpr (countFLOPs or calculateGlobals) {
       const auto threadID = autopas::autopas_get_thread_num();
@@ -1084,7 +1238,7 @@ class LJFunctor
 
             // We add 6 times the potential energy for each owned particle. The total sum is corrected in
             // endTraversal().
-              const SoAFloatPrecision energyFactor = ownedFactorI;
+            SoAFloatPrecision energyFactor = ownedFactorI;
             if constexpr (newton3) {
               energyFactor += (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
             }
