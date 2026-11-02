@@ -195,19 +195,7 @@ class LJFunctorHWY
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    auto sigmaSquare = _sigmaSquareAoS;
-    auto epsilon24 = _epsilon24AoS;
-    auto shift6 = _shift6AoS;
-    if constexpr (useMixing) {
-      const auto typeI = i.getTypeId();
-      const auto typeJ = j.getTypeId();
-      const auto sigma = _halfSigmaPerType[typeI] + _halfSigmaPerType[typeJ];
-      sigmaSquare = sigma * sigma;
-      epsilon24 = 24.0 * _sqrtEpsilonPerType[typeI] * _sqrtEpsilonPerType[typeJ];
-      if constexpr (applyShift) {
-        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffSquareAoS);
-      }
-    }
+
     const auto dr = i.getR() - j.getR();
     const double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
@@ -215,30 +203,34 @@ class LJFunctorHWY
       return;
     }
 
-    const double invdr2 = 1. / dr2;
-    double lj6 = sigmaSquare * invdr2;
-    lj6 = lj6 * lj6 * lj6;
-    const double lj12 = lj6 * lj6;
-    const double lj12m6 = lj12 - lj6;
-    const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    const auto f = dr * fac;
+    double halfSigI = 0., sqrtEpsI = 0.;
+    size_t typeJ = 0;
+    if constexpr (useMixing) {
+      const auto typeI = i.getTypeId();
+      typeJ = j.getTypeId();
+      halfSigI = _halfSigmaPerType[typeI];
+      sqrtEpsI = _sqrtEpsilonPerType[typeI];
+    }
+
+    std::array<double, 3> f{};
+    double potentialEnergy6 = 0.;
+    computeScalarLJInteraction(dr2, dr[0], dr[1], dr[2], halfSigI, sqrtEpsI, typeJ, f[0], f[1], f[2], potentialEnergy6);
+
     i.addF(f);
     if (newton3) {
       j.subF(f);
     }
     if constexpr (calculateGlobals) {
       const auto virial = dr * f;
-      const double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
-
-      const int threadnum = autopas::autopas_get_thread_num();
+      const int threadID = autopas::autopas_get_thread_num();
 
       if (i.isOwned()) {
-        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadData[threadnum].virialSum += virial;
+        _aosThreadData[threadID].potentialEnergySum += potentialEnergy6;
+        _aosThreadData[threadID].virialSum += virial;
       }
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadData[threadnum].virialSum += virial;
+        _aosThreadData[threadID].potentialEnergySum += potentialEnergy6;
+        _aosThreadData[threadID].virialSum += virial;
       }
     }
   }
@@ -268,71 +260,8 @@ class LJFunctorHWY
     // Scalar computations for low particle counts
     // -------------------------------------------------------------------------
     if (soaSize <= 7) {
-      const int threadID = autopas::autopas_get_thread_num();
-      for (size_t i = 1; i < soaSize; ++i) {
-        if (ownedStatePtr[i] == autopas::OwnershipState::dummy) continue;
-        const double xi = xPtr[i], yi = yPtr[i], zi = zPtr[i];
-        double halfSigI = 0., sqrtEpsI = 0.;
-        if constexpr (useMixing) {
-          const size_t ti = typeIDPtr[i];
-          halfSigI = _halfSigmaPerType[ti];
-          sqrtEpsI = _sqrtEpsilonPerType[ti];
-        }
-        double fxi = 0., fyi = 0., fzi = 0.;
-        for (size_t j = 0; j < i; ++j) {
-          if (ownedStatePtr[j] == autopas::OwnershipState::dummy) continue;
-          const double dx = xi - xPtr[j];
-          const double dy = yi - yPtr[j];
-          const double dz = zi - zPtr[j];
-          const double dr2 = dx * dx + dy * dy + dz * dz;
-          if (dr2 <= _cutoffSquareAoS) {
-            double sigSq = _sigmaSquareAoS;
-            double eps24 = _epsilon24AoS;
-            double shift6 = _shift6AoS;
-            if constexpr (useMixing) {
-              const size_t tj = typeIDPtr[j];
-              const double sig = halfSigI + _halfSigmaPerType[tj];
-              sigSq = sig * sig;
-              eps24 = 24.0 * sqrtEpsI * _sqrtEpsilonPerType[tj];
-              if constexpr (applyShift) {
-                shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(eps24, sigSq, _cutoffSquareAoS);
-              }
-            }
-            const double invdr2 = 1.0 / dr2;
-            const double lj2 = sigSq * invdr2;
-            const double lj4 = lj2 * lj2;
-            const double lj6 = lj4 * lj2;
-            const double lj12 = lj6 * lj6;
-            const double lj12m6 = lj12 - lj6;
-            const double fac = eps24 * (lj12 + lj12m6) * invdr2;
-            const double fx = dx * fac, fy = dy * fac, fz = dz * fac;
-            fxi += fx;
-            fyi += fy;
-            fzi += fz;
-            fxPtr[j] -= fx;
-            fyPtr[j] -= fy;
-            fzPtr[j] -= fz;
-            if constexpr (calculateGlobals) {
-              const double pot6 = eps24 * lj12m6 + shift6;
-              if (ownedStatePtr[i] == autopas::OwnershipState::owned) {
-                _aosThreadData[threadID].potentialEnergySum += pot6;
-                _aosThreadData[threadID].virialSum[0] += fx * dx;
-                _aosThreadData[threadID].virialSum[1] += fy * dy;
-                _aosThreadData[threadID].virialSum[2] += fz * dz;
-              }
-              if (ownedStatePtr[j] == autopas::OwnershipState::owned) {
-                _aosThreadData[threadID].potentialEnergySum += pot6;
-                _aosThreadData[threadID].virialSum[0] += fx * dx;
-                _aosThreadData[threadID].virialSum[1] += fy * dy;
-                _aosThreadData[threadID].virialSum[2] += fz * dz;
-              }
-            }
-          }
-        }
-        fxPtr[i] += fxi;
-        fyPtr[i] += fyi;
-        fzPtr[i] += fzi;
-      }
+      scalarSoAKernel<true, true>(soaSize, soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, typeIDPtr,
+                                  xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, typeIDPtr);
       return;
     }
 
@@ -476,6 +405,101 @@ class LJFunctorHWY
       }
     }
     return true;
+  }
+
+  inline void computeScalarLJInteraction(const double dr2, const double dx, const double dy, const double dz,
+                                         [[maybe_unused]] const double halfSigI, [[maybe_unused]] const double sqrtEpsI,
+                                         [[maybe_unused]] const size_t typeJ, double &fx, double &fy, double &fz,
+                                         [[maybe_unused]] double &pot6) const {
+    double sigSq = _sigmaSquareAoS;
+    double eps24 = _epsilon24AoS;
+    [[maybe_unused]] double shift6 = _shift6AoS;
+    if constexpr (useMixing) {
+      const double sig = halfSigI + _halfSigmaPerType[typeJ];
+      sigSq = sig * sig;
+      eps24 = 24.0 * sqrtEpsI * _sqrtEpsilonPerType[typeJ];
+      if constexpr (calculateGlobals and applyShift) {
+        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(eps24, sigSq, _cutoffSquareAoS);
+      }
+    }
+    const double invdr2 = 1.0 / dr2;
+    const double lj2 = sigSq * invdr2;
+    const double lj6 = lj2 * lj2 * lj2;
+    const double lj12 = lj6 * lj6;
+    const double lj12m6 = lj12 - lj6;
+    const double fac = eps24 * (lj12 + lj12m6) * invdr2;
+    fx = dx * fac;
+    fy = dy * fac;
+    fz = dz * fac;
+    if constexpr (calculateGlobals) {
+      pot6 = eps24 * lj12m6 + shift6;
+    }
+  }
+
+  template <bool isSingleCell, bool newton3>
+  inline void scalarSoAKernel(const size_t soaSize1, const size_t soaSize2, const double *const x1Ptr,
+                              const double *const y1Ptr, const double *const z1Ptr,
+                              const autopas::OwnershipState *const ownedStatePtr1, double *const fx1Ptr,
+                              double *const fy1Ptr, double *const fz1Ptr, const size_t *const typeID1Ptr,
+                              const double *const x2Ptr, const double *const y2Ptr, const double *const z2Ptr,
+                              const autopas::OwnershipState *const ownedStatePtr2, double *const fx2Ptr,
+                              double *const fy2Ptr, double *const fz2Ptr, const size_t *const typeID2Ptr) {
+    double virialX = 0., virialY = 0., virialZ = 0., potentialEnergy = 0.;
+
+    constexpr size_t startI = isSingleCell ? 1 : 0;
+    for (size_t i = startI; i < soaSize1; ++i) {
+      if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) continue;
+      const double xi = x1Ptr[i], yi = y1Ptr[i], zi = z1Ptr[i];
+      double halfSigI = 0., sqrtEpsI = 0.;
+      if constexpr (useMixing) {
+        const size_t typeI = typeID1Ptr[i];
+        halfSigI = _halfSigmaPerType[typeI];
+        sqrtEpsI = _sqrtEpsilonPerType[typeI];
+      }
+      [[maybe_unused]] const bool isOwnedI = (ownedStatePtr1[i] == autopas::OwnershipState::owned);
+      double fxi = 0., fyi = 0., fzi = 0.;
+
+      const size_t endJ = isSingleCell ? i : soaSize2;
+      for (size_t j = 0; j < endJ; ++j) {
+        if (ownedStatePtr2[j] == autopas::OwnershipState::dummy) continue;
+        const double dx = xi - x2Ptr[j];
+        const double dy = yi - y2Ptr[j];
+        const double dz = zi - z2Ptr[j];
+        const double dr2 = dx * dx + dy * dy + dz * dz;
+        if (dr2 <= _cutoffSquareAoS) {
+          double fx = 0., fy = 0., fz = 0., pot6 = 0.;
+          computeScalarLJInteraction(dr2, dx, dy, dz, halfSigI, sqrtEpsI, useMixing ? typeID2Ptr[j] : 0, fx, fy, fz,
+                                     pot6);
+          fxi += fx;
+          fyi += fy;
+          fzi += fz;
+          if constexpr (newton3) {
+            fx2Ptr[j] -= fx;
+            fy2Ptr[j] -= fy;
+            fz2Ptr[j] -= fz;
+          }
+          if constexpr (calculateGlobals) {
+            const bool isOwnedJ = newton3 and (ownedStatePtr2[j] == autopas::OwnershipState::owned);
+            const double energyFactor = (isOwnedI ? 1.0 : 0.0) + (isOwnedJ ? 1.0 : 0.0);
+            potentialEnergy += energyFactor * pot6;
+            virialX += energyFactor * fx * dx;
+            virialY += energyFactor * fy * dy;
+            virialZ += energyFactor * fz * dz;
+          }
+        }
+      }
+      fx1Ptr[i] += fxi;
+      fy1Ptr[i] += fyi;
+      fz1Ptr[i] += fzi;
+    }
+
+    if constexpr (calculateGlobals) {
+      const int threadID = autopas::autopas_get_thread_num();
+      _aosThreadData[threadID].potentialEnergySum += potentialEnergy;
+      _aosThreadData[threadID].virialSum[0] += virialX;
+      _aosThreadData[threadID].virialSum[1] += virialY;
+      _aosThreadData[threadID].virialSum[2] += virialZ;
+    }
   }
 
   /**
@@ -995,75 +1019,9 @@ class LJFunctorHWY
     // Scalar computations for low particle counts
     // -------------------------------------------------------------------------
     if (soaSize1 <= 7 and soaSize2 <= 7) {
-      const int threadID = autopas::autopas_get_thread_num();
-      for (size_t i = 0; i < soaSize1; ++i) {
-        if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) continue;
-        const double xi = x1Ptr[i], yi = y1Ptr[i], zi = z1Ptr[i];
-        double halfSigI = 0., sqrtEpsI = 0.;
-        if constexpr (useMixing) {
-          const size_t ti = typeID1Ptr[i];
-          halfSigI = _halfSigmaPerType[ti];
-          sqrtEpsI = _sqrtEpsilonPerType[ti];
-        }
-        double fxi = 0., fyi = 0., fzi = 0.;
-        for (size_t j = 0; j < soaSize2; ++j) {
-          if (ownedStatePtr2[j] == autopas::OwnershipState::dummy) continue;
-          const double dx = xi - x2Ptr[j];
-          const double dy = yi - y2Ptr[j];
-          const double dz = zi - z2Ptr[j];
-          const double dr2 = dx * dx + dy * dy + dz * dz;
-          if (dr2 <= _cutoffSquareAoS) {
-            double sigSq = _sigmaSquareAoS;
-            double eps24 = _epsilon24AoS;
-            double shift6 = _shift6AoS;
-            if constexpr (useMixing) {
-              const size_t tj = typeID2Ptr[j];
-              const double sig = halfSigI + _halfSigmaPerType[tj];
-              sigSq = sig * sig;
-              eps24 = 24.0 * sqrtEpsI * _sqrtEpsilonPerType[tj];
-              if constexpr (applyShift) {
-                shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(eps24, sigSq, _cutoffSquareAoS);
-              }
-            }
-            const double invdr2 = 1.0 / dr2;
-            const double lj2 = sigSq * invdr2;
-            const double lj4 = lj2 * lj2;
-            const double lj6 = lj4 * lj2;
-            const double lj12 = lj6 * lj6;
-            const double lj12m6 = lj12 - lj6;
-            const double fac = eps24 * (lj12 + lj12m6) * invdr2;
-            const double fx = dx * fac, fy = dy * fac, fz = dz * fac;
-            fxi += fx;
-            fyi += fy;
-            fzi += fz;
-            if constexpr (newton3) {
-              fx2Ptr[j] -= fx;
-              fy2Ptr[j] -= fy;
-              fz2Ptr[j] -= fz;
-            }
-            if constexpr (calculateGlobals) {
-              const double pot6 = eps24 * lj12m6 + shift6;
-              if (ownedStatePtr1[i] == autopas::OwnershipState::owned) {
-                _aosThreadData[threadID].potentialEnergySum += pot6;
-                _aosThreadData[threadID].virialSum[0] += fx * dx;
-                _aosThreadData[threadID].virialSum[1] += fy * dy;
-                _aosThreadData[threadID].virialSum[2] += fz * dz;
-              }
-              if constexpr (newton3) {
-                if (ownedStatePtr2[j] == autopas::OwnershipState::owned) {
-                  _aosThreadData[threadID].potentialEnergySum += pot6;
-                  _aosThreadData[threadID].virialSum[0] += fx * dx;
-                  _aosThreadData[threadID].virialSum[1] += fy * dy;
-                  _aosThreadData[threadID].virialSum[2] += fz * dz;
-                }
-              }
-            }
-          }
-        }
-        fx1Ptr[i] += fxi;
-        fy1Ptr[i] += fyi;
-        fz1Ptr[i] += fzi;
-      }
+      scalarSoAKernel<false, newton3>(soaSize1, soaSize2, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, fx1Ptr, fy1Ptr, fz1Ptr,
+                                      typeID1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx2Ptr, fy2Ptr, fz2Ptr,
+                                      typeID2Ptr);
       return;
     }
 
@@ -1151,10 +1109,10 @@ class LJFunctorHWY
       MixingBuffers<512> mixingBuffers2;
       double *halfSig1Ptr = nullptr, *sqrtEps1Ptr = nullptr;
       double *halfSig2Ptr = nullptr, *sqrtEps2Ptr = nullptr;
-      mixingBuffers1.template getMixingPointers<0>(typeID1Ptr, soaSize1, _halfSigmaPerType, _sqrtEpsilonPerType, halfSig1Ptr,
-                                          sqrtEps1Ptr);
-      mixingBuffers2.template getMixingPointers<1>(typeID2Ptr, soaSize2, _halfSigmaPerType, _sqrtEpsilonPerType, halfSig2Ptr,
-                                          sqrtEps2Ptr);
+      mixingBuffers1.template getMixingPointers<0>(typeID1Ptr, soaSize1, _halfSigmaPerType, _sqrtEpsilonPerType,
+                                                   halfSig1Ptr, sqrtEps1Ptr);
+      mixingBuffers2.template getMixingPointers<1>(typeID2Ptr, soaSize2, _halfSigmaPerType, _sqrtEpsilonPerType,
+                                                   halfSig2Ptr, sqrtEps2Ptr);
 
       HeterogeneousParameters heterogeneousParams{halfSig1Ptr, sqrtEps1Ptr, halfSig2Ptr, sqrtEps2Ptr,
                                                   _invCutoffSquareAoS};
