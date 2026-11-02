@@ -74,8 +74,8 @@ class LJFunctor
      */
     template <size_t BufferIndex = 0>
     Pointers getMixingPointers(const size_t *__restrict typeIDs, const size_t soaSize,
-                              const std::vector<SoAFloatPrecision> &halfSigmaPerType,
-                              const std::vector<SoAFloatPrecision> &sqrtEpsilonPerType) {
+                               const std::vector<SoAFloatPrecision> &halfSigmaPerType,
+                               const std::vector<SoAFloatPrecision> &sqrtEpsilonPerType) {
       SoAFloatPrecision *rawHalfSigmaPtr = nullptr;
       SoAFloatPrecision *rawSqrtEpsilonPtr = nullptr;
       if (soaSize <= StackCapacity) [[likely]] {
@@ -334,8 +334,12 @@ class LJFunctor
             const auto fac = eps24 * (lj12 + lj12m6) * invdr2;
 
             const auto dfx = dx * fac, dfy = dy * fac, dfz = dz * fac;
-            fxi += dfx; fyi += dfy; fzi += dfz;
-            fxptr[j] -= dfx; fyptr[j] -= dfy; fzptr[j] -= dfz;
+            fxi += dfx;
+            fyi += dfy;
+            fzi += dfz;
+            fxptr[j] -= dfx;
+            fyptr[j] -= dfy;
+            fzptr[j] -= dfz;
 
             if constexpr (countFLOPs) {
               ++numDistanceCalculationSum;
@@ -359,7 +363,9 @@ class LJFunctor
             ++numDistanceCalculationSum;
           }
         }
-        fxptr[i] += fxi; fyptr[i] += fyi; fzptr[i] += fzi;
+        fxptr[i] += fxi;
+        fyptr[i] += fyi;
+        fzptr[i] += fzi;
       }
 
       if constexpr (countFLOPs or calculateGlobals) {
@@ -508,8 +514,7 @@ class LJFunctor
       }
     } else if constexpr (useMixing) {
       MixingBuffers<512> mixingBuffers;
-      const auto mixingPtrs =
-          mixingBuffers.getMixingPointers(typeptr, n, _halfSigmaPerType, _sqrtEpsilonPerType);
+      const auto mixingPtrs = mixingBuffers.getMixingPointers(typeptr, n, _halfSigmaPerType, _sqrtEpsilonPerType);
       const auto *const __restrict halfSigmaPtr = mixingPtrs.halfSigmaPtr;
       const auto *const __restrict sqrtEpsilonPtr = mixingPtrs.sqrtEpsilonPtr;
 
