@@ -174,11 +174,14 @@ class LJFunctorHWY
   }
 
  private:
+  /**
+   *
+   * @param typeIDPtr
+   * @param soaSize
+   * @return
+   */
   static inline bool soaIsHomogeneous(const size_t *const __restrict typeIDPtr, const size_t soaSize) {
     if constexpr (useMixing) {
-      if (soaSize <= 1) {
-        return true;
-      }
       const auto firstType = typeIDPtr[0];
       for (size_t k = 1; k < soaSize; ++k) {
         if (typeIDPtr[k] != firstType) {
@@ -457,7 +460,7 @@ class LJFunctorHWY
   template <VectorizationPattern vecPattern>
   static constexpr bool checkSecondLoopCondition(std::ptrdiff_t i, size_t j) {
     // Round i down to the nearest multiple of jStep (the j-lane width) to get the exclusive upper bound.
-    const std::ptrdiff_t jStep = static_cast<std::ptrdiff_t>(jStepSize<vecPattern>());
+    const auto jStep = static_cast<std::ptrdiff_t>(jStepSize<vecPattern>());
     const std::ptrdiff_t limit = i - (i % jStep);
     return j < static_cast<size_t>(limit);
   }
@@ -741,8 +744,10 @@ class LJFunctorHWY
    * @param fxPtr2
    * @param fyPtr2
    * @param fzPtr2
-   * @param typeIDptr1
-   * @param typeIDptr2
+   * @param halfSigma1Ptr
+   * @param sqrtEpsilon1Ptr
+   * @param halfSigma2Ptr
+   * @param sqrtEpsilon2Ptr
    * @param virialSumX
    * @param virialSumY
    * @param virialSumZ
@@ -750,6 +755,9 @@ class LJFunctorHWY
    * @param restI In the remainder case, this is the number of elements left in the SoA.
    * @param jVecStart The start index for the inner "j" loop.
    * @param jVecEnd The end index for the inner "j" loop.
+   * @param homoSigmaSquared
+   * @param homoEpsilon24
+   * @param homoShift6
    */
   template <bool reversed, bool newton3, bool remainderI, VectorizationPattern vecPattern>
   inline void handleILoopBody(
@@ -758,12 +766,12 @@ class LJFunctorHWY
       const double *const __restrict xPtr2, const double *const __restrict yPtr2, const double *const __restrict zPtr2,
       const autopas::OwnershipState *const __restrict ownedStatePtr2, double *const __restrict fxPtr1,
       double *const __restrict fyPtr1, double *const __restrict fzPtr1, double *const __restrict fxPtr2,
-      double *const __restrict fy2Ptr, double *const __restrict fz2Ptr, const double *const __restrict halfSigma1Ptr,
+      double *const __restrict fyPtr2, double *const __restrict fzPtr2, const double *const __restrict halfSigma1Ptr,
       const double *const __restrict sqrtEpsilon1Ptr, const double *const __restrict halfSigma2Ptr,
       const double *const __restrict sqrtEpsilon2Ptr, VectorDouble &virialSumX, VectorDouble &virialSumY,
       VectorDouble &virialSumZ, VectorDouble &potentialEnergySum, const size_t restI, const size_t jVecStart,
       const size_t jVecEnd, const double homoSigmaSquared = 0.0, const double homoEpsilon24 = 0.0,
-      const double homoShift6 = 0.0) {
+      const double homoShift6 = 0.0) const {
     VectorDouble fxAcc = highway::Zero(tag_double);
     VectorDouble fyAcc = highway::Zero(tag_double);
     VectorDouble fzAcc = highway::Zero(tag_double);
@@ -786,8 +794,8 @@ class LJFunctorHWY
       const auto *const hs2Ptr = halfSigma2Ptr != nullptr ? &halfSigma2Ptr[j] : nullptr;
       const auto *const se2Ptr = sqrtEpsilon2Ptr != nullptr ? &sqrtEpsilon2Ptr[j] : nullptr;
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
-          i, j, notDummyMaskI, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2,
-          zPtr2, fxPtr2, fy2Ptr, fz2Ptr, hs1Ptr, se1Ptr, hs2Ptr, se2Ptr, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
+          j, notDummyMaskI, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2,
+          zPtr2, fxPtr2, fyPtr2, fzPtr2, hs1Ptr, se1Ptr, hs2Ptr, se2Ptr, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
           virialSumZ, potentialEnergySum, restI, 0, homoSigmaSquared, homoEpsilon24, homoShift6);
     }
 
@@ -796,8 +804,8 @@ class LJFunctorHWY
       const auto *const hs2Ptr = halfSigma2Ptr != nullptr ? &halfSigma2Ptr[j] : nullptr;
       const auto *const se2Ptr = sqrtEpsilon2Ptr != nullptr ? &sqrtEpsilon2Ptr[j] : nullptr;
       SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
-          i, j, notDummyMaskI, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2,
-          zPtr2, fxPtr2, fy2Ptr, fz2Ptr, hs1Ptr, se1Ptr, hs2Ptr, se2Ptr, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
+          j, notDummyMaskI, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2,
+          zPtr2, fxPtr2, fyPtr2, fzPtr2, hs1Ptr, se1Ptr, hs2Ptr, se2Ptr, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
           virialSumZ, potentialEnergySum, restI, restJ, homoSigmaSquared, homoEpsilon24, homoShift6);
     }
 
@@ -1148,7 +1156,6 @@ class LJFunctorHWY
    * @tparam remainderJ
    * @tparam reversed
    * @tparam vecPattern
-   * @param i
    * @param j
    * @param notDummyMaskI
    * @param ownedMaskI
@@ -1175,20 +1182,23 @@ class LJFunctorHWY
    * @param potentialEnergySum
    * @param restI
    * @param restJ
+   * @param homoSigmaSquared
+   * @param homoEpsilon24
+   * @param homoShift6
    */
   template <bool newton3, bool remainderI, bool remainderJ, bool reversed, VectorizationPattern vecPattern>
-  inline void SoAKernel(const size_t i, const size_t j, const MaskDouble &notDummyMaskI,
-                        [[maybe_unused]] const MaskDouble &ownedMaskI, const int64_t *const __restrict ownedStatePtr2,
-                        const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1,
-                        const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
-                        const double *const __restrict z2Ptr, double *const __restrict fx2Ptr,
-                        double *const __restrict fy2Ptr, double *const __restrict fz2Ptr,
-                        const double *const halfSigma1Ptr, const double *const sqrtEpsilon1Ptr,
-                        const double *const halfSigma2Ptr, const double *const sqrtEpsilon2Ptr, VectorDouble &fxAcc,
-                        VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
+  inline void SoAKernel(const size_t j, const MaskDouble &notDummyMaskI, [[maybe_unused]] const MaskDouble &ownedMaskI,
+                        const int64_t *const __restrict ownedStatePtr2, const VectorDouble &x1, const VectorDouble &y1,
+                        const VectorDouble &z1, const double *const __restrict x2Ptr,
+                        const double *const __restrict y2Ptr, const double *const __restrict z2Ptr,
+                        double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
+                        double *const __restrict fz2Ptr, const double *const halfSigma1Ptr,
+                        const double *const sqrtEpsilon1Ptr, const double *const halfSigma2Ptr,
+                        const double *const sqrtEpsilon2Ptr, VectorDouble &fxAcc, VectorDouble &fyAcc,
+                        VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
                         VectorDouble &virialSumZ, VectorDouble &potentialEnergySum, const unsigned int restI,
                         const unsigned int restJ, const double homoSigmaSquared = 0.0, const double homoEpsilon24 = 0.0,
-                        const double homoShift6 = 0.0) {
+                        const double homoShift6 = 0.0) const {
     VectorDouble x2;
     VectorDouble y2;
     VectorDouble z2;
@@ -1294,7 +1304,7 @@ class LJFunctorHWY
 
   template <bool newton3, bool remainder = false>
   inline void SoAKernelVerlet(
-      const size_t i, const size_t j, const MaskDouble &notDummyMaskI, [[maybe_unused]] const MaskDouble &ownedMaskI,
+      const size_t j, const MaskDouble &notDummyMaskI, [[maybe_unused]] const MaskDouble &ownedMaskI,
       const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict xPtr,
       const double *const __restrict yPtr, const double *const __restrict zPtr,
       const int64_t *const __restrict ownedStatePtr, double *const __restrict fxPtr, double *const __restrict fyPtr,
@@ -1547,7 +1557,7 @@ class LJFunctorHWY
     const MaskDouble notDummyMaskI = highway::Ne(ownedStateI, highway::Zero(tag_double));
     [[maybe_unused]] MaskDouble ownedMaskI;
     if constexpr (calculateGlobals) {
-      const auto ownedVal = static_cast<double>(static_cast<int64_t>(autopas::OwnershipState::owned));
+      constexpr auto ownedVal = static_cast<double>(static_cast<int64_t>(autopas::OwnershipState::owned));
       ownedMaskI = highway::Eq(ownedStateI, highway::Set(tag_double, ownedVal));
     }
 
@@ -1559,21 +1569,19 @@ class LJFunctorHWY
     const size_t vecEnd = (neighborListSize / _vecLengthDouble) * _vecLengthDouble;
 
     for (; j < vecEnd; j += _vecLengthDouble) {
-      SoAKernelVerlet<newton3, false>(indexFirst, j, notDummyMaskI, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
-                                      reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr, hs1Ptr,
-                                      se1Ptr, halfSigmaPtr, sqrtEpsilonPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
-                                      virialSumX, virialSumY, virialSumZ, potentialEnergySum, 0, homoSigmaSquared,
-                                      homoEpsilon24, homoShift6);
+      SoAKernelVerlet<newton3, false>(
+          j, notDummyMaskI, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr),
+          fxPtr, fyPtr, fzPtr, hs1Ptr, se1Ptr, halfSigmaPtr, sqrtEpsilonPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
+          virialSumX, virialSumY, virialSumZ, potentialEnergySum, 0, homoSigmaSquared, homoEpsilon24, homoShift6);
     }
 
     const size_t rest = neighborListSize & (_vecLengthDouble - 1);
 
     if (rest > 0) {
-      SoAKernelVerlet<newton3, true>(indexFirst, j, notDummyMaskI, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
-                                     reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr, hs1Ptr,
-                                     se1Ptr, halfSigmaPtr, sqrtEpsilonPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
-                                     virialSumX, virialSumY, virialSumZ, potentialEnergySum, rest, homoSigmaSquared,
-                                     homoEpsilon24, homoShift6);
+      SoAKernelVerlet<newton3, true>(
+          j, notDummyMaskI, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr),
+          fxPtr, fyPtr, fzPtr, hs1Ptr, se1Ptr, halfSigmaPtr, sqrtEpsilonPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
+          virialSumX, virialSumY, virialSumZ, potentialEnergySum, rest, homoSigmaSquared, homoEpsilon24, homoShift6);
     }
 
     fxPtr[indexFirst] += highway::ReduceSum(tag_double, fxAcc);
@@ -1644,7 +1652,7 @@ class LJFunctorHWY
   }
 
   /**
-   * Accumulates global values, e.g. upot and virial.
+   * Accumulates global values, e.g. potential energy and virial.
    * @param newton3
    */
   void endTraversal(const bool newton3) final {
