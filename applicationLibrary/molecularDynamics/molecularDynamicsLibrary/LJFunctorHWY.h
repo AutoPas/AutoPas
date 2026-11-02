@@ -287,18 +287,7 @@ class LJFunctorHWY
     // -------------------------------------------------------------------------
     if (not useMixing or isHomogeneous) {
       const size_t firstType = useMixing ? typeIDPtr[0] : 0;
-      double sigmaSquare = _sigmaSquareAoS;
-      double epsilon24 = _epsilon24AoS;
-      double shift6 = _shift6AoS;
-      if constexpr (useMixing) {
-        const double sigma = 2.0 * _halfSigmaPerType[firstType];
-        sigmaSquare = sigma * sigma;
-        epsilon24 = 24.0 * _sqrtEpsilonPerType[firstType] * _sqrtEpsilonPerType[firstType];
-        if constexpr (applyShift) {
-          shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffSquareAoS);
-        }
-      }
-      HomogeneousParameters homogeneousParams{sigmaSquare, epsilon24, shift6};
+      auto homogeneousParams = makeHomogeneousParameters(firstType, firstType);
       runSingleLoop(homogeneousParams);
     } else if constexpr (useMixing) {
       // -------------------------------------------------------------------------
@@ -837,14 +826,37 @@ class LJFunctorHWY
     inline LJParameters getJ([[maybe_unused]] const size_t j, [[maybe_unused]] const size_t restJ) const {
       return {sigmaSquareConst, epsilon24Const, shift6Const};
     }
+
+    template <bool remainder>
+    inline LJParameters getJ([[maybe_unused]] const VectorLong &indices,
+                             [[maybe_unused]] const MaskDouble &restMaskDouble) const {
+      return {sigmaSquareConst, epsilon24Const, shift6Const};
+    }
   };
 
+  inline HomogeneousParameters makeHomogeneousParameters([[maybe_unused]] const size_t typeId1,
+                                                         [[maybe_unused]] const size_t typeId2) const {
+    double sigmaSquare = _sigmaSquareAoS;
+    double epsilon24 = _epsilon24AoS;
+    double shift6 = _shift6AoS;
+    if constexpr (useMixing) {
+      const double sigma = _halfSigmaPerType[typeId1] + _halfSigmaPerType[typeId2];
+      sigmaSquare = sigma * sigma;
+      epsilon24 = 24.0 * _sqrtEpsilonPerType[typeId1] * _sqrtEpsilonPerType[typeId2];
+      if constexpr (calculateGlobals and applyShift) {
+        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffSquareAoS);
+      }
+    }
+    return HomogeneousParameters{sigmaSquare, epsilon24, shift6};
+  }
+
   struct HeterogeneousParameters {
-    const double *const __restrict halfSigma1Ptr;
-    const double *const __restrict sqrtEpsilon1Ptr;
-    const double *const __restrict halfSigma2Ptr;
-    const double *const __restrict sqrtEpsilon2Ptr;
-    VectorDouble invCutoffSquaredVec;
+    const double *const __restrict halfSigma1Ptr{nullptr};
+    const double *const __restrict sqrtEpsilon1Ptr{nullptr};
+    const double *const __restrict halfSigma2Ptr{nullptr};
+    const double *const __restrict sqrtEpsilon2Ptr{nullptr};
+    const int64_t *const __restrict typeID2Ptr{nullptr};
+    const VectorDouble invCutoffSquaredVec;
 
     VectorDouble halfSigmaI{highway::Zero(tag_double)};
     VectorDouble sqrtEpsilon24I{highway::Zero(tag_double)};
@@ -858,6 +870,16 @@ class LJFunctorHWY
           sqrtEpsilon2Ptr{sqrtEps2},
           invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)} {}
 
+    HeterogeneousParameters(const double halfSigmaIScalar, const double sqrtEpsilonIScalar,
+                            const int64_t *const __restrict typeIDPtr, const double *const __restrict halfSigmaPerType,
+                            const double *const __restrict sqrtEpsilonPerType, const double invCutoffSquared)
+        : halfSigma2Ptr{halfSigmaPerType},
+          sqrtEpsilon2Ptr{sqrtEpsilonPerType},
+          typeID2Ptr{typeIDPtr},
+          invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)},
+          halfSigmaI{highway::Set(tag_double, halfSigmaIScalar)},
+          sqrtEpsilon24I{highway::Set(tag_double, 24.0 * sqrtEpsilonIScalar)} {}
+
     template <bool remainderI, bool reversed, VectorizationPattern vecPattern>
     inline void prepareI(const size_t i, const size_t restI) {
       fillIPhysicsRegisters<remainderI, reversed, vecPattern>(i, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigmaI,
@@ -865,70 +887,7 @@ class LJFunctorHWY
       sqrtEpsilon24I = highway::Mul(highway::Set(tag_double, 24.0), sqrtEpsilon24I);
     }
 
-    template <bool remainderJ, VectorizationPattern vecPattern>
-    inline LJParameters getJ(const size_t j, const size_t restJ) const {
-      VectorDouble halfSigJ;
-      VectorDouble sqrtEpsJ;
-      fillJPhysicsRegisters<remainderJ, vecPattern>(j, halfSigma2Ptr, sqrtEpsilon2Ptr, halfSigJ, sqrtEpsJ, restJ);
-      const auto sigma = highway::Add(halfSigmaI, halfSigJ);
-      const auto sigSq = highway::Mul(sigma, sigma);
-      const auto eps24 = highway::Mul(sqrtEpsilon24I, sqrtEpsJ);
-      VectorDouble shift6 = highway::Zero(tag_double);
-      if constexpr (calculateGlobals and applyShift) {
-        shift6 = computeShift6SIMD(sigSq, eps24, invCutoffSquaredVec);
-      }
-      return {sigSq, eps24, shift6};
-    }
-  };
-
-  struct HomogeneousVerletParameters {
-    VectorDouble sigSqConst;
-    VectorDouble eps24Const;
-    VectorDouble shift6Const;
-
-    HomogeneousVerletParameters(const double sigmaSquaredConst, const double epsilon24Const, const double shift6Const)
-        : sigSqConst{highway::Set(tag_double, sigmaSquaredConst)},
-          eps24Const{highway::Set(tag_double, epsilon24Const)},
-          shift6Const{highway::Set(tag_double, shift6Const)} {}
-
-    template <bool remainder>
-    inline LJParameters getJ([[maybe_unused]] const VectorLong &indices,
-                             [[maybe_unused]] const MaskDouble &restMaskDouble) const {
-      return {sigSqConst, eps24Const, shift6Const};
-    }
-  };
-
-  struct HeterogeneousVerletParameters {
-    VectorDouble halfSigmaI;
-    VectorDouble sqrtEpsilon24I;
-    const int64_t *const __restrict typeIDPtr;
-    const double *const __restrict halfSigmaPerTypePtr;
-    const double *const __restrict sqrtEpsilonPerTypePtr;
-    const VectorDouble invCutoffSquaredVec;
-
-    HeterogeneousVerletParameters(const double halfSigmaIScalar, const double sqrtEpsilonIScalar,
-                                  const int64_t *const __restrict typeIDPtr,
-                                  const double *const __restrict halfSigmaPerType,
-                                  const double *const __restrict sqrtEpsilonPerType, const double invCutoffSquared)
-        : halfSigmaI{highway::Set(tag_double, halfSigmaIScalar)},
-          sqrtEpsilon24I{highway::Set(tag_double, 24.0 * sqrtEpsilonIScalar)},
-          typeIDPtr{typeIDPtr},
-          halfSigmaPerTypePtr{halfSigmaPerType},
-          sqrtEpsilonPerTypePtr{sqrtEpsilonPerType},
-          invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)} {}
-
-    template <bool remainder>
-    inline LJParameters getJ(const VectorLong &indices, const MaskDouble &restMaskDouble) const {
-      VectorLong typeJ;
-      if constexpr (remainder) {
-        const MaskLong restMaskLong = highway::RebindMask(tag_long, restMaskDouble);
-        typeJ = highway::MaskedGatherIndex(restMaskLong, tag_long, typeIDPtr, indices);
-      } else {
-        typeJ = highway::GatherIndex(tag_long, typeIDPtr, indices);
-      }
-      const VectorDouble halfSigmaJ = highway::GatherIndex(tag_double, halfSigmaPerTypePtr, typeJ);
-      const VectorDouble sqrtEpsilonJ = highway::GatherIndex(tag_double, sqrtEpsilonPerTypePtr, typeJ);
-
+    inline LJParameters mixParameters(const VectorDouble &halfSigmaJ, const VectorDouble &sqrtEpsilonJ) const {
       const auto sigma = highway::Add(halfSigmaI, halfSigmaJ);
       const auto sigSq = highway::Mul(sigma, sigma);
       const auto eps24 = highway::Mul(sqrtEpsilon24I, sqrtEpsilonJ);
@@ -937,6 +896,28 @@ class LJFunctorHWY
         shift6 = computeShift6SIMD(sigSq, eps24, invCutoffSquaredVec);
       }
       return {sigSq, eps24, shift6};
+    }
+
+    template <bool remainderJ, VectorizationPattern vecPattern>
+    inline LJParameters getJ(const size_t j, const size_t restJ) const {
+      VectorDouble halfSigJ;
+      VectorDouble sqrtEpsJ;
+      fillJPhysicsRegisters<remainderJ, vecPattern>(j, halfSigma2Ptr, sqrtEpsilon2Ptr, halfSigJ, sqrtEpsJ, restJ);
+      return mixParameters(halfSigJ, sqrtEpsJ);
+    }
+
+    template <bool remainder>
+    inline LJParameters getJ(const VectorLong &indices, const MaskDouble &restMaskDouble) const {
+      VectorLong typeJ;
+      if constexpr (remainder) {
+        const MaskLong restMaskLong = highway::RebindMask(tag_long, restMaskDouble);
+        typeJ = highway::MaskedGatherIndex(restMaskLong, tag_long, typeID2Ptr, indices);
+      } else {
+        typeJ = highway::GatherIndex(tag_long, typeID2Ptr, indices);
+      }
+      const VectorDouble halfSigmaJ = highway::GatherIndex(tag_double, halfSigma2Ptr, typeJ);
+      const VectorDouble sqrtEpsilonJ = highway::GatherIndex(tag_double, sqrtEpsilon2Ptr, typeJ);
+      return mixParameters(halfSigmaJ, sqrtEpsilonJ);
     }
   };
 
@@ -1091,18 +1072,7 @@ class LJFunctorHWY
     if (not useMixing or isHomogeneous) {
       const size_t firstType1 = useMixing ? typeID1Ptr[0] : 0;
       const size_t firstType2 = useMixing ? typeID2Ptr[0] : 0;
-      double sigSq = _sigmaSquareAoS;
-      double eps24 = _epsilon24AoS;
-      double shift6 = _shift6AoS;
-      if constexpr (useMixing) {
-        const double sig = _halfSigmaPerType[firstType1] + _halfSigmaPerType[firstType2];
-        sigSq = sig * sig;
-        eps24 = 24.0 * _sqrtEpsilonPerType[firstType1] * _sqrtEpsilonPerType[firstType2];
-        if constexpr (applyShift) {
-          shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(eps24, sigSq, _cutoffSquareAoS);
-        }
-      }
-      HomogeneousParameters homogeneousParams{sigSq, eps24, shift6};
+      auto homogeneousParams = makeHomogeneousParameters(firstType1, firstType2);
       runPairLoop(homogeneousParams);
     } else if constexpr (useMixing) {
       MixingBuffers<512> mixingBuffers1;
@@ -1384,7 +1354,7 @@ class LJFunctorHWY
     const MaskDouble notDummyMaskI = highway::Ne(ownedStateI, highway::Zero(tag_double));
     [[maybe_unused]] MaskDouble ownedMaskI;
     if constexpr (calculateGlobals) {
-      const auto ownedVal = static_cast<double>(static_cast<int64_t>(autopas::OwnershipState::owned));
+      constexpr auto ownedVal = static_cast<double>(static_cast<int64_t>(autopas::OwnershipState::owned));
       ownedMaskI = highway::Eq(ownedStateI, highway::Set(tag_double, ownedVal));
     }
 
@@ -1413,25 +1383,14 @@ class LJFunctorHWY
 
     if (not useMixing or isHomogeneous) {
       const size_t firstType = useMixing ? typeIDPtr[indexFirst] : 0;
-      double sigSq = _sigmaSquareAoS;
-      double eps24 = _epsilon24AoS;
-      double shift6 = _shift6AoS;
-      if constexpr (useMixing) {
-        const double sig = 2.0 * _halfSigmaPerType[firstType];
-        sigSq = sig * sig;
-        eps24 = 24.0 * _sqrtEpsilonPerType[firstType] * _sqrtEpsilonPerType[firstType];
-        if constexpr (applyShift) {
-          shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(eps24, sigSq, _cutoffSquareAoS);
-        }
-      }
-      HomogeneousVerletParameters homogeneousVerletParams{sigSq, eps24, shift6};
-      runVerletLoop(homogeneousVerletParams);
+      const auto homogeneousParams = makeHomogeneousParameters(firstType, firstType);
+      runVerletLoop(homogeneousParams);
     } else if constexpr (useMixing) {
       const size_t typeI = typeIDPtr[indexFirst];
-      HeterogeneousVerletParameters heterogeneousVerletParams{
+      HeterogeneousParameters heterogeneousParams{
           _halfSigmaPerType[typeI], _sqrtEpsilonPerType[typeI], reinterpret_cast<const int64_t *>(typeIDPtr),
           _halfSigmaPerType.data(), _sqrtEpsilonPerType.data(), _invCutoffSquareAoS};
-      runVerletLoop(heterogeneousVerletParams);
+      runVerletLoop(heterogeneousParams);
     }
 
     fxPtr[indexFirst] += highway::ReduceSum(tag_double, fxAcc);
