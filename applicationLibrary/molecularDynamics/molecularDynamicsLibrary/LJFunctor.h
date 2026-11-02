@@ -119,10 +119,10 @@ class LJFunctor
         _virialSum{0., 0., 0.},
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
-      _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
+      _threadDataGlobals.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
+      _threadDataFLOPs.resize(autopas::autopas_get_max_threads());
     }
   }
 
@@ -174,10 +174,10 @@ class LJFunctor
       return;
     }
 
-    const auto threadnum = autopas::autopas_get_thread_num();
+    const auto threadID = autopas::autopas_get_thread_num();
 
     if constexpr (countFLOPs) {
-      ++_aosThreadDataFLOPs[threadnum].numDistCalls;
+      ++_threadDataFLOPs[threadID].numDistCalls;
     }
 
     auto sigmaSquared = _sigmaSquared;
@@ -215,9 +215,9 @@ class LJFunctor
 
     if constexpr (countFLOPs) {
       if (newton3) {
-        ++_aosThreadDataFLOPs[threadnum].numKernelCallsN3;
+        ++_threadDataFLOPs[threadID].numKernelCallsN3;
       } else {
-        ++_aosThreadDataFLOPs[threadnum].numKernelCallsNoN3;
+        ++_threadDataFLOPs[threadID].numKernelCallsNoN3;
       }
     }
 
@@ -229,19 +229,19 @@ class LJFunctor
       double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       if (i.isOwned()) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadDataGlobals[threadnum].virialSum += virial;
+        _threadDataGlobals[threadID].potentialEnergySum += potentialEnergy6;
+        _threadDataGlobals[threadID].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
-        _aosThreadDataGlobals[threadnum].virialSum += virial;
+        _threadDataGlobals[threadID].potentialEnergySum += potentialEnergy6;
+        _threadDataGlobals[threadID].virialSum += virial;
       }
       if constexpr (countFLOPs) {
         if (newton3) {
-          ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsN3;
+          ++_threadDataFLOPs[threadID].numGlobalCalcsN3;
         } else {
-          ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3;
+          ++_threadDataFLOPs[threadID].numGlobalCalcsNoN3;
         }
       }
     }
@@ -254,7 +254,7 @@ class LJFunctor
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.size() == 0) return;
 
-    const auto threadnum = autopas::autopas_get_thread_num();
+    const auto threadID = autopas::autopas_get_thread_num();
 
     const auto *const __restrict xptr = soa.template begin<Particle_T::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle_T::AttributeNames::posY>();
@@ -413,16 +413,16 @@ class LJFunctor
       fzptr[i] += fzacc;
     }
     if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
-      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
-      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
-      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsSum;  // Always N3 in Single SoAFunctor
+      _threadDataFLOPs[threadID].numDistCalls += numDistanceCalculationSum;
+      _threadDataFLOPs[threadID].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _threadDataFLOPs[threadID].numKernelCallsN3 += numKernelCallsN3Sum;
+      _threadDataFLOPs[threadID].numGlobalCalcsN3 += numGlobalCalcsSum;  // Always N3 in Single SoAFunctor
     }
     if (calculateGlobals) {
-      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
-      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
-      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
-      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
+      _threadDataGlobals[threadID].potentialEnergySum += potentialEnergySum;
+      _threadDataGlobals[threadID].virialSum[0] += virialSumX;
+      _threadDataGlobals[threadID].virialSum[1] += virialSumY;
+      _threadDataGlobals[threadID].virialSum[2] += virialSumZ;
     }
   }
 
@@ -450,7 +450,7 @@ class LJFunctor
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
-    const auto threadnum = autopas::autopas_get_thread_num();
+    const auto threadID = autopas::autopas_get_thread_num();
 
     const auto *const __restrict x1ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
     const auto *const __restrict y1ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
@@ -627,17 +627,17 @@ class LJFunctor
       fz1ptr[i] += fzacc;
     }
     if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
-      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
-      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
-      _aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
-      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
+      _threadDataFLOPs[threadID].numDistCalls += numDistanceCalculationSum;
+      _threadDataFLOPs[threadID].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _threadDataFLOPs[threadID].numKernelCallsN3 += numKernelCallsN3Sum;
+      _threadDataFLOPs[threadID].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _threadDataFLOPs[threadID].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
     }
     if (calculateGlobals) {
-      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
-      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
-      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
-      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
+      _threadDataGlobals[threadID].potentialEnergySum += potentialEnergySum;
+      _threadDataGlobals[threadID].virialSum[0] += virialSumX;
+      _threadDataGlobals[threadID].virialSum[1] += virialSumY;
+      _threadDataGlobals[threadID].virialSum[2] += virialSumZ;
     }
   }
 
@@ -723,12 +723,12 @@ class LJFunctor
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
     if constexpr (calculateGlobals) {
-      for (auto &data : _aosThreadDataGlobals) {
+      for (auto &data : _threadDataGlobals) {
         data.setZero();
       }
     }
     if constexpr (countFLOPs) {
-      for (auto &data : _aosThreadDataFLOPs) {
+      for (auto &data : _threadDataFLOPs) {
         data.setZero();
       }
     }
@@ -746,7 +746,7 @@ class LJFunctor
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
-      for (const auto &data : _aosThreadDataGlobals) {
+      for (const auto &data : _threadDataGlobals) {
         _potentialEnergySum += data.potentialEnergySum;
         _virialSum += data.virialSum;
       }
@@ -838,19 +838,19 @@ class LJFunctor
   [[nodiscard]] size_t getNumFLOPs() const override {
     if constexpr (countFLOPs) {
       const size_t numDistCallsAcc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+          std::accumulate(_threadDataFLOPs.begin(), _threadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
       const size_t numKernelCallsN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+          std::accumulate(_threadDataFLOPs.begin(), _threadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
       const size_t numKernelCallsNoN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+          std::accumulate(_threadDataFLOPs.begin(), _threadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
       const size_t numGlobalCalcsN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+          std::accumulate(_threadDataFLOPs.begin(), _threadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsN3; });
       const size_t numGlobalCalcsNoN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+          std::accumulate(_threadDataFLOPs.begin(), _threadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsNoN3; });
 
       constexpr size_t numFLOPsPerDistanceCall = 8;
@@ -871,13 +871,13 @@ class LJFunctor
   [[nodiscard]] double getHitRate() const override {
     if constexpr (countFLOPs) {
       const size_t numDistCallsAcc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+          std::accumulate(_threadDataFLOPs.begin(), _threadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
       const size_t numKernelCallsN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+          std::accumulate(_threadDataFLOPs.begin(), _threadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
       const size_t numKernelCallsNoN3Acc =
-          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+          std::accumulate(_threadDataFLOPs.begin(), _threadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
 
       return (static_cast<double>(numKernelCallsNoN3Acc) + static_cast<double>(numKernelCallsN3Acc)) /
@@ -938,7 +938,7 @@ class LJFunctor
       return;
     }
 
-    const auto threadnum = autopas::autopas_get_thread_num();
+    const auto threadID = autopas::autopas_get_thread_num();
 
     // this is a magic number, that should correspond to at least
     // vectorization width*N have testet multiple sizes:
@@ -1194,18 +1194,18 @@ class LJFunctor
     }
 
     if constexpr (countFLOPs) {
-      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
-      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
-      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
-      _aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
-      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
+      _threadDataFLOPs[threadID].numDistCalls += numDistanceCalculationSum;
+      _threadDataFLOPs[threadID].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _threadDataFLOPs[threadID].numKernelCallsN3 += numKernelCallsN3Sum;
+      _threadDataFLOPs[threadID].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _threadDataFLOPs[threadID].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
     }
 
     if (calculateGlobals) {
-      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
-      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
-      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
-      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
+      _threadDataGlobals[threadID].potentialEnergySum += potentialEnergySum;
+      _threadDataGlobals[threadID].virialSum[0] += virialSumX;
+      _threadDataGlobals[threadID].virialSum[1] += virialSumY;
+      _threadDataGlobals[threadID].virialSum[2] += virialSumZ;
     }
   }
 
@@ -1213,9 +1213,9 @@ class LJFunctor
    * This class stores internal data for global calculations for each thread. Make sure that this data has proper size,
    * i.e. k*64 Bytes!
    */
-  class AoSThreadDataGlobals {
+  class ThreadDataGlobals {
    public:
-    AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
+    ThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
     void setZero() {
       virialSum = {0., 0., 0.};
       potentialEnergySum = 0.;
@@ -1237,9 +1237,9 @@ class LJFunctor
    * numKernelCallsN3, numDistCalls, numGlobalCalcs) to reduce computational cost in the functors themselves and to
    * improve maintainability (e.g. if the cost of a kernel call changes).
    */
-  class AoSThreadDataFLOPs {
+  class ThreadDataFLOPs {
    public:
-    AoSThreadDataFLOPs() : __remainingTo64{} {}
+    ThreadDataFLOPs() : __remainingTo64{} {}
 
     /**
      * Set all counters to zero.
@@ -1289,9 +1289,9 @@ class LJFunctor
     double __remainingTo64[(64 - 5 * sizeof(size_t)) / sizeof(size_t)];
   };
 
-  // make sure of the size of AoSThreadDataGlobals and AoSThreadDataFLOPs
-  static_assert(sizeof(AoSThreadDataGlobals) % 64 == 0, "AoSThreadDataGlobals has wrong size");
-  static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
+  // make sure of the size of ThreadDataGlobals and ThreadDataFLOPs
+  static_assert(sizeof(ThreadDataGlobals) % 64 == 0, "ThreadDataGlobals has wrong size");
+  static_assert(sizeof(ThreadDataFLOPs) % 64 == 0, "ThreadDataFLOPs has wrong size");
 
   void initFromPPL(const ParticlePropertiesLibrary<double, size_t> &ppl) {
     const size_t nTypes = ppl.getNumberRegisteredSiteTypes();
@@ -1322,9 +1322,9 @@ class LJFunctor
   // sum of the virial, only calculated if calculateGlobals is true
   std::array<double, 3> _virialSum;
 
-  // thread buffer for aos
-  std::vector<AoSThreadDataGlobals> _aosThreadDataGlobals{};
-  std::vector<AoSThreadDataFLOPs> _aosThreadDataFLOPs{};
+  // thread local buffers
+  std::vector<ThreadDataGlobals> _threadDataGlobals{};
+  std::vector<ThreadDataFLOPs> _threadDataFLOPs{};
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
