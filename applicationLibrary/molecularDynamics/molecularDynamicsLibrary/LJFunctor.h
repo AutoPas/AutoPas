@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <array>
 #include <cmath>
 
 #include "ParticlePropertiesLibrary.h"
@@ -55,6 +56,50 @@ class LJFunctor
   using SoAFloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
  public:
+  template <size_t StackCapacity = 256>
+  struct MixingBuffers {
+    alignas(64) std::array<SoAFloatPrecision, StackCapacity> halfSigmaStack;
+    alignas(64) std::array<SoAFloatPrecision, StackCapacity> sqrtEpsilonStack;
+
+    /**
+     * Fills the provided pointers with the projected halfSigma and sqrtEpsilon values for the given typeIDs.
+     * If the number of particles is less than or equal to StackCapacity, the values are stored in the stack buffer.
+     * Otherwise, they are stored in a thread-local heap buffer.
+     *
+     * @tparam BufferIndex An optional template parameter to differentiate between multiple MixingBuffers instances.
+     * @param typeIDs Pointer to the array of type IDs for the particles.
+     * @param soaSize The number of particles in the SoA.
+     * @param halfSigmaPerType Vector containing halfSigma values for each particle type.
+     * @param sqrtEpsilonPerType Vector containing sqrtEpsilon values for each particle type.
+     * @param halfSigmaPtr Reference to a pointer that will be set to point to the projected halfSigma values.
+     * @param sqrtEpsilonPtr Reference to a pointer that will be set to point to the projected sqrtEpsilon values.
+     */
+    template <size_t BufferIndex = 0>
+    void getMixingPointers(const size_t *__restrict typeIDs, const size_t soaSize,
+                           const std::vector<double> &halfSigmaPerType, const std::vector<double> &sqrtEpsilonPerType,
+                           SoAFloatPrecision *&halfSigmaPtr, SoAFloatPrecision *&sqrtEpsilonPtr) {
+      if (soaSize <= StackCapacity) [[likely]] {
+        halfSigmaPtr = halfSigmaStack.data();
+        sqrtEpsilonPtr = sqrtEpsilonStack.data();
+      } else [[unlikely]] {
+        thread_local std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision, 64>> halfSigmaHeap;
+        thread_local std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision, 64>> sqrtEpsilonHeap;
+        if (halfSigmaHeap.size() < soaSize) {
+          halfSigmaHeap.resize(soaSize);
+          sqrtEpsilonHeap.resize(soaSize);
+        }
+        halfSigmaPtr = halfSigmaHeap.data();
+        sqrtEpsilonPtr = sqrtEpsilonHeap.data();
+      }
+#pragma omp simd
+      for (size_t k = 0; k < soaSize; ++k) {
+        const auto typeID = typeIDs[k];
+        halfSigmaPtr[k] = static_cast<SoAFloatPrecision>(halfSigmaPerType[typeID]);
+        sqrtEpsilonPtr[k] = static_cast<SoAFloatPrecision>(sqrtEpsilonPerType[typeID]);
+      }
+    }
+  };
+
   /**
    * Deleted default constructor
    */
@@ -237,7 +282,14 @@ class LJFunctor
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
+
+    MixingBuffers mixingBuffers;
+    SoAFloatPrecision *halfSigmaPtr = nullptr;
+    SoAFloatPrecision *sqrtEpsilonPtr = nullptr;
+
     if constexpr (useMixing) {
+      mixingBuffers.getMixingPointers(typeptr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
+                                      sqrtEpsilonPtr);
       // Preload all sigma and epsilons for next vectorized region.
       // Not preloading and directly using the values, will produce worse results.
       sigmaSquareds.resize(soa.size());
@@ -263,12 +315,12 @@ class LJFunctor
       SoAFloatPrecision fzacc = 0.;
 
       if constexpr (useMixing) {
+        const auto halfSigmaI = halfSigmaPtr[i];
+        const auto sqrtEpsilonI = sqrtEpsilonPtr[i];
         for (unsigned int j = 0; j < soa.size(); ++j) {
-          const auto typeI = typeptr[i];
-          const auto typeJ = typeptr[j];
-          const auto sigma = _halfSigmaPerType[typeI] + _halfSigmaPerType[typeJ];
+          const auto sigma = halfSigmaI + halfSigmaPtr[j];
           const auto sigmaSquared = sigma * sigma;
-          const auto epsilon24 = 24.0 * _sqrtEpsilonPerType[typeI] * _sqrtEpsilonPerType[typeJ];
+          const auto epsilon24 = 24.0 * sqrtEpsilonI * sqrtEpsilonPtr[j];
           sigmaSquareds[j] = sigmaSquared;
           epsilon24s[j] = epsilon24;
           if constexpr (applyShift) {
@@ -279,7 +331,9 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsSum)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
+                               numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
+                               numGlobalCalcsSum)
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
         SoAFloatPrecision shift6 = const_shift6;
         SoAFloatPrecision sigmaSquared = const_sigmaSquared;
@@ -437,7 +491,19 @@ class LJFunctor
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
+
+    MixingBuffers mixingBuffers1;
+    MixingBuffers mixingBuffers2;
+    SoAFloatPrecision *halfSigma1Ptr = nullptr;
+    SoAFloatPrecision *sqrtEpsilon1Ptr = nullptr;
+    SoAFloatPrecision *halfSigma2Ptr = nullptr;
+    SoAFloatPrecision *sqrtEpsilon2Ptr = nullptr;
+
     if constexpr (useMixing) {
+      mixingBuffers1.template getMixingPointers<0>(typeptr1, soa1.size(), _halfSigmaPerType, _sqrtEpsilonPerType,
+                                                   halfSigma1Ptr, sqrtEpsilon1Ptr);
+      mixingBuffers2.template getMixingPointers<1>(typeptr2, soa2.size(), _halfSigmaPerType, _sqrtEpsilonPerType,
+                                                   halfSigma2Ptr, sqrtEpsilon2Ptr);
       sigmaSquareds.resize(soa2.size());
       epsilon24s.resize(soa2.size());
       // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
@@ -458,23 +524,26 @@ class LJFunctor
 
       // preload all sigma and epsilons for next vectorized region
       if constexpr (useMixing) {
+        const auto halfSigmaI = halfSigma1Ptr[i];
+        const auto sqrtEpsilonI = sqrtEpsilon1Ptr[i];
         for (unsigned int j = 0; j < soa2.size(); ++j) {
-          const auto typeI = typeptr1[i];
-          const auto typeJ = typeptr2[j];
-          const auto sigma = _halfSigmaPerType[typeI] + _halfSigmaPerType[typeJ];
+          const auto sigma = halfSigmaI + halfSigma2Ptr[j];
           const auto sigmaSquaredTmp = sigma * sigma;
-          const auto epsilon24Tmp = 24.0 * _sqrtEpsilonPerType[typeI] * _sqrtEpsilonPerType[typeJ];
+          const auto epsilon24Tmp = 24.0 * sqrtEpsilonI * sqrtEpsilon2Ptr[j];
           sigmaSquareds[j] = sigmaSquaredTmp;
           epsilon24s[j] = epsilon24Tmp;
           if constexpr (applyShift) {
-            shift6s[j] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24Tmp, sigmaSquaredTmp, _cutoffSquared);
+            shift6s[j] =
+                ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24Tmp, sigmaSquaredTmp, _cutoffSquared);
           }
         }
       }
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
+                               numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
+                               numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
@@ -831,7 +900,6 @@ class LJFunctor
     auto *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
     [[maybe_unused]] auto *const __restrict typeptr1 = soa.template begin<Particle_T::AttributeNames::typeId>();
-    [[maybe_unused]] auto *const __restrict typeptr2 = soa.template begin<Particle_T::AttributeNames::typeId>();
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
@@ -839,6 +907,14 @@ class LJFunctor
     SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmaSquared = _sigmaSquared;
     SoAFloatPrecision epsilon24 = _epsilon24;
+
+    MixingBuffers mixingBuffers;
+    SoAFloatPrecision *halfSigmaPtr = nullptr;
+    SoAFloatPrecision *sqrtEpsilonPtr = nullptr;
+    if constexpr (useMixing) {
+      mixingBuffers.getMixingPointers(typeptr1, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
+                                      sqrtEpsilonPtr);
+    }
 
     SoAFloatPrecision potentialEnergySum = 0.;
     SoAFloatPrecision virialSumX = 0.;
@@ -902,16 +978,18 @@ class LJFunctor
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> epsilon24s;
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> shift6s;
         if constexpr (useMixing) {
+          const auto halfSigmaI = halfSigmaPtr[indexFirst];
+          const auto sqrtEpsilonI = sqrtEpsilonPtr[indexFirst];
           for (size_t j = 0; j < vecsize; j++) {
-            const auto typeI = typeptr1[indexFirst];
-            const auto typeJ = typeptr2[neighborList[joff + j]];
-            const auto sigma = _halfSigmaPerType[typeI] + _halfSigmaPerType[typeJ];
+            const auto neighborIdx = neighborList[joff + j];
+            const auto sigma = halfSigmaI + halfSigmaPtr[neighborIdx];
             const auto sigmaSquaredTmp = sigma * sigma;
-            const auto epsilon24Tmp = 24.0 * _sqrtEpsilonPerType[typeI] * _sqrtEpsilonPerType[typeJ];
+            const auto epsilon24Tmp = 24.0 * sqrtEpsilonI * sqrtEpsilonPtr[neighborIdx];
             sigmaSquareds[j] = sigmaSquaredTmp;
             epsilon24s[j] = epsilon24Tmp;
             if constexpr (applyShift) {
-              shift6s[j] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24Tmp, sigmaSquaredTmp, _cutoffSquared);
+              shift6s[j] =
+                  ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24Tmp, sigmaSquaredTmp, _cutoffSquared);
             }
           }
         }
@@ -925,7 +1003,9 @@ class LJFunctor
           ownedStateArr[tmpj] = ownedStatePtr[neighborList[joff + tmpj]];
         }
         // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
+                               numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
+                               numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
           if constexpr (useMixing) {
             sigmaSquared = sigmaSquareds[j];
@@ -1023,11 +1103,9 @@ class LJFunctor
       size_t j = neighborList[jNeighIndex];
       if (indexFirst == j) continue;
       if constexpr (useMixing) {
-        const auto typeI = typeptr1[indexFirst];
-        const auto typeJ = typeptr2[j];
-        const auto sigma = _halfSigmaPerType[typeI] + _halfSigmaPerType[typeJ];
+        const auto sigma = halfSigmaPtr[indexFirst] + halfSigmaPtr[j];
         sigmaSquared = sigma * sigma;
-        epsilon24 = 24.0 * _sqrtEpsilonPerType[typeI] * _sqrtEpsilonPerType[typeJ];
+        epsilon24 = 24.0 * sqrtEpsilonPtr[indexFirst] * sqrtEpsilonPtr[j];
         if constexpr (applyShift) {
           shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
         }
