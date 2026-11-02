@@ -73,9 +73,20 @@ class LJFunctorHWY
   using SoAArraysType = Particle_T::SoAArraysType;
 
  public:
+  /**
+   * Helper struct to manage temporary buffers for projected halfSigma and sqrtEpsilon values.
+   *
+   * @tparam StackCapacity Capacity of the stack-allocated buffer before falling back to thread-local heap memory.
+   */
   template <size_t StackCapacity = 256>
   struct MixingBuffers {
+    /**
+     * Stack storage for projected halfSigma values.
+     */
     alignas(64) std::array<double, StackCapacity> halfSigmaStack;
+    /**
+     * Stack storage for projected sqrtEpsilon values.
+     */
     alignas(64) std::array<double, StackCapacity> sqrtEpsilonStack;
 
     /**
@@ -128,8 +139,9 @@ class LJFunctorHWY
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctorHWY(double cutoff, std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>>
-                                           particlePropertiesLibrary = std::nullopt)
+  explicit LJFunctorHWY(double cutoff,
+                        const std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>>
+                            particlePropertiesLibrary = std::nullopt)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff), _cutoffSquared{cutoff * cutoff} {
     if (calculateGlobals) {
       _threadData.resize(autopas::autopas_get_max_threads());
@@ -175,10 +187,11 @@ class LJFunctorHWY
 
  private:
   /**
+   * Checks whether all particles within an SoA have identical type IDs.
    *
-   * @param typeIDPtr
-   * @param soaSize
-   * @return
+   * @param typeIDPtr Pointer to the particle type IDs array.
+   * @param soaSize Number of particles in the SoA.
+   * @return True if the cell is homogeneous (or if mixing is disabled), false otherwise.
    */
   static inline bool soaIsHomogeneous(const size_t *const __restrict typeIDPtr, const size_t soaSize) {
     if constexpr (useMixing) {

@@ -54,9 +54,20 @@ class LJFunctor
   using SoAFloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
  public:
+  /**
+   * Helper struct to manage temporary buffers for projected halfSigma and sqrtEpsilon values.
+   *
+   * @tparam StackCapacity Capacity of the stack-allocated buffer before falling back to thread-local heap memory.
+   */
   template <size_t StackCapacity = 256>
   struct MixingBuffers {
+    /**
+     * Stack storage for projected halfSigma values.
+     */
     alignas(64) std::array<SoAFloatPrecision, StackCapacity> halfSigmaStack;
+    /**
+     * Stack storage for projected sqrtEpsilon values.
+     */
     alignas(64) std::array<SoAFloatPrecision, StackCapacity> sqrtEpsilonStack;
 
     /**
@@ -166,10 +177,11 @@ class LJFunctor
 
  private:
   /**
+   * Checks whether all particles within an SoA have identical type IDs.
    *
-   * @param typeIDPtr
-   * @param soaSize
-   * @return
+   * @param typeIDPtr Pointer to the particle type IDs array.
+   * @param soaSize Number of particles in the SoA.
+   * @return True if the cell is homogeneous (or if mixing is disabled), false otherwise.
    */
   static inline bool soaIsHomogeneous(const size_t *const __restrict typeIDPtr, const size_t soaSize) {
     if constexpr (useMixing) {
@@ -358,8 +370,6 @@ class LJFunctor
         }
       }
 
-// icpc vectorizes this.
-// g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxAcc, fyAcc, fzAcc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
                                numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
                                numGlobalCalcsSum)
@@ -579,8 +589,6 @@ class LJFunctor
         }
       }
 
-// icpc vectorizes this.
-// g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxAcc, fyAcc, fzAcc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, \
                                numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
                                numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
