@@ -645,9 +645,10 @@ class LJFunctor
           SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
           // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
-          const SoAFloatPrecision energyFactor =
-              (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-              (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
+          SoAFloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.);
+          if constexpr (newton3) {
+            energyFactor += (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
+          }
           potentialEnergySum += potentialEnergy6 * energyFactor;
           virialSumX += virialX * energyFactor;
           virialSumY += virialY * energyFactor;
@@ -948,9 +949,9 @@ class LJFunctor
     SoAFloatPrecision sigmaSquared = _sigmaSquared;
     SoAFloatPrecision epsilon24 = _epsilon24;
 
-    MixingBuffers mixingBuffers;
-    SoAFloatPrecision *halfSigmaPtr = nullptr;
-    SoAFloatPrecision *sqrtEpsilonPtr = nullptr;
+    bool isHomogeneous = true;
+    SoAFloatPrecision halfSigmaI = 0.;
+    SoAFloatPrecision sqrtEpsilonI = 0.;
     if constexpr (useMixing) {
       if (soaIsHomogeneous(typePtr1, soa.size())) {
         const size_t type = soa.size() > 0 ? typePtr1[0] : 0;
@@ -961,8 +962,10 @@ class LJFunctor
           shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
         }
       } else {
-        mixingBuffers.getMixingPointers(typePtr1, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
-                                        sqrtEpsilonPtr);
+        isHomogeneous = false;
+        const size_t typeI = typePtr1[indexFirst];
+        halfSigmaI = _halfSigmaPerType[typeI];
+        sqrtEpsilonI = _sqrtEpsilonPerType[typeI];
       }
     }
 
@@ -1028,19 +1031,20 @@ class LJFunctor
             sigmaSquareds;
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vectorSize> epsilon24s;
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vectorSize> shift6s;
-        if (halfSigmaPtr != nullptr) {
-          const auto halfSigmaI = halfSigmaPtr[indexFirst];
-          const auto sqrtEpsilonI = sqrtEpsilonPtr[indexFirst];
-          for (size_t j = 0; j < vectorSize; j++) {
-            const auto neighborIdx = neighborList[joff + j];
-            const auto sigma = halfSigmaI + halfSigmaPtr[neighborIdx];
-            const auto sigmaSquaredTmp = sigma * sigma;
-            const auto epsilon24Tmp = 24.0 * sqrtEpsilonI * sqrtEpsilonPtr[neighborIdx];
-            sigmaSquareds[j] = sigmaSquaredTmp;
-            epsilon24s[j] = epsilon24Tmp;
-            if constexpr (calculateGlobals and applyShift) {
-              shift6s[j] =
-                  ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24Tmp, sigmaSquaredTmp, _cutoffSquared);
+        if constexpr (useMixing) {
+          if (not isHomogeneous) {
+            for (size_t j = 0; j < vectorSize; j++) {
+              const auto neighborIdx = neighborList[joff + j];
+              const auto neighborType = typePtr1[neighborIdx];
+              const auto sigma = halfSigmaI + _halfSigmaPerType[neighborType];
+              const auto sigmaSquaredTmp = sigma * sigma;
+              const auto epsilon24Tmp = 24.0 * sqrtEpsilonI * _sqrtEpsilonPerType[neighborType];
+              sigmaSquareds[j] = sigmaSquaredTmp;
+              epsilon24s[j] = epsilon24Tmp;
+              if constexpr (calculateGlobals and applyShift) {
+                shift6s[j] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24Tmp, sigmaSquaredTmp,
+                                                                                   _cutoffSquared);
+              }
             }
           }
         }
@@ -1058,11 +1062,13 @@ class LJFunctor
                                numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
                                numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vectorSize)
         for (size_t j = 0; j < vectorSize; j++) {
-          if (halfSigmaPtr != nullptr) {
-            sigmaSquared = sigmaSquareds[j];
-            epsilon24 = epsilon24s[j];
-            if constexpr (calculateGlobals and applyShift) {
-              shift6 = shift6s[j];
+          if constexpr (useMixing) {
+            if (not isHomogeneous) {
+              sigmaSquared = sigmaSquareds[j];
+              epsilon24 = epsilon24s[j];
+              if constexpr (calculateGlobals and applyShift) {
+                shift6 = shift6s[j];
+              }
             }
           }
           // const size_t j = currentList[jNeighIndex];
@@ -1120,9 +1126,10 @@ class LJFunctor
 
             // We add 6 times the potential energy for each owned particle. The total sum is corrected in
             // endTraversal().
-            const SoAFloatPrecision energyFactor =
-                (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-                (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
+            SoAFloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.);
+            if constexpr (newton3) {
+              energyFactor += (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
+            }
             potentialEnergySum += potentialEnergy6 * energyFactor;
             virialSumX += virialX * energyFactor;
             virialSumY += virialY * energyFactor;
@@ -1153,12 +1160,15 @@ class LJFunctor
     for (size_t jNeighIndex = joff; jNeighIndex < neighborListSize; ++jNeighIndex) {
       size_t j = neighborList[jNeighIndex];
       if (indexFirst == j) continue;
-      if (halfSigmaPtr != nullptr) {
-        const auto sigma = halfSigmaPtr[indexFirst] + halfSigmaPtr[j];
-        sigmaSquared = sigma * sigma;
-        epsilon24 = 24.0 * sqrtEpsilonPtr[indexFirst] * sqrtEpsilonPtr[j];
-        if constexpr (calculateGlobals and applyShift) {
-          shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
+      if constexpr (useMixing) {
+        if (not isHomogeneous) {
+          const auto neighborType = typePtr1[j];
+          const auto sigma = halfSigmaI + _halfSigmaPerType[neighborType];
+          sigmaSquared = sigma * sigma;
+          epsilon24 = 24.0 * sqrtEpsilonI * _sqrtEpsilonPerType[neighborType];
+          if constexpr (calculateGlobals and applyShift) {
+            shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
+          }
         }
       }
 
@@ -1220,9 +1230,10 @@ class LJFunctor
         SoAFloatPrecision potentialEnergy6 = (epsilon24 * lj12m6 + shift6);
 
         // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
-        const SoAFloatPrecision energyFactor =
-            (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-            (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
+        SoAFloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.);
+        if constexpr (newton3) {
+          energyFactor += (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
+        }
         potentialEnergySum += potentialEnergy6 * energyFactor;
         virialSumX += virialX * energyFactor;
         virialSumY += virialY * energyFactor;

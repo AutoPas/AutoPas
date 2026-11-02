@@ -142,7 +142,7 @@ class LJFunctorHWY
       if (not particlePropertiesLibrary.has_value()) {
         throw std::runtime_error("Mixing is enabled but no ParticlePropertiesLibrary was provided!");
       }
-      initFromPPL(particlePropertiesLibrary);
+      initFromPPL(particlePropertiesLibrary->get());
     } else {
       if (particlePropertiesLibrary.has_value()) {
         throw std::runtime_error("Mixing is disabled but a ParticlePropertiesLibrary was provided!");
@@ -1303,16 +1303,18 @@ class LJFunctorHWY
   }
 
   template <bool newton3, bool remainder = false>
-  inline void SoAKernelVerlet(
-      const size_t j, const MaskDouble &notDummyMaskI, [[maybe_unused]] const MaskDouble &ownedMaskI,
-      const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict xPtr,
-      const double *const __restrict yPtr, const double *const __restrict zPtr,
-      const int64_t *const __restrict ownedStatePtr, double *const __restrict fxPtr, double *const __restrict fyPtr,
-      double *const __restrict fzPtr, const double *const halfSigma1Ptr, const double *const sqrtEpsilon1Ptr,
-      const double *const halfSigmaPtr, const double *const sqrtEpsilonPtr, const size_t *const __restrict neighborList,
-      VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
-      VectorDouble &virialSumZ, VectorDouble &potentialEnergySum, [[maybe_unused]] const size_t rest = 0,
-      const double homoSigmaSquared = 0.0, const double homoEpsilon24 = 0.0, const double homoShift6 = 0.0) const {
+  inline void SoAKernelVerlet(const size_t j, const MaskDouble &notDummyMaskI,
+                              [[maybe_unused]] const MaskDouble &ownedMaskI, const VectorDouble &x1,
+                              const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict xPtr,
+                              const double *const __restrict yPtr, const double *const __restrict zPtr,
+                              const int64_t *const __restrict ownedStatePtr, double *const __restrict fxPtr,
+                              double *const __restrict fyPtr, double *const __restrict fzPtr,
+                              const double *const halfSigma1Ptr, const double *const sqrtEpsilon1Ptr,
+                              const size_t *const __restrict typeIDPtr, const size_t *const __restrict neighborList,
+                              VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
+                              VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &potentialEnergySum,
+                              [[maybe_unused]] const size_t rest = 0, const double homoSigmaSquared = 0.0,
+                              const double homoEpsilon24 = 0.0, const double homoShift6 = 0.0) const {
     [[maybe_unused]] MaskDouble restMaskDouble;
     [[maybe_unused]] MaskLong restMaskLong;
     VectorLong indices;
@@ -1378,8 +1380,9 @@ class LJFunctorHWY
         const auto se1 = *sqrtEpsilon1Ptr;
         for (size_t k = 0; k < kMax; ++k) {
           const auto neighborIdx = neighborList[j + k];
-          const auto hs2 = halfSigmaPtr[neighborIdx];
-          const auto se2 = sqrtEpsilonPtr[neighborIdx];
+          const auto neighborType = typeIDPtr[neighborIdx];
+          const auto hs2 = _halfSigmaPerType[neighborType];
+          const auto se2 = _sqrtEpsilonPerType[neighborType];
           const auto sigma = hs1 + hs2;
           const auto sigmaSquared = sigma * sigma;
           const auto epsilon24 = 24.0 * se1 * se2;
@@ -1517,15 +1520,17 @@ class LJFunctorHWY
     auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    MixingBuffers mixingBuffers;
-    double *halfSigmaPtr = nullptr;
-    double *sqrtEpsilonPtr = nullptr;
     double homoSigmaSquared = _sigmaSquared;
     double homoEpsilon24 = _epsilon24;
     double homoShift6 = _shift6;
+    double halfSigmaI = 0.0;
+    double sqrtEpsilonI = 0.0;
+    const double *hs1Ptr = nullptr;
+    const double *se1Ptr = nullptr;
+    const size_t *typeIDPtr = nullptr;
 
     if constexpr (useMixing) {
-      const auto *const __restrict typeIDPtr = soa.template begin<Particle_T::AttributeNames::typeId>();
+      typeIDPtr = soa.template begin<Particle_T::AttributeNames::typeId>();
       if (soaIsHomogeneous(typeIDPtr, soa.size())) {
         const size_t type = soa.size() > 0 ? typeIDPtr[0] : 0;
         const double sigma = 2.0 * _halfSigmaPerType[type];
@@ -1536,8 +1541,11 @@ class LJFunctorHWY
               ParticlePropertiesLibrary<double, size_t>::calcShift6(homoEpsilon24, homoSigmaSquared, _cutoffSquared);
         }
       } else {
-        mixingBuffers.getMixingPointers(typeIDPtr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
-                                        sqrtEpsilonPtr);
+        const size_t typeI = typeIDPtr[indexFirst];
+        halfSigmaI = _halfSigmaPerType[typeI];
+        sqrtEpsilonI = _sqrtEpsilonPerType[typeI];
+        hs1Ptr = &halfSigmaI;
+        se1Ptr = &sqrtEpsilonI;
       }
     }
 
@@ -1561,9 +1569,6 @@ class LJFunctorHWY
       ownedMaskI = highway::Eq(ownedStateI, highway::Set(tag_double, ownedVal));
     }
 
-    const auto *const hs1Ptr = halfSigmaPtr != nullptr ? &halfSigmaPtr[indexFirst] : nullptr;
-    const auto *const se1Ptr = sqrtEpsilonPtr != nullptr ? &sqrtEpsilonPtr[indexFirst] : nullptr;
-
     size_t j = 0;
     const size_t neighborListSize = neighborList.size();
     const size_t vecEnd = (neighborListSize / _vecLengthDouble) * _vecLengthDouble;
@@ -1571,8 +1576,8 @@ class LJFunctorHWY
     for (; j < vecEnd; j += _vecLengthDouble) {
       SoAKernelVerlet<newton3, false>(
           j, notDummyMaskI, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr),
-          fxPtr, fyPtr, fzPtr, hs1Ptr, se1Ptr, halfSigmaPtr, sqrtEpsilonPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
-          virialSumX, virialSumY, virialSumZ, potentialEnergySum, 0, homoSigmaSquared, homoEpsilon24, homoShift6);
+          fxPtr, fyPtr, fzPtr, hs1Ptr, se1Ptr, typeIDPtr, neighborList.data(), fxAcc, fyAcc, fzAcc, virialSumX,
+          virialSumY, virialSumZ, potentialEnergySum, 0, homoSigmaSquared, homoEpsilon24, homoShift6);
     }
 
     const size_t rest = neighborListSize & (_vecLengthDouble - 1);
@@ -1580,8 +1585,8 @@ class LJFunctorHWY
     if (rest > 0) {
       SoAKernelVerlet<newton3, true>(
           j, notDummyMaskI, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr),
-          fxPtr, fyPtr, fzPtr, hs1Ptr, se1Ptr, halfSigmaPtr, sqrtEpsilonPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
-          virialSumX, virialSumY, virialSumZ, potentialEnergySum, rest, homoSigmaSquared, homoEpsilon24, homoShift6);
+          fxPtr, fyPtr, fzPtr, hs1Ptr, se1Ptr, typeIDPtr, neighborList.data(), fxAcc, fyAcc, fzAcc, virialSumX,
+          virialSumY, virialSumZ, potentialEnergySum, rest, homoSigmaSquared, homoEpsilon24, homoShift6);
     }
 
     fxPtr[indexFirst] += highway::ReduceSum(tag_double, fxAcc);
@@ -1741,22 +1746,19 @@ class LJFunctorHWY
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
  private:
-  void initFromPPL(const std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>> &ppl) {
-    if (not ppl.has_value()) {
-      return;
-    }
-    const size_t nTypes = ppl->get().getNumberRegisteredSiteTypes();
+  void initFromPPL(const ParticlePropertiesLibrary<double, size_t> &ppl) {
+    const size_t nTypes = ppl.getNumberRegisteredSiteTypes();
     _halfSigmaPerType.resize(nTypes);
     _sqrtEpsilonPerType.resize(nTypes);
     for (size_t t = 0; t < nTypes; ++t) {
-      _halfSigmaPerType[t] = ppl->get().getSigma(t) * 0.5;
-      _sqrtEpsilonPerType[t] = std::sqrt(ppl->get().getEpsilon(t));
+      _halfSigmaPerType[t] = ppl.getSigma(t) * 0.5;
+      _sqrtEpsilonPerType[t] = std::sqrt(ppl.getEpsilon(t));
     }
     if (nTypes > 0) {
       _sigmaSquared = 4.0 * _halfSigmaPerType[0] * _halfSigmaPerType[0];
       _epsilon24 = 24.0 * _sqrtEpsilonPerType[0] * _sqrtEpsilonPerType[0];
       if constexpr (applyShift) {
-        _shift6 = ppl->get().getMixingShift6(0, 0);
+        _shift6 = ppl.getMixingShift6(0, 0);
       }
     }
   }
