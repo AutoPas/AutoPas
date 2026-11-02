@@ -416,7 +416,7 @@ class LJFunctor
           numKernelCallsN3Sum += mask;
         }
 
-        if (calculateGlobals) {
+        if constexpr (calculateGlobals) {
           const SoAFloatPrecision virialX = drx * fx;
           const SoAFloatPrecision virialY = dry * fy;
           const SoAFloatPrecision virialZ = drz * fz;
@@ -447,7 +447,7 @@ class LJFunctor
       _threadDataFLOPs[threadID].numKernelCallsN3 += numKernelCallsN3Sum;
       _threadDataFLOPs[threadID].numGlobalCalcsN3 += numGlobalCalcsSum;  // Always N3 in Single SoAFunctor
     }
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       _threadDataGlobals[threadID].potentialEnergySum += potentialEnergySum;
       _threadDataGlobals[threadID].virialSum[0] += virialSumX;
       _threadDataGlobals[threadID].virialSum[1] += virialSumY;
@@ -623,7 +623,7 @@ class LJFunctor
         fxAcc += fx;
         fyAcc += fy;
         fzAcc += fz;
-        if (newton3) {
+        if constexpr (newton3) {
           fx2Ptr[j] -= fx;
           fy2Ptr[j] -= fy;
           fz2Ptr[j] -= fz;
@@ -673,7 +673,7 @@ class LJFunctor
       _threadDataFLOPs[threadID].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
       _threadDataFLOPs[threadID].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
     }
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       _threadDataGlobals[threadID].potentialEnergySum += potentialEnergySum;
       _threadDataGlobals[threadID].virialSum[0] += virialSumX;
       _threadDataGlobals[threadID].virialSum[1] += virialSumY;
@@ -708,7 +708,7 @@ class LJFunctor
     _sigmaSquared = sigmaSquared;
     _halfSigmaPerType = {std::sqrt(sigmaSquared) * 0.5};
     _sqrtEpsilonPerType = {std::sqrt(epsilon24 / 24.0)};
-    if (applyShift) {
+    if constexpr (applyShift) {
       _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared);
     } else {
       _shift6 = 0.;
@@ -785,7 +785,7 @@ class LJFunctor
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       for (const auto &data : _threadDataGlobals) {
         _potentialEnergySum += data.potentialEnergySum;
         _virialSum += data.virialSum;
@@ -1097,7 +1097,7 @@ class LJFunctor
           fxAcc += fx;
           fyAcc += fy;
           fzAcc += fz;
-          if (newton3) {
+          if constexpr (newton3) {
             fxArr[j] = fx;
             fyArr[j] = fy;
             fzArr[j] = fz;
@@ -1112,7 +1112,7 @@ class LJFunctor
             }
           }
 
-          if (calculateGlobals) {
+          if constexpr (calculateGlobals) {
             SoAFloatPrecision virialX = drx * fx;
             SoAFloatPrecision virialY = dry * fy;
             SoAFloatPrecision virialZ = drz * fz;
@@ -1138,7 +1138,7 @@ class LJFunctor
           }
         }
         // scatter the forces to where they belong, this is only needed for newton3
-        if (newton3) {
+        if constexpr (newton3) {
 #pragma omp simd safelen(vectorSize)
           for (size_t tmpj = 0; tmpj < vectorSize; tmpj++) {
             const size_t j = neighborList[joff + tmpj];
@@ -1199,7 +1199,7 @@ class LJFunctor
       fxAcc += fx;
       fyAcc += fy;
       fzAcc += fz;
-      if (newton3) {
+      if constexpr (newton3) {
         fxPtr[j] -= fx;
         fyPtr[j] -= fy;
         fzPtr[j] -= fz;
@@ -1213,7 +1213,7 @@ class LJFunctor
         }
       }
 
-      if (calculateGlobals) {
+      if constexpr (calculateGlobals) {
         SoAFloatPrecision virialX = drx * fx;
         SoAFloatPrecision virialY = dry * fy;
         SoAFloatPrecision virialZ = drz * fz;
@@ -1252,7 +1252,7 @@ class LJFunctor
       _threadDataFLOPs[threadID].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
     }
 
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       _threadDataGlobals[threadID].potentialEnergySum += potentialEnergySum;
       _threadDataGlobals[threadID].virialSum[0] += virialSumX;
       _threadDataGlobals[threadID].virialSum[1] += virialSumY;
