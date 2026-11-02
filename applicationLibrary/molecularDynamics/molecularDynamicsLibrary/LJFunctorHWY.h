@@ -637,18 +637,14 @@ class LJFunctorHWY
   static void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
                              const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
                              VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, MaskDouble &notDummyMaskJ,
-                             [[maybe_unused]] MaskDouble &ownedMaskJ, const unsigned int restJ) {
+                             [[maybe_unused]] VectorLong &ownedStateJLong, const unsigned int restJ) {
     x2 = loadJRegister<remainder, vecPattern>(tag_double, x2Ptr, j, restJ);
     y2 = loadJRegister<remainder, vecPattern>(tag_double, y2Ptr, j, restJ);
     z2 = loadJRegister<remainder, vecPattern>(tag_double, z2Ptr, j, restJ);
 
-    const VectorLong ownedStateJLong = loadJRegister<remainder, vecPattern>(tag_long, ownedStatePtr2, j, restJ);
+    ownedStateJLong = loadJRegister<remainder, vecPattern>(tag_long, ownedStatePtr2, j, restJ);
     const MaskLong notDummyMaskJLong = highway::Ne(ownedStateJLong, highway::Zero(tag_long));
     notDummyMaskJ = highway::RebindMask(tag_double, notDummyMaskJLong);
-    if constexpr (calculateGlobals) {
-      const VectorLong ownedStateVal = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
-      ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedStateJLong, ownedStateVal));
-    }
   }
 
   /**
@@ -827,7 +823,7 @@ class LJFunctorHWY
       return {sigmaSquareConst, epsilon24Const, shift6Const};
     }
 
-    template <bool remainder>
+    template <bool remainder, VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
     inline LJParameters getJ([[maybe_unused]] const VectorLong &indices,
                              [[maybe_unused]] const MaskDouble &restMaskDouble) const {
       return {sigmaSquareConst, epsilon24Const, shift6Const};
@@ -906,7 +902,7 @@ class LJFunctorHWY
       return mixParameters(halfSigJ, sqrtEpsJ);
     }
 
-    template <bool remainder>
+    template <bool remainder, VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
     inline LJParameters getJ(const VectorLong &indices, const MaskDouble &restMaskDouble) const {
       VectorLong typeJ;
       if constexpr (remainder) {
@@ -1095,27 +1091,19 @@ class LJFunctorHWY
   }
 
   /**
-   * Actual inner kernel of the SoAFunctors
+   * Shared SIMD Lennard-Jones distance, cutoff, force, and globals calculation for SoAKernel and SoAKernelVerlet.
+   * @return true if at least one lane was within cutoff and non-dummy, false otherwise.
    */
-  template <bool newton3, bool remainderJ, VectorizationPattern vecPattern, typename LJParametersType>
-  inline void SoAKernel(const size_t j, const MaskDouble &notDummyMaskI, [[maybe_unused]] const MaskDouble &ownedMaskI,
-                        const int64_t *const __restrict ownedStatePtr2, const VectorDouble &x1, const VectorDouble &y1,
-                        const VectorDouble &z1, const double *const __restrict x2Ptr,
-                        const double *const __restrict y2Ptr, const double *const __restrict z2Ptr,
-                        double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
-                        double *const __restrict fz2Ptr, LJParametersType &ljParams, VectorDouble &fxAcc,
-                        VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
-                        VectorDouble &virialSumZ, VectorDouble &uPotSum, const unsigned int restJ) {
-    VectorDouble x2;
-    VectorDouble y2;
-    VectorDouble z2;
-    MaskDouble notDummyMaskJ;
-    [[maybe_unused]] MaskDouble ownedMaskJ;
-
-    fillJRegisters<remainderJ, vecPattern>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, notDummyMaskJ,
-                                           ownedMaskJ, restJ);
-
-    // distance calculations
+  template <bool newton3, bool remainderJ, VectorizationPattern vecPattern = VectorizationPattern::p1xVec,
+            typename LJParametersType, typename JIndexType, typename RestType>
+  inline bool computeLJInteractionSIMD(
+      const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1, const VectorDouble &x2,
+      const VectorDouble &y2, const VectorDouble &z2, const MaskDouble &notDummyMaskI,
+      const MaskDouble &notDummyMaskJ, [[maybe_unused]] const MaskDouble &ownedMaskI,
+      [[maybe_unused]] const VectorLong &ownedStateJLong, const LJParametersType &ljParams,
+      const JIndexType &jOrIndices, const RestType &restOrMask, VectorDouble &fx, VectorDouble &fy,
+      VectorDouble &fz, VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
+      VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &uPotSum) const {
     const auto drX = highway::Sub(x1, x2);
     const auto drY = highway::Sub(y1, y2);
     const auto drZ = highway::Sub(z1, z2);
@@ -1126,12 +1114,12 @@ class LJFunctorHWY
     const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, _cutoffSquaredVec);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
-      return;
+      return false;
     }
 
-    const auto [sigmaSquareds, epsilon24s, shift6s] = ljParams.template getJ<remainderJ, vecPattern>(j, restJ);
+    const auto [sigmaSquareds, epsilon24s, shift6s] =
+        ljParams.template getJ<remainderJ, vecPattern>(jOrIndices, restOrMask);
 
-    // compute LJ Potential
     const auto invDr2 = highway::Div(highway::Set(tag_double, 1.0), dr2);
     const auto lj2 = highway::Mul(sigmaSquareds, invDr2);
     const auto lj4 = highway::Mul(lj2, lj2);
@@ -1144,29 +1132,27 @@ class LJFunctorHWY
 
     const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
 
-    const VectorDouble fx = highway::Mul(drX, facMasked);
-    const VectorDouble fy = highway::Mul(drY, facMasked);
-    const VectorDouble fz = highway::Mul(drZ, facMasked);
+    fx = highway::Mul(drX, facMasked);
+    fy = highway::Mul(drY, facMasked);
+    fz = highway::Mul(drZ, facMasked);
 
     fxAcc = highway::Add(fxAcc, fx);
     fyAcc = highway::Add(fyAcc, fy);
     fzAcc = highway::Add(fzAcc, fz);
 
-    if constexpr (newton3) {
-      handleNewton3Reduction<remainderJ, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
-    }
-
     if constexpr (calculateGlobals) {
-      auto virialX = highway::Mul(fx, drX);
-      auto virialY = highway::Mul(fy, drY);
-      auto virialZ = highway::Mul(fz, drZ);
+      const auto virialX = highway::Mul(fx, drX);
+      const auto virialY = highway::Mul(fy, drY);
+      const auto virialZ = highway::Mul(fz, drZ);
 
-      auto uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
-      auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
+      const auto uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
+      const auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
 
       auto energyFactor = highway::MaskedSet(tag_double, ownedMaskI, 1.0);
 
       if constexpr (newton3) {
+        const VectorLong ownedStateVal = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
+        const MaskDouble ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedStateJLong, ownedStateVal));
         energyFactor = highway::Add(energyFactor, highway::MaskedSet(tag_double, ownedMaskJ, 1.0));
       }
 
@@ -1174,6 +1160,41 @@ class LJFunctorHWY
       virialSumX = highway::MulAdd(energyFactor, virialX, virialSumX);
       virialSumY = highway::MulAdd(energyFactor, virialY, virialSumY);
       virialSumZ = highway::MulAdd(energyFactor, virialZ, virialSumZ);
+    }
+
+    return true;
+  }
+
+  /**
+   * Actual inner kernel of the SoAFunctors
+   */
+  template <bool newton3, bool remainderJ, VectorizationPattern vecPattern, typename LJParametersType>
+  inline void SoAKernel(const size_t j, const MaskDouble &notDummyMaskI, [[maybe_unused]] const MaskDouble &ownedMaskI,
+                        const int64_t *const __restrict ownedStatePtr2, const VectorDouble &x1, const VectorDouble &y1,
+                        const VectorDouble &z1, const double *const __restrict x2Ptr,
+                        const double *const __restrict y2Ptr, const double *const __restrict z2Ptr,
+                        double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
+                        double *const __restrict fz2Ptr, const LJParametersType &ljParams, VectorDouble &fxAcc,
+                        VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
+                        VectorDouble &virialSumZ, VectorDouble &uPotSum, const unsigned int restJ) {
+    VectorDouble x2;
+    VectorDouble y2;
+    VectorDouble z2;
+    VectorDouble fx;
+    VectorDouble fy;
+    VectorDouble fz;
+    MaskDouble notDummyMaskJ;
+    [[maybe_unused]] VectorLong ownedStateJLong;
+
+    fillJRegisters<remainderJ, vecPattern>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, notDummyMaskJ,
+                                           ownedStateJLong, restJ);
+
+    if (computeLJInteractionSIMD<newton3, remainderJ, vecPattern>(
+            x1, y1, z1, x2, y2, z2, notDummyMaskI, notDummyMaskJ, ownedMaskI, ownedStateJLong, ljParams, j, restJ, fx,
+            fy, fz, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum)) {
+      if constexpr (newton3) {
+        handleNewton3Reduction<remainderJ, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
+      }
     }
   }
 
@@ -1220,39 +1241,15 @@ class LJFunctorHWY
     const MaskLong notDummyMaskJLong = highway::Ne(ownedState2, highway::Zero(tag_long));
     const MaskDouble notDummyMaskJ = highway::RebindMask(tag_double, notDummyMaskJLong);
 
-    const auto drX = highway::Sub(x1, x2);
-    const auto drY = highway::Sub(y1, y2);
-    const auto drZ = highway::Sub(z1, z2);
+    VectorDouble fx;
+    VectorDouble fy;
+    VectorDouble fz;
 
-    const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, highway::Mul(drX, drX)));
-
-    const auto dummyMask = highway::And(notDummyMaskI, notDummyMaskJ);
-    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, _cutoffSquaredVec);
-
-    if (highway::AllFalse(tag_double, cutoffDummyMask)) {
+    if (not computeLJInteractionSIMD<newton3, remainder>(
+            x1, y1, z1, x2, y2, z2, notDummyMaskI, notDummyMaskJ, ownedMaskI, ownedState2, ljParams, indices,
+            restMaskDouble, fx, fy, fz, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum)) {
       return;
     }
-    const auto [sigmaSquareds, epsilon24s, shift6s] = ljParams.template getJ<remainder>(indices, restMaskDouble);
-
-    const auto invDr2 = highway::Div(highway::Set(tag_double, 1.0), dr2);
-    const auto lj2 = highway::Mul(sigmaSquareds, invDr2);
-    const auto lj4 = highway::Mul(lj2, lj2);
-    const auto lj6 = highway::Mul(lj2, lj4);
-    const auto lj12 = highway::Mul(lj6, lj6);
-    const auto lj12m6 = highway::Sub(lj12, lj6);
-    const auto lj12m6alj12 = highway::Add(lj12m6, lj12);
-    const auto lj12m6alj12e = highway::Mul(lj12m6alj12, epsilon24s);
-    const auto fac = highway::Mul(lj12m6alj12e, invDr2);
-
-    const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
-
-    const VectorDouble fx = highway::Mul(drX, facMasked);
-    const VectorDouble fy = highway::Mul(drY, facMasked);
-    const VectorDouble fz = highway::Mul(drZ, facMasked);
-
-    fxAcc = highway::Add(fxAcc, fx);
-    fyAcc = highway::Add(fyAcc, fy);
-    fzAcc = highway::Add(fzAcc, fz);
 
     if constexpr (newton3) {
       if constexpr (remainder) {
@@ -1280,28 +1277,6 @@ class LJFunctorHWY
         highway::ScatterIndex(fy2New, tag_double, fyPtr, indices);
         highway::ScatterIndex(fz2New, tag_double, fzPtr, indices);
       }
-    }
-
-    if constexpr (calculateGlobals) {
-      auto virialX = highway::Mul(fx, drX);
-      auto virialY = highway::Mul(fy, drY);
-      auto virialZ = highway::Mul(fz, drZ);
-
-      auto uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
-      auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
-
-      auto energyFactor = highway::MaskedSet(tag_double, ownedMaskI, 1.0);
-
-      if constexpr (newton3) {
-        const VectorLong ownedStateVal = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
-        const MaskDouble ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedState2, ownedStateVal));
-        energyFactor = highway::Add(energyFactor, highway::MaskedSet(tag_double, ownedMaskJ, 1.0));
-      }
-
-      uPotSum = highway::MulAdd(energyFactor, uPotMasked, uPotSum);
-      virialSumX = highway::MulAdd(energyFactor, virialX, virialSumX);
-      virialSumY = highway::MulAdd(energyFactor, virialY, virialSumY);
-      virialSumZ = highway::MulAdd(energyFactor, virialZ, virialSumZ);
     }
   }
 
