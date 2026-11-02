@@ -589,7 +589,7 @@ class LJFunctor
           fxacc += fx;
           fyacc += fy;
           fzacc += fz;
-          if (newton3) {
+          if constexpr (newton3) {
             fx2ptr[j] -= fx;
             fy2ptr[j] -= fy;
             fz2ptr[j] -= fz;
@@ -682,7 +682,7 @@ class LJFunctor
   void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
-    if (applyShift) {
+    if constexpr (applyShift) {
       _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared);
     } else {
       _shift6 = 0.;
@@ -759,7 +759,7 @@ class LJFunctor
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       for (const auto &data : _aosThreadDataGlobals) {
         _potentialEnergySum += data.potentialEnergySum;
         _virialSum += data.virialSum;
@@ -783,7 +783,7 @@ class LJFunctor
    * @return the potential Energy
    */
   double getPotentialEnergy() {
-    if (not calculateGlobals) {
+    if constexpr (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get potential energy even though calculateGlobals is false. If you want this functor to calculate "
           "global "
@@ -801,7 +801,7 @@ class LJFunctor
    * @return
    */
   double getVirial() {
-    if (not calculateGlobals) {
+    if constexpr (not calculateGlobals) {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
           "values, please specify calculateGlobals to be true.");
@@ -1044,7 +1044,7 @@ class LJFunctor
           fxacc += fx;
           fyacc += fy;
           fzacc += fz;
-          if (newton3) {
+          if constexpr (newton3) {
             fxArr[j] = fx;
             fyArr[j] = fy;
             fzArr[j] = fz;
@@ -1059,7 +1059,7 @@ class LJFunctor
             }
           }
 
-          if (calculateGlobals) {
+          if constexpr (calculateGlobals) {
             SoAFloatPrecision virialx = drx * fx;
             SoAFloatPrecision virialy = dry * fy;
             SoAFloatPrecision virialz = drz * fz;
@@ -1084,7 +1084,7 @@ class LJFunctor
           }
         }
         // scatter the forces to where they belong, this is only needed for newton3
-        if (newton3) {
+        if constexpr (newton3) {
 #pragma omp simd safelen(vecsize)
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
             const size_t j = neighborList[joff + tmpj];
@@ -1147,7 +1147,7 @@ class LJFunctor
       fxacc += fx;
       fyacc += fy;
       fzacc += fz;
-      if (newton3) {
+      if constexpr (newton3) {
         fxptr[j] -= fx;
         fyptr[j] -= fy;
         fzptr[j] -= fz;
@@ -1161,7 +1161,7 @@ class LJFunctor
         }
       }
 
-      if (calculateGlobals) {
+      if constexpr (calculateGlobals) {
         SoAFloatPrecision virialx = drx * fx;
         SoAFloatPrecision virialy = dry * fy;
         SoAFloatPrecision virialz = drz * fz;
