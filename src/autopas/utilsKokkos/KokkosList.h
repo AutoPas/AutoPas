@@ -27,10 +27,10 @@ class KokkosList {
   KOKKOS_INLINE_FUNCTION auto &operator()(size_t index) const {
     switch (_activeDataLayout) {
       case DataLayoutOption::Value::aos: {
-        return _soa.template operator()<Attribute, useDeviceView>(index);
+        return _aos.template operator()<Attribute, useDeviceView>(index);
       }
       case DataLayoutOption::Value::soa: {
-        return _soa.template operator()<Attribute, useDeviceView>(index);
+        return _soa.template operator()<Attribute-1, useDeviceView>(index);
       }
       default:
         break;  // todo: throw exception although this should currently not happen
@@ -52,13 +52,22 @@ class KokkosList {
 
   size_t size() const { return _size; }
 
+  size_t getCapacity() const { return _capacity; }
+
   void addParticle(Particle_T &p) {
+
+    if (_size == _capacity) {
+      size_t newCapacity = _capacity == 0 ? 2 : _capacity * 2;
+      resize(newCapacity);
+      _capacity = newCapacity;
+    }
+
     switch (_activeDataLayout) {
       case DataLayoutOption::Value::aos: {
-        return _aos.addParticle(p);
+        return _aos.addParticle(_size++, p);
       }
       case DataLayoutOption::Value::soa: {
-        return _soa.addParticle(p);
+        return _soa.addParticle(_size++, p);
       }
       default:
         break;  // todo: throw exception although this should currently not happen
