@@ -387,7 +387,8 @@ class LJFunctorHWY
    * @param x1 The register to be filled for x coordinates.
    * @param y1 The register to be filled for y coordinates.
    * @param z1 The register to be filled for z coordinates.
-   * @param ownedMaskI The mask to be filled for the ownership state.
+   * @param notDummyMaskI The mask to be filled for the 'not dummy' ownership state.
+   * @param ownedMaskI The mask to be filled for the 'owned' ownership state.
    * @param restI The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, bool reversed, VectorizationPattern vecPattern>
@@ -844,7 +845,8 @@ class LJFunctorHWY
    * @param x2 The register to be filled for x coordinates.
    * @param y2 The register to be filled for y coordinates.
    * @param z2 The register to be filled for z coordinates.
-   * @param ownedMaskJ The register to be filled for the ownership state.
+   * @param notDummyMaskJ The mask to be filled for the 'not dummy' ownership state.
+   * @param ownedMaskJ The mask to be filled for the 'owned' ownership state.
    * @param rest The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, VectorizationPattern vecPattern>
@@ -992,6 +994,7 @@ class LJFunctorHWY
    * @tparam vecPattern
    * @param i
    * @param j
+   * @param notDummyMaskI
    * @param ownedMaskI
    * @param ownedStatePtr2
    * @param x1
