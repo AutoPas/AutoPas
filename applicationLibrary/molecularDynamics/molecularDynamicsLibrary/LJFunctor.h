@@ -14,9 +14,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoA.h"
-#include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "autopas/utils/inBox.h"
 
 namespace mdLib {
 
@@ -57,8 +55,13 @@ class LJFunctor
     alignas(64) std::array<SoAFloatPrecision, StackCapacity> halfSigmaStack;
     alignas(64) std::array<SoAFloatPrecision, StackCapacity> sqrtEpsilonStack;
 
+    struct Pointers {
+      const SoAFloatPrecision *__restrict halfSigmaPtr;
+      const SoAFloatPrecision *__restrict sqrtEpsilonPtr;
+    };
+
     /**
-     * Fills the provided pointers with the projected halfSigma and sqrtEpsilon values for the given typeIDs.
+     * Projects halfSigma and sqrtEpsilon values for the given typeIDs into a 64-byte aligned buffer.
      * If the number of particles is less than or equal to StackCapacity, the values are stored in the stack buffer.
      * Otherwise, they are stored in a thread-local heap buffer.
      *
@@ -67,17 +70,17 @@ class LJFunctor
      * @param soaSize The number of particles in the SoA.
      * @param halfSigmaPerType Vector containing halfSigma values for each particle type.
      * @param sqrtEpsilonPerType Vector containing sqrtEpsilon values for each particle type.
-     * @param halfSigmaPtr Reference to a pointer that will be set to point to the projected halfSigma values.
-     * @param sqrtEpsilonPtr Reference to a pointer that will be set to point to the projected sqrtEpsilon values.
+     * @return Pointers containing the halfSigma and sqrtEpsilon __restrict pointers.
      */
     template <size_t BufferIndex = 0>
-    void getMixingPointers(const size_t *__restrict typeIDs, const size_t soaSize,
-                           const std::vector<SoAFloatPrecision> &halfSigmaPerType,
-                           const std::vector<SoAFloatPrecision> &sqrtEpsilonPerType, SoAFloatPrecision *&halfSigmaPtr,
-                           SoAFloatPrecision *&sqrtEpsilonPtr) {
+    Pointers getMixingPointers(const size_t *__restrict typeIDs, const size_t soaSize,
+                              const std::vector<SoAFloatPrecision> &halfSigmaPerType,
+                              const std::vector<SoAFloatPrecision> &sqrtEpsilonPerType) {
+      SoAFloatPrecision *rawHalfSigmaPtr = nullptr;
+      SoAFloatPrecision *rawSqrtEpsilonPtr = nullptr;
       if (soaSize <= StackCapacity) [[likely]] {
-        halfSigmaPtr = halfSigmaStack.data();
-        sqrtEpsilonPtr = sqrtEpsilonStack.data();
+        rawHalfSigmaPtr = halfSigmaStack.data();
+        rawSqrtEpsilonPtr = sqrtEpsilonStack.data();
       } else [[unlikely]] {
         thread_local std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision, 64>> halfSigmaHeap;
         thread_local std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision, 64>> sqrtEpsilonHeap;
@@ -85,15 +88,16 @@ class LJFunctor
           halfSigmaHeap.resize(soaSize);
           sqrtEpsilonHeap.resize(soaSize);
         }
-        halfSigmaPtr = halfSigmaHeap.data();
-        sqrtEpsilonPtr = sqrtEpsilonHeap.data();
+        rawHalfSigmaPtr = halfSigmaHeap.data();
+        rawSqrtEpsilonPtr = sqrtEpsilonHeap.data();
       }
 #pragma omp simd
       for (size_t k = 0; k < soaSize; ++k) {
         const auto typeID = typeIDs[k];
-        halfSigmaPtr[k] = halfSigmaPerType[typeID];
-        sqrtEpsilonPtr[k] = sqrtEpsilonPerType[typeID];
+        rawHalfSigmaPtr[k] = halfSigmaPerType[typeID];
+        rawSqrtEpsilonPtr[k] = sqrtEpsilonPerType[typeID];
       }
+      return {rawHalfSigmaPtr, rawSqrtEpsilonPtr};
     }
   };
 
@@ -286,8 +290,8 @@ class LJFunctor
 
     const bool isHomogeneous = soaIsHomogeneous(typeptr, soa.size());
     MixingBuffers<512> mixingBuffers;
-    SoAFloatPrecision *halfSigmaPtr = nullptr;
-    SoAFloatPrecision *sqrtEpsilonPtr = nullptr;
+    const SoAFloatPrecision *__restrict halfSigmaPtr = nullptr;
+    const SoAFloatPrecision *__restrict sqrtEpsilonPtr = nullptr;
 
     if constexpr (useMixing) {
       if (isHomogeneous) {
@@ -299,8 +303,10 @@ class LJFunctor
           const_shift6 = computeShift6(const_epsilon24, const_sigmaSquared, invCutoffSquared);
         }
       } else {
-        mixingBuffers.getMixingPointers(typeptr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
-                                        sqrtEpsilonPtr);
+        const auto mixingPtrs =
+            mixingBuffers.getMixingPointers(typeptr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType);
+        halfSigmaPtr = mixingPtrs.halfSigmaPtr;
+        sqrtEpsilonPtr = mixingPtrs.sqrtEpsilonPtr;
       }
     }
 
@@ -321,11 +327,14 @@ class LJFunctor
         SoAFloatPrecision fyacc = 0.;
         SoAFloatPrecision fzacc = 0.;
 
+        [[maybe_unused]] const SoAFloatPrecision *const __restrict halfSigmaPtrLocal = halfSigmaPtr;
+        [[maybe_unused]] const SoAFloatPrecision *const __restrict sqrtEpsilonPtrLocal = sqrtEpsilonPtr;
+
         [[maybe_unused]] SoAFloatPrecision halfSigmaI = 0.;
         [[maybe_unused]] SoAFloatPrecision sqrtEpsilon24I = 0.;
         if constexpr (not homogeneous) {
-          halfSigmaI = halfSigmaPtr[i];
-          sqrtEpsilon24I = 24.0 * sqrtEpsilonPtr[i];
+          halfSigmaI = halfSigmaPtrLocal[i];
+          sqrtEpsilon24I = 24.0 * sqrtEpsilonPtrLocal[i];
         }
 
 // icpc vectorizes this.
@@ -336,9 +345,9 @@ class LJFunctor
           SoAFloatPrecision sigmaSquared = const_sigmaSquared;
           SoAFloatPrecision epsilon24 = const_epsilon24;
           if constexpr (not homogeneous) {
-            const SoAFloatPrecision sigma = halfSigmaI + halfSigmaPtr[j];
+            const SoAFloatPrecision sigma = halfSigmaI + halfSigmaPtrLocal[j];
             sigmaSquared = sigma * sigma;
-            epsilon24 = sqrtEpsilon24I * sqrtEpsilonPtr[j];
+            epsilon24 = sqrtEpsilon24I * sqrtEpsilonPtrLocal[j];
             if constexpr (calculateGlobals and applyShift) {
               shift6 = computeShift6(epsilon24, sigmaSquared, invCutoffSquared);
             }
@@ -493,8 +502,8 @@ class LJFunctor
 
     const bool isSoA2Homogeneous = soaIsHomogeneous(typeptr2, soa2.size());
     MixingBuffers<512> mixingBuffers2;
-    SoAFloatPrecision *halfSigma2Ptr = nullptr;
-    SoAFloatPrecision *sqrtEpsilon2Ptr = nullptr;
+    const SoAFloatPrecision *__restrict halfSigma2Ptr = nullptr;
+    const SoAFloatPrecision *__restrict sqrtEpsilon2Ptr = nullptr;
     [[maybe_unused]] SoAFloatPrecision halfSigmaJConst = 0.;
     [[maybe_unused]] SoAFloatPrecision sqrtEpsilonJConst = 0.;
 
@@ -504,8 +513,10 @@ class LJFunctor
         halfSigmaJConst = _halfSigmaPerType[firstType2];
         sqrtEpsilonJConst = _sqrtEpsilonPerType[firstType2];
       } else {
-        mixingBuffers2.getMixingPointers(typeptr2, soa2.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigma2Ptr,
-                                         sqrtEpsilon2Ptr);
+        const auto mixingPtrs2 =
+            mixingBuffers2.getMixingPointers(typeptr2, soa2.size(), _halfSigmaPerType, _sqrtEpsilonPerType);
+        halfSigma2Ptr = mixingPtrs2.halfSigmaPtr;
+        sqrtEpsilon2Ptr = mixingPtrs2.sqrtEpsilonPtr;
       }
     }
 
@@ -525,6 +536,9 @@ class LJFunctor
         const SoAFloatPrecision zi = z1ptr[i];
         [[maybe_unused]] const SoAFloatPrecision ownedFactorI =
             (ownedStateI == autopas::OwnershipState::owned) ? 1. : 0.;
+
+        [[maybe_unused]] const SoAFloatPrecision *const __restrict halfSigma2PtrLocal = halfSigma2Ptr;
+        [[maybe_unused]] const SoAFloatPrecision *const __restrict sqrtEpsilon2PtrLocal = sqrtEpsilon2Ptr;
 
         SoAFloatPrecision shift6 = _shift6;
         SoAFloatPrecision sigmaSquared = _sigmaSquared;
@@ -551,9 +565,9 @@ class LJFunctor
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
         for (unsigned int j = 0; j < soa2.size(); ++j) {
           if constexpr (not homogeneousJ) {
-            const SoAFloatPrecision sigma = halfSigmaI + halfSigma2Ptr[j];
+            const SoAFloatPrecision sigma = halfSigmaI + halfSigma2PtrLocal[j];
             sigmaSquared = sigma * sigma;
-            epsilon24 = sqrtEpsilon24I * sqrtEpsilon2Ptr[j];
+            epsilon24 = sqrtEpsilon24I * sqrtEpsilon2PtrLocal[j];
             if constexpr (calculateGlobals and applyShift) {
               shift6 = computeShift6(epsilon24, sigmaSquared, invCutoffSquared);
             }
@@ -612,8 +626,11 @@ class LJFunctor
 
             // We add 6 times the potential energy for each owned particle. The total sum is corrected in
             // endTraversal().
-            const SoAFloatPrecision energyFactor =
-                ownedFactorI + (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
+            const SoAFloatPrecision energyFactor = ownedFactorI;
+            if constexpr (newton3) {
+              energyFactor += (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
+            }
+
             potentialEnergySum += potentialEnergy6 * energyFactor;
             virialSumX += virialx * energyFactor;
             virialSumY += virialy * energyFactor;
@@ -1067,8 +1084,11 @@ class LJFunctor
 
             // We add 6 times the potential energy for each owned particle. The total sum is corrected in
             // endTraversal().
-            const SoAFloatPrecision energyFactor =
-                ownedFactorI + (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
+              const SoAFloatPrecision energyFactor = ownedFactorI;
+            if constexpr (newton3) {
+              energyFactor += (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
+            }
+
             potentialEnergySum += potentialEnergy6 * energyFactor;
             virialSumX += virialx * energyFactor;
             virialSumY += virialy * energyFactor;
