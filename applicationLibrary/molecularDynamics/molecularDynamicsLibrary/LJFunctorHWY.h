@@ -10,6 +10,7 @@
 #include <hwy/highway.h>
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <vector>
 
@@ -85,8 +86,7 @@ class LJFunctorHWY
   explicit LJFunctorHWY(double cutoff, std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>>
                                            particlePropertiesLibrary = std::nullopt)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
-        _cutoffSquareAoS{cutoff * cutoff},
-        _PPLibrary{particlePropertiesLibrary} {
+        _cutoffSquareAoS{cutoff * cutoff} {
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
@@ -95,11 +95,12 @@ class LJFunctorHWY
     }
 
     if constexpr (useMixing) {
-      if (not _PPLibrary.has_value()) {
+      if (not particlePropertiesLibrary.has_value()) {
         throw std::runtime_error("Mixing is enabled but no ParticlePropertiesLibrary was provided!");
       }
+      initFromPPL(particlePropertiesLibrary);
     } else {
-      if (_PPLibrary.has_value()) {
+      if (particlePropertiesLibrary.has_value()) {
         throw std::runtime_error("Mixing is disabled but a ParticlePropertiesLibrary was provided!");
       }
     }
@@ -140,10 +141,13 @@ class LJFunctorHWY
     auto epsilon24 = _epsilon24AoS;
     auto shift6 = _shift6AoS;
     if constexpr (useMixing) {
-      sigmaSquare = _PPLibrary->get().getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->get().getMixing24Epsilon(i.getTypeId(), j.getTypeId());
-      if constexpr (applyShift) {
-        shift6 = _PPLibrary->get().getMixingShift6(i.getTypeId(), j.getTypeId());
+      const auto typeI = i.getTypeId();
+      const auto typeJ = j.getTypeId();
+      const auto sigma = _halfSigmaPerType[typeI] + _halfSigmaPerType[typeJ];
+      sigmaSquare = sigma * sigma;
+      epsilon24 = 24.0 * _sqrtEpsilonPerType[typeI] * _sqrtEpsilonPerType[typeJ];
+      if constexpr (calculateGlobals and applyShift) {
+        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffSquareAoS);
       }
     }
     const auto dr = i.getR() - j.getR();
@@ -932,10 +936,15 @@ class LJFunctorHWY
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       for (int j = 0; j < (remainderJ ? restJ : _vecLengthDouble); ++j) {
-        epsilons[j] = _PPLibrary->get().getMixing24Epsilon(*typeID1Ptr, *(typeID2Ptr + j));
-        sigmas[j] = _PPLibrary->get().getMixingSigmaSquared(*typeID1Ptr, *(typeID2Ptr + j));
+        const auto type1 = *typeID1Ptr;
+        const auto type2 = *(typeID2Ptr + j);
+        const auto sigma = _halfSigmaPerType[type1] + _halfSigmaPerType[type2];
+        const auto sigmaSquare = sigma * sigma;
+        const auto epsilon24 = 24.0 * _sqrtEpsilonPerType[type1] * _sqrtEpsilonPerType[type2];
+        epsilons[j] = epsilon24;
+        sigmas[j] = sigmaSquare;
         if constexpr (applyShift) {
-          shifts[j] = _PPLibrary->get().getMixingShift6(*typeID1Ptr, *(typeID2Ptr + j));
+          shifts[j] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffSquareAoS);
         }
       }
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -943,11 +952,16 @@ class LJFunctorHWY
         for (int j = 0; j < (remainderJ ? restJ : _vecLengthDouble / 2); ++j) {
           const auto index = i * (_vecLengthDouble / 2) + j;
           const auto typeID1 = reversed ? typeID1Ptr - i : typeID1Ptr + i;
-          epsilons[index] = _PPLibrary->get().getMixing24Epsilon(*typeID1, *(typeID2Ptr + j));
-          sigmas[index] = _PPLibrary->get().getMixingSigmaSquared(*typeID1, *(typeID2Ptr + j));
+          const auto type1 = *typeID1;
+          const auto type2 = *(typeID2Ptr + j);
+          const auto sigma = _halfSigmaPerType[type1] + _halfSigmaPerType[type2];
+          const auto sigmaSquare = sigma * sigma;
+          const auto epsilon24 = 24.0 * _sqrtEpsilonPerType[type1] * _sqrtEpsilonPerType[type2];
+          epsilons[index] = epsilon24;
+          sigmas[index] = sigmaSquare;
 
           if constexpr (applyShift) {
-            shifts[index] = _PPLibrary->get().getMixingShift6(*typeID1, *(typeID2Ptr + j));
+            shifts[index] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffSquareAoS);
           }
         }
       }
@@ -956,23 +970,33 @@ class LJFunctorHWY
         for (int j = 0; j < (remainderJ ? 1 : 2); ++j) {
           const auto index = i + _vecLengthDouble / 2 * j;
           const auto typeID1 = reversed ? typeID1Ptr - i : typeID1Ptr + i;
+          const auto type1 = *typeID1;
+          const auto type2 = *(typeID2Ptr + j);
+          const auto sigma = _halfSigmaPerType[type1] + _halfSigmaPerType[type2];
+          const auto sigmaSquare = sigma * sigma;
+          const auto epsilon24 = 24.0 * _sqrtEpsilonPerType[type1] * _sqrtEpsilonPerType[type2];
 
-          epsilons[index] = _PPLibrary->get().getMixing24Epsilon(*typeID1, *(typeID2Ptr + j));
-          sigmas[index] = _PPLibrary->get().getMixingSigmaSquared(*typeID1, *(typeID2Ptr + j));
+          epsilons[index] = epsilon24;
+          sigmas[index] = sigmaSquare;
 
           if constexpr (applyShift) {
-            shifts[index] = _PPLibrary->get().getMixingShift6(*typeID1, *(typeID2Ptr + j));
+            shifts[index] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffSquareAoS);
           }
         }
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
       for (int i = 0; i < (remainderI ? restI : _vecLengthDouble); ++i) {
         auto typeID1 = reversed ? typeID1Ptr - i : typeID1Ptr + i;
-        epsilons[i] = _PPLibrary->get().getMixing24Epsilon(*typeID1, *typeID2Ptr);
-        sigmas[i] = _PPLibrary->get().getMixingSigmaSquared(*typeID1, *typeID2Ptr);
+        const auto type1 = *typeID1;
+        const auto type2 = *typeID2Ptr;
+        const auto sigma = _halfSigmaPerType[type1] + _halfSigmaPerType[type2];
+        const auto sigmaSquare = sigma * sigma;
+        const auto epsilon24 = 24.0 * _sqrtEpsilonPerType[type1] * _sqrtEpsilonPerType[type2];
+        epsilons[i] = epsilon24;
+        sigmas[i] = sigmaSquare;
 
         if constexpr (applyShift) {
-          shifts[i] = _PPLibrary->get().getMixingShift6(*typeID1, *typeID2Ptr);
+          shifts[i] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffSquareAoS);
         }
       }
     }
@@ -1155,10 +1179,15 @@ class LJFunctorHWY
       HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
       const size_t kMax = remainder ? rest : _vecLengthDouble;
       for (size_t k = 0; k < kMax; ++k) {
-        epsilons[k] = _PPLibrary->get().getMixing24Epsilon(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
-        sigmas[k] = _PPLibrary->get().getMixingSigmaSquared(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
+        const auto type1 = *typeID1Ptr;
+        const auto type2 = typeIDPtr[neighborList[j + k]];
+        const auto sigma = _halfSigmaPerType[type1] + _halfSigmaPerType[type2];
+        const auto sigmaSquare = sigma * sigma;
+        const auto epsilon24 = 24.0 * _sqrtEpsilonPerType[type1] * _sqrtEpsilonPerType[type2];
+        epsilons[k] = epsilon24;
+        sigmas[k] = sigmaSquare;
         if constexpr (applyShift) {
-          shifts[k] = _PPLibrary->get().getMixingShift6(*typeID1Ptr, typeIDPtr[neighborList[j + k]]);
+          shifts[k] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffSquareAoS);
         }
       }
       epsilon24s = highway::Load(tag_double, epsilons.data());
@@ -1503,6 +1532,8 @@ class LJFunctorHWY
   void setParticleProperties(const double epsilon24, const double sigmaSquare) {
     _epsilon24AoS = epsilon24;
     _sigmaSquareAoS = sigmaSquare;
+    _halfSigmaPerType = {std::sqrt(sigmaSquare) * 0.5};
+    _sqrtEpsilonPerType = {std::sqrt(epsilon24 / 24.0)};
     if constexpr (applyShift) {
       _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffSquareAoS);
     } else {
@@ -1516,6 +1547,26 @@ class LJFunctorHWY
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
  private:
+  void initFromPPL(const std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>> &ppl) {
+    if (not ppl.has_value()) {
+      return;
+    }
+    const size_t nTypes = ppl->get().getNumberRegisteredSiteTypes();
+    _halfSigmaPerType.resize(nTypes);
+    _sqrtEpsilonPerType.resize(nTypes);
+    for (size_t t = 0; t < nTypes; ++t) {
+      _halfSigmaPerType[t] = ppl->get().getSigma(t) * 0.5;
+      _sqrtEpsilonPerType[t] = std::sqrt(ppl->get().getEpsilon(t));
+    }
+    if (nTypes > 0) {
+      _sigmaSquareAoS = 4.0 * _halfSigmaPerType[0] * _halfSigmaPerType[0];
+      _epsilon24AoS = 24.0 * _sqrtEpsilonPerType[0] * _sqrtEpsilonPerType[0];
+      if constexpr (applyShift) {
+        _shift6AoS = ppl->get().getMixingShift6(0, 0);
+      }
+    }
+  }
+
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
    */
@@ -1540,10 +1591,8 @@ class LJFunctorHWY
   const double _cutoffSquareAoS{0.};
   // epsilon, sigma and shift6 used in the AoS functor.
   double _epsilon24AoS{0.}, _sigmaSquareAoS{0.}, _shift6AoS{0.};
-
-  // optional to hold a reference to the ParticlePropertiesLibrary. If a ParticlePropertiesLibrary is not used the
-  // optional is empty.
-  std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>> _PPLibrary;
+  std::vector<double> _halfSigmaPerType{};
+  std::vector<double> _sqrtEpsilonPerType{};
 
   // accumulators for the globals (potential energy and virial).
   double _potentialEnergySum{0.};
