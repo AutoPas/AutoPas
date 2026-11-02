@@ -7,6 +7,7 @@
 #include "LogicHandlerTest.h"
 
 #include <algorithm>
+#include <tuple>
 
 #include "autopas/LogicHandler.h"
 #include "mocks/MockPairwiseFunctor.h"
@@ -252,8 +253,8 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
 /**
  * Tests that a configuration is rejected when its trial starts, if the OpenMP runtime would fall back from its schedule
  * kind for all loops of the traversal, and that the configuration with the fallback schedule is queued for the tuning
- * phase if it is not in the search space. Other tests handle indivdual components of this mechanic more thouroghly,
- * this test just checks that the whole mechanic gets put together by the LogicHandler correctly.
+ * phase if it is not trialled in it. Other tests handle indivdual components of this mechanic more thouroghly, this
+ * test just checks that the whole mechanic gets put together by the LogicHandler correctly.
  */
 TEST_F(LogicHandlerTest, testRejectConfigWhoseScheduleKindFallsBack) {
   if (autopas::OpenMPKindOption::runtimeScheduleLevel == autopas::OpenMPKindOption::ScheduleLevel::gccLibgomp) {
@@ -274,7 +275,7 @@ TEST_F(LogicHandlerTest, testRejectConfigWhoseScheduleKindFallsBack) {
   const auto configFallback = getConfig(autopas::OpenMPKindOption::omp_dynamic, 4);
   LJFunctorGlobals functor(2.5);
 
-  // If the configuration it falls back to is in the search space, it is only rejected.
+  // If the configuration it falls back to is in the queue, it is only rejected.
   const std::set<autopas::Configuration> searchSpaceWithFallback{configRunsGuided, configFallsBack, configFallback};
   initLogicHandler(searchSpaceWithFallback);
   // Start a tuning phase, so that the tuner is about to trial its first configuration.
@@ -408,11 +409,11 @@ TEST_F(LogicHandlerTest, testSequentialConfigDoesNotSetSchedule) {
 
 /**
  * Tests that a configuration with the golden chunk size is rejected when its trial starts, if the same configuration
- * with the fixed chunk size golden evaluates to is in the search space, and that no configuration gets added to the
- * search space when this happens. As with testRejectConfigWhoseScheduleKindFallsBack, this just checks that the
+ * with the fixed chunk size golden evaluates to is trialled in this tuning phase, and that no configuration gets added
+ * to the search space when this happens. As with testRejectConfigWhoseScheduleKindFallsBack, this just checks that the
  * LogicHandler puts the mechanic together correctly.
  */
-TEST_F(LogicHandlerTest, testRejectGoldenChunkSizeWhoseValueIsInSearchSpace) {
+TEST_F(LogicHandlerTest, testRejectGoldenChunkSizeWhoseValueIsTrialled) {
 #ifndef AUTOPAS_USE_OPENMP
   GTEST_SKIP() << "Without OpenMP, there is only one thread, with which the golden chunk size is not 1 here.";
 #else
@@ -440,7 +441,19 @@ TEST_F(LogicHandlerTest, testRejectGoldenChunkSizeWhoseValueIsInSearchSpace) {
   EXPECT_EQ(_tuningManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise)->getSearchSpace(),
             searchSpaceWithoutChunkSize1);
 
-  // With it in the search space, the golden one is rejected.
+  // Case 1: configGolden's fallback is in the search space but not in the queue. It is not rejected and the fall back
+  // is not added to the queue.
+  initLogicHandler({configGolden, configChunkSize1});
+  _tuningManager->tune(0, autopas::LiveInfo{});
+  std::ignore = _tuningManager->rejectConfiguration(configChunkSize1, /*indefinitely*/ false,
+                                                    autopas::InteractionTypeOption::pairwise);
+  EXPECT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configGolden, functor)), nullptr);
+  EXPECT_EQ(
+      std::ranges::count(_tuningManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise)->getConfigQueue(),
+                         configChunkSize1),
+      0);
+
+  // Case 2: configGolden's fallback is in the queue, so configGolden is rejected.
   initLogicHandler({configGolden, configChunkSize1});
   _tuningManager->tune(0, autopas::LiveInfo{});
   EXPECT_NE(std::get<0>(_logicHandler->isConfigurationApplicable(configChunkSize1, functor)), nullptr);

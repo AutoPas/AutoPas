@@ -152,6 +152,11 @@ class TuningManager {
    */
   std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &getAutoTuners() { return _autoTuners; }
 
+  /**
+   * @return The number of the current tuning phase.
+   */
+  size_t getTuningPhase() const { return _tuningPhase; }
+
  private:
   /**
    * Let all AutoTuners tune their configuration for the time step ahead.

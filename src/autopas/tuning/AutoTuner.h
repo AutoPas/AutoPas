@@ -142,6 +142,15 @@ class AutoTuner {
   void addTempConfig(const Configuration &configuration);
 
   /**
+   * Indicate if a configuration is trialled in a tuning phase, i.e. if it is waiting in the config queue or already has
+   * evidence from that tuning phase.
+   * @param configuration
+   * @param tuningPhase
+   * @return True if the configuration is in the config queue or its latest evidence is from the given tuning phase.
+   */
+  [[nodiscard]] bool isTrialledInTuningPhase(const Configuration &configuration, size_t tuningPhase) const;
+
+  /**
    * Indicator function whether the search space consists of exactly one configuration.
    * @return
    */

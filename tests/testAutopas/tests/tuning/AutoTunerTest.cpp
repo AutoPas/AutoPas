@@ -427,6 +427,50 @@ TEST_F(AutoTunerTest, testIsAtStartOfConfigurationTrial) {
 }
 
 /**
+ * Test that isTrialledInTuningPhase() holds for configurations in the config queue and for configurations with evidence
+ * from the given tuning phase.
+ */
+TEST_F(AutoTunerTest, testIsTrialledInTuningPhase) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  const autopas::AutoTuner::SearchSpaceType searchSpace{arbitraryConfigurations::_arbitrary_config_2B_3,
+                                                        arbitraryConfigurations::_arbitrary_config_2B_6};
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 1,
+  };
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, 10, ""};
+  const auto tempConfig = arbitraryConfigurations::_arbitrary_config_2B_0;
+
+  autoTuner.tuneConfiguration(0, 0, /*isStartOfTuningPhase*/ true);
+  for (const auto &config : searchSpace) {
+    EXPECT_TRUE(autoTuner.isTrialledInTuningPhase(config, 0)) << "The configuration is in the queue.";
+  }
+  EXPECT_FALSE(autoTuner.isTrialledInTuningPhase(tempConfig, 0))
+      << "The configuration is not queued and has no evidence.";
+
+  autoTuner.addTempConfig(tempConfig);
+  EXPECT_TRUE(autoTuner.isTrialledInTuningPhase(tempConfig, 0)) << "The configuration is in the queue.";
+
+  // Trial the first configuration of the search space and then the temporary one, which was queued right below it.
+  autoTuner.addMeasurement(1, 1, true, 0, 0);
+  autoTuner.tuneConfiguration(1, 0, /*isStartOfTuningPhase*/ false);
+  ASSERT_EQ(autoTuner.getCurrentConfig(), tempConfig);
+  autoTuner.addMeasurement(1, 1, true, 1, 0);
+  autoTuner.tuneConfiguration(2, 0, /*isStartOfTuningPhase*/ false);
+  ASSERT_NE(autoTuner.getCurrentConfig(), tempConfig);
+  EXPECT_TRUE(autoTuner.isTrialledInTuningPhase(tempConfig, 0)) << "The configuration has evidence from this phase.";
+
+  // Trial the last configuration, which ends the tuning phase, and start the next one.
+  autoTuner.addMeasurement(1, 1, true, 2, 0);
+  autoTuner.tuneConfiguration(3, 0, /*isStartOfTuningPhase*/ false);
+  autoTuner.tuneConfiguration(4, 1, /*isStartOfTuningPhase*/ true);
+  for (const auto &config : searchSpace) {
+    EXPECT_TRUE(autoTuner.isTrialledInTuningPhase(config, 1)) << "The configuration is in the queue.";
+  }
+  EXPECT_FALSE(autoTuner.isTrialledInTuningPhase(tempConfig, 1))
+      << "The configuration is not queued and only has evidence from an earlier tuning phase.";
+}
+
+/**
  * Test that addTempConfig() queues a configuration once per tuning phase without adding it to the search space, and
  * that it is trialled next if the current configuration is rejected.
  */
