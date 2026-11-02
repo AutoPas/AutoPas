@@ -200,6 +200,8 @@ std::vector<AutoPasConfigEndToEndTest::StepResult> AutoPasConfigEndToEndTest::si
   autoPas.setAllowedDataLayouts({config.dataLayout}, interactionType);
   autoPas.setAllowedNewton3Options({config.newton3}, interactionType);
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>{config.cellSizeFactor}));
+  autoPas.setAllowedOpenMPScheduleKinds({config.ompKind});
+  autoPas.setAllowedOpenMPChunkSizes({config.ompChunkSize});
   autoPas.setAllowedVecPatterns({config.vecPattern}, interactionType);
   const size_t sortingThreshold = useSorting ? 5 : std::numeric_limits<size_t>::max();
   autoPas.setAoSSortingThreshold(sortingThreshold);
@@ -341,12 +343,12 @@ const std::vector<AutoPasConfigEndToEndTest::StepResult> &AutoPasConfigEndToEndT
         interactionType == autopas::InteractionTypeOption::pairwise
             ? autopas::Configuration(autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c08,
                                      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                     autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise,
-                                     autopas::VectorizationPatternOption::NA)
+                                     autopas::Newton3Option::enabled, autopas::OpenMPKindOption::omp_dynamic, 1,
+                                     autopas::InteractionTypeOption::pairwise, autopas::VectorizationPatternOption::NA)
             : autopas::Configuration(autopas::ContainerOption::linkedCells, 1.0, autopas::TraversalOption::lc_c01,
                                      autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                     autopas::Newton3Option::disabled, autopas::InteractionTypeOption::triwise,
-                                     autopas::VectorizationPatternOption::NA);
+                                     autopas::Newton3Option::disabled, autopas::OpenMPKindOption::omp_dynamic, 1,
+                                     autopas::InteractionTypeOption::triwise, autopas::VectorizationPatternOption::NA);
     std::string rejectionMessage;
     const auto reference = simulate(referenceConfig, key, false, rejectionMessage);
     if (not reference) {

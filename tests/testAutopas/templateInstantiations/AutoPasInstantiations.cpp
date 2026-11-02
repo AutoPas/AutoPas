@@ -23,6 +23,7 @@ template bool autopas::AutoPas<Molecule>::computeInteractions(
                   /*globals*/ false> *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(ATMFunctorGlobals *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
+template bool autopas::AutoPas<Molecule>::computeInteractions(MockPairwiseFunctor<Molecule> *);
 template bool autopas::AutoPas<NonConstructibleParticle>::computeInteractions(
     MockPairwiseFunctor<NonConstructibleParticle> *);
 

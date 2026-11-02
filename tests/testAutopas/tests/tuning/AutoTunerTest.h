@@ -20,7 +20,7 @@ class AutoTunerTest : public AutoPasTestBase {
    * Tests that ending a tuning phase with a reject configuration is handled correctly.
    *
    * Mimics an AutoTuner trialling four configurations. The second and the final configurations will be rejected. After
-   * the tuning phase is completed, the test should get the correct configuration upon calling `getNextConfig`
+   * the tuning phase is completed, the test should get the correct configuration upon calling `getCurrentConfig`
    *
    * @param rejectIndefinitely Run the test, parsing this rejectIndefinitely value to rejectConfig
    */

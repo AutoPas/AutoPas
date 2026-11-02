@@ -35,6 +35,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
           std::ranges::any_of(_tuningStrategies, [](auto &tuningStrat) { return tuningStrat->needsLiveInfo(); })),
       _samplesTraverseInteractions(autoTunerInfo.maxSamples),
       _searchSpace(searchSpace),
+      _initialSearchSpaceIsTrivial(searchSpace.size() == 1),
       _configQueue(searchSpace.begin(), searchSpace.end()),
       _tuningResultLogger(outputSuffix, autoTunerInfo.tuningMetric),
       _tuningDataLogger(autoTunerInfo.maxSamples, rebuildFrequency, outputSuffix),
@@ -62,13 +63,10 @@ void AutoTuner::addDomainSimilarityStatistics(double pdBinDensityStdDev, double 
 }
 
 void AutoTuner::logTuningResult(const long tuningTime, const size_t currentIteration) const {
-  // only log if we are at the end of a tuning phase
-  if (_endOfTuningPhase) {
-    // This string is part of several older scripts, hence it is not recommended to change it.
-    const auto [conf, optimalEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
-    AutoPasLog(DEBUG, "Selected Configuration {}", conf.toString());
-    _tuningResultLogger.logTuningResult(conf, currentIteration, tuningTime, optimalEvidence.effectiveValue);
-  }
+  // This string is part of several older scripts, hence it is not recommended to change it.
+  const auto [conf, optimalEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
+  AutoPasLog(DEBUG, "Selected Configuration {}", conf.toString());
+  _tuningResultLogger.logTuningResult(conf, currentIteration, tuningTime, optimalEvidence.effectiveValue);
 }
 
 bool AutoTuner::searchSpaceIsTrivial() const { return _searchSpace.size() == 1; }
@@ -177,7 +175,6 @@ bool AutoTuner::tuneConfiguration(const size_t currentIteration, const size_t tu
 }
 
 void AutoTuner::handleEndOfTuningPhase(const size_t tuningPhase) {
-  _endOfTuningPhase = true;
   _isTuning = false;
   selectBestConfiguration(tuningPhase);
 }
@@ -198,7 +195,6 @@ void AutoTuner::setOptimalConfiguration(const Configuration &optimalConfig) {
   _configQueue.clear();
   _configQueue.push_back(optimalConfig);
 
-  _endOfTuningPhase = true;
   _isTuning = false;
 }
 
@@ -210,8 +206,7 @@ const Configuration &AutoTuner::getCurrentConfig() const {
   return _configQueue.back();
 }
 
-Configuration AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool indefinitely,
-                                      const size_t tuningPhase) {
+void AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool indefinitely, const size_t tuningPhase) {
   if (searchSpaceIsTrivial()) {
     utils::ExceptionHandler::exception("Rejected the only configuration in the search space!\n{}",
                                        rejectedConfig.toString());
@@ -245,8 +240,6 @@ Configuration AutoTuner::rejectConfig(const Configuration &rejectedConfig, bool 
   if (_configQueue.empty()) {
     handleEndOfTuningPhase(tuningPhase);
   }
-
-  return getCurrentConfig();
 }
 
 void AutoTuner::addTempConfig(const Configuration &configuration) {
@@ -422,15 +415,9 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo, const bool isStartOfTu
 
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 
-bool AutoTuner::inTuningPhase() const {
-  // If _iteration % _tuningInterval == 0 we are in the first tuning iteration but tuneConfiguration has not
-  // been called yet.
-  return (_isTuning or _forceRetune) and not searchSpaceIsTrivial();
-}
+bool AutoTuner::inTuningPhase() const { return (_isTuning or _forceRetune) and not _initialSearchSpaceIsTrivial; }
 
 bool AutoTuner::isAtStartOfConfigurationTrial() const { return inTuningPhase() and getCurrentNumSamples() == 0; }
-
-bool AutoTuner::inLastTuningIteration() const { return _endOfTuningPhase; }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
