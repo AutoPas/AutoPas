@@ -167,6 +167,24 @@ class LJFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
+ private:
+  template <typename TypePtr>
+  static inline bool soaIsHomogeneous(const TypePtr typeIDPtr, const size_t soaSize) {
+    if constexpr (useMixing) {
+      if (soaSize <= 1) {
+        return true;
+      }
+      const auto firstType = typeIDPtr[0];
+      for (size_t k = 1; k < soaSize; ++k) {
+        if (typeIDPtr[k] != firstType) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+ public:
   void AoSFunctor(Particle_T &i, Particle_T &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
@@ -288,22 +306,33 @@ class LJFunctor
     SoAFloatPrecision *halfSigmaPtr = nullptr;
     SoAFloatPrecision *sqrtEpsilonPtr = nullptr;
 
+    SoAFloatPrecision const_shift6 = _shift6;
+    SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
+    SoAFloatPrecision const_epsilon24 = _epsilon24;
+
     if constexpr (useMixing) {
-      mixingBuffers.getMixingPointers(typeptr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
-                                      sqrtEpsilonPtr);
-      // Preload all sigma and epsilons for next vectorized region.
-      // Not preloading and directly using the values, will produce worse results.
-      sigmaSquareds.resize(soa.size());
-      epsilon24s.resize(soa.size());
-      // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
-      if constexpr (applyShift) {
-        shift6s.resize(soa.size());
+      if (soaIsHomogeneous(typeptr, soa.size())) {
+        const size_t type = soa.size() > 0 ? typeptr[0] : 0;
+        const auto sigma = 2.0 * _halfSigmaPerType[type];
+        const_sigmaSquared = sigma * sigma;
+        const_epsilon24 = 24.0 * _sqrtEpsilonPerType[type] * _sqrtEpsilonPerType[type];
+        if constexpr (calculateGlobals and applyShift) {
+          const_shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(const_epsilon24, const_sigmaSquared,
+                                                                               _cutoffSquared);
+        }
+      } else {
+        mixingBuffers.getMixingPointers(typeptr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
+                                        sqrtEpsilonPtr);
+        // Preload all sigma and epsilons for next vectorized region.
+        // Not preloading and directly using the values, will produce worse results.
+        sigmaSquareds.resize(soa.size());
+        epsilon24s.resize(soa.size());
+        // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
+        if constexpr (calculateGlobals and applyShift) {
+          shift6s.resize(soa.size());
+        }
       }
     }
-
-    const SoAFloatPrecision const_shift6 = _shift6;
-    const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
-    const SoAFloatPrecision const_epsilon24 = _epsilon24;
 
     for (unsigned int i = 0; i < soa.size(); ++i) {
       const auto ownedStateI = ownedStatePtr[i];
@@ -315,7 +344,7 @@ class LJFunctor
       SoAFloatPrecision fyacc = 0.;
       SoAFloatPrecision fzacc = 0.;
 
-      if constexpr (useMixing) {
+      if (halfSigmaPtr != nullptr) {
         const auto halfSigmaI = halfSigmaPtr[i];
         const auto sqrtEpsilonI = sqrtEpsilonPtr[i];
         for (unsigned int j = 0; j < soa.size(); ++j) {
@@ -324,7 +353,7 @@ class LJFunctor
           const auto epsilon24 = 24.0 * sqrtEpsilonI * sqrtEpsilonPtr[j];
           sigmaSquareds[j] = sigmaSquared;
           epsilon24s[j] = epsilon24;
-          if constexpr (applyShift) {
+          if constexpr (calculateGlobals and applyShift) {
             shift6s[j] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
           }
         }
@@ -339,10 +368,10 @@ class LJFunctor
         SoAFloatPrecision shift6 = const_shift6;
         SoAFloatPrecision sigmaSquared = const_sigmaSquared;
         SoAFloatPrecision epsilon24 = const_epsilon24;
-        if constexpr (useMixing) {
+        if (halfSigmaPtr != nullptr) {
           sigmaSquared = sigmaSquareds[j];
           epsilon24 = epsilon24s[j];
-          if constexpr (applyShift) {
+          if constexpr (calculateGlobals and applyShift) {
             shift6 = shift6s[j];
           }
         }
@@ -501,15 +530,26 @@ class LJFunctor
     SoAFloatPrecision *sqrtEpsilon2Ptr = nullptr;
 
     if constexpr (useMixing) {
-      mixingBuffers1.template getMixingPointers<0>(typeptr1, soa1.size(), _halfSigmaPerType, _sqrtEpsilonPerType,
-                                                   halfSigma1Ptr, sqrtEpsilon1Ptr);
-      mixingBuffers2.template getMixingPointers<1>(typeptr2, soa2.size(), _halfSigmaPerType, _sqrtEpsilonPerType,
-                                                   halfSigma2Ptr, sqrtEpsilon2Ptr);
-      sigmaSquareds.resize(soa2.size());
-      epsilon24s.resize(soa2.size());
-      // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
-      if constexpr (applyShift) {
-        shift6s.resize(soa2.size());
+      if (soaIsHomogeneous(typeptr1, soa1.size()) && soaIsHomogeneous(typeptr2, soa2.size())) {
+        const size_t type1 = soa1.size() > 0 ? typeptr1[0] : 0;
+        const size_t type2 = soa2.size() > 0 ? typeptr2[0] : 0;
+        const auto sigma = _halfSigmaPerType[type1] + _halfSigmaPerType[type2];
+        sigmaSquared = sigma * sigma;
+        epsilon24 = 24.0 * _sqrtEpsilonPerType[type1] * _sqrtEpsilonPerType[type2];
+        if constexpr (calculateGlobals and applyShift) {
+          shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
+        }
+      } else {
+        mixingBuffers1.template getMixingPointers<0>(typeptr1, soa1.size(), _halfSigmaPerType, _sqrtEpsilonPerType,
+                                                     halfSigma1Ptr, sqrtEpsilon1Ptr);
+        mixingBuffers2.template getMixingPointers<1>(typeptr2, soa2.size(), _halfSigmaPerType, _sqrtEpsilonPerType,
+                                                     halfSigma2Ptr, sqrtEpsilon2Ptr);
+        sigmaSquareds.resize(soa2.size());
+        epsilon24s.resize(soa2.size());
+        // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
+        if constexpr (calculateGlobals and applyShift) {
+          shift6s.resize(soa2.size());
+        }
       }
     }
 
@@ -524,7 +564,7 @@ class LJFunctor
       }
 
       // preload all sigma and epsilons for next vectorized region
-      if constexpr (useMixing) {
+      if (halfSigma1Ptr != nullptr) {
         const auto halfSigmaI = halfSigma1Ptr[i];
         const auto sqrtEpsilonI = sqrtEpsilon1Ptr[i];
         for (unsigned int j = 0; j < soa2.size(); ++j) {
@@ -533,7 +573,7 @@ class LJFunctor
           const auto epsilon24Tmp = 24.0 * sqrtEpsilonI * sqrtEpsilon2Ptr[j];
           sigmaSquareds[j] = sigmaSquaredTmp;
           epsilon24s[j] = epsilon24Tmp;
-          if constexpr (applyShift) {
+          if constexpr (calculateGlobals and applyShift) {
             shift6s[j] =
                 ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24Tmp, sigmaSquaredTmp, _cutoffSquared);
           }
@@ -546,10 +586,10 @@ class LJFunctor
                                numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
                                numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
-        if constexpr (useMixing) {
+        if (halfSigma1Ptr != nullptr) {
           sigmaSquared = sigmaSquareds[j];
           epsilon24 = epsilon24s[j];
-          if constexpr (applyShift) {
+          if constexpr (calculateGlobals and applyShift) {
             shift6 = shift6s[j];
           }
         }
@@ -913,8 +953,18 @@ class LJFunctor
     SoAFloatPrecision *halfSigmaPtr = nullptr;
     SoAFloatPrecision *sqrtEpsilonPtr = nullptr;
     if constexpr (useMixing) {
-      mixingBuffers.getMixingPointers(typeptr1, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
-                                      sqrtEpsilonPtr);
+      if (soaIsHomogeneous(typeptr1, soa.size())) {
+        const size_t type = soa.size() > 0 ? typeptr1[0] : 0;
+        const auto sigma = 2.0 * _halfSigmaPerType[type];
+        sigmaSquared = sigma * sigma;
+        epsilon24 = 24.0 * _sqrtEpsilonPerType[type] * _sqrtEpsilonPerType[type];
+        if constexpr (calculateGlobals and applyShift) {
+          shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
+        }
+      } else {
+        mixingBuffers.getMixingPointers(typeptr1, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
+                                        sqrtEpsilonPtr);
+      }
     }
 
     SoAFloatPrecision potentialEnergySum = 0.;
@@ -978,7 +1028,7 @@ class LJFunctor
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> sigmaSquareds;
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> epsilon24s;
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> shift6s;
-        if constexpr (useMixing) {
+        if (halfSigmaPtr != nullptr) {
           const auto halfSigmaI = halfSigmaPtr[indexFirst];
           const auto sqrtEpsilonI = sqrtEpsilonPtr[indexFirst];
           for (size_t j = 0; j < vecsize; j++) {
@@ -988,7 +1038,7 @@ class LJFunctor
             const auto epsilon24Tmp = 24.0 * sqrtEpsilonI * sqrtEpsilonPtr[neighborIdx];
             sigmaSquareds[j] = sigmaSquaredTmp;
             epsilon24s[j] = epsilon24Tmp;
-            if constexpr (applyShift) {
+            if constexpr (calculateGlobals and applyShift) {
               shift6s[j] =
                   ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24Tmp, sigmaSquaredTmp, _cutoffSquared);
             }
@@ -1008,10 +1058,10 @@ class LJFunctor
                                numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum,       \
                                numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
-          if constexpr (useMixing) {
+          if (halfSigmaPtr != nullptr) {
             sigmaSquared = sigmaSquareds[j];
             epsilon24 = epsilon24s[j];
-            if constexpr (applyShift) {
+            if constexpr (calculateGlobals and applyShift) {
               shift6 = shift6s[j];
             }
           }
@@ -1103,11 +1153,11 @@ class LJFunctor
     for (size_t jNeighIndex = joff; jNeighIndex < neighborListSize; ++jNeighIndex) {
       size_t j = neighborList[jNeighIndex];
       if (indexFirst == j) continue;
-      if constexpr (useMixing) {
+      if (halfSigmaPtr != nullptr) {
         const auto sigma = halfSigmaPtr[indexFirst] + halfSigmaPtr[j];
         sigmaSquared = sigma * sigma;
         epsilon24 = 24.0 * sqrtEpsilonPtr[indexFirst] * sqrtEpsilonPtr[j];
-        if constexpr (applyShift) {
+        if constexpr (calculateGlobals and applyShift) {
           shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
         }
       }

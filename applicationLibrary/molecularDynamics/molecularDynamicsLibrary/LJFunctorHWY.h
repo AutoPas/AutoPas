@@ -173,6 +173,23 @@ class LJFunctorHWY
     return std::ranges::find(_vecPatternsAllowed, vecPattern) != _vecPatternsAllowed.end();
   }
 
+ private:
+  static inline bool soaIsHomogeneous(const size_t *const __restrict typeIDPtr, const size_t soaSize) {
+    if constexpr (useMixing) {
+      if (soaSize <= 1) {
+        return true;
+      }
+      const auto firstType = typeIDPtr[0];
+      for (size_t k = 1; k < soaSize; ++k) {
+        if (typeIDPtr[k] != firstType) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+ public:
   /**
    * @copydoc autopas::PairwiseFunctor::AoSFunctor()
    */
@@ -253,10 +270,25 @@ class LJFunctorHWY
     MixingBuffers mixingBuffers;
     double *halfSigmaPtr = nullptr;
     double *sqrtEpsilonPtr = nullptr;
+    double homoSigmaSquared = _sigmaSquared;
+    double homoEpsilon24 = _epsilon24;
+    double homoShift6 = _shift6;
+
     if constexpr (useMixing) {
-      const auto *const __restrict typeIDptr = soa.template begin<Particle_T::AttributeNames::typeId>();
-      mixingBuffers.getMixingPointers(typeIDptr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
-                                      sqrtEpsilonPtr);
+      const auto *const __restrict typeIDPtr = soa.template begin<Particle_T::AttributeNames::typeId>();
+      if (soaIsHomogeneous(typeIDPtr, soa.size())) {
+        const size_t type = soa.size() > 0 ? typeIDPtr[0] : 0;
+        const double sigma = 2.0 * _halfSigmaPerType[type];
+        homoSigmaSquared = sigma * sigma;
+        homoEpsilon24 = 24.0 * _sqrtEpsilonPerType[type] * _sqrtEpsilonPerType[type];
+        if constexpr (calculateGlobals and applyShift) {
+          homoShift6 =
+              ParticlePropertiesLibrary<double, size_t>::calcShift6(homoEpsilon24, homoSigmaSquared, _cutoffSquared);
+        }
+      } else {
+        mixingBuffers.getMixingPointers(typeIDPtr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
+                                        sqrtEpsilonPtr);
+      }
     }
 
     // initialize and declare vector variables
@@ -272,7 +304,7 @@ class LJFunctorHWY
       handleILoopBody<true, true, false, VectorizationPattern::p1xVec>(
           i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr,
           halfSigmaPtr, sqrtEpsilonPtr, halfSigmaPtr, sqrtEpsilonPtr, virialSumX, virialSumY, virialSumZ,
-          potentialEnergySum, 0, 0, i);
+          potentialEnergySum, 0, 0, i, homoSigmaSquared, homoEpsilon24, homoShift6);
     }
 
     if constexpr (calculateGlobals) {
@@ -730,7 +762,8 @@ class LJFunctorHWY
       const double *const __restrict sqrtEpsilon1Ptr, const double *const __restrict halfSigma2Ptr,
       const double *const __restrict sqrtEpsilon2Ptr, VectorDouble &virialSumX, VectorDouble &virialSumY,
       VectorDouble &virialSumZ, VectorDouble &potentialEnergySum, const size_t restI, const size_t jVecStart,
-      const size_t jVecEnd) {
+      const size_t jVecEnd, const double homoSigmaSquared = 0.0, const double homoEpsilon24 = 0.0,
+      const double homoShift6 = 0.0) {
     VectorDouble fxAcc = highway::Zero(tag_double);
     VectorDouble fyAcc = highway::Zero(tag_double);
     VectorDouble fzAcc = highway::Zero(tag_double);
@@ -755,7 +788,7 @@ class LJFunctorHWY
       SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
           i, j, notDummyMaskI, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2,
           zPtr2, fxPtr2, fy2Ptr, fz2Ptr, hs1Ptr, se1Ptr, hs2Ptr, se2Ptr, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
-          virialSumZ, potentialEnergySum, restI, 0);
+          virialSumZ, potentialEnergySum, restI, 0, homoSigmaSquared, homoEpsilon24, homoShift6);
     }
 
     const size_t restJ = jVecEnd & (jStepSize<vecPattern>() - 1);
@@ -765,7 +798,7 @@ class LJFunctorHWY
       SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
           i, j, notDummyMaskI, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2,
           zPtr2, fxPtr2, fy2Ptr, fz2Ptr, hs1Ptr, se1Ptr, hs2Ptr, se2Ptr, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
-          virialSumZ, potentialEnergySum, restI, restJ);
+          virialSumZ, potentialEnergySum, restI, restJ, homoSigmaSquared, homoEpsilon24, homoShift6);
     }
 
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
@@ -814,13 +847,29 @@ class LJFunctorHWY
     double *sqrtEpsilon1Ptr = nullptr;
     double *halfSigma2Ptr = nullptr;
     double *sqrtEpsilon2Ptr = nullptr;
+    double homoSigmaSquared = _sigmaSquared;
+    double homoEpsilon24 = _epsilon24;
+    double homoShift6 = _shift6;
+
     if constexpr (useMixing) {
       const auto *const __restrict typeID1Ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
       const auto *const __restrict typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
-      mixingBuffers1.template getMixingPointers<0>(typeID1Ptr, n1, _halfSigmaPerType, _sqrtEpsilonPerType,
-                                                   halfSigma1Ptr, sqrtEpsilon1Ptr);
-      mixingBuffers2.template getMixingPointers<1>(typeID2Ptr, n2, _halfSigmaPerType, _sqrtEpsilonPerType,
-                                                   halfSigma2Ptr, sqrtEpsilon2Ptr);
+      if (soaIsHomogeneous(typeID1Ptr, n1) && soaIsHomogeneous(typeID2Ptr, n2)) {
+        const size_t type1 = n1 > 0 ? typeID1Ptr[0] : 0;
+        const size_t type2 = n2 > 0 ? typeID2Ptr[0] : 0;
+        const double sigma = _halfSigmaPerType[type1] + _halfSigmaPerType[type2];
+        homoSigmaSquared = sigma * sigma;
+        homoEpsilon24 = 24.0 * _sqrtEpsilonPerType[type1] * _sqrtEpsilonPerType[type2];
+        if constexpr (calculateGlobals and applyShift) {
+          homoShift6 =
+              ParticlePropertiesLibrary<double, size_t>::calcShift6(homoEpsilon24, homoSigmaSquared, _cutoffSquared);
+        }
+      } else {
+        mixingBuffers1.template getMixingPointers<0>(typeID1Ptr, n1, _halfSigmaPerType, _sqrtEpsilonPerType,
+                                                     halfSigma1Ptr, sqrtEpsilon1Ptr);
+        mixingBuffers2.template getMixingPointers<1>(typeID2Ptr, n2, _halfSigmaPerType, _sqrtEpsilonPerType,
+                                                     halfSigma2Ptr, sqrtEpsilon2Ptr);
+      }
     }
 
     const std::ptrdiff_t startI =
@@ -871,7 +920,7 @@ class LJFunctorHWY
       handleILoopBody<false, newton3, false, vecPattern>(
           i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr,
           fy2Ptr, fz2Ptr, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigma2Ptr, sqrtEpsilon2Ptr, virialSumX, virialSumY,
-          virialSumZ, potentialEnergySum, 0, jVecStart, jVecEnd);
+          virialSumZ, potentialEnergySum, 0, jVecStart, jVecEnd, homoSigmaSquared, homoEpsilon24, homoShift6);
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       // Rest I can't occur in 1xVec case. Bounded by endI, not n1: i-particles from endI onwards cannot
@@ -897,7 +946,8 @@ class LJFunctorHWY
           handleILoopBody<false, newton3, true, vecPattern>(
               i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr,
               fx2Ptr, fy2Ptr, fz2Ptr, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigma2Ptr, sqrtEpsilon2Ptr, virialSumX,
-              virialSumY, virialSumZ, potentialEnergySum, static_cast<size_t>(restI), jVecStart, jVecEnd);
+              virialSumY, virialSumZ, potentialEnergySum, static_cast<size_t>(restI), jVecStart, jVecEnd,
+              homoSigmaSquared, homoEpsilon24, homoShift6);
         }
       }
     }
@@ -1137,7 +1187,8 @@ class LJFunctorHWY
                         const double *const halfSigma2Ptr, const double *const sqrtEpsilon2Ptr, VectorDouble &fxAcc,
                         VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
                         VectorDouble &virialSumZ, VectorDouble &potentialEnergySum, const unsigned int restI,
-                        const unsigned int restJ) {
+                        const unsigned int restJ, const double homoSigmaSquared = 0.0, const double homoEpsilon24 = 0.0,
+                        const double homoShift6 = 0.0) {
     VectorDouble x2;
     VectorDouble y2;
     VectorDouble z2;
@@ -1172,9 +1223,19 @@ class LJFunctorHWY
     VectorDouble shift6s = highway::Undefined(tag_double);
 
     if constexpr (useMixing) {
-      fillPhysicsRegisters<remainderI, remainderJ, reversed, vecPattern>(halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigma2Ptr,
-                                                                         sqrtEpsilon2Ptr, epsilon24s, sigmaSquareds,
-                                                                         shift6s, restI, restJ);
+      if (halfSigma1Ptr != nullptr) {
+        fillPhysicsRegisters<remainderI, remainderJ, reversed, vecPattern>(halfSigma1Ptr, sqrtEpsilon1Ptr,
+                                                                           halfSigma2Ptr, sqrtEpsilon2Ptr, epsilon24s,
+                                                                           sigmaSquareds, shift6s, restI, restJ);
+      } else {
+        epsilon24s = highway::Set(tag_double, homoEpsilon24);
+        sigmaSquareds = highway::Set(tag_double, homoSigmaSquared);
+        if constexpr (calculateGlobals and applyShift) {
+          shift6s = highway::Set(tag_double, homoShift6);
+        } else {
+          shift6s = highway::Zero(tag_double);
+        }
+      }
     } else {
       epsilon24s = highway::Set(tag_double, _epsilon24);
       sigmaSquareds = highway::Set(tag_double, _sigmaSquared);
@@ -1240,7 +1301,8 @@ class LJFunctorHWY
       double *const __restrict fzPtr, const double *const halfSigma1Ptr, const double *const sqrtEpsilon1Ptr,
       const double *const halfSigmaPtr, const double *const sqrtEpsilonPtr, const size_t *const __restrict neighborList,
       VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
-      VectorDouble &virialSumZ, VectorDouble &potentialEnergySum, [[maybe_unused]] const size_t rest = 0) const {
+      VectorDouble &virialSumZ, VectorDouble &potentialEnergySum, [[maybe_unused]] const size_t rest = 0,
+      const double homoSigmaSquared = 0.0, const double homoEpsilon24 = 0.0, const double homoShift6 = 0.0) const {
     [[maybe_unused]] MaskDouble restMaskDouble;
     [[maybe_unused]] MaskLong restMaskLong;
     VectorLong indices;
@@ -1297,31 +1359,41 @@ class LJFunctorHWY
     VectorDouble shift6s = highway::Undefined(tag_double);
 
     if constexpr (useMixing) {
-      HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
-      HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
-      HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
-      const size_t kMax = remainder ? rest : _vecLengthDouble;
-      const auto hs1 = *halfSigma1Ptr;
-      const auto se1 = *sqrtEpsilon1Ptr;
-      for (size_t k = 0; k < kMax; ++k) {
-        const auto neighborIdx = neighborList[j + k];
-        const auto hs2 = halfSigmaPtr[neighborIdx];
-        const auto se2 = sqrtEpsilonPtr[neighborIdx];
-        const auto sigma = hs1 + hs2;
-        const auto sigmaSquared = sigma * sigma;
-        const auto epsilon24 = 24.0 * se1 * se2;
-        epsilons[k] = epsilon24;
-        sigmas[k] = sigmaSquared;
-        if constexpr (calculateGlobals and applyShift) {
-          shifts[k] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
+      if (halfSigma1Ptr != nullptr) {
+        HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
+        HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
+        HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
+        const size_t kMax = remainder ? rest : _vecLengthDouble;
+        const auto hs1 = *halfSigma1Ptr;
+        const auto se1 = *sqrtEpsilon1Ptr;
+        for (size_t k = 0; k < kMax; ++k) {
+          const auto neighborIdx = neighborList[j + k];
+          const auto hs2 = halfSigmaPtr[neighborIdx];
+          const auto se2 = sqrtEpsilonPtr[neighborIdx];
+          const auto sigma = hs1 + hs2;
+          const auto sigmaSquared = sigma * sigma;
+          const auto epsilon24 = 24.0 * se1 * se2;
+          epsilons[k] = epsilon24;
+          sigmas[k] = sigmaSquared;
+          if constexpr (calculateGlobals and applyShift) {
+            shifts[k] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
+          }
         }
-      }
-      epsilon24s = highway::Load(tag_double, epsilons.data());
-      sigmaSquareds = highway::Load(tag_double, sigmas.data());
-      if constexpr (calculateGlobals and applyShift) {
-        shift6s = highway::Load(tag_double, shifts.data());
+        epsilon24s = highway::Load(tag_double, epsilons.data());
+        sigmaSquareds = highway::Load(tag_double, sigmas.data());
+        if constexpr (calculateGlobals and applyShift) {
+          shift6s = highway::Load(tag_double, shifts.data());
+        } else {
+          shift6s = highway::Zero(tag_double);
+        }
       } else {
-        shift6s = highway::Zero(tag_double);
+        epsilon24s = highway::Set(tag_double, homoEpsilon24);
+        sigmaSquareds = highway::Set(tag_double, homoSigmaSquared);
+        if constexpr (calculateGlobals and applyShift) {
+          shift6s = highway::Set(tag_double, homoShift6);
+        } else {
+          shift6s = highway::Zero(tag_double);
+        }
       }
     } else {
       epsilon24s = highway::Set(tag_double, _epsilon24);
@@ -1438,10 +1510,25 @@ class LJFunctorHWY
     MixingBuffers mixingBuffers;
     double *halfSigmaPtr = nullptr;
     double *sqrtEpsilonPtr = nullptr;
+    double homoSigmaSquared = _sigmaSquared;
+    double homoEpsilon24 = _epsilon24;
+    double homoShift6 = _shift6;
+
     if constexpr (useMixing) {
       const auto *const __restrict typeIDPtr = soa.template begin<Particle_T::AttributeNames::typeId>();
-      mixingBuffers.getMixingPointers(typeIDPtr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
-                                      sqrtEpsilonPtr);
+      if (soaIsHomogeneous(typeIDPtr, soa.size())) {
+        const size_t type = soa.size() > 0 ? typeIDPtr[0] : 0;
+        const double sigma = 2.0 * _halfSigmaPerType[type];
+        homoSigmaSquared = sigma * sigma;
+        homoEpsilon24 = 24.0 * _sqrtEpsilonPerType[type] * _sqrtEpsilonPerType[type];
+        if constexpr (calculateGlobals and applyShift) {
+          homoShift6 =
+              ParticlePropertiesLibrary<double, size_t>::calcShift6(homoEpsilon24, homoSigmaSquared, _cutoffSquared);
+        }
+      } else {
+        mixingBuffers.getMixingPointers(typeIDPtr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
+                                        sqrtEpsilonPtr);
+      }
     }
 
     VectorDouble virialSumX = highway::Zero(tag_double);
@@ -1475,7 +1562,8 @@ class LJFunctorHWY
       SoAKernelVerlet<newton3, false>(indexFirst, j, notDummyMaskI, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
                                       reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr, hs1Ptr,
                                       se1Ptr, halfSigmaPtr, sqrtEpsilonPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
-                                      virialSumX, virialSumY, virialSumZ, potentialEnergySum);
+                                      virialSumX, virialSumY, virialSumZ, potentialEnergySum, 0, homoSigmaSquared,
+                                      homoEpsilon24, homoShift6);
     }
 
     const size_t rest = neighborListSize & (_vecLengthDouble - 1);
@@ -1484,7 +1572,8 @@ class LJFunctorHWY
       SoAKernelVerlet<newton3, true>(indexFirst, j, notDummyMaskI, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
                                      reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr, hs1Ptr,
                                      se1Ptr, halfSigmaPtr, sqrtEpsilonPtr, neighborList.data(), fxAcc, fyAcc, fzAcc,
-                                     virialSumX, virialSumY, virialSumZ, potentialEnergySum, rest);
+                                     virialSumX, virialSumY, virialSumZ, potentialEnergySum, rest, homoSigmaSquared,
+                                     homoEpsilon24, homoShift6);
     }
 
     fxPtr[indexFirst] += highway::ReduceSum(tag_double, fxAcc);
