@@ -863,18 +863,18 @@ class LJFunctorHWY
    * @tparam reversed Whether iterating backwards over the outer loop.
    * @tparam vecPattern The vectorization pattern.
    * @param i Particle index in the outer i loop.
-   * @param halfSigPtr Pointer to the halfSigma array.
-   * @param sqrtEpsPtr Pointer to the sqrtEpsilon array.
-   * @param halfSigI Output SIMD vector for halfSigma of particle(s) i.
-   * @param sqrtEpsI Output SIMD vector for sqrtEpsilon of particle(s) i.
+   * @param halfSigmaPtr Pointer to the halfSigma array.
+   * @param sqrtEpsilonPtr Pointer to the sqrtEpsilon array.
+   * @param halfSigmaI Output SIMD vector for halfSigma of particle(s) i.
+   * @param sqrtEpsilonI Output SIMD vector for sqrtEpsilon of particle(s) i.
    * @param restI Number of valid elements in case remainder is true.
    */
   template <bool remainder, bool reversed, VectorizationPattern vecPattern>
-  static void fillIPhysicsRegisters(const size_t i, const double *const __restrict halfSigPtr,
-                                    const double *const __restrict sqrtEpsPtr, VectorDouble &halfSigI,
-                                    VectorDouble &sqrtEpsI, const size_t restI) {
-    halfSigI = loadIRegister<remainder, reversed, vecPattern>(tag_double, halfSigPtr, i, restI);
-    sqrtEpsI = loadIRegister<remainder, reversed, vecPattern>(tag_double, sqrtEpsPtr, i, restI);
+  static void fillIPhysicsRegisters(const size_t i, const double *const __restrict halfSigmaPtr,
+                                    const double *const __restrict sqrtEpsilonPtr, VectorDouble &halfSigmaI,
+                                    VectorDouble &sqrtEpsilonI, const size_t restI) {
+    halfSigmaI = loadIRegister<remainder, reversed, vecPattern>(tag_double, halfSigmaPtr, i, restI);
+    sqrtEpsilonI = loadIRegister<remainder, reversed, vecPattern>(tag_double, sqrtEpsilonPtr, i, restI);
   }
 
   /**
@@ -958,18 +958,18 @@ class LJFunctorHWY
    * @tparam remainder Whether this is a remainder loop iteration with fewer lanes than the vector width.
    * @tparam vecPattern The vectorization pattern.
    * @param j Particle index in the inner j loop.
-   * @param halfSigPtr Pointer to the halfSigma array.
-   * @param sqrtEpsPtr Pointer to the sqrtEpsilon array.
-   * @param halfSigJ Output SIMD vector for halfSigma of particle(s) j.
-   * @param sqrtEpsJ Output SIMD vector for sqrtEpsilon of particle(s) j.
+   * @param halfSigmaPtr Pointer to the halfSigma array.
+   * @param sqrtEpsilonPtr Pointer to the sqrtEpsilon array.
+   * @param halfSigmaJ Output SIMD vector for halfSigma of particle(s) j.
+   * @param sqrtEpsilonJ Output SIMD vector for sqrtEpsilon of particle(s) j.
    * @param restJ Number of valid elements in case remainder is true.
    */
   template <bool remainder, VectorizationPattern vecPattern>
-  static void fillJPhysicsRegisters(const size_t j, const double *const __restrict halfSigPtr,
-                                    const double *const __restrict sqrtEpsPtr, VectorDouble &halfSigJ,
-                                    VectorDouble &sqrtEpsJ, const unsigned int restJ) {
-    halfSigJ = loadJRegister<remainder, vecPattern>(tag_double, halfSigPtr, j, restJ);
-    sqrtEpsJ = loadJRegister<remainder, vecPattern>(tag_double, sqrtEpsPtr, j, restJ);
+  static void fillJPhysicsRegisters(const size_t j, const double *const __restrict halfSigmaPtr,
+                                    const double *const __restrict sqrtEpsilonPtr, VectorDouble &halfSigmaJ,
+                                    VectorDouble &sqrtEpsilonJ, const size_t restJ) {
+    halfSigmaJ = loadJRegister<remainder, vecPattern>(tag_double, halfSigmaPtr, j, restJ);
+    sqrtEpsilonJ = loadJRegister<remainder, vecPattern>(tag_double, sqrtEpsilonPtr, j, restJ);
   }
 
   /**
@@ -1013,6 +1013,250 @@ class LJFunctorHWY
     }
   }
 
+  /**
+   * Recursively folds a vector in half down to 2 lanes by adding its lower and upper halves.
+   *
+   * @tparam D Tag type defining the vector properties.
+   * @param d Tag descriptor.
+   * @param v Input SIMD vector.
+   * @return A 2-lane SIMD vector containing the folded sum.
+   */
+  template <class D>
+  HWY_INLINE static auto foldTo2Lanes(D d, const highway::VFromD<D> &v) {
+    if constexpr (highway::MaxLanes(d) == 8) {
+      const highway::Half<D> d4;
+      const auto v4 = highway::Add(highway::LowerHalf(d4, v), highway::UpperHalf(d4, v));
+      const highway::Half<decltype(d4)> d2;
+      return highway::Add(highway::LowerHalf(d2, v4), highway::UpperHalf(d2, v4));
+    } else if constexpr (highway::MaxLanes(d) == 4) {
+      const highway::Half<D> d2;
+      return highway::Add(highway::LowerHalf(d2, v), highway::UpperHalf(d2, v));
+    } else {
+      return v;
+    }
+  }
+
+  /**
+   * Reduces a single vector to a scalar using a halving tree down to 2 lanes before calling highway::ReduceSum.
+   *
+   * @tparam D Tag type defining the vector properties.
+   * @param d Tag descriptor.
+   * @param v Input SIMD vector.
+   * @return The horizontal sum of all vector lanes.
+   */
+  template <class D>
+  HWY_INLINE static double reduceSumHalving(D d, const highway::VFromD<D> &v) {
+    if constexpr (highway::MaxLanes(d) <= 2) {
+      return highway::ReduceSum(d, v);
+    } else {
+      const auto v2 = foldTo2Lanes(d, v);
+      const highway::DFromV<decltype(v2)> d2;
+      return highway::ReduceSum(d2, v2);
+    }
+  }
+
+  /**
+   * Reduces two vectors simultaneously by interleaving their even/odd lanes and folding to 2 lanes,
+   * adding the results to output scalar accumulators.
+   *
+   * @tparam D Tag type defining the vector properties.
+   * @param d Tag descriptor.
+   * @param va First input SIMD vector.
+   * @param vb Second input SIMD vector.
+   * @param outA Output scalar accumulator for va.
+   * @param outB Output scalar accumulator for vb.
+   */
+  template <class D>
+  HWY_INLINE static void reduceAdd2_InterleaveFirst(D d, const highway::VFromD<D> &va, const highway::VFromD<D> &vb,
+                                                    double &outA, double &outB) {
+    if constexpr (highway::MaxLanes(d) == 1) {
+      outA += highway::GetLane(va);
+      outB += highway::GetLane(vb);
+    } else {
+      const auto ab = highway::Add(highway::InterleaveLower(d, va, vb), highway::InterleaveUpper(d, va, vb));
+      const auto ab2 = foldTo2Lanes(d, ab);
+      outA += highway::GetLane(ab2);
+      outB += highway::ExtractLane(ab2, 1);
+    }
+  }
+
+  /**
+   * Reduces two vectors simultaneously by interleaving their even/odd lanes and folding to 2 lanes,
+   * subtracting the results from output scalar accumulators.
+   *
+   * @tparam D Tag type defining the vector properties.
+   * @param d Tag descriptor.
+   * @param va First input SIMD vector.
+   * @param vb Second input SIMD vector.
+   * @param outA Output scalar accumulator for va.
+   * @param outB Output scalar accumulator for vb.
+   */
+  template <class D>
+  HWY_INLINE static void reduceSub2_InterleaveFirst(D d, const highway::VFromD<D> &va, const highway::VFromD<D> &vb,
+                                                    double &outA, double &outB) {
+    if constexpr (highway::MaxLanes(d) == 1) {
+      outA -= highway::GetLane(va);
+      outB -= highway::GetLane(vb);
+    } else {
+      const auto ab = highway::Add(highway::InterleaveLower(d, va, vb), highway::InterleaveUpper(d, va, vb));
+      const auto ab2 = foldTo2Lanes(d, ab);
+      outA -= highway::GetLane(ab2);
+      outB -= highway::ExtractLane(ab2, 1);
+    }
+  }
+
+  /**
+   * Reduces 3 vectors (x, y, z) into scalar accumulators by interleaving (x, y) and halving z,
+   * adding the results to output scalar accumulators.
+   *
+   * @tparam D Tag type defining the vector properties.
+   * @param d Tag descriptor.
+   * @param fx Vector of x force components.
+   * @param fy Vector of y force components.
+   * @param fz Vector of z force components.
+   * @param outX Output scalar accumulator for fx.
+   * @param outY Output scalar accumulator for fy.
+   * @param outZ Output scalar accumulator for fz.
+   */
+  template <class D>
+  HWY_INLINE static void reduceAdd3_InterleaveFirst(D d, const highway::VFromD<D> &fx, const highway::VFromD<D> &fy,
+                                                    const highway::VFromD<D> &fz, double &outX, double &outY,
+                                                    double &outZ) {
+    reduceAdd2_InterleaveFirst(d, fx, fy, outX, outY);
+    outZ += reduceSumHalving(d, fz);
+  }
+
+  /**
+   * Reduces 3 vectors (x, y, z) into scalar accumulators by interleaving (x, y) and halving z,
+   * subtracting the results from output scalar accumulators.
+   *
+   * @tparam D Tag type defining the vector properties.
+   * @param d Tag descriptor.
+   * @param fx Vector of x force components.
+   * @param fy Vector of y force components.
+   * @param fz Vector of z force components.
+   * @param outX Output scalar accumulator for fx.
+   * @param outY Output scalar accumulator for fy.
+   * @param outZ Output scalar accumulator for fz.
+   */
+  template <class D>
+  HWY_INLINE static void reduceSub3_InterleaveFirst(D d, const highway::VFromD<D> &fx, const highway::VFromD<D> &fy,
+                                                    const highway::VFromD<D> &fz, double &outX, double &outY,
+                                                    double &outZ) {
+    reduceSub2_InterleaveFirst(d, fx, fy, outX, outY);
+    outZ -= reduceSumHalving(d, fz);
+  }
+
+  /**
+   * Reduces 4 vectors into scalar accumulators using two parallel interleaved pairs.
+   *
+   * @tparam D Tag type defining the vector properties.
+   * @param d Tag descriptor.
+   * @param v0 First input SIMD vector.
+   * @param v1 Second input SIMD vector.
+   * @param v2 Third input SIMD vector.
+   * @param v3 Fourth input SIMD vector.
+   * @param out0 Output scalar accumulator for v0.
+   * @param out1 Output scalar accumulator for v1.
+   * @param out2 Output scalar accumulator for v2.
+   * @param out3 Output scalar accumulator for v3.
+   */
+  template <class D>
+  HWY_INLINE static void reduceAdd4_Interleaved(D d, const highway::VFromD<D> &v0, const highway::VFromD<D> &v1,
+                                                const highway::VFromD<D> &v2, const highway::VFromD<D> &v3,
+                                                double &out0, double &out1, double &out2, double &out3) {
+    reduceAdd2_InterleaveFirst(d, v0, v1, out0, out1);
+    reduceAdd2_InterleaveFirst(d, v2, v3, out2, out3);
+  }
+
+  /**
+   * Pairs lower and upper half-vectors for 3 dimensions into 2-lane vectors and adds them directly
+   * to memory at 2 contiguous particle positions using 128-bit vector stores.
+   *
+   * @tparam DHalf Half-width tag descriptor type.
+   * @param dh Half-width tag descriptor.
+   * @param lfx Lower half of fx.
+   * @param lfy Lower half of fy.
+   * @param lfz Lower half of fz.
+   * @param ufx Upper half of fx.
+   * @param ufy Upper half of fy.
+   * @param ufz Upper half of fz.
+   * @param fxPtr Pointer to the first of two contiguous force x elements.
+   * @param fyPtr Pointer to the first of two contiguous force y elements.
+   * @param fzPtr Pointer to the first of two contiguous force z elements.
+   */
+  template <class DHalf>
+  HWY_INLINE static void reduceAdd6Half_Vec2Store(DHalf dh, const highway::VFromD<DHalf> &lfx,
+                                                  const highway::VFromD<DHalf> &lfy, const highway::VFromD<DHalf> &lfz,
+                                                  const highway::VFromD<DHalf> &ufx, const highway::VFromD<DHalf> &ufy,
+                                                  const highway::VFromD<DHalf> &ufz, double *const __restrict fxPtr,
+                                                  double *const __restrict fyPtr, double *const __restrict fzPtr) {
+    if constexpr (highway::MaxLanes(dh) == 1) {
+      fxPtr[0] += highway::GetLane(lfx);
+      fyPtr[0] += highway::GetLane(lfy);
+      fzPtr[0] += highway::GetLane(lfz);
+      fxPtr[1] += highway::GetLane(ufx);
+      fyPtr[1] += highway::GetLane(ufy);
+      fzPtr[1] += highway::GetLane(ufz);
+    } else {
+      const auto fxLU = highway::Add(highway::InterleaveLower(dh, lfx, ufx), highway::InterleaveUpper(dh, lfx, ufx));
+      const auto fyLU = highway::Add(highway::InterleaveLower(dh, lfy, ufy), highway::InterleaveUpper(dh, lfy, ufy));
+      const auto fzLU = highway::Add(highway::InterleaveLower(dh, lfz, ufz), highway::InterleaveUpper(dh, lfz, ufz));
+      const auto fx2 = foldTo2Lanes(dh, fxLU);
+      const auto fy2 = foldTo2Lanes(dh, fyLU);
+      const auto fz2 = foldTo2Lanes(dh, fzLU);
+      const highway::DFromV<decltype(fx2)> d2;
+
+      highway::StoreU(highway::Add(highway::LoadU(d2, fxPtr), fx2), d2, fxPtr);
+      highway::StoreU(highway::Add(highway::LoadU(d2, fyPtr), fy2), d2, fyPtr);
+      highway::StoreU(highway::Add(highway::LoadU(d2, fzPtr), fz2), d2, fzPtr);
+    }
+  }
+
+  /**
+   * Pairs lower and upper half-vectors for 3 dimensions into 2-lane vectors and subtracts them directly
+   * from memory at 2 contiguous particle positions using 128-bit vector stores.
+   *
+   * @tparam DHalf Half-width tag descriptor type.
+   * @param dh Half-width tag descriptor.
+   * @param lfx Lower half of fx.
+   * @param lfy Lower half of fy.
+   * @param lfz Lower half of fz.
+   * @param ufx Upper half of fx.
+   * @param ufy Upper half of fy.
+   * @param ufz Upper half of fz.
+   * @param fxPtr Pointer to the first of two contiguous force x elements.
+   * @param fyPtr Pointer to the first of two contiguous force y elements.
+   * @param fzPtr Pointer to the first of two contiguous force z elements.
+   */
+  template <class DHalf>
+  HWY_INLINE static void reduceSub6Half_Vec2Store(DHalf dh, const highway::VFromD<DHalf> &lfx,
+                                                  const highway::VFromD<DHalf> &lfy, const highway::VFromD<DHalf> &lfz,
+                                                  const highway::VFromD<DHalf> &ufx, const highway::VFromD<DHalf> &ufy,
+                                                  const highway::VFromD<DHalf> &ufz, double *const __restrict fxPtr,
+                                                  double *const __restrict fyPtr, double *const __restrict fzPtr) {
+    if constexpr (highway::MaxLanes(dh) == 1) {
+      fxPtr[0] -= highway::GetLane(lfx);
+      fyPtr[0] -= highway::GetLane(lfy);
+      fzPtr[0] -= highway::GetLane(lfz);
+      fxPtr[1] -= highway::GetLane(ufx);
+      fyPtr[1] -= highway::GetLane(ufy);
+      fzPtr[1] -= highway::GetLane(ufz);
+    } else {
+      const auto fxLU = highway::Add(highway::InterleaveLower(dh, lfx, ufx), highway::InterleaveUpper(dh, lfx, ufx));
+      const auto fyLU = highway::Add(highway::InterleaveLower(dh, lfy, ufy), highway::InterleaveUpper(dh, lfy, ufy));
+      const auto fzLU = highway::Add(highway::InterleaveLower(dh, lfz, ufz), highway::InterleaveUpper(dh, lfz, ufz));
+      const auto fx2 = foldTo2Lanes(dh, fxLU);
+      const auto fy2 = foldTo2Lanes(dh, fyLU);
+      const auto fz2 = foldTo2Lanes(dh, fzLU);
+      const highway::DFromV<decltype(fx2)> d2;
+
+      highway::StoreU(highway::Sub(highway::LoadU(d2, fxPtr), fx2), d2, fxPtr);
+      highway::StoreU(highway::Sub(highway::LoadU(d2, fyPtr), fy2), d2, fyPtr);
+      highway::StoreU(highway::Sub(highway::LoadU(d2, fzPtr), fz2), d2, fzPtr);
+    }
+  }
+
   template <bool remainder, VectorizationPattern vecPattern>
   HWY_INLINE static void handleNewton3Reduction(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
                                                 double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
@@ -1040,23 +1284,18 @@ class LJFunctorHWY
       const auto lowerFy = highway::LowerHalf(tag_double_half, fy);
       const auto lowerFz = highway::LowerHalf(tag_double_half, fz);
 
-      fx2Ptr[j] -= highway::ReduceSum(tag_double_half, lowerFx);
-      fy2Ptr[j] -= highway::ReduceSum(tag_double_half, lowerFy);
-      fz2Ptr[j] -= highway::ReduceSum(tag_double_half, lowerFz);
-
-      if constexpr (not remainder) {
+      if constexpr (remainder) {
+        reduceSub3_InterleaveFirst(tag_double_half, lowerFx, lowerFy, lowerFz, fx2Ptr[j], fy2Ptr[j], fz2Ptr[j]);
+      } else {
         const auto upperFx = highway::UpperHalf(tag_double_half, fx);
         const auto upperFy = highway::UpperHalf(tag_double_half, fy);
         const auto upperFz = highway::UpperHalf(tag_double_half, fz);
 
-        fx2Ptr[j + 1] -= highway::ReduceSum(tag_double_half, upperFx);
-        fy2Ptr[j + 1] -= highway::ReduceSum(tag_double_half, upperFy);
-        fz2Ptr[j + 1] -= highway::ReduceSum(tag_double_half, upperFz);
+        reduceSub6Half_Vec2Store(tag_double_half, lowerFx, lowerFy, lowerFz, upperFx, upperFy, upperFz, &fx2Ptr[j],
+                                 &fy2Ptr[j], &fz2Ptr[j]);
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-      fx2Ptr[j] -= highway::ReduceSum(tag_double, fx);
-      fy2Ptr[j] -= highway::ReduceSum(tag_double, fy);
-      fz2Ptr[j] -= highway::ReduceSum(tag_double, fz);
+      reduceSub3_InterleaveFirst(tag_double, fx, fy, fz, fx2Ptr[j], fy2Ptr[j], fz2Ptr[j]);
     }
   }
 
@@ -1065,27 +1304,26 @@ class LJFunctorHWY
                                      double *const __restrict fzPtr, const VectorDouble &fxAcc,
                                      const VectorDouble &fyAcc, const VectorDouble &fzAcc, const size_t restI) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      fxPtr[i] += highway::ReduceSum(tag_double, fxAcc);
-      fyPtr[i] += highway::ReduceSum(tag_double, fyAcc);
-      fzPtr[i] += highway::ReduceSum(tag_double, fzAcc);
+      reduceAdd3_InterleaveFirst(tag_double, fxAcc, fyAcc, fzAcc, fxPtr[i], fyPtr[i], fzPtr[i]);
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
       const auto lowerFxAcc = highway::LowerHalf(tag_double_half, fxAcc);
       const auto lowerFyAcc = highway::LowerHalf(tag_double_half, fyAcc);
       const auto lowerFzAcc = highway::LowerHalf(tag_double_half, fzAcc);
 
-      fxPtr[i] += highway::ReduceSum(tag_double_half, lowerFxAcc);
-      fyPtr[i] += highway::ReduceSum(tag_double_half, lowerFyAcc);
-      fzPtr[i] += highway::ReduceSum(tag_double_half, lowerFzAcc);
-
-      if constexpr (not remainder) {
+      if constexpr (remainder) {
+        reduceAdd3_InterleaveFirst(tag_double_half, lowerFxAcc, lowerFyAcc, lowerFzAcc, fxPtr[i], fyPtr[i], fzPtr[i]);
+      } else {
         const auto upperFxAcc = highway::UpperHalf(tag_double_half, fxAcc);
         const auto upperFyAcc = highway::UpperHalf(tag_double_half, fyAcc);
         const auto upperFzAcc = highway::UpperHalf(tag_double_half, fzAcc);
 
-        const auto index = reversed ? i - 1 : i + 1;
-        fxPtr[index] += highway::ReduceSum(tag_double_half, upperFxAcc);
-        fyPtr[index] += highway::ReduceSum(tag_double_half, upperFyAcc);
-        fzPtr[index] += highway::ReduceSum(tag_double_half, upperFzAcc);
+        if constexpr (reversed) {
+          reduceAdd6Half_Vec2Store(tag_double_half, upperFxAcc, upperFyAcc, upperFzAcc, lowerFxAcc, lowerFyAcc,
+                                   lowerFzAcc, &fxPtr[i - 1], &fyPtr[i - 1], &fzPtr[i - 1]);
+        } else {
+          reduceAdd6Half_Vec2Store(tag_double_half, lowerFxAcc, lowerFyAcc, lowerFzAcc, upperFxAcc, upperFyAcc,
+                                   upperFzAcc, &fxPtr[i], &fyPtr[i], &fzPtr[i]);
+        }
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
       const auto lowerFxAcc = highway::LowerHalf(tag_double_half, fxAcc);
@@ -1115,10 +1353,9 @@ class LJFunctorHWY
                              const VectorDouble &virialSumZ, const VectorDouble &potentialEnergySum) {
     const int threadID = autopas::autopas_get_thread_num();
 
-    _threadData[threadID].virialSum[0] += highway::ReduceSum(tag_double, virialSumX);
-    _threadData[threadID].virialSum[1] += highway::ReduceSum(tag_double, virialSumY);
-    _threadData[threadID].virialSum[2] += highway::ReduceSum(tag_double, virialSumZ);
-    _threadData[threadID].potentialEnergySum += highway::ReduceSum(tag_double, potentialEnergySum);
+    reduceAdd4_Interleaved(tag_double, virialSumX, virialSumY, virialSumZ, potentialEnergySum,
+                           _threadData[threadID].virialSum[0], _threadData[threadID].virialSum[1],
+                           _threadData[threadID].virialSum[2], _threadData[threadID].potentialEnergySum);
   }
 
   /**
@@ -1138,35 +1375,35 @@ class LJFunctorHWY
    * @param dx Distance vector x-component.
    * @param dy Distance vector y-component.
    * @param dz Distance vector z-component.
-   * @param halfSigI Pre-looked-up halfSigma for particle i (used when useMixing=true).
-   * @param sqrtEpsI Pre-looked-up sqrtEpsilon for particle i (used when useMixing=true).
+   * @param halfSigmaI Pre-looked-up halfSigma for particle i (used when useMixing=true).
+   * @param sqrtEpsilonI Pre-looked-up sqrtEpsilon for particle i (used when useMixing=true).
    * @param typeJ Type ID of particle j (used when useMixing=true).
    * @return ScalarLJResult containing forces and potential energy.
    */
   HWY_INLINE ScalarLJResult computeScalarLJInteraction(const double dr2, const double dx, const double dy,
-                                                       const double dz, [[maybe_unused]] const double halfSigI,
-                                                       [[maybe_unused]] const double sqrtEpsI,
+                                                       const double dz, [[maybe_unused]] const double halfSigmaI,
+                                                       [[maybe_unused]] const double sqrtEpsilonI,
                                                        [[maybe_unused]] const size_t typeJ) const {
-    double sigSq = _sigmaSquared;
-    double eps24 = _epsilon24;
+    double sigmaSquared = _sigmaSquared;
+    double epsilon24 = _epsilon24;
     [[maybe_unused]] double shift6 = _shift6;
     if constexpr (useMixing) {
-      const double sig = halfSigI + _halfSigmaPerType[typeJ];
-      sigSq = sig * sig;
-      eps24 = 24.0 * sqrtEpsI * _sqrtEpsilonPerType[typeJ];
+      const double sig = halfSigmaI + _halfSigmaPerType[typeJ];
+      sigmaSquared = sig * sig;
+      epsilon24 = 24.0 * sqrtEpsilonI * _sqrtEpsilonPerType[typeJ];
       if constexpr (calculateGlobals and applyShift) {
-        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(eps24, sigSq, _cutoffSquared);
+        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
       }
     }
     const double invdr2 = 1.0 / dr2;
-    const double lj2 = sigSq * invdr2;
+    const double lj2 = sigmaSquared * invdr2;
     const double lj6 = lj2 * lj2 * lj2;
     const double lj12 = lj6 * lj6;
     const double lj12m6 = lj12 - lj6;
-    const double fac = eps24 * (lj12 + lj12m6) * invdr2;
+    const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
     ScalarLJResult result{dx * fac, dy * fac, dz * fac, 0.};
     if constexpr (calculateGlobals) {
-      result.potentialEnergy6 = eps24 * lj12m6 + shift6;
+      result.potentialEnergy6 = epsilon24 * lj12m6 + shift6;
     }
     return result;
   }
@@ -1197,12 +1434,12 @@ class LJFunctorHWY
    */
   template <bool isSingleCell, bool newton3>
   HWY_INLINE void scalarSoAKernel(const size_t soaSize1, const size_t soaSize2, const double *const x1Ptr,
-                                    const double *const y1Ptr, const double *const z1Ptr,
-                                    const autopas::OwnershipState *const ownedStatePtr1, double *const fx1Ptr,
-                                    double *const fy1Ptr, double *const fz1Ptr, const size_t *const typeID1Ptr,
-                                    const double *const x2Ptr, const double *const y2Ptr, const double *const z2Ptr,
-                                    const autopas::OwnershipState *const ownedStatePtr2, double *const fx2Ptr,
-                                    double *const fy2Ptr, double *const fz2Ptr, const size_t *const typeID2Ptr) {
+                                  const double *const y1Ptr, const double *const z1Ptr,
+                                  const autopas::OwnershipState *const ownedStatePtr1, double *const fx1Ptr,
+                                  double *const fy1Ptr, double *const fz1Ptr, const size_t *const typeID1Ptr,
+                                  const double *const x2Ptr, const double *const y2Ptr, const double *const z2Ptr,
+                                  const autopas::OwnershipState *const ownedStatePtr2, double *const fx2Ptr,
+                                  double *const fy2Ptr, double *const fz2Ptr, const size_t *const typeID2Ptr) {
     [[maybe_unused]] double virialX = 0., virialY = 0., virialZ = 0., potentialEnergy = 0.;
 
     // Local force accumulators kept in registers/stack to eliminate repeated memory read-modify-writes
@@ -1215,11 +1452,11 @@ class LJFunctorHWY
         continue;
       }
       const double xi = x1Ptr[i], yi = y1Ptr[i], zi = z1Ptr[i];
-      double halfSigI = 0., sqrtEpsI = 0.;
+      double halfSigmaI = 0., sqrtEpsilonI = 0.;
       if constexpr (useMixing) {
         const size_t typeI = typeID1Ptr[i];
-        halfSigI = _halfSigmaPerType[typeI];
-        sqrtEpsI = _sqrtEpsilonPerType[typeI];
+        halfSigmaI = _halfSigmaPerType[typeI];
+        sqrtEpsilonI = _sqrtEpsilonPerType[typeI];
       }
       [[maybe_unused]] const bool isOwnedI = (ownedStatePtr1[i] == autopas::OwnershipState::owned);
 
@@ -1235,7 +1472,7 @@ class LJFunctorHWY
 
         if (dr2 <= _cutoffSquared) {
           const auto [fx, fy, fz, pot6] =
-              computeScalarLJInteraction(dr2, dx, dy, dz, halfSigI, sqrtEpsI, useMixing ? typeID2Ptr[j] : 0);
+              computeScalarLJInteraction(dr2, dx, dy, dz, halfSigmaI, sqrtEpsilonI, useMixing ? typeID2Ptr[j] : 0);
           fx1Acc[i] += fx;
           fy1Acc[i] += fy;
           fz1Acc[i] += fz;
@@ -1414,7 +1651,7 @@ class LJFunctorHWY
                             double *const __restrict fz2Ptr, const ParameterPolicy &paramPolicy, VectorDouble &fxAcc,
                             VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
                             VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &potentialEnergySum,
-                            const unsigned int restJ) const {
+                            const size_t restJ) const {
     VectorDouble x2;
     VectorDouble y2;
     VectorDouble z2;
@@ -1832,9 +2069,8 @@ class LJFunctorHWY
                                      potentialEnergySum, rest);
     }
 
-    fxPtr[indexFirst] += highway::ReduceSum(tag_double, fxAcc);
-    fyPtr[indexFirst] += highway::ReduceSum(tag_double, fyAcc);
-    fzPtr[indexFirst] += highway::ReduceSum(tag_double, fzAcc);
+    reduceAdd3_InterleaveFirst(tag_double, fxAcc, fyAcc, fzAcc, fxPtr[indexFirst], fyPtr[indexFirst],
+                               fzPtr[indexFirst]);
 
     if constexpr (calculateGlobals) {
       computeGlobals(virialSumX, virialSumY, virialSumZ, potentialEnergySum);
