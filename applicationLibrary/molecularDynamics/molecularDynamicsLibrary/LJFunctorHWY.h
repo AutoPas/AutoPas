@@ -721,7 +721,7 @@ class LJFunctorHWY
    * @tparam vecPattern
    */
   template <VectorizationPattern vecPattern>
-  static size_t iStepSize() {
+  HWY_INLINE constexpr static size_t iStepSize() {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       return 1;
     }
@@ -743,7 +743,7 @@ class LJFunctorHWY
    * @tparam vecPattern
    */
   template <VectorizationPattern vecPattern>
-  static size_t jStepSize() {
+  HWY_INLINE constexpr static size_t jStepSize() {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       return _vecLengthDouble;
     }
@@ -760,21 +760,6 @@ class LJFunctorHWY
     return {};
   }
 
-  /**
-   * Checks whether the inner loop over j should be continued. This depends on the respective VectorizationPattern.
-   *
-   * @tparam vecPattern
-   * @param i
-   * @param j
-   * @return  true if the inner loop over j should be continued, else false.
-   */
-  template <VectorizationPattern vecPattern>
-  static constexpr bool checkSecondLoopCondition(std::ptrdiff_t i, size_t j) {
-    // Round i down to the nearest multiple of jStep (the j-lane width) to get the exclusive upper bound.
-    const auto jStep = static_cast<std::ptrdiff_t>(jStepSize<vecPattern>());
-    const std::ptrdiff_t limit = i - (i % jStep);
-    return j < static_cast<size_t>(limit);
-  }
   /**
    * Loads a single attribute array for the outer i-loop according to the specified VectorizationPattern.
    *
@@ -1625,7 +1610,6 @@ class LJFunctorHWY
                             VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
                             VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &potentialEnergySum,
                             const size_t restJ) const {
-
     const auto x2 = loadJRegister<remainderJ, vecPattern>(tag_double, x2Ptr, j, restJ);
     const auto y2 = loadJRegister<remainderJ, vecPattern>(tag_double, y2Ptr, j, restJ);
     const auto z2 = loadJRegister<remainderJ, vecPattern>(tag_double, z2Ptr, j, restJ);
@@ -1674,7 +1658,6 @@ class LJFunctorHWY
    * @tparam remainder Whether this is a remainder iteration.
    * @tparam ParameterPolicy Type of parameter policy providing pair parameters.
    * @param j Loop index into the neighbor list.
-   * @param notDummyMaskI Mask indicating valid particle i.
    * @param ownedMaskI Mask indicating owned particle i.
    * @param x1 Position x of particle i.
    * @param y1 Position y of particle i.
@@ -1698,8 +1681,7 @@ class LJFunctorHWY
    * @param rest Number of remaining elements in remainder iteration.
    */
   template <bool newton3, bool remainder = false, typename ParameterPolicy>
-  HWY_INLINE void SoAKernelVerlet(const size_t j, const MaskDouble &notDummyMaskI,
-                                  [[maybe_unused]] const MaskDouble &ownedMaskI, const VectorDouble &x1,
+  HWY_INLINE void SoAKernelVerlet(const size_t j, [[maybe_unused]] const MaskDouble &ownedMaskI, const VectorDouble &x1,
                                   const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict xPtr,
                                   const double *const __restrict yPtr, const double *const __restrict zPtr,
                                   const int64_t *const __restrict ownedStatePtr, double *const __restrict fxPtr,
@@ -1747,8 +1729,7 @@ class LJFunctorHWY
     const auto drX2 = highway::Mul(drX, drX);
     const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, drX2));
 
-    const auto dummyMask = highway::And(notDummyMaskI, notDummyMaskJ);
-    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, _cutoffSquaredVec);
+    const auto cutoffDummyMask = highway::MaskedLe(notDummyMaskJ, dr2, _cutoffSquaredVec);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
       return;
@@ -1821,16 +1802,16 @@ class LJFunctorHWY
                                                      ownedMaskI, restI);
     paramPolicy.template prepareI<remainderI, reversed, vecPattern>(i, restI);
 
-    auto j = static_cast<std::ptrdiff_t>(jVecStart);
-    for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j);
-         j += static_cast<std::ptrdiff_t>(jStepSize<vecPattern>())) {
+    constexpr size_t jStep = jStepSize<vecPattern>();
+    const size_t restJ = jVecEnd & (jStep - 1);
+    const size_t jVecEndFull = jVecEnd - restJ;
+    size_t j = jVecStart;
+    for (; j < jVecEndFull; j += jStep) {
       SoAKernel<newton3, false, vecPattern>(j, notDummyMaskI, ownedMaskI,
                                             reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2,
                                             zPtr2, fxPtr2, fyPtr2, fzPtr2, paramPolicy, fxAcc, fyAcc, fzAcc, virialSumX,
                                             virialSumY, virialSumZ, potentialEnergySum, 0);
     }
-
-    const size_t restJ = jVecEnd & (jStepSize<vecPattern>() - 1);
     if (restJ > 0) {
       SoAKernel<newton3, true, vecPattern>(j, notDummyMaskI, ownedMaskI,
                                            reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2,
@@ -1865,7 +1846,7 @@ class LJFunctorHWY
     auto virialSumZ = highway::Zero(tag_double);
     auto potentialEnergySum = highway::Zero(tag_double);
 
-    for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soa.size()) - 1; i >= 0; i -= 1) {
+    for (size_t i = soa.size() - 1; i >= 1; i -= 1) {
       static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
 
@@ -1916,21 +1897,19 @@ class LJFunctorHWY
     auto *const __restrict fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const std::ptrdiff_t startI =
-        sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().startI) : 0;
-    const std::ptrdiff_t endI = sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().endI)
-                                                                  : static_cast<std::ptrdiff_t>(n1);
+    const size_t startI = sorted && sortingData.has_value() ? sortingData->get().startI : 0;
+    const size_t endI = sorted && sortingData.has_value() ? sortingData->get().endI : n1;
 
     VectorDouble virialSumX = highway::Zero(tag_double);
     VectorDouble virialSumY = highway::Zero(tag_double);
     VectorDouble virialSumZ = highway::Zero(tag_double);
     VectorDouble potentialEnergySum = highway::Zero(tag_double);
 
-    const size_t iStep = iStepSize<vecPattern>();
-    const size_t jStep = jStepSize<vecPattern>();
+    constexpr size_t iStep = iStepSize<vecPattern>();
+    constexpr size_t jStep = jStepSize<vecPattern>();
 
-    std::ptrdiff_t i = startI;
-    for (; i + static_cast<std::ptrdiff_t>(iStep) <= endI; i += static_cast<std::ptrdiff_t>(iStep)) {
+    size_t i = startI;
+    for (; i + iStep <= endI; i += iStep) {
       size_t jVecEnd{};
       size_t jVecStart = 0;
       if constexpr (sorted) {
@@ -1954,7 +1933,7 @@ class LJFunctorHWY
           fy2Ptr, fz2Ptr, paramPolicy, virialSumX, virialSumY, virialSumZ, potentialEnergySum, 0, jVecStart, jVecEnd);
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
-      const std::ptrdiff_t restI = endI - i;
+      const size_t restI = endI - i;
       if (restI > 0) {
         size_t jVecEnd = n2;
         size_t jVecStart = 0;
@@ -2015,7 +1994,6 @@ class LJFunctorHWY
     const VectorDouble z1 = highway::Set(tag_double, zPtr[indexFirst]);
     const auto ownedI = static_cast<int64_t>(ownedStatePtr[indexFirst]);
     const VectorDouble ownedStateI = highway::Set(tag_double, static_cast<double>(ownedI));
-    const MaskDouble notDummyMaskI = highway::Ne(ownedStateI, highway::Zero(tag_double));
     [[maybe_unused]] MaskDouble ownedMaskI;
     if constexpr (calculateGlobals) {
       constexpr auto ownedVal = static_cast<double>(static_cast<int64_t>(autopas::OwnershipState::owned));
@@ -2024,19 +2002,18 @@ class LJFunctorHWY
 
     size_t j = 0;
     const size_t neighborListSize = neighborList.size();
-    const size_t vecEnd = (neighborListSize / _vecLengthDouble) * _vecLengthDouble;
+    const size_t rest = neighborListSize & (_vecLengthDouble - 1);
+    const size_t vecEnd = neighborListSize - rest;
 
     for (; j < vecEnd; j += _vecLengthDouble) {
-      SoAKernelVerlet<newton3, false>(j, notDummyMaskI, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
+      SoAKernelVerlet<newton3, false>(j, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
                                       reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
                                       paramPolicy, neighborList.data(), fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
                                       virialSumZ, potentialEnergySum, 0);
     }
 
-    const size_t rest = neighborListSize & (_vecLengthDouble - 1);
-
     if (rest > 0) {
-      SoAKernelVerlet<newton3, true>(j, notDummyMaskI, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
+      SoAKernelVerlet<newton3, true>(j, ownedMaskI, x1, y1, z1, xPtr, yPtr, zPtr,
                                      reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr, paramPolicy,
                                      neighborList.data(), fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ,
                                      potentialEnergySum, rest);
