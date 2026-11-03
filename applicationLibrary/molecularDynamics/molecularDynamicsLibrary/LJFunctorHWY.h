@@ -349,35 +349,24 @@ class LJFunctorHWY
       return;
     }
 
-    auto sigmaSquared = _sigmaSquared;
-    auto epsilon24 = _epsilon24;
-    auto shift6 = _shift6;
+    double halfSigI = 0., sqrtEpsI = 0.;
+    size_t typeJ = 0;
     if constexpr (useMixing) {
       const auto typeI = i.getTypeId();
-      const auto typeJ = j.getTypeId();
-      const auto sigma = _halfSigmaPerType[typeI] + _halfSigmaPerType[typeJ];
-      sigmaSquared = sigma * sigma;
-      epsilon24 = 24.0 * _sqrtEpsilonPerType[typeI] * _sqrtEpsilonPerType[typeJ];
-      if constexpr (calculateGlobals and applyShift) {
-        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
-      }
+      typeJ = j.getTypeId();
+      halfSigI = _halfSigmaPerType[typeI];
+      sqrtEpsI = _sqrtEpsilonPerType[typeI];
     }
 
-    const double invdr2 = 1. / dr2;
-    double lj6 = sigmaSquared * invdr2;
-    lj6 = lj6 * lj6 * lj6;
-    const double lj12 = lj6 * lj6;
-    const double lj12m6 = lj12 - lj6;
-    const double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    const auto f = dr * fac;
+    const auto [fx, fy, fz, potentialEnergy6] =
+        computeScalarLJInteraction(dr2, dr[0], dr[1], dr[2], halfSigI, sqrtEpsI, typeJ);
+    const std::array<double, 3> f{fx, fy, fz};
     i.addF(f);
     if (newton3) {
       j.subF(f);
     }
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       const auto virial = dr * f;
-      const double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
-
       const int threadID = autopas::autopas_get_thread_num();
 
       if (i.isOwned()) {
@@ -398,7 +387,24 @@ class LJFunctorHWY
    * This functor will always do a newton3 like traversal of the SoA using only the 1xVec Pattern.
    */
   inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, [[maybe_unused]] const bool newton3) final {
-    if (soa.size() == 0) return;
+    const auto soaSize = soa.size();
+    if (soaSize <= 1) return;
+
+    if (soaSize <= 7) {
+      const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
+      const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
+      const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
+      const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
+      auto *const __restrict fxPtr = soa.template begin<Particle_T::AttributeNames::forceX>();
+      auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
+      auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
+      const auto *const __restrict typeIDPtr =
+          useMixing ? soa.template begin<Particle_T::AttributeNames::typeId>() : nullptr;
+
+      scalarSoAKernel<true, true>(soaSize, soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, typeIDPtr,
+                                  xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, typeIDPtr);
+      return;
+    }
 
     if constexpr (useMixing) {
       const auto *const __restrict typeIDPtr = soa.template begin<Particle_T::AttributeNames::typeId>();
@@ -886,7 +892,7 @@ class LJFunctorHWY
    */
   template <bool remainder, VectorizationPattern vecPattern, typename Tag, typename ValueType>
   HWY_INLINE static auto loadJRegister(Tag tag, const ValueType *const __restrict dataPtr, const size_t j,
-                                   const size_t restJ) {
+                                       const size_t restJ) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       if constexpr (remainder) {
         return highway::LoadN(tag, &dataPtr[j], restJ);
@@ -928,10 +934,11 @@ class LJFunctorHWY
    * @param rest The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, VectorizationPattern vecPattern>
-  HWY_INLINE static void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
-                             const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
-                             VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, MaskDouble &notDummyMaskJ,
-                             [[maybe_unused]] MaskDouble &ownedMaskJ, const unsigned int rest) {
+  HWY_INLINE static void fillJRegisters(const size_t j, const double *const __restrict x2Ptr,
+                                        const double *const __restrict y2Ptr, const double *const __restrict z2Ptr,
+                                        const int64_t *const __restrict ownedStatePtr2, VectorDouble &x2,
+                                        VectorDouble &y2, VectorDouble &z2, MaskDouble &notDummyMaskJ,
+                                        [[maybe_unused]] MaskDouble &ownedMaskJ, const unsigned int rest) {
     const auto ownedStateJLong = loadJRegister<remainder, vecPattern>(tag_long, ownedStatePtr2, j, rest);
     x2 = loadJRegister<remainder, vecPattern>(tag_double, x2Ptr, j, rest);
     y2 = loadJRegister<remainder, vecPattern>(tag_double, y2Ptr, j, rest);
@@ -984,9 +991,9 @@ class LJFunctorHWY
    */
   template <bool remainder, bool subtract, typename Tag>
   HWY_INLINE static void updateForceArrays(const Tag tag, const size_t offset, double *const __restrict fxPtr,
-                                       double *const __restrict fyPtr, double *const __restrict fzPtr,
-                                       const highway::VFromD<Tag> &dfx, const highway::VFromD<Tag> &dfy,
-                                       const highway::VFromD<Tag> &dfz, const size_t lanes) {
+                                           double *const __restrict fyPtr, double *const __restrict fzPtr,
+                                           const highway::VFromD<Tag> &dfx, const highway::VFromD<Tag> &dfy,
+                                           const highway::VFromD<Tag> &dfz, const size_t lanes) {
     const auto oldFx = remainder ? highway::LoadN(tag, &fxPtr[offset], lanes) : highway::LoadU(tag, &fxPtr[offset]);
     const auto oldFy = remainder ? highway::LoadN(tag, &fyPtr[offset], lanes) : highway::LoadU(tag, &fyPtr[offset]);
     const auto oldFz = remainder ? highway::LoadN(tag, &fzPtr[offset], lanes) : highway::LoadU(tag, &fzPtr[offset]);
@@ -1008,8 +1015,8 @@ class LJFunctorHWY
 
   template <bool remainder, VectorizationPattern vecPattern>
   HWY_INLINE static void handleNewton3Reduction(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
-                                     double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
-                                     double *const __restrict fz2Ptr, const size_t j, const size_t rest) {
+                                                double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
+                                                double *const __restrict fz2Ptr, const size_t j, const size_t rest) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       updateForceArrays<remainder, true>(tag_double, j, fx2Ptr, fy2Ptr, fz2Ptr, fx, fy, fz, rest);
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -1112,6 +1119,170 @@ class LJFunctorHWY
     _threadData[threadID].virialSum[1] += highway::ReduceSum(tag_double, virialSumY);
     _threadData[threadID].virialSum[2] += highway::ReduceSum(tag_double, virialSumZ);
     _threadData[threadID].potentialEnergySum += highway::ReduceSum(tag_double, potentialEnergySum);
+  }
+
+  /**
+   * Struct holding the result of a scalar Lennard-Jones interaction calculation.
+   */
+  struct ScalarLJResult {
+    double fx{0.};
+    double fy{0.};
+    double fz{0.};
+    double potentialEnergy6{0.};
+  };
+
+  /**
+   * Computes the scalar Lennard-Jones interaction between two particles.
+   *
+   * @param dr2 Distance squared between particles.
+   * @param dx Distance vector x-component.
+   * @param dy Distance vector y-component.
+   * @param dz Distance vector z-component.
+   * @param halfSigI Pre-looked-up halfSigma for particle i (used when useMixing=true).
+   * @param sqrtEpsI Pre-looked-up sqrtEpsilon for particle i (used when useMixing=true).
+   * @param typeJ Type ID of particle j (used when useMixing=true).
+   * @return ScalarLJResult containing forces and potential energy.
+   */
+  HWY_INLINE ScalarLJResult computeScalarLJInteraction(const double dr2, const double dx, const double dy,
+                                                       const double dz, [[maybe_unused]] const double halfSigI,
+                                                       [[maybe_unused]] const double sqrtEpsI,
+                                                       [[maybe_unused]] const size_t typeJ) const {
+    double sigSq = _sigmaSquared;
+    double eps24 = _epsilon24;
+    [[maybe_unused]] double shift6 = _shift6;
+    if constexpr (useMixing) {
+      const double sig = halfSigI + _halfSigmaPerType[typeJ];
+      sigSq = sig * sig;
+      eps24 = 24.0 * sqrtEpsI * _sqrtEpsilonPerType[typeJ];
+      if constexpr (calculateGlobals and applyShift) {
+        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(eps24, sigSq, _cutoffSquared);
+      }
+    }
+    const double invdr2 = 1.0 / dr2;
+    const double lj2 = sigSq * invdr2;
+    const double lj6 = lj2 * lj2 * lj2;
+    const double lj12 = lj6 * lj6;
+    const double lj12m6 = lj12 - lj6;
+    const double fac = eps24 * (lj12 + lj12m6) * invdr2;
+    ScalarLJResult result{dx * fac, dy * fac, dz * fac, 0.};
+    if constexpr (calculateGlobals) {
+      result.potentialEnergy6 = eps24 * lj12m6 + shift6;
+    }
+    return result;
+  }
+
+  /**
+   * Scalar fallback kernel for small particle counts (N <= 7).
+   *
+   * @tparam isSingleCell Whether computing interactions within a single cell (i > j).
+   * @tparam newton3 Whether Newton's third law is enabled.
+   * @param soaSize1 Number of particles in first cell.
+   * @param soaSize2 Number of particles in second cell.
+   * @param x1Ptr Pointer to posX array of cell 1.
+   * @param y1Ptr Pointer to posY array of cell 1.
+   * @param z1Ptr Pointer to posZ array of cell 1.
+   * @param ownedStatePtr1 Pointer to ownershipState array of cell 1.
+   * @param fx1Ptr Pointer to forceX array of cell 1.
+   * @param fy1Ptr Pointer to forceY array of cell 1.
+   * @param fz1Ptr Pointer to forceZ array of cell 1.
+   * @param typeID1Ptr Pointer to typeId array of cell 1.
+   * @param x2Ptr Pointer to posX array of cell 2.
+   * @param y2Ptr Pointer to posY array of cell 2.
+   * @param z2Ptr Pointer to posZ array of cell 2.
+   * @param ownedStatePtr2 Pointer to ownershipState array of cell 2.
+   * @param fx2Ptr Pointer to forceX array of cell 2.
+   * @param fy2Ptr Pointer to forceY array of cell 2.
+   * @param fz2Ptr Pointer to forceZ array of cell 2.
+   * @param typeID2Ptr Pointer to typeId array of cell 2.
+   */
+  template <bool isSingleCell, bool newton3>
+  HWY_INLINE void scalarSoAKernel(const size_t soaSize1, const size_t soaSize2, const double *const x1Ptr,
+                                    const double *const y1Ptr, const double *const z1Ptr,
+                                    const autopas::OwnershipState *const ownedStatePtr1, double *const fx1Ptr,
+                                    double *const fy1Ptr, double *const fz1Ptr, const size_t *const typeID1Ptr,
+                                    const double *const x2Ptr, const double *const y2Ptr, const double *const z2Ptr,
+                                    const autopas::OwnershipState *const ownedStatePtr2, double *const fx2Ptr,
+                                    double *const fy2Ptr, double *const fz2Ptr, const size_t *const typeID2Ptr) {
+    [[maybe_unused]] double virialX = 0., virialY = 0., virialZ = 0., potentialEnergy = 0.;
+
+    // Local force accumulators kept in registers/stack to eliminate repeated memory read-modify-writes
+    std::array<double, 8> fx1Acc{}, fy1Acc{}, fz1Acc{};
+    std::array<double, 8> fx2Acc{}, fy2Acc{}, fz2Acc{};
+
+    constexpr size_t startI = isSingleCell ? 1 : 0;
+    for (size_t i = startI; i < soaSize1; ++i) {
+      if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
+        continue;
+      }
+      const double xi = x1Ptr[i], yi = y1Ptr[i], zi = z1Ptr[i];
+      double halfSigI = 0., sqrtEpsI = 0.;
+      if constexpr (useMixing) {
+        const size_t typeI = typeID1Ptr[i];
+        halfSigI = _halfSigmaPerType[typeI];
+        sqrtEpsI = _sqrtEpsilonPerType[typeI];
+      }
+      [[maybe_unused]] const bool isOwnedI = (ownedStatePtr1[i] == autopas::OwnershipState::owned);
+
+      const size_t endJ = isSingleCell ? i : soaSize2;
+      for (size_t j = 0; j < endJ; ++j) {
+        if (ownedStatePtr2[j] == autopas::OwnershipState::dummy) {
+          continue;
+        }
+        const double dx = xi - x2Ptr[j];
+        const double dy = yi - y2Ptr[j];
+        const double dz = zi - z2Ptr[j];
+        const double dr2 = dx * dx + dy * dy + dz * dz;
+
+        if (dr2 <= _cutoffSquared) {
+          const auto [fx, fy, fz, pot6] =
+              computeScalarLJInteraction(dr2, dx, dy, dz, halfSigI, sqrtEpsI, useMixing ? typeID2Ptr[j] : 0);
+          fx1Acc[i] += fx;
+          fy1Acc[i] += fy;
+          fz1Acc[i] += fz;
+          if constexpr (newton3) {
+            if constexpr (isSingleCell) {
+              fx1Acc[j] -= fx;
+              fy1Acc[j] -= fy;
+              fz1Acc[j] -= fz;
+            } else {
+              fx2Acc[j] -= fx;
+              fy2Acc[j] -= fy;
+              fz2Acc[j] -= fz;
+            }
+          }
+          if constexpr (calculateGlobals) {
+            const bool isOwnedJ = newton3 and (ownedStatePtr2[j] == autopas::OwnershipState::owned);
+            const double energyFactor = (isOwnedI ? 1.0 : 0.0) + (isOwnedJ ? 1.0 : 0.0);
+            potentialEnergy += energyFactor * pot6;
+            virialX += energyFactor * fx * dx;
+            virialY += energyFactor * fy * dy;
+            virialZ += energyFactor * fz * dz;
+          }
+        }
+      }
+    }
+
+    // Flush accumulated forces to memory in a single sequential pass
+    for (size_t i = 0; i < soaSize1; ++i) {
+      fx1Ptr[i] += fx1Acc[i];
+      fy1Ptr[i] += fy1Acc[i];
+      fz1Ptr[i] += fz1Acc[i];
+    }
+    if constexpr (newton3 and not isSingleCell) {
+      for (size_t j = 0; j < soaSize2; ++j) {
+        fx2Ptr[j] += fx2Acc[j];
+        fy2Ptr[j] += fy2Acc[j];
+        fz2Ptr[j] += fz2Acc[j];
+      }
+    }
+
+    if constexpr (calculateGlobals) {
+      const int threadID = autopas::autopas_get_thread_num();
+      _threadData[threadID].potentialEnergySum += potentialEnergy;
+      _threadData[threadID].virialSum[0] += virialX;
+      _threadData[threadID].virialSum[1] += virialY;
+      _threadData[threadID].virialSum[2] += virialZ;
+    }
   }
 
   /**
@@ -1684,6 +1855,51 @@ class LJFunctorHWY
       autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3,
       [[maybe_unused]] const std::optional<std::reference_wrapper<const autopas::SoASortingData>> &sortingData =
           std::nullopt) {
+    const size_t soaSize1 = soa1.size();
+    const size_t soaSize2 = soa2.size();
+
+    if (soaSize1 <= 7 and soaSize2 <= 7) {
+      if constexpr (sorted) {
+        if (sortingData.has_value()) {
+          const auto &sd = sortingData->get();
+          if (sd.startI >= sd.endI) {
+            return;
+          }
+        }
+      }
+
+      const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+      const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+      const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+      const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+      auto *const __restrict fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
+      auto *const __restrict fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
+      auto *const __restrict fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+      const auto *const __restrict typeID1Ptr =
+          useMixing ? soa1.template begin<Particle_T::AttributeNames::typeId>() : nullptr;
+
+      const auto *const __restrict x2Ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+      const auto *const __restrict y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+      const auto *const __restrict z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
+      const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
+      auto *const __restrict fx2Ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
+      auto *const __restrict fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
+      auto *const __restrict fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+      const auto *const __restrict typeID2Ptr =
+          useMixing ? soa2.template begin<Particle_T::AttributeNames::typeId>() : nullptr;
+
+      if (newton3) {
+        scalarSoAKernel<false, true>(soaSize1, soaSize2, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, fx1Ptr, fy1Ptr, fz1Ptr,
+                                     typeID1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx2Ptr, fy2Ptr, fz2Ptr,
+                                     typeID2Ptr);
+      } else {
+        scalarSoAKernel<false, false>(soaSize1, soaSize2, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, fx1Ptr, fy1Ptr, fz1Ptr,
+                                      typeID1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx2Ptr, fy2Ptr, fz2Ptr,
+                                      typeID2Ptr);
+      }
+      return;
+    }
+
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec: {
         if (newton3) {
