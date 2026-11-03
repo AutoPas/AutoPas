@@ -273,3 +273,32 @@ using MyTypes = ::testing::Types<Newton3True<LJFunShiftMixNoGlob>, Newton3False<
 #endif
                                  >;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestNoGlobals, MyTypes);
+
+/**
+ * Tests that the mixing buffers work correctly in the stack and heap regime.
+ */
+TEST(MixingBuffersTest, testMixingBuffersAutoVec) {
+  using MixingBuffers_t = mdLib::LJFunctor<Molecule, false, true>::MixingBuffers<4>;
+  MixingBuffers_t buffers;
+  const std::vector<double> halfSigma = {0.5, 1.0, 1.5};
+  const std::vector<double> sqrtEpsilon = {1.0, 2.0, 3.0};
+  const std::vector<size_t> typeIDs = {0, 1, 2, 0, 1, 2};
+  double *halfSigmaPtr = nullptr;
+  double *sqrtEpsilonPtr = nullptr;
+
+  // Stack buffer path (size <= StackCapacity = 4)
+  buffers.template getMixingPointers<0>(typeIDs.data(), 4, halfSigma, sqrtEpsilon, halfSigmaPtr, sqrtEpsilonPtr);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(halfSigmaPtr) % 64, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(sqrtEpsilonPtr) % 64, 0);
+  EXPECT_DOUBLE_EQ(halfSigmaPtr[0], 0.5);
+  EXPECT_DOUBLE_EQ(halfSigmaPtr[1], 1.0);
+  EXPECT_DOUBLE_EQ(halfSigmaPtr[2], 1.5);
+  EXPECT_DOUBLE_EQ(halfSigmaPtr[3], 0.5);
+
+  // Heap buffer path (size > StackCapacity = 4)
+  buffers.template getMixingPointers<0>(typeIDs.data(), 6, halfSigma, sqrtEpsilon, halfSigmaPtr, sqrtEpsilonPtr);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(halfSigmaPtr) % 64, 0);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(sqrtEpsilonPtr) % 64, 0);
+  EXPECT_DOUBLE_EQ(halfSigmaPtr[4], 1.0);
+  EXPECT_DOUBLE_EQ(halfSigmaPtr[5], 1.5);
+}
