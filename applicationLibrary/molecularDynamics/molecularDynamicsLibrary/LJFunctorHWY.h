@@ -419,6 +419,27 @@ class LJFunctorHWY
 
  private:
   /**
+   * Initializes the functor's internal constants from the provided ParticlePropertiesLibrary.
+   * @param ppl The ParticlePropertiesLibrary containing particle properties.
+   */
+  void initFromPPL(const ParticlePropertiesLibrary<double, size_t> &ppl) {
+    const size_t nTypes = ppl.getNumberRegisteredSiteTypes();
+    _halfSigmaPerType.resize(nTypes);
+    _sqrtEpsilonPerType.resize(nTypes);
+    for (size_t t = 0; t < nTypes; ++t) {
+      _halfSigmaPerType[t] = ppl.getSigma(t) * 0.5;
+      _sqrtEpsilonPerType[t] = std::sqrt(ppl.getEpsilon(t));
+    }
+    if (nTypes > 0) {
+      _sigmaSquared = 4.0 * _halfSigmaPerType[0] * _halfSigmaPerType[0];
+      _epsilon24 = 24.0 * _sqrtEpsilonPerType[0] * _sqrtEpsilonPerType[0];
+      if constexpr (applyShift) {
+        _shift6 = ParticlePropertiesLibrary<>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared);
+      }
+    }
+  }
+
+  /**
    * Number of i-particles processed per outer-loop step for the given vectorization pattern.
    * @tparam vecPattern
    */
@@ -1542,18 +1563,11 @@ class LJFunctorHWY
     const double *se1Ptr = nullptr;
     const size_t *typeIDPtr = nullptr;
 
+    const bool isHomogeneous = not useMixing or _halfSigmaPerType.size() <= 1;
+
     if constexpr (useMixing) {
       typeIDPtr = soa.template begin<Particle_T::AttributeNames::typeId>();
-      if (soaIsHomogeneous(typeIDPtr, soa.size())) {
-        const size_t type = soa.size() > 0 ? typeIDPtr[0] : 0;
-        const double sigma = 2.0 * _halfSigmaPerType[type];
-        homoSigmaSquared = sigma * sigma;
-        homoEpsilon24 = 24.0 * _sqrtEpsilonPerType[type] * _sqrtEpsilonPerType[type];
-        if constexpr (calculateGlobals and applyShift) {
-          homoShift6 =
-              ParticlePropertiesLibrary<double, size_t>::calcShift6(homoEpsilon24, homoSigmaSquared, _cutoffSquared);
-        }
-      } else {
+      if (not isHomogeneous) {
         const size_t typeI = typeIDPtr[indexFirst];
         halfSigmaI = _halfSigmaPerType[typeI];
         sqrtEpsilonI = _sqrtEpsilonPerType[typeI];
@@ -1759,23 +1773,6 @@ class LJFunctorHWY
   void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
 
  private:
-  void initFromPPL(const ParticlePropertiesLibrary<double, size_t> &ppl) {
-    const size_t nTypes = ppl.getNumberRegisteredSiteTypes();
-    _halfSigmaPerType.resize(nTypes);
-    _sqrtEpsilonPerType.resize(nTypes);
-    for (size_t t = 0; t < nTypes; ++t) {
-      _halfSigmaPerType[t] = ppl.getSigma(t) * 0.5;
-      _sqrtEpsilonPerType[t] = std::sqrt(ppl.getEpsilon(t));
-    }
-    if (nTypes > 0) {
-      _sigmaSquared = 4.0 * _halfSigmaPerType[0] * _halfSigmaPerType[0];
-      _epsilon24 = 24.0 * _sqrtEpsilonPerType[0] * _sqrtEpsilonPerType[0];
-      if constexpr (applyShift) {
-        _shift6 = ppl.getMixingShift6(0, 0);
-      }
-    }
-  }
-
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
    */

@@ -177,6 +177,27 @@ class LJFunctor
 
  private:
   /**
+   * Initializes the functor's internal constants from the provided ParticlePropertiesLibrary.
+   * @param ppl The ParticlePropertiesLibrary containing particle properties.
+   */
+  void initFromPPL(const ParticlePropertiesLibrary<double, size_t> &ppl) {
+    const size_t nTypes = ppl.getNumberRegisteredSiteTypes();
+    _halfSigmaPerType.resize(nTypes);
+    _sqrtEpsilonPerType.resize(nTypes);
+    for (size_t t = 0; t < nTypes; ++t) {
+      _halfSigmaPerType[t] = ppl.getSigma(t) * 0.5;
+      _sqrtEpsilonPerType[t] = std::sqrt(ppl.getEpsilon(t));
+    }
+    if (nTypes > 0) {
+      _sigmaSquared = 4.0 * _halfSigmaPerType[0] * _halfSigmaPerType[0];
+      _epsilon24 = 24.0 * _sqrtEpsilonPerType[0] * _sqrtEpsilonPerType[0];
+      if constexpr (applyShift) {
+        _shift6 = ParticlePropertiesLibrary<>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared);
+      }
+    }
+  }
+
+  /**
    * Checks whether all particles within an SoA have identical type IDs.
    *
    * @param typeIDPtr Pointer to the particle type IDs array.
@@ -957,20 +978,11 @@ class LJFunctor
     SoAFloatPrecision sigmaSquared = _sigmaSquared;
     SoAFloatPrecision epsilon24 = _epsilon24;
 
-    bool isHomogeneous = true;
+    const bool isHomogeneous = not useMixing or _halfSigmaPerType.size() <= 1;
     SoAFloatPrecision halfSigmaI = 0.;
     SoAFloatPrecision sqrtEpsilonI = 0.;
     if constexpr (useMixing) {
-      if (soaIsHomogeneous(typePtr1, soa.size())) {
-        const size_t type = soa.size() > 0 ? typePtr1[0] : 0;
-        const auto sigma = 2.0 * _halfSigmaPerType[type];
-        sigmaSquared = sigma * sigma;
-        epsilon24 = 24.0 * _sqrtEpsilonPerType[type] * _sqrtEpsilonPerType[type];
-        if constexpr (calculateGlobals and applyShift) {
-          shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
-        }
-      } else {
-        isHomogeneous = false;
+      if (not isHomogeneous) {
         const size_t typeI = typePtr1[indexFirst];
         halfSigmaI = _halfSigmaPerType[typeI];
         sqrtEpsilonI = _sqrtEpsilonPerType[typeI];
@@ -1362,23 +1374,6 @@ class LJFunctor
   // make sure of the size of ThreadDataGlobals and ThreadDataFLOPs
   static_assert(sizeof(ThreadDataGlobals) % 64 == 0, "ThreadDataGlobals has wrong size");
   static_assert(sizeof(ThreadDataFLOPs) % 64 == 0, "ThreadDataFLOPs has wrong size");
-
-  void initFromPPL(const ParticlePropertiesLibrary<double, size_t> &ppl) {
-    const size_t nTypes = ppl.getNumberRegisteredSiteTypes();
-    _halfSigmaPerType.resize(nTypes);
-    _sqrtEpsilonPerType.resize(nTypes);
-    for (size_t t = 0; t < nTypes; ++t) {
-      _halfSigmaPerType[t] = ppl.getSigma(t) * 0.5;
-      _sqrtEpsilonPerType[t] = std::sqrt(ppl.getEpsilon(t));
-    }
-    if (nTypes > 0) {
-      _sigmaSquared = 4.0 * _halfSigmaPerType[0] * _halfSigmaPerType[0];
-      _epsilon24 = 24.0 * _sqrtEpsilonPerType[0] * _sqrtEpsilonPerType[0];
-      if constexpr (applyShift) {
-        _shift6 = ppl.getMixingShift6(0, 0);
-      }
-    }
-  }
 
   const double _cutoffSquared;
   // not const because they might be reset through PPL
