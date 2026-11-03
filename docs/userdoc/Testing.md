@@ -43,6 +43,22 @@ There are multiple possibilities to run tests from the `/tests/` directory. In o
    tests/testAutopas/runTests --gtest_filter=ArrayMathTest.testAdd*
    ```
 
+### Testing More OpenMP Schedules
+
+Tests that sweep over all valid configurations typically only use the OpenMP schedule `static` with chunk size 1 by default.
+We assume the OpenMP runtime libraries correctly test their schedulers across a range of chunk sizes, so that if an AutoPas algorithm with static, 1 is correct, it is also correct with other OpenMP schedules.
+If you wish to sweep over more schedules, set the environment variable `AUTOPAS_TEST_OPENMP_SCHEDULES` to `core` or `extended` (`static1` is the default).
+`core` includes the `static`, `dynamic`, and (if possible by the OpenMP runtime library), `static_steal` schedules, and chunk sizes 1, `balanced` (i.e. static with default chunk size), and `golden` (our implementation of LB4OMP's golden/expert chunk size [1]).
+These are the scheduling options recommended for use with AutoPas.
+`extended` includes further scheduling kinds `guided`, and (if possible by the OpenMP runtime library) `auto`, `trapezoidal`, and the other LB4OMP scheduling techniques used by Auto4OMP [1] (`fac2a`, `awf_b`, `awf_c`, `awf_d`, `awf_e`, and `af_a`); as well as two further chunk sizes: 2 and 1000 (as a stress-test).
+
+```bash
+AUTOPAS_TEST_OPENMP_SCHEDULES=core tests/testAutopas/runTests
+```
+
+`ctest` caches the list of tests and only updates it after `runTests` is rebuilt.
+After changing the variable, run `touch tests/testAutopas/runTests` before `ctest`, otherwise the tests of the previous setting are run.
+
 ### Running Example Tests
 
 To enable the example simulations, run
@@ -96,3 +112,7 @@ make coverage
 After these commands have been executed, a folder named `$BUILD_DIR/coverage` can be found which contains the HTML output. This can be downloaded and viewed in a browser.
 
 ## Related Files and Folders
+
+## References
+
+[1] A. Mohammed, J. H. Müller Korndörfer, A. Eleliemy, and F. M. Ciorba, "Automated Scheduling Algorithm Selection and Chunk Parameter Calculation in OpenMP", IEEE Transactions on Parallel and Distributed Systems, 2022. DOI: [10.1109/TPDS.2022.3189270](https://doi.org/10.1109/TPDS.2022.3189270)

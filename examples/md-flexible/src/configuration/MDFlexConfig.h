@@ -25,6 +25,7 @@
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/OpenMPChunkSize.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
 #include "src/configuration/objects/CubeGauss.h"
@@ -316,6 +317,21 @@ class MDFlexConfig {
   MDFlexOption<std::shared_ptr<autopas::NumberSet<double>>, __LINE__> cellSizeFactors{
       std::make_shared<autopas::NumberSetFinite<double>>(std::set<double>{1.}), "cell-size", true,
       "Factor for the interaction length to determine the cell size."};
+  /**
+   * openMPKindOptions
+   */
+  MDFlexOption<std::set<autopas::OpenMPKindOption>, __LINE__> openMPKindOptions{
+      autopas::OpenMPKindOption::getMostOptions(), "openmp-schedule-kinds", true,
+      "List of OpenMP Scheduling Kind options to use. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::OpenMPKindOption::getAllParallelKinds(), " ", {"(", ")"})};
+  /**
+   * openMPChunkSizes
+   */
+  MDFlexOption<std::set<autopas::OpenMPChunkSize>, __LINE__> openMPChunkSizes{
+      {1, autopas::OpenMPChunkSize::balanced, autopas::OpenMPChunkSize::golden},
+      "openmp-chunk-sizes",
+      true,
+      "Chunk Sizes that can be used for OpenMP Scheduling. Possible Values: positive integers, 'balanced', 'golden'"};
   /**
    * logFileName
    */

@@ -25,8 +25,10 @@ namespace autopas::SearchSpaceGenerators {
  * @param allowedDataLayoutOptions
  * @param allowedNewton3Options
  * @param allowedCellSizeFactors
- * @param interactionType
+ * @param allowedOpenMPKindOptions
+ * @param allowedOpenMPChunkSizes
  * @param allowedVecPatternOptions
+ * @param interactionType
  * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return an empty set.
  * @return A set containing all valid configurations.
  */
@@ -36,6 +38,8 @@ std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowe
                                          const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                          const std::set<Newton3Option> &allowedNewton3Options,
                                          const NumberSet<double> *allowedCellSizeFactors,
+                                         const std::set<OpenMPKindOption> &allowedOpenMPKindOptions,
+                                         const std::set<OpenMPChunkSize> &allowedOpenMPChunkSizes,
                                          const std::set<VectorizationPatternOption> &allowedVecPatternOptions,
                                          const InteractionTypeOption &interactionType, bool throwIfNone = true);
 

@@ -53,6 +53,27 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04_HCP; }
 
+  /**
+   * @copydoc autopas::TraversalInterface::getRuntimeScheduledLoopCounts()
+   * Must be kept in line with traverseSingleColor().
+   */
+  [[nodiscard]] std::optional<std::vector<size_t>> getRuntimeScheduledLoopCounts(
+      const TraversalSelectorInfo &traversalInfo, size_t numParticles) const override {
+    // starting points of the four colors, coordinates: {x,y,z}
+    constexpr std::array<std::array<long, 3>, 4> startOfColors{
+        {{0l, 0l, 0l}, {-4l, 0l, 1l}, {-4l, 0l, -2l}, {-2l, 0l, -1l}}};
+
+    std::vector<size_t> loopCounts;
+    for (const auto &start : startOfColors) {
+      // x has a stride of 6 and runs until _end[0] + 4, y has a stride of 1, z has a stride of 4
+      const auto numX = (_end[0] + 4 - start[0] + 5) / 6;
+      const auto numY = _end[1] - start[1];
+      const auto numZ = (_end[2] - start[2] + 3) / 4;
+      loopCounts.push_back(static_cast<size_t>(numX * numY * numZ));
+    }
+    return loopCounts;
+  }
+
   [[nodiscard]] bool isApplicableToDomain() const override {
     // The cellsize cannot be smaller than the cutoff, if OpenMP is used.
     // Also see: https://github.com/AutoPas/AutoPas/issues/464
@@ -169,7 +190,7 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::traverseSingleColor(std::
   const long startZ = startOfThisColor[2], endZ = _end[2];
 
   // iterate over cartesian grid
-  AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3) nowait)
+  AUTOPAS_OPENMP(for schedule(runtime) collapse(3) nowait)
   for (long z = startZ; z < endZ; z += 4) {
     for (long y = startY; y < endY; y++) {
       /* color starts every 6th column again, the +4 is needed to prevent ending too early, since it

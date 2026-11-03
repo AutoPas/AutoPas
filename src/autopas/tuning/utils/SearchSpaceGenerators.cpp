@@ -19,7 +19,8 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
-    const NumberSet<double> *allowedCellSizeFactors,
+    const NumberSet<double> *allowedCellSizeFactors, const std::set<OpenMPKindOption> &allowedOpenMPKindOptions,
+    const std::set<OpenMPChunkSize> &allowedOpenMPChunkSizes,
     const std::set<VectorizationPatternOption> &allowedVecPatternOptions, const InteractionTypeOption &interactionType,
     bool throwIfNone) {
   if (allowedCellSizeFactors->isInterval()) {
@@ -30,6 +31,12 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
   // configurations.
   auto vecPatternOptions = allowedVecPatternOptions;
   vecPatternOptions.insert(VectorizationPatternOption::NA);
+  // Similarly, the sequential OpenMP schedule kind and the not-applicable chunk size are always included, used in
+  // configurations with sequential traversals.
+  auto ompKindOptions = allowedOpenMPKindOptions;
+  ompKindOptions.insert(OpenMPKindOption::sequential);
+  auto ompChunkSizes = allowedOpenMPChunkSizes;
+  ompChunkSizes.insert(OpenMPChunkSize::notApplicable);
 
   std::set<Configuration> searchSet;
   // generate all potential configs
@@ -50,11 +57,16 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
         for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
           for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
             for (const auto &newton3Option : allowedNewton3Options) {
-              for (const auto &vecPatternOption : vecPatternOptions) {
-                const Configuration configuration{containerOption,  csf,           traversalOption, loadEstimatorOption,
-                                                  dataLayoutOption, newton3Option, interactionType, vecPatternOption};
-                if (configuration.hasCompatibleValues()) {
-                  searchSet.insert(configuration);
+              for (const auto &ompKind : ompKindOptions) {
+                for (const auto &ompChunkSize : ompChunkSizes) {
+                  for (const auto &vecPatternOption : vecPatternOptions) {
+                    const Configuration configuration{
+                        containerOption, csf,     traversalOption, loadEstimatorOption, dataLayoutOption,
+                        newton3Option,   ompKind, ompChunkSize,    interactionType,     vecPatternOption};
+                    if (configuration.hasCompatibleValues()) {
+                      searchSet.insert(configuration);
+                    }
+                  }
                 }
               }
             }

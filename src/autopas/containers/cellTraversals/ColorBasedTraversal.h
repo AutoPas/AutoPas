@@ -11,6 +11,7 @@
 #include "autopas/options/InteractionTypeOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/DataLayoutConverter.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -99,6 +100,46 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
                              const std::array<unsigned long, 3> &offset = {0ul, 0ul, 0ul});
 
   /**
+   * Returns the number of iterations of each loop colorTraversal() runs with OpenMP's schedule(runtime), i.e. of the
+   * collapsed loop of each color. Must be kept in line with colorTraversal().
+   * @param end see colorTraversal()
+   * @param stride see colorTraversal()
+   * @param offset see colorTraversal()
+   * @return One loop count per color.
+   */
+  [[nodiscard]] std::vector<size_t> colorTraversalLoopCounts(const std::array<unsigned long, 3> &end,
+                                                             const std::array<unsigned long, 3> &stride,
+                                                             const std::array<unsigned long, 3> &offset = {0ul, 0ul,
+                                                                                                           0ul}) const {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    const unsigned long numColors = stride[0] * stride[1] * stride[2];
+    std::vector<size_t> loopCounts;
+    loopCounts.reserve(numColors);
+    for (unsigned long col = 0; col < numColors; ++col) {
+      const std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
+      const std::array<unsigned long, 3> start(startWithoutOffset + offset);
+
+      std::array<size_t, 3> numIterations{};
+      for (size_t d = 0; d < 3; ++d) {
+        if (start[d] >= end[d]) {
+          utils::ExceptionHandler::exception(
+              "ColorBasedTraversal::colorTraversalLoopCounts(): Color {} starts at {} in dimension {}, but ends at {}.",
+              col, start[d], d, end[d]);
+        }
+        // The "+ stride[d] - 1" means we round up always, unless "end[d] - start[d]" is perfectly divided by stride[d]
+        numIterations[d] = (end[d] - start[d] + stride[d] - 1) / stride[d];
+      }
+      if (collapseDepth == 2) {
+        loopCounts.push_back(numIterations[2] * numIterations[1]);
+      } else {
+        loopCounts.push_back(numIterations[2] * numIterations[1] * numIterations[0]);
+      }
+    }
+    return loopCounts;
+  }
+
+  /**
    * This method is called when the color during the traversal has changed.
    *
    * @param newColor The new current color.
@@ -150,7 +191,7 @@ inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTrav
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
       if (collapseDepth == 2) {
-        AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(2))
+        AUTOPAS_OPENMP(for schedule(runtime) collapse(2))
         for (unsigned long z = start_z; z < end_z; z += stride_z) {
           for (unsigned long y = start_y; y < end_y; y += stride_y) {
             for (unsigned long x = start_x; x < end_x; x += stride_x) {
@@ -160,7 +201,7 @@ inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTrav
           }
         }
       } else {
-        AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3))
+        AUTOPAS_OPENMP(for schedule(runtime) collapse(3))
         for (unsigned long z = start_z; z < end_z; z += stride_z) {
           for (unsigned long y = start_y; y < end_y; y += stride_y) {
             for (unsigned long x = start_x; x < end_x; x += stride_x) {
@@ -173,5 +214,4 @@ inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTrav
     }
   }
 }
-
 }  // namespace autopas

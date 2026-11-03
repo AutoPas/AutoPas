@@ -329,11 +329,13 @@ std::string MDFlexConfig::to_string() const {
     printOption(dataLayoutOptions3B);
     printOption(newton3Options3B);
   }
+  printOption(openMPKindOptions);
+  printOption(openMPChunkSizes);
+  printOption(cellSizeFactors);
 
   printOption(cutoff);
   printOption(boxMin);
   printOption(boxMax);
-  printOption(cellSizeFactors);
   printOption(deltaT);
   printOption(pauseSimulationDuringTuning);
   printOption(aosSortingThreshold);

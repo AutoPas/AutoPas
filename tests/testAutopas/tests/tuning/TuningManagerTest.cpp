@@ -6,7 +6,9 @@
 
 #include "TuningManagerTest.h"
 
+#include <algorithm>
 #include <ranges>
+#include <tuple>
 
 #include "autopas/LogicHandler.h"
 #include "autopas/tuning/AutoTuner.h"
@@ -17,7 +19,9 @@
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "testingHelpers/ArbitraryConfigurations.h"
+#include "testingHelpers/EmptyPairwiseFunctor.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
+#include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
@@ -365,7 +369,14 @@ TEST_F(TuningManagerTest, testForceRetuneInPhase) {
 }
 
 /**
- * Test the AutoTuner with all valid pairwise configurations in the search space.
+ * Test the AutoTuner with all valid pairwise configurations in the search space, by comparing manually determined
+ * expected number of configurations with the actuall trialled number of configurations.
+ *
+ * As there are high maintainence costs in manually determining the expected number of configurations with OpenMP
+ * scheduling kinds and chunk sizes that do not fall back to other kinds and chunk sizes and are considered
+ * inapplicable, we do two passes: one with only static, 1 scheduling (or sequential scheduling for sequential
+ * traversals), which never falls back and so we can determine an exact expected number of configurations; and another
+ * with more scheduling options, where we only determine an upper bound.
  */
 TEST_F(TuningManagerTest, testAllConfigurations) {
   const autopas::NumberSetFinite<double> cellSizeFactors({1});
@@ -397,7 +408,13 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
       .WillRepeatedly(
           testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
 
-  const auto searchSpace = generateAllValidConfigurations(autopas::InteractionTypeOption::pairwise);
+  // First pass: all valid configurations with a single OpenMP schedule (static, 1), or (sequential, NotApplicable) for
+  // sequential traversals, for which the exact numbers of configurations and iterations are known.
+  const auto searchSpace = generateAllValidConfigurations(
+      autopas::InteractionTypeOption::pairwise, autopas::ContainerOption::getAllOptions(),
+      autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
+      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions(), {0.5, 1.0, 1.5},
+      {autopas::OpenMPKindOption::omp_static}, {1});
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
   tuningManager->addAutoTuner(
@@ -409,19 +426,25 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
 
   std::map<autopas::ContainerOption, size_t> configsPerContainer;
 
+  // TODO before merge: below was changed to differentiate between static, 1 only configs and others, but it looks like
+  // we don't need this anymore. If this remains the case, we should change below to match the master version to reduce
+  // review cost.
+
   // Number of configs manually counted:
   // Configurations considered valid by cartesian product but are typically invalid due to
   // Traversal::isApplicableToDomain are still included in this count.
   //
-  // Direct Sum:            ds_sequential               (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
-  //   Subtotal:                                                                                              =   4
+  // Direct Sum:
+  //   Only sequential scheduling:
+  //                        ds_sequential               (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //     Subtotal:                                                                                            =   4
   // Direct Sum only supports CSF 1 => Multiply by 1
 
   configsPerContainer[autopas::ContainerOption::directSum] = 4;
-  // LinkedCells:           lc_c08                      (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  // LinkedCells:
+  //   All OpenMP configurations:
+  //                        lc_c08                      (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
   //                        lc_sliced                   (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
-  //                        lc_sliced_balanced          (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3,
-  //                                                     2 LB heuristics)                                     =  20
   //                        lc_sliced_c02               (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
   //                        lc_c18                      (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
   //                        lc_c01                      (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
@@ -429,62 +452,85 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   //                        lc_c04                      (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3) *     =  10
   //                        lc_c04_combined_SoA         (SoA x 4 vecPat, newton3 <=> noNewton3)         *     =   8
   //                        lc_c04_HCP                  (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3) *     =  10
-  //   Subtotal:                                                                                              =  97
+  //     Subtotal:                                                                                            =  77
+  //   Only static, 1 scheduling:
+  //                        lc_sliced_balanced          (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3,
+  //                                                     2 LB heuristics)                                     =  20
+  //     Subtotal:                                                                                            =  20
   // Linked Cells supports all CSFs (i.e. 0.5, 1.0, 1.5) => Multiply by 3
   // * C04 traversals will almost always not support CSF 0.5, but these will be excluded later.
-  configsPerContainer[autopas::ContainerOption::linkedCells] = 291;
+  configsPerContainer[autopas::ContainerOption::linkedCells] = (77 + 20) * 3;
 
   // Linked Cells References:
-  // same as linked Cells but without the squaredParticlesPerCell load estimator for sliced_balanced (-10 * 3  = -30)
+  // same as linked Cells but without the squaredParticlesPerCell load estimator for sliced_balanced. As
+  // sliced_balanced only supports static, 1 scheduling, this is (-10 * 3 = -30)
   configsPerContainer[autopas::ContainerOption::linkedCellsReferences] =
       configsPerContainer[autopas::ContainerOption::linkedCells] - 30;
 
-  // VerletLists:           vl_list_iteration           (AoS <=> SoA x 1 vecPat, noNewton3)                   =   2
-  // VerletLists:           vl_list_iteration_27        (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
-  //   Subtotal:                                                                                              =   6
+  // VerletLists:
+  //   All OpenMP configurations:
+  //                        vl_list_iteration           (AoS <=> SoA x 1 vecPat, noNewton3)                   =   2
+  //                        vl_list_iteration_27        (AoS <=> SoA, newton3 <=> noNewton3)                  =   4
+  //     Subtotal:                                                                                            =   6
   // Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
-  configsPerContainer[autopas::ContainerOption::verletLists] = 12;
+  configsPerContainer[autopas::ContainerOption::verletLists] = 6 * 2;
 
-  // VerletListsCells:      vlc_sliced                  (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
-  //                        vlc_sliced_balanced         (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3,
-  //                                                     3 LB heuristics)                                     =  12
+  // VerletListsCells:
+  //   All OpenMP configurations:
+  //                        vlc_sliced                  (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
   //                        vlc_sliced_colored          (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
   //                        vlc_c18                     (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
   //                        vlc_c01                     (AoS <=> SoA x 1 vecPat, noNewton3)                   =   2
   //                        vlc_c08                     (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
-  //   Subtotal:                                                                                              =  30
+  //     Subtotal:                                                                                            =  18
+  //   Only static, 1 scheduling:
+  //                        vlc_sliced_balanced         (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3,
+  //                                                     3 LB heuristics)                                     =  12
+  //     Subtotal:                                                                                            =  12
   // Verlet Lists Cells only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
-  configsPerContainer[autopas::ContainerOption::verletListsCells] = 60;
+  configsPerContainer[autopas::ContainerOption::verletListsCells] = (18 + 12) * 2;
 
-  // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
+  // VerletClusterLists:
+  //   All OpenMP configurations:
+  //                        vcl_cluster_iteration       (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
   //                        vcl_c06                     (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
-  //                        vcl_c01_balanced            (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
   //                        vcl_sliced                  (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
   //                        vcl_sliced_c02              (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3)       =  10
+  //     Subtotal:                                                                                            =  35
+  //   Only static, 1 scheduling:
+  //                        vcl_c01_balanced            (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
   //                        vcl_sliced_balanced         (AoS <=> SoA x 4 vecPat, newton3 <=> noNewton3,
   //                                                     2 LB heuristics)                                     =  20
-  //   Subtotal:                                                                                              =  60
+  //     Subtotal:                                                                                            =  25
   // Verlet Cluster Lists only support CSF 1 => Multiply by 1
-  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 60;
+  configsPerContainer[autopas::ContainerOption::verletClusterLists] = 35 + 25;
 
-  // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
-  //   Subtotal:                                                                                              =   4
+  // VarVerletListsAsBuild:
+  //   Only static, 1 scheduling:
+  //                        vvl_as_built                (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //     Subtotal:                                                                                            =   4
   // Var Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
   configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 8;
 
-  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
-  //                        vlp_sliced_balanced         (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  // PairwiseVerletLists:
+  //   All OpenMP configurations:
+  //                        vlp_sliced                  (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
   //                        vlp_sliced_colored          (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
   //                        vlp_c18                     (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
   //                        vlp_c01                     (AoS <=> SoA x 1 vecPat, noNewton3)                   =   2
   //                        vlp_c08                     (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
-  //   Subtotal:                                                                                              =  22
+  //     Subtotal:                                                                                            =  18
+  //   Only static, 1 scheduling:
+  //                        vlp_sliced_balanced         (AoS <=> SoA x 1 vecPat, newton3 <=> noNewton3)       =   4
+  //     Subtotal:                                                                                            =   4
   // Pairwise Verlet Lists only supports CSF >= 1 (i.e. 1.0, 1.5) => Multiply by 2
-  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 44;
+  configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = (18 + 4) * 2;
 
-  // Octree:                ot_c01                      (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
+  // Octree:
+  //   Only sequential scheduling:
+  //                        ot_c01                      (AoS <=> SoA x 4 vecPat, noNewton3)                   =   5
   //                        ot_c18                      (AoS <=> SoA x 4 vecPat, newton3)                     =   5
-  //   Subtotal:                                                                                              =  10
+  //     Subtotal:                                                                                            =  10
   // Octree only supports CSF 1 => Multiply by 1
   configsPerContainer[autopas::ContainerOption::octree] = 10;
 
@@ -539,7 +585,7 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   // => lc_c04 (10), lc_c04_combined_SoA (8), lc_c04_HCP (10) => 28 configurations
   // Similarly for Linked Cells References => 28 more
 
-  constexpr size_t numConfigsExpectedNotApplicable{56};
+  const size_t numConfigsExpectedNotApplicable{56};
 
   const size_t expectedNumberOfIterations =
       (numberOfConfigs - numConfigsExpectedNotApplicable) * autoTunerInfo.maxSamples + 1;
@@ -585,6 +631,58 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   }
 
   EXPECT_EQ(expectedNumberOfIterations, iterations);
+
+  // Second pass: also sweep over several OpenMP schedule kinds and chunk sizes. Which of the kinds end up in the search
+  // space depends on what the OpenMP runtime supports, and how many configurations are rejected because their schedule
+  // falls back to another one depends on the number of threads. Hence, the number of iterations is only checked
+  // against bounds.
+  const auto searchSpaceMultipleSchedules = generateAllValidConfigurations(
+      autopas::InteractionTypeOption::pairwise, autopas::ContainerOption::getAllOptions(),
+      autopas::TraversalOption::getAllOptions(), autopas::LoadEstimatorOption::getAllOptions(),
+      autopas::DataLayoutOption::getAllOptions(), autopas::Newton3Option::getAllOptions(), {0.5, 1.0, 1.5},
+      {autopas::OpenMPKindOption::omp_static, autopas::OpenMPKindOption::omp_dynamic,
+       autopas::OpenMPKindOption::omp_guided, autopas::OpenMPKindOption::llvm_trapezoidal,
+       autopas::OpenMPKindOption::lb4omp_static_steal, autopas::OpenMPKindOption::lb4omp_fac2a},
+      {1, autopas::OpenMPChunkSize::balanced, autopas::OpenMPChunkSize::golden});
+
+  const std::string outputSuffixMultipleSchedules = "multipleSchedules";
+  auto tuningManagerMultipleSchedules = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tuningManagerMultipleSchedules->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpaceMultipleSchedules, autoTunerInfo,
+                                           rebuildFrequency, outputSuffixMultipleSchedules),
+      autopas::InteractionTypeOption::pairwise);
+  autopas::LogicHandler<Molecule> logicHandlerMultipleSchedules(
+      tuningManagerMultipleSchedules, logicHandlerInfo, rebuildFrequency, outputSuffixMultipleSchedules,
+      autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
+
+  // Upper bound: assume no schedule falls back, so every configuration is trialled, apart from the ones which are not
+  // applicable. These are the ones determined above for (static, 1), once for every schedule in the search space, as
+  // their traversals support all schedules (except sequential).
+  std::set<std::pair<autopas::OpenMPKindOption, autopas::OpenMPChunkSize>> schedules;
+  for (const auto &config : searchSpaceMultipleSchedules) {
+    if (config.ompKind != autopas::OpenMPKindOption::sequential) {
+      schedules.emplace(config.ompKind, config.ompChunkSize);
+    }
+  }
+  const size_t maxNumberOfIterationsMultipleSchedules =
+      (searchSpaceMultipleSchedules.size() - numConfigsExpectedNotApplicable * schedules.size()) *
+          autoTunerInfo.maxSamples +
+      1;
+
+  size_t iterationsMultipleSchedules = 0;
+  bool stillTuningMultipleSchedules = true;
+  // Stop above the upper bound to avoid infinite looping.
+  while (stillTuningMultipleSchedules and iterationsMultipleSchedules <= maxNumberOfIterationsMultipleSchedules) {
+    logicHandlerMultipleSchedules.updateContainer();
+    stillTuningMultipleSchedules =
+        logicHandlerMultipleSchedules.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+    ++iterationsMultipleSchedules;
+  }
+
+  // Lower bound: the configurations of the first pass are in this search space as well, and their schedules (static, 1)
+  // and (sequential, NotApplicable) never fall back.
+  EXPECT_GE(iterationsMultipleSchedules, expectedNumberOfIterations);
+  EXPECT_LE(iterationsMultipleSchedules, maxNumberOfIterationsMultipleSchedules);
 }
 
 /**
@@ -936,6 +1034,142 @@ TEST_F(TuningManagerTest, testLastConfigThrownOut) {
 
   EXPECT_THROW((logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)),
                autopas::utils::ExceptionHandler::AutoPasException);
+}
+
+/**
+ * Tests that a configuration with a fallback OpenMP schedule gets queued unless the fallback version of the
+ * configuration was trialled already this tuning phase or is already in the queue. With one thread, every schedule
+ * falls back to static, 1, so the test makes use of this case.
+ */
+TEST_F(TuningManagerTest, testFallbackConfigIsQueuedUnlessTrialled) {
+  const NumThreadGuard numThreadGuard(1);
+  auto configFallback = arbitraryConfigurations::_arbitrary_config_2B_allOpenMPSchedules;
+  configFallback.ompKind = autopas::OpenMPKindOption::omp_static;
+  configFallback.ompChunkSize = 1;
+  auto configThatFallsBack = configFallback;
+  configThatFallsBack.ompKind = autopas::OpenMPKindOption::omp_dynamic;
+
+  constexpr unsigned int rebuildFrequency = 20;
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
+      .boxMin{0., 0., 0.},
+      .boxMax{10., 10., 10.},
+  };
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .tuningInterval = 1000,
+      .maxSamples = 3,
+  };
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  const auto searchSpace = {configFallback, configThatFallsBack};
+  const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tuningManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
+  const auto &autoTuner = *tuningManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise);
+
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
+  EmptyPairwiseFunctor<Molecule> functor;
+
+  // Adds all samples of the current configuration, which gives it evidence. It leaves the queue in the next tune().
+  const auto finishTrial = [&]() {
+    for (size_t sample = 0; sample < autoTunerInfo.maxSamples; ++sample) {
+      tuningManager->addMeasurement(1, 1, true, 0, autopas::InteractionTypeOption::pairwise);
+    }
+  };
+  const auto numTimesFallbackIsQueued = [&]() {
+    return std::ranges::count(autoTuner.getConfigQueue(), configFallback);
+  };
+
+  // Case 1: The fallback has not been trialled yet, but it is in the queue, so it must not be queued a second time.
+  // The queue follows the order of the search space, in which static is before dynamic.
+  tuningManager->tune(0, autopas::LiveInfo{});
+  ASSERT_EQ(autoTuner.getCurrentConfig(), configFallback);
+  // A traversal that is a nullptr means that the configuration is rejected.
+  EXPECT_EQ(std::get<0>(logicHandler.isConfigurationApplicable(configThatFallsBack, functor)), nullptr);
+  EXPECT_EQ(numTimesFallbackIsQueued(), 1);
+
+  // Case 2: The fallback has been trialled in this tuning phase, so it has left the queue and has evidence. Queuing it
+  // again would only repeat that measurement.
+  finishTrial();
+  tuningManager->tune(1, autopas::LiveInfo{});
+  ASSERT_EQ(autoTuner.getCurrentConfig(), configThatFallsBack);
+  EXPECT_EQ(std::get<0>(logicHandler.isConfigurationApplicable(configThatFallsBack, functor)), nullptr);
+  EXPECT_EQ(numTimesFallbackIsQueued(), 0);
+
+  // End this tuning phase.
+  finishTrial();
+  tuningManager->tune(2, autopas::LiveInfo{});
+  ASSERT_FALSE(autoTuner.inTuningPhase());
+
+  // Case 3: The fallback is in the search space, but it is not in the queue and has no evidence from this tuning phase.
+  // Nothing else would trial it in this tuning phase, so it has to be queued. A tuning strategy would typically remove
+  // it from the queue, which we recreate with rejectConfiguration.
+  tuningManager->tune(autoTunerInfo.tuningInterval, autopas::LiveInfo{});
+  std::ignore = tuningManager->rejectConfiguration(configFallback, /*indefinitely*/ false,
+                                                   autopas::InteractionTypeOption::pairwise);
+  ASSERT_EQ(autoTuner.getCurrentConfig(), configThatFallsBack);
+  ASSERT_EQ(numTimesFallbackIsQueued(), 0);
+  const auto [traversal, rejectIndefinitely] = logicHandler.isConfigurationApplicable(configThatFallsBack, functor);
+  EXPECT_EQ(traversal, nullptr);
+  EXPECT_FALSE(rejectIndefinitely);
+  EXPECT_EQ(numTimesFallbackIsQueued(), 1);
+}
+
+/**
+ * Tests a whole tuning phase in which the only queued configuration falls back. This would typically occur due to a
+ * tuning strategy removing other configurations, but we recreate this with rejectConfiguration.
+ */
+TEST_F(TuningManagerTest, testFallbackIsTrialledIfOnlyQueuedConfigFallsBack) {
+  // With one thread, every schedule falls back to static, 1.
+  const NumThreadGuard numThreadGuard(1);
+  auto configFallback = arbitraryConfigurations::_arbitrary_config_2B_allOpenMPSchedules;
+  configFallback.ompKind = autopas::OpenMPKindOption::omp_static;
+  configFallback.ompChunkSize = 1;
+  auto configThatFallsBack = configFallback;
+  configThatFallsBack.ompKind = autopas::OpenMPKindOption::omp_dynamic;
+
+  constexpr unsigned int rebuildFrequency = 20;
+  constexpr autopas::LogicHandlerInfo logicHandlerInfo{
+      .boxMin{0., 0., 0.},
+      .boxMax{10., 10., 10.},
+  };
+  constexpr autopas::AutoTunerInfo autoTunerInfo{
+      .tuningInterval = 1000,
+      .maxSamples = 3,
+  };
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  const auto searchSpace = {configFallback, configThatFallsBack};
+  const auto tuningManager = std::make_shared<autopas::TuningManager>(autoTunerInfo);
+  tuningManager->addAutoTuner(
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""),
+      autopas::InteractionTypeOption::pairwise);
+  const auto &autoTuner = *tuningManager->getAutoTuners().at(autopas::InteractionTypeOption::pairwise);
+
+  autopas::LogicHandler<Molecule> logicHandler(tuningManager, logicHandlerInfo, rebuildFrequency, "",
+                                               autoTunerInfo.aosSortingThreshold, autoTunerInfo.soaSortingThreshold);
+  EmptyPairwiseFunctor<Molecule> functor;
+
+  // Start the tuning phase and remove the fallback from the queue, so that only the configuration that falls back is
+  // left.
+  tuningManager->tune(0, autopas::LiveInfo{});
+  std::ignore = tuningManager->rejectConfiguration(configFallback, /*indefinitely*/ false,
+                                                   autopas::InteractionTypeOption::pairwise);
+  ASSERT_EQ(autoTuner.getConfigQueue().size(), 1);
+  ASSERT_EQ(autoTuner.getCurrentConfig(), configThatFallsBack);
+
+  // In the first iteration, the configuration that falls back gets rejected and the fallback runs in its place.
+  for (size_t iteration = 0; iteration < autoTunerInfo.maxSamples + 1; ++iteration) {
+    logicHandler.updateContainer();
+    logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+  }
+
+  // The tuning phase has to end with evidence for the fallback, which is what the tuner selects as a result.
+  const auto *evidenceFallback = autoTuner.getEvidenceCollection().getEvidence(configFallback);
+  ASSERT_NE(evidenceFallback, nullptr);
+  EXPECT_EQ(evidenceFallback->back().tuningPhase, tuningManager->getTuningPhase());
+  EXPECT_EQ(autoTuner.getEvidenceCollection().getEvidence(configThatFallsBack), nullptr);
+  EXPECT_FALSE(autoTuner.inTuningPhase());
+  EXPECT_EQ(autoTuner.getCurrentConfig(), configFallback);
 }
 
 /**

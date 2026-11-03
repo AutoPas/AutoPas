@@ -43,11 +43,6 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Funct
 
  protected:
   /**
-   * whether to use static or dynamic scheduling.
-   */
-  bool _dynamic = true;
-
-  /**
    * The main traversal of the sliced traversal.
    *
    * @copydetails C01BasedTraversal::c01Traversal()
@@ -55,6 +50,18 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Funct
    */
   template <typename LoopBody>
   inline void slicedTraversal(LoopBody &&loopBody);
+
+  /**
+   * Returns the number of iterations of the loop slicedTraversal() runs with OpenMP's schedule(runtime), which is the
+   * number of slices. As the slices are only set up in initTraversal(), this computes their number in the same way.
+   * Must be kept in line with slicedTraversal() and SlicedBasedTraversal::initSliceThickness().
+   * @return The number of slices.
+   */
+  [[nodiscard]] std::vector<size_t> slicedTraversalLoopCounts() const {
+    const auto minSliceThickness = this->_overlapLongestAxis + 1;
+    const auto numSlices = this->_cellsPerDimension[this->_dimsSortedByLength[0]] / minSliceThickness;
+    return {numSlices};
+  }
 };
 
 template <class ParticleCell, class Functor>
@@ -81,13 +88,6 @@ void SlicedLockBasedTraversal<ParticleCell, Functor>::slicedTraversal(LoopBody &
   timers.resize(numSlices);
   threadTimes.resize(numSlices);
 
-#ifdef AUTOPAS_USE_OPENMP
-  if (this->_dynamic) {
-    omp_set_schedule(omp_sched_dynamic, 1);
-  } else {
-    omp_set_schedule(omp_sched_static, 1);
-  }
-#endif
   AUTOPAS_OPENMP(parallel for schedule(runtime))
   for (size_t slice = 0; slice < numSlices; ++slice) {
     timers[slice].start();

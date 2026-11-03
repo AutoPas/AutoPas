@@ -13,7 +13,8 @@ std::string autopas::Configuration::toString() const {
   return "{Interaction Type: " + interactionType.to_string() + " , Container: " + container.to_string() +
          " , CellSizeFactor: " + std::to_string(cellSizeFactor) + " , Traversal: " + traversal.to_string() +
          " , Load Estimator: " + loadEstimator.to_string() + " , Data Layout: " + dataLayout.to_string() +
-         " , Newton 3: " + newton3.to_string() + " , VectorizationPattern: " + vecPattern.to_string() + "}";
+         " , Newton 3: " + newton3.to_string() + " , OpenMP Schedule Kind: " + ompKind.to_string() +
+         " , OpenMPChunkSize: " + ompChunkSize.to_string() + " , VectorizationPattern: " + vecPattern.to_string() + "}";
 }
 
 std::string autopas::Configuration::getCSVHeader() const { return getCSVRepresentation(true); }
@@ -89,6 +90,40 @@ bool autopas::Configuration::hasCompatibleValues() const {
       return false;
     }
   }
+  if (ompKind != OpenMPKindOption::omp_static or ompChunkSize != OpenMPChunkSize(1)) {
+    const auto static1OnlyTraversals = compatibleTraversals::allTraversalsSupportingOnlyStatic1Scheduling();
+    if (static1OnlyTraversals.contains(traversal)) {
+      return false;
+    }
+  }
+  // Sequential traversals only support the sequential schedule kind and the not-applicable chunk size, which in turn
+  // are not supported by any other traversal.
+  if (compatibleTraversals::allSequentialTraversals().contains(traversal)) {
+    if (ompKind != OpenMPKindOption::sequential or ompChunkSize != OpenMPChunkSize::notApplicable) {
+      return false;
+    }
+  } else if (ompKind == OpenMPKindOption::sequential or ompChunkSize == OpenMPChunkSize::notApplicable) {
+    return false;
+  }
+  // The balanced chunk size is only compatible with the static scheduling kind (it is static's default chunk size,
+  // whereas other kinds have a default chunk size of 1 and balanced makes no sense for)
+  if (ompChunkSize == OpenMPChunkSize::balanced and ompKind != OpenMPKindOption::omp_static) {
+    return false;
+  }
+  // The OpenMP runtimes ignore the chunk size for auto, so we only allow it with chunk size 1 to prevent config
+  // duplication. We do not use the notApplicable chunk size, because LLVM libomp's auto uses an analytic variant of
+  // guided with a chunk size of 1, regardless of the actually supplied chunk size.
+  if (ompKind == OpenMPKindOption::omp_auto and ompChunkSize != OpenMPChunkSize(1)) {
+    return false;
+  }
+  // Auto4OMP's selection methods internally calculate and use the golden chunk size, so they are only used with it.
+  if (OpenMPKindOption::getAuto4OMPSelectionMethods().contains(ompKind) and ompChunkSize != OpenMPChunkSize::golden) {
+    return false;
+  }
+  // Check if the compiler and OpenMP runtime AutoPas is built with support the OpenMP schedule kind.
+  if (not ompKind.isSupportedAtScheduleLevel(OpenMPKindOption::runtimeScheduleLevel)) {
+    return false;
+  }
 
   const auto allContainersSupportingSuper1CSF = compatibleCSFs::allContainersSupportingSuper1CSF();
   if ((not allContainersSupportingSuper1CSF.contains(container)) and cellSizeFactor > 1.0) {
@@ -143,6 +178,10 @@ std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &conf
   in >> configuration.dataLayout;
   in.ignore(max, ':');
   in >> configuration.newton3;
+  in.ignore(max, ':');
+  in >> configuration.ompKind;
+  in.ignore(max, ':');
+  in >> configuration.ompChunkSize;
   in.ignore(max, ':');
   in >> configuration.vecPattern;
   return in;
