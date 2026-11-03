@@ -188,27 +188,152 @@ class LJFunctorHWY
     return std::ranges::find(_vecPatternsAllowed, vecPattern) != _vecPatternsAllowed.end();
   }
 
- private:
   /**
-   * Checks whether all particles within an SoA have identical type IDs.
-   *
-   * @param typeIDPtr Pointer to the particle type IDs array.
-   * @param soaSize Number of particles in the SoA.
-   * @return True if the cell is homogeneous (or if mixing is disabled), false otherwise.
+   * @copydoc autopas::Functor::supportsSoASorting
    */
-  static inline bool soaIsHomogeneous(const size_t *const __restrict typeIDPtr, const size_t soaSize) {
-    if constexpr (useMixing) {
-      const auto firstType = typeIDPtr[0];
-      for (size_t k = 1; k < soaSize; ++k) {
-        if (typeIDPtr[k] != firstType) {
-          return false;
-        }
-      }
-    }
-    return true;
+  static constexpr bool supportsSoASorting = true;
+
+  /**
+   *
+   * @return useMixing
+   */
+  constexpr static bool getMixing() { return useMixing; }
+
+  /**
+   * @copydoc autopas::Functor::setVecPattern()
+   */
+  void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
+
+  /**
+   * @copydoc autopas::Functor::getNeededAttr()
+   */
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
+                                                              Particle_T::AttributeNames::posX,
+                                                              Particle_T::AttributeNames::posY,
+                                                              Particle_T::AttributeNames::posZ,
+                                                              Particle_T::AttributeNames::forceX,
+                                                              Particle_T::AttributeNames::forceY,
+                                                              Particle_T::AttributeNames::forceZ,
+                                                              Particle_T::AttributeNames::typeId,
+                                                              Particle_T::AttributeNames::ownershipState};
   }
 
- public:
+  /**
+   * @copydoc autopas::Functor::getNeededAttr(std::false_type)
+   */
+  constexpr static auto getNeededAttr(std::false_type) {
+    return std::array<typename Particle_T::AttributeNames, 6>{
+        Particle_T::AttributeNames::id,     Particle_T::AttributeNames::posX,
+        Particle_T::AttributeNames::posY,   Particle_T::AttributeNames::posZ,
+        Particle_T::AttributeNames::typeId, Particle_T::AttributeNames::ownershipState};
+  }
+
+  /**
+   * @copydoc autopas::Functor::getComputedAttr()
+   */
+  constexpr static auto getComputedAttr() {
+    return std::array<typename Particle_T::AttributeNames, 3>{
+        Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY, Particle_T::AttributeNames::forceZ};
+  }
+
+  /**
+   * Reset the global values.
+   * Will set the global values to zero to prepare for the next iteration.
+   */
+  void initTraversal() final {
+    _potentialEnergySum = 0.;
+    _virialSum = {0., 0., 0.};
+    _postProcessed = false;
+    for (size_t i = 0; i < _threadData.size(); ++i) {
+      _threadData[i].setZero();
+    }
+  }
+
+  /**
+   * Accumulates global values, e.g. potential energy and virial.
+   * @param newton3
+   */
+  void endTraversal(const bool newton3) final {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    if (_postProcessed) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
+    }
+
+    if (calculateGlobals) {
+      for (size_t i = 0; i < _threadData.size(); ++i) {
+        _potentialEnergySum += _threadData[i].potentialEnergySum;
+        _virialSum += _threadData[i].virialSum;
+      }
+      // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
+      // contribution is only counted once per pair.
+      _potentialEnergySum *= 0.5;
+      _virialSum *= 0.5;
+
+      // We have always calculated 6*potentialEnergy, so we divide by 6 here!
+      _potentialEnergySum /= 6.;
+      _postProcessed = true;
+
+      AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
+      AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
+    }
+  }
+
+  /**
+   * Get the potential Energy
+   * @return the potential Energy
+   */
+  double getPotentialEnergy() const {
+    if (not calculateGlobals) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
+          "values, please specify calculateGlobals to be true.");
+    }
+    if (not _postProcessed) {
+      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get upot, because endTraversal was not called.");
+    }
+    return _potentialEnergySum;
+  }
+
+  /**
+   * Get the virial
+   * @return the virial
+   */
+  double getVirial() const {
+    if (not calculateGlobals) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
+          "values, please specify calculateGlobals to be true.");
+    }
+    if (not _postProcessed) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot get virial, because endTraversal was not called.");
+    }
+    return _virialSum[0] + _virialSum[1] + _virialSum[2];
+  }
+
+  /**
+   * Sets the particle properties constants for this functor.
+   *
+   * This is only necessary if no particlePropertiesLibrary is used.
+   *
+   * @param epsilon24
+   * @param sigmaSquared
+   */
+  void setParticleProperties(const double epsilon24, const double sigmaSquared) {
+    _epsilon24 = epsilon24;
+    _sigmaSquared = sigmaSquared;
+    _halfSigmaPerType = {std::sqrt(sigmaSquared) * 0.5};
+    _sqrtEpsilonPerType = {std::sqrt(epsilon24 / 24.0)};
+    if constexpr (applyShift) {
+      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
+    } else {
+      _shift6 = 0.;
+    }
+  }
+
   /**
    * @copydoc autopas::PairwiseFunctor::AoSFunctor()
    */
@@ -420,7 +545,283 @@ class LJFunctorHWY
     }
   }
 
+  /**
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
+   */
+  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                               const std::span<const size_t> neighborList, const bool newton3) final {
+    if (soa.size() == 0 or neighborList.empty()) return;
+    if (newton3) {
+      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
+    } else {
+      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
+    }
+  }
+
  private:
+  /**
+   * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
+   */
+  class ThreadData {
+   public:
+    ThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.} {}
+
+    void setZero() {
+      virialSum = {0., 0., 0.};
+      potentialEnergySum = 0.;
+    }
+
+    std::array<double, 3> virialSum{};
+    double potentialEnergySum{};
+
+   private:
+    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
+  };
+  static_assert(sizeof(ThreadData) % 64 == 0, "ThreadData has wrong size");
+
+  /**
+   * Struct holding Lennard-Jones parameters loaded into SIMD vectors for an interaction.
+   */
+  struct LJPairParameters {
+    VectorDouble sigmaSquared;
+    VectorDouble epsilon24;
+    VectorDouble shift6;
+  };
+
+  /**
+   * Parameter policy for homogeneous cells (or interactions with mixing disabled), where all particles share the same
+   * physical parameters.
+   */
+  struct HomogeneousParameterPolicy {
+    const VectorDouble sigmaSquaredConst;
+    const VectorDouble epsilon24Const;
+    const VectorDouble shift6Const;
+
+    /**
+     * Constructor pre-broadcasting scalar constants into SIMD vectors.
+     *
+     * @param sigmaSquaredConst Scalar sigma squared.
+     * @param epsilon24Const Scalar 24 * epsilon.
+     * @param shift6Const Scalar shift6 value.
+     */
+    HomogeneousParameterPolicy(const double sigmaSquaredConst, const double epsilon24Const, const double shift6Const)
+        : sigmaSquaredConst{highway::Set(tag_double, sigmaSquaredConst)},
+          epsilon24Const{highway::Set(tag_double, epsilon24Const)},
+          shift6Const{highway::Set(tag_double, shift6Const)} {}
+
+    /**
+     * Prepares parameters for particle(s) i. For homogeneous interactions, this is a no-op.
+     *
+     * @tparam remainderI Whether this is a remainder iteration.
+     * @tparam reversed Whether outer loop iterates backwards.
+     * @tparam vecPattern The vectorization pattern.
+     * @param i Loop index i.
+     * @param restI Number of valid lanes in remainder case.
+     */
+    template <bool remainderI, bool reversed, VectorizationPattern vecPattern>
+    inline void prepareI([[maybe_unused]] const size_t i, [[maybe_unused]] const size_t restI) const {}
+
+    /**
+     * Retrieves the Lennard-Jones parameters for particle(s) j in regular cell interactions.
+     *
+     * @tparam remainderJ Whether this is a remainder iteration.
+     * @tparam vecPattern The vectorization pattern.
+     * @param j Loop index j.
+     * @param restJ Number of valid lanes in remainder case.
+     * @return LJPairParameters containing the pre-broadcast constants.
+     */
+    template <bool remainderJ, VectorizationPattern vecPattern>
+    inline LJPairParameters getJ([[maybe_unused]] const size_t j, [[maybe_unused]] const size_t restJ) const {
+      return {sigmaSquaredConst, epsilon24Const, shift6Const};
+    }
+
+    /**
+     * Retrieves the Lennard-Jones parameters for particle(s) j in Verlet list interactions.
+     *
+     * @tparam remainder Whether this is a remainder iteration.
+     * @tparam vecPattern The vectorization pattern.
+     * @param indices Vector of neighbor particle indices.
+     * @param restMaskDouble Mask of valid lanes in remainder case.
+     * @return LJPairParameters containing the pre-broadcast constants.
+     */
+    template <bool remainder, VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
+    inline LJPairParameters getJ([[maybe_unused]] const VectorLong &indices,
+                                 [[maybe_unused]] const MaskDouble &restMaskDouble) const {
+      return {sigmaSquaredConst, epsilon24Const, shift6Const};
+    }
+  };
+
+  /**
+   * Parameter policy for heterogeneous cells where multiple particle types interact.
+   * Handles per-particle loading and SIMD mixing for cell pairs, single cells, and Verlet lists.
+   */
+  struct HeterogeneousParameterPolicy {
+    const double *const __restrict halfSigma1Ptr{nullptr};
+    const double *const __restrict sqrtEpsilon1Ptr{nullptr};
+    const double *const __restrict halfSigma2Ptr{nullptr};
+    const double *const __restrict sqrtEpsilon2Ptr{nullptr};
+    const int64_t *const __restrict typeID2Ptr{nullptr};
+    const VectorDouble invCutoffSquaredVec;
+
+    VectorDouble halfSigmaI{highway::Zero(tag_double)};
+    VectorDouble sqrtEpsilon24I{highway::Zero(tag_double)};
+
+    /**
+     * Constructor for cell-pair and single-cell interactions using pre-unpacked mixing buffers.
+     *
+     * @param halfSigma1 Pointer to halfSigma buffer for particle(s) 1.
+     * @param sqrtEpsilon1 Pointer to sqrtEpsilon buffer for particle(s) 1.
+     * @param halfSigma2 Pointer to halfSigma buffer for particle(s) 2.
+     * @param sqrtEpsilon2 Pointer to sqrtEpsilon buffer for particle(s) 2.
+     * @param invCutoffSquared Scalar 1 / (cutoff^2).
+     */
+    HeterogeneousParameterPolicy(const double *const __restrict halfSigma1, const double *const __restrict sqrtEpsilon1,
+                                 const double *const __restrict halfSigma2, const double *const __restrict sqrtEpsilon2,
+                                 const double invCutoffSquared)
+        : halfSigma1Ptr{halfSigma1},
+          sqrtEpsilon1Ptr{sqrtEpsilon1},
+          halfSigma2Ptr{halfSigma2},
+          sqrtEpsilon2Ptr{sqrtEpsilon2},
+          invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)} {}
+
+    /**
+     * Constructor for Verlet list interactions using per-type lookup tables and SIMD gather.
+     *
+     * @param halfSigmaIScalar Scalar halfSigma of particle i.
+     * @param sqrtEpsilonIScalar Scalar sqrtEpsilon of particle i.
+     * @param typeIDPtr Pointer to particle type IDs in the SoA.
+     * @param halfSigmaPerType Pointer to per-type halfSigma lookup array.
+     * @param sqrtEpsilonPerType Pointer to per-type sqrtEpsilon lookup array.
+     * @param invCutoffSquared Scalar 1 / (cutoff^2).
+     */
+    HeterogeneousParameterPolicy(const double halfSigmaIScalar, const double sqrtEpsilonIScalar,
+                                 const int64_t *const __restrict typeIDPtr,
+                                 const double *const __restrict halfSigmaPerType,
+                                 const double *const __restrict sqrtEpsilonPerType, const double invCutoffSquared)
+        : halfSigma2Ptr{halfSigmaPerType},
+          sqrtEpsilon2Ptr{sqrtEpsilonPerType},
+          typeID2Ptr{typeIDPtr},
+          invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)},
+          halfSigmaI{highway::Set(tag_double, halfSigmaIScalar)},
+          sqrtEpsilon24I{highway::Set(tag_double, 24.0 * sqrtEpsilonIScalar)} {}
+
+    /**
+     * Prepares physical parameters for particle(s) i.
+     *
+     * @tparam remainderI Whether this is a remainder iteration.
+     * @tparam reversed Whether outer loop iterates backwards.
+     * @tparam vecPattern The vectorization pattern.
+     * @param i Loop index i.
+     * @param restI Number of valid lanes in remainder case.
+     */
+    template <bool remainderI, bool reversed, VectorizationPattern vecPattern>
+    inline void prepareI(const size_t i, const size_t restI) {
+      fillIPhysicsRegisters<remainderI, reversed, vecPattern>(i, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigmaI,
+                                                              sqrtEpsilon24I, restI);
+      sqrtEpsilon24I = highway::Mul(highway::Set(tag_double, 24.0), sqrtEpsilon24I);
+    }
+
+    /**
+     * Mixes parameters of particle(s) i with particle(s) j into an LJPairParameters struct.
+     *
+     * @param halfSigmaJ SIMD vector of halfSigma for particle(s) j.
+     * @param sqrtEpsilonJ SIMD vector of sqrtEpsilon for particle(s) j.
+     * @return Evaluated LJPairParameters for the interaction.
+     */
+    inline LJPairParameters mixParameters(const VectorDouble &halfSigmaJ, const VectorDouble &sqrtEpsilonJ) const {
+      const auto sigma = highway::Add(halfSigmaI, halfSigmaJ);
+      const auto sigmaSquared = highway::Mul(sigma, sigma);
+      const auto epsilon24 = highway::Mul(sqrtEpsilon24I, sqrtEpsilonJ);
+      VectorDouble shift6 = highway::Zero(tag_double);
+      if constexpr (calculateGlobals and applyShift) {
+        shift6 = computeShift6SIMD(sigmaSquared, epsilon24, invCutoffSquaredVec);
+      }
+      return {sigmaSquared, epsilon24, shift6};
+    }
+
+    /**
+     * Retrieves the mixed Lennard-Jones parameters for particle(s) j in regular cell interactions.
+     *
+     * @tparam remainderJ Whether this is a remainder iteration.
+     * @tparam vecPattern The vectorization pattern.
+     * @param j Loop index j.
+     * @param restJ Number of valid lanes in remainder case.
+     * @return Evaluated LJPairParameters.
+     */
+    template <bool remainderJ, VectorizationPattern vecPattern>
+    inline LJPairParameters getJ(const size_t j, const size_t restJ) const {
+      VectorDouble halfSigmaJ;
+      VectorDouble sqrtEpsilonJ;
+      fillJPhysicsRegisters<remainderJ, vecPattern>(j, halfSigma2Ptr, sqrtEpsilon2Ptr, halfSigmaJ, sqrtEpsilonJ, restJ);
+      return mixParameters(halfSigmaJ, sqrtEpsilonJ);
+    }
+
+    /**
+     * Retrieves the mixed Lennard-Jones parameters for particle(s) j in Verlet list interactions via SIMD gather.
+     *
+     * @tparam remainder Whether this is a remainder iteration.
+     * @tparam vecPattern The vectorization pattern.
+     * @param indices SIMD vector of neighbor indices.
+     * @param restMaskDouble Lane mask for remainder case.
+     * @return Evaluated LJPairParameters.
+     */
+    template <bool remainder, VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
+    inline LJPairParameters getJ(const VectorLong &indices, const MaskDouble &restMaskDouble) const {
+      VectorLong typeJ;
+      if constexpr (remainder) {
+        const MaskLong restMaskLong = highway::RebindMask(tag_long, restMaskDouble);
+        typeJ = highway::MaskedGatherIndex(restMaskLong, tag_long, typeID2Ptr, indices);
+      } else {
+        typeJ = highway::GatherIndex(tag_long, typeID2Ptr, indices);
+      }
+      const VectorDouble halfSigmaJ = highway::GatherIndex(tag_double, halfSigma2Ptr, typeJ);
+      const VectorDouble sqrtEpsilonJ = highway::GatherIndex(tag_double, sqrtEpsilon2Ptr, typeJ);
+      return mixParameters(halfSigmaJ, sqrtEpsilonJ);
+    }
+  };
+
+  /**
+   * Helper method to construct a HomogeneousParameterPolicy for given particle type IDs.
+   *
+   * @param typeId1 Type ID of the first particle (used if mixing is enabled).
+   * @param typeId2 Type ID of the second particle (used if mixing is enabled).
+   * @return Initialized HomogeneousParameterPolicy.
+   */
+  inline HomogeneousParameterPolicy makeHomogeneousParameterPolicy([[maybe_unused]] const size_t typeId1,
+                                                                   [[maybe_unused]] const size_t typeId2) const {
+    double sigmaSquared = _sigmaSquared;
+    double epsilon24 = _epsilon24;
+    double shift6 = _shift6;
+    if constexpr (useMixing) {
+      const double sigma = _halfSigmaPerType[typeId1] + _halfSigmaPerType[typeId2];
+      sigmaSquared = sigma * sigma;
+      epsilon24 = 24.0 * _sqrtEpsilonPerType[typeId1] * _sqrtEpsilonPerType[typeId2];
+      if constexpr (calculateGlobals and applyShift) {
+        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
+      }
+    }
+    return HomogeneousParameterPolicy{sigmaSquared, epsilon24, shift6};
+  }
+
+  /**
+   * Checks whether all particles within an SoA have identical type IDs.
+   *
+   * @param typeIDPtr Pointer to the particle type IDs array.
+   * @param soaSize Number of particles in the SoA.
+   * @return True if the cell is homogeneous (or if mixing is disabled), false otherwise.
+   */
+  static inline bool soaIsHomogeneous(const size_t *const __restrict typeIDPtr, const size_t soaSize) {
+    if constexpr (useMixing) {
+      const auto firstType = typeIDPtr[0];
+      for (size_t k = 1; k < soaSize; ++k) {
+        if (typeIDPtr[k] != firstType) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   /**
    * Initializes the functor's internal constants from the provided ParticlePropertiesLibrary.
    * @param ppl The ParticlePropertiesLibrary containing particle properties.
@@ -847,15 +1248,6 @@ class LJFunctorHWY
   }
 
   /**
-   * Struct holding Lennard-Jones parameters loaded into SIMD vectors for an interaction.
-   */
-  struct LJPairParameters {
-    VectorDouble sigmaSquared;
-    VectorDouble epsilon24;
-    VectorDouble shift6;
-  };
-
-  /**
    * Computes shift6 for SIMD vectors of sigmaSquared and epsilon24 using the inverse cutoff squared.
    *
    * @param sigmaSquared Vector of sigma squared values.
@@ -870,466 +1262,6 @@ class LJFunctorHWY
     const auto sig6Cut6 = highway::Mul(sig4Cut4, sig2Cut2);
     const auto sig12Cut12 = highway::Mul(sig6Cut6, sig6Cut6);
     return highway::Mul(epsilon24, highway::Sub(sig6Cut6, sig12Cut12));
-  }
-
-  /**
-   * Parameter policy for homogeneous cells (or interactions with mixing disabled), where all particles share the same
-   * physical parameters.
-   */
-  struct HomogeneousParameterPolicy {
-    const VectorDouble sigmaSquaredConst;
-    const VectorDouble epsilon24Const;
-    const VectorDouble shift6Const;
-
-    /**
-     * Constructor pre-broadcasting scalar constants into SIMD vectors.
-     *
-     * @param sigmaSquaredConst Scalar sigma squared.
-     * @param epsilon24Const Scalar 24 * epsilon.
-     * @param shift6Const Scalar shift6 value.
-     */
-    HomogeneousParameterPolicy(const double sigmaSquaredConst, const double epsilon24Const, const double shift6Const)
-        : sigmaSquaredConst{highway::Set(tag_double, sigmaSquaredConst)},
-          epsilon24Const{highway::Set(tag_double, epsilon24Const)},
-          shift6Const{highway::Set(tag_double, shift6Const)} {}
-
-    /**
-     * Prepares parameters for particle(s) i. For homogeneous interactions, this is a no-op.
-     *
-     * @tparam remainderI Whether this is a remainder iteration.
-     * @tparam reversed Whether outer loop iterates backwards.
-     * @tparam vecPattern The vectorization pattern.
-     * @param i Loop index i.
-     * @param restI Number of valid lanes in remainder case.
-     */
-    template <bool remainderI, bool reversed, VectorizationPattern vecPattern>
-    inline void prepareI([[maybe_unused]] const size_t i, [[maybe_unused]] const size_t restI) const {}
-
-    /**
-     * Retrieves the Lennard-Jones parameters for particle(s) j in regular cell interactions.
-     *
-     * @tparam remainderJ Whether this is a remainder iteration.
-     * @tparam vecPattern The vectorization pattern.
-     * @param j Loop index j.
-     * @param restJ Number of valid lanes in remainder case.
-     * @return LJPairParameters containing the pre-broadcast constants.
-     */
-    template <bool remainderJ, VectorizationPattern vecPattern>
-    inline LJPairParameters getJ([[maybe_unused]] const size_t j, [[maybe_unused]] const size_t restJ) const {
-      return {sigmaSquaredConst, epsilon24Const, shift6Const};
-    }
-
-    /**
-     * Retrieves the Lennard-Jones parameters for particle(s) j in Verlet list interactions.
-     *
-     * @tparam remainder Whether this is a remainder iteration.
-     * @tparam vecPattern The vectorization pattern.
-     * @param indices Vector of neighbor particle indices.
-     * @param restMaskDouble Mask of valid lanes in remainder case.
-     * @return LJPairParameters containing the pre-broadcast constants.
-     */
-    template <bool remainder, VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
-    inline LJPairParameters getJ([[maybe_unused]] const VectorLong &indices,
-                                 [[maybe_unused]] const MaskDouble &restMaskDouble) const {
-      return {sigmaSquaredConst, epsilon24Const, shift6Const};
-    }
-  };
-
-  /**
-   * Helper method to construct a HomogeneousParameterPolicy for given particle type IDs.
-   *
-   * @param typeId1 Type ID of the first particle (used if mixing is enabled).
-   * @param typeId2 Type ID of the second particle (used if mixing is enabled).
-   * @return Initialized HomogeneousParameterPolicy.
-   */
-  inline HomogeneousParameterPolicy makeHomogeneousParameterPolicy([[maybe_unused]] const size_t typeId1,
-                                                                   [[maybe_unused]] const size_t typeId2) const {
-    double sigmaSquared = _sigmaSquared;
-    double epsilon24 = _epsilon24;
-    double shift6 = _shift6;
-    if constexpr (useMixing) {
-      const double sigma = _halfSigmaPerType[typeId1] + _halfSigmaPerType[typeId2];
-      sigmaSquared = sigma * sigma;
-      epsilon24 = 24.0 * _sqrtEpsilonPerType[typeId1] * _sqrtEpsilonPerType[typeId2];
-      if constexpr (calculateGlobals and applyShift) {
-        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
-      }
-    }
-    return HomogeneousParameterPolicy{sigmaSquared, epsilon24, shift6};
-  }
-
-  /**
-   * Parameter policy for heterogeneous cells where multiple particle types interact.
-   * Handles per-particle loading and SIMD mixing for cell pairs, single cells, and Verlet lists.
-   */
-  struct HeterogeneousParameterPolicy {
-    const double *const __restrict halfSigma1Ptr{nullptr};
-    const double *const __restrict sqrtEpsilon1Ptr{nullptr};
-    const double *const __restrict halfSigma2Ptr{nullptr};
-    const double *const __restrict sqrtEpsilon2Ptr{nullptr};
-    const int64_t *const __restrict typeID2Ptr{nullptr};
-    const VectorDouble invCutoffSquaredVec;
-
-    VectorDouble halfSigmaI{highway::Zero(tag_double)};
-    VectorDouble sqrtEpsilon24I{highway::Zero(tag_double)};
-
-    /**
-     * Constructor for cell-pair and single-cell interactions using pre-unpacked mixing buffers.
-     *
-     * @param halfSigma1 Pointer to halfSigma buffer for particle(s) 1.
-     * @param sqrtEpsilon1 Pointer to sqrtEpsilon buffer for particle(s) 1.
-     * @param halfSigma2 Pointer to halfSigma buffer for particle(s) 2.
-     * @param sqrtEpsilon2 Pointer to sqrtEpsilon buffer for particle(s) 2.
-     * @param invCutoffSquared Scalar 1 / (cutoff^2).
-     */
-    HeterogeneousParameterPolicy(const double *const __restrict halfSigma1, const double *const __restrict sqrtEpsilon1,
-                                 const double *const __restrict halfSigma2, const double *const __restrict sqrtEpsilon2,
-                                 const double invCutoffSquared)
-        : halfSigma1Ptr{halfSigma1},
-          sqrtEpsilon1Ptr{sqrtEpsilon1},
-          halfSigma2Ptr{halfSigma2},
-          sqrtEpsilon2Ptr{sqrtEpsilon2},
-          invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)} {}
-
-    /**
-     * Constructor for Verlet list interactions using per-type lookup tables and SIMD gather.
-     *
-     * @param halfSigmaIScalar Scalar halfSigma of particle i.
-     * @param sqrtEpsilonIScalar Scalar sqrtEpsilon of particle i.
-     * @param typeIDPtr Pointer to particle type IDs in the SoA.
-     * @param halfSigmaPerType Pointer to per-type halfSigma lookup array.
-     * @param sqrtEpsilonPerType Pointer to per-type sqrtEpsilon lookup array.
-     * @param invCutoffSquared Scalar 1 / (cutoff^2).
-     */
-    HeterogeneousParameterPolicy(const double halfSigmaIScalar, const double sqrtEpsilonIScalar,
-                                 const int64_t *const __restrict typeIDPtr,
-                                 const double *const __restrict halfSigmaPerType,
-                                 const double *const __restrict sqrtEpsilonPerType, const double invCutoffSquared)
-        : halfSigma2Ptr{halfSigmaPerType},
-          sqrtEpsilon2Ptr{sqrtEpsilonPerType},
-          typeID2Ptr{typeIDPtr},
-          invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)},
-          halfSigmaI{highway::Set(tag_double, halfSigmaIScalar)},
-          sqrtEpsilon24I{highway::Set(tag_double, 24.0 * sqrtEpsilonIScalar)} {}
-
-    /**
-     * Prepares physical parameters for particle(s) i.
-     *
-     * @tparam remainderI Whether this is a remainder iteration.
-     * @tparam reversed Whether outer loop iterates backwards.
-     * @tparam vecPattern The vectorization pattern.
-     * @param i Loop index i.
-     * @param restI Number of valid lanes in remainder case.
-     */
-    template <bool remainderI, bool reversed, VectorizationPattern vecPattern>
-    inline void prepareI(const size_t i, const size_t restI) {
-      fillIPhysicsRegisters<remainderI, reversed, vecPattern>(i, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigmaI,
-                                                              sqrtEpsilon24I, restI);
-      sqrtEpsilon24I = highway::Mul(highway::Set(tag_double, 24.0), sqrtEpsilon24I);
-    }
-
-    /**
-     * Mixes parameters of particle(s) i with particle(s) j into an LJPairParameters struct.
-     *
-     * @param halfSigmaJ SIMD vector of halfSigma for particle(s) j.
-     * @param sqrtEpsilonJ SIMD vector of sqrtEpsilon for particle(s) j.
-     * @return Evaluated LJPairParameters for the interaction.
-     */
-    inline LJPairParameters mixParameters(const VectorDouble &halfSigmaJ, const VectorDouble &sqrtEpsilonJ) const {
-      const auto sigma = highway::Add(halfSigmaI, halfSigmaJ);
-      const auto sigmaSquared = highway::Mul(sigma, sigma);
-      const auto epsilon24 = highway::Mul(sqrtEpsilon24I, sqrtEpsilonJ);
-      VectorDouble shift6 = highway::Zero(tag_double);
-      if constexpr (calculateGlobals and applyShift) {
-        shift6 = computeShift6SIMD(sigmaSquared, epsilon24, invCutoffSquaredVec);
-      }
-      return {sigmaSquared, epsilon24, shift6};
-    }
-
-    /**
-     * Retrieves the mixed Lennard-Jones parameters for particle(s) j in regular cell interactions.
-     *
-     * @tparam remainderJ Whether this is a remainder iteration.
-     * @tparam vecPattern The vectorization pattern.
-     * @param j Loop index j.
-     * @param restJ Number of valid lanes in remainder case.
-     * @return Evaluated LJPairParameters.
-     */
-    template <bool remainderJ, VectorizationPattern vecPattern>
-    inline LJPairParameters getJ(const size_t j, const size_t restJ) const {
-      VectorDouble halfSigmaJ;
-      VectorDouble sqrtEpsilonJ;
-      fillJPhysicsRegisters<remainderJ, vecPattern>(j, halfSigma2Ptr, sqrtEpsilon2Ptr, halfSigmaJ, sqrtEpsilonJ, restJ);
-      return mixParameters(halfSigmaJ, sqrtEpsilonJ);
-    }
-
-    /**
-     * Retrieves the mixed Lennard-Jones parameters for particle(s) j in Verlet list interactions via SIMD gather.
-     *
-     * @tparam remainder Whether this is a remainder iteration.
-     * @tparam vecPattern The vectorization pattern.
-     * @param indices SIMD vector of neighbor indices.
-     * @param restMaskDouble Lane mask for remainder case.
-     * @return Evaluated LJPairParameters.
-     */
-    template <bool remainder, VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
-    inline LJPairParameters getJ(const VectorLong &indices, const MaskDouble &restMaskDouble) const {
-      VectorLong typeJ;
-      if constexpr (remainder) {
-        const MaskLong restMaskLong = highway::RebindMask(tag_long, restMaskDouble);
-        typeJ = highway::MaskedGatherIndex(restMaskLong, tag_long, typeID2Ptr, indices);
-      } else {
-        typeJ = highway::GatherIndex(tag_long, typeID2Ptr, indices);
-      }
-      const VectorDouble halfSigmaJ = highway::GatherIndex(tag_double, halfSigma2Ptr, typeJ);
-      const VectorDouble sqrtEpsilonJ = highway::GatherIndex(tag_double, sqrtEpsilon2Ptr, typeJ);
-      return mixParameters(halfSigmaJ, sqrtEpsilonJ);
-    }
-  };
-
-  /**
-   * Helper function that handles an iteration of the outer-loop (the loop that changes "i").
-   * @tparam reversed Whether iterating backwards over the outer-loop.
-   * @tparam newton3
-   * @tparam remainderI True iff the "i" vector register is not fully filled, i.e. there are less than _vecLength
-   * elements of the SoA to iterate over.
-   * @tparam vecPattern
-   * @param i index of SoA 1 from which the vector register is filled. E.g. with reversed=false, and the VecLength x 1
-   * pattern used, the vector register will be filled with elements i, i+1, i+2, ..., i+_vecLength-1. With
-   * reversed=true, this is instead i-_vecLength+1, i-_vecLength+2, ..., i-1, i.
-   * @param xPtr1
-   * @param yPtr1
-   * @param zPtr1
-   * @param ownedStatePtr1
-   * @param xPtr2
-   * @param yPtr2
-   * @param zPtr2
-   * @param ownedStatePtr2
-   * @param fxPtr1
-   * @param fyPtr1
-   * @param fzPtr1
-   * @param fxPtr2
-   * @param fyPtr2
-   * @param fzPtr2
-   * @param halfSigma1Ptr
-   * @param sqrtEpsilon1Ptr
-   * @param halfSigma2Ptr
-   * @param sqrtEpsilon2Ptr
-   * @param virialSumX
-   * @param virialSumY
-   * @param virialSumZ
-   * @param potentialEnergySum
-   * @param restI In the remainder case, this is the number of elements left in the SoA.
-   * @param jVecStart The start index for the inner "j" loop.
-   * @param jVecEnd The end index for the inner "j" loop.
-   * @param homoSigmaSquared
-   * @param homoEpsilon24
-   * @param homoShift6
-   */
-  template <bool reversed, bool newton3, bool remainderI, VectorizationPattern vecPattern>
-  inline void handleILoopBody(
-      const size_t i, const double *const __restrict xPtr1, const double *const __restrict yPtr1,
-      const double *const __restrict zPtr1, const autopas::OwnershipState *const __restrict ownedStatePtr1,
-      const double *const __restrict xPtr2, const double *const __restrict yPtr2, const double *const __restrict zPtr2,
-      const autopas::OwnershipState *const __restrict ownedStatePtr2, double *const __restrict fxPtr1,
-      double *const __restrict fyPtr1, double *const __restrict fzPtr1, double *const __restrict fxPtr2,
-      double *const __restrict fyPtr2, double *const __restrict fzPtr2, const double *const __restrict halfSigma1Ptr,
-      const double *const __restrict sqrtEpsilon1Ptr, const double *const __restrict halfSigma2Ptr,
-      const double *const __restrict sqrtEpsilon2Ptr, VectorDouble &virialSumX, VectorDouble &virialSumY,
-      VectorDouble &virialSumZ, VectorDouble &potentialEnergySum, const size_t restI, const size_t jVecStart,
-      const size_t jVecEnd, const double homoSigmaSquared = 0.0, const double homoEpsilon24 = 0.0,
-      const double homoShift6 = 0.0) const {
-    VectorDouble fxAcc = highway::Zero(tag_double);
-    VectorDouble fyAcc = highway::Zero(tag_double);
-    VectorDouble fzAcc = highway::Zero(tag_double);
-
-    MaskDouble notDummyMaskI;
-    [[maybe_unused]] MaskDouble ownedMaskI;
-
-    VectorDouble x1 = highway::Zero(tag_double);
-    VectorDouble y1 = highway::Zero(tag_double);
-    VectorDouble z1 = highway::Zero(tag_double);
-
-    fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, notDummyMaskI,
-                                                     ownedMaskI, restI);
-    const auto *const hs1Ptr = halfSigma1Ptr != nullptr ? &halfSigma1Ptr[i] : nullptr;
-    const auto *const se1Ptr = sqrtEpsilon1Ptr != nullptr ? &sqrtEpsilon1Ptr[i] : nullptr;
-
-    auto j = static_cast<std::ptrdiff_t>(jVecStart);
-    for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j);
-         j += static_cast<std::ptrdiff_t>(jStepSize<vecPattern>())) {
-      const auto *const hs2Ptr = halfSigma2Ptr != nullptr ? &halfSigma2Ptr[j] : nullptr;
-      const auto *const se2Ptr = sqrtEpsilon2Ptr != nullptr ? &sqrtEpsilon2Ptr[j] : nullptr;
-      SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
-          j, notDummyMaskI, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2,
-          zPtr2, fxPtr2, fyPtr2, fzPtr2, hs1Ptr, se1Ptr, hs2Ptr, se2Ptr, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
-          virialSumZ, potentialEnergySum, restI, 0, homoSigmaSquared, homoEpsilon24, homoShift6);
-    }
-
-    const size_t restJ = jVecEnd & (jStepSize<vecPattern>() - 1);
-    if (restJ > 0) {
-      const auto *const hs2Ptr = halfSigma2Ptr != nullptr ? &halfSigma2Ptr[j] : nullptr;
-      const auto *const se2Ptr = sqrtEpsilon2Ptr != nullptr ? &sqrtEpsilon2Ptr[j] : nullptr;
-      SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
-          j, notDummyMaskI, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2,
-          zPtr2, fxPtr2, fyPtr2, fzPtr2, hs1Ptr, se1Ptr, hs2Ptr, se2Ptr, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
-          virialSumZ, potentialEnergySum, restI, restJ, homoSigmaSquared, homoEpsilon24, homoShift6);
-    }
-
-    reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
-  }
-
-  /**
-   * Templatized implementation of SoAFunctorPair.
-   *
-   * When sorted=false the original SoA arrays are iterated directly.
-   * When sorted=true the iteration is pruned via the supplied sortingData.
-   *
-   * @tparam newton3
-   * @tparam sorted Whether to use pruned index data in sortingData.
-   * @tparam vecPattern Vectorization pattern.
-   * @param soa1
-   * @param soa2
-   * @param sortingData Pruning data needed for sorting optimization.
-   */
-  template <bool newton3, bool sorted, VectorizationPattern vecPattern>
-  inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                 autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
-    if (soa1.size() == 0 || soa2.size() == 0) {
-      return;
-    }
-
-    const size_t n1 = soa1.size();
-    const size_t n2 = soa2.size();
-
-    const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
-    const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
-    const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
-    const auto *const __restrict x2Ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
-    const auto *const __restrict y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
-    const auto *const __restrict z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
-    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
-    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
-    auto *const __restrict fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
-    auto *const __restrict fx2Ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
-    MixingBuffers mixingBuffers1;
-    MixingBuffers mixingBuffers2;
-    double *halfSigma1Ptr = nullptr;
-    double *sqrtEpsilon1Ptr = nullptr;
-    double *halfSigma2Ptr = nullptr;
-    double *sqrtEpsilon2Ptr = nullptr;
-    double homoSigmaSquared = _sigmaSquared;
-    double homoEpsilon24 = _epsilon24;
-    double homoShift6 = _shift6;
-
-    if constexpr (useMixing) {
-      const auto *const __restrict typeID1Ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
-      const auto *const __restrict typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
-      if (soaIsHomogeneous(typeID1Ptr, n1) && soaIsHomogeneous(typeID2Ptr, n2)) {
-        const size_t type1 = n1 > 0 ? typeID1Ptr[0] : 0;
-        const size_t type2 = n2 > 0 ? typeID2Ptr[0] : 0;
-        const double sigma = _halfSigmaPerType[type1] + _halfSigmaPerType[type2];
-        homoSigmaSquared = sigma * sigma;
-        homoEpsilon24 = 24.0 * _sqrtEpsilonPerType[type1] * _sqrtEpsilonPerType[type2];
-        if constexpr (calculateGlobals and applyShift) {
-          homoShift6 =
-              ParticlePropertiesLibrary<double, size_t>::calcShift6(homoEpsilon24, homoSigmaSquared, _cutoffSquared);
-        }
-      } else {
-        mixingBuffers1.template getMixingPointers<0>(typeID1Ptr, n1, _halfSigmaPerType, _sqrtEpsilonPerType,
-                                                     halfSigma1Ptr, sqrtEpsilon1Ptr);
-        mixingBuffers2.template getMixingPointers<1>(typeID2Ptr, n2, _halfSigmaPerType, _sqrtEpsilonPerType,
-                                                     halfSigma2Ptr, sqrtEpsilon2Ptr);
-      }
-    }
-
-    const std::ptrdiff_t startI =
-        sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().startI) : 0;
-    // endI bounds the outer loop from above, mirroring startI: i-particles from endI onwards cannot interact
-    // with any j-particle, so the loop stops there instead of running to n1 and relying on the per-block
-    // jVecStart >= jVecEnd skip below.
-    const std::ptrdiff_t endI = sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().endI)
-                                                                  : static_cast<std::ptrdiff_t>(n1);
-
-    VectorDouble virialSumX = highway::Zero(tag_double);
-    VectorDouble virialSumY = highway::Zero(tag_double);
-    VectorDouble virialSumZ = highway::Zero(tag_double);
-    VectorDouble potentialEnergySum = highway::Zero(tag_double);
-
-    const size_t iStep = iStepSize<vecPattern>();
-    const size_t jStep = jStepSize<vecPattern>();
-
-    std::ptrdiff_t i = startI;
-    for (; i + static_cast<std::ptrdiff_t>(iStep) <= endI; i += static_cast<std::ptrdiff_t>(iStep)) {
-      size_t jVecEnd{};
-      size_t jVecStart = 0;
-      if constexpr (sorted) {
-        // The get is always safe here since SoAFunctorPairSorted() will never call this with no sortingData.
-        const auto &sd = sortingData->get();
-        // maxIndex is monotonically non-decreasing, so the tightest valid bound for [i, i + iStep - 1] (the i values
-        // handled in one iteration) is maxIndex of the last particle in the block. For p1xVec
-        // (iStep=1) this collapses to maxIndex[i].
-        jVecEnd = sd.maxIndex[i + iStep - 1];
-        // minIndex is monotonically non-decreasing, so the tightest valid lower bound [i, i + iStep - 1] (the i values
-        // handled in one iteration) is always minIndex[i], the minimum across the block.
-        jVecStart = sd.minIndex[i];
-        // If this check is true it means there are no particles in soa2 that can interact with particles in soa1
-        // I.e. the hitrate in this case is 0%.
-        if (jVecStart >= jVecEnd) {
-          continue;
-        }
-        // Round down to the nearest full SIMD lane boundary so the j-loop starts aligned.
-        jVecStart = jVecStart - (jVecStart % jStep);
-        if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-          if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
-            continue;
-          }
-        }
-      } else {
-        jVecEnd = n2;
-      }
-      handleILoopBody<false, newton3, false, vecPattern>(
-          i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr,
-          fy2Ptr, fz2Ptr, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigma2Ptr, sqrtEpsilon2Ptr, virialSumX, virialSumY,
-          virialSumZ, potentialEnergySum, 0, jVecStart, jVecEnd, homoSigmaSquared, homoEpsilon24, homoShift6);
-    }
-    if constexpr (vecPattern != VectorizationPattern::p1xVec) {
-      // Rest I can't occur in 1xVec case. Bounded by endI, not n1: i-particles from endI onwards cannot
-      // interact with any j-particle and are skipped entirely rather than processed as a no-op remainder.
-      const std::ptrdiff_t restI = endI - i;
-      if (restI > 0) {
-        // Remainder block covers [i, i + restI - 1]. Same monotonicity argument as above.
-        size_t jVecEnd = n2;
-        size_t jVecStart = 0;
-        if constexpr (sorted) {
-          // The get is always safe here since SoAFunctorPairSorted() will never call this with no sortingData.
-          const auto &sd = sortingData->get();
-          jVecEnd = sd.maxIndex[i + restI - 1];
-          jVecStart = sd.minIndex[i];
-          if (jVecStart < jVecEnd) {
-            // Round down to nearest full SIMD lane boundary.
-            jVecStart = jVecStart - (jVecStart % jStep);
-          }
-        }
-        // If this check is false it means there are no particles in soa2 that can interact with particles in soa1
-        // I.e. the hitrate in this case is 0%.
-        if (jVecStart < jVecEnd) {
-          handleILoopBody<false, newton3, true, vecPattern>(
-              i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr,
-              fx2Ptr, fy2Ptr, fz2Ptr, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigma2Ptr, sqrtEpsilon2Ptr, virialSumX,
-              virialSumY, virialSumZ, potentialEnergySum, static_cast<size_t>(restI), jVecStart, jVecEnd,
-              homoSigmaSquared, homoEpsilon24, homoShift6);
-        }
-      }
-    }
-
-    if constexpr (calculateGlobals) {
-      computeGlobals(virialSumX, virialSumY, virialSumZ, potentialEnergySum);
-    }
   }
 
   template <bool remainderI, bool remainderJ, bool reversed, VectorizationPattern vecPattern>
@@ -1745,21 +1677,251 @@ class LJFunctorHWY
     }
   }
 
- public:
   /**
-   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
+   * Helper function that handles an iteration of the outer-loop (the loop that changes "i").
+   * @tparam reversed Whether iterating backwards over the outer-loop.
+   * @tparam newton3
+   * @tparam remainderI True iff the "i" vector register is not fully filled, i.e. there are less than _vecLength
+   * elements of the SoA to iterate over.
+   * @tparam vecPattern
+   * @param i index of SoA 1 from which the vector register is filled. E.g. with reversed=false, and the VecLength x 1
+   * pattern used, the vector register will be filled with elements i, i+1, i+2, ..., i+_vecLength-1. With
+   * reversed=true, this is instead i-_vecLength+1, i-_vecLength+2, ..., i-1, i.
+   * @param xPtr1
+   * @param yPtr1
+   * @param zPtr1
+   * @param ownedStatePtr1
+   * @param xPtr2
+   * @param yPtr2
+   * @param zPtr2
+   * @param ownedStatePtr2
+   * @param fxPtr1
+   * @param fyPtr1
+   * @param fzPtr1
+   * @param fxPtr2
+   * @param fyPtr2
+   * @param fzPtr2
+   * @param halfSigma1Ptr
+   * @param sqrtEpsilon1Ptr
+   * @param halfSigma2Ptr
+   * @param sqrtEpsilon2Ptr
+   * @param virialSumX
+   * @param virialSumY
+   * @param virialSumZ
+   * @param potentialEnergySum
+   * @param restI In the remainder case, this is the number of elements left in the SoA.
+   * @param jVecStart The start index for the inner "j" loop.
+   * @param jVecEnd The end index for the inner "j" loop.
+   * @param homoSigmaSquared
+   * @param homoEpsilon24
+   * @param homoShift6
    */
-  inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                               const std::span<const size_t> neighborList, const bool newton3) final {
-    if (soa.size() == 0 or neighborList.empty()) return;
-    if (newton3) {
-      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
-    } else {
-      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
+  template <bool reversed, bool newton3, bool remainderI, VectorizationPattern vecPattern>
+  inline void handleILoopBody(
+      const size_t i, const double *const __restrict xPtr1, const double *const __restrict yPtr1,
+      const double *const __restrict zPtr1, const autopas::OwnershipState *const __restrict ownedStatePtr1,
+      const double *const __restrict xPtr2, const double *const __restrict yPtr2, const double *const __restrict zPtr2,
+      const autopas::OwnershipState *const __restrict ownedStatePtr2, double *const __restrict fxPtr1,
+      double *const __restrict fyPtr1, double *const __restrict fzPtr1, double *const __restrict fxPtr2,
+      double *const __restrict fyPtr2, double *const __restrict fzPtr2, const double *const __restrict halfSigma1Ptr,
+      const double *const __restrict sqrtEpsilon1Ptr, const double *const __restrict halfSigma2Ptr,
+      const double *const __restrict sqrtEpsilon2Ptr, VectorDouble &virialSumX, VectorDouble &virialSumY,
+      VectorDouble &virialSumZ, VectorDouble &potentialEnergySum, const size_t restI, const size_t jVecStart,
+      const size_t jVecEnd, const double homoSigmaSquared = 0.0, const double homoEpsilon24 = 0.0,
+      const double homoShift6 = 0.0) const {
+    VectorDouble fxAcc = highway::Zero(tag_double);
+    VectorDouble fyAcc = highway::Zero(tag_double);
+    VectorDouble fzAcc = highway::Zero(tag_double);
+
+    MaskDouble notDummyMaskI;
+    [[maybe_unused]] MaskDouble ownedMaskI;
+
+    VectorDouble x1 = highway::Zero(tag_double);
+    VectorDouble y1 = highway::Zero(tag_double);
+    VectorDouble z1 = highway::Zero(tag_double);
+
+    fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, notDummyMaskI,
+                                                     ownedMaskI, restI);
+    const auto *const hs1Ptr = halfSigma1Ptr != nullptr ? &halfSigma1Ptr[i] : nullptr;
+    const auto *const se1Ptr = sqrtEpsilon1Ptr != nullptr ? &sqrtEpsilon1Ptr[i] : nullptr;
+
+    auto j = static_cast<std::ptrdiff_t>(jVecStart);
+    for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j);
+         j += static_cast<std::ptrdiff_t>(jStepSize<vecPattern>())) {
+      const auto *const hs2Ptr = halfSigma2Ptr != nullptr ? &halfSigma2Ptr[j] : nullptr;
+      const auto *const se2Ptr = sqrtEpsilon2Ptr != nullptr ? &sqrtEpsilon2Ptr[j] : nullptr;
+      SoAKernel<newton3, remainderI, false, reversed, vecPattern>(
+          j, notDummyMaskI, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2,
+          zPtr2, fxPtr2, fyPtr2, fzPtr2, hs1Ptr, se1Ptr, hs2Ptr, se2Ptr, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
+          virialSumZ, potentialEnergySum, restI, 0, homoSigmaSquared, homoEpsilon24, homoShift6);
+    }
+
+    const size_t restJ = jVecEnd & (jStepSize<vecPattern>() - 1);
+    if (restJ > 0) {
+      const auto *const hs2Ptr = halfSigma2Ptr != nullptr ? &halfSigma2Ptr[j] : nullptr;
+      const auto *const se2Ptr = sqrtEpsilon2Ptr != nullptr ? &sqrtEpsilon2Ptr[j] : nullptr;
+      SoAKernel<newton3, remainderI, true, reversed, vecPattern>(
+          j, notDummyMaskI, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2,
+          zPtr2, fxPtr2, fyPtr2, fzPtr2, hs1Ptr, se1Ptr, hs2Ptr, se2Ptr, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
+          virialSumZ, potentialEnergySum, restI, restJ, homoSigmaSquared, homoEpsilon24, homoShift6);
+    }
+
+    reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
+  }
+
+  /**
+   * Templatized implementation of SoAFunctorPair.
+   *
+   * When sorted=false the original SoA arrays are iterated directly.
+   * When sorted=true the iteration is pruned via the supplied sortingData.
+   *
+   * @tparam newton3
+   * @tparam sorted Whether to use pruned index data in sortingData.
+   * @tparam vecPattern Vectorization pattern.
+   * @param soa1
+   * @param soa2
+   * @param sortingData Pruning data needed for sorting optimization.
+   */
+  template <bool newton3, bool sorted, VectorizationPattern vecPattern>
+  inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                                 autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
+    if (soa1.size() == 0 || soa2.size() == 0) {
+      return;
+    }
+
+    const size_t n1 = soa1.size();
+    const size_t n2 = soa2.size();
+
+    const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict x2Ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
+    auto *const __restrict fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+    auto *const __restrict fx2Ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    MixingBuffers mixingBuffers1;
+    MixingBuffers mixingBuffers2;
+    double *halfSigma1Ptr = nullptr;
+    double *sqrtEpsilon1Ptr = nullptr;
+    double *halfSigma2Ptr = nullptr;
+    double *sqrtEpsilon2Ptr = nullptr;
+    double homoSigmaSquared = _sigmaSquared;
+    double homoEpsilon24 = _epsilon24;
+    double homoShift6 = _shift6;
+
+    if constexpr (useMixing) {
+      const auto *const __restrict typeID1Ptr = soa1.template begin<Particle_T::AttributeNames::typeId>();
+      const auto *const __restrict typeID2Ptr = soa2.template begin<Particle_T::AttributeNames::typeId>();
+      if (soaIsHomogeneous(typeID1Ptr, n1) && soaIsHomogeneous(typeID2Ptr, n2)) {
+        const size_t type1 = n1 > 0 ? typeID1Ptr[0] : 0;
+        const size_t type2 = n2 > 0 ? typeID2Ptr[0] : 0;
+        const double sigma = _halfSigmaPerType[type1] + _halfSigmaPerType[type2];
+        homoSigmaSquared = sigma * sigma;
+        homoEpsilon24 = 24.0 * _sqrtEpsilonPerType[type1] * _sqrtEpsilonPerType[type2];
+        if constexpr (calculateGlobals and applyShift) {
+          homoShift6 =
+              ParticlePropertiesLibrary<double, size_t>::calcShift6(homoEpsilon24, homoSigmaSquared, _cutoffSquared);
+        }
+      } else {
+        mixingBuffers1.template getMixingPointers<0>(typeID1Ptr, n1, _halfSigmaPerType, _sqrtEpsilonPerType,
+                                                     halfSigma1Ptr, sqrtEpsilon1Ptr);
+        mixingBuffers2.template getMixingPointers<1>(typeID2Ptr, n2, _halfSigmaPerType, _sqrtEpsilonPerType,
+                                                     halfSigma2Ptr, sqrtEpsilon2Ptr);
+      }
+    }
+
+    const std::ptrdiff_t startI =
+        sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().startI) : 0;
+    // endI bounds the outer loop from above, mirroring startI: i-particles from endI onwards cannot interact
+    // with any j-particle, so the loop stops there instead of running to n1 and relying on the per-block
+    // jVecStart >= jVecEnd skip below.
+    const std::ptrdiff_t endI = sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().endI)
+                                                                  : static_cast<std::ptrdiff_t>(n1);
+
+    VectorDouble virialSumX = highway::Zero(tag_double);
+    VectorDouble virialSumY = highway::Zero(tag_double);
+    VectorDouble virialSumZ = highway::Zero(tag_double);
+    VectorDouble potentialEnergySum = highway::Zero(tag_double);
+
+    const size_t iStep = iStepSize<vecPattern>();
+    const size_t jStep = jStepSize<vecPattern>();
+
+    std::ptrdiff_t i = startI;
+    for (; i + static_cast<std::ptrdiff_t>(iStep) <= endI; i += static_cast<std::ptrdiff_t>(iStep)) {
+      size_t jVecEnd{};
+      size_t jVecStart = 0;
+      if constexpr (sorted) {
+        // The get is always safe here since SoAFunctorPairSorted() will never call this with no sortingData.
+        const auto &sd = sortingData->get();
+        // maxIndex is monotonically non-decreasing, so the tightest valid bound for [i, i + iStep - 1] (the i values
+        // handled in one iteration) is maxIndex of the last particle in the block. For p1xVec
+        // (iStep=1) this collapses to maxIndex[i].
+        jVecEnd = sd.maxIndex[i + iStep - 1];
+        // minIndex is monotonically non-decreasing, so the tightest valid lower bound [i, i + iStep - 1] (the i values
+        // handled in one iteration) is always minIndex[i], the minimum across the block.
+        jVecStart = sd.minIndex[i];
+        // If this check is true it means there are no particles in soa2 that can interact with particles in soa1
+        // I.e. the hitrate in this case is 0%.
+        if (jVecStart >= jVecEnd) {
+          continue;
+        }
+        // Round down to the nearest full SIMD lane boundary so the j-loop starts aligned.
+        jVecStart = jVecStart - (jVecStart % jStep);
+        if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+          if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
+            continue;
+          }
+        }
+      } else {
+        jVecEnd = n2;
+      }
+      handleILoopBody<false, newton3, false, vecPattern>(
+          i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr,
+          fy2Ptr, fz2Ptr, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigma2Ptr, sqrtEpsilon2Ptr, virialSumX, virialSumY,
+          virialSumZ, potentialEnergySum, 0, jVecStart, jVecEnd, homoSigmaSquared, homoEpsilon24, homoShift6);
+    }
+    if constexpr (vecPattern != VectorizationPattern::p1xVec) {
+      // Rest I can't occur in 1xVec case. Bounded by endI, not n1: i-particles from endI onwards cannot
+      // interact with any j-particle and are skipped entirely rather than processed as a no-op remainder.
+      const std::ptrdiff_t restI = endI - i;
+      if (restI > 0) {
+        // Remainder block covers [i, i + restI - 1]. Same monotonicity argument as above.
+        size_t jVecEnd = n2;
+        size_t jVecStart = 0;
+        if constexpr (sorted) {
+          // The get is always safe here since SoAFunctorPairSorted() will never call this with no sortingData.
+          const auto &sd = sortingData->get();
+          jVecEnd = sd.maxIndex[i + restI - 1];
+          jVecStart = sd.minIndex[i];
+          if (jVecStart < jVecEnd) {
+            // Round down to nearest full SIMD lane boundary.
+            jVecStart = jVecStart - (jVecStart % jStep);
+          }
+        }
+        // If this check is false it means there are no particles in soa2 that can interact with particles in soa1
+        // I.e. the hitrate in this case is 0%.
+        if (jVecStart < jVecEnd) {
+          handleILoopBody<false, newton3, true, vecPattern>(
+              i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr,
+              fx2Ptr, fy2Ptr, fz2Ptr, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigma2Ptr, sqrtEpsilon2Ptr, virialSumX,
+              virialSumY, virialSumZ, potentialEnergySum, static_cast<size_t>(restI), jVecStart, jVecEnd,
+              homoSigmaSquared, homoEpsilon24, homoShift6);
+        }
+      }
+    }
+
+    if constexpr (calculateGlobals) {
+      computeGlobals(virialSumX, virialSumY, virialSumZ, potentialEnergySum);
     }
   }
 
- private:
   template <bool newton3>
   inline void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                    std::span<const size_t> neighborList) {
@@ -1846,174 +2008,6 @@ class LJFunctorHWY
       computeGlobals(virialSumX, virialSumY, virialSumZ, potentialEnergySum);
     }
   }
-
- public:
-  /**
-   * @copydoc autopas::Functor::getNeededAttr()
-   */
-  constexpr static auto getNeededAttr() {
-    return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
-                                                              Particle_T::AttributeNames::posX,
-                                                              Particle_T::AttributeNames::posY,
-                                                              Particle_T::AttributeNames::posZ,
-                                                              Particle_T::AttributeNames::forceX,
-                                                              Particle_T::AttributeNames::forceY,
-                                                              Particle_T::AttributeNames::forceZ,
-                                                              Particle_T::AttributeNames::typeId,
-                                                              Particle_T::AttributeNames::ownershipState};
-  }
-
-  /**
-   * @copydoc autopas::Functor::getNeededAttr(std::false_type)
-   */
-  constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle_T::AttributeNames, 6>{
-        Particle_T::AttributeNames::id,     Particle_T::AttributeNames::posX,
-        Particle_T::AttributeNames::posY,   Particle_T::AttributeNames::posZ,
-        Particle_T::AttributeNames::typeId, Particle_T::AttributeNames::ownershipState};
-  }
-
-  /**
-   * @copydoc autopas::Functor::getComputedAttr()
-   */
-  constexpr static auto getComputedAttr() {
-    return std::array<typename Particle_T::AttributeNames, 3>{
-        Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY, Particle_T::AttributeNames::forceZ};
-  }
-
-  /**
-   * @copydoc autopas::Functor::supportsSoASorting
-   */
-  static constexpr bool supportsSoASorting = true;
-
-  /**
-   *
-   * @return useMixing
-   */
-  constexpr static bool getMixing() { return useMixing; }
-
-  /**
-   * Reset the global values.
-   * Will set the global values to zero to prepare for the next iteration.
-   */
-  void initTraversal() final {
-    _potentialEnergySum = 0.;
-    _virialSum = {0., 0., 0.};
-    _postProcessed = false;
-    for (size_t i = 0; i < _threadData.size(); ++i) {
-      _threadData[i].setZero();
-    }
-  }
-
-  /**
-   * Accumulates global values, e.g. potential energy and virial.
-   * @param newton3
-   */
-  void endTraversal(const bool newton3) final {
-    using namespace autopas::utils::ArrayMath::literals;
-
-    if (_postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
-    }
-
-    if (calculateGlobals) {
-      for (size_t i = 0; i < _threadData.size(); ++i) {
-        _potentialEnergySum += _threadData[i].potentialEnergySum;
-        _virialSum += _threadData[i].virialSum;
-      }
-      // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
-      // contribution is only counted once per pair.
-      _potentialEnergySum *= 0.5;
-      _virialSum *= 0.5;
-
-      // We have always calculated 6*potentialEnergy, so we divide by 6 here!
-      _potentialEnergySum /= 6.;
-      _postProcessed = true;
-
-      AutoPasLog(DEBUG, "Final potential energy {}", _potentialEnergySum);
-      AutoPasLog(DEBUG, "Final virial           {}", _virialSum[0] + _virialSum[1] + _virialSum[2]);
-    }
-  }
-
-  /**
-   * Get the potential Energy
-   * @return the potential Energy
-   */
-  double getPotentialEnergy() const {
-    if (not calculateGlobals) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
-          "values, please specify calculateGlobals to be true.");
-    }
-    if (not _postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get upot, because endTraversal was not called.");
-    }
-    return _potentialEnergySum;
-  }
-
-  /**
-   * Get the virial
-   * @return the virial
-   */
-  double getVirial() const {
-    if (not calculateGlobals) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
-          "values, please specify calculateGlobals to be true.");
-    }
-    if (not _postProcessed) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Cannot get virial, because endTraversal was not called.");
-    }
-    return _virialSum[0] + _virialSum[1] + _virialSum[2];
-  }
-
-  /**
-   * Sets the particle properties constants for this functor.
-   *
-   * This is only necessary if no particlePropertiesLibrary is used.
-   *
-   * @param epsilon24
-   * @param sigmaSquared
-   */
-  void setParticleProperties(const double epsilon24, const double sigmaSquared) {
-    _epsilon24 = epsilon24;
-    _sigmaSquared = sigmaSquared;
-    _halfSigmaPerType = {std::sqrt(sigmaSquared) * 0.5};
-    _sqrtEpsilonPerType = {std::sqrt(epsilon24 / 24.0)};
-    if constexpr (applyShift) {
-      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
-    } else {
-      _shift6 = 0.;
-    }
-  }
-
-  /**
-   * @copydoc autopas::Functor::setVecPattern()
-   */
-  void setVecPattern(const VectorizationPattern vecPattern) final { _vecPattern = vecPattern; }
-
- private:
-  /**
-   * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
-   */
-  class ThreadData {
-   public:
-    ThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.} {}
-
-    void setZero() {
-      virialSum = {0., 0., 0.};
-      potentialEnergySum = 0.;
-    }
-
-    std::array<double, 3> virialSum{};
-    double potentialEnergySum{};
-
-   private:
-    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
-  };
-  static_assert(sizeof(ThreadData) % 64 == 0, "ThreadData has wrong size");
 
   // cutoff squared used in the functor.
   const double _cutoffSquared{0.};
