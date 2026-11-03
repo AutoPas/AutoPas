@@ -8,8 +8,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <map>
-#include <set>
 #include <vector>
 
 #include "autopas/utils/AlignedAllocator.h"
@@ -321,6 +319,10 @@ class ParticlePropertiesLibrary {
   bool _storeLJData{false};
   bool _storeATData{false};
 
+  /**
+   * Return type of getLJMixingData(). LJ mixing data is computed on demand (see getLJMixingData()) rather than
+   * cached, so this is only used as a lightweight return value, not as backing storage.
+   */
   struct PackedLJMixingData {
     floatType epsilon24;
     floatType sigmaSquared;

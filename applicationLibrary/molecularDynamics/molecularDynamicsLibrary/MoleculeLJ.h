@@ -52,6 +52,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
     oldForceY,
     oldForceZ,
     typeId,
+    sqrtEpsilon,
+    halfSigma,
     ownershipState
   };
 
@@ -66,7 +68,8 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       typename autopas::utils::SoAType<MoleculeLJ *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+                                       size_t /*typeid*/, double /*sqrtEpsilon*/, double /*halfSigma*/,
+                                       autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -114,6 +117,10 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       return getOldF()[2];
     } else if constexpr (attribute == AttributeNames::typeId) {
       return getTypeId();
+    } else if constexpr (attribute == AttributeNames::sqrtEpsilon) {
+      return getSqrtEpsilon();
+    } else if constexpr (attribute == AttributeNames::halfSigma) {
+      return getHalfSigma();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
@@ -158,6 +165,10 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
       _oldF[2] = value;
     } else if constexpr (attribute == AttributeNames::typeId) {
       setTypeId(value);
+    } else if constexpr (attribute == AttributeNames::sqrtEpsilon) {
+      setSqrtEpsilon(value);
+    } else if constexpr (attribute == AttributeNames::halfSigma) {
+      setHalfSigma(value);
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
@@ -190,6 +201,43 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
   void setTypeId(size_t typeId);
 
   /**
+   * Get the square root of the Lennard-Jones epsilon of this particle's site type.
+   *
+   * This is stored directly on the particle (rather than looked up from the type Id in a ParticlePropertiesLibrary
+   * on every pairwise interaction) so that functors can mix epsilon/sigma inline from contiguous per-particle data
+   * instead of an indexed lookup by type Id. It is stored pre-square-rooted so that mixing two site types' epsilons
+   * (epsilon24_ij = 24*sqrt(epsilon_i*epsilon_j) = 24*sqrt(epsilon_i)*sqrt(epsilon_j)) reduces to a single
+   * multiplication in the hot pairwise kernel instead of a multiplication followed by a sqrt.
+   * It must be kept in sync with the type Id, e.g. by setting it once at particle-creation time via
+   * sqrt(ParticlePropertiesLibrary::getEpsilon(typeId)).
+   * @return sqrt(epsilon)
+   */
+  [[nodiscard]] double getSqrtEpsilon() const;
+
+  /**
+   * Set the square root of the Lennard-Jones epsilon of this particle's site type. See getSqrtEpsilon() for why this
+   * is stored per-particle and pre-square-rooted.
+   * @param sqrtEpsilon sqrt(epsilon)
+   */
+  void setSqrtEpsilon(double sqrtEpsilon);
+
+  /**
+   * Get half the Lennard-Jones sigma of this particle's site type. See getSqrtEpsilon() for why this is stored
+   * per-particle. It is stored pre-halved so that mixing two site types' sigmas (sigma_ij = (sigma_i+sigma_j)/2 =
+   * sigma_i/2 + sigma_j/2) reduces to a single addition in the hot pairwise kernel instead of an addition followed by
+   * a multiplication by 0.5.
+   * @return sigma/2
+   */
+  [[nodiscard]] double getHalfSigma() const;
+
+  /**
+   * Set half the Lennard-Jones sigma of this particle's site type. See getHalfSigma() for why this is stored
+   * per-particle and pre-halved.
+   * @param halfSigma sigma/2
+   */
+  void setHalfSigma(double halfSigma);
+
+  /**
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
@@ -204,6 +252,16 @@ class MoleculeLJ : public autopas::ParticleBaseFP64 {
    * a molId to look up molecular attributes (including siteIds of the sites).
    */
   size_t _typeId = 0;
+
+  /**
+   * Square root of the Lennard-Jones epsilon of this particle's site type. See getSqrtEpsilon() for details.
+   */
+  double _sqrtEpsilon = 0.;
+
+  /**
+   * Half the Lennard-Jones sigma of this particle's site type. See getHalfSigma() for details.
+   */
+  double _halfSigma = 0.;
 
   /**
    * Old Force of the particle experiences as 3D vector.

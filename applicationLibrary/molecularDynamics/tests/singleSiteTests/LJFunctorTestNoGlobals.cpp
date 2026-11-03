@@ -6,6 +6,8 @@
 
 #include "LJFunctorTestNoGlobals.h"
 
+#include <cmath>
+
 TYPED_TEST_SUITE_P(LJFunctorTestNoGlobals);
 
 TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
@@ -30,6 +32,12 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
 
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
+  if constexpr (mixing) {
+    p1.setSqrtEpsilon(std::sqrt(this->epsilon));
+    p1.setHalfSigma(this->sigma * 0.5);
+    p2.setSqrtEpsilon(std::sqrt(this->epsilon2));
+    p2.setHalfSigma(this->sigma2 * 0.5);
+  }
 
   if (auto msg = this->shouldSkipIfNotImplemented([&]() { functor->AoSFunctor(p1, p2, newton3); }); msg != "") {
     GTEST_SKIP() << msg;
@@ -117,10 +125,16 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     {
       // particle 1 is always in cell1
       Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
-      cell1.addParticle(p1);
-
       // The cell of particle 2 depends on the InteractionType.
       Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
+      if constexpr (mixing) {
+        p1.setSqrtEpsilon(std::sqrt(this->epsilon));
+        p1.setHalfSigma(this->sigma * 0.5);
+        p2.setSqrtEpsilon(std::sqrt(this->epsilon2));
+        p2.setHalfSigma(this->sigma2 * 0.5);
+      }
+      cell1.addParticle(p1);
+
       switch (interactionType) {
         case TestType::InteractionType::verlet:
           // same as for own

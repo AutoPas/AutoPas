@@ -6,6 +6,7 @@
 #include "MDFlexConfig.h"
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -150,6 +151,14 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
   const auto torques = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 #endif
 
+  findWord(inputStream, "epsilons");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  const auto epsilons = readPayload<double, 1>(inputStream, numParticles);
+
+  findWord(inputStream, "sigmas");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  const auto sigmas = readPayload<double, 1>(inputStream, numParticles);
+
   findWord(inputStream, "typeIds");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   const auto typeIds = readPayload<size_t, 1>(inputStream, numParticles);
@@ -171,7 +180,11 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
     particle.setV(velocities[i]);
     particle.setF(forces[i]);
     particle.setID(ids[i]);
+#if MD_FLEXIBLE_MODE == SINGLESITE
     particle.setTypeId(typeIds[i]);
+    particle.setSqrtEpsilon(epsilons[i]);
+    particle.setHalfSigma(sigmas[i]);
+#endif
 
 #if MD_FLEXIBLE_MODE == MULTISITE
     particle.setQuaternion(quaternions[i]);
@@ -611,6 +624,16 @@ void MDFlexConfig::initializeObjects() {
       object->generate(particles);
     }
   }
+
+  // TODO: this needs change since the idea is to store the parameters in the objects
+#if MD_FLEXIBLE_MODE == SINGLESITE
+  // Object generators only set each particle's typeId. Populate epsilon/sigma from the PPL here so the LJ functors
+  // can mix them inline per pair instead of looking them up by typeId.
+  for (auto &particle : particles) {
+    particle.setSqrtEpsilon(std::sqrt(_particlePropertiesLibrary->getEpsilon(particle.getTypeId())));
+    particle.setHalfSigma(_particlePropertiesLibrary->getSigma(particle.getTypeId()) * 0.5);
+  }
+#endif
 }
 
 void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t &numRanks) {

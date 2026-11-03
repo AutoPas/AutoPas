@@ -85,7 +85,7 @@ const std::vector<int64_t> kNValuesReduced = {50, 75, 100};
 /**
  * Hitrates swept by the Benchmarks in the Hitrate study.
  */
-const std::vector<int64_t> hitrates = {0, 5, 10, 15, 20, 30, 50};
+const std::vector<int64_t> hitrates = {0, 5, 10, 15, 20, 30, 50, 70};
 
 /**
  * VecPattern used by the Benchmarks in the Hitrate study.

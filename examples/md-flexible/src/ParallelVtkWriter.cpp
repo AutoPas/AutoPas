@@ -128,6 +128,20 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   }
   timestepFile << "        </DataArray>\n";
 
+  // print epsilons
+  timestepFile << "        <DataArray Name=\"epsilons\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    timestepFile << "        " << particle->getSqrtEpsilon() << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print sigmas
+  timestepFile << "        <DataArray Name=\"sigmas\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    timestepFile << "        " << particle->getHalfSigma() << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
   // print ids
   timestepFile << "        <DataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
