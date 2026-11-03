@@ -35,7 +35,6 @@ target_link_libraries(
     PUBLIC
         $<$<NOT:$<PLATFORM_ID:Darwin>>:rt> # required for Time.h, on macOS not needed
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
-        $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
@@ -44,6 +43,9 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:pmt>
         Eigen3
         hwy
+        # Keep this last: Its include directory may be a package manager's global one (e.g. /opt/homebrew/include), which
+        # must not shadow the dependencies from above.
+        $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
 )
 
 # OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP

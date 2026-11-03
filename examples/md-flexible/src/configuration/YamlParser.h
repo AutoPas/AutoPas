@@ -49,6 +49,15 @@ std::string typeToStr() {
 bool parseYamlFile(MDFlexConfig &config);
 
 /**
+ * Parses the input for the simulation from an already loaded YAML node.
+ * This allows configurations which do not originate from a file, e.g. a dictionary of the Python interface.
+ * @param node Root node of the configuration.
+ * @param config configuration where the input is stored.
+ * @return All errors which occurred during parsing. Empty on success.
+ */
+std::vector<std::string> parseYamlNode(const YAML::Node &node, MDFlexConfig &config);
+
+/**
  * Parses an input where exactly one option is expected and throws an error if a sequence of multiple options is given
  * @param node The current YAML::Node, that should be parsed
  * @param errMsg The error message thrown if multiple options are passed

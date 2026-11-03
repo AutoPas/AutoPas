@@ -44,6 +44,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
+#include "configureAutoPas.h"
 
 namespace {
 /**
@@ -119,8 +120,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   }
 
   _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
-  _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
-  _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
 
   if (_configuration.getInteractionTypes().empty()) {
     std::string functorName{};
@@ -141,57 +140,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     std::cout << "WARNING: No functor was specified. Defaulting to " << functorName << std::endl;
   }
 
-  _autoPasContainer->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());
-
-  // Pairwise specific options
-  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value,
-                                           autopas::InteractionTypeOption::pairwise);
-  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value,
-                                              autopas::InteractionTypeOption::pairwise);
-  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
-                                          autopas::InteractionTypeOption::pairwise);
-  _autoPasContainer->setAllowedVecPatterns(_configuration.vecPatternOptions.value,
-                                           autopas::InteractionTypeOption::pairwise);
-  _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
-  // Triwise specific options
-  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
-                                           autopas::InteractionTypeOption::triwise);
-  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options3B.value,
-                                              autopas::InteractionTypeOption::triwise);
-  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions3B.value,
-                                          autopas::InteractionTypeOption::triwise);
-  // General options
-  _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
-  _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
-  _autoPasContainer->setCutoff(_configuration.cutoff.value);
-  _autoPasContainer->setRelativeOptimumRange(_configuration.relativeOptimumRange.value);
-  _autoPasContainer->setMaxTuningPhasesWithoutTest(_configuration.maxTuningPhasesWithoutTest.value);
-  _autoPasContainer->setRelativeBlacklistRange(_configuration.relativeBlacklistRange.value);
-  _autoPasContainer->setEvidenceFirstPrediction(_configuration.evidenceFirstPrediction.value);
-  _autoPasContainer->setExtrapolationMethodOption(_configuration.extrapolationMethodOption.value);
-  _autoPasContainer->setNumSamples(_configuration.tuningSamples.value);
-  _autoPasContainer->setEarlyStoppingFactor(_configuration.earlyStoppingFactor.value);
-  _autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
-  _autoPasContainer->setRuleFileName(_configuration.ruleFilename.value);
-  _autoPasContainer->setFuzzyRuleFileName(_configuration.fuzzyRuleFilename.value);
-  _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
-  _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
-  _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOptions.value);
-  _autoPasContainer->setTuningMetricOption(_configuration.tuningMetricOption.value);
-  _autoPasContainer->setUseLOESSSmoothening(_configuration.useLOESSSmoothening.value);
-  _autoPasContainer->setEnergySensorOption(_configuration.energySensorOption.value);
-  _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
-  _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
-  _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
-  _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
-  _autoPasContainer->setVerletSkin(_configuration.verletSkinRadius.value);
-  _autoPasContainer->setDeltaT(_configuration.deltaT.value);
-  _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
-  _autoPasContainer->setAoSSortingThreshold(_configuration.aosSortingThreshold.value);
-  _autoPasContainer->setSoASortingThreshold(_configuration.soaSortingThreshold.value);
-  _autoPasContainer->setUseSortingThresholdBenchmark(_configuration.useSortingThresholdBenchmark.value);
-  _autoPasContainer->setOutputSuffix(outputSuffix);
-  autopas::Logger::get()->set_level(_configuration.logLevel.value);
+  configureAutoPas(*_autoPasContainer, _configuration, _domainDecomposition->getLocalBoxMin(),
+                   _domainDecomposition->getLocalBoxMax(), outputSuffix);
 
   _autoPasContainer->init();
 

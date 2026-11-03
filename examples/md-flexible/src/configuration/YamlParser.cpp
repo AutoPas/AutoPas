@@ -201,6 +201,14 @@ CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const MDFlexC
 }
 
 bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
+  const auto errors = parseYamlNode(YAML::LoadFile(config.yamlFilename.value), config);
+  for (const auto &err : errors) {
+    std::cerr << err << std::endl << std::endl;
+  }
+  return errors.empty();
+}
+
+std::vector<std::string> MDFlexParser::YamlParser::parseYamlNode(const YAML::Node &node, MDFlexConfig &config) {
   /*
   Global variables used to print the expected input and a description of the parameter if an error occurs while
   parsing. Yaml mark is used to identify the current line of the error.
@@ -209,8 +217,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
   std::string description;
   YAML::Mark mark;
   std::vector<std::string> errors;
-
-  const auto node = YAML::LoadFile(config.yamlFilename.value);
 
   // We iterate over all keys to identify known/unknown parameters.
   for (auto itemIterator = node.begin(); itemIterator != node.end(); ++itemIterator) {
@@ -960,12 +966,5 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
     }
   }
 
-  if (!errors.empty()) {
-    for (std::string &err : errors) {
-      std::cerr << err << std::endl << std::endl;
-    }
-    return false;
-  }
-
-  return true;
+  return errors;
 }

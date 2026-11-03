@@ -194,13 +194,19 @@ MDFlexConfig::MDFlexConfig(int argc, char **argv) {
     exit(EXIT_SUCCESS);
   }
 
+  finalizeConfiguration();
+}
+
+void MDFlexConfig::finalizeConfiguration(bool initPropertiesLibrary) {
   calcSimulationBox();
 
   if (tuningPhases.value > 0) {
     iterations.value = 0ul;
   }
 
-  initializeParticlePropertiesLibrary();
+  if (initPropertiesLibrary) {
+    initializeParticlePropertiesLibrary();
+  }
 
   initializeObjects();
 }

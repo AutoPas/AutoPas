@@ -53,6 +53,14 @@ class MDFlexConfig {
   MDFlexConfig() = default;
 
   /**
+   * Derives everything which depends on the parsed options: the simulation box, the particle properties library, and
+   * the particles of all particle objects. The constructor from CLI arguments calls this after parsing. Whoever fills
+   * a default constructed configuration has to call this themselves.
+   * @param initPropertiesLibrary Set this to false if the caller provides their own particle properties library.
+   */
+  void finalizeConfiguration(bool initPropertiesLibrary = true);
+
+  /**
    * Struct to bundle information for options.
    * @tparam T Datatype of the option
    * @tparam getOptChar int for the switch case that is used during cli argument parsing with getOpt.

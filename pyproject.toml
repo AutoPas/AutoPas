@@ -1,0 +1,99 @@
+# ---------------------------------------------------------------------------------------------------
+# The build of the Python interface. CMake does the actual work, scikit-build-core is the PEP 517 build
+# backend which drives it and turns its output into a wheel.
+#
+# Every knob of the C++ build stays a CMake option; this file only chooses the defaults for a pip build.
+# To change one for a single install, pass it through pip:
+#
+#     pip install . -C cmake.define.AUTOPAS_PYTHON_FUNCTOR_AVX=ON
+# ---------------------------------------------------------------------------------------------------
+[build-system]
+requires = ["scikit-build-core>=0.11", "pybind11>=3.1"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "autopas"
+description = "Python interface of AutoPas, a node-level auto-tuned particle simulation library"
+readme = "python/README.md"
+authors = [{ name = "AutoPas development team" }]
+requires-python = ">=3.9"
+license = { text = "BSD-2-Clause" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: C++",
+    "Programming Language :: Python",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = ["numpy"]
+# The version comes from version.cmake, see the provider below
+dynamic = ["version"]
+
+[project.optional-dependencies]
+plot = ["matplotlib"]
+test = ["pytest", "matplotlib"]
+
+[project.urls]
+Homepage = "https://github.com/AutoPas/AutoPas"
+Source = "https://github.com/AutoPas/AutoPas"
+Documentation = "https://autopas.github.io/doxygen_documentation/git-master/"
+Issues = "https://github.com/AutoPas/AutoPas/issues"
+
+# ---------------------------------------------------------------------------------------------------
+# How the wheel is built
+# ---------------------------------------------------------------------------------------------------
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+cmake.version = ">=3.18"
+build-dir = "build/{wheel_tag}"
+# The pure Python part of the package. CMake installs _core next to it, see src/autopasPython
+wheel.packages = ["python/autopas"]
+# Only the module itself, not the install rules of the bundled dependencies
+install.components = ["AutoPasPython"]
+
+[tool.scikit-build.cmake.define]
+AUTOPAS_BUILD_PYTHON_INTERFACE = "ON"
+AUTOPAS_BUILD_MD_LIBRARY = "ON"
+# Everything the Python interface does not need
+AUTOPAS_BUILD_TESTS = "OFF"
+AUTOPAS_BUILD_EXAMPLES = "OFF"
+AUTOPAS_BUILD_SPH_LIBRARY = "OFF"
+AUTOPAS_BUILD_NEIGHBOR_IDENTIFICATION_LIBRARY = "OFF"
+AUTOPAS_FORMATTING_TARGETS = "OFF"
+AUTOPAS_BUILD_TARGET_DOC = "OFF"
+# The energy sensors abort the process on missing RAPL permissions, which would take the interpreter down with it
+AUTOPAS_ENABLE_ENERGY_MEASUREMENTS = "OFF"
+# A module must not depend on what else is installed: A spdlog from a package manager, for instance, usually
+# uses an external fmt, which AutoPas' logger can not work with.
+AUTOPAS_FORCE_ALL_BUNDLED = "ON"
+# Required since CMake 4.0 (does nothing before that) due to outdated minimum versions in bundled dependencies
+CMAKE_POLICY_VERSION_MINIMUM = "3.5"
+
+# ---------------------------------------------------------------------------------------------------
+# version.cmake is the single source of the version, for the C++ library as much as for the wheel
+# ---------------------------------------------------------------------------------------------------
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "version.cmake"
+regex = '''(?s)AutoPas_VERSION_MAJOR\s+(?P<major>\d+)\).*?AutoPas_VERSION_MINOR\s+(?P<minor>\d+)\).*?AutoPas_VERSION_PATCH\s+(?P<patch>\d+)\)'''
+result = "{major}.{minor}.{patch}"
+
+# ---------------------------------------------------------------------------------------------------
+# What goes into the source distribution
+# ---------------------------------------------------------------------------------------------------
+[tool.scikit-build.sdist]
+exclude = [
+    "build*/",
+    "cmake-build*/",
+    "Testing/",
+    "docs/",
+    ".github/",
+    "tests/",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["tests/python"]

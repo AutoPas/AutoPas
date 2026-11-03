@@ -73,6 +73,18 @@ if (AUTOPAS_FORMATTING_TARGETS)
     include(autopas_format)
 endif ()
 
+option(AUTOPAS_BUILD_PYTHON_INTERFACE "Build the Python interface. Single-site molecular dynamics without MPI only." OFF)
+if (AUTOPAS_BUILD_PYTHON_INTERFACE)
+    # All static libraries end up in a shared object. This has to be set before any of them is defined.
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif ()
+
+if (AUTOPAS_BUILD_PYTHON_INTERFACE AND DEFINED ENV{CONDA_PREFIX})
+    # The module has to share the OpenMP runtime with the rest of the environment, e.g. NumPy. A second runtime in the
+    # same process (e.g. from Homebrew) can abort with "OMP: Error #15".
+    list(PREPEND CMAKE_PREFIX_PATH "$ENV{CONDA_PREFIX}")
+endif ()
+
 include(autopas_ccache)
 include(autopas_OpenMP)
 include(autopas_clang-sanitizers)
@@ -108,6 +120,10 @@ add_subdirectory(tests)
 add_subdirectory(applicationLibrary)
 # might also include tests, hence might need flags from tests subdirectory
 add_subdirectory(examples)
+# needs the molecular dynamics application library
+if (AUTOPAS_BUILD_PYTHON_INTERFACE)
+    add_subdirectory(src/autopasPython)
+endif ()
 
 include(autopas_doxygen) # does not really need a target but does need the variable AUTOPAS_BUILD_EXAMPLES.
 

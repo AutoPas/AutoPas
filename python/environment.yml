@@ -1,0 +1,18 @@
+# Everything to build and test the Python interface, except for the C++ compiler, which comes from the system:
+#
+#     conda env create -f python/environment.yml && conda activate autopas
+#     pip install . --no-build-isolation && pytest
+#
+# On macOS, Apple Clang comes without OpenMP. Additionally install llvm-openmp there.
+name: autopas
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - scikit-build-core>=0.11
+  - pybind11>=3.1
+  - cmake
+  - ninja
+  - numpy
+  - matplotlib
+  - pytest

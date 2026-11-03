@@ -22,6 +22,8 @@ The examples include:
 ## Using AutoPas
 Please look at our [user documentation pages](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc).
 
+For molecular dynamics from Python, see the [Python interface](https://github.com/AutoPas/AutoPas/blob/master/python/README.md).
+
 ## Developing AutoPas
 * Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
 * In particular, look at our GenAI policy.

@@ -101,6 +101,12 @@ class ParticlePropertiesLibrary {
   ~ParticlePropertiesLibrary() = default;
 
   /**
+   * Returns the cutoff which is used for the calculation of the shift of the potential.
+   * @return cutoff
+   */
+  [[nodiscard]] double getCutoff() const { return _cutoff; }
+
+  /**
    * Returns the number of registered site / single-site molecule types.
    * @return Number of registered site types.
    */

@@ -1,0 +1,41 @@
+# Workflow for the Python interface: Installs the module and runs its tests on all supported operating systems.
+name: Python Interface
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+  # Allows to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# abort old runs if a new one is started
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}-python-interface
+  cancel-in-progress: true
+
+jobs:
+
+  build-and-test-python:
+    name: Python Interface on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Conda environment from environment.yml
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: python/environment.yml
+          # Apple Clang comes without OpenMP
+          create-args: ${{ runner.os == 'macOS' && 'llvm-openmp' || '' }}
+          cache-downloads: true
+          cache-environment: true
+          init-shell: bash
+      - name: Install & Test the Python interface
+        run: |
+          pip install . -vv --no-build-isolation
+          pytest -v
+        shell: bash -el {0}
