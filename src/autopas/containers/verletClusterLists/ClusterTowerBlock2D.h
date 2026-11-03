@@ -140,6 +140,8 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     if (numParticles == 0) {
       // One owned tower per direction plus the halo towers filling one interaction length on each side, so at least 3
       // towers per direction. This is needed for sliced traversals to work correctly.
+      // As AutoPas supports only box length >= cutoff, the calculation below is overkill. But I guess maybe useful in
+      // the future?
       const auto numTowers = ceil(_interactionLength / boxSize2D) * 2. + 1.;
       return {boxSize2D, static_cast_copy_array<size_t>(numTowers)};
     }
