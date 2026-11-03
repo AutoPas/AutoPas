@@ -132,6 +132,20 @@ class TraversalOption : public Option<TraversalOption> {
      * Uses C27 coloring to avoid race conditions when using Newton3.
      */
     vl_list_iteration_c27,
+    /**
+     * VLListIntersectionTraversal :  Distribute processing of neighbor lists dynamically to threads.
+     * Calls Functor for the Intersection of two neighbor lists. Finds intersection by sorting neighbor lists.
+     * Only viable for triwise interactions.
+     * Does not support Newton3.
+     */
+    vl_list_intersection,
+    /**
+     * VLPairListIterationTraversal :  Distribute processing of neighbor lists dynamically to threads.
+     * Iterates over neighbor lists that store all possible neighbor pairs.
+     * Only viable for triwise interactions.
+     * Does not support Newton3.
+     */
+    vl_pair_list_iteration,
 
     // VerletListCells Traversals:
     /**
@@ -232,14 +246,38 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for pairwise interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllPairwiseOptions() { return getAllOptions(); }
+  static std::set<TraversalOption> getAllPairwiseOptions() {
+    std::set<TraversalOption> allPairwiseOptions;
+    auto allOptions = getAllOptions();
+    auto triwiseOptions = getAllTriwiseOnlyOptions();
+    std::ranges::set_difference(allOptions, triwiseOptions,
+                                std::inserter(allPairwiseOptions, allPairwiseOptions.begin()));
+    return allPairwiseOptions;
+  }
 
   /**
    * Set of options that apply for triwise interactions.
    * @return
    */
   static std::set<TraversalOption> getAllTriwiseOptions() {
-    return {Value::ds_sequential, Value::lc_c01, Value::lc_c08, Value::lc_sliced, Value::lc_sliced_c02, Value::lc_c04};
+    return {Value::ds_sequential,
+            Value::lc_c01,
+            Value::lc_c08,
+            Value::lc_sliced,
+            Value::lc_sliced_c02,
+            Value::lc_c04,
+            Value::vl_list_iteration,
+            Value::vl_list_iteration_c27,
+            Value::vl_list_intersection,
+            Value::vl_pair_list_iteration};
+  }
+
+  /**
+   * Set of options that apply ONLY for triwise interactions.
+   * @return
+   */
+  static std::set<TraversalOption> getAllTriwiseOnlyOptions() {
+    return {Value::vl_list_intersection, Value::vl_pair_list_iteration};
   }
 
   /**
@@ -248,10 +286,10 @@ class TraversalOption : public Option<TraversalOption> {
    */
   static std::set<TraversalOption> getMostPairwiseOptions() {
     std::set<TraversalOption> mostPairwiseOptions;
-    auto allOptions = getAllOptions();
+    auto allOptions = getAllPairwiseOptions();
     auto discouragedOptions = getDiscouragedOptions();
-    std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
-                        std::inserter(mostPairwiseOptions, mostPairwiseOptions.begin()));
+    std::ranges::set_difference(allOptions, discouragedOptions,
+                                std::inserter(mostPairwiseOptions, mostPairwiseOptions.begin()));
     return mostPairwiseOptions;
   }
 
@@ -263,8 +301,8 @@ class TraversalOption : public Option<TraversalOption> {
     std::set<TraversalOption> mostTriwiseOptions;
     auto allOptions = getAllTriwiseOptions();
     auto discouragedOptions = getDiscouragedOptions();
-    std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
-                        std::inserter(mostTriwiseOptions, mostTriwiseOptions.begin()));
+    std::ranges::set_difference(allOptions, discouragedOptions,
+                                std::inserter(mostTriwiseOptions, mostTriwiseOptions.begin()));
     return mostTriwiseOptions;
   }
 
@@ -273,11 +311,11 @@ class TraversalOption : public Option<TraversalOption> {
    * @param interactionType
    * @return
    */
-  static std::set<TraversalOption> getAllOptionsOf(const autopas::InteractionTypeOption &interactionType) {
+  static std::set<TraversalOption> getAllOptionsOf(const InteractionTypeOption &interactionType) {
     switch (interactionType) {
-      case autopas::InteractionTypeOption::pairwise:
+      case InteractionTypeOption::pairwise:
         return getAllPairwiseOptions();
-      case autopas::InteractionTypeOption::triwise:
+      case InteractionTypeOption::triwise:
         return getAllTriwiseOptions();
       default:
         return {};
@@ -316,6 +354,8 @@ class TraversalOption : public Option<TraversalOption> {
         // VerletList Traversals:
         {TraversalOption::vl_list_iteration, "vl_list_iteration"},
         {TraversalOption::vl_list_iteration_c27, "vl_list_iteration_c27"},
+        {TraversalOption::vl_list_intersection, "vl_list_intersection"},
+        {TraversalOption::vl_pair_list_iteration, "vl_pair_list_iteration"},
 
         // VerletListCells Traversals:
         {TraversalOption::vlc_sliced, "vlc_sliced"},

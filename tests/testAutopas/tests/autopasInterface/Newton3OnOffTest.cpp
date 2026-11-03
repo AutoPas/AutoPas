@@ -62,6 +62,13 @@ void Newton3OnOffTest::countFunctorCalls(autopas::Configuration config) {
   if (config.container == autopas::ContainerOption::directSum and config.dataLayout == autopas::DataLayoutOption::soa) {
     return;
   }
+  // vl_list_iteration generates triplets from pairwise neighbor lists, which leads to a non-deterministic ratio of
+  // Functor calls between Newton3 on/off
+  if ((config.traversal == autopas::TraversalOption::vl_list_iteration or
+       config.traversal == autopas::TraversalOption::vl_list_iteration_c27) and
+      config.interactionType == autopas::InteractionTypeOption::triwise) {
+    return;
+  }
   const autopas::ContainerSelectorInfo containerInfo(getBoxMin(), getBoxMax(), getCutoff(), config.cellSizeFactor,
                                                      getVerletSkin(), getClusterSize(), getAoSSortingThreshold(),
                                                      getSoASortingThreshold(), config.loadEstimator);
