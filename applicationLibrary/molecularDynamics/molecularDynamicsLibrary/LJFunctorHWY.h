@@ -142,7 +142,9 @@ class LJFunctorHWY
   explicit LJFunctorHWY(double cutoff,
                         const std::optional<std::reference_wrapper<ParticlePropertiesLibrary<double, size_t>>>
                             particlePropertiesLibrary = std::nullopt)
-      : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff), _cutoffSquared{cutoff * cutoff} {
+      : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
+        _cutoffSquared{cutoff * cutoff},
+        _invCutoffSquared{1. / (cutoff * cutoff)} {
     if (calculateGlobals) {
       _threadData.resize(autopas::autopas_get_max_threads());
     }
@@ -844,6 +846,41 @@ class LJFunctorHWY
   }
 
   /**
+   * Struct holding Lennard-Jones parameters loaded into SIMD vectors.
+   */
+  struct LJParameters {
+    /**
+     * Vector of sigma squared values.
+     */
+    VectorDouble sigmaSquared;
+    /**
+     * Vector of 24 * epsilon values.
+     */
+    VectorDouble epsilon24;
+    /**
+     * Vector of shift6 values.
+     */
+    VectorDouble shift6;
+  };
+
+  /**
+   * Computes shift6 for SIMD vectors of sigmaSquared and epsilon24 using the inverse cutoff squared.
+   *
+   * @param sigmaSquared Vector of sigma squared values.
+   * @param epsilon24 Vector of 24 * epsilon values.
+   * @param invCutoffSquared Vector containing 1 / (cutoff^2).
+   * @return Vector of shift6 values.
+   */
+  static inline VectorDouble computeShift6SIMD(const VectorDouble &sigmaSquared, const VectorDouble &epsilon24,
+                                               const VectorDouble &invCutoffSquared) {
+    const auto sig2Cut2 = highway::Mul(sigmaSquared, invCutoffSquared);
+    const auto sig4Cut4 = highway::Mul(sig2Cut2, sig2Cut2);
+    const auto sig6Cut6 = highway::Mul(sig4Cut4, sig2Cut2);
+    const auto sig12Cut12 = highway::Mul(sig6Cut6, sig6Cut6);
+    return highway::Mul(epsilon24, highway::Sub(sig6Cut6, sig12Cut12));
+  }
+
+  /**
    * Helper function that handles an iteration of the outer-loop (the loop that changes "i").
    * @tparam reversed Whether iterating backwards over the outer-loop.
    * @tparam newton3
@@ -1097,7 +1134,6 @@ class LJFunctorHWY
     // enough on e.g. ARM/RISC-V to cause issues.
     HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
     HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
-    HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       const auto hs1 = *halfSigma1Ptr;
@@ -1110,9 +1146,6 @@ class LJFunctorHWY
         const auto epsilon24 = 24.0 * se1 * se2;
         epsilons[j] = epsilon24;
         sigmas[j] = sigmaSquared;
-        if constexpr (calculateGlobals and applyShift) {
-          shifts[j] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
-        }
       }
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
       for (int i = 0; i < (remainderI ? 1 : 2); ++i) {
@@ -1127,11 +1160,6 @@ class LJFunctorHWY
           const auto epsilon24 = 24.0 * se1 * se2;
           epsilons[index] = epsilon24;
           sigmas[index] = sigmaSquared;
-
-          if constexpr (calculateGlobals and applyShift) {
-            shifts[index] =
-                ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
-          }
         }
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
@@ -1148,11 +1176,6 @@ class LJFunctorHWY
 
           epsilons[index] = epsilon24;
           sigmas[index] = sigmaSquared;
-
-          if constexpr (calculateGlobals and applyShift) {
-            shifts[index] =
-                ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
-          }
         }
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
@@ -1166,17 +1189,13 @@ class LJFunctorHWY
         const auto epsilon24 = 24.0 * se1 * se2;
         epsilons[i] = epsilon24;
         sigmas[i] = sigmaSquared;
-
-        if constexpr (calculateGlobals and applyShift) {
-          shifts[i] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
-        }
       }
     }
 
     epsilon24s = highway::Load(tag_double, epsilons.data());
     sigmaSquareds = highway::Load(tag_double, sigmas.data());
     if constexpr (calculateGlobals and applyShift) {
-      shift6s = highway::Load(tag_double, shifts.data());
+      shift6s = computeShift6SIMD(sigmaSquareds, epsilon24s, highway::Set(tag_double, _invCutoffSquared));
     } else {
       shift6s = highway::Zero(tag_double);
     }
@@ -1408,7 +1427,6 @@ class LJFunctorHWY
       if (halfSigma1Ptr != nullptr) {
         HWY_ALIGN std::array<double, _maxVecLengthDouble> epsilons{};
         HWY_ALIGN std::array<double, _maxVecLengthDouble> sigmas{};
-        HWY_ALIGN std::array<double, _maxVecLengthDouble> shifts{};
         const size_t kMax = remainder ? rest : _vecLengthDouble;
         const auto hs1 = *halfSigma1Ptr;
         const auto se1 = *sqrtEpsilon1Ptr;
@@ -1422,14 +1440,11 @@ class LJFunctorHWY
           const auto epsilon24 = 24.0 * se1 * se2;
           epsilons[k] = epsilon24;
           sigmas[k] = sigmaSquared;
-          if constexpr (calculateGlobals and applyShift) {
-            shifts[k] = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
-          }
         }
         epsilon24s = highway::Load(tag_double, epsilons.data());
         sigmaSquareds = highway::Load(tag_double, sigmas.data());
         if constexpr (calculateGlobals and applyShift) {
-          shift6s = highway::Load(tag_double, shifts.data());
+          shift6s = computeShift6SIMD(sigmaSquareds, epsilon24s, highway::Set(tag_double, _invCutoffSquared));
         } else {
           shift6s = highway::Zero(tag_double);
         }
@@ -1795,6 +1810,8 @@ class LJFunctorHWY
 
   // cutoff squared used in the functor.
   const double _cutoffSquared{0.};
+  // inverse cutoff squared used in the functor.
+  const double _invCutoffSquared{0.};
   // epsilon, sigma and shift6 used in the functor.
   double _epsilon24{0.}, _sigmaSquared{0.}, _shift6{0.};
   std::vector<double> _halfSigmaPerType{};
