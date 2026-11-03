@@ -85,9 +85,9 @@ class LJFunctorHWY
      */
     alignas(64) std::array<double, StackCapacity> halfSigmaStack;
     /**
-     * Stack storage for projected sqrtEpsilon values.
+     * Stack storage for projected sqrtEpsilon24 values.
      */
-    alignas(64) std::array<double, StackCapacity> sqrtEpsilonStack;
+    alignas(64) std::array<double, StackCapacity> sqrtEpsilon24Stack;
 
     /**
      * Fills the provided pointers with the projected halfSigma and sqrtEpsilon values for the given typeIDs.
@@ -98,32 +98,32 @@ class LJFunctorHWY
      * @param typeIDs Pointer to the array of type IDs for the particles.
      * @param soaSize The number of particles in the SoA.
      * @param halfSigmaPerType Vector containing halfSigma values for each particle type.
-     * @param sqrtEpsilonPerType Vector containing sqrtEpsilon values for each particle type.
+     * @param sqrtEpsilon24PerType Vector containing sqrtEpsilon24 values for each particle type.
      * @param halfSigmaPtr Reference to a pointer that will be set to point to the projected halfSigma values.
-     * @param sqrtEpsilonPtr Reference to a pointer that will be set to point to the projected sqrtEpsilon values.
+     * @param sqrtEpsilon24Ptr Reference to a pointer that will be set to point to the projected sqrtEpsilon24 values.
      */
     template <size_t BufferIndex = 0>
     void getMixingPointers(const size_t *__restrict typeIDs, const size_t soaSize,
-                           const std::vector<double> &halfSigmaPerType, const std::vector<double> &sqrtEpsilonPerType,
-                           double *&halfSigmaPtr, double *&sqrtEpsilonPtr) {
+                           const std::vector<double> &halfSigmaPerType, const std::vector<double> &sqrtEpsilon24PerType,
+                           double *&halfSigmaPtr, double *&sqrtEpsilon24Ptr) {
       if (soaSize <= StackCapacity) [[likely]] {
         halfSigmaPtr = halfSigmaStack.data();
-        sqrtEpsilonPtr = sqrtEpsilonStack.data();
+        sqrtEpsilon24Ptr = sqrtEpsilon24Stack.data();
       } else [[unlikely]] {
         thread_local std::vector<double, autopas::AlignedAllocator<double, 64>> halfSigmaHeap;
-        thread_local std::vector<double, autopas::AlignedAllocator<double, 64>> sqrtEpsilonHeap;
+        thread_local std::vector<double, autopas::AlignedAllocator<double, 64>> sqrtEpsilon24Heap;
         if (halfSigmaHeap.size() < soaSize) {
           halfSigmaHeap.resize(soaSize);
-          sqrtEpsilonHeap.resize(soaSize);
+          sqrtEpsilon24Heap.resize(soaSize);
         }
         halfSigmaPtr = halfSigmaHeap.data();
-        sqrtEpsilonPtr = sqrtEpsilonHeap.data();
+        sqrtEpsilon24Ptr = sqrtEpsilon24Heap.data();
       }
 #pragma omp simd
       for (size_t k = 0; k < soaSize; ++k) {
         const auto typeID = typeIDs[k];
         halfSigmaPtr[k] = halfSigmaPerType[typeID];
-        sqrtEpsilonPtr[k] = sqrtEpsilonPerType[typeID];
+        sqrtEpsilon24Ptr[k] = sqrtEpsilon24PerType[typeID];
       }
     }
   };
@@ -326,7 +326,7 @@ class LJFunctorHWY
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
     _halfSigmaPerType = {std::sqrt(sigmaSquared) * 0.5};
-    _sqrtEpsilonPerType = {std::sqrt(epsilon24 / 24.0)};
+    _sqrtEpsilon24PerType = {std::sqrt(epsilon24)};
     if constexpr (applyShift) {
       _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
     } else {
@@ -349,17 +349,17 @@ class LJFunctorHWY
       return;
     }
 
-    double halfSigI = 0., sqrtEpsI = 0.;
+    double halfSigI = 0., sqrtEps24I = 0.;
     size_t typeJ = 0;
     if constexpr (useMixing) {
       const auto typeI = i.getTypeId();
       typeJ = j.getTypeId();
       halfSigI = _halfSigmaPerType[typeI];
-      sqrtEpsI = _sqrtEpsilonPerType[typeI];
+      sqrtEps24I = _sqrtEpsilon24PerType[typeI];
     }
 
     const auto [fx, fy, fz, potentialEnergy6] =
-        computeScalarLJInteraction(dr2, dr[0], dr[1], dr[2], halfSigI, sqrtEpsI, typeJ);
+        computeScalarLJInteraction(dr2, dr[0], dr[1], dr[2], halfSigI, sqrtEps24I, typeJ);
     const std::array<double, 3> f{fx, fy, fz};
     i.addF(f);
     if (newton3) {
@@ -415,10 +415,10 @@ class LJFunctorHWY
       } else {
         MixingBuffers mixingBuffers;
         double *halfSigmaPtr = nullptr;
-        double *sqrtEpsilonPtr = nullptr;
-        mixingBuffers.getMixingPointers(typeIDPtr, soa.size(), _halfSigmaPerType, _sqrtEpsilonPerType, halfSigmaPtr,
-                                        sqrtEpsilonPtr);
-        HeterogeneousParameterPolicy paramPolicy{halfSigmaPtr, sqrtEpsilonPtr, halfSigmaPtr, sqrtEpsilonPtr,
+        double *sqrtEpsilon24Ptr = nullptr;
+        mixingBuffers.getMixingPointers(typeIDPtr, soa.size(), _halfSigmaPerType, _sqrtEpsilon24PerType, halfSigmaPtr,
+                                        sqrtEpsilon24Ptr);
+        HeterogeneousParameterPolicy paramPolicy{halfSigmaPtr, sqrtEpsilon24Ptr, halfSigmaPtr, sqrtEpsilon24Ptr,
                                                  _invCutoffSquared};
         runSingleLoop(soa, paramPolicy);
       }
@@ -513,7 +513,7 @@ class LJFunctorHWY
       return params;
     }
 
-    template <bool remainder, VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
+    template <bool remainder>
     HWY_INLINE const LJPairParameters &getJ([[maybe_unused]] const VectorLong &indices,
                                             [[maybe_unused]] const MaskDouble &restMaskDouble) const {
       return params;
@@ -525,10 +525,10 @@ class LJFunctorHWY
    * Handles per-particle loading and SIMD mixing for cell pairs, single cells, and Verlet lists.
    */
   struct HeterogeneousParameterPolicy {
-    const double *const __restrict halfSigma1Ptr{nullptr};
-    const double *const __restrict sqrtEpsilon1Ptr{nullptr};
-    const double *const __restrict halfSigma2Ptr{nullptr};
-    const double *const __restrict sqrtEpsilon2Ptr{nullptr};
+    const double *const __restrict halfSigmaPtr1{nullptr};
+    const double *const __restrict sqrtEpsilon24Ptr1{nullptr};
+    const double *const __restrict halfSigmaPtr2{nullptr};
+    const double *const __restrict sqrtEpsilon24Ptr2{nullptr};
     const int64_t *const __restrict typeID2Ptr{nullptr};
     const VectorDouble invCutoffSquaredVec;
 
@@ -547,32 +547,32 @@ class LJFunctorHWY
     HeterogeneousParameterPolicy(const double *const __restrict halfSigma1, const double *const __restrict sqrtEpsilon1,
                                  const double *const __restrict halfSigma2, const double *const __restrict sqrtEpsilon2,
                                  const double invCutoffSquared)
-        : halfSigma1Ptr{halfSigma1},
-          sqrtEpsilon1Ptr{sqrtEpsilon1},
-          halfSigma2Ptr{halfSigma2},
-          sqrtEpsilon2Ptr{sqrtEpsilon2},
+        : halfSigmaPtr1{halfSigma1},
+          sqrtEpsilon24Ptr1{sqrtEpsilon1},
+          halfSigmaPtr2{halfSigma2},
+          sqrtEpsilon24Ptr2{sqrtEpsilon2},
           invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)} {}
 
     /**
      * Constructor for Verlet list interactions using per-type lookup tables and SIMD gather.
      *
      * @param halfSigmaIScalar Scalar halfSigma of particle i.
-     * @param sqrtEpsilonIScalar Scalar sqrtEpsilon of particle i.
+     * @param sqrtEpsilon24IScalar Scalar sqrtEpsilon24 of particle i.
      * @param typeIDPtr Pointer to particle type IDs in the SoA.
      * @param halfSigmaPerType Pointer to per-type halfSigma lookup array.
-     * @param sqrtEpsilonPerType Pointer to per-type sqrtEpsilon lookup array.
+     * @param sqrtEpsilon24PerType Pointer to per-type sqrtEpsilon24 lookup array.
      * @param invCutoffSquared Scalar 1 / (cutoff^2).
      */
-    HeterogeneousParameterPolicy(const double halfSigmaIScalar, const double sqrtEpsilonIScalar,
+    HeterogeneousParameterPolicy(const double halfSigmaIScalar, const double sqrtEpsilon24IScalar,
                                  const int64_t *const __restrict typeIDPtr,
                                  const double *const __restrict halfSigmaPerType,
-                                 const double *const __restrict sqrtEpsilonPerType, const double invCutoffSquared)
-        : halfSigma2Ptr{halfSigmaPerType},
-          sqrtEpsilon2Ptr{sqrtEpsilonPerType},
+                                 const double *const __restrict sqrtEpsilon24PerType, const double invCutoffSquared)
+        : halfSigmaPtr2{halfSigmaPerType},
+          sqrtEpsilon24Ptr2{sqrtEpsilon24PerType},
           typeID2Ptr{typeIDPtr},
           invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)},
           halfSigmaI{highway::Set(tag_double, halfSigmaIScalar)},
-          sqrtEpsilon24I{highway::Set(tag_double, 24.0 * sqrtEpsilonIScalar)} {}
+          sqrtEpsilon24I{highway::Set(tag_double, sqrtEpsilon24IScalar)} {}
 
     /**
      * Prepares physical parameters for particle(s) i.
@@ -585,22 +585,21 @@ class LJFunctorHWY
      */
     template <bool remainderI, bool reversed, VectorizationPattern vecPattern>
     HWY_INLINE void prepareI(const size_t i, const size_t restI) {
-      fillIPhysicsRegisters<remainderI, reversed, vecPattern>(i, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigmaI,
+      fillIPhysicsRegisters<remainderI, reversed, vecPattern>(i, halfSigmaPtr1, sqrtEpsilon24Ptr1, halfSigmaI,
                                                               sqrtEpsilon24I, restI);
-      sqrtEpsilon24I = highway::Mul(highway::Set(tag_double, 24.0), sqrtEpsilon24I);
     }
 
     /**
      * Mixes parameters of particle(s) i with particle(s) j into an LJPairParameters struct.
      *
      * @param halfSigmaJ SIMD vector of halfSigma for particle(s) j.
-     * @param sqrtEpsilonJ SIMD vector of sqrtEpsilon for particle(s) j.
+     * @param sqrtEpsilon24J SIMD vector of sqrtEpsilon for particle(s) j.
      * @return Evaluated LJPairParameters for the interaction.
      */
-    inline LJPairParameters mixParameters(const VectorDouble &halfSigmaJ, const VectorDouble &sqrtEpsilonJ) const {
+    inline LJPairParameters mixParameters(const VectorDouble &halfSigmaJ, const VectorDouble &sqrtEpsilon24J) const {
       const auto sigma = highway::Add(halfSigmaI, halfSigmaJ);
       const auto sigmaSquared = highway::Mul(sigma, sigma);
-      const auto epsilon24 = highway::Mul(sqrtEpsilon24I, sqrtEpsilonJ);
+      const auto epsilon24 = highway::Mul(sqrtEpsilon24I, sqrtEpsilon24J);
       VectorDouble shift6 = highway::Zero(tag_double);
       if constexpr (calculateGlobals and applyShift) {
         shift6 = computeShift6SIMD(sigmaSquared, epsilon24, invCutoffSquaredVec);
@@ -620,21 +619,21 @@ class LJFunctorHWY
     template <bool remainderJ, VectorizationPattern vecPattern>
     HWY_INLINE LJPairParameters getJ(const size_t j, const size_t restJ) const {
       VectorDouble halfSigmaJ;
-      VectorDouble sqrtEpsilonJ;
-      fillJPhysicsRegisters<remainderJ, vecPattern>(j, halfSigma2Ptr, sqrtEpsilon2Ptr, halfSigmaJ, sqrtEpsilonJ, restJ);
-      return mixParameters(halfSigmaJ, sqrtEpsilonJ);
+      VectorDouble sqrtEpsilon24J;
+      fillJPhysicsRegisters<remainderJ, vecPattern>(j, halfSigmaPtr2, sqrtEpsilon24Ptr2, halfSigmaJ, sqrtEpsilon24J,
+                                                    restJ);
+      return mixParameters(halfSigmaJ, sqrtEpsilon24J);
     }
 
     /**
      * Retrieves the mixed Lennard-Jones parameters for particle(s) j in Verlet list interactions via SIMD gather.
      *
      * @tparam remainder Whether this is a remainder iteration.
-     * @tparam vecPattern The vectorization pattern.
      * @param indices SIMD vector of neighbor indices.
      * @param restMaskDouble Lane mask for remainder case.
      * @return Evaluated LJPairParameters.
      */
-    template <bool remainder, VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
+    template <bool remainder>
     HWY_INLINE LJPairParameters getJ(const VectorLong &indices, const MaskDouble &restMaskDouble) const {
       VectorLong typeJ;
       VectorDouble halfSigmaJ;
@@ -642,12 +641,12 @@ class LJFunctorHWY
       if constexpr (remainder) {
         const MaskLong restMaskLong = highway::RebindMask(tag_long, restMaskDouble);
         typeJ = highway::MaskedGatherIndex(restMaskLong, tag_long, typeID2Ptr, indices);
-        halfSigmaJ = highway::MaskedGatherIndex(restMaskDouble, tag_double, halfSigma2Ptr, typeJ);
-        sqrtEpsilonJ = highway::MaskedGatherIndex(restMaskDouble, tag_double, sqrtEpsilon2Ptr, typeJ);
+        halfSigmaJ = highway::MaskedGatherIndex(restMaskDouble, tag_double, halfSigmaPtr2, typeJ);
+        sqrtEpsilonJ = highway::MaskedGatherIndex(restMaskDouble, tag_double, sqrtEpsilon24Ptr2, typeJ);
       } else {
         typeJ = highway::GatherIndex(tag_long, typeID2Ptr, indices);
-        halfSigmaJ = highway::GatherIndex(tag_double, halfSigma2Ptr, typeJ);
-        sqrtEpsilonJ = highway::GatherIndex(tag_double, sqrtEpsilon2Ptr, typeJ);
+        halfSigmaJ = highway::GatherIndex(tag_double, halfSigmaPtr2, typeJ);
+        sqrtEpsilonJ = highway::GatherIndex(tag_double, sqrtEpsilon24Ptr2, typeJ);
       }
       return mixParameters(halfSigmaJ, sqrtEpsilonJ);
     }
@@ -668,7 +667,7 @@ class LJFunctorHWY
     if constexpr (useMixing) {
       const double sigma = _halfSigmaPerType[typeId1] + _halfSigmaPerType[typeId2];
       sigmaSquared = sigma * sigma;
-      epsilon24 = 24.0 * _sqrtEpsilonPerType[typeId1] * _sqrtEpsilonPerType[typeId2];
+      epsilon24 = _sqrtEpsilon24PerType[typeId1] * _sqrtEpsilon24PerType[typeId2];
       if constexpr (calculateGlobals and applyShift) {
         shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
       }
@@ -683,10 +682,22 @@ class LJFunctorHWY
    * @param soaSize Number of particles in the SoA.
    * @return True if the cell is homogeneous (or if mixing is disabled), false otherwise.
    */
-  static inline bool soaIsHomogeneous(const size_t *const __restrict typeIDPtr, const size_t soaSize) {
+  inline bool soaIsHomogeneous(const size_t *const __restrict typeIDPtr, const size_t soaSize) const {
+    if (_halfSigmaPerType.size() <= 1 or soaSize <= 1) return true;
     if constexpr (useMixing) {
+      constexpr highway::ScalableTag<size_t> tag_size;
       const auto firstType = typeIDPtr[0];
-      for (size_t k = 1; k < soaSize; ++k) {
+      const auto vFirst = highway::Set(tag_size, firstType);
+      HWY_LANES_CONSTEXPR size_t vecLanes = highway::Lanes(tag_size);
+
+      size_t k = 0;
+      for (; k + vecLanes <= soaSize; k += vecLanes) {
+        const auto v = highway::LoadU(tag_size, &typeIDPtr[k]);
+        if (!highway::AllTrue(tag_size, highway::Eq(v, vFirst))) {
+          return false;
+        }
+      }
+      for (; k < soaSize; ++k) {
         if (typeIDPtr[k] != firstType) {
           return false;
         }
@@ -702,14 +713,14 @@ class LJFunctorHWY
   void initFromPPL(const ParticlePropertiesLibrary<double, size_t> &ppl) {
     const size_t nTypes = ppl.getNumberRegisteredSiteTypes();
     _halfSigmaPerType.resize(nTypes);
-    _sqrtEpsilonPerType.resize(nTypes);
+    _sqrtEpsilon24PerType.resize(nTypes);
     for (size_t t = 0; t < nTypes; ++t) {
       _halfSigmaPerType[t] = ppl.getSigma(t) * 0.5;
-      _sqrtEpsilonPerType[t] = std::sqrt(ppl.getEpsilon(t));
+      _sqrtEpsilon24PerType[t] = std::sqrt(ppl.getEpsilon(t) * 24.);
     }
     if (nTypes > 0) {
       _sigmaSquared = 4.0 * _halfSigmaPerType[0] * _halfSigmaPerType[0];
-      _epsilon24 = 24.0 * _sqrtEpsilonPerType[0] * _sqrtEpsilonPerType[0];
+      _epsilon24 = _sqrtEpsilon24PerType[0] * _sqrtEpsilon24PerType[0];
       if constexpr (applyShift) {
         _shift6 = ParticlePropertiesLibrary<>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared);
       }
@@ -849,17 +860,17 @@ class LJFunctorHWY
    * @tparam vecPattern The vectorization pattern.
    * @param i Particle index in the outer i loop.
    * @param halfSigmaPtr Pointer to the halfSigma array.
-   * @param sqrtEpsilonPtr Pointer to the sqrtEpsilon array.
+   * @param sqrtEpsilon24Ptr Pointer to the sqrtEpsilon24 array.
    * @param halfSigmaI Output SIMD vector for halfSigma of particle(s) i.
-   * @param sqrtEpsilonI Output SIMD vector for sqrtEpsilon of particle(s) i.
+   * @param sqrtEpsilon24I Output SIMD vector for sqrtEpsilon24 of particle(s) i.
    * @param restI Number of valid elements in case remainder is true.
    */
   template <bool remainder, bool reversed, VectorizationPattern vecPattern>
   static void fillIPhysicsRegisters(const size_t i, const double *const __restrict halfSigmaPtr,
-                                    const double *const __restrict sqrtEpsilonPtr, VectorDouble &halfSigmaI,
-                                    VectorDouble &sqrtEpsilonI, const size_t restI) {
+                                    const double *const __restrict sqrtEpsilon24Ptr, VectorDouble &halfSigmaI,
+                                    VectorDouble &sqrtEpsilon24I, const size_t restI) {
     halfSigmaI = loadIRegister<remainder, reversed, vecPattern>(tag_double, halfSigmaPtr, i, restI);
-    sqrtEpsilonI = loadIRegister<remainder, reversed, vecPattern>(tag_double, sqrtEpsilonPtr, i, restI);
+    sqrtEpsilon24I = loadIRegister<remainder, reversed, vecPattern>(tag_double, sqrtEpsilon24Ptr, i, restI);
   }
 
   /**
@@ -1325,13 +1336,13 @@ class LJFunctorHWY
    * @param dy Distance vector y-component.
    * @param dz Distance vector z-component.
    * @param halfSigmaI Pre-looked-up halfSigma for particle i (used when useMixing=true).
-   * @param sqrtEpsilonI Pre-looked-up sqrtEpsilon for particle i (used when useMixing=true).
+   * @param sqrtEpsilon24I Pre-looked-up sqrtEpsilon24 for particle i (used when useMixing=true).
    * @param typeJ Type ID of particle j (used when useMixing=true).
    * @return ScalarLJResult containing forces and potential energy.
    */
   HWY_INLINE ScalarLJResult computeScalarLJInteraction(const double dr2, const double dx, const double dy,
                                                        const double dz, [[maybe_unused]] const double halfSigmaI,
-                                                       [[maybe_unused]] const double sqrtEpsilonI,
+                                                       [[maybe_unused]] const double sqrtEpsilon24I,
                                                        [[maybe_unused]] const size_t typeJ) const {
     double sigmaSquared = _sigmaSquared;
     double epsilon24 = _epsilon24;
@@ -1339,7 +1350,7 @@ class LJFunctorHWY
     if constexpr (useMixing) {
       const double sig = halfSigmaI + _halfSigmaPerType[typeJ];
       sigmaSquared = sig * sig;
-      epsilon24 = 24.0 * sqrtEpsilonI * _sqrtEpsilonPerType[typeJ];
+      epsilon24 = sqrtEpsilon24I * _sqrtEpsilon24PerType[typeJ];
       if constexpr (calculateGlobals and applyShift) {
         shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
       }
@@ -1401,11 +1412,11 @@ class LJFunctorHWY
         continue;
       }
       const double xi = x1Ptr[i], yi = y1Ptr[i], zi = z1Ptr[i];
-      double halfSigmaI = 0., sqrtEpsilonI = 0.;
+      double halfSigmaI = 0., sqrtEpsilon24I = 0.;
       if constexpr (useMixing) {
         const size_t typeI = typeID1Ptr[i];
         halfSigmaI = _halfSigmaPerType[typeI];
-        sqrtEpsilonI = _sqrtEpsilonPerType[typeI];
+        sqrtEpsilon24I = _sqrtEpsilon24PerType[typeI];
       }
       [[maybe_unused]] const bool isOwnedI = (ownedStatePtr1[i] == autopas::OwnershipState::owned);
 
@@ -1421,7 +1432,7 @@ class LJFunctorHWY
 
         if (dr2 <= _cutoffSquared) {
           const auto [fx, fy, fz, pot6] =
-              computeScalarLJInteraction(dr2, dx, dy, dz, halfSigmaI, sqrtEpsilonI, useMixing ? typeID2Ptr[j] : 0);
+              computeScalarLJInteraction(dr2, dx, dy, dz, halfSigmaI, sqrtEpsilon24I, useMixing ? typeID2Ptr[j] : 0);
           fx1Acc[i] += fx;
           fy1Acc[i] += fy;
           fz1Acc[i] += fz;
@@ -2156,15 +2167,16 @@ class LJFunctorHWY
         auto paramPolicy = makeHomogeneousParameterPolicy(type1, type2);
         runPairLoop<newton3, sorted, vecPattern>(soa1, soa2, sortingData, paramPolicy);
       } else {
-        MixingBuffers mixingBuffers;
+        MixingBuffers mixingBuffers1;
+        MixingBuffers mixingBuffers2;
         double *halfSigma1Ptr = nullptr;
         double *sqrtEpsilon1Ptr = nullptr;
         double *halfSigma2Ptr = nullptr;
         double *sqrtEpsilon2Ptr = nullptr;
-        mixingBuffers.template getMixingPointers<0>(typeID1Ptr, n1, _halfSigmaPerType, _sqrtEpsilonPerType,
-                                                    halfSigma1Ptr, sqrtEpsilon1Ptr);
-        mixingBuffers.template getMixingPointers<1>(typeID2Ptr, n2, _halfSigmaPerType, _sqrtEpsilonPerType,
-                                                    halfSigma2Ptr, sqrtEpsilon2Ptr);
+        mixingBuffers1.template getMixingPointers<0>(typeID1Ptr, n1, _halfSigmaPerType, _sqrtEpsilon24PerType,
+                                                     halfSigma1Ptr, sqrtEpsilon1Ptr);
+        mixingBuffers2.template getMixingPointers<1>(typeID2Ptr, n2, _halfSigmaPerType, _sqrtEpsilon24PerType,
+                                                     halfSigma2Ptr, sqrtEpsilon2Ptr);
         HeterogeneousParameterPolicy paramPolicy{halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigma2Ptr, sqrtEpsilon2Ptr,
                                                  _invCutoffSquared};
         runPairLoop<newton3, sorted, vecPattern>(soa1, soa2, sortingData, paramPolicy);
@@ -2198,8 +2210,8 @@ class LJFunctorHWY
         const auto *const typeIDPtr = soa.template begin<Particle_T::AttributeNames::typeId>();
         const size_t typeI = typeIDPtr[indexFirst];
         HeterogeneousParameterPolicy paramPolicy{
-            _halfSigmaPerType[typeI], _sqrtEpsilonPerType[typeI], reinterpret_cast<const int64_t *>(typeIDPtr),
-            _halfSigmaPerType.data(), _sqrtEpsilonPerType.data(), _invCutoffSquared};
+            _halfSigmaPerType[typeI], _sqrtEpsilon24PerType[typeI], reinterpret_cast<const int64_t *>(typeIDPtr),
+            _halfSigmaPerType.data(), _sqrtEpsilon24PerType.data(), _invCutoffSquared};
         runVerletLoop<newton3>(soa, indexFirst, neighborList, paramPolicy);
       } else {
         auto paramPolicy = makeHomogeneousParameterPolicy();
@@ -2219,7 +2231,7 @@ class LJFunctorHWY
   // epsilon, sigma and shift6 used in the functor.
   double _epsilon24{0.}, _sigmaSquared{0.}, _shift6{0.};
   std::vector<double> _halfSigmaPerType{};
-  std::vector<double> _sqrtEpsilonPerType{};
+  std::vector<double> _sqrtEpsilon24PerType{};
 
   // accumulators for the globals (potential energy and virial).
   double _potentialEnergySum{0.};
