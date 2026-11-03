@@ -1570,31 +1570,40 @@ class LJFunctorHWY
       VectorDouble &fz, VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc,
       [[maybe_unused]] VectorDouble &virialSumX, [[maybe_unused]] VectorDouble &virialSumY,
       [[maybe_unused]] VectorDouble &virialSumZ, [[maybe_unused]] VectorDouble &potentialEnergySum) const {
-    const auto invDr2 = highway::Div(highway::Set(tag_double, 1.0), dr2);
+    const auto one = highway::Set(tag_double, 1.0);
+    const auto invDr2 = highway::Div(one, dr2);
     const auto lj2 = highway::Mul(params.sigmaSquared, invDr2);
+    const auto eps24InvDr2 = highway::Mul(params.epsilon24, invDr2);
+
     const auto lj4 = highway::Mul(lj2, lj2);
     const auto lj6 = highway::Mul(lj2, lj4);
-    const auto lj12 = highway::Mul(lj6, lj6);
-    const auto lj12m6 = highway::Sub(lj12, lj6);
-    const auto lj12m6alj12 = highway::Add(lj12m6, lj12);
-    const auto lj12m6alj12e = highway::Mul(lj12m6alj12, params.epsilon24);
-    const auto fac = highway::Mul(lj12m6alj12e, invDr2);
 
+    const auto twoLj6m1 = highway::MulSub(lj6, highway::Set(tag_double, 2.0), one);
+    const auto lj6Eps24InvDr2 = highway::Mul(lj6, eps24InvDr2);
+
+    const auto fac = highway::Mul(twoLj6m1, lj6Eps24InvDr2);
     const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
 
-    fx = highway::Mul(drX, facMasked);
-    fy = highway::Mul(drY, facMasked);
-    fz = highway::Mul(drZ, facMasked);
+    if constexpr (not newton3 and not calculateGlobals) {
+      fxAcc = highway::MulAdd(drX, facMasked, fxAcc);
+      fyAcc = highway::MulAdd(drY, facMasked, fyAcc);
+      fzAcc = highway::MulAdd(drZ, facMasked, fzAcc);
+    } else {
+      fx = highway::Mul(drX, facMasked);
+      fy = highway::Mul(drY, facMasked);
+      fz = highway::Mul(drZ, facMasked);
 
-    fxAcc = highway::Add(fxAcc, fx);
-    fyAcc = highway::Add(fyAcc, fy);
-    fzAcc = highway::Add(fzAcc, fz);
+      fxAcc = highway::Add(fxAcc, fx);
+      fyAcc = highway::Add(fyAcc, fy);
+      fzAcc = highway::Add(fzAcc, fz);
+    }
 
     if constexpr (calculateGlobals) {
       const auto virialX = highway::Mul(fx, drX);
       const auto virialY = highway::Mul(fy, drY);
       const auto virialZ = highway::Mul(fz, drZ);
 
+      const auto lj12m6 = highway::MulSub(lj6, lj6, lj6);
       const auto potentialEnergy = highway::MulAdd(params.epsilon24, lj12m6, params.shift6);
       const auto potentialEnergyMasked = highway::IfThenElseZero(cutoffDummyMask, potentialEnergy);
 
@@ -1666,10 +1675,7 @@ class LJFunctorHWY
     const auto drZ = highway::Sub(z1, z2);
 
     const auto drX2 = highway::Mul(drX, drX);
-    const auto drY2 = highway::Mul(drY, drY);
-    const auto drZ2 = highway::Mul(drZ, drZ);
-
-    const auto dr2 = highway::Add(highway::Add(drX2, drY2), drZ2);
+    const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, drX2));
 
     const auto dummyMask = highway::And(notDummyMaskI, notDummyMaskJ);
     const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, _cutoffSquaredVec);
@@ -1769,10 +1775,7 @@ class LJFunctorHWY
     const auto drZ = highway::Sub(z1, z2);
 
     const auto drX2 = highway::Mul(drX, drX);
-    const auto drY2 = highway::Mul(drY, drY);
-    const auto drZ2 = highway::Mul(drZ, drZ);
-
-    const auto dr2 = highway::Add(highway::Add(drX2, drY2), drZ2);
+    const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, drX2));
 
     const auto dummyMask = highway::And(notDummyMaskI, notDummyMaskJ);
     const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, _cutoffSquaredVec);
