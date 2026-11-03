@@ -194,7 +194,7 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
         f2 = cell2.begin()->getF();
         break;
     }
-    // if the interactiontype is own, then the forces of the second particle should always be calculated!
+    // if the interaction type is own, then the forces of the second particle should always be calculated!
     if (newton3 or interactionType != TestType::InteractionType::pair) {
       if (mixing) {
         EXPECT_NEAR(f2[0], -this->expectedForceMixing[0], this->absDelta);

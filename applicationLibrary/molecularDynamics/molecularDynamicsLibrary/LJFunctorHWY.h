@@ -917,42 +917,6 @@ class LJFunctorHWY
   }
 
   /**
-   * Fills the registers for the loop over j. This includes positions and ownership state.
-   *
-   * @tparam remainder Whether this is a remainder loop iteration with fewer lanes than the vector width.
-   * @tparam vecPattern The vectorization pattern.
-   * @param j Current loop index for j.
-   * @param x2Ptr Pointer to the x coordinate of the particle at position j.
-   * @param y2Ptr Pointer to the y coordinate of the particle at position j.
-   * @param z2Ptr Pointer to the z coordinate of the particle at position j.
-   * @param ownedStatePtr2 Pointer to the ownership state of the particle at position j.
-   * @param x2 The register to be filled for x coordinates.
-   * @param y2 The register to be filled for y coordinates.
-   * @param z2 The register to be filled for z coordinates.
-   * @param notDummyMaskJ The mask to be filled for the 'not dummy' ownership state.
-   * @param ownedMaskJ The mask to be filled for the 'owned' ownership state.
-   * @param rest The number of lanes filled in case of a remainder loop.
-   */
-  template <bool remainder, VectorizationPattern vecPattern>
-  HWY_INLINE static void fillJRegisters(const size_t j, const double *const __restrict x2Ptr,
-                                        const double *const __restrict y2Ptr, const double *const __restrict z2Ptr,
-                                        const int64_t *const __restrict ownedStatePtr2, VectorDouble &x2,
-                                        VectorDouble &y2, VectorDouble &z2, MaskDouble &notDummyMaskJ,
-                                        [[maybe_unused]] MaskDouble &ownedMaskJ, const unsigned int rest) {
-    const auto ownedStateJLong = loadJRegister<remainder, vecPattern>(tag_long, ownedStatePtr2, j, rest);
-    x2 = loadJRegister<remainder, vecPattern>(tag_double, x2Ptr, j, rest);
-    y2 = loadJRegister<remainder, vecPattern>(tag_double, y2Ptr, j, rest);
-    z2 = loadJRegister<remainder, vecPattern>(tag_double, z2Ptr, j, rest);
-
-    const MaskLong notDummyMaskJLong = highway::Ne(ownedStateJLong, highway::Zero(tag_long));
-    notDummyMaskJ = highway::RebindMask(tag_double, notDummyMaskJLong);
-    if constexpr (calculateGlobals) {
-      const VectorLong ownedStateVal = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
-      ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedStateJLong, ownedStateVal));
-    }
-  }
-
-  /**
    * Loads the physical parameters (halfSigma and sqrtEpsilon) for particle(s) j according to the vectorization pattern.
    *
    * @tparam remainder Whether this is a remainder loop iteration with fewer lanes than the vector width.
@@ -1661,27 +1625,33 @@ class LJFunctorHWY
                             VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
                             VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &potentialEnergySum,
                             const size_t restJ) const {
-    VectorDouble x2;
-    VectorDouble y2;
-    VectorDouble z2;
-    MaskDouble notDummyMaskJ;
-    [[maybe_unused]] MaskDouble ownedMaskJ;
 
-    fillJRegisters<remainderJ, vecPattern>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, notDummyMaskJ,
-                                           ownedMaskJ, restJ);
+    const auto x2 = loadJRegister<remainderJ, vecPattern>(tag_double, x2Ptr, j, restJ);
+    const auto y2 = loadJRegister<remainderJ, vecPattern>(tag_double, y2Ptr, j, restJ);
+    const auto z2 = loadJRegister<remainderJ, vecPattern>(tag_double, z2Ptr, j, restJ);
 
     const auto drX = highway::Sub(x1, x2);
     const auto drY = highway::Sub(y1, y2);
     const auto drZ = highway::Sub(z1, z2);
+    const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, highway::Mul(drX, drX)));
 
-    const auto drX2 = highway::Mul(drX, drX);
-    const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, drX2));
-
-    const auto dummyMask = highway::And(notDummyMaskI, notDummyMaskJ);
-    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, _cutoffSquaredVec);
-
-    if (highway::AllFalse(tag_double, cutoffDummyMask)) {
+    const auto cutoffMaskI = highway::MaskedLe(notDummyMaskI, dr2, _cutoffSquaredVec);
+    if (highway::AllFalse(tag_double, cutoffMaskI)) {
       return;
+    }
+
+    const auto ownedStateJLong = loadJRegister<remainderJ, vecPattern>(tag_long, ownedStatePtr2, j, restJ);
+    const auto notDummyMaskJ = highway::RebindMask(tag_double, highway::Ne(ownedStateJLong, highway::Zero(tag_long)));
+    const auto cutoffDummyMask = highway::And(cutoffMaskI, notDummyMaskJ);
+
+    if (highway::AllFalse(tag_double, cutoffDummyMask)) [[unlikely]] {
+      return;
+    }
+
+    [[maybe_unused]] MaskDouble ownedMaskJ;
+    if constexpr (calculateGlobals and newton3) {
+      const VectorLong ownedStateVal = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
+      ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedStateJLong, ownedStateVal));
     }
 
     const auto &params = paramPolicy.template getJ<remainderJ, vecPattern>(j, restJ);
