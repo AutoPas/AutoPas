@@ -144,7 +144,8 @@ class LJFunctorHWY
                             particlePropertiesLibrary = std::nullopt)
       : autopas::PairwiseFunctor<Particle_T, LJFunctorHWY>(cutoff),
         _cutoffSquared{cutoff * cutoff},
-        _invCutoffSquared{1. / (cutoff * cutoff)} {
+        _invCutoffSquared{1. / (cutoff * cutoff)},
+        _cutoffSquaredVec{highway::Set(tag_double, cutoff * cutoff)} {
     if (calculateGlobals) {
       _threadData.resize(autopas::autopas_get_max_threads());
     }
@@ -846,20 +847,11 @@ class LJFunctorHWY
   }
 
   /**
-   * Struct holding Lennard-Jones parameters loaded into SIMD vectors.
+   * Struct holding Lennard-Jones parameters loaded into SIMD vectors for an interaction.
    */
-  struct LJParameters {
-    /**
-     * Vector of sigma squared values.
-     */
+  struct LJPairParameters {
     VectorDouble sigmaSquared;
-    /**
-     * Vector of 24 * epsilon values.
-     */
     VectorDouble epsilon24;
-    /**
-     * Vector of shift6 values.
-     */
     VectorDouble shift6;
   };
 
@@ -879,6 +871,221 @@ class LJFunctorHWY
     const auto sig12Cut12 = highway::Mul(sig6Cut6, sig6Cut6);
     return highway::Mul(epsilon24, highway::Sub(sig6Cut6, sig12Cut12));
   }
+
+  /**
+   * Parameter policy for homogeneous cells (or interactions with mixing disabled), where all particles share the same
+   * physical parameters.
+   */
+  struct HomogeneousParameterPolicy {
+    const VectorDouble sigmaSquaredConst;
+    const VectorDouble epsilon24Const;
+    const VectorDouble shift6Const;
+
+    /**
+     * Constructor pre-broadcasting scalar constants into SIMD vectors.
+     *
+     * @param sigmaSquaredConst Scalar sigma squared.
+     * @param epsilon24Const Scalar 24 * epsilon.
+     * @param shift6Const Scalar shift6 value.
+     */
+    HomogeneousParameterPolicy(const double sigmaSquaredConst, const double epsilon24Const, const double shift6Const)
+        : sigmaSquaredConst{highway::Set(tag_double, sigmaSquaredConst)},
+          epsilon24Const{highway::Set(tag_double, epsilon24Const)},
+          shift6Const{highway::Set(tag_double, shift6Const)} {}
+
+    /**
+     * Prepares parameters for particle(s) i. For homogeneous interactions, this is a no-op.
+     *
+     * @tparam remainderI Whether this is a remainder iteration.
+     * @tparam reversed Whether outer loop iterates backwards.
+     * @tparam vecPattern The vectorization pattern.
+     * @param i Loop index i.
+     * @param restI Number of valid lanes in remainder case.
+     */
+    template <bool remainderI, bool reversed, VectorizationPattern vecPattern>
+    inline void prepareI([[maybe_unused]] const size_t i, [[maybe_unused]] const size_t restI) const {}
+
+    /**
+     * Retrieves the Lennard-Jones parameters for particle(s) j in regular cell interactions.
+     *
+     * @tparam remainderJ Whether this is a remainder iteration.
+     * @tparam vecPattern The vectorization pattern.
+     * @param j Loop index j.
+     * @param restJ Number of valid lanes in remainder case.
+     * @return LJPairParameters containing the pre-broadcast constants.
+     */
+    template <bool remainderJ, VectorizationPattern vecPattern>
+    inline LJPairParameters getJ([[maybe_unused]] const size_t j, [[maybe_unused]] const size_t restJ) const {
+      return {sigmaSquaredConst, epsilon24Const, shift6Const};
+    }
+
+    /**
+     * Retrieves the Lennard-Jones parameters for particle(s) j in Verlet list interactions.
+     *
+     * @tparam remainder Whether this is a remainder iteration.
+     * @tparam vecPattern The vectorization pattern.
+     * @param indices Vector of neighbor particle indices.
+     * @param restMaskDouble Mask of valid lanes in remainder case.
+     * @return LJPairParameters containing the pre-broadcast constants.
+     */
+    template <bool remainder, VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
+    inline LJPairParameters getJ([[maybe_unused]] const VectorLong &indices,
+                                 [[maybe_unused]] const MaskDouble &restMaskDouble) const {
+      return {sigmaSquaredConst, epsilon24Const, shift6Const};
+    }
+  };
+
+  /**
+   * Helper method to construct a HomogeneousParameterPolicy for given particle type IDs.
+   *
+   * @param typeId1 Type ID of the first particle (used if mixing is enabled).
+   * @param typeId2 Type ID of the second particle (used if mixing is enabled).
+   * @return Initialized HomogeneousParameterPolicy.
+   */
+  inline HomogeneousParameterPolicy makeHomogeneousParameterPolicy([[maybe_unused]] const size_t typeId1,
+                                                                   [[maybe_unused]] const size_t typeId2) const {
+    double sigmaSquared = _sigmaSquared;
+    double epsilon24 = _epsilon24;
+    double shift6 = _shift6;
+    if constexpr (useMixing) {
+      const double sigma = _halfSigmaPerType[typeId1] + _halfSigmaPerType[typeId2];
+      sigmaSquared = sigma * sigma;
+      epsilon24 = 24.0 * _sqrtEpsilonPerType[typeId1] * _sqrtEpsilonPerType[typeId2];
+      if constexpr (calculateGlobals and applyShift) {
+        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
+      }
+    }
+    return HomogeneousParameterPolicy{sigmaSquared, epsilon24, shift6};
+  }
+
+  /**
+   * Parameter policy for heterogeneous cells where multiple particle types interact.
+   * Handles per-particle loading and SIMD mixing for cell pairs, single cells, and Verlet lists.
+   */
+  struct HeterogeneousParameterPolicy {
+    const double *const __restrict halfSigma1Ptr{nullptr};
+    const double *const __restrict sqrtEpsilon1Ptr{nullptr};
+    const double *const __restrict halfSigma2Ptr{nullptr};
+    const double *const __restrict sqrtEpsilon2Ptr{nullptr};
+    const int64_t *const __restrict typeID2Ptr{nullptr};
+    const VectorDouble invCutoffSquaredVec;
+
+    VectorDouble halfSigmaI{highway::Zero(tag_double)};
+    VectorDouble sqrtEpsilon24I{highway::Zero(tag_double)};
+
+    /**
+     * Constructor for cell-pair and single-cell interactions using pre-unpacked mixing buffers.
+     *
+     * @param halfSigma1 Pointer to halfSigma buffer for particle(s) 1.
+     * @param sqrtEpsilon1 Pointer to sqrtEpsilon buffer for particle(s) 1.
+     * @param halfSigma2 Pointer to halfSigma buffer for particle(s) 2.
+     * @param sqrtEpsilon2 Pointer to sqrtEpsilon buffer for particle(s) 2.
+     * @param invCutoffSquared Scalar 1 / (cutoff^2).
+     */
+    HeterogeneousParameterPolicy(const double *const __restrict halfSigma1, const double *const __restrict sqrtEpsilon1,
+                                 const double *const __restrict halfSigma2, const double *const __restrict sqrtEpsilon2,
+                                 const double invCutoffSquared)
+        : halfSigma1Ptr{halfSigma1},
+          sqrtEpsilon1Ptr{sqrtEpsilon1},
+          halfSigma2Ptr{halfSigma2},
+          sqrtEpsilon2Ptr{sqrtEpsilon2},
+          invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)} {}
+
+    /**
+     * Constructor for Verlet list interactions using per-type lookup tables and SIMD gather.
+     *
+     * @param halfSigmaIScalar Scalar halfSigma of particle i.
+     * @param sqrtEpsilonIScalar Scalar sqrtEpsilon of particle i.
+     * @param typeIDPtr Pointer to particle type IDs in the SoA.
+     * @param halfSigmaPerType Pointer to per-type halfSigma lookup array.
+     * @param sqrtEpsilonPerType Pointer to per-type sqrtEpsilon lookup array.
+     * @param invCutoffSquared Scalar 1 / (cutoff^2).
+     */
+    HeterogeneousParameterPolicy(const double halfSigmaIScalar, const double sqrtEpsilonIScalar,
+                                 const int64_t *const __restrict typeIDPtr,
+                                 const double *const __restrict halfSigmaPerType,
+                                 const double *const __restrict sqrtEpsilonPerType, const double invCutoffSquared)
+        : halfSigma2Ptr{halfSigmaPerType},
+          sqrtEpsilon2Ptr{sqrtEpsilonPerType},
+          typeID2Ptr{typeIDPtr},
+          invCutoffSquaredVec{highway::Set(tag_double, invCutoffSquared)},
+          halfSigmaI{highway::Set(tag_double, halfSigmaIScalar)},
+          sqrtEpsilon24I{highway::Set(tag_double, 24.0 * sqrtEpsilonIScalar)} {}
+
+    /**
+     * Prepares physical parameters for particle(s) i.
+     *
+     * @tparam remainderI Whether this is a remainder iteration.
+     * @tparam reversed Whether outer loop iterates backwards.
+     * @tparam vecPattern The vectorization pattern.
+     * @param i Loop index i.
+     * @param restI Number of valid lanes in remainder case.
+     */
+    template <bool remainderI, bool reversed, VectorizationPattern vecPattern>
+    inline void prepareI(const size_t i, const size_t restI) {
+      fillIPhysicsRegisters<remainderI, reversed, vecPattern>(i, halfSigma1Ptr, sqrtEpsilon1Ptr, halfSigmaI,
+                                                              sqrtEpsilon24I, restI);
+      sqrtEpsilon24I = highway::Mul(highway::Set(tag_double, 24.0), sqrtEpsilon24I);
+    }
+
+    /**
+     * Mixes parameters of particle(s) i with particle(s) j into an LJPairParameters struct.
+     *
+     * @param halfSigmaJ SIMD vector of halfSigma for particle(s) j.
+     * @param sqrtEpsilonJ SIMD vector of sqrtEpsilon for particle(s) j.
+     * @return Evaluated LJPairParameters for the interaction.
+     */
+    inline LJPairParameters mixParameters(const VectorDouble &halfSigmaJ, const VectorDouble &sqrtEpsilonJ) const {
+      const auto sigma = highway::Add(halfSigmaI, halfSigmaJ);
+      const auto sigmaSquared = highway::Mul(sigma, sigma);
+      const auto epsilon24 = highway::Mul(sqrtEpsilon24I, sqrtEpsilonJ);
+      VectorDouble shift6 = highway::Zero(tag_double);
+      if constexpr (calculateGlobals and applyShift) {
+        shift6 = computeShift6SIMD(sigmaSquared, epsilon24, invCutoffSquaredVec);
+      }
+      return {sigmaSquared, epsilon24, shift6};
+    }
+
+    /**
+     * Retrieves the mixed Lennard-Jones parameters for particle(s) j in regular cell interactions.
+     *
+     * @tparam remainderJ Whether this is a remainder iteration.
+     * @tparam vecPattern The vectorization pattern.
+     * @param j Loop index j.
+     * @param restJ Number of valid lanes in remainder case.
+     * @return Evaluated LJPairParameters.
+     */
+    template <bool remainderJ, VectorizationPattern vecPattern>
+    inline LJPairParameters getJ(const size_t j, const size_t restJ) const {
+      VectorDouble halfSigmaJ;
+      VectorDouble sqrtEpsilonJ;
+      fillJPhysicsRegisters<remainderJ, vecPattern>(j, halfSigma2Ptr, sqrtEpsilon2Ptr, halfSigmaJ, sqrtEpsilonJ, restJ);
+      return mixParameters(halfSigmaJ, sqrtEpsilonJ);
+    }
+
+    /**
+     * Retrieves the mixed Lennard-Jones parameters for particle(s) j in Verlet list interactions via SIMD gather.
+     *
+     * @tparam remainder Whether this is a remainder iteration.
+     * @tparam vecPattern The vectorization pattern.
+     * @param indices SIMD vector of neighbor indices.
+     * @param restMaskDouble Lane mask for remainder case.
+     * @return Evaluated LJPairParameters.
+     */
+    template <bool remainder, VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
+    inline LJPairParameters getJ(const VectorLong &indices, const MaskDouble &restMaskDouble) const {
+      VectorLong typeJ;
+      if constexpr (remainder) {
+        const MaskLong restMaskLong = highway::RebindMask(tag_long, restMaskDouble);
+        typeJ = highway::MaskedGatherIndex(restMaskLong, tag_long, typeID2Ptr, indices);
+      } else {
+        typeJ = highway::GatherIndex(tag_long, typeID2Ptr, indices);
+      }
+      const VectorDouble halfSigmaJ = highway::GatherIndex(tag_double, halfSigma2Ptr, typeJ);
+      const VectorDouble sqrtEpsilonJ = highway::GatherIndex(tag_double, sqrtEpsilon2Ptr, typeJ);
+      return mixParameters(halfSigmaJ, sqrtEpsilonJ);
+    }
+  };
 
   /**
    * Helper function that handles an iteration of the outer-loop (the loop that changes "i").
@@ -1812,6 +2019,8 @@ class LJFunctorHWY
   const double _cutoffSquared{0.};
   // inverse cutoff squared used in the functor.
   const double _invCutoffSquared{0.};
+  // cutoff squared pre-broadcast into a vector.
+  const VectorDouble _cutoffSquaredVec{highway::Set(tag_double, 0.)};
   // epsilon, sigma and shift6 used in the functor.
   double _epsilon24{0.}, _sigmaSquared{0.}, _shift6{0.};
   std::vector<double> _halfSigmaPerType{};
