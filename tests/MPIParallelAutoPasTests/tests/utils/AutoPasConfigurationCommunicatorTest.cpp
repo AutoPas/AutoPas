@@ -34,7 +34,6 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserializeVector) 
 TEST_F(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
   Configuration config = Configuration(
       ContainerOption::directSum, 1 + rank, TraversalOption::lc_sliced, LoadEstimatorOption::neighborListLength,
       DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise, VectorizationPatternOption::NA);

@@ -6,11 +6,11 @@
 
 #include "RemainderTraversalTest.h"
 
+#include "NumThreadGuard.h"
 #include "autopas/LogicHandler.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**
@@ -67,7 +67,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   const auto searchSpace = generateAllValidConfigurations(
       autopas::InteractionTypeOption::pairwise, {containerConfig.container}, autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), {dataLayout}, {n3}, {containerConfig.cellSizeFactor},
-      autopas::VectorizationPatternOption::getAllOptions(), /*throwIfNone*/ false);
+      autopas::VectorizationPatternOption::getAllOptions(), {autopas::autopas_all_threads}, /*throwIfNone*/ false);
   // Sanity check
   if (searchSpace.empty()) {
     FAIL() << "No valid configuration exists for " << containerConfig << " with Data Layout " << dataLayout
@@ -282,7 +282,7 @@ std::vector<RemainderTraversalDirectTest::ParamType> getDirectTestParams() {
       for (const auto n3 : autopas::Newton3Option::getAllOptions()) {
         if (getArbitraryConfiguration(autopas::InteractionTypeOption::pairwise, containerConfig.container, std::nullopt,
                                       std::nullopt, dataLayout, n3, containerConfig.cellSizeFactor, std::nullopt,
-                                      /*throwIfNone*/ false)
+                                      std::nullopt, /*throwIfNone*/ false)
                 .has_value()) {
           params.emplace_back(containerConfig, dataLayout, n3);
         }

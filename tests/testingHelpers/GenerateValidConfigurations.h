@@ -35,6 +35,7 @@
  * @param allowedNewton3Options By default, all options.
  * @param allowedCellSizeFactors By default, {0.5, 1.0, 1.5}
  * @param allowedVectorPatterns By default, all options.
+ * @param allowedThreadCounts By default, no thread count tuning (use all threads).
  * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return an empty set.
  * @return
  */
@@ -49,15 +50,16 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
     const std::set<double> &allowedCellSizeFactors = {0.5, 1.0, 1.5},
     const std::set<autopas::VectorizationPatternOption> &allowedVectorPatterns =
         autopas::VectorizationPatternOption::getAllOptions(),
-    bool throwIfNone = true) {
+    const std::set<int> &allowedThreadCounts = {autopas::autopas_all_threads}, bool throwIfNone = true) {
   const autopas::NumberSetFinite<double> csfs(allowedCellSizeFactors);
+  const autopas::NumberSetFinite<int> tcs(allowedThreadCounts);
   if (interactionType == autopas::InteractionTypeOption::all) {
     std::set<autopas::Configuration> allConfigs;
     for (auto iType : autopas::InteractionTypeOption::getMostOptions()) {
       // Do not throw for individual interaction types, as only the union has to be non-empty.
       const auto configs = autopas::SearchSpaceGenerators::cartesianProduct(
           allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-          allowedNewton3Options, &csfs, allowedVectorPatterns, iType, /*throwIfNone*/ false);
+          allowedNewton3Options, &csfs, &tcs, allowedVectorPatterns, iType, /*throwIfNone*/ false);
       allConfigs.insert(configs.begin(), configs.end());
     }
     if (throwIfNone and allConfigs.empty()) {
@@ -67,7 +69,7 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
   } else {
     return autopas::SearchSpaceGenerators::cartesianProduct(
         allowedContainerOptions, allowedTraversalOptions, allowedLoadEstimatorOptions, allowedDataLayoutOptions,
-        allowedNewton3Options, &csfs, allowedVectorPatterns, interactionType, throwIfNone);
+        allowedNewton3Options, &csfs, &tcs, allowedVectorPatterns, interactionType, throwIfNone);
   }
 }
 
@@ -83,6 +85,7 @@ inline std::set<autopas::Configuration> generateAllValidConfigurations(
  * @param newton3Option If provided, restrict to this Newton 3 option, otherwise consider all options.
  * @param cellSizeFactor If provided, restrict to this cell size factor, otherwise consider {0.5, 1.0, 1.5}.
  * @param vectorPattern If provided, restrict to this vectorization pattern, otherwise consider all options.
+ * @param vectorPattern If provided, restrict to this thread count option, otherwise do not tune thread count (use all).
  * @param throwIfNone If true (default), throw when no valid configuration exists; if false, return std::nullopt
  * instead.
  * @return An arbitrary valid configuration matching the given constraints, or std::nullopt if none exists.
@@ -95,7 +98,8 @@ inline std::optional<autopas::Configuration> getArbitraryConfiguration(
     std::optional<autopas::DataLayoutOption> dataLayoutOption = std::nullopt,
     std::optional<autopas::Newton3Option> newton3Option = std::nullopt,
     std::optional<double> cellSizeFactor = std::nullopt,
-    std::optional<autopas::VectorizationPatternOption> vectorPattern = std::nullopt, bool throwIfNone = true) {
+    std::optional<autopas::VectorizationPatternOption> vectorPattern = std::nullopt,
+    std::optional<int> threadCount = std::nullopt, bool throwIfNone = true) {
   const auto configurations = generateAllValidConfigurations(
       interactionType.value_or(autopas::InteractionTypeOption::all),
       containerOption.has_value() ? std::set<autopas::ContainerOption>{*containerOption}
@@ -111,6 +115,7 @@ inline std::optional<autopas::Configuration> getArbitraryConfiguration(
       cellSizeFactor.has_value() ? std::set<double>{*cellSizeFactor} : std::set<double>{0.5, 1.0, 1.5},
       vectorPattern.has_value() ? std::set<autopas::VectorizationPatternOption>{*vectorPattern}
                                 : autopas::VectorizationPatternOption::getAllOptions(),
+      threadCount.has_value() ? std::set<int>{*threadCount} : std::set<int>{autopas::autopas_all_threads},
       /*throwIfNone -> false so that we use the error message below which is clearer for users of this function*/
       false);
 
@@ -194,7 +199,7 @@ struct ContainerConfiguration {
   [[nodiscard]] std::optional<autopas::Configuration> generateFullConfig(
       std::optional<autopas::InteractionTypeOption> interactionType = std::nullopt, bool throwIfNone = true) const {
     return getArbitraryConfiguration(interactionType, container, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
-                                     cellSizeFactor, std::nullopt, throwIfNone);
+                                     cellSizeFactor, std::nullopt, std::nullopt, throwIfNone);
   }
 };
 
