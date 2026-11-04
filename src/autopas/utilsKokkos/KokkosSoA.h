@@ -36,7 +36,7 @@ class KokkosSoA {
   }
 
   template <class Particle_T>
-  void addParticle(size_t index, Particle_T &particle) {
+  void addParticle(size_t index, const Particle_T &particle) {
     constexpr auto tupleSize = std::tuple_size<decltype(_particleData)>::value;
     constexpr auto I = std::make_index_sequence<tupleSize>{};
 
@@ -91,7 +91,7 @@ class KokkosSoA {
   }
 
   template <class Particle_T, std::size_t... I>
-  void addParticleImpl(size_t index, Particle_T &particle, std::index_sequence<I...>) {
+  void addParticleImpl(size_t index, const Particle_T &particle, std::index_sequence<I...>) {
     // I+1 is required since we do not want to store the Particle Pointer which is the result of particle.get<0>()
     ((operator()<I, false>(index) = particle.template get<static_cast<Particle_T::AttributeNames>(I + 1)>()), ...);
   }

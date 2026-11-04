@@ -3,207 +3,196 @@
  * @author Luis Gall
  * @date 28.10.2026
  *
- * Currently covered methods of KokkosSoA: operator<useDeviceView=false>()(index), addParticle(index, Particle)
+ * Currently covered methods of KokkosSoA: operator<useDeviceView>()(index), addParticle(index, Particle), resize(size),
+ * getView<Attribute>(), sync<Space, I>(), syncAll<Space>(), modify<Space, I>(), modifyAll<Space>()
  */
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
 
 #include "KokkosSoATest.h"
 
-TEST_F(KokkosSoATest, testInitialization) {
-  autopas::utilsKokkos::KokkosSoA<autopas::KokkosParticleBaseFP32::KokkosSoAArraysType> soa;
-}
+#include "KokkosTestUtils.h"
 
-TEST_F(KokkosSoATest, SoATypeTest) {
-  static_assert(
-      std::is_same<autopas::utilsKokkos::KokkosSoA<unsigned int *, float *, float *, float *>::Type,
+using namespace kokkosTestUtils;
+
+namespace {
+
+using TestSoA = autopas::utilsKokkos::KokkosSoA<unsigned int *, float *, float *, float *>;
+
+static_assert(
+    std::is_same_v<TestSoA::Type,
                    std::tuple<Kokkos::DualView<unsigned int *, autopas::utilsKokkos::DeviceMemSpace::device_type>,
                               Kokkos::DualView<float *, autopas::utilsKokkos::DeviceMemSpace::device_type>,
                               Kokkos::DualView<float *, autopas::utilsKokkos::DeviceMemSpace::device_type>,
-                              Kokkos::DualView<float *, autopas::utilsKokkos::DeviceMemSpace::device_type>>>::value,
-      "type must be same");
+                              Kokkos::DualView<float *, autopas::utilsKokkos::DeviceMemSpace::device_type>>>,
+    "KokkosSoA must store one DualView per attribute.");
+
+static_assert(std::is_same_v<decltype(std::get<0>(std::declval<TestSoA::Type &>()).view_host().data()), unsigned int *>,
+              "The host view of the first column must store unsigned int.");
+static_assert(std::is_same_v<decltype(std::get<1>(std::declval<TestSoA::Type &>()).view_host().data()), float *>,
+              "The host view of the second column must store float.");
+
+/**
+ * Creates an SoA with the given size and fills it with the particles [0, size) on the host.
+ * In contrast to KokkosList, KokkosSoA::addParticle() does not handle the sync state on its own.
+ * @param size
+ * @return The filled SoA, in which the host holds the newest data.
+ */
+SoA makeFilledSoA(size_t size) {
+  SoA soa{};
+  soa.resize(size);
+
+  // resize() marks the device as modified. Without this sync, the modifyAll() below aborts.
+  soa.syncAll<HostExecSpace>();
+  for (size_t i = 0; i < size; ++i) {
+    soa.addParticle(i, makeParticle(i));
+  }
+  soa.modifyAll<HostExecSpace>();
+
+  return soa;
 }
 
-using SoAType = autopas::utilsKokkos::KokkosSoA<unsigned int *, float *, float *, float *>::Type;
-
-TEST_F(KokkosSoATest, SoAStorageTestGet) {
-  SoAType soa{};
-
-  EXPECT_EQ(std::get<0>(soa).extent(0), 0);
-  EXPECT_EQ(std::get<1>(soa).extent(0), 0);
-  EXPECT_EQ(std::get<2>(soa).extent(0), 0);
-  EXPECT_EQ(std::get<3>(soa).extent(0), 0);
-
-  size_t size1 = 4;
-  size_t size2 = 5;
-  size_t size3 = 6;
-  size_t size4 = 7;
-
-  std::get<0>(soa).resize(size1);
-  std::get<1>(soa).resize(size2);
-  std::get<2>(soa).resize(size3);
-  std::get<3>(soa).resize(size4);
-
-  EXPECT_EQ(std::get<0>(soa).extent(0), size1);
-  EXPECT_EQ(std::get<1>(soa).extent(0), size2);
-  EXPECT_EQ(std::get<2>(soa).extent(0), size3);
-  EXPECT_EQ(std::get<3>(soa).extent(0), size4);
-
-  static_assert(std::is_same<decltype(std::get<0>(soa).view_host().data()), unsigned int *>::value,
-                "id type must be proper(unsigned int)");
-  static_assert(std::is_same<decltype(std::get<1>(soa).view_host().data()), float *>::value,
-                "position type must be proper(float)");
-  static_assert(std::is_same<decltype(std::get<2>(soa).view_host().data()), float *>::value,
-                "position type must be proper(float)");
-  static_assert(std::is_same<decltype(std::get<3>(soa).view_host().data()), float *>::value,
-                "position type must be proper(float)");
+/**
+ * Writes to the posX and posY columns in a device kernel, without touching the sync state.
+ * @param soa
+ * @param numParticles
+ * @param value
+ */
+void writePositionsXYOnDevice(const SoA &soa, size_t numParticles, float value) {
+  Kokkos::parallel_for(
+      "KokkosSoATest::writePositionsXYOnDevice", Kokkos::RangePolicy<DeviceExecSpace>(0, numParticles),
+      KOKKOS_LAMBDA(const size_t i) {
+        soa.template operator()<Attr::posX - 1, true>(i) = value;
+        soa.template operator()<Attr::posY - 1, true>(i) = value;
+      });
 }
 
-TEST_F(KokkosSoATest, SoATestGet) {
-  autopas::utilsKokkos::KokkosSoA<unsigned int *, float *, double *> soa {};
+}  // namespace
+
+TEST_F(KokkosSoATest, testInitialization) { SoA soa; }
+
+TEST_F(KokkosSoATest, testGetView) {
+  autopas::utilsKokkos::KokkosSoA<unsigned int *, float *, double *> soa{};
 
   soa.resize(1);
 
-  auto storedView1 = soa.getView<0>();
-  auto storedView2 = soa.getView<1>();
-  auto storedView3 = soa.getView<2>();
+  const auto &storedView1 = soa.getView<0>();
+  const auto &storedView2 = soa.getView<1>();
+  const auto &storedView3 = soa.getView<2>();
 
-  EXPECT_EQ(storedView1.extent(0), 1);
-  EXPECT_EQ(storedView2.extent(0), 1);
-  EXPECT_EQ(storedView3.extent(0), 1);
+  EXPECT_EQ(storedView1.extent(0), 1u);
+  EXPECT_EQ(storedView2.extent(0), 1u);
+  EXPECT_EQ(storedView3.extent(0), 1u);
 
-  static_assert(std::is_same<decltype(storedView1)::value_type, unsigned int>::value,
-                "first attribute type must be proper(unsigned int)");
-  static_assert(std::is_same<decltype(storedView2)::value_type, float>::value,
-                "second attribute type must be proper(float)");
-  static_assert(std::is_same<decltype(storedView3)::value_type, double>::value,
-                "third attribute type must be proper(double)");
+  static_assert(std::is_same_v<std::remove_cvref_t<decltype(storedView1)>::value_type, unsigned int>,
+                "The first attribute must be unsigned int.");
+  static_assert(std::is_same_v<std::remove_cvref_t<decltype(storedView2)>::value_type, float>,
+                "The second attribute must be float.");
+  static_assert(std::is_same_v<std::remove_cvref_t<decltype(storedView3)>::value_type, double>,
+                "The third attribute must be double.");
 }
 
-TEST_F(KokkosSoATest, SoATestAddParticleHost) {
-  autopas::KokkosParticleBaseFP32::KokkosSoAArraysType soa;
-  soa.resize(1);
+TEST_F(KokkosSoATest, testAddParticleHost) {
+  const SoA soa = makeFilledSoA(3);
 
-  autopas::KokkosParticleBaseFP32 particle{};
-
-  signed int id = 42;
-  const std::array<float, 3> position{1.f, 2.f, 3.f};
-  const std::array<float, 3> force{0.5f, 0.4f, 0.3f};
-  const std::array<float, 3> velocity{0.123f, 0.456f, 0.789f};
-  autopas::OwnershipState ownershipState{autopas::OwnershipState::halo};
-
-  particle.setID(id);
-  particle.setR(position);
-  particle.setF(force);
-  particle.setV(velocity);
-  particle.setOwnershipState(ownershipState);
-
-  soa.template addParticle<autopas::KokkosParticleBaseFP32>(0, particle);
-
-  auto storedId = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::id - 1, false>(0);
-  auto storedX = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posX - 1, false>(0);
-  auto storedY = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posY - 1, false>(0);
-  auto storedZ = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posZ - 1, false>(0);
-  auto storedVx = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velX - 1, false>(0);
-  auto storedVy = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velY - 1, false>(0);
-  auto storedVz = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velZ - 1, false>(0);
-  auto storedFx = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceX - 1, false>(0);
-  auto storedFy = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceY - 1, false>(0);
-  auto storedFz = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceZ - 1, false>(0);
-  auto storedState =
-      soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::ownershipState - 1, false>(0);
-
-  EXPECT_EQ(storedId, id);
-  EXPECT_EQ(storedX, position[0]);
-  EXPECT_EQ(storedY, position[1]);
-  EXPECT_EQ(storedZ, position[2]);
-  EXPECT_EQ(storedVx, velocity[0]);
-  EXPECT_EQ(storedVy, velocity[1]);
-  EXPECT_EQ(storedVz, velocity[2]);
-  EXPECT_EQ(storedFx, force[0]);
-  EXPECT_EQ(storedFy, force[1]);
-  EXPECT_EQ(storedFz, force[2]);
-  EXPECT_EQ(storedState, ownershipState);
+  EXPECT_EQ(soa.getView<0>().extent(0), 3u);
+  for (size_t i = 0; i < 3; ++i) {
+    expectOnHost(SoAByAttributeName{soa}, i);
+  }
 }
 
-TEST_F(KokkosSoATest, SoATestAddParticleDevice) {
-  autopas::KokkosParticleBaseFP32::KokkosSoAArraysType soa;
-  soa.resize(1);
+TEST_F(KokkosSoATest, testAddParticleDevice) {
+  SoA soa = makeFilledSoA(3);
 
-  autopas::KokkosParticleBaseFP32 particle{};
+  soa.syncAll<DeviceExecSpace>();
 
-  signed int id = 42;
-  float x = 1.f;
-  float y = 2.f;
-  float z = 3.f;
-  float fX = 0.5f;
-  float fY = 0.4f;
-  float fZ = 0.3f;
-  float vX = 0.123f;
-  float vY = 0.456f;
-  float vZ = 0.789f;
-  const std::array<float, 3> position{x,y,z};
-  const std::array<float, 3> force{fX, fY, fZ};
-  const std::array<float, 3> velocity{vX, vY, vZ};
-  autopas::OwnershipState ownershipState{autopas::OwnershipState::halo};
+  expectDeviceStorage(soa, 3);
+  EXPECT_EQ(countDeviceMismatches(SoAByAttributeName{soa}, 0, 3), 0);
+}
 
-  particle.setID(id);
-  particle.setR(position);
-  particle.setF(force);
-  particle.setV(velocity);
-  particle.setOwnershipState(ownershipState);
+TEST_F(KokkosSoATest, testDeviceRoundTrip) {
+  const float offset = 1000.f;
+  SoA soa = makeFilledSoA(3);
 
-  soa.syncAll<autopas::utilsKokkos::HostExecSpace>();
-  soa.template addParticle<autopas::KokkosParticleBaseFP32>(0, particle);
-  soa.modifyAll<autopas::utilsKokkos::HostExecSpace>();
+  // The device has to be up to date before it may be marked as modified. Otherwise, DualView::modify() aborts.
+  soa.syncAll<DeviceExecSpace>();
+  overwriteOnDevice(SoAByAttributeName{soa}, 3, offset);
+  soa.modifyAll<DeviceExecSpace>();
 
-  soa.syncAll<autopas::utilsKokkos::DeviceExecSpace>();
+  soa.syncAll<HostExecSpace>();
 
-  auto hostCopyX = Kokkos::create_mirror_view_and_copy(
-    Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::posX - 1>().view_device());
-  auto hostCopyY = Kokkos::create_mirror_view_and_copy(
-    Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::posY - 1>().view_device());
-  auto hostCopyZ = Kokkos::create_mirror_view_and_copy(
-    Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::posZ - 1>().view_device());
-  auto hostCopyFx = Kokkos::create_mirror_view_and_copy(
-    Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::forceX - 1>().view_device());
-  auto hostCopyFy = Kokkos::create_mirror_view_and_copy(
-      Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::forceY - 1>().view_device());
-  auto hostCopyFz = Kokkos::create_mirror_view_and_copy(
-      Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::forceZ - 1>().view_device());
-  auto hostCopyVx = Kokkos::create_mirror_view_and_copy(
-      Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::velX - 1>().view_device());
-  auto hostCopyVy = Kokkos::create_mirror_view_and_copy(
-      Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::velY - 1>().view_device());
-  auto hostCopyVz = Kokkos::create_mirror_view_and_copy(
-      Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::velZ - 1>().view_device());
+  for (size_t i = 0; i < 3; ++i) {
+    expectOnHost(SoAByAttributeName{soa}, i, offset);
+  }
+}
 
-  EXPECT_EQ(hostCopyX(0), x);
-  EXPECT_EQ(hostCopyY(0), y);
-  EXPECT_EQ(hostCopyZ(0), z);
-  EXPECT_EQ(hostCopyVx(0), vX);
-  EXPECT_EQ(hostCopyVy(0), vY);
-  EXPECT_EQ(hostCopyVz(0), vZ);
-  EXPECT_EQ(hostCopyFx(0), fX);
-  EXPECT_EQ(hostCopyFy(0), fY);
-  EXPECT_EQ(hostCopyFz(0), fZ);
+// DualView::resize() takes a different code path depending on which side holds the newest data.
+TEST_F(KokkosSoATest, testResizeHostNewest) {
+  SoA soa = makeFilledSoA(2);
 
-  int errors = 0;
-  Kokkos::parallel_reduce(
-      "checkDevice", Kokkos::RangePolicy<autopas::utilsKokkos::DeviceExecSpace>(0, 1),
-      KOKKOS_LAMBDA(int i, int &err) {
-        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posX - 1, true>(i) != x) ++err;
-        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posY - 1, true>(i) != y) ++err;
-        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posZ - 1, true>(i) != z) ++err;
-        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velX - 1, true>(i) != vX) ++err;
-        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velY - 1, true>(i) != vY) ++err;
-        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velZ - 1, true>(i) != vZ) ++err;
-        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceX - 1, true>(i) != fX) ++err;
-        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceY - 1, true>(i) != fY) ++err;
-        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceZ - 1, true>(i) != fZ) ++err;
-      },
-      errors);
-  EXPECT_EQ(errors, 0);
+  soa.resize(8);
+  EXPECT_EQ(soa.getView<0>().view_host().extent(0), 8u);
+  EXPECT_EQ(soa.getView<0>().view_device().extent(0), 8u);
+
+  soa.syncAll<DeviceExecSpace>();
+
+  expectDeviceStorage(soa, 2);
+  EXPECT_EQ(countDeviceMismatches(SoAByAttributeName{soa}, 0, 2), 0);
+}
+
+TEST_F(KokkosSoATest, testResizeDeviceNewest) {
+  const float offset = 1000.f;
+  SoA soa = makeFilledSoA(2);
+
+  soa.syncAll<DeviceExecSpace>();
+  overwriteOnDevice(SoAByAttributeName{soa}, 2, offset);
+  soa.modifyAll<DeviceExecSpace>();
+
+  soa.resize(8);
+  EXPECT_EQ(soa.getView<0>().view_host().extent(0), 8u);
+  EXPECT_EQ(soa.getView<0>().view_device().extent(0), 8u);
+
+  soa.syncAll<HostExecSpace>();
+
+  for (size_t i = 0; i < 2; ++i) {
+    expectOnHost(SoAByAttributeName{soa}, i, offset);
+  }
+}
+
+TEST_F(KokkosSoATest, testShrink) {
+  SoA soa = makeFilledSoA(8);
+
+  soa.resize(4);
+  soa.syncAll<DeviceExecSpace>();
+
+  EXPECT_EQ(soa.getView<0>().view_device().extent(0), 4u);
+  expectDeviceStorage(soa, 4);
+  EXPECT_EQ(countDeviceMismatches(SoAByAttributeName{soa}, 0, 4), 0);
+}
+
+// Columns have to sync independently of each other.
+TEST_F(KokkosSoATest, testPerColumnSync) {
+  const float newValue = -1.f;
+  SoA soa = makeFilledSoA(2);
+
+  soa.syncAll<DeviceExecSpace>();
+
+  // Both columns change on the device, but only posX is marked as modified.
+  writePositionsXYOnDevice(soa, 2, newValue);
+  soa.modify<DeviceExecSpace, Attr::posX - 1>();
+
+  EXPECT_TRUE(soa.getView<Attr::posX - 1>().need_sync_host());
+  EXPECT_FALSE(soa.getView<Attr::posY - 1>().need_sync_host());
+
+  soa.sync<HostExecSpace, Attr::posX - 1>();
+
+  EXPECT_FALSE(soa.getView<Attr::posX - 1>().need_sync_host());
+
+  for (size_t i = 0; i < 2; ++i) {
+    SCOPED_TRACE("Particle " + std::to_string(i));
+    EXPECT_EQ((soa.operator()<Attr::posX - 1, false>(i)), newValue);
+    EXPECT_EQ((soa.operator()<Attr::posY - 1, false>(i)), expectedAt(i).y);
+  }
 }
 
 #endif

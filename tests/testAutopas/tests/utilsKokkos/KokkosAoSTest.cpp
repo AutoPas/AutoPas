@@ -3,62 +3,120 @@
  * @author Luis Gall
  * @date 28.10.2026
  *
- * Currently covered methods of KokkosAoS: operator<useDeviceView=false>()(index), addParticle(index, Particle),
- * resize(size)
+ * Currently covered methods of KokkosAoS: operator<useDeviceView>()(index), addParticle(index, Particle), resize(size),
+ * sync<Space>(), modify<Space>()
  */
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
 
 #include "KokkosAoSTest.h"
 
-TEST_F(KokkosAoSTest, testInitialization) { autopas::utilsKokkos::KokkosAoS<autopas::KokkosParticleBaseFP32> aos; }
+#include "KokkosTestUtils.h"
 
-TEST_F(KokkosAoSTest, AoSTestAddParticle) {
-  autopas::utilsKokkos::KokkosAoS<autopas::KokkosParticleBaseFP32> aos{};
-  aos.resize(1);
+using namespace kokkosTestUtils;
 
-  size_t storedSize = aos.getView().extent(0);
-  EXPECT_EQ(storedSize, 1);
+namespace {
 
-  autopas::KokkosParticleBaseFP32 particle{};
+/**
+ * Creates an AoS with the given size and fills it with the particles [0, size) on the host.
+ * In contrast to KokkosList, KokkosAoS::addParticle() does not handle the sync state on its own.
+ * @param size
+ * @return The filled AoS, in which the host holds the newest data.
+ */
+AoS makeFilledAoS(size_t size) {
+  AoS aos{};
+  aos.resize(size);
 
-  signed int id = 42;
-  const std::array<float, 3> position{1.f, 2.f, 3.f};
-  const std::array<float, 3> force{0.5f, 0.4f, 0.3f};
-  const std::array<float, 3> velocity{0.123f, 0.456f, 0.789f};
-  autopas::OwnershipState ownershipState{autopas::OwnershipState::halo};
+  // resize() marks the device as modified. Without this sync, the modify() below aborts.
+  aos.sync<HostExecSpace>();
+  for (size_t i = 0; i < size; ++i) {
+    aos.addParticle(i, makeParticle(i));
+  }
+  aos.modify<HostExecSpace>();
 
-  particle.setID(id);
-  particle.setR(position);
-  particle.setF(force);
-  particle.setV(velocity);
-  particle.setOwnershipState(ownershipState);
+  return aos;
+}
 
-  aos.addParticle(0, particle);
+}  // namespace
 
-  auto storedId = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::id, false>(0);
-  auto storedX = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posX, false>(0);
-  auto storedY = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posY, false>(0);
-  auto storedZ = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posZ, false>(0);
-  auto storedVx = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velX, false>(0);
-  auto storedVy = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velY, false>(0);
-  auto storedVz = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velZ, false>(0);
-  auto storedFx = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceX, false>(0);
-  auto storedFy = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceY, false>(0);
-  auto storedFz = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceZ, false>(0);
-  auto storedState = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::ownershipState, false>(0);
+TEST_F(KokkosAoSTest, testInitialization) { AoS aos; }
 
-  EXPECT_EQ(storedId, id);
-  EXPECT_EQ(storedX, position[0]);
-  EXPECT_EQ(storedY, position[1]);
-  EXPECT_EQ(storedZ, position[2]);
-  EXPECT_EQ(storedVx, velocity[0]);
-  EXPECT_EQ(storedVy, velocity[1]);
-  EXPECT_EQ(storedVz, velocity[2]);
-  EXPECT_EQ(storedFx, force[0]);
-  EXPECT_EQ(storedFy, force[1]);
-  EXPECT_EQ(storedFz, force[2]);
-  EXPECT_EQ(storedState, ownershipState);
+TEST_F(KokkosAoSTest, testAddParticleHost) {
+  const AoS aos = makeFilledAoS(3);
+
+  EXPECT_EQ(aos.getView().extent(0), 3u);
+  for (size_t i = 0; i < 3; ++i) {
+    expectOnHost(aos, i);
+  }
+}
+
+TEST_F(KokkosAoSTest, testAddParticleDevice) {
+  AoS aos = makeFilledAoS(3);
+
+  aos.sync<DeviceExecSpace>();
+
+  expectDeviceStorage(aos, 3);
+  EXPECT_EQ(countDeviceMismatches(aos, 0, 3), 0);
+}
+
+TEST_F(KokkosAoSTest, testDeviceRoundTrip) {
+  const float offset = 1000.f;
+  AoS aos = makeFilledAoS(3);
+
+  // The device has to be up to date before it may be marked as modified. Otherwise, DualView::modify() aborts.
+  aos.sync<DeviceExecSpace>();
+  overwriteOnDevice(aos, 3, offset);
+  aos.modify<DeviceExecSpace>();
+
+  aos.sync<HostExecSpace>();
+
+  for (size_t i = 0; i < 3; ++i) {
+    expectOnHost(aos, i, offset);
+  }
+}
+
+// DualView::resize() takes a different code path depending on which side holds the newest data.
+TEST_F(KokkosAoSTest, testResizeHostNewest) {
+  AoS aos = makeFilledAoS(2);
+
+  aos.resize(8);
+  EXPECT_EQ(aos.getView().view_host().extent(0), 8u);
+  EXPECT_EQ(aos.getView().view_device().extent(0), 8u);
+
+  aos.sync<DeviceExecSpace>();
+
+  expectDeviceStorage(aos, 2);
+  EXPECT_EQ(countDeviceMismatches(aos, 0, 2), 0);
+}
+
+TEST_F(KokkosAoSTest, testResizeDeviceNewest) {
+  const float offset = 1000.f;
+  AoS aos = makeFilledAoS(2);
+
+  aos.sync<DeviceExecSpace>();
+  overwriteOnDevice(aos, 2, offset);
+  aos.modify<DeviceExecSpace>();
+
+  aos.resize(8);
+  EXPECT_EQ(aos.getView().view_host().extent(0), 8u);
+  EXPECT_EQ(aos.getView().view_device().extent(0), 8u);
+
+  aos.sync<HostExecSpace>();
+
+  for (size_t i = 0; i < 2; ++i) {
+    expectOnHost(aos, i, offset);
+  }
+}
+
+TEST_F(KokkosAoSTest, testShrink) {
+  AoS aos = makeFilledAoS(8);
+
+  aos.resize(4);
+  aos.sync<DeviceExecSpace>();
+
+  EXPECT_EQ(aos.getView().view_device().extent(0), 4u);
+  expectDeviceStorage(aos, 4);
+  EXPECT_EQ(countDeviceMismatches(aos, 0, 4), 0);
 }
 
 #endif

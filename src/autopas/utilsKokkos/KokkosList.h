@@ -62,11 +62,23 @@ class KokkosList {
     _aos.template sync<Space>();
   }
 
+  template <typename Space>
+  void syncAll() {
+    _aos.template sync<Space>();
+    _soa.template syncAll<Space>();
+  }
+
+  template <typename Space>
+  void modifyAll() {
+    _aos.template modify<Space>();
+    _soa.template modifyAll<Space>();
+  }
+
   size_t size() const { return _size; }
 
   size_t getCapacity() const { return _capacity; }
 
-  void addParticle(Particle_T &p) {
+  void addParticle(const Particle_T &p) {
 
     syncAll<HostExecSpace>();
     modifyAll<HostExecSpace>();
@@ -96,18 +108,6 @@ class KokkosList {
   const auto &getSoA() const { return _soa; }
 
  private:
-
-  template <typename Space>
-  void syncAll() {
-    _aos.template sync<Space>();
-    _soa.template syncAll<Space>();
-  }
-
-  template <typename Space>
-  void modifyAll() {
-    _aos.template modify<Space>();
-    _soa.template modifyAll<Space>();
-  }
 
   size_t _size{0};
   size_t _capacity{0};

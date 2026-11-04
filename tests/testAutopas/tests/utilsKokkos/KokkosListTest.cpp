@@ -3,12 +3,152 @@
  * @author Luis Gall
  * @date 30.10.2026
  *
- * Currently covered methods of KokkosList: operator<useDeviceView=false>()(index), addParticle(Particle), resize(size)
+ * Currently covered methods of KokkosList: operator<useDeviceView>()(index), addParticle(Particle), resize(size),
+ * syncAll<Space>(), modifyAll<Space>()
  */
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
 
 #include "KokkosListTest.h"
+
+#include "KokkosTestUtils.h"
+
+using namespace kokkosTestUtils;
+
+namespace {
+
+using List = autopas::utilsKokkos::KokkosList<Particle>;
+
+/**
+ * Adds the particles with the indices [first, last) to the list.
+ * @param list
+ * @param first
+ * @param last
+ */
+void addParticles(List &list, size_t first, size_t last) {
+  for (size_t i = first; i < last; ++i) {
+    list.addParticle(makeParticle(i));
+  }
+}
+
+/**
+ * Checks the raw device storage of the active data layout for the particles [0, numParticles).
+ * The inactive data layout is not checked since it holds uninitialized data.
+ * @param list
+ * @param numParticles
+ */
+void expectDeviceStorage(const List &list, size_t numParticles) {
+  if (list.getActiveDataLayout() == autopas::DataLayoutOption::soa) {
+    kokkosTestUtils::expectDeviceStorage(list.getSoA(), numParticles);
+  } else {
+    kokkosTestUtils::expectDeviceStorage(list.getAoS(), numParticles);
+  }
+}
+
+/**
+ * Checks that the device views of both data layouts have the given extent.
+ * @param list
+ * @param extent
+ */
+void expectDeviceExtents(const List &list, size_t extent) {
+  EXPECT_EQ(list.getAoS().getView().view_device().extent(0), extent);
+  EXPECT_EQ(list.getSoA().template getView<0>().view_device().extent(0), extent);
+  EXPECT_EQ(list.getSoA().template getView<Attr::ownershipState - 1>().view_device().extent(0), extent);
+}
+
+/**
+ * Adds a single particle to an empty list and checks it on the device.
+ * @param layout
+ */
+void testAddParticleDevice(autopas::DataLayoutOption layout) {
+  List list{layout, 0};
+
+  addParticles(list, 0, 1);
+  EXPECT_EQ(list.size(), 1u);
+  EXPECT_EQ(list.getCapacity(), 2u);
+
+  // addParticle() already handles the host side, so only the sync to the device is left to do.
+  list.syncAll<DeviceExecSpace>();
+
+  expectDeviceStorage(list, 1);
+  EXPECT_EQ(countDeviceMismatches(list, 0, 1), 0);
+}
+
+/**
+ * Adds more particles than fit into the initial capacity, which reallocates the views several times.
+ * @param layout
+ */
+void testAddParticleGrowthDevice(autopas::DataLayoutOption layout) {
+  List list{layout, 0};
+
+  addParticles(list, 0, 5);
+  EXPECT_EQ(list.size(), 5u);
+  EXPECT_EQ(list.getCapacity(), 8u);
+
+  list.syncAll<DeviceExecSpace>();
+
+  expectDeviceExtents(list, 8);
+  expectDeviceStorage(list, 5);
+  EXPECT_EQ(countDeviceMismatches(list, 0, 5), 0);
+}
+
+/**
+ * Shrinks a full list and checks that the remaining particles are still correct on the device.
+ * DualView::resize() takes a different code path depending on which side holds the newest data, so both are tested.
+ * @param layout
+ * @param syncBeforeResize If true the device is up to date before the resize, otherwise the host holds the newest data.
+ */
+void testResizeFullDevice(autopas::DataLayoutOption layout, bool syncBeforeResize) {
+  List list{layout, 8};
+  addParticles(list, 0, 8);
+
+  if (syncBeforeResize) {
+    list.syncAll<DeviceExecSpace>();
+  }
+
+  list.resize(4);
+  list.syncAll<DeviceExecSpace>();
+
+  EXPECT_EQ(list.size(), 4u);
+  EXPECT_EQ(list.getCapacity(), 4u);
+  expectDeviceExtents(list, 4);
+  expectDeviceStorage(list, 4);
+  EXPECT_EQ(countDeviceMismatches(list, 0, 4), 0);
+}
+
+/**
+ * Modifies particles on the device, then adds a particle on the host which forces the views to grow.
+ * The modifications and the new particle have to be available on both sides afterwards.
+ * @param layout
+ */
+void testDeviceRoundTrip(autopas::DataLayoutOption layout) {
+  const float offset = 1000.f;
+
+  List list{layout, 0};
+  addParticles(list, 0, 2);
+  EXPECT_EQ(list.getCapacity(), 2u);
+
+  // The device has to be up to date before it may be marked as modified. Otherwise, DualView::modify() aborts.
+  list.syncAll<DeviceExecSpace>();
+  overwriteOnDevice(list, 2, offset);
+  list.modifyAll<DeviceExecSpace>();
+
+  // addParticle() syncs the modifications back to the host before writing to it.
+  addParticles(list, 2, 3);
+  EXPECT_EQ(list.size(), 3u);
+  EXPECT_EQ(list.getCapacity(), 4u);
+
+  expectOnHost(list, 0, offset);
+  expectOnHost(list, 1, offset);
+  expectOnHost(list, 2);
+
+  list.syncAll<DeviceExecSpace>();
+
+  EXPECT_EQ(countDeviceMismatches(list, 0, 2, offset), 0);
+  EXPECT_EQ(countDeviceMismatches(list, 2, 3), 0);
+}
+
+}  // namespace
 
 TEST_F(KokkosListTest, testInitialization) {
   autopas::utilsKokkos::KokkosList<autopas::KokkosParticleBaseFP32> kokkosList{};
@@ -86,7 +226,7 @@ TEST_F(KokkosListTest, testResizeFull) {
   EXPECT_EQ(kokkosList.getSoA().getView<0>().extent(0), 4);
 }
 
-TEST_F(KokkosListTest, testAddParticleSoA) {
+TEST_F(KokkosListTest, testAddParticleSoAHost) {
 
   autopas::utilsKokkos::KokkosList<autopas::KokkosParticleBaseFP32> kokkosList{autopas::DataLayoutOption::soa, 0};
 
@@ -166,7 +306,7 @@ TEST_F(KokkosListTest, testAddParticleSoA) {
   EXPECT_EQ(storedStateList, ownershipState);
 }
 
-TEST_F(KokkosListTest, testAddParticleAoS) {
+TEST_F(KokkosListTest, testAddParticleAoSHost) {
 
   autopas::utilsKokkos::KokkosList<autopas::KokkosParticleBaseFP32> kokkosList{autopas::DataLayoutOption::aos, 0};
 
@@ -245,5 +385,45 @@ TEST_F(KokkosListTest, testAddParticleAoS) {
   EXPECT_EQ(storedFzList, force[2]);
   EXPECT_EQ(storedStateList, ownershipState);
 }
+
+TEST_F(KokkosListTest, testConstructorDevice) {
+  const List list{autopas::DataLayoutOption::soa, 42};
+
+  expectDeviceExtents(list, 42);
+}
+
+TEST_F(KokkosListTest, testResizeEmptyDevice) {
+  List list{autopas::DataLayoutOption::soa, 42};
+
+  // Case 1: downsize the list
+  list.resize(16);
+  expectDeviceExtents(list, 16);
+
+  // Case 2: increase size of the list
+  list.resize(32);
+  expectDeviceExtents(list, 32);
+}
+
+TEST_F(KokkosListTest, testResizeFullSoADevice) {
+  testResizeFullDevice(autopas::DataLayoutOption::soa, true);
+  testResizeFullDevice(autopas::DataLayoutOption::soa, false);
+}
+
+TEST_F(KokkosListTest, testResizeFullAoSDevice) {
+  testResizeFullDevice(autopas::DataLayoutOption::aos, true);
+  testResizeFullDevice(autopas::DataLayoutOption::aos, false);
+}
+
+TEST_F(KokkosListTest, testAddParticleSoADevice) { testAddParticleDevice(autopas::DataLayoutOption::soa); }
+
+TEST_F(KokkosListTest, testAddParticleAoSDevice) { testAddParticleDevice(autopas::DataLayoutOption::aos); }
+
+TEST_F(KokkosListTest, testAddParticleGrowthSoADevice) { testAddParticleGrowthDevice(autopas::DataLayoutOption::soa); }
+
+TEST_F(KokkosListTest, testAddParticleGrowthAoSDevice) { testAddParticleGrowthDevice(autopas::DataLayoutOption::aos); }
+
+TEST_F(KokkosListTest, testDeviceRoundTripSoA) { testDeviceRoundTrip(autopas::DataLayoutOption::soa); }
+
+TEST_F(KokkosListTest, testDeviceRoundTripAoS) { testDeviceRoundTrip(autopas::DataLayoutOption::aos); }
 
 #endif
