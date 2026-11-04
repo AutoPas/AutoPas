@@ -6,11 +6,27 @@
 
 #include "TraversalSelectorTest.h"
 
+#include <type_traits>
+
+#include "autopas/containers/cellTraversals/C01BasedTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC01Traversal.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::Return;
+
+using C01TraversalBase = autopas::C01BasedTraversal<FPCell, MPairwiseFunctor>;
+static_assert(
+    std::is_base_of_v<C01TraversalBase, autopas::VLCC01Traversal<FPCell, MPairwiseFunctor,
+                                                                 autopas::VLCAllCellsNeighborList<ParticleFP64>>>,
+    "vlc_c01 must use the default collapse depth.");
+static_assert(
+    std::is_base_of_v<C01TraversalBase, autopas::VLCC01Traversal<FPCell, MPairwiseFunctor,
+                                                                 autopas::VLCCellPairNeighborList<ParticleFP64>>>,
+    "vlp_c01 must use the default collapse depth.");
 
 /**
  * Check if the only allowed traversal is returned
