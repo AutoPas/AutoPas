@@ -48,10 +48,46 @@ class KokkosSoA {
     return std::get<Attribute>(_particleData);
   }
 
+  template <typename Space, std::size_t I>
+  void modify() {
+    std::get<I>(_particleData).template modify<Space>();
+  }
+
+  template <typename Space>
+  void modifyAll() {
+    constexpr auto tupleSize = std::tuple_size<decltype(_particleData)>::value;
+    constexpr auto I = std::make_index_sequence<tupleSize>{};
+
+    modifyAllImpl<Space>(I);
+  }
+
+  template <typename Space, std::size_t I>
+  void sync() {
+    std::get<I>(_particleData).template sync<Space>();
+  }
+
+  template <typename Space>
+  void syncAll() {
+    constexpr auto tupleSize = std::tuple_size<decltype(_particleData)>::value;
+    constexpr auto I = std::make_index_sequence<tupleSize>{};
+
+    syncAllImpl<Space>(I);
+  }
+
  private:
   template <std::size_t... I>
   void resizeImpl(size_t size, std::index_sequence<I...>) {
     (std::get<I>(_particleData).resize(Kokkos::WithoutInitializing, size), ...);
+  }
+
+  template <typename Space, std::size_t... I>
+  void syncAllImpl(std::index_sequence<I...>) {
+    (sync<Space, I>(), ...);
+  }
+
+  template <typename Space, std::size_t... I>
+  void modifyAllImpl(std::index_sequence<I...>) {
+    (modify<Space, I>(), ...);
   }
 
   template <class Particle_T, std::size_t... I>

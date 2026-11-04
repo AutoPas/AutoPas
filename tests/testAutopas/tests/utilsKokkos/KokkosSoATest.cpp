@@ -80,7 +80,7 @@ TEST_F(KokkosSoATest, SoATestGet) {
                 "third attribute type must be proper(double)");
 }
 
-TEST_F(KokkosSoATest, SoATestAddParticle) {
+TEST_F(KokkosSoATest, SoATestAddParticleHost) {
   autopas::KokkosParticleBaseFP32::KokkosSoAArraysType soa;
   soa.resize(1);
 
@@ -124,6 +124,86 @@ TEST_F(KokkosSoATest, SoATestAddParticle) {
   EXPECT_EQ(storedFy, force[1]);
   EXPECT_EQ(storedFz, force[2]);
   EXPECT_EQ(storedState, ownershipState);
+}
+
+TEST_F(KokkosSoATest, SoATestAddParticleDevice) {
+  autopas::KokkosParticleBaseFP32::KokkosSoAArraysType soa;
+  soa.resize(1);
+
+  autopas::KokkosParticleBaseFP32 particle{};
+
+  signed int id = 42;
+  float x = 1.f;
+  float y = 2.f;
+  float z = 3.f;
+  float fX = 0.5f;
+  float fY = 0.4f;
+  float fZ = 0.3f;
+  float vX = 0.123f;
+  float vY = 0.456f;
+  float vZ = 0.789f;
+  const std::array<float, 3> position{x,y,z};
+  const std::array<float, 3> force{fX, fY, fZ};
+  const std::array<float, 3> velocity{vX, vY, vZ};
+  autopas::OwnershipState ownershipState{autopas::OwnershipState::halo};
+
+  particle.setID(id);
+  particle.setR(position);
+  particle.setF(force);
+  particle.setV(velocity);
+  particle.setOwnershipState(ownershipState);
+
+  soa.syncAll<autopas::utilsKokkos::HostExecSpace>();
+  soa.template addParticle<autopas::KokkosParticleBaseFP32>(0, particle);
+  soa.modifyAll<autopas::utilsKokkos::HostExecSpace>();
+
+  soa.syncAll<autopas::utilsKokkos::DeviceExecSpace>();
+
+  auto hostCopyX = Kokkos::create_mirror_view_and_copy(
+    Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::posX - 1>().view_device());
+  auto hostCopyY = Kokkos::create_mirror_view_and_copy(
+    Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::posY - 1>().view_device());
+  auto hostCopyZ = Kokkos::create_mirror_view_and_copy(
+    Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::posZ - 1>().view_device());
+  auto hostCopyFx = Kokkos::create_mirror_view_and_copy(
+    Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::forceX - 1>().view_device());
+  auto hostCopyFy = Kokkos::create_mirror_view_and_copy(
+      Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::forceY - 1>().view_device());
+  auto hostCopyFz = Kokkos::create_mirror_view_and_copy(
+      Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::forceZ - 1>().view_device());
+  auto hostCopyVx = Kokkos::create_mirror_view_and_copy(
+      Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::velX - 1>().view_device());
+  auto hostCopyVy = Kokkos::create_mirror_view_and_copy(
+      Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::velY - 1>().view_device());
+  auto hostCopyVz = Kokkos::create_mirror_view_and_copy(
+      Kokkos::HostSpace{}, soa.getView<autopas::KokkosParticleBaseFP32::AttributeNames::velZ - 1>().view_device());
+
+  EXPECT_EQ(hostCopyX(0), x);
+  EXPECT_EQ(hostCopyY(0), y);
+  EXPECT_EQ(hostCopyZ(0), z);
+  EXPECT_EQ(hostCopyVx(0), vX);
+  EXPECT_EQ(hostCopyVy(0), vY);
+  EXPECT_EQ(hostCopyVz(0), vZ);
+  EXPECT_EQ(hostCopyFx(0), fX);
+  EXPECT_EQ(hostCopyFy(0), fY);
+  EXPECT_EQ(hostCopyFz(0), fZ);
+
+  int errors = 0;
+  Kokkos::parallel_reduce(
+      "checkDevice", Kokkos::RangePolicy<autopas::utilsKokkos::DeviceExecSpace>(0, 1),
+      KOKKOS_LAMBDA(int i, int &err) {
+        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posX - 1, true>(i) != x) ++err;
+        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posY - 1, true>(i) != y) ++err;
+        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posZ - 1, true>(i) != z) ++err;
+        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velX - 1, true>(i) != vX) ++err;
+        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velY - 1, true>(i) != vY) ++err;
+        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velZ - 1, true>(i) != vZ) ++err;
+        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceX - 1, true>(i) != fX) ++err;
+        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceY - 1, true>(i) != fY) ++err;
+        if (soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceZ - 1, true>(i) != fZ) ++err;
+      },
+      errors);
+  EXPECT_EQ(errors, 0);
 }
 
 #endif

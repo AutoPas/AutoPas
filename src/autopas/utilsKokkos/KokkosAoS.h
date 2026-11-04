@@ -32,6 +32,16 @@ class KokkosAoS {
 
   const auto &getView() const { return _particles; }
 
+  template <typename Space>
+  void modify() {
+    _particles.template modify<Space>();
+  }
+
+  template <typename Space>
+  void sync() {
+    _particles.template sync<Space>();
+  }
+
  private:
   Kokkos::DualView<Particle_T *, DeviceExecSpace::device_type> _particles{};
 };
