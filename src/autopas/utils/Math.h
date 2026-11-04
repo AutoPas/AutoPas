@@ -234,33 +234,34 @@ template <class T>
 requires std::convertible_to<T, double>
 [[nodiscard]] inline std::pair<double, double> simpleLeastSquares(const std::vector<T> &x, const std::vector<T> &y) {
   if (x.size() != y.size()) {
-    throw std::invalid_argument("x and y must have the same size");
+    throw autopas::utils::ExceptionHandler::AutoPasException("Vectors x and y must have the same size.");
   }
   const std::size_t n = std::min(x.size(), y.size());
   if (n < 2) {
-    throw std::domain_error("least squares requires at least 2 points");
+    throw autopas::utils::ExceptionHandler::AutoPasException("Finding least squares fit requires at least 2 points");
   }
 
   // Welford-style running means for numerical stability.
-  double mean_x = 0.0, mean_y = 0.0;
+  double meanX = 0.0, meanY = 0.0;
   double sxx = 0.0, sxy = 0.0;
   for (std::size_t i = 0; i < n; ++i) {
     const double xi = static_cast<double>(x[i]);
     const double yi = static_cast<double>(y[i]);
-    const double dx = xi - mean_x;
-    const double dy = yi - mean_y;
-    mean_x += dx / static_cast<double>(i + 1);
-    mean_y += dy / static_cast<double>(i + 1);
-    sxy += dx * (yi - mean_y);  // note: uses UPDATED mean_y
-    sxx += dx * (xi - mean_x);  // note: uses UPDATED mean_x
+    const double dx = xi - meanX;
+    const double dy = yi - meanY;
+    meanX += dx / static_cast<double>(i + 1);
+    meanY += dy / static_cast<double>(i + 1);
+    sxy += dx * (yi - meanY);
+    sxx += dx * (xi - meanX);
   }
 
   if (sxx == 0.0) {
-    throw std::domain_error("all x values are identical");
+    throw autopas::utils::ExceptionHandler::AutoPasException(
+        "A least square fit is not possible as all x values are identical.");
   }
 
   const double slope = sxy / sxx;
-  return {mean_y - slope * mean_x, slope};
+  return {meanY - slope * meanX, slope};
 }
 
 /**
