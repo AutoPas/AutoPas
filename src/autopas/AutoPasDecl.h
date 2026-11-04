@@ -1158,6 +1158,29 @@ class AutoPas {
   const std::string &getRuleFileName() const { return _tuningStrategyFactoryInfo.ruleFileName; }
 
   /**
+   * Set the name / path of the model file for the PythonBasedTuning.
+   * @param modelFileName The name of the model file to use during python-based tuning.
+   */
+  void setModelFileName(const std::string &modelFileName) { _tuningStrategyFactoryInfo.modelFileName = modelFileName; }
+
+  /**
+   * Get the name / path of the model file for the PythonBasedTuning.
+   * @return
+   */
+  const std::string &getModelFileName() const { return _tuningStrategyFactoryInfo.modelFileName; }
+  /**
+   * Set the confidence threshold for the PythonBasedTuning.
+   * @param confidenceThreshold The confidence threshold to use during python-based tuning.
+   */
+  void setConfidenceThreshold(double confidenceThreshold) {
+    _tuningStrategyFactoryInfo.confidenceThreshold = confidenceThreshold;
+  }
+  /**
+   * Get the confidence threshold for the PythonBasedTuning.
+   * @return
+   */
+  double getConfidenceThreshold() const { return _tuningStrategyFactoryInfo.confidenceThreshold; }
+  /**
    * Set the aos-sorting-threshold for traversals that use the CellFunctor
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.

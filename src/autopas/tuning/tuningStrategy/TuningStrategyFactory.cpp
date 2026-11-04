@@ -14,6 +14,7 @@
 #include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/FuzzyTuning.h"
+#include "autopas/tuning/tuningStrategy/pythonBasedTuning/PythonBasedTuning.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/NumberSetFinite.h"
@@ -52,6 +53,12 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
 
     case TuningStrategyOption::fuzzyTuning: {
       tuningStrategy = std::make_unique<FuzzyTuning>(info.fuzzyRuleFileName);
+      break;
+    }
+
+    case TuningStrategyOption::pythonBasedTuning: {
+      tuningStrategy = std::make_unique<PythonBasedTuning>(searchSpace, info.modelFileName, info.confidenceThreshold,
+                                                           interactionType);
       break;
     }
 
