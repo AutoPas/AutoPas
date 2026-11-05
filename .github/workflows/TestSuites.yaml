@@ -270,19 +270,19 @@ jobs:
             # Non-MPI: Run split tests
             if [[ "${{ matrix.config.cc }}" != 'mpicc' ]]; then
                # Run tests split in 4
-               ctest --output-on-failure -I ${{ matrix.part }},,4 -j $(nproc)
+               ctest --output-on-failure -I ${{ matrix.part }},,4 -j $(numParallelTests)
           
                cd applicationLibrary
-               ctest --output-on-failure -I ${{ matrix.part }},,4 -j $(nproc)
+               ctest --output-on-failure -I ${{ matrix.part }},,4 -j $(numParallelTests)
           
                cd ../examples
-               ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,4 -j $(nproc)
+               ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,4 -j $(numParallelTests)
           
             # MPI: Run all tests
             else
-               ctest --output-on-failure --tests-regex MPIParallelAutoPasTests -j $(nproc)
+               ctest --output-on-failure --tests-regex MPIParallelAutoPasTests -j $(numParallelTests)
                cd examples
-               ctest --output-on-failure --build-config checkExamples --exclude-regex 'sph-((main.test)|(diagram.*))' -j $(nproc)
+               ctest --output-on-failure --build-config checkExamples --exclude-regex 'sph-((main.test)|(diagram.*))' -j $(numParallelTests)
             fi
           fi
           
