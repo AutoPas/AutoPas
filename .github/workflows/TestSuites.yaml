@@ -253,8 +253,16 @@ jobs:
         run: tar -xzf build.tar.gz
 
       - name: Run tests
+        env:
+          # Use 2 threads if OpenMP
+          OMP_NUM_THREADS: ${{ matrix.config.omp == 'ON' && 2 || 1 }}
         run: |
           cd build
+          
+          # Avoid oversubscription. E.g., with 4 process, on OpenMP builds we get 2 parallel tests of 2 threads, and
+          # without OpenMP we get 4 parallel tests of 1 thread. 
+          numParallelTests=$(( $(nproc) / OMP_NUM_THREADS ))
+          (( numParallelTests > 0 )) || numParallelTests=1
           
           # --- CASE 1: Single-Site (Standard) ---
           if [[ "${{ matrix.config.site }}" == 'singlesite' ]]; then
