@@ -13,9 +13,9 @@
 
 /**
  * ParticleVector class.
- * This class uses a std::vector to store particles and allows access to its references.
- * It also keeps track, which references are no longer valid, which happens
- * when operations like delete and resize are performed.
+ * This class uses a std::vector to store particles, which cells refer to by their index in this vector.
+ * It also keeps track of which particles are not referenced by a cell yet, and whether all references are no longer
+ * valid, which happens when particles are removed. Adding particles keeps all indices valid.
  * @tparam Particle_T of the Particle that is being stored
  */
 template <class Particle_T>
@@ -75,9 +75,6 @@ class ParticleVector {
   void push_back(const Particle_T &particle) {
     _particleListLock.lock();
     _dirty = true;
-    if (_particleListImp.capacity() == _particleListImp.size()) {
-      _dirtyIndex = 0;
-    }
     _particleListImp.push_back(particle);
     _particleListLock.unlock();
   }
@@ -101,15 +98,16 @@ class ParticleVector {
   bool needsRebuild() { return _dirtyIndex == 0; }
 
   /**
-   * Begin of the iterator over dirty Particles
-   * @return Start of the iterator
+   * Get the index of the first Particle that is not referenced by a cell yet.
+   * @return Index of the first dirty Particle
    */
-  auto beginDirty() { return _particleListImp.begin() + _dirtyIndex; }
+  size_t getDirtyIndex() { return _dirtyIndex; }
+
   /**
-   * End of the iterator over dirty Particles
-   * @return End of the iterator
+   * Get the vector that stores the Particles. Cells refer to Particles by their index in this vector.
+   * @return Reference to the vector storing the Particles
    */
-  auto endDirty() { return _particleListImp.end(); }
+  std::vector<Particle_T> &getParticleStorage() { return _particleListImp; }
 
   /**
    * Iterate over all particles and execute lambda function on them.
@@ -140,7 +138,7 @@ class ParticleVector {
    */
   bool _dirty = false;
   /**
-   * Index of the first out-of-date reference.
+   * Index of the first Particle that is not referenced by a cell yet. 0 if all references have to be rebuilt.
    */
   size_t _dirtyIndex{0};
   autopas::AutoPasLock _particleListLock;

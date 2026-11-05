@@ -150,9 +150,12 @@ constexpr std::array<std::array<double, 3>, 3> calculateATMVirials(const std::ar
   const auto forceJ = forces[1];
   const auto forceK = forces[2];
 
-  const auto virialI = forceI * posI;
-  const auto virialJ = forceJ * posJ;
-  const auto virialK = forceK * posK;
+  // Calculate the centroid of the triangle formed by the three particles to use as a reference point for the virial
+  // calculation.
+  const auto centroid = (posI + posJ + posK) * (1. / 3.);
+  const auto virialI = forceI * (posI - centroid);
+  const auto virialJ = forceJ * (posJ - centroid);
+  const auto virialK = forceK * (posK - centroid);
 
   return {virialI, virialJ, virialK};
 }
