@@ -26,6 +26,7 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ParticleCellHelpers.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -203,23 +204,34 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     _particlesToAdd[autopas_get_thread_num()].push_back(haloParticle);
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::updateHaloParticle()
+   * @note Only the towers are searched, not _particlesToAdd, as this function is only expected to be called whilst the
+   * neighbor lists are valid, at which point _particlesToAdd is expected to be empty (and would not lead to wrong
+   * behavior even if not, the particle to update would just be added to the buffer).
+   * @note Towers store owned and halo particles together, so, unlike in most other containers, a dummy that arose from
+   * an owned particle leaving the box can also be the update candidate, if the image of that particle arrives at the
+   * same position. This is a valid update, as both represent the same particle.
+   */
   bool updateHaloParticle(const Particle_T &haloParticle) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     const auto &haloPos = haloParticle.getR();
-    // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it = getRegionIterator(haloPos - (this->getVerletSkin() / 2.), haloPos + (this->getVerletSkin() / 2.),
-                                     IteratorBehavior::halo | IteratorBehavior::forceSequential, std::nullopt);
-         it.isValid(); ++it) {
-      if (haloParticle.getID() == it->getID()) {
-        // don't simply copy haloParticle over iter. This would trigger a dataRace with other regionIterators that
-        // overlap with this region.
-        it->setR(haloPos);
-        it->setV(haloParticle.getV());
-        it->setF(haloParticle.getF());
-        return true;
+    const auto skinHalf = 0.5 * this->getVerletSkin();
+    // Towers span the whole z range, so only the x-y footprint of the search box matters.
+    const auto [lowX, lowY] = _towerBlock.getTowerIndex2DAtPosition(haloPos - skinHalf);
+    const auto [highX, highY] = _towerBlock.getTowerIndex2DAtPosition(haloPos + skinHalf);
+    for (size_t y = lowY; y <= highY; ++y) {
+      for (size_t x = lowX; x <= highX; ++x) {
+        // It's possible that a tower includes the owned version and a halo version of a particle. But they will be far
+        // enough apart that the position check will ensure no incorrect updates.
+        if (internal::checkParticleInCellAndUpdateByIDAndPosition(_towerBlock.getTowerByIndex2D(x, y), haloParticle,
+                                                                  skinHalf)) {
+          return true;
+        }
       }
     }
+    AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", haloParticle.toString());
     return false;
   }
 
@@ -359,16 +371,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
     return {retPtr, cellIndex, particleIndex};
   }
 
-  bool deleteParticle(Particle_T &particle) override {
+  void deleteParticle(Particle_T &particle) override {
     // This function doesn't actually delete anything as it would mess up the clusters' references.
     internal::markParticleAsDeleted(particle);
-    return false;
   }
 
-  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+  void deleteParticle(size_t cellIndex, size_t particleIndex) override {
     // This function doesn't actually delete anything as it would mess up the clusters' references.
     internal::markParticleAsDeleted(_towerBlock[cellIndex][particleIndex]);
-    return false;
   }
 
   [[nodiscard]] std::vector<Particle_T> updateContainer(bool keepNeighborListsValid) override {
@@ -892,9 +902,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle_T>, public
 
   /**
    * Returns the towers per interaction length. That is how many towers fit into one interaction length rounded up.
+   * If this differs between x and y, the maximum is returned.
    * @return the number of towers per interaction length.
    */
-  auto getNumTowersPerInteractionLength() const { return _towerBlock.getNumTowersPerInteractionLength(); }
+  auto getMaxNumTowersPerInteractionLength() const { return _towerBlock.getMaxNumTowersPerInteractionLength(); }
 
   /**
    * Loads all particles of the container in their correct SoA and generates the SoAViews for the clusters.
