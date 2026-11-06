@@ -4,7 +4,7 @@
  * @date 28.10.2026
  *
  * Currently covered methods of KokkosSoA: operator<useDeviceView>()(index), addParticle(index, Particle), resize(size),
- * getView<Attribute>(), sync<Space, I>(), syncAll<Space>(), modify<Space, I>(), modifyAll<Space>()
+ * getView<Attribute>(), sync<Space, Attribute>(), syncAll<Space>(), modify<Space, Attribute>(), modifyAll<Space>()
  */
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
@@ -17,7 +17,13 @@ using namespace kokkosTestUtils;
 
 namespace {
 
-using TestSoA = autopas::utilsKokkos::KokkosSoA<unsigned int *, float *, float *, float *>;
+/**
+ * Column names for the generic SoAs below. Nothing is skipped, so the first name is stored in the first column.
+ */
+enum class TestColumns { first, second, third, fourth };
+
+using TestSoA =
+    autopas::utilsKokkos::KokkosSoA<TestColumns, TestColumns::first, unsigned int *, float *, float *, float *>;
 
 static_assert(
     std::is_same_v<TestSoA::Type,
@@ -52,33 +58,18 @@ SoA makeFilledSoA(size_t size) {
   return soa;
 }
 
-/**
- * Writes to the posX and posY columns in a device kernel, without touching the sync state.
- * @param soa
- * @param numParticles
- * @param value
- */
-void writePositionsXYOnDevice(const SoA &soa, size_t numParticles, float value) {
-  Kokkos::parallel_for(
-      "KokkosSoATest::writePositionsXYOnDevice", Kokkos::RangePolicy<DeviceExecSpace>(0, numParticles),
-      KOKKOS_LAMBDA(const size_t i) {
-        soa.template operator()<Attr::posX - 1, true>(i) = value;
-        soa.template operator()<Attr::posY - 1, true>(i) = value;
-      });
-}
-
 }  // namespace
 
 TEST_F(KokkosSoATest, testInitialization) { SoA soa; }
 
 TEST_F(KokkosSoATest, testGetView) {
-  autopas::utilsKokkos::KokkosSoA<unsigned int *, float *, double *> soa{};
+  autopas::utilsKokkos::KokkosSoA<TestColumns, TestColumns::first, unsigned int *, float *, double *> soa{};
 
   soa.resize(1);
 
-  const auto &storedView1 = soa.getView<0>();
-  const auto &storedView2 = soa.getView<1>();
-  const auto &storedView3 = soa.getView<2>();
+  const auto &storedView1 = soa.getView<TestColumns::first>();
+  const auto &storedView2 = soa.getView<TestColumns::second>();
+  const auto &storedView3 = soa.getView<TestColumns::third>();
 
   EXPECT_EQ(storedView1.extent(0), 1u);
   EXPECT_EQ(storedView2.extent(0), 1u);
@@ -95,9 +86,9 @@ TEST_F(KokkosSoATest, testGetView) {
 TEST_F(KokkosSoATest, testAddParticleHost) {
   const SoA soa = makeFilledSoA(3);
 
-  EXPECT_EQ(soa.getView<0>().extent(0), 3u);
+  EXPECT_EQ(soa.getView<Attr::id>().extent(0), 3u);
   for (size_t i = 0; i < 3; ++i) {
-    expectOnHost(SoAByAttributeName{soa}, i);
+    expectOnHost(soa, i);
   }
 }
 
@@ -107,7 +98,7 @@ TEST_F(KokkosSoATest, testAddParticleDevice) {
   soa.syncAll<DeviceExecSpace>();
 
   expectDeviceStorage(soa, 3);
-  EXPECT_EQ(countDeviceMismatches(SoAByAttributeName{soa}, 0, 3), 0);
+  EXPECT_EQ(countDeviceMismatches(soa, 0, 3), 0);
 }
 
 TEST_F(KokkosSoATest, testDeviceRoundTrip) {
@@ -116,13 +107,13 @@ TEST_F(KokkosSoATest, testDeviceRoundTrip) {
 
   // The device has to be up to date before it may be marked as modified. Otherwise, DualView::modify() aborts.
   soa.syncAll<DeviceExecSpace>();
-  overwriteOnDevice(SoAByAttributeName{soa}, 3, offset);
+  overwriteOnDevice(soa, 3, offset);
   soa.modifyAll<DeviceExecSpace>();
 
   soa.syncAll<HostExecSpace>();
 
   for (size_t i = 0; i < 3; ++i) {
-    expectOnHost(SoAByAttributeName{soa}, i, offset);
+    expectOnHost(soa, i, offset);
   }
 }
 
@@ -131,13 +122,13 @@ TEST_F(KokkosSoATest, testResizeHostNewest) {
   SoA soa = makeFilledSoA(2);
 
   soa.resize(8);
-  EXPECT_EQ(soa.getView<0>().view_host().extent(0), 8u);
-  EXPECT_EQ(soa.getView<0>().view_device().extent(0), 8u);
+  EXPECT_EQ(soa.getView<Attr::id>().view_host().extent(0), 8u);
+  EXPECT_EQ(soa.getView<Attr::id>().view_device().extent(0), 8u);
 
   soa.syncAll<DeviceExecSpace>();
 
   expectDeviceStorage(soa, 2);
-  EXPECT_EQ(countDeviceMismatches(SoAByAttributeName{soa}, 0, 2), 0);
+  EXPECT_EQ(countDeviceMismatches(soa, 0, 2), 0);
 }
 
 TEST_F(KokkosSoATest, testResizeDeviceNewest) {
@@ -145,17 +136,17 @@ TEST_F(KokkosSoATest, testResizeDeviceNewest) {
   SoA soa = makeFilledSoA(2);
 
   soa.syncAll<DeviceExecSpace>();
-  overwriteOnDevice(SoAByAttributeName{soa}, 2, offset);
+  overwriteOnDevice(soa, 2, offset);
   soa.modifyAll<DeviceExecSpace>();
 
   soa.resize(8);
-  EXPECT_EQ(soa.getView<0>().view_host().extent(0), 8u);
-  EXPECT_EQ(soa.getView<0>().view_device().extent(0), 8u);
+  EXPECT_EQ(soa.getView<Attr::id>().view_host().extent(0), 8u);
+  EXPECT_EQ(soa.getView<Attr::id>().view_device().extent(0), 8u);
 
   soa.syncAll<HostExecSpace>();
 
   for (size_t i = 0; i < 2; ++i) {
-    expectOnHost(SoAByAttributeName{soa}, i, offset);
+    expectOnHost(soa, i, offset);
   }
 }
 
@@ -165,13 +156,17 @@ TEST_F(KokkosSoATest, testShrink) {
   soa.resize(4);
   soa.syncAll<DeviceExecSpace>();
 
-  EXPECT_EQ(soa.getView<0>().view_device().extent(0), 4u);
+  EXPECT_EQ(soa.getView<Attr::id>().view_device().extent(0), 4u);
   expectDeviceStorage(soa, 4);
-  EXPECT_EQ(countDeviceMismatches(SoAByAttributeName{soa}, 0, 4), 0);
+  EXPECT_EQ(countDeviceMismatches(soa, 0, 4), 0);
 }
 
 // Columns have to sync independently of each other.
 TEST_F(KokkosSoATest, testPerColumnSync) {
+  if constexpr (hostAndDeviceShareMemory) {
+    GTEST_SKIP() << "Host and device share memory, so DualView sync flags are no-ops.";
+  }
+
   const float newValue = -1.f;
   SoA soa = makeFilledSoA(2);
 
@@ -179,19 +174,19 @@ TEST_F(KokkosSoATest, testPerColumnSync) {
 
   // Both columns change on the device, but only posX is marked as modified.
   writePositionsXYOnDevice(soa, 2, newValue);
-  soa.modify<DeviceExecSpace, Attr::posX - 1>();
+  soa.modify<DeviceExecSpace, Attr::posX>();
 
-  EXPECT_TRUE(soa.getView<Attr::posX - 1>().need_sync_host());
-  EXPECT_FALSE(soa.getView<Attr::posY - 1>().need_sync_host());
+  EXPECT_TRUE(soa.getView<Attr::posX>().need_sync_host());
+  EXPECT_FALSE(soa.getView<Attr::posY>().need_sync_host());
 
-  soa.sync<HostExecSpace, Attr::posX - 1>();
+  soa.sync<HostExecSpace, Attr::posX>();
 
-  EXPECT_FALSE(soa.getView<Attr::posX - 1>().need_sync_host());
+  EXPECT_FALSE(soa.getView<Attr::posX>().need_sync_host());
 
   for (size_t i = 0; i < 2; ++i) {
     SCOPED_TRACE("Particle " + std::to_string(i));
-    EXPECT_EQ((soa.operator()<Attr::posX - 1, false>(i)), newValue);
-    EXPECT_EQ((soa.operator()<Attr::posY - 1, false>(i)), expectedAt(i).y);
+    EXPECT_EQ((soa.operator()<Attr::posX, false>(i)), newValue);
+    EXPECT_EQ((soa.operator()<Attr::posY, false>(i)), expectedAt(i).y);
   }
 }
 

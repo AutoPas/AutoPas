@@ -4,7 +4,7 @@
  * @date 30.10.2026
  *
  * Currently covered methods of KokkosList: operator<useDeviceView>()(index), addParticle(Particle), resize(size),
- * syncAll<Space>(), modifyAll<Space>()
+ * syncAll<Space>(), modifyAll<Space>(), sync<Space, Attribute>(), modify<Space, Attribute>()
  */
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
@@ -33,7 +33,7 @@ void addParticles(List &list, size_t first, size_t last) {
 
 /**
  * Checks the raw device storage of the active data layout for the particles [0, numParticles).
- * The inactive data layout is not checked since it holds uninitialized data.
+ * The inactive data layout is not checked since only the active one is allocated.
  * @param list
  * @param numParticles
  */
@@ -46,14 +46,18 @@ void expectDeviceStorage(const List &list, size_t numParticles) {
 }
 
 /**
- * Checks that the device views of both data layouts have the given extent.
+ * Checks that the device views of the active data layout have the given extent.
+ * The inactive data layout is not checked since only the active one is allocated.
  * @param list
  * @param extent
  */
 void expectDeviceExtents(const List &list, size_t extent) {
-  EXPECT_EQ(list.getAoS().getView().view_device().extent(0), extent);
-  EXPECT_EQ(list.getSoA().template getView<0>().view_device().extent(0), extent);
-  EXPECT_EQ(list.getSoA().template getView<Attr::ownershipState - 1>().view_device().extent(0), extent);
+  if (list.getActiveDataLayout() == autopas::DataLayoutOption::soa) {
+    EXPECT_EQ(list.getSoA().template getView<Attr::id>().view_device().extent(0), extent);
+    EXPECT_EQ(list.getSoA().template getView<Attr::ownershipState>().view_device().extent(0), extent);
+  } else {
+    EXPECT_EQ(list.getAoS().getView().view_device().extent(0), extent);
+  }
 }
 
 /**
@@ -165,11 +169,21 @@ TEST_F(KokkosListTest, testConstructor) {
   EXPECT_EQ(size, 0);
   EXPECT_EQ(capacity, 42);
 
+  // Only the active data layout is allocated.
   auto soa = kokkosList.getSoA();
-  auto aos = kokkosList.getAoS();
 
-  EXPECT_EQ(soa.getView<0>().extent(0), 42);
-  EXPECT_EQ(aos.getView().extent(0), 42);
+  EXPECT_EQ(soa.getView<Attr::id>().extent(0), 42);
+}
+
+/**
+ * A default-constructed DataLayoutOption is invalid. The constructor's resize() has to reject it instead of silently
+ * allocating nothing.
+ */
+TEST_F(KokkosListTest, testConstructorInvalidLayout) {
+  // Other tests change the global behavior, so make sure that exceptions are thrown.
+  autopas::utils::ExceptionHandler::setBehavior(autopas::utils::ExceptionBehavior::throwException);
+
+  EXPECT_THROW((List{autopas::DataLayoutOption{}, 4}), autopas::utils::ExceptionHandler::AutoPasException);
 }
 
 TEST_F(KokkosListTest, testResizeEmpty) {
@@ -183,8 +197,7 @@ TEST_F(KokkosListTest, testResizeEmpty) {
 
   EXPECT_EQ(sizeA, 0);
   EXPECT_EQ(capacityA, 16);
-  EXPECT_EQ(kokkosList.getAoS().getView().extent(0), 16);
-  EXPECT_EQ(kokkosList.getSoA().getView<0>().extent(0), 16);
+  EXPECT_EQ(kokkosList.getSoA().getView<Attr::id>().extent(0), 16);
 
   // todo: expect that warning is issued
 
@@ -196,8 +209,7 @@ TEST_F(KokkosListTest, testResizeEmpty) {
 
   EXPECT_EQ(sizeB, 0);
   EXPECT_EQ(capacityB, 32);
-  EXPECT_EQ(kokkosList.getAoS().getView().extent(0), 32);
-  EXPECT_EQ(kokkosList.getSoA().getView<0>().extent(0), 32);
+  EXPECT_EQ(kokkosList.getSoA().getView<Attr::id>().extent(0), 32);
 }
 
 TEST_F(KokkosListTest, testResizeFull) {
@@ -213,8 +225,7 @@ TEST_F(KokkosListTest, testResizeFull) {
   size_t capacityA = kokkosList.getCapacity();
   EXPECT_EQ(sizeA, 8);
   EXPECT_EQ(capacityA, 8);
-  EXPECT_EQ(kokkosList.getAoS().getView().extent(0), 8);
-  EXPECT_EQ(kokkosList.getSoA().getView<0>().extent(0), 8);
+  EXPECT_EQ(kokkosList.getSoA().getView<Attr::id>().extent(0), 8);
 
   kokkosList.resize(4);
 
@@ -222,8 +233,7 @@ TEST_F(KokkosListTest, testResizeFull) {
   size_t capacityB = kokkosList.getCapacity();
   EXPECT_EQ(sizeB, 4);
   EXPECT_EQ(capacityB, 4);
-  EXPECT_EQ(kokkosList.getAoS().getView().extent(0), 4);
-  EXPECT_EQ(kokkosList.getSoA().getView<0>().extent(0), 4);
+  EXPECT_EQ(kokkosList.getSoA().getView<Attr::id>().extent(0), 4);
 }
 
 TEST_F(KokkosListTest, testAddParticleSoAHost) {
@@ -256,17 +266,17 @@ TEST_F(KokkosListTest, testAddParticleSoAHost) {
   // Test if the stored particle is correctly added to the SoA views of the storage object
   auto soa = kokkosList.getSoA();
 
-  auto storedIdSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::id-1, false>(0);
-  auto storedXSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posX-1, false>(0);
-  auto storedYSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posY-1, false>(0);
-  auto storedZSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posZ-1, false>(0);
-  auto storedVxSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velX-1, false>(0);
-  auto storedVySoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velY-1, false>(0);
-  auto storedVzSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velZ-1, false>(0);
-  auto storedFxSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceX-1, false>(0);
-  auto storedFySoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceY-1, false>(0);
-  auto storedFzSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceZ-1, false>(0);
-  auto storedStateSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::ownershipState-1, false>(0);
+  auto storedIdSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::id, false>(0);
+  auto storedXSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posX, false>(0);
+  auto storedYSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posY, false>(0);
+  auto storedZSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::posZ, false>(0);
+  auto storedVxSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velX, false>(0);
+  auto storedVySoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velY, false>(0);
+  auto storedVzSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::velZ, false>(0);
+  auto storedFxSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceX, false>(0);
+  auto storedFySoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceY, false>(0);
+  auto storedFzSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceZ, false>(0);
+  auto storedStateSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::ownershipState, false>(0);
 
   EXPECT_EQ(storedIdSoA, id);
   EXPECT_EQ(storedXSoA, position[0]);
@@ -425,5 +435,37 @@ TEST_F(KokkosListTest, testAddParticleGrowthAoSDevice) { testAddParticleGrowthDe
 TEST_F(KokkosListTest, testDeviceRoundTripSoA) { testDeviceRoundTrip(autopas::DataLayoutOption::soa); }
 
 TEST_F(KokkosListTest, testDeviceRoundTripAoS) { testDeviceRoundTrip(autopas::DataLayoutOption::aos); }
+
+/**
+ * modify() and sync() take attribute names, the same as operator(). Only the named SoA column may be marked and synced.
+ */
+TEST_F(KokkosListTest, testPerAttributeSyncSoA) {
+  if constexpr (hostAndDeviceShareMemory) {
+    GTEST_SKIP() << "Host and device share memory, so DualView sync flags are no-ops.";
+  }
+
+  const float newValue = -1.f;
+  List list{autopas::DataLayoutOption::soa, 0};
+  addParticles(list, 0, 2);
+
+  list.syncAll<DeviceExecSpace>();
+
+  // Both attributes change on the device, but only posX is marked as modified.
+  writePositionsXYOnDevice(list, 2, newValue);
+  list.modify<DeviceExecSpace, Attr::posX>();
+
+  EXPECT_TRUE(list.getSoA().getView<Attr::posX>().need_sync_host());
+  EXPECT_FALSE(list.getSoA().getView<Attr::posY>().need_sync_host());
+
+  list.sync<HostExecSpace, Attr::posX>();
+
+  EXPECT_FALSE(list.getSoA().getView<Attr::posX>().need_sync_host());
+
+  for (size_t i = 0; i < 2; ++i) {
+    SCOPED_TRACE("Particle " + std::to_string(i));
+    EXPECT_EQ((list.operator()<Attr::posX, false>(i)), newValue);
+    EXPECT_EQ((list.operator()<Attr::posY, false>(i)), expectedAt(i).y);
+  }
+}
 
 #endif
