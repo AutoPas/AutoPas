@@ -74,12 +74,12 @@ std::vector<Molecule> generateInitialParticles(const Scenario &scenario, const d
   const auto backgroundMin = boxMin - haloWidth;
   const auto backgroundMax = scenario.boxMax + haloWidth;
   const double backgroundSpacing = autopas::generators::ClosestPackedGenerator::optimizeSpacingForDensity(
-      backgroundMin, backgroundMax, scenario.density, LatticeStructure::FCC, /*centered*/ false);
+      backgroundMin, backgroundMax, scenario.density, LatticeStructure::FCC, /*centered*/ true);
   std::vector<Molecule> fccMolecules;
   autopas::generators::PseudoContainer fccMoleculesWrapper(fccMolecules);
   autopas::generators::ClosestPackedGenerator::fillWithParticles(fccMoleculesWrapper, backgroundMin, backgroundMax,
                                                                  Molecule{}, backgroundSpacing, LatticeStructure::FCC,
-                                                                 /*centered*/ false);
+                                                                 /*centered*/ true);
   if (not scenario.denseSphere) {
     return fccMolecules;
   }
