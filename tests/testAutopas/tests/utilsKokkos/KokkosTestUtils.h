@@ -14,6 +14,7 @@
 
 #include <Kokkos_Core.hpp>
 #include <string>
+#include <type_traits>
 
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utilsKokkos/KokkosAoS.h"
@@ -40,6 +41,14 @@ using SoA = Particle::KokkosSoAArraysType;
 using AoS = autopas::utilsKokkos::KokkosAoS<Particle>;
 using autopas::utilsKokkos::DeviceExecSpace;
 using autopas::utilsKokkos::HostExecSpace;
+
+/**
+ * True if host and device share one memory space (e.g. OpenMP-only builds).
+ * DualViews are then single-device: modify() and sync() are no-ops and need_sync_host() / need_sync_device() are
+ * always false. Tests that rely on stale data or sync flags have to be skipped in this case.
+ */
+inline constexpr bool hostAndDeviceShareMemory =
+    std::is_same_v<autopas::utilsKokkos::DeviceMemSpace, autopas::utilsKokkos::HostMemSpace>;
 
 /**
  * Attribute values a particle is expected to hold.
@@ -99,37 +108,11 @@ inline Particle makeParticle(size_t i) {
 }
 
 /**
- * Gives KokkosSoA the same attribute-name interface as KokkosAoS and KokkosList, whose columns do not contain the
- * particle pointer and are therefore shifted by one.
- *
- * The copy of the SoA shares its data and sync state with the original. It has to be created after the last resize of
- * the original since a resize replaces the views.
- */
-struct SoAByAttributeName {
-  /**
-   * The wrapped SoA.
-   */
-  SoA soa;
-
-  /**
-   * Access an attribute by its name.
-   * @tparam Attribute Attribute name.
-   * @tparam useDeviceView Whether to read from the device view or from the host view.
-   * @param i Index of the particle.
-   * @return Reference to the attribute.
-   */
-  template <size_t Attribute, bool useDeviceView = true>
-  KOKKOS_INLINE_FUNCTION auto &operator()(size_t i) const {
-    return soa.template operator()<Attribute - 1, useDeviceView>(i);
-  }
-};
-
-/**
  * Reads all attributes of the particles [first, last) through the storage's operator() in a device kernel.
  *
  * This is a free function because the kernel must not be defined in TEST_F's private TestBody(), which nvcc rejects.
  *
- * @tparam Storage KokkosAoS, KokkosList, or SoAByAttributeName.
+ * @tparam Storage SoA, AoS, or KokkosList.
  * @param storage
  * @param first
  * @param last
@@ -162,7 +145,7 @@ int countDeviceMismatches(const Storage &storage, size_t first, size_t last, flo
 /**
  * Overwrites all floating point attributes of the particles [0, numParticles) in a device kernel.
  * The id and the ownership state remain untouched.
- * @tparam Storage KokkosAoS, KokkosList, or SoAByAttributeName.
+ * @tparam Storage SoA, AoS, or KokkosList.
  * @param storage
  * @param numParticles
  * @param offset Offset used to generate the new values.
@@ -186,8 +169,26 @@ void overwriteOnDevice(const Storage &storage, size_t numParticles, float offset
 }
 
 /**
+ * Writes to the posX and posY attributes of the particles [0, numParticles) in a device kernel, without touching the
+ * sync state.
+ * @tparam Storage SoA, AoS, or KokkosList.
+ * @param storage
+ * @param numParticles
+ * @param value
+ */
+template <typename Storage>
+void writePositionsXYOnDevice(const Storage &storage, size_t numParticles, float value) {
+  Kokkos::parallel_for(
+      "kokkosTestUtils::writePositionsXYOnDevice", Kokkos::RangePolicy<DeviceExecSpace>(0, numParticles),
+      KOKKOS_LAMBDA(const size_t i) {
+        storage.template operator()<Attr::posX, true>(i) = value;
+        storage.template operator()<Attr::posY, true>(i) = value;
+      });
+}
+
+/**
  * Checks all attributes of one particle through the storage's operator() on the host.
- * @tparam Storage KokkosAoS, KokkosList, or SoAByAttributeName.
+ * @tparam Storage SoA, AoS, or KokkosList.
  * @param storage
  * @param i Index of the particle.
  * @param offset Offset that was used to generate the expected values.
@@ -215,9 +216,9 @@ void expectOnHost(const Storage &storage, size_t i, float offset = 0.f) {
  * @param soa
  * @return Host copy of the device view.
  */
-template <size_t Attribute>
+template <Attr Attribute>
 auto copyDeviceColumnToHost(const SoA &soa) {
-  return Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, soa.template getView<Attribute - 1>().view_device());
+  return Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, soa.template getView<Attribute>().view_device());
 }
 
 /**

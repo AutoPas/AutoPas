@@ -9,91 +9,128 @@
 #ifdef AUTOPAS_ENABLE_KOKKOS
 
 #include <Kokkos_Core.hpp>
+#include <type_traits>
 
 #include "Kokkos_DualView.hpp"
 #include "autopas/utilsKokkos/KokkosSpaces.h"
 
 namespace autopas::utilsKokkos {
 
-template <typename... AttributeTypes>
+/**
+ * Structure of arrays with one DualView per attribute.
+ *
+ * All public methods address columns by attribute name. The columns store the attributes [firstStored, firstStored +
+ * sizeof...(AttributeTypes)) in the order of AttributeNames_T, so attributes before firstStored (e.g. ptr) are not
+ * stored. The conversion between attribute names and column indices happens only in this class.
+ *
+ * @tparam AttributeNames_T Enum that names the attributes, usually Particle_T::AttributeNames.
+ * @tparam firstStored Attribute that is stored in the first column.
+ * @tparam AttributeTypes Data types of the columns, e.g. float *.
+ */
+template <typename AttributeNames_T, AttributeNames_T firstStored, typename... AttributeTypes>
 class KokkosSoA {
+  static_assert(std::is_enum_v<AttributeNames_T>, "KokkosSoA columns have to be named by an enum.");
+
  public:
   using Type = std::tuple<Kokkos::DualView<AttributeTypes, DeviceExecSpace::device_type>...>;
 
-  template <size_t Attribute, bool useDeviceView = true>
+  template <AttributeNames_T Attribute, bool useDeviceView = true>
   KOKKOS_INLINE_FUNCTION auto &operator()(size_t index) const {
     if constexpr (useDeviceView) {
-      return std::get<Attribute>(_particleData).view_device()(index);
+      return std::get<column<Attribute>()>(_particleData).view_device()(index);
+    } else {
+      return std::get<column<Attribute>()>(_particleData).view_host()(index);
     }
-    return std::get<Attribute>(_particleData).view_host()(index);
   }
 
-  void resize(size_t size) {
-    constexpr auto tupleSize = std::tuple_size<decltype(_particleData)>::value;
-    constexpr auto I = std::make_index_sequence<tupleSize>{};
-
-    resizeImpl(size, I);
-  }
+  void resize(size_t size) { resizeImpl(size, Columns{}); }
 
   template <class Particle_T>
   void addParticle(size_t index, const Particle_T &particle) {
-    constexpr auto tupleSize = std::tuple_size<decltype(_particleData)>::value;
-    constexpr auto I = std::make_index_sequence<tupleSize>{};
-
-    addParticleImpl<Particle_T>(index, particle, I);
+    static_assert(std::is_same_v<typename Particle_T::AttributeNames, AttributeNames_T>,
+                  "The particle's attribute names have to match the ones of the SoA.");
+    addParticleImpl<Particle_T>(index, particle, Columns{});
   }
 
-  template <size_t Attribute>
+  template <AttributeNames_T Attribute>
   const auto &getView() const {
-    return std::get<Attribute>(_particleData);
+    return std::get<column<Attribute>()>(_particleData);
   }
 
-  template <typename Space, std::size_t I>
+  template <typename Space, AttributeNames_T Attribute>
   void modify() {
-    std::get<I>(_particleData).template modify<Space>();
+    modifyColumn<Space, column<Attribute>()>();
   }
 
   template <typename Space>
   void modifyAll() {
-    constexpr auto tupleSize = std::tuple_size<decltype(_particleData)>::value;
-    constexpr auto I = std::make_index_sequence<tupleSize>{};
-
-    modifyAllImpl<Space>(I);
+    modifyAllImpl<Space>(Columns{});
   }
 
-  template <typename Space, std::size_t I>
+  template <typename Space, AttributeNames_T Attribute>
   void sync() {
-    std::get<I>(_particleData).template sync<Space>();
+    syncColumn<Space, column<Attribute>()>();
   }
 
   template <typename Space>
   void syncAll() {
-    constexpr auto tupleSize = std::tuple_size<decltype(_particleData)>::value;
-    constexpr auto I = std::make_index_sequence<tupleSize>{};
-
-    syncAllImpl<Space>(I);
+    syncAllImpl<Space>(Columns{});
   }
 
  private:
-  template <std::size_t... I>
-  void resizeImpl(size_t size, std::index_sequence<I...>) {
-    (std::get<I>(_particleData).resize(Kokkos::WithoutInitializing, size), ...);
+  using Columns = std::index_sequence_for<AttributeTypes...>;
+
+  /**
+   * The only place that converts an attribute name to a column index.
+   * @tparam Attribute
+   * @return Index of the column that stores Attribute.
+   */
+  template <AttributeNames_T Attribute>
+  static constexpr size_t column() {
+    static_assert(Attribute >= firstStored, "Attribute is not stored in this SoA (e.g. ptr).");
+    constexpr size_t col = static_cast<size_t>(Attribute) - static_cast<size_t>(firstStored);
+    static_assert(col < sizeof...(AttributeTypes), "Attribute is out of range for this SoA.");
+    return col;
   }
 
-  template <typename Space, std::size_t... I>
-  void syncAllImpl(std::index_sequence<I...>) {
-    (sync<Space, I>(), ...);
+  /**
+   * The only place that converts a column index to an attribute name.
+   * @tparam Col
+   * @return Attribute stored in column Col.
+   */
+  template <size_t Col>
+  static constexpr AttributeNames_T attributeOf() {
+    return static_cast<AttributeNames_T>(Col + static_cast<size_t>(firstStored));
   }
 
-  template <typename Space, std::size_t... I>
-  void modifyAllImpl(std::index_sequence<I...>) {
-    (modify<Space, I>(), ...);
+  template <typename Space, size_t Col>
+  void modifyColumn() {
+    std::get<Col>(_particleData).template modify<Space>();
   }
 
-  template <class Particle_T, std::size_t... I>
-  void addParticleImpl(size_t index, const Particle_T &particle, std::index_sequence<I...>) {
-    // I+1 is required since we do not want to store the Particle Pointer which is the result of particle.get<0>()
-    ((operator()<I, false>(index) = particle.template get<static_cast<Particle_T::AttributeNames>(I + 1)>()), ...);
+  template <typename Space, size_t Col>
+  void syncColumn() {
+    std::get<Col>(_particleData).template sync<Space>();
+  }
+
+  template <size_t... Col>
+  void resizeImpl(size_t size, std::index_sequence<Col...>) {
+    (std::get<Col>(_particleData).resize(Kokkos::WithoutInitializing, size), ...);
+  }
+
+  template <typename Space, size_t... Col>
+  void syncAllImpl(std::index_sequence<Col...>) {
+    (syncColumn<Space, Col>(), ...);
+  }
+
+  template <typename Space, size_t... Col>
+  void modifyAllImpl(std::index_sequence<Col...>) {
+    (modifyColumn<Space, Col>(), ...);
+  }
+
+  template <class Particle_T, size_t... Col>
+  void addParticleImpl(size_t index, const Particle_T &particle, std::index_sequence<Col...>) {
+    ((std::get<Col>(_particleData).view_host()(index) = particle.template get<attributeOf<Col>()>()), ...);
   }
 
   Type _particleData{};

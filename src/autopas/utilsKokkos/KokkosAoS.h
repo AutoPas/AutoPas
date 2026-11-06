@@ -9,6 +9,7 @@
 #ifdef AUTOPAS_ENABLE_KOKKOS
 
 #include <Kokkos_Core.hpp>
+#include <type_traits>
 
 #include "Kokkos_DualView.hpp"
 #include "autopas/utilsKokkos/KokkosSpaces.h"
@@ -17,13 +18,18 @@ namespace autopas::utilsKokkos {
 
 template <typename Particle_T>
 class KokkosAoS {
+  static_assert(std::is_trivially_copyable_v<Particle_T>,
+                "KokkosAoS requires trivially copyable particles: elements are allocated WithoutInitializing and "
+                "deep-copied between memory spaces, so e.g. virtual functions are not allowed.");
+
  public:
-  template <size_t Attribute, bool useDeviceView = true>
+  template <typename Particle_T::AttributeNames Attribute, bool useDeviceView = true>
   KOKKOS_INLINE_FUNCTION auto &operator()(size_t index) const {
     if constexpr (useDeviceView) {
-      return _particles.view_device()(index).template operator()<static_cast<Particle_T::AttributeNames>(Attribute)>();
+      return _particles.view_device()(index).template operator()<Attribute>();
+    } else {
+      return _particles.view_host()(index).template operator()<Attribute>();
     }
-    return _particles.view_host()(index).template operator()<static_cast<Particle_T::AttributeNames>(Attribute)>();
   }
 
   void resize(size_t size) { _particles.resize(Kokkos::WithoutInitializing, size); }

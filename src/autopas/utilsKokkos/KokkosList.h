@@ -13,28 +13,30 @@
 #include "KokkosAoS.h"
 #include "KokkosSoA.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas::utilsKokkos {
 
 template <typename Particle_T>
 class KokkosList {
  public:
-  KokkosList() : _activeDataLayout(DataLayoutOption::soa) {}
+  KokkosList() {}
 
   KokkosList(DataLayoutOption activeDataLayout, size_t size) : _activeDataLayout(activeDataLayout) { resize(size); }
 
-  template <size_t Attribute, bool useDeviceView = true>
+  template <typename Particle_T::AttributeNames Attribute, bool useDeviceView = true>
   KOKKOS_INLINE_FUNCTION auto &operator()(size_t index) const {
     switch (_activeDataLayout) {
       case DataLayoutOption::Value::aos: {
         return _aos.template operator()<Attribute, useDeviceView>(index);
       }
       case DataLayoutOption::Value::soa: {
-        return _soa.template operator()<Attribute-1, useDeviceView>(index);
+        return _soa.template operator()<Attribute, useDeviceView>(index);
       }
-      default:
-        break;  // todo: throw exception although this should currently not happen
     }
+    // No default case so that -Wswitch reports layouts without a case. This may run on the device, so abort instead
+    // of throwing.
+    Kokkos::abort("KokkosList::operator(): invalid data layout");
   }
 
   void resize(size_t size) {
@@ -46,19 +48,40 @@ class KokkosList {
     }
 
     _capacity = size;
-    _soa.resize(size);
-    _aos.resize(size);
+    switch (_activeDataLayout) {
+      case DataLayoutOption::Value::aos: {
+        _aos.resize(size);
+        return;
+      }
+      case DataLayoutOption::Value::soa: {
+        _soa.resize(size);
+        return;
+      }
+    }
+    // No default case so that -Wswitch reports layouts without a case.
+    utils::ExceptionHandler::exception("KokkosList::resize(): invalid data layout {}",
+                                       static_cast<int>(_activeDataLayout));
   }
 
-  template <typename Space, std::size_t I>
+  /**
+   * Marks one attribute as modified in the given space. The AoS can only be marked as a whole.
+   * @tparam Space
+   * @tparam Attribute
+   */
+  template <typename Space, typename Particle_T::AttributeNames Attribute>
   void modify() {
-    _soa.template modify<Space>(I);
+    _soa.template modify<Space, Attribute>();
     _aos.template modify<Space>();
   }
 
-  template <typename Space, std::size_t I>
+  /**
+   * Syncs one attribute to the given space. The AoS can only be synced as a whole.
+   * @tparam Space
+   * @tparam Attribute
+   */
+  template <typename Space, typename Particle_T::AttributeNames Attribute>
   void sync() {
-    _soa.template sync<Space>(I);
+    _soa.template sync<Space, Attribute>();
     _aos.template sync<Space>();
   }
 
@@ -96,9 +119,10 @@ class KokkosList {
       case DataLayoutOption::Value::soa: {
         return _soa.addParticle(_size++, p);
       }
-      default:
-        break;  // todo: throw exception although this should currently not happen
     }
+    // No default case so that -Wswitch reports layouts without a case.
+    utils::ExceptionHandler::exception("KokkosList::addParticle(): invalid data layout {}",
+                                       static_cast<int>(_activeDataLayout));
   }
 
   DataLayoutOption getActiveDataLayout() const { return _activeDataLayout; }
@@ -112,7 +136,7 @@ class KokkosList {
   size_t _size{0};
   size_t _capacity{0};
 
-  DataLayoutOption _activeDataLayout{};
+  DataLayoutOption _activeDataLayout{DataLayoutOption::soa};
 
   KokkosAoS<Particle_T> _aos{};
   Particle_T::KokkosSoAArraysType _soa{};

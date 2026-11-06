@@ -50,16 +50,16 @@ class KokkosParticleBase {
    * @param id Id of the particle.
    * @param ownershipState OwnershipState of the particle (can be either owned, halo, or dummy)
    */
-  KokkosParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id,
+  KokkosParticleBase(const std::array<floatType, 3> &r, const std::array<floatType, 3> &v, idType id,
                      OwnershipState ownershipState = OwnershipState::owned)
-      : _r(r),
-        _v(v),
+      : _r{r.at(0), r.at(1), r.at(2)},
+        _v{v.at(0), v.at(1), v.at(2)},
         _f({0.0, 0.0, 0.0}),
         _id(id),
         _ownershipState(ownershipState)
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
         ,
-        _rAtRebuild(r)
+        _rAtRebuild{r.at(0), r.at(1), r.at(2)}
 #endif
   {
   }
@@ -67,7 +67,7 @@ class KokkosParticleBase {
   /**
    * Destructor of ParticleBase class
    */
-  virtual ~KokkosParticleBase() = default;
+  ~KokkosParticleBase() = default;
 
  protected:
   /**
@@ -252,7 +252,7 @@ class KokkosParticleBase {
    * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
    */
   bool addRDistanceCheck(const std::array<floatType, 3> &r, double maxDistSquared) {
-    const auto newR = {_r[0] + r[0], _r[1] + r[1], _r[2] + r[2]};
+    const std::array<floatType, 3> newR = {_r[0] + r[0], _r[1] + r[1], _r[2] + r[2]};
     return setRDistanceCheck(newR, maxDistSquared);
   }
 
@@ -286,7 +286,7 @@ class KokkosParticleBase {
    * Creates a string containing all data of the particle.
    * @return String representation.
    */
-  [[nodiscard]] virtual std::string toString() const {
+  [[nodiscard]] std::string toString() const {
     std::ostringstream text;
     // clang-format off
     text << "Particle"
@@ -381,16 +381,15 @@ class KokkosParticleBase {
 
 #ifdef AUTOPAS_ENABLE_KOKKOS
   /**
-   * The type for the Kokkos SoA storage. Same columns as SoAArraysType but without ptr.
+   * The type for the Kokkos SoA storage. Same columns as SoAArraysType but without ptr, so the first column is id.
    */
-  using KokkosSoAArraysType =
-      autopas::utilsKokkos::KokkosSoA<idType * /*id*/, floatType * /*x*/, floatType * /*y*/, floatType * /*z*/,
+  using KokkosSoAArraysType = autopas::utilsKokkos::KokkosSoA<
+      AttributeNames, AttributeNames::id, idType * /*id*/, floatType * /*x*/, floatType * /*y*/, floatType * /*z*/,
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
-                                      floatType * /*rebuildX*/, floatType * /*rebuildY*/, floatType * /*rebuildZ*/,
+      floatType * /*rebuildX*/, floatType * /*rebuildY*/, floatType * /*rebuildZ*/,
 #endif
-                                      floatType * /*vx*/, floatType * /*vy*/, floatType * /*vz*/, floatType * /*fx*/,
-                                      floatType * /*fy*/, floatType * /*fz*/,
-                                      autopas::OwnershipState * /*ownershipState*/>;
+      floatType * /*vx*/, floatType * /*vy*/, floatType * /*vz*/, floatType * /*fx*/, floatType * /*fy*/,
+      floatType * /*fz*/, autopas::OwnershipState * /*ownershipState*/>;
 
   static_assert(std::tuple_size_v<SoAArraysType> == std::tuple_size_v<typename KokkosSoAArraysType::Type> + 1,
                 "KokkosSoAArraysType must have the same columns as SoAArraysType, except for ptr.");
@@ -402,6 +401,7 @@ class KokkosParticleBase {
    * @return this for AttributeNames::ptr, otherwise a reference to the requested attribute.
    */
   template <AttributeNames attribute>
+  KOKKOS_INLINE_FUNCTION
   constexpr decltype(auto) operator()() {
     if constexpr (attribute == AttributeNames::ptr) {
       return this;
@@ -427,6 +427,7 @@ class KokkosParticleBase {
    * @return Reference to the requested attribute.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
+  KOKKOS_INLINE_FUNCTION
   constexpr decltype(auto) getRef() {
     if constexpr (attribute == AttributeNames::id) {
       return (_id);
