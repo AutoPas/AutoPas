@@ -272,6 +272,9 @@ class SoA {
     if constexpr (attribute < NumBaseAttrs) {
       return soaStorage.template get<attribute>().data();
     } else {
+      if (_extraColumns.size() <= attribute - NumBaseAttrs) {
+        return static_cast<double *>(nullptr);
+      }
       return _extraColumns[attribute - NumBaseAttrs].data();
     }
   }
@@ -286,6 +289,9 @@ class SoA {
     if constexpr (attribute < NumBaseAttrs) {
       return soaStorage.template get<attribute>().data();
     } else {
+      if (_extraColumns.size() <= attribute - NumBaseAttrs) {
+        return static_cast<const double *>(nullptr);
+      }
       return _extraColumns[attribute - NumBaseAttrs].data();
     }
   }
