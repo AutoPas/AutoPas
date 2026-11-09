@@ -64,11 +64,6 @@ class OctreeNodeInterface {
   virtual std::unique_ptr<OctreeNodeInterface<Particle_T>> insert(const Particle_T &p) = 0;
 
   /**
-   * @copydoc OctreeNodeWrapper::deleteParticle()
-   */
-  virtual bool deleteParticle(Particle_T &particle) = 0;
-
-  /**
    * Put all particles that are below this node into the vector.
    * @param ps A reference to the vector that should contain the particles after the operation
    */

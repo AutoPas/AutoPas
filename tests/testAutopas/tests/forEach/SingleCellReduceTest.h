@@ -30,8 +30,9 @@ class SingleCellReduceTest : public AutoPasTestBase {
 
   template <class Cell>
   void fillWithParticleReferences(Cell *pc) {
-    for (auto &m : _vecOfMolecules) {
-      pc->addParticleReference(&m);
+    pc->setParticleStorage(&_vecOfMolecules);
+    for (size_t index = 0; index < _vecOfMolecules.size(); ++index) {
+      pc->addParticleReference(index);
     }
   }
 
