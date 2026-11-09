@@ -865,7 +865,9 @@ TEST_F(OctreeTest, testForEachAndReduceInRegionFindParticlesThatLeftTheirLeaf) {
       {IteratorBehavior::owned, {moverID}},
       {IteratorBehavior::halo, {haloIDOffset + moverID}},
       {IteratorBehavior::ownedOrHalo, {moverID, haloIDOffset + moverID}}};
-  for (const auto &[behavior, expectedIDs] : expectedIDsByBehavior) {
+  for (const auto &behaviorAndExpectedIDs : expectedIDsByBehavior) {
+    const auto &behavior = behaviorAndExpectedIDs.first;
+    const auto &expectedIDs = behaviorAndExpectedIDs.second;
     SCOPED_TRACE(behavior.to_string());
     ForEachTestHelper::forEachParticleTest(
         [&](auto lambda) { octree.forEachInRegion(lambda, regionMin, regionMax, behavior); }, expectedIDs);
