@@ -368,10 +368,8 @@ TEST_F(SoATest, SoATestExtraColumns) {
   EXPECT_EQ(soa.size(), 0);
 
   // Resize for posX, posY, posZ and two extra columns
-  soa.resizeArraysForAttributes<ParticleBaseFP64::AttributeNames::posX,
-                                ParticleBaseFP64::AttributeNames::posY,
-                                ParticleBaseFP64::AttributeNames::posZ,
-                                Extra0, Extra1>(3);
+  soa.resizeArraysForAttributes<ParticleBaseFP64::AttributeNames::posX, ParticleBaseFP64::AttributeNames::posY,
+                                ParticleBaseFP64::AttributeNames::posZ, Extra0, Extra1>(3);
 
   EXPECT_EQ(soa.size(), 3);
 

@@ -273,8 +273,8 @@ class Functor {
   void SoALoaderImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize,
                      std::index_sequence<I...>) {
     if (not skipSoAResize) {
-      soa.template resizeArraysForAttributes<static_cast<std::size_t>(Functor_T::getNeededAttr()[I])...>(
-          offset + cell.size());
+      soa.template resizeArraysForAttributes<static_cast<std::size_t>(Functor_T::getNeededAttr()[I])...>(offset +
+                                                                                                         cell.size());
     }
 
     if (cell.isEmpty()) return;

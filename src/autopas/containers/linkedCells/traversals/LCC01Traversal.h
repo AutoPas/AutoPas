@@ -202,8 +202,8 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
    */
   template <std::size_t... I>
   void resizeNeeded(ParticleCell &cell, size_t newSize, std::index_sequence<I...>) {
-    cell._particleSoABuffer.template resizeArraysForAttributes<
-        static_cast<std::size_t>(std::get<I>(Functor::getNeededAttr(std::false_type())))...>(newSize);
+    cell._particleSoABuffer.template resizeArraysForAttributes<static_cast<std::size_t>(
+        std::get<I>(Functor::getNeededAttr(std::false_type())))...>(newSize);
   }
 
   /**
