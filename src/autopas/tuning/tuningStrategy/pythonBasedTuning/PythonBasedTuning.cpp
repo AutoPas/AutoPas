@@ -24,11 +24,8 @@ namespace py = pybind11;
 #endif
 
 PythonBasedTuning::PythonBasedTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
-                                     double confidenceThreshold, InteractionTypeOption interactionType)
-    : _configurations(searchSpace),
-      _modelFileName(modelFileName),
-      _confidenceThreshold(confidenceThreshold),
-      _interactionType(interactionType) {
+                                     InteractionTypeOption interactionType)
+    : _configurations(searchSpace), _modelFileName(modelFileName), _interactionType(interactionType) {
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   _pythonInterpreter = utils::PythonInterpreter::getSharedInterpreter();
   try {
@@ -132,22 +129,29 @@ void PythonBasedTuning::updateConfigQueue(std::vector<Configuration> &configQueu
 #ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
   try {
     nlohmann::json predictionJson = nlohmann::json::parse(prediction);
-    if (double confidence = predictionJson["confidence"]; confidence < _confidenceThreshold) {
-      AutoPasLog(WARN, "Prediction confidence ({:.2f}) below threshold ({:.2f}), skipping update.", confidence,
-                 _confidenceThreshold);
+    if (not predictionJson.is_array()) {
+      utils::ExceptionHandler::exception(
+          "The prediction must be a JSON list of configurations, most promising first, but is: {}", prediction);
+    }
+    if (predictionJson.empty()) {
+      AutoPasLog(WARN, "The model predicted no configuration, leaving the configuration queue unchanged.");
       return;
     }
 
-    std::stringstream configStream;
-    std::istringstream configHeader(Configuration().getCSVHeader());
-    for (std::string component; std::getline(configHeader, component, ',');) {
-      configStream << component << ": " << predictionJson.at(component).get<std::string>() << " , ";
+    std::vector<Configuration> predictedConfigs;
+    for (const auto &configJson : predictionJson) {
+      std::stringstream configStream;
+      std::istringstream configHeader(Configuration().getCSVHeader());
+      for (std::string component; std::getline(configHeader, component, ',');) {
+        configStream << component << ": " << configJson.at(component).get<std::string>() << " , ";
+      }
+      Configuration config;
+      configStream >> config;
+      predictedConfigs.push_back(config);
     }
-    Configuration config;
-    configStream >> config;
 
-    configQueue.clear();
-    configQueue.push_back(config);
+    // The queue is tested from the back, so the most promising configuration goes last.
+    configQueue.assign(predictedConfigs.rbegin(), predictedConfigs.rend());
 
   } catch (const std::exception &e) {
     AutoPasLog(ERROR, "Error parsing prediction: {}", e.what());

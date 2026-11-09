@@ -25,10 +25,13 @@ namespace autopas {
 /**
  * @class PythonBasedTuning
  *
- * This class uses a model written in Python to predict the best configuration based on the current live information.
+ * This class uses a model written in Python to predict the best configurations based on the current live information.
  * The Python script randomForest/predict.py is used to load the model and make predictions. It provides a random forest
  * model, trained with randomForest/train.py using the Python scikit-learn library. For how to use a different model,
  * see docs/userdoc/PythonBasedMachineLearningTuning.md.
+ *
+ * The predicted configurations are all tested in the tuning phase, most promising first. predict.py returns up to
+ * NUM_PREDICTIONS of them. If the model predicts none, the configuration queue is left unchanged.
  *
  * @note This tuning strategy requires the CMake variable AUTOPAS_ENABLE_PYTHON_BASED_TUNING set to ON
  */
@@ -38,11 +41,10 @@ class PythonBasedTuning : public TuningStrategyInterface {
    * Constructor of PythonBasedTuning.
    * @param searchSpace Set of configurations to be considered.
    * @param modelFileName Name of the file containing the models.
-   * @param confidenceThreshold Minimum confidence threshold for accepting predictions.
    * @param interactionType The interaction type (used to select the appropriate pairwise/triwise model).
    */
   PythonBasedTuning(const std::set<Configuration> &searchSpace, const std::string &modelFileName,
-                    double confidenceThreshold, InteractionTypeOption interactionType);
+                    InteractionTypeOption interactionType);
 
   ~PythonBasedTuning() override;
 
@@ -64,7 +66,7 @@ class PythonBasedTuning : public TuningStrategyInterface {
   /**
    * Update the configuration queue based on the prediction.
    * @param configQueue Configuration queue to be updated.
-   * @param prediction Prediction from the Python script.
+   * @param prediction Prediction from the Python script: a JSON list of configurations, most promising first.
    */
   void updateConfigQueue(std::vector<Configuration> &configQueue, const std::string &prediction);
 
@@ -80,10 +82,6 @@ class PythonBasedTuning : public TuningStrategyInterface {
    * Name of the file containing the model.
    */
   std::string _modelFileName;
-  /**
-   * Confidence threshold for the prediction.
-   */
-  double _confidenceThreshold;
 
   /**
    * The interaction type for which this tuning strategy predicts.
