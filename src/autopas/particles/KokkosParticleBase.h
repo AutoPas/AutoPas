@@ -401,8 +401,7 @@ class KokkosParticleBase {
    * @return this for AttributeNames::ptr, otherwise a reference to the requested attribute.
    */
   template <AttributeNames attribute>
-  KOKKOS_INLINE_FUNCTION
-  constexpr decltype(auto) operator()() {
+  KOKKOS_INLINE_FUNCTION constexpr decltype(auto) operator()() {
     if constexpr (attribute == AttributeNames::ptr) {
       return this;
     } else {
@@ -427,8 +426,7 @@ class KokkosParticleBase {
    * @return Reference to the requested attribute.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
-  KOKKOS_INLINE_FUNCTION
-  constexpr decltype(auto) getRef() {
+  KOKKOS_INLINE_FUNCTION constexpr decltype(auto) getRef() {
     if constexpr (attribute == AttributeNames::id) {
       return (_id);
     } else if constexpr (attribute == AttributeNames::posX) {

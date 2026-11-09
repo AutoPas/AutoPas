@@ -237,7 +237,6 @@ TEST_F(KokkosListTest, testResizeFull) {
 }
 
 TEST_F(KokkosListTest, testAddParticleSoAHost) {
-
   autopas::utilsKokkos::KokkosList<autopas::KokkosParticleBaseFP32> kokkosList{autopas::DataLayoutOption::soa, 0};
 
   autopas::KokkosParticleBaseFP32 particle{};
@@ -276,7 +275,8 @@ TEST_F(KokkosListTest, testAddParticleSoAHost) {
   auto storedFxSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceX, false>(0);
   auto storedFySoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceY, false>(0);
   auto storedFzSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceZ, false>(0);
-  auto storedStateSoA = soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::ownershipState, false>(0);
+  auto storedStateSoA =
+      soa.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::ownershipState, false>(0);
 
   EXPECT_EQ(storedIdSoA, id);
   EXPECT_EQ(storedXSoA, position[0]);
@@ -301,7 +301,8 @@ TEST_F(KokkosListTest, testAddParticleSoAHost) {
   auto storedFxList = kokkosList.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceX, false>(0);
   auto storedFyList = kokkosList.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceY, false>(0);
   auto storedFzList = kokkosList.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceZ, false>(0);
-  auto storedStateList = kokkosList.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::ownershipState, false>(0);
+  auto storedStateList =
+      kokkosList.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::ownershipState, false>(0);
 
   EXPECT_EQ(storedIdList, id);
   EXPECT_EQ(storedXList, position[0]);
@@ -317,7 +318,6 @@ TEST_F(KokkosListTest, testAddParticleSoAHost) {
 }
 
 TEST_F(KokkosListTest, testAddParticleAoSHost) {
-
   autopas::utilsKokkos::KokkosList<autopas::KokkosParticleBaseFP32> kokkosList{autopas::DataLayoutOption::aos, 0};
 
   autopas::KokkosParticleBaseFP32 particle{};
@@ -356,7 +356,8 @@ TEST_F(KokkosListTest, testAddParticleAoSHost) {
   auto storedFxAoS = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceX, false>(0);
   auto storedFyAoS = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceY, false>(0);
   auto storedFzAoS = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceZ, false>(0);
-  auto storedStateAoS = aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::ownershipState, false>(0);
+  auto storedStateAoS =
+      aos.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::ownershipState, false>(0);
 
   EXPECT_EQ(storedIdAoS, id);
   EXPECT_EQ(storedXAoS, position[0]);
@@ -381,7 +382,8 @@ TEST_F(KokkosListTest, testAddParticleAoSHost) {
   auto storedFxList = kokkosList.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceX, false>(0);
   auto storedFyList = kokkosList.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceY, false>(0);
   auto storedFzList = kokkosList.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::forceZ, false>(0);
-  auto storedStateList = kokkosList.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::ownershipState, false>(0);
+  auto storedStateList =
+      kokkosList.template operator()<autopas::KokkosParticleBaseFP32::AttributeNames::ownershipState, false>(0);
 
   EXPECT_EQ(storedIdList, id);
   EXPECT_EQ(storedXList, position[0]);

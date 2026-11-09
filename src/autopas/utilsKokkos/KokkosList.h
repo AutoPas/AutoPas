@@ -102,7 +102,6 @@ class KokkosList {
   size_t getCapacity() const { return _capacity; }
 
   void addParticle(const Particle_T &p) {
-
     syncAll<HostExecSpace>();
     modifyAll<HostExecSpace>();
 
@@ -132,7 +131,6 @@ class KokkosList {
   const auto &getSoA() const { return _soa; }
 
  private:
-
   size_t _size{0};
   size_t _capacity{0};
 
