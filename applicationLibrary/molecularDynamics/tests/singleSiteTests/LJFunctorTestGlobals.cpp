@@ -163,10 +163,8 @@ template <class FuncType>
 void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncType>::where_type where, bool newton3,
                                                     InteractionType interactionType,
                                                     size_t additionalParticlesToVerletNumber,
-                                                    uint64_t numParticleReplicas, bool mixedNewton3FunctorCalls) {
-  const bool shifting = true;
-  const bool mixing = false;
-
+                                                    uint64_t numParticleReplicas, bool mixedNewton3FunctorCalls,
+                                                    autopas::VectorizationPatternOption::Value vecPattern) {
   // static coords for the particles. Here we need the coordinates as single values, as theyx are used later for the
   // molecules p1 and p2 with different offsets
   constexpr double p1X = 0.;
@@ -182,8 +180,9 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
   constexpr double expectedEnergy = calculateLJPotential(p1Pos, p2Pos, cutoff, sigma, epsilon);
   constexpr double expectedVirial = calculateLJVirialTotal(p1Pos, p2Pos, cutoff, sigma, epsilon);
 
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(cutoff);
+  FuncType functor(cutoff);
   functor.setParticleProperties(epsilon * 24, sigma);
+  functor.setVecPattern(vecPattern);
   double xOffset;
   double whereFactor = 0.;
   std::string where_str;
@@ -355,12 +354,26 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
       << "where: " << where_str << ", newton3: " << newton3
       << ", interactionType: " << (interactionType == pair ? "pair" : (interactionType == own ? "own" : "verlet"))
       << ", additionalVerletDummyParticles: " << additionalParticlesToVerletNumber
-      << ", numParticleReplicas: " << numParticleReplicas;
+      << ", numParticleReplicas: " << numParticleReplicas
+      << ", vecPattern: " << autopas::VectorizationPatternOption(vecPattern).to_string();
   EXPECT_NEAR(virial, whereFactor * expectedVirial * 2., absDelta)
       << "where: " << where_str << ", newton3: " << newton3
       << ", interactionType: " << (interactionType == pair ? "pair" : (interactionType == own ? "own" : "verlet"))
       << ", additionalVerletDummyParticles: " << additionalParticlesToVerletNumber
-      << ", numParticleReplicas: " << numParticleReplicas;
+      << ", numParticleReplicas: " << numParticleReplicas
+      << ", vecPattern: " << autopas::VectorizationPatternOption(vecPattern).to_string();
+}
+
+template <class FuncType>
+std::vector<autopas::VectorizationPatternOption::Value> LJFunctorTestGlobals<FuncType>::getSupportedVecPatterns() {
+  FuncType functor(cutoff);
+  std::vector<autopas::VectorizationPatternOption::Value> supportedVecPatterns;
+  for (const auto vecPattern : autopas::VectorizationPatternOption::getAllApplicablePatterns()) {
+    if (functor.isVecPatternAllowed(vecPattern)) {
+      supportedVecPatterns.push_back(vecPattern);
+    }
+  }
+  return supportedVecPatterns;
 }
 
 TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobals) {
@@ -393,13 +406,16 @@ TYPED_TEST_P(LJFunctorTestGlobals, testSoAFunctorGlobalsOwn) {
   using FuncType = TypeParam;
   using TestType = LJFunctorTestGlobals<FuncType>;
 
-  for (bool mixedNewton3FunctorCalls : {false, true}) {
-    // the own functor can only be called for inner or outside pairs! (if two particles lie in one cell they can be
-    // either both inside the process or neither of them is)
-    for (typename TestType::where_type where : {TestType::inside, TestType::outside}) {
-      for (bool newton3 : {false, true}) {
-        for (uint64_t numParticleReplicas : {1, 2}) {
-          this->testSoAGlobals(where, newton3, TestType::own, 0, numParticleReplicas, mixedNewton3FunctorCalls);
+  for (const auto vecPattern : TestType::getSupportedVecPatterns()) {
+    for (bool mixedNewton3FunctorCalls : {false, true}) {
+      // the own functor can only be called for inner or outside pairs! (if two particles lie in one cell they can be
+      // either both inside the process or neither of them is)
+      for (typename TestType::where_type where : {TestType::inside, TestType::outside}) {
+        for (bool newton3 : {false, true}) {
+          for (uint64_t numParticleReplicas : {1, 2}) {
+            this->testSoAGlobals(where, newton3, TestType::own, 0, numParticleReplicas, mixedNewton3FunctorCalls,
+                                 vecPattern);
+          }
         }
       }
     }
@@ -410,13 +426,15 @@ TYPED_TEST_P(LJFunctorTestGlobals, testSoAFunctorGlobalsVerlet) {
   using FuncType = TypeParam;
   using TestType = LJFunctorTestGlobals<FuncType>;
 
-  for (bool mixedNewton3FunctorCalls : {false, true}) {
-    for (size_t additionalDummyParticles = 0; additionalDummyParticles < 30; additionalDummyParticles += 5) {
-      for (typename TestType::where_type where : {TestType::inside, TestType::boundary, TestType::outside}) {
-        for (bool newton3 : {false, true}) {
-          for (uint64_t numParticleReplicas : {1, 2}) {
-            this->testSoAGlobals(where, newton3, TestType::verlet, additionalDummyParticles, numParticleReplicas,
-                                 mixedNewton3FunctorCalls);
+  for (const auto vecPattern : TestType::getSupportedVecPatterns()) {
+    for (bool mixedNewton3FunctorCalls : {false, true}) {
+      for (size_t additionalDummyParticles = 0; additionalDummyParticles < 30; additionalDummyParticles += 5) {
+        for (typename TestType::where_type where : {TestType::inside, TestType::boundary, TestType::outside}) {
+          for (bool newton3 : {false, true}) {
+            for (uint64_t numParticleReplicas : {1, 2}) {
+              this->testSoAGlobals(where, newton3, TestType::verlet, additionalDummyParticles, numParticleReplicas,
+                                   mixedNewton3FunctorCalls, vecPattern);
+            }
           }
         }
       }
@@ -428,11 +446,14 @@ TYPED_TEST_P(LJFunctorTestGlobals, testSoAFunctorGlobalsPair) {
   using FuncType = TypeParam;
   using TestType = LJFunctorTestGlobals<FuncType>;
 
-  for (bool mixedNewton3FunctorCalls : {false, true}) {
-    for (typename TestType::where_type where : {TestType::inside, TestType::boundary, TestType::outside}) {
-      for (bool newton3 : {false, true}) {
-        for (uint64_t numParticleReplicas : {1, 2}) {
-          this->testSoAGlobals(where, newton3, TestType::pair, 0, numParticleReplicas, mixedNewton3FunctorCalls);
+  for (const auto vecPattern : TestType::getSupportedVecPatterns()) {
+    for (bool mixedNewton3FunctorCalls : {false, true}) {
+      for (typename TestType::where_type where : {TestType::inside, TestType::boundary, TestType::outside}) {
+        for (bool newton3 : {false, true}) {
+          for (uint64_t numParticleReplicas : {1, 2}) {
+            this->testSoAGlobals(where, newton3, TestType::pair, 0, numParticleReplicas, mixedNewton3FunctorCalls,
+                                 vecPattern);
+          }
         }
       }
     }
@@ -526,7 +547,7 @@ REGISTER_TYPED_TEST_SUITE_P(LJFunctorTestGlobals, testAoSFunctorGlobals, testAoS
                             testSoAFunctorGlobalsOwn, testSoAFunctorGlobalsPair, testSoAFunctorGlobalsVerlet,
                             testFunctorGlobalsThrowBad, testAoSFunctorGlobalsMixedN3);
 
-using MyTypes = ::testing::Types<LJFunShiftNoMixGlob
+using MyTypes = ::testing::Types<LJFunShiftNoMixGlob, LJFunHWYShiftNoMixGlob
 #ifdef __AVX__
                                  ,
                                  LJFunAVXShiftNoMixGlob
