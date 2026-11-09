@@ -108,6 +108,7 @@ possible to generate multiple objects from the same generator as one
 specifies the objects directly. For a list of all possible objects and their
 descriptions see [`src/Objects`](https://autopas.github.io/doxygen_documentation_md-flexible/git-master/dir_8e5023335c6d80afeb9fe41ac1daf95f.html).
 For examples how to define and configure each object see [`input/AllOptions.yaml`](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible/input/AllOptions.yaml).
+For a simulation of no particles, simply provide no generator.
 
 For a basic homogeneous distribution of particles in a box, it is recommended to use the `CubeClosestPacked` object.
 When `centered` is set to `true` the particles will be generated slightly offset from the box boundaries and as such 
