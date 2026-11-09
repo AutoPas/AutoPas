@@ -268,8 +268,8 @@ class LJFunctorAVX
     auto *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const double *sqrtEpsilonptr = nullptr;
-    const double *halfSigmaptr = nullptr;
+    const double *__restrict sqrtEpsilonptr = nullptr;
+    const double *__restrict halfSigmaptr = nullptr;
     if constexpr (useMixing) {
       sqrtEpsilonptr = soa.template begin<AttrSqrt24Epsilon>();
       halfSigmaptr = soa.template begin<AttrHalfSigma>();
@@ -399,10 +399,10 @@ class LJFunctorAVX
     auto *const __restrict fy2ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fz2ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const double *sqrtEpsilon1ptr = nullptr;
-    const double *halfSigma1ptr = nullptr;
-    const double *sqrtEpsilon2ptr = nullptr;
-    const double *halfSigma2ptr = nullptr;
+    const double *__restrict sqrtEpsilon1ptr = nullptr;
+    const double *__restrict halfSigma1ptr = nullptr;
+    const double *__restrict sqrtEpsilon2ptr = nullptr;
+    const double *__restrict halfSigma2ptr = nullptr;
     if constexpr (useMixing) {
       sqrtEpsilon1ptr = soa1.template begin<AttrSqrt24Epsilon>();
       halfSigma1ptr = soa1.template begin<AttrHalfSigma>();
@@ -717,8 +717,8 @@ class LJFunctorAVX
     auto *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const double *sqrtEpsilonptr = nullptr;
-    const double *halfSigmaptr = nullptr;
+    const double *__restrict sqrtEpsilonptr = nullptr;
+    const double *__restrict halfSigmaptr = nullptr;
     if constexpr (useMixing) {
       sqrtEpsilonptr = soa.template begin<AttrSqrt24Epsilon>();
       halfSigmaptr = soa.template begin<AttrHalfSigma>();
@@ -911,18 +911,22 @@ class LJFunctorAVX
    */
   constexpr static auto getNeededAttr() {
     if constexpr (useMixing) {
-      return std::array<typename Particle_T::AttributeNames, 10>{
-          Particle_T::AttributeNames::id,       Particle_T::AttributeNames::posX,
-          Particle_T::AttributeNames::posY,     Particle_T::AttributeNames::posZ,
-          Particle_T::AttributeNames::forceX,   Particle_T::AttributeNames::forceY,
-          Particle_T::AttributeNames::forceZ,   AttrSqrt24Epsilon,
-          AttrHalfSigma,                        Particle_T::AttributeNames::ownershipState};
+      return std::array<typename Particle_T::AttributeNames, 10>{Particle_T::AttributeNames::id,
+                                                                 Particle_T::AttributeNames::posX,
+                                                                 Particle_T::AttributeNames::posY,
+                                                                 Particle_T::AttributeNames::posZ,
+                                                                 Particle_T::AttributeNames::forceX,
+                                                                 Particle_T::AttributeNames::forceY,
+                                                                 Particle_T::AttributeNames::forceZ,
+                                                                 AttrSqrt24Epsilon,
+                                                                 AttrHalfSigma,
+                                                                 Particle_T::AttributeNames::ownershipState};
     } else {
       return std::array<typename Particle_T::AttributeNames, 8>{
-          Particle_T::AttributeNames::id,       Particle_T::AttributeNames::posX,
-          Particle_T::AttributeNames::posY,     Particle_T::AttributeNames::posZ,
-          Particle_T::AttributeNames::forceX,   Particle_T::AttributeNames::forceY,
-          Particle_T::AttributeNames::forceZ,   Particle_T::AttributeNames::ownershipState};
+          Particle_T::AttributeNames::id,     Particle_T::AttributeNames::posX,
+          Particle_T::AttributeNames::posY,   Particle_T::AttributeNames::posZ,
+          Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY,
+          Particle_T::AttributeNames::forceZ, Particle_T::AttributeNames::ownershipState};
     }
   }
 
@@ -931,16 +935,17 @@ class LJFunctorAVX
    */
   constexpr static auto getNeededAttr(std::false_type) {
     if constexpr (useMixing) {
-      return std::array<typename Particle_T::AttributeNames, 7>{
-          Particle_T::AttributeNames::id,       Particle_T::AttributeNames::posX,
-          Particle_T::AttributeNames::posY,     Particle_T::AttributeNames::posZ,
-          AttrSqrt24Epsilon,                    AttrHalfSigma,
-          Particle_T::AttributeNames::ownershipState};
+      return std::array<typename Particle_T::AttributeNames, 7>{Particle_T::AttributeNames::id,
+                                                                Particle_T::AttributeNames::posX,
+                                                                Particle_T::AttributeNames::posY,
+                                                                Particle_T::AttributeNames::posZ,
+                                                                AttrSqrt24Epsilon,
+                                                                AttrHalfSigma,
+                                                                Particle_T::AttributeNames::ownershipState};
     } else {
       return std::array<typename Particle_T::AttributeNames, 5>{
-          Particle_T::AttributeNames::id,       Particle_T::AttributeNames::posX,
-          Particle_T::AttributeNames::posY,     Particle_T::AttributeNames::posZ,
-          Particle_T::AttributeNames::ownershipState};
+          Particle_T::AttributeNames::id, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+          Particle_T::AttributeNames::posZ, Particle_T::AttributeNames::ownershipState};
     }
   }
 

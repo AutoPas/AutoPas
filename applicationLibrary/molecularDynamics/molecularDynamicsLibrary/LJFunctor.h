@@ -266,8 +266,8 @@ class LJFunctor
     SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle_T::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
-    const SoAFloatPrecision *sqrtEpsilonptr = nullptr;
-    const SoAFloatPrecision *halfSigmaptr = nullptr;
+    const SoAFloatPrecision *__restrict sqrtEpsilonptr = nullptr;
+    const SoAFloatPrecision *__restrict halfSigmaptr = nullptr;
     if constexpr (useMixing) {
       sqrtEpsilonptr = soa.template begin<AttrSqrt24Epsilon>();
       halfSigmaptr = soa.template begin<AttrHalfSigma>();
@@ -462,10 +462,10 @@ class LJFunctor
     auto *const __restrict fx2ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
     auto *const __restrict fy2ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fz2ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
-    const SoAFloatPrecision *sqrtEpsilonptr1 = nullptr;
-    const SoAFloatPrecision *halfSigmaptr1 = nullptr;
-    const SoAFloatPrecision *sqrtEpsilonptr2 = nullptr;
-    const SoAFloatPrecision *halfSigmaptr2 = nullptr;
+    const SoAFloatPrecision *__restrict sqrtEpsilonptr1 = nullptr;
+    const SoAFloatPrecision *__restrict halfSigmaptr1 = nullptr;
+    const SoAFloatPrecision *__restrict sqrtEpsilonptr2 = nullptr;
+    const SoAFloatPrecision *__restrict halfSigmaptr2 = nullptr;
     if constexpr (useMixing) {
       sqrtEpsilonptr1 = soa1.template begin<AttrSqrt24Epsilon>();
       halfSigmaptr1 = soa1.template begin<AttrHalfSigma>();
@@ -664,18 +664,22 @@ class LJFunctor
    */
   constexpr static auto getNeededAttr() {
     if constexpr (useMixing) {
-      return std::array<typename Particle_T::AttributeNames, 10>{
-          Particle_T::AttributeNames::id,       Particle_T::AttributeNames::posX,
-          Particle_T::AttributeNames::posY,     Particle_T::AttributeNames::posZ,
-          Particle_T::AttributeNames::forceX,   Particle_T::AttributeNames::forceY,
-          Particle_T::AttributeNames::forceZ,   AttrSqrt24Epsilon,
-          AttrHalfSigma,                        Particle_T::AttributeNames::ownershipState};
+      return std::array<typename Particle_T::AttributeNames, 10>{Particle_T::AttributeNames::id,
+                                                                 Particle_T::AttributeNames::posX,
+                                                                 Particle_T::AttributeNames::posY,
+                                                                 Particle_T::AttributeNames::posZ,
+                                                                 Particle_T::AttributeNames::forceX,
+                                                                 Particle_T::AttributeNames::forceY,
+                                                                 Particle_T::AttributeNames::forceZ,
+                                                                 AttrSqrt24Epsilon,
+                                                                 AttrHalfSigma,
+                                                                 Particle_T::AttributeNames::ownershipState};
     } else {
       return std::array<typename Particle_T::AttributeNames, 8>{
-          Particle_T::AttributeNames::id,       Particle_T::AttributeNames::posX,
-          Particle_T::AttributeNames::posY,     Particle_T::AttributeNames::posZ,
-          Particle_T::AttributeNames::forceX,   Particle_T::AttributeNames::forceY,
-          Particle_T::AttributeNames::forceZ,   Particle_T::AttributeNames::ownershipState};
+          Particle_T::AttributeNames::id,     Particle_T::AttributeNames::posX,
+          Particle_T::AttributeNames::posY,   Particle_T::AttributeNames::posZ,
+          Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY,
+          Particle_T::AttributeNames::forceZ, Particle_T::AttributeNames::ownershipState};
     }
   }
 
@@ -684,16 +688,17 @@ class LJFunctor
    */
   constexpr static auto getNeededAttr(std::false_type) {
     if constexpr (useMixing) {
-      return std::array<typename Particle_T::AttributeNames, 7>{
-          Particle_T::AttributeNames::id,       Particle_T::AttributeNames::posX,
-          Particle_T::AttributeNames::posY,     Particle_T::AttributeNames::posZ,
-          AttrSqrt24Epsilon,                    AttrHalfSigma,
-          Particle_T::AttributeNames::ownershipState};
+      return std::array<typename Particle_T::AttributeNames, 7>{Particle_T::AttributeNames::id,
+                                                                Particle_T::AttributeNames::posX,
+                                                                Particle_T::AttributeNames::posY,
+                                                                Particle_T::AttributeNames::posZ,
+                                                                AttrSqrt24Epsilon,
+                                                                AttrHalfSigma,
+                                                                Particle_T::AttributeNames::ownershipState};
     } else {
       return std::array<typename Particle_T::AttributeNames, 5>{
-          Particle_T::AttributeNames::id,       Particle_T::AttributeNames::posX,
-          Particle_T::AttributeNames::posY,     Particle_T::AttributeNames::posZ,
-          Particle_T::AttributeNames::ownershipState};
+          Particle_T::AttributeNames::id, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
+          Particle_T::AttributeNames::posZ, Particle_T::AttributeNames::ownershipState};
     }
   }
 
@@ -896,8 +901,8 @@ class LJFunctor
     auto *const __restrict fxptr = soa.template begin<Particle_T::AttributeNames::forceX>();
     auto *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
-    const SoAFloatPrecision *sqrtEpsilonptr = nullptr;
-    const SoAFloatPrecision *halfSigmaptr = nullptr;
+    const SoAFloatPrecision *__restrict sqrtEpsilonptr = nullptr;
+    const SoAFloatPrecision *__restrict halfSigmaptr = nullptr;
     if constexpr (useMixing) {
       sqrtEpsilonptr = soa.template begin<AttrSqrt24Epsilon>();
       halfSigmaptr = soa.template begin<AttrHalfSigma>();

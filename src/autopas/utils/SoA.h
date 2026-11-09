@@ -301,9 +301,7 @@ class SoA {
    *
    * @return Number of particles.
    */
-  [[nodiscard]] inline size_t size() const {
-    return _size;
-  }
+  [[nodiscard]] inline size_t size() const { return _size; }
 
   /**
    * delete all particles in the soa

@@ -64,7 +64,8 @@ class SortedSoAView {
     }
     std::sort(_projIdx.begin(), _projIdx.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
 
-    // Step 2: resize arrays for needed and computed attributes (allocates extra columns and zeroes computed attributes).
+    // Step 2: resize arrays for needed and computed attributes (allocates extra columns and zeroes computed
+    // attributes).
     resizeArraysImpl(std::make_index_sequence<Functor_T::getNeededAttr(std::false_type()).size()>{},
                      std::make_index_sequence<Functor_T::getComputedAttr().size()>{}, n);
 
