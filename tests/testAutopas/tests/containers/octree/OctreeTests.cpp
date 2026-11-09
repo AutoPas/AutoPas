@@ -22,6 +22,7 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "testingHelpers/EmptyPairwiseFunctor.h"
+#include "tests/forEach/ForEachTestHelper.h"
 
 using ::testing::_;
 
@@ -800,4 +801,76 @@ TEST_F(OctreeTest, testComputeInteractionsThrowsWithUnsortedParticles) {
   // After rebuild should be valid
   octree.rebuildNeighborLists(&traversal);
   EXPECT_NO_THROW(octree.computeInteractions(&traversal));
+}
+
+/**
+ * Between rebuilds, particles can move out of their leaf by up to skin/2. Moves an owned and a halo particle out of
+ * their leaves and checks that forEachInRegion() and reduceInRegion() still find them in a region that overlaps only
+ * other leaves.
+ */
+TEST_F(OctreeTest, testForEachAndReduceInRegionFindParticlesThatLeftTheirLeaf) {
+  using namespace autopas;
+
+  constexpr double cutoff = 1.;
+  constexpr double skin = 0.2;
+  Octree<Molecule> octree({0., 0., 0.}, {10., 10., 10.}, cutoff, skin, 1., 8, 100);
+  EmptyPairwiseFunctor<Molecule> functor;
+  OTC18Traversal<Molecule, EmptyPairwiseFunctor<Molecule>> traversal(functor, cutoff, cutoff + skin,
+                                                                     DataLayoutOption::aos, true);
+
+  // Adds an owned particle at z = 1 and a halo particle with the ID offset by haloIDOffset at z = -0.5.
+  constexpr size_t haloIDOffset = 100;
+  auto addOwnedAndHaloParticle = [&](double x, double y, size_t id) {
+    octree.addParticle(Molecule({x, y, 1.}, {0., 0., 0.}, id));
+    Molecule haloParticle({x, y, -0.5}, {0., 0., 0.}, haloIDOffset + id);
+    haloParticle.setOwnershipState(OwnershipState::halo);
+    octree.addHaloParticle(haloParticle);
+  };
+  // The owned tree [0,10)^3 and the halo tree [-1.2,11.2)^3 are both centred at 5. In both, 16 particles (the split
+  // threshold) in the leaf left of x = 5 and one right of it make the root split.
+  for (size_t id = 0; id < 15; ++id) {
+    // Add 15 "boring" particles
+    addOwnedAndHaloParticle(1. + 0.1 * static_cast<double>(id), 1., id);
+  }
+  // Add the particle which will move
+  constexpr size_t moverID = 15;
+  addOwnedAndHaloParticle(4.97, 1., moverID);
+  // Add another to cause a split
+  addOwnedAndHaloParticle(7., 7., 16);
+  // updateContainer(false) would delete the halo particles, so the particles are sorted into the trees by this instead.
+  octree.rebuildNeighborLists(&traversal);
+
+  // Both movers move by 0.08 < skin/2 out of their leaf into the region of the leaf right of x = 5.
+  octree.forEach(
+      [&](auto &particle) {
+        if (particle.getID() % haloIDOffset == moverID) {
+          particle.setR({5.05, particle.getR()[1], particle.getR()[2]});
+        }
+      },
+      IteratorBehavior::ownedOrHalo);
+
+  const std::array<double, 3> regionMin{5.02, 0.5, -1.};
+  const std::array<double, 3> regionMax{6., 1.5, 1.5};
+  // Sanity check that the movers are in none of the leaves that overlap the region.
+  for (const auto cellType : {Octree<Molecule>::OWNED, Octree<Molecule>::HALO}) {
+    for (const auto *leaf : octree.getCells()[cellType].getRaw()->getLeavesInRange(regionMin, regionMax)) {
+      for (const auto &particle : *leaf) {
+        ASSERT_NE(particle.getID() % haloIDOffset, moverID)
+            << "The test setup does not move the particle out of its leaf.";
+      }
+    }
+  }
+
+  const std::vector<std::pair<IteratorBehavior, std::vector<size_t>>> expectedIDsByBehavior{
+      {IteratorBehavior::owned, {moverID}},
+      {IteratorBehavior::halo, {haloIDOffset + moverID}},
+      {IteratorBehavior::ownedOrHalo, {moverID, haloIDOffset + moverID}}};
+  for (const auto &[behavior, expectedIDs] : expectedIDsByBehavior) {
+    SCOPED_TRACE(behavior.to_string());
+    ForEachTestHelper::forEachParticleTest(
+        [&](auto lambda) { octree.forEachInRegion(lambda, regionMin, regionMax, behavior); }, expectedIDs);
+    ForEachTestHelper::reduceParticlesTest(
+        [&](auto lambda, size_t &result) { octree.reduceInRegion(lambda, result, regionMin, regionMax, behavior); },
+        expectedIDs);
+  }
 }
