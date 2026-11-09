@@ -20,23 +20,23 @@ namespace {
 /**
  * Column names for the generic SoAs below. Nothing is skipped, so the first name is stored in the first column.
  */
-enum class TestColumns { first, second, third, fourth };
+enum class TestColumns { first, second, third };
 
-using TestSoA =
-    autopas::utilsKokkos::KokkosSoA<TestColumns, TestColumns::first, unsigned int *, float *, float *, float *>;
+using TestSoA = autopas::utilsKokkos::KokkosSoA<TestColumns, TestColumns::first, unsigned int *, float *, double *>;
 
 static_assert(
     std::is_same_v<TestSoA::Type,
                    std::tuple<Kokkos::DualView<unsigned int *, autopas::utilsKokkos::DeviceMemSpace::device_type>,
                               Kokkos::DualView<float *, autopas::utilsKokkos::DeviceMemSpace::device_type>,
-                              Kokkos::DualView<float *, autopas::utilsKokkos::DeviceMemSpace::device_type>,
-                              Kokkos::DualView<float *, autopas::utilsKokkos::DeviceMemSpace::device_type>>>,
+                              Kokkos::DualView<double *, autopas::utilsKokkos::DeviceMemSpace::device_type>>>,
     "KokkosSoA must store one DualView per attribute.");
 
 static_assert(std::is_same_v<decltype(std::get<0>(std::declval<TestSoA::Type &>()).view_host().data()), unsigned int *>,
               "The host view of the first column must store unsigned int.");
 static_assert(std::is_same_v<decltype(std::get<1>(std::declval<TestSoA::Type &>()).view_host().data()), float *>,
               "The host view of the second column must store float.");
+static_assert(std::is_same_v<decltype(std::get<2>(std::declval<TestSoA::Type &>()).view_host().data()), double *>,
+              "The host view of the third column must store float.");
 
 /**
  * Creates an SoA with the given size and fills it with the particles [0, size) on the host.
@@ -60,8 +60,15 @@ SoA makeFilledSoA(size_t size) {
 
 }  // namespace
 
+/**
+ * Tests if the initialization of an empty KokkosSoA works with the default constructor
+ */
 TEST_F(KokkosSoATest, testInitialization) { SoA soa; }
 
+/**
+ * Tests if the views for the individual attributes of the SoA have the correct extent after creating an empty KokkosSoA
+ * and resizing it to 0. Also tests if the data type of the stored SoA attributes are as expected.
+ */
 TEST_F(KokkosSoATest, testGetView) {
   autopas::utilsKokkos::KokkosSoA<TestColumns, TestColumns::first, unsigned int *, float *, double *> soa{};
 
@@ -83,17 +90,16 @@ TEST_F(KokkosSoATest, testGetView) {
                 "The third attribute must be double.");
 }
 
-TEST_F(KokkosSoATest, testAddParticleHost) {
-  const SoA soa = makeFilledSoA(3);
+/**
+ * Tests if three particles are correctly added to the SoA on the Host, synced to the Device, and remain as expected
+ */
+TEST_F(KokkosSoATest, testAddParticleHostAndDevice) {
+  SoA soa = makeFilledSoA(3);
 
   EXPECT_EQ(soa.getView<Attr::id>().extent(0), 3u);
   for (size_t i = 0; i < 3; ++i) {
     expectOnHost(soa, i);
   }
-}
-
-TEST_F(KokkosSoATest, testAddParticleDevice) {
-  SoA soa = makeFilledSoA(3);
 
   soa.syncAll<DeviceExecSpace>();
 
@@ -101,6 +107,10 @@ TEST_F(KokkosSoATest, testAddParticleDevice) {
   EXPECT_EQ(countDeviceMismatches(soa, 0, 3), 0);
 }
 
+/**
+ * Tests if three particles that are modified on the Device are as expected in the Device storage, and are correctly
+ * synced back to the Host
+ */
 TEST_F(KokkosSoATest, testDeviceRoundTrip) {
   const float offset = 1000.f;
   SoA soa = makeFilledSoA(3);
@@ -110,6 +120,9 @@ TEST_F(KokkosSoATest, testDeviceRoundTrip) {
   overwriteOnDevice(soa, 3, offset);
   soa.modifyAll<DeviceExecSpace>();
 
+  expectDeviceStorage(soa, 3, offset);
+  EXPECT_EQ(countDeviceMismatches(soa, 0, 3, offset), 0);
+
   soa.syncAll<HostExecSpace>();
 
   for (size_t i = 0; i < 3; ++i) {
@@ -117,7 +130,9 @@ TEST_F(KokkosSoATest, testDeviceRoundTrip) {
   }
 }
 
-// DualView::resize() takes a different code path depending on which side holds the newest data.
+/**
+ * Tests if the Host particles survive a resize in case the Host View holds the most up-to-date data
+ */
 TEST_F(KokkosSoATest, testResizeHostNewest) {
   SoA soa = makeFilledSoA(2);
 
@@ -125,12 +140,19 @@ TEST_F(KokkosSoATest, testResizeHostNewest) {
   EXPECT_EQ(soa.getView<Attr::id>().view_host().extent(0), 8u);
   EXPECT_EQ(soa.getView<Attr::id>().view_device().extent(0), 8u);
 
+  for (size_t i = 0; i < 2; ++i) {
+    expectOnHost(soa, i);
+  }
+
   soa.syncAll<DeviceExecSpace>();
 
   expectDeviceStorage(soa, 2);
   EXPECT_EQ(countDeviceMismatches(soa, 0, 2), 0);
 }
 
+/**
+ * Tests if the Device particles survive a resize in case the Device View holds the most up-to-date data
+ */
 TEST_F(KokkosSoATest, testResizeDeviceNewest) {
   const float offset = 1000.f;
   SoA soa = makeFilledSoA(2);
@@ -143,6 +165,9 @@ TEST_F(KokkosSoATest, testResizeDeviceNewest) {
   EXPECT_EQ(soa.getView<Attr::id>().view_host().extent(0), 8u);
   EXPECT_EQ(soa.getView<Attr::id>().view_device().extent(0), 8u);
 
+  expectDeviceStorage(soa, 2, offset);
+  EXPECT_EQ(countDeviceMismatches(soa, 0, 2, offset), 0);
+
   soa.syncAll<HostExecSpace>();
 
   for (size_t i = 0; i < 2; ++i) {
@@ -150,10 +175,16 @@ TEST_F(KokkosSoATest, testResizeDeviceNewest) {
   }
 }
 
+/**
+ * Tests if after a resize that downsizes a full list, the particles are still existing on Host and Device
+ */
 TEST_F(KokkosSoATest, testShrink) {
   SoA soa = makeFilledSoA(8);
 
   soa.resize(4);
+  for (size_t i = 0; i < 4; ++i) {
+    expectOnHost(soa, i);
+  }
   soa.syncAll<DeviceExecSpace>();
 
   EXPECT_EQ(soa.getView<Attr::id>().view_device().extent(0), 4u);
@@ -161,7 +192,9 @@ TEST_F(KokkosSoATest, testShrink) {
   EXPECT_EQ(countDeviceMismatches(soa, 0, 4), 0);
 }
 
-// Columns have to sync independently of each other.
+/**
+ * Tests if the sync<Attribute>() function only syncs the respective attribute and no other Views
+ */
 TEST_F(KokkosSoATest, testPerColumnSync) {
   if constexpr (hostAndDeviceShareMemory) {
     GTEST_SKIP() << "Host and device share memory, so DualView sync flags are no-ops.";

@@ -226,7 +226,7 @@ auto copyDeviceColumnToHost(const SoA &soa) {
  * @param soa
  * @param numParticles
  */
-inline void expectDeviceStorage(const SoA &soa, size_t numParticles) {
+inline void expectDeviceStorage(const SoA &soa, size_t numParticles, float offset = 0.f) {
   const auto ids = copyDeviceColumnToHost<Attr::id>(soa);
   const auto xs = copyDeviceColumnToHost<Attr::posX>(soa);
   const auto ys = copyDeviceColumnToHost<Attr::posY>(soa);
@@ -241,7 +241,7 @@ inline void expectDeviceStorage(const SoA &soa, size_t numParticles) {
 
   for (size_t i = 0; i < numParticles; ++i) {
     SCOPED_TRACE("Particle " + std::to_string(i));
-    const auto expected = expectedAt(i);
+    const auto expected = expectedAt(i, offset);
     EXPECT_EQ(ids(i), expected.id);
     EXPECT_EQ(xs(i), expected.x);
     EXPECT_EQ(ys(i), expected.y);
@@ -261,12 +261,12 @@ inline void expectDeviceStorage(const SoA &soa, size_t numParticles) {
  * @param aos
  * @param numParticles
  */
-inline void expectDeviceStorage(const AoS &aos, size_t numParticles) {
+inline void expectDeviceStorage(const AoS &aos, size_t numParticles, float offset = 0.f) {
   const auto particles = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, aos.getView().view_device());
 
   for (size_t i = 0; i < numParticles; ++i) {
     SCOPED_TRACE("Particle " + std::to_string(i));
-    const auto expected = expectedAt(i);
+    const auto expected = expectedAt(i, offset);
     EXPECT_EQ(particles(i).get<Attr::id>(), expected.id);
     EXPECT_EQ(particles(i).get<Attr::posX>(), expected.x);
     EXPECT_EQ(particles(i).get<Attr::posY>(), expected.y);
