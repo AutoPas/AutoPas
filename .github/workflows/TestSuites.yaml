@@ -256,6 +256,26 @@ jobs:
       - name: Run tests
         run: |
           cd build
+
+          # TODO: This approach to deciding the number of parallel tests and OMP threads is messy. If faster,
+          # define these in the config matrix instead.
+
+          # Use 2 threads if OpenMP
+          ompNumThreads=${{ matrix.config.omp == 'ON' && 2 || 1 }}
+
+          # Avoid oversubscription. E.g., with 4 process, on OpenMP builds we get 2 parallel tests of 2 threads, and
+          # without OpenMP we get 4 parallel tests of 1 thread. 
+          numParallelTests=$(( $(nproc) / ompNumThreads ))
+          (( numParallelTests > 0 )) || numParallelTests=1
+
+          # Except for TSan: its tests spend much of their time in a long, serial process start-up, so it runs as many
+          # tests in parallel as there are cores, although this oversubscribes them.
+          if [[ "${{ matrix.config.tsan }}" == 'ON' ]]; then
+            numParallelTests=$(nproc)
+          fi
+
+          # Export only after calling nproc: nproc returns OMP_NUM_THREADS instead of the core count if it is set.
+          export OMP_NUM_THREADS=${ompNumThreads}
           
           # --- CASE 1: Single-Site (Standard) ---
           if [[ "${{ matrix.config.site }}" == 'singlesite' ]]; then
@@ -263,19 +283,19 @@ jobs:
             # Non-MPI: Run split tests
             if [[ "${{ matrix.config.cc }}" != 'mpicc' ]]; then
                # Run tests split in 4
-               ctest --output-on-failure -I ${{ matrix.part }},,4 -j $(nproc)
+               ctest --output-on-failure -I ${{ matrix.part }},,4 -j ${numParallelTests}
           
                cd applicationLibrary
-               ctest --output-on-failure -I ${{ matrix.part }},,4 -j $(nproc)
+               ctest --output-on-failure -I ${{ matrix.part }},,4 -j ${numParallelTests}
           
                cd ../examples
-               ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,4 -j $(nproc)
+               ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,4 -j ${numParallelTests}
           
             # MPI: Run all tests
             else
-               ctest --output-on-failure --tests-regex MPIParallelAutoPasTests -j $(nproc)
+               ctest --output-on-failure --tests-regex MPIParallelAutoPasTests -j ${numParallelTests}
                cd examples
-               ctest --output-on-failure --build-config checkExamples --exclude-regex 'sph-((main.test)|(diagram.*))' -j $(nproc)
+               ctest --output-on-failure --build-config checkExamples --exclude-regex 'sph-((main.test)|(diagram.*))' -j ${numParallelTests}
             fi
           fi
           
