@@ -195,6 +195,18 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
   }
 
   /**
+   * Resizes all needed Attributes of the SoA buffer in cell to newSize.
+   * @tparam I
+   * @param cell
+   * @param newSize
+   */
+  template <std::size_t... I>
+  void resizeNeeded(ParticleCell &cell, size_t newSize, std::index_sequence<I...>) {
+    cell._particleSoABuffer.template resizeArraysForAttributes<
+        static_cast<std::size_t>(std::get<I>(Functor::getNeededAttr(std::false_type())))...>(newSize);
+  }
+
+  /**
    * Resizes all buffers needed for combined SoA buffers (_combinationSlices, _currentSlices) to fit the current number
    * of threads and cell offsets (= _cellOffsets.size()).
    */
@@ -418,7 +430,8 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
           ParticleCell &otherCell = cells[otherIndex];
           newSize += otherCell.size();
         }
-        combinationSlice[slice]._particleSoABuffer.resizeArrays(newSize);
+        resizeNeeded(combinationSlice[slice], newSize,
+                     std::make_index_sequence<Functor::getNeededAttr(std::false_type()).size()>{});
       }
       // append buffers
       for (size_t slice = midSlice; slice != currentSlice; ++slice %= cOffSize, ++i) {
