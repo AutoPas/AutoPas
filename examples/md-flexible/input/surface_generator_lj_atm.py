@@ -19,6 +19,7 @@ import sys
 
 VALID_SURFACES = ["smooth", "boss", "pit", "grid", "dual_boss"]
 
+
 BOX_SIZE_X, BOX_SIZE_Y = 160, 160
 WALL_SIZE = 140
 WALL_X0 = (BOX_SIZE_X - WALL_SIZE) // 2
@@ -26,18 +27,19 @@ WALL_Y0 = (BOX_SIZE_Y - WALL_SIZE) // 2
 WALL_CENTER_X = WALL_X0 + WALL_SIZE // 2
 WALL_CENTER_Y = WALL_Y0 + WALL_SIZE // 2
 
-ITERATIONS = 150000
+
+ITERATIONS = 50000
 DELTA_T = 0.0005
 GRAVITY_Z = -0.0001
-TEMPERATURE = 0.6
+TEMPERATURE = 0.3
 VTK_WRITE_FREQUENCY = 1000
 
 EPSILON_FF = 1.0
 EPSILON_WW = 1.0
 # Fluid-wall wetting: effective_epsilon_fw = ZETA * EPSILON_FF.
 # Must match FLUID_WALL_EPSILON_SCALE in SimulationParticleTypes.h.
-ZETA = 0.3
-VERLET_REBUILD_FREQUENCY= 1
+ZETA = 0.6
+VERLET_REBUILD_FREQUENCY= 10
 RADIUS = 17
 CUTOFF = 2.5
 
@@ -247,7 +249,7 @@ def generate_yaml(surface, wall_mode, is_treatment):
         header + "\n"
         f"container                        :  [VerletLists]\n"
         f"verlet-rebuild-frequency         :  {VERLET_REBUILD_FREQUENCY}\n"
-        f"verlet-skin-radius               :  0.2\n"
+        f"verlet-skin-radius               :  0.4\n"
         f"verlet-cluster-size              :  4\n"
         f"selector-strategy                :  Fastest-Absolute-Value\n"
         f"data-layout                      :  [AoS]\n"
