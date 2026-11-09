@@ -49,7 +49,8 @@ class SortedSoAView {
       : _source(source), _sortedSoa(cachedSoa), _projIdx(cachedProjIdx) {
     const size_t n = source.size();
     if (n == 0) {
-      _sortedSoa.resizeArrays(0);
+      resizeArraysImpl(std::make_index_sequence<Functor_T::getNeededAttr(std::false_type()).size()>{},
+                       std::make_index_sequence<Functor_T::getComputedAttr().size()>{}, 0);
       return;
     }
 
@@ -63,8 +64,9 @@ class SortedSoAView {
     }
     std::sort(_projIdx.begin(), _projIdx.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
 
-    // Step 2: resize all arrays (value-initializes to 0, covering the computed attributes).
-    _sortedSoa.resizeArrays(n);
+    // Step 2: resize arrays for needed and computed attributes (allocates extra columns and zeroes computed attributes).
+    resizeArraysImpl(std::make_index_sequence<Functor_T::getNeededAttr(std::false_type()).size()>{},
+                     std::make_index_sequence<Functor_T::getComputedAttr().size()>{}, n);
 
     // Step 3: pack getNeededAttr(std::false_type) attributes from source in sorted order.
     // std::false_type as this variant of getNeededAttr includes only the read only attributes, preventing race
@@ -137,6 +139,19 @@ class SortedSoAView {
   template <size_t... AttrIdxs>
   void zeroComputedImpl(std::index_sequence<AttrIdxs...>, size_t n) {
     (zeroAttr<AttrIdxs>(n), ...);
+  }
+
+  /**
+   * Resizes _sortedSoa for all needed and computed attributes of Functor_T.
+   * @tparam NeededIdxs Indices into Functor_T::getNeededAttr(std::false_type()).
+   * @tparam ComputedIdxs Indices into Functor_T::getComputedAttr().
+   * @param n Number of particles.
+   */
+  template <size_t... NeededIdxs, size_t... ComputedIdxs>
+  void resizeArraysImpl(std::index_sequence<NeededIdxs...>, std::index_sequence<ComputedIdxs...>, size_t n) {
+    _sortedSoa.template resizeArraysForAttributes<
+        static_cast<size_t>(Functor_T::getNeededAttr(std::false_type())[NeededIdxs])...,
+        static_cast<size_t>(Functor_T::getComputedAttr()[ComputedIdxs])...>(n);
   }
 
   /**
