@@ -379,13 +379,6 @@ class MDFlexConfig {
                                                     "tuning method."};
 
   /**
-   * confidenceThreshold
-   */
-  MDFlexOption<double, __LINE__> confidenceThreshold{
-      0.0, "confidence-threshold", true,
-      "For python-based tuning strategies: Threshold for the confidence of the prediction."};
-
-  /**
    * MPITuningMaxDifferenceForBucket
    */
   MDFlexOption<double, __LINE__> MPITuningMaxDifferenceForBucket{

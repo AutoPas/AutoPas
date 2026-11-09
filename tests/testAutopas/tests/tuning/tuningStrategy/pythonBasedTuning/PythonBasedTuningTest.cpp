@@ -13,10 +13,13 @@
 #include <pybind11/stl.h>
 #endif
 
+#include <algorithm>
 #include <filesystem>
+#include <iterator>
 #include <memory>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "autopas/options/InteractionTypeOption.h"
 #include "autopas/tuning/Configuration.h"
@@ -38,6 +41,17 @@ py::module importTestModelGenerator() {
   py::module::import("sys").attr("path").attr("append")(
       std::string(AUTOPAS_SOURCE_DIR) + "/tests/testAutopas/tests/tuning/tuningStrategy/pythonBasedTuning");
   return py::module::import("generate_test_models");
+}
+
+/**
+ * Get NUM_PREDICTIONS from predict.py, the maximum number of configurations that the model predicts. Needs a running
+ * Python interpreter.
+ * @return The maximum number of predicted configurations.
+ */
+size_t getNumPredictions() {
+  py::module::import("sys").attr("path").attr("append")(
+      std::string(AUTOPAS_SOURCE_DIR) + "/src/autopas/tuning/tuningStrategy/pythonBasedTuning/randomForest");
+  return py::module::import("predict").attr("NUM_PREDICTIONS").cast<size_t>();
 }
 
 /**
@@ -65,7 +79,7 @@ TEST(PythonBasedTuningTest, TestNonExistantModelLoading) {
 
   EXPECT_THROW(
       {
-        autopas::PythonBasedTuning tuningStrategy(searchSpace, "/nonexistant_model.pkl", 0.8,
+        autopas::PythonBasedTuning tuningStrategy(searchSpace, "/nonexistant_model.pkl",
                                                   InteractionTypeOption::pairwise);
         std::vector<autopas::Configuration> configQueue;
         autopas::EvidenceCollection evidenceCollection;
@@ -92,8 +106,7 @@ TEST(PythonBasedTuningTest, TestValidPythonResponse) {
       utils::StringUtils::tokenize(predictedConfig.getCSVLine(), ","));
 
   std::set<autopas::Configuration> searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_0};
-  autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
-                                            InteractionTypeOption::pairwise);
+  autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", InteractionTypeOption::pairwise);
   LiveInfo liveInfo;
   std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
       {"avgParticlesPerCell", 6.82}, {"maxParticlesPerCell", 33.0},    {"homogeneity", 0.42},
@@ -116,6 +129,62 @@ TEST(PythonBasedTuningTest, TestValidPythonResponse) {
 }
 
 /**
+ * @test TestTopPredictionsInOrder
+ *
+ * Tests that the configuration queue holds the NUM_PREDICTIONS most probable configurations, with the most probable one
+ * at the back so that it is tested first, and none with probability zero.
+ */
+TEST(PythonBasedTuningTest, TestTopPredictionsInOrder) {
+#ifdef AUTOPAS_ENABLE_PYTHON_BASED_TUNING
+  const auto pythonInterpreter = utils::PythonInterpreter::getSharedInterpreter();
+  const auto modelDir = getTestModelDir();
+  const auto numPredictions = getNumPredictions();
+
+  // More configurations than are predicted, from most to least probable.
+  std::vector<Configuration> rankedConfigs;
+  for (size_t i = 0; i < numPredictions + 2; ++i) {
+    auto config = arbitraryConfigurations::_arbitrary_config_2B_0;
+    config.cellSizeFactor = 1. + 0.5 * static_cast<double>(numPredictions + 1 - i);
+    rankedConfigs.push_back(config);
+  }
+  const auto zeroProbabilityConfig = arbitraryConfigurations::_arbitrary_config_2B_1;
+
+  const auto toValues = [](const Configuration &config) {
+    return utils::StringUtils::tokenize(config.getCSVLine(), ",");
+  };
+  std::vector<std::vector<std::string>> rankedConfigValues;
+  std::ranges::transform(rankedConfigs, std::back_inserter(rankedConfigValues), toValues);
+  importTestModelGenerator().attr("create_ranked_model")(
+      modelDir, utils::StringUtils::tokenize(autopas::Configuration().getCSVHeader(), ","), rankedConfigValues,
+      toValues(zeroProbabilityConfig));
+
+  std::set<autopas::Configuration> searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_0};
+  autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model_ranked.pkl",
+                                            InteractionTypeOption::pairwise);
+  LiveInfo liveInfo;
+  std::map<std::string, LiveInfo::InfoType> liveInfoMap = {
+      {"avgParticlesPerCell", 6.82}, {"maxParticlesPerCell", 33.0},    {"homogeneity", 0.42},
+      {"maxDensity", 1.17},          {"particlesPerCellStdDev", 0.03}, {"threadCount", 1.0}};
+
+  liveInfo.set(liveInfoMap);
+
+  tuningStrategy.receiveLiveInfo(liveInfo);
+  std::vector<autopas::Configuration> configQueue{arbitraryConfigurations::_arbitrary_config_2B_0};
+
+  autopas::EvidenceCollection evidenceCollection;
+
+  tuningStrategy.reset(0, 0, configQueue, evidenceCollection);
+
+  // The queue is tested from the back, so it holds the most probable configurations in reverse order.
+  std::vector<Configuration> expectedQueue(rankedConfigs.begin(), rankedConfigs.begin() + numPredictions);
+  std::ranges::reverse(expectedQueue);
+  EXPECT_EQ(configQueue, expectedQueue);
+#else
+  GTEST_SKIP() << "Skipping test as AUTOPAS_ENABLE_PYTHON_BASED_TUNING=OFF";
+#endif
+}
+
+/**
  * @test TestInvalidModel
  *
  * Tests that a malformed model throws an exception during `reset()`.
@@ -128,7 +197,7 @@ TEST(PythonBasedTuningTest, TestInvalidModel) {
       modelDir, utils::StringUtils::tokenize(autopas::Configuration().getCSVHeader(), ","));
 
   std::set<autopas::Configuration> searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_2};
-  autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model_invalid.pkl", 0.8,
+  autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model_invalid.pkl",
                                             InteractionTypeOption::pairwise);
 
   LiveInfo liveInfo;
@@ -167,8 +236,7 @@ TEST(PythonBasedTuningTest, ThrowsWithMissingLiveInfoFeature) {
       utils::StringUtils::tokenize(arbitraryConfigurations::_arbitrary_config_2B_2.getCSVLine(), ","));
 
   std::set<autopas::Configuration> searchSpace = {arbitraryConfigurations::_arbitrary_config_2B_0};
-  autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
-                                            InteractionTypeOption::pairwise);
+  autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", InteractionTypeOption::pairwise);
 
   // The features the model was trained on, except threadCount
   LiveInfo liveInfo;
@@ -216,7 +284,7 @@ TEST(PythonBasedTuningTest, ThrowsWithIncompleteModel) {
     importTestModelGenerator().attr("create_valid_model")(modelDir, modelComponents, modelValues);
     EXPECT_THROW(
         {
-          autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl", 0.8,
+          autopas::PythonBasedTuning tuningStrategy(searchSpace, modelDir + "/test_model.pkl",
                                                     InteractionTypeOption::pairwise);
         },
         utils::ExceptionHandler::AutoPasException);

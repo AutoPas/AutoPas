@@ -57,8 +57,7 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
     }
 
     case TuningStrategyOption::pythonBasedTuning: {
-      tuningStrategy = std::make_unique<PythonBasedTuning>(searchSpace, info.modelFileName, info.confidenceThreshold,
-                                                           interactionType);
+      tuningStrategy = std::make_unique<PythonBasedTuning>(searchSpace, info.modelFileName, interactionType);
       break;
     }
 

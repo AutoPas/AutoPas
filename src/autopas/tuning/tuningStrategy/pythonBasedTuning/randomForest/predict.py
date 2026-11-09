@@ -8,6 +8,10 @@ import json
 import os
 import numpy as np
 
+# The maximum number of the most probable configurations that PythonBasedTuning.predict returns. AutoPas tests all of
+# them in a tuning phase and keeps the fastest, so more predictions make tuning phases longer but more robust.
+NUM_PREDICTIONS = 10
+
 class PythonBasedTuning:
     """
     Stores and predicts with a trained random forest model, label encoder, and the live info features that it
@@ -111,19 +115,18 @@ class PythonBasedTuning:
 
     def predict(self, live_info_json: str) -> str:
         """
-        Perform a forward pass through the trained models to predict the tuning configuration.
+        Perform a forward pass through the trained models to predict the best tuning configurations.
 
         This function takes the live info data, preprocesses it, and makes predictions using the loaded model.
-        The prediction is then decoded back into its original label using the corresponding LabelEncoder, and returned
-        together with the model's "confidence"/"probability". (The leaves of each decision tree contain a number of training
-        samples. The "probability" of each configuration is simply the percentage of samples in that leaf where the
-        configuration was chosen. The random forest simply averages these probabilities.)
+        The NUM_PREDICTIONS configurations with the highest model probability are then decoded back into their original
+        labels using the corresponding LabelEncoder. Configurations with a probability of zero are left out, so fewer may
+        be returned.
 
         Args:
             live_info_json (str): A JSON of live info data from C++.
 
         Returns:
-            str: JSON containing the predicted optimal algorithmic configuration and confidence score.
+            str: JSON list of the predicted algorithmic configurations, most probable first.
         """
         # Preprocess the live info into a DataFrame
         live_info_df = self.preprocess_live_info(live_info_json)
@@ -131,23 +134,28 @@ class PythonBasedTuning:
         # Get prediction probabilities
         probabilities = self.model.predict_proba(live_info_df)[0]
 
-        # Todo, we may be able to improve the generalizability of this tuning strategy by taking e.g. the top 5 predictions
-        predicted_column = np.argmax(probabilities)
-        predicted_class_id = self.model.classes_[predicted_column]
+        # The columns of the most probable configurations, most probable first. The stable sort keeps ties in column
+        # order, so the result is deterministic.
+        predicted_columns = np.argsort(-probabilities, kind='stable')[:NUM_PREDICTIONS]
+        predicted_columns = [column for column in predicted_columns if probabilities[column] > 0]
 
-        prediction = self.label_encoder.inverse_transform([predicted_class_id])[0]
-        prediction_split = prediction.split(";")
+        predictions = []
+        for predicted_column in predicted_columns:
+            predicted_class_id = self.model.classes_[predicted_column]
 
-        # The predicted label is the configuration components joined by ';' (see build_alg_config in train.py), so the
-        # number of parts must match the number of component names stored with the model.
-        if len(prediction_split) != len(self.config_columns):
-            raise ValueError(f"The predicted configuration has {len(prediction_split)} components "
-                             f"({prediction_split}), but the model expects {len(self.config_columns)} "
-                             f"({self.config_columns}). The model file may be inconsistent with predict.py.")
+            prediction = self.label_encoder.inverse_transform([predicted_class_id])[0]
+            prediction_split = prediction.split(";")
 
-        prediction = dict(zip(self.config_columns, prediction_split))
-        prediction["confidence"] = probabilities[predicted_column]
+            # The predicted label is the configuration components joined by ';' (see build_alg_config in train.py), so
+            # the number of parts must match the number of component names stored with the model.
+            if len(prediction_split) != len(self.config_columns):
+                raise ValueError(f"The predicted configuration has {len(prediction_split)} components "
+                                 f"({prediction_split}), but the model expects {len(self.config_columns)} "
+                                 f"({self.config_columns}). The model file may be inconsistent with predict.py.")
 
-        return json.dumps(prediction)
+            prediction = dict(zip(self.config_columns, prediction_split))
+            predictions.append(prediction)
+
+        return json.dumps(predictions)
 
 

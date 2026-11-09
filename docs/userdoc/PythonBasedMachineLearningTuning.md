@@ -90,10 +90,8 @@ AutoPas objects that are alive at the same time share one interpreter automatica
 Python is finalized when the last of them is destroyed, and it cannot be started again in the same process, because libraries like numpy do not support that. 
 So if you create AutoPas objects one after another, or you otherwise need an embedded Python interpreter, keep the interpreter alive in between by holding the shared pointer returned by `autopas::utils::PythonInterpreter::getSharedInterpreter()`.
 
-It is also possible to set a confidence threshold, such for that predictions in which the model's confidence is below this, the configuration queue is left untouched (e.g. typically a full search will occur, if no other tuning strategies are specified).
-This feature is largely untested, and potentially not even of value with the random forest model.
-It is left included because it may be valuable with alternative models.
-We recommend therefore using the default threshold (0.0).
+In each tuning phase, the random forest predicts up to `NUM_PREDICTIONS` configurations (set in `predict.py`, default 10), leaving out those with probability zero.
+AutoPas tests all of them, most probable first, and keeps the fastest.
 
 ## Using a different model
 
@@ -106,7 +104,7 @@ To use a different model, write a `predict.py` whose class `PythonBasedTuning` p
 
 - `__init__(self, model_file: str, interaction_type: str)`: loads the model from the model file set in AutoPas, for the interaction type `pairwise` or `triwise`.
 - `config_columns`: the names of the configuration components that the model predicts. These must be the components in `Configuration::getCSVHeader()`, otherwise AutoPas refuses to load the model.
-- `predict(self, live_info_json: str) -> str`: takes the live info as a JSON string and returns a JSON string with a value for each configuration component, written as in the tuning results logs, and the `confidence` of the prediction.
+- `predict(self, live_info_json: str) -> str`: takes the live info as a JSON string and returns a JSON list of the predicted configurations, most promising first. Each is an object with a value for each configuration component, written as in the tuning results logs. If the list is empty, the configuration queue is left unchanged (e.g. typically a full search will occur, if no other tuning strategies are specified).
 
 Place your scripts in a new directory next to `randomForest/`, and change the path that `PythonBasedTuning.cpp` appends to Python's `sys.path` to that directory.
 AutoPas loads the scripts from its source directory at runtime, so further changes to them take effect without rebuilding AutoPas.
