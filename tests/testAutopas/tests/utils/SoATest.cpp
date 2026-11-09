@@ -356,3 +356,99 @@ TEST_F(SoATest, SoATestComplicatedAccess) {
   EXPECT_EQ(res[1], 8.);
   EXPECT_EQ(res[2], 9.);
 }
+
+TEST_F(SoATest, SoATestExtraColumns) {
+  using autopas::ParticleBaseFP64;
+  using SoAType = autopas::SoA<ParticleBaseFP64::SoAArraysType>;
+  constexpr size_t NumBase = SoAType::NumBaseAttrs;
+  constexpr size_t Extra0 = NumBase + 0;
+  constexpr size_t Extra1 = NumBase + 1;
+
+  SoAType soa;
+  EXPECT_EQ(soa.size(), 0);
+
+  // Resize for posX, posY, posZ and two extra columns
+  soa.resizeArraysForAttributes<ParticleBaseFP64::AttributeNames::posX,
+                                ParticleBaseFP64::AttributeNames::posY,
+                                ParticleBaseFP64::AttributeNames::posZ,
+                                Extra0, Extra1>(3);
+
+  EXPECT_EQ(soa.size(), 3);
+
+  // Write values to base and extra columns
+  soa.write<ParticleBaseFP64::AttributeNames::posX>(0, 1.0);
+  soa.write<Extra0>(0, 10.0);
+  soa.write<Extra1>(0, 20.0);
+
+  soa.write<ParticleBaseFP64::AttributeNames::posX>(1, 2.0);
+  soa.write<Extra0>(1, 30.0);
+  soa.write<Extra1>(1, 40.0);
+
+  soa.write<ParticleBaseFP64::AttributeNames::posX>(2, 3.0);
+  soa.write<Extra0>(2, 50.0);
+  soa.write<Extra1>(2, 60.0);
+
+  // Read via read()
+  EXPECT_DOUBLE_EQ(soa.read<Extra0>(0), 10.0);
+  EXPECT_DOUBLE_EQ(soa.read<Extra1>(0), 20.0);
+  EXPECT_DOUBLE_EQ(soa.read<Extra0>(1), 30.0);
+  EXPECT_DOUBLE_EQ(soa.read<Extra1>(1), 40.0);
+  EXPECT_DOUBLE_EQ(soa.read<Extra0>(2), 50.0);
+  EXPECT_DOUBLE_EQ(soa.read<Extra1>(2), 60.0);
+
+  // Test pointer access via begin()
+  auto *extra0Ptr = soa.begin<Extra0>();
+  auto *extra1Ptr = soa.begin<Extra1>();
+  EXPECT_DOUBLE_EQ(extra0Ptr[0], 10.0);
+  EXPECT_DOUBLE_EQ(extra1Ptr[0], 20.0);
+  EXPECT_DOUBLE_EQ(extra0Ptr[1], 30.0);
+  EXPECT_DOUBLE_EQ(extra1Ptr[1], 40.0);
+
+  // Test swap
+  soa.swap(0, 1);
+  EXPECT_DOUBLE_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(0), 2.0);
+  EXPECT_DOUBLE_EQ(soa.read<Extra0>(0), 30.0);
+  EXPECT_DOUBLE_EQ(soa.read<Extra1>(0), 40.0);
+  EXPECT_DOUBLE_EQ(soa.read<ParticleBaseFP64::AttributeNames::posX>(1), 1.0);
+  EXPECT_DOUBLE_EQ(soa.read<Extra0>(1), 10.0);
+  EXPECT_DOUBLE_EQ(soa.read<Extra1>(1), 20.0);
+
+  // Test pop_back
+  soa.pop_back();
+  EXPECT_EQ(soa.size(), 2);
+
+  // Test push to extra column
+  soa.push<Extra0>(70.0);
+  EXPECT_EQ(soa.size(), 3);
+  EXPECT_DOUBLE_EQ(soa.read<Extra0>(2), 70.0);
+
+  // Test clear
+  soa.clear();
+  EXPECT_EQ(soa.size(), 0);
+}
+
+TEST_F(SoATest, SoATestSelectiveResizingAndAppend) {
+  using autopas::ParticleBaseFP64;
+  using SoAType = autopas::SoA<ParticleBaseFP64::SoAArraysType>;
+  constexpr size_t NumBase = SoAType::NumBaseAttrs;
+  constexpr size_t Extra0 = NumBase + 0;
+
+  SoAType soa1;
+  soa1.resizeArraysForAttributes<ParticleBaseFP64::AttributeNames::posX, Extra0>(2);
+  EXPECT_EQ(soa1.size(), 2);
+
+  soa1.write<ParticleBaseFP64::AttributeNames::posX>(0, 1.5);
+  soa1.write<Extra0>(0, 3.5);
+  soa1.write<ParticleBaseFP64::AttributeNames::posX>(1, 2.5);
+  soa1.write<Extra0>(1, 4.5);
+
+  SoAType soa2;
+  soa2.resizeArraysForAttributes<ParticleBaseFP64::AttributeNames::posX, Extra0>(1);
+  soa2.write<ParticleBaseFP64::AttributeNames::posX>(0, 5.5);
+  soa2.write<Extra0>(0, 6.5);
+
+  soa1.append(soa2);
+  EXPECT_EQ(soa1.size(), 3);
+  EXPECT_DOUBLE_EQ(soa1.read<ParticleBaseFP64::AttributeNames::posX>(2), 5.5);
+  EXPECT_DOUBLE_EQ(soa1.read<Extra0>(2), 6.5);
+}
