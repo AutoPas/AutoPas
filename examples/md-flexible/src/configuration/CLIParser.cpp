@@ -830,14 +830,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
     }
   }
 
-  // only create objects if nothing was set by a yaml file and there was no checkpoint
-  if (config.checkpointfile.value.empty() and config.particleObjects.empty()) {
+  if (config.generatorOption.value.has_value()) {
     // common settings for any object type:
     unsigned int typeID = 0;
     std::array<double, 3> bottomLeftCorner = {0, 0, 0};
     std::array<double, 3> velocity = {0, 0, 0};
 
-    switch (config.generatorOption.value) {
+    switch (*config.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::grid: {
         if (config.particleDensity.value > 0) {
           config.particleObjects.push_back(std::make_shared<CubeGrid>(

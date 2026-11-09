@@ -9,6 +9,7 @@
 #include <getopt.h>
 
 #include <map>
+#include <optional>
 #include <set>
 #include <utility>
 
@@ -698,9 +699,10 @@ class MDFlexConfig {
   /**
    * generatorOption
    */
-  MDFlexOption<GeneratorOption, __LINE__> generatorOption{
-      GeneratorOption::grid, "particle-generator", true,
-      "Scenario generator. Possible Values: (grid uniform gaussian sphere closestPacking) Default: grid"};
+  MDFlexOption<std::optional<GeneratorOption>, __LINE__> generatorOption{
+      std::nullopt, "particle-generator", true,
+      "Scenario generator. Possible Values: (grid uniform gaussian sphere closestPacking) Default: none, i.e. no "
+      "particles are generated"};
 
   // Site Type Generation
   /**
