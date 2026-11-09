@@ -132,7 +132,8 @@ class PythonBasedTuning:
         probabilities = self.model.predict_proba(live_info_df)[0]
 
         # Todo, we may be able to improve the generalizability of this tuning strategy by taking e.g. the top 5 predictions
-        predicted_class_id = np.argmax(probabilities)
+        predicted_column = np.argmax(probabilities)
+        predicted_class_id = self.model.classes_[predicted_column]
 
         prediction = self.label_encoder.inverse_transform([predicted_class_id])[0]
         prediction_split = prediction.split(";")
@@ -145,7 +146,7 @@ class PythonBasedTuning:
                              f"({self.config_columns}). The model file may be inconsistent with predict.py.")
 
         prediction = dict(zip(self.config_columns, prediction_split))
-        prediction["confidence"] = probabilities[predicted_class_id]
+        prediction["confidence"] = probabilities[predicted_column]
 
         return json.dumps(prediction)
 
