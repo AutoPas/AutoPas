@@ -103,10 +103,17 @@ class VerletListHelpers {
 
       size_t numPart = soa.size();
       for (unsigned int i = 0; i < numPart; ++i) {
-        if (ptrptr[i]->isWall()) continue;
         auto &currentList = _verletListsAoS.at(ptrptr[i]);
+        const bool iIsWall = ParticleTypes::isWall(ptrptr[i]->getTypeId());
 
         for (unsigned int j = i + 1; j < numPart; ++j) {
+          // Skip only wall-wall pairs: the LJ functor masks them anyway and both
+          // particles' lists are unused. Fluid-wall pairs must stay, otherwise
+          // a fluid sharing a cell with walls can miss the wall in its list.
+          if (iIsWall and ParticleTypes::isWall(ptrptr[j]->getTypeId())) {
+            continue;
+          }
+
           const double drx = xptr[i] - xptr[j];
           const double dry = yptr[i] - yptr[j];
           const double drz = zptr[i] - zptr[j];
@@ -149,12 +156,18 @@ class VerletListHelpers {
 
       size_t numPart1 = soa1.size();
       for (unsigned int i = 0; i < numPart1; ++i) {
-        if (ptr1ptr[i]->isWall()) continue;
         auto &currentList = _verletListsAoS.at(ptr1ptr[i]);
+        const bool iIsWall = ParticleTypes::isWall(ptr1ptr[i]->getTypeId());
 
         size_t numPart2 = soa2.size();
 
         for (unsigned int j = 0; j < numPart2; ++j) {
+          // Skip only wall-wall pairs; keep fluid-wall pairs so fluids in soa2
+          // get added to their lists even when soa1 contains wall particles.
+          if (iIsWall and ParticleTypes::isWall(ptr2ptr[j]->getTypeId())) {
+            continue;
+          }
+
           const double drx = x1ptr[i] - x2ptr[j];
           const double dry = y1ptr[i] - y2ptr[j];
           const double drz = z1ptr[i] - z2ptr[j];
