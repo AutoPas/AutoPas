@@ -8,6 +8,12 @@
 
 #include <gmock/gmock-matchers.h>
 
+#include "autopas/utils/WrapMPI.h"
+#include "src/ParallelVtkWriter.h"
+#include "src/domainDecomposition/RegularGridDecomposition.h"
+
+extern template class autopas::AutoPas<ParticleType>;
+
 using ::testing::ElementsAreArray;
 
 TEST_F(MDFlexConfigTest, GridBoxMinMax) {
@@ -244,4 +250,57 @@ TEST_F(MDFlexConfigTest, UserSpecifiedBoxMinMaxPreserved) {
   constexpr std::array<double, 3> expectedBoxMax = {10.0, 10.0, 10.0};
   EXPECT_EQ(config.boxMin.value, expectedBoxMin);
   EXPECT_EQ(config.boxMax.value, expectedBoxMax);
+}
+
+/**
+ * Test that a yaml file without objects results in a simulation without particles.
+ */
+TEST_F(MDFlexConfigTest, noObjectsMeansNoParticles) {
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "noObjects.yaml"};
+
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
+
+  const MDFlexConfig configuration(3, argv);
+
+  EXPECT_TRUE(configuration.particleObjects.empty());
+  EXPECT_TRUE(configuration.particles.empty());
+
+  constexpr std::array<double, 3> expectedBoxMin = {0.0, 0.0, 0.0};
+  constexpr std::array<double, 3> expectedBoxMax = {10.0, 10.0, 10.0};
+  EXPECT_EQ(configuration.boxMin.value, expectedBoxMin);
+  EXPECT_EQ(configuration.boxMax.value, expectedBoxMax);
+}
+
+/**
+ * Test that a checkpoint written by a simulation without particles can be loaded again.
+ */
+TEST_F(MDFlexConfigTest, loadCheckpointWithZeroParticles) {
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "noObjects.yaml"};
+
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
+
+  MDFlexConfig configuration(3, argv);
+
+  const RegularGridDecomposition decomposition(configuration);
+
+  autopas::AutoPas<ParticleType> autoPasContainer;
+  autoPasContainer.setBoxMin(decomposition.getLocalBoxMin());
+  autoPasContainer.setBoxMax(decomposition.getLocalBoxMax());
+  autoPasContainer.setCutoff(configuration.cutoff.value);
+  autoPasContainer.setVerletSkin(configuration.verletSkinRadius.value);
+  autoPasContainer.init();
+
+  // write a checkpoint of the empty container
+  const std::string sessionName{"zeroParticlesCheckpoint"};
+  const ParallelVtkWriter vtkWriter(sessionName, ".", 1);
+  vtkWriter.recordTimestep(0, autoPasContainer, decomposition);
+  // all ranks must have written their files before any rank reads them
+  autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
+
+  configuration.checkpointfile.value = "./" + sessionName + "/" + sessionName + "_Particles_0.pvtu";
+  EXPECT_NO_THROW(
+      configuration.loadParticlesFromCheckpoint(decomposition.getDomainIndex(), decomposition.getNumberOfSubdomains()));
+  EXPECT_TRUE(configuration.particles.empty());
 }

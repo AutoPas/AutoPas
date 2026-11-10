@@ -320,4 +320,4 @@ jobs:
             -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=OFF
           cmake --build . --target md-flexible
       - name: Run md-flexible
-        run: cd build/examples/md-flexible && ./md-flexible
+        run: cd build/examples/md-flexible && ./md-flexible --particle-generator grid

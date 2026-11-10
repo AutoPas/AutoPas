@@ -123,7 +123,7 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
   inputStream >> numParticles;
 
   // sanity check
-  if (numParticles == 0) {
+  if (inputStream.fail()) {
     throw std::runtime_error("Could not determine the number of particles in the checkpoint file " + rankFilename);
     return;
   }
