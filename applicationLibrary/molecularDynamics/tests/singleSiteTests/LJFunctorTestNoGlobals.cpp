@@ -300,6 +300,8 @@ class CustomParticle16Attrs : public autopas::ParticleBaseFP64 {
                                                          double, double, double, double, double, double, double, double,
                                                          double, size_t, autopas::OwnershipState>::Type;
   using ParticleSoAFloatPrecision = double;
+
+  [[nodiscard]] size_t getTypeId() const { return 0; }
 };
 }  // namespace
 
