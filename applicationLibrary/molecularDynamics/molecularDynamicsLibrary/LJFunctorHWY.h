@@ -488,10 +488,176 @@ class LJFunctorHWY
     }
   }
 
+  /**
+   * Recursively folds a vector in half down to 2 lanes by adding its lower and upper halves.
+   */
+  template <class D>
+  HWY_INLINE static auto foldTo2Lanes(D d, const highway::VFromD<D> &v) {
+    if constexpr (highway::MaxLanes(d) == 8) {
+      const highway::Half<D> d4;
+      const auto v4 = highway::Add(highway::LowerHalf(d4, v), highway::UpperHalf(d4, v));
+      const highway::Half<decltype(d4)> d2;
+      return highway::Add(highway::LowerHalf(d2, v4), highway::UpperHalf(d2, v4));
+    } else if constexpr (highway::MaxLanes(d) == 4) {
+      const highway::Half<D> d2;
+      return highway::Add(highway::LowerHalf(d2, v), highway::UpperHalf(d2, v));
+    } else {
+      return v;
+    }
+  }
+
+  /**
+   * Reduces a single vector to a scalar using a halving tree down to 2 lanes before calling highway::ReduceSum.
+   */
+  template <class D>
+  HWY_INLINE static double reduceSumHalving(D d, const highway::VFromD<D> &v) {
+    if constexpr (highway::MaxLanes(d) <= 2) {
+      return highway::ReduceSum(d, v);
+    } else {
+      const auto v2 = foldTo2Lanes(d, v);
+      const highway::DFromV<decltype(v2)> d2;
+      return highway::ReduceSum(d2, v2);
+    }
+  }
+
+  /**
+   * Reduces two vectors simultaneously by interleaving their even/odd lanes and folding to 2 lanes,
+   * adding the results to output scalar accumulators.
+   */
+  template <class D>
+  HWY_INLINE static void reduceAdd2_InterleaveFirst(D d, const highway::VFromD<D> &va, const highway::VFromD<D> &vb,
+                                                    double &outA, double &outB) {
+    if constexpr (highway::MaxLanes(d) == 1) {
+      outA += highway::GetLane(va);
+      outB += highway::GetLane(vb);
+    } else {
+      const auto ab = highway::Add(highway::InterleaveLower(d, va, vb), highway::InterleaveUpper(d, va, vb));
+      const auto ab2 = foldTo2Lanes(d, ab);
+      outA += highway::GetLane(ab2);
+      outB += highway::ExtractLane(ab2, 1);
+    }
+  }
+
+  /**
+   * Reduces two vectors simultaneously by interleaving their even/odd lanes and folding to 2 lanes,
+   * subtracting the results from output scalar accumulators.
+   */
+  template <class D>
+  HWY_INLINE static void reduceSub2_InterleaveFirst(D d, const highway::VFromD<D> &va, const highway::VFromD<D> &vb,
+                                                    double &outA, double &outB) {
+    if constexpr (highway::MaxLanes(d) == 1) {
+      outA -= highway::GetLane(va);
+      outB -= highway::GetLane(vb);
+    } else {
+      const auto ab = highway::Add(highway::InterleaveLower(d, va, vb), highway::InterleaveUpper(d, va, vb));
+      const auto ab2 = foldTo2Lanes(d, ab);
+      outA -= highway::GetLane(ab2);
+      outB += highway::ExtractLane(ab2, 1);
+    }
+  }
+
+  /**
+   * Reduces 3 vectors (x, y, z) into scalar accumulators by interleaving (x, y) and halving z.
+   */
+  template <class D>
+  HWY_INLINE static void reduceAdd3_InterleaveFirst(D d, const highway::VFromD<D> &fx, const highway::VFromD<D> &fy,
+                                                    const highway::VFromD<D> &fz, double &outX, double &outY,
+                                                    double &outZ) {
+    reduceAdd2_InterleaveFirst(d, fx, fy, outX, outY);
+    outZ += reduceSumHalving(d, fz);
+  }
+
+  /**
+   * Reduces 3 vectors (x, y, z) into scalar accumulators by interleaving (x, y) and halving z,
+   * subtracting the results from output scalar accumulators.
+   */
+  template <class D>
+  HWY_INLINE static void reduceSub3_InterleaveFirst(D d, const highway::VFromD<D> &fx, const highway::VFromD<D> &fy,
+                                                    const highway::VFromD<D> &fz, double &outX, double &outY,
+                                                    double &outZ) {
+    reduceSub2_InterleaveFirst(d, fx, fy, outX, outY);
+    outZ -= reduceSumHalving(d, fz);
+  }
+
+  /**
+   * Reduces 4 vectors into scalar accumulators using two parallel interleaved pairs.
+   */
+  template <class D>
+  HWY_INLINE static void reduceAdd4_Interleaved(D d, const highway::VFromD<D> &v0, const highway::VFromD<D> &v1,
+                                                const highway::VFromD<D> &v2, const highway::VFromD<D> &v3,
+                                                double &out0, double &out1, double &out2, double &out3) {
+    reduceAdd2_InterleaveFirst(d, v0, v1, out0, out1);
+    reduceAdd2_InterleaveFirst(d, v2, v3, out2, out3);
+  }
+
+  /**
+   * Pairs lower and upper half-vectors for 3 dimensions into 2-lane vectors and adds them directly
+   * to memory at 2 contiguous particle positions using 128-bit vector stores.
+   */
+  template <class DHalf>
+  HWY_INLINE static void reduceAdd6Half_Vec2Store(DHalf dh, const highway::VFromD<DHalf> &lfx,
+                                                  const highway::VFromD<DHalf> &lfy, const highway::VFromD<DHalf> &lfz,
+                                                  const highway::VFromD<DHalf> &ufx, const highway::VFromD<DHalf> &ufy,
+                                                  const highway::VFromD<DHalf> &ufz, double *const __restrict fxPtr,
+                                                  double *const __restrict fyPtr, double *const __restrict fzPtr) {
+    if constexpr (highway::MaxLanes(dh) == 1) {
+      fxPtr[0] += highway::GetLane(lfx);
+      fyPtr[0] += highway::GetLane(lfy);
+      fzPtr[0] += highway::GetLane(lfz);
+      fxPtr[1] += highway::GetLane(ufx);
+      fyPtr[1] += highway::GetLane(ufy);
+      fzPtr[1] += highway::GetLane(ufz);
+    } else {
+      const auto fxLU = highway::Add(highway::InterleaveLower(dh, lfx, ufx), highway::InterleaveUpper(dh, lfx, ufx));
+      const auto fyLU = highway::Add(highway::InterleaveLower(dh, lfy, ufy), highway::InterleaveUpper(dh, lfy, ufy));
+      const auto fzLU = highway::Add(highway::InterleaveLower(dh, lfz, ufz), highway::InterleaveUpper(dh, lfz, ufz));
+      const auto fx2 = foldTo2Lanes(dh, fxLU);
+      const auto fy2 = foldTo2Lanes(dh, fyLU);
+      const auto fz2 = foldTo2Lanes(dh, fzLU);
+      const highway::DFromV<decltype(fx2)> d2;
+
+      highway::StoreU(highway::Add(highway::LoadU(d2, fxPtr), fx2), d2, fxPtr);
+      highway::StoreU(highway::Add(highway::LoadU(d2, fyPtr), fy2), d2, fyPtr);
+      highway::StoreU(highway::Add(highway::LoadU(d2, fzPtr), fz2), d2, fzPtr);
+    }
+  }
+
+  /**
+   * Pairs lower and upper half-vectors for 3 dimensions into 2-lane vectors and subtracts them directly
+   * from memory at 2 contiguous particle positions using 128-bit vector stores.
+   */
+  template <class DHalf>
+  HWY_INLINE static void reduceSub6Half_Vec2Store(DHalf dh, const highway::VFromD<DHalf> &lfx,
+                                                  const highway::VFromD<DHalf> &lfy, const highway::VFromD<DHalf> &lfz,
+                                                  const highway::VFromD<DHalf> &ufx, const highway::VFromD<DHalf> &ufy,
+                                                  const highway::VFromD<DHalf> &ufz, double *const __restrict fxPtr,
+                                                  double *const __restrict fyPtr, double *const __restrict fzPtr) {
+    if constexpr (highway::MaxLanes(dh) == 1) {
+      fxPtr[0] -= highway::GetLane(lfx);
+      fyPtr[0] -= highway::GetLane(lfy);
+      fzPtr[0] -= highway::GetLane(lfz);
+      fxPtr[1] -= highway::GetLane(ufx);
+      fyPtr[1] -= highway::GetLane(ufy);
+      fzPtr[1] -= highway::GetLane(ufz);
+    } else {
+      const auto fxLU = highway::Add(highway::InterleaveLower(dh, lfx, ufx), highway::InterleaveUpper(dh, lfx, ufx));
+      const auto fyLU = highway::Add(highway::InterleaveLower(dh, lfy, ufy), highway::InterleaveUpper(dh, lfy, ufy));
+      const auto fzLU = highway::Add(highway::InterleaveLower(dh, lfz, ufz), highway::InterleaveUpper(dh, lfz, ufz));
+      const auto fx2 = foldTo2Lanes(dh, fxLU);
+      const auto fy2 = foldTo2Lanes(dh, fyLU);
+      const auto fz2 = foldTo2Lanes(dh, fzLU);
+      const highway::DFromV<decltype(fx2)> d2;
+
+      highway::StoreU(highway::Sub(highway::LoadU(d2, fxPtr), fx2), d2, fxPtr);
+      highway::StoreU(highway::Sub(highway::LoadU(d2, fyPtr), fy2), d2, fyPtr);
+      highway::StoreU(highway::Sub(highway::LoadU(d2, fzPtr), fz2), d2, fzPtr);
+    }
+  }
+
   template <bool remainder, VectorizationPattern vecPattern>
-  static void handleNewton3Reduction(VectorDouble &fx, VectorDouble &fy, VectorDouble &fz,
-                                     double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
-                                     double *const __restrict fz2Ptr, const size_t j, const size_t rest) {
+  HWY_INLINE static void handleNewton3Reduction(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
+                                                double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
+                                                double *const __restrict fz2Ptr, const size_t j, const size_t rest) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       const VectorDouble fx2 =
           remainder ? highway::LoadN(tag_double, &fx2Ptr[j], rest) : highway::LoadU(tag_double, &fx2Ptr[j]);
@@ -523,70 +689,74 @@ class LJFunctorHWY
       const auto fyCombined = highway::Add(lowerFy, upperFy);
       const auto fzCombined = highway::Add(lowerFz, upperFz);
 
-      const int lanes = remainder ? rest : _vecLengthDouble / 2;
+      const size_t lanes = remainder ? rest : _vecLengthDouble / 2;
 
-      const auto fx2 = highway::LoadN(tag_double_half, &fx2Ptr[j], lanes);
-      const auto fy2 = highway::LoadN(tag_double_half, &fy2Ptr[j], lanes);
-      const auto fz2 = highway::LoadN(tag_double_half, &fz2Ptr[j], lanes);
+      const auto fx2 = remainder ? highway::LoadN(tag_double_half, &fx2Ptr[j], lanes)
+                                 : highway::LoadU(tag_double_half, &fx2Ptr[j]);
+      const auto fy2 = remainder ? highway::LoadN(tag_double_half, &fy2Ptr[j], lanes)
+                                 : highway::LoadU(tag_double_half, &fy2Ptr[j]);
+      const auto fz2 = remainder ? highway::LoadN(tag_double_half, &fz2Ptr[j], lanes)
+                                 : highway::LoadU(tag_double_half, &fz2Ptr[j]);
 
       const auto newFx = highway::Sub(fx2, fxCombined);
       const auto newFy = highway::Sub(fy2, fyCombined);
       const auto newFz = highway::Sub(fz2, fzCombined);
 
-      highway::StoreN(newFx, tag_double_half, &fx2Ptr[j], lanes);
-      highway::StoreN(newFy, tag_double_half, &fy2Ptr[j], lanes);
-      highway::StoreN(newFz, tag_double_half, &fz2Ptr[j], lanes);
+      if constexpr (remainder) {
+        highway::StoreN(newFx, tag_double_half, &fx2Ptr[j], lanes);
+        highway::StoreN(newFy, tag_double_half, &fy2Ptr[j], lanes);
+        highway::StoreN(newFz, tag_double_half, &fz2Ptr[j], lanes);
+      } else {
+        highway::StoreU(newFx, tag_double_half, &fx2Ptr[j]);
+        highway::StoreU(newFy, tag_double_half, &fy2Ptr[j]);
+        highway::StoreU(newFz, tag_double_half, &fz2Ptr[j]);
+      }
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
       const auto lowerFx = highway::LowerHalf(tag_double_half, fx);
       const auto lowerFy = highway::LowerHalf(tag_double_half, fy);
       const auto lowerFz = highway::LowerHalf(tag_double_half, fz);
 
-      fx2Ptr[j] -= highway::ReduceSum(tag_double_half, lowerFx);
-      fy2Ptr[j] -= highway::ReduceSum(tag_double_half, lowerFy);
-      fz2Ptr[j] -= highway::ReduceSum(tag_double_half, lowerFz);
-
-      if constexpr (not remainder) {
+      if constexpr (remainder) {
+        reduceSub3_InterleaveFirst(tag_double_half, lowerFx, lowerFy, lowerFz, fx2Ptr[j], fy2Ptr[j], fz2Ptr[j]);
+      } else {
         const auto upperFx = highway::UpperHalf(tag_double_half, fx);
         const auto upperFy = highway::UpperHalf(tag_double_half, fy);
         const auto upperFz = highway::UpperHalf(tag_double_half, fz);
 
-        fx2Ptr[j + 1] -= highway::ReduceSum(tag_double_half, upperFx);
-        fy2Ptr[j + 1] -= highway::ReduceSum(tag_double_half, upperFy);
-        fz2Ptr[j + 1] -= highway::ReduceSum(tag_double_half, upperFz);
+        reduceSub6Half_Vec2Store(tag_double_half, lowerFx, lowerFy, lowerFz, upperFx, upperFy, upperFz, &fx2Ptr[j],
+                                 &fy2Ptr[j], &fz2Ptr[j]);
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-      fx2Ptr[j] -= highway::ReduceSum(tag_double, fx);
-      fy2Ptr[j] -= highway::ReduceSum(tag_double, fy);
-      fz2Ptr[j] -= highway::ReduceSum(tag_double, fz);
+      reduceSub3_InterleaveFirst(tag_double, fx, fy, fz, fx2Ptr[j], fy2Ptr[j], fz2Ptr[j]);
     }
   }
 
   template <bool reversed, bool remainder, VectorizationPattern vecPattern>
-  static void reduceAccumulatedForce(const size_t i, double *const __restrict fxPtr, double *const __restrict fyPtr,
-                                     double *const __restrict fzPtr, const VectorDouble &fxAcc,
-                                     const VectorDouble &fyAcc, const VectorDouble &fzAcc, const int restI) {
+  HWY_INLINE static void reduceAccumulatedForce(const size_t i, double *const __restrict fxPtr,
+                                                double *const __restrict fyPtr, double *const __restrict fzPtr,
+                                                const VectorDouble &fxAcc, const VectorDouble &fyAcc,
+                                                const VectorDouble &fzAcc, const size_t restI) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      fxPtr[i] += highway::ReduceSum(tag_double, fxAcc);
-      fyPtr[i] += highway::ReduceSum(tag_double, fyAcc);
-      fzPtr[i] += highway::ReduceSum(tag_double, fzAcc);
+      reduceAdd3_InterleaveFirst(tag_double, fxAcc, fyAcc, fzAcc, fxPtr[i], fyPtr[i], fzPtr[i]);
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
       const auto lowerFxAcc = highway::LowerHalf(tag_double_half, fxAcc);
       const auto lowerFyAcc = highway::LowerHalf(tag_double_half, fyAcc);
       const auto lowerFzAcc = highway::LowerHalf(tag_double_half, fzAcc);
 
-      fxPtr[i] += highway::ReduceSum(tag_double_half, lowerFxAcc);
-      fyPtr[i] += highway::ReduceSum(tag_double_half, lowerFyAcc);
-      fzPtr[i] += highway::ReduceSum(tag_double_half, lowerFzAcc);
-
-      if constexpr (not remainder) {
+      if constexpr (remainder) {
+        reduceAdd3_InterleaveFirst(tag_double_half, lowerFxAcc, lowerFyAcc, lowerFzAcc, fxPtr[i], fyPtr[i], fzPtr[i]);
+      } else {
         const auto upperFxAcc = highway::UpperHalf(tag_double_half, fxAcc);
         const auto upperFyAcc = highway::UpperHalf(tag_double_half, fyAcc);
         const auto upperFzAcc = highway::UpperHalf(tag_double_half, fzAcc);
 
-        const auto index = reversed ? i - 1 : i + 1;
-        fxPtr[index] += highway::ReduceSum(tag_double_half, upperFxAcc);
-        fyPtr[index] += highway::ReduceSum(tag_double_half, upperFyAcc);
-        fzPtr[index] += highway::ReduceSum(tag_double_half, upperFzAcc);
+        if constexpr (reversed) {
+          reduceAdd6Half_Vec2Store(tag_double_half, upperFxAcc, upperFyAcc, upperFzAcc, lowerFxAcc, lowerFyAcc,
+                                   lowerFzAcc, &fxPtr[i - 1], &fyPtr[i - 1], &fzPtr[i - 1]);
+        } else {
+          reduceAdd6Half_Vec2Store(tag_double_half, lowerFxAcc, lowerFyAcc, lowerFzAcc, upperFxAcc, upperFyAcc,
+                                   upperFzAcc, &fxPtr[i], &fyPtr[i], &fzPtr[i]);
+        }
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
       const auto lowerFxAcc = highway::LowerHalf(tag_double_half, fxAcc);
@@ -601,47 +771,58 @@ class LJFunctorHWY
       const auto fyAccCombined = highway::Add(lowerFyAcc, upperFyAcc);
       const auto fzAccCombined = highway::Add(lowerFzAcc, upperFzAcc);
 
-      const int index = reversed ? (remainder ? 0 : i - _vecLengthDouble / 2 + 1) : i;
+      const size_t index = reversed ? (remainder ? 0 : i - _vecLengthDouble / 2 + 1) : i;
+      const size_t lanes = remainder ? restI : _vecLengthDouble / 2;
 
-      const int lanes = remainder ? restI : _vecLengthDouble / 2;
-
-      const auto oldFx = highway::LoadN(tag_double_half, &fxPtr[index], lanes);
-      const auto oldFy = highway::LoadN(tag_double_half, &fyPtr[index], lanes);
-      const auto oldFz = highway::LoadN(tag_double_half, &fzPtr[index], lanes);
+      const auto oldFx = remainder ? highway::LoadN(tag_double_half, &fxPtr[index], lanes)
+                                   : highway::LoadU(tag_double_half, &fxPtr[index]);
+      const auto oldFy = remainder ? highway::LoadN(tag_double_half, &fyPtr[index], lanes)
+                                   : highway::LoadU(tag_double_half, &fyPtr[index]);
+      const auto oldFz = remainder ? highway::LoadN(tag_double_half, &fzPtr[index], lanes)
+                                   : highway::LoadU(tag_double_half, &fzPtr[index]);
 
       const auto newFx = highway::Add(oldFx, fxAccCombined);
       const auto newFy = highway::Add(oldFy, fyAccCombined);
       const auto newFz = highway::Add(oldFz, fzAccCombined);
 
-      highway::StoreN(newFx, tag_double_half, &fxPtr[index], lanes);
-      highway::StoreN(newFy, tag_double_half, &fyPtr[index], lanes);
-      highway::StoreN(newFz, tag_double_half, &fzPtr[index], lanes);
+      if constexpr (remainder) {
+        highway::StoreN(newFx, tag_double_half, &fxPtr[index], lanes);
+        highway::StoreN(newFy, tag_double_half, &fyPtr[index], lanes);
+        highway::StoreN(newFz, tag_double_half, &fzPtr[index], lanes);
+      } else {
+        highway::StoreU(newFx, tag_double_half, &fxPtr[index]);
+        highway::StoreU(newFy, tag_double_half, &fyPtr[index]);
+        highway::StoreU(newFz, tag_double_half, &fzPtr[index]);
+      }
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+      const size_t index = reversed ? (remainder ? 0 : i - _vecLengthDouble + 1) : i;
       const VectorDouble oldFx =
-          remainder ? highway::LoadN(tag_double, &fxPtr[i], restI) : highway::LoadU(tag_double, &fxPtr[i]);
+          remainder ? highway::LoadN(tag_double, &fxPtr[index], restI) : highway::LoadU(tag_double, &fxPtr[index]);
       const VectorDouble oldFy =
-          remainder ? highway::LoadN(tag_double, &fyPtr[i], restI) : highway::LoadU(tag_double, &fyPtr[i]);
+          remainder ? highway::LoadN(tag_double, &fyPtr[index], restI) : highway::LoadU(tag_double, &fyPtr[index]);
       const VectorDouble oldFz =
-          remainder ? highway::LoadN(tag_double, &fzPtr[i], restI) : highway::LoadU(tag_double, &fzPtr[i]);
+          remainder ? highway::LoadN(tag_double, &fzPtr[index], restI) : highway::LoadU(tag_double, &fzPtr[index]);
 
       const VectorDouble fxNew = highway::Add(oldFx, fxAcc);
       const VectorDouble fyNew = highway::Add(oldFy, fyAcc);
       const VectorDouble fzNew = highway::Add(oldFz, fzAcc);
 
-      remainder ? highway::StoreN(fxNew, tag_double, &fxPtr[i], restI) : highway::StoreU(fxNew, tag_double, &fxPtr[i]);
-      remainder ? highway::StoreN(fyNew, tag_double, &fyPtr[i], restI) : highway::StoreU(fyNew, tag_double, &fyPtr[i]);
-      remainder ? highway::StoreN(fzNew, tag_double, &fzPtr[i], restI) : highway::StoreU(fzNew, tag_double, &fzPtr[i]);
+      remainder ? highway::StoreN(fxNew, tag_double, &fxPtr[index], restI)
+                : highway::StoreU(fxNew, tag_double, &fxPtr[index]);
+      remainder ? highway::StoreN(fyNew, tag_double, &fyPtr[index], restI)
+                : highway::StoreU(fyNew, tag_double, &fyPtr[index]);
+      remainder ? highway::StoreN(fzNew, tag_double, &fzPtr[index], restI)
+                : highway::StoreU(fzNew, tag_double, &fzPtr[index]);
     }
   }
 
-  inline void computeGlobals(const VectorDouble &virialSumX, const VectorDouble &virialSumY,
-                             const VectorDouble &virialSumZ, const VectorDouble &uPotSum) {
-    const int threadID = autopas::autopas_get_thread_num();
+  HWY_INLINE void computeGlobals(const VectorDouble &virialSumX, const VectorDouble &virialSumY,
+                                 const VectorDouble &virialSumZ, const VectorDouble &uPotSum) {
+    const int threadnum = autopas::autopas_get_thread_num();
 
-    _aosThreadData[threadID].virialSum[0] += highway::ReduceSum(tag_double, virialSumX);
-    _aosThreadData[threadID].virialSum[1] += highway::ReduceSum(tag_double, virialSumY);
-    _aosThreadData[threadID].virialSum[2] += highway::ReduceSum(tag_double, virialSumZ);
-    _aosThreadData[threadID].potentialEnergySum += highway::ReduceSum(tag_double, uPotSum);
+    reduceAdd4_Interleaved(tag_double, virialSumX, virialSumY, virialSumZ, uPotSum,
+                           _aosThreadData[threadnum].virialSum[0], _aosThreadData[threadnum].virialSum[1],
+                           _aosThreadData[threadnum].virialSum[2], _aosThreadData[threadnum].potentialEnergySum);
   }
 
   /**
@@ -1273,9 +1454,8 @@ class LJFunctorHWY
                                      fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, rest);
     }
 
-    fxPtr[indexFirst] += highway::ReduceSum(tag_double, fxAcc);
-    fyPtr[indexFirst] += highway::ReduceSum(tag_double, fyAcc);
-    fzPtr[indexFirst] += highway::ReduceSum(tag_double, fzAcc);
+    reduceAdd3_InterleaveFirst(tag_double, fxAcc, fyAcc, fzAcc, fxPtr[indexFirst], fyPtr[indexFirst],
+                               fzPtr[indexFirst]);
 
     if constexpr (calculateGlobals) {
       computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
