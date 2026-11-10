@@ -181,7 +181,7 @@ class LJFunctorHWY
    * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always do a newton3 like traversal of the SoA using only the 1xVec Pattern.
    */
-  inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, [[maybe_unused]] const bool newton3) final {
+  HWY_NOINLINE void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, [[maybe_unused]] const bool newton3) final {
     const size_t soaSize = soa.size();
     if (soaSize <= 1) return;
 
@@ -642,7 +642,7 @@ class LJFunctorHWY
    * @param sortingData Pruning data needed for sorting optimization.
    */
   template <bool newton3, bool sorted, VectorizationPattern vecPattern>
-  inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+  HWY_NOINLINE void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                                  autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
     const size_t n1 = soa1.size();
     const size_t n2 = soa2.size();
