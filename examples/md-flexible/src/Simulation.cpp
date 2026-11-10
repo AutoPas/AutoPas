@@ -715,7 +715,24 @@ void Simulation::logMeasurements() {
 }
 
 bool Simulation::needsMoreIterations() const {
-  return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
+  const bool needsMoreIterationsOnThisRank =
+      _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
+
+  // When the simulation length is determined by --tuning-phases the ranks may finish at different times: Different
+  // ranks can trial a different number of configurations (e.g. because of the tuning strategy or because
+  // isApplicableToDomain() discounts configurations for a rank's local domain). If one rank left the simulation loop
+  // while others are still running, it would no longer take part in the collective MPI operations inside the loop or
+  // in finalize() and the simulation would hang. Therefore, when using --tuning-phases, no rank finishes before all
+  // ranks are done. See https://github.com/AutoPas/AutoPas/issues/1251
+  if (_configuration.tuningPhases.value > 0) {
+    const int localFlag = needsMoreIterationsOnThisRank ? 1 : 0;
+    int anyRankNeedsMoreIterations = 0;
+    autopas::AutoPas_MPI_Allreduce(&localFlag, &anyRankNeedsMoreIterations, 1, AUTOPAS_MPI_INT, AUTOPAS_MPI_MAX,
+                                   AUTOPAS_MPI_COMM_WORLD);
+    return anyRankNeedsMoreIterations != 0;
+  }
+
+  return needsMoreIterationsOnThisRank;
 }
 
 void Simulation::checkNumParticles(size_t expectedNumParticlesGlobal, size_t numParticlesCurrentlyMigratingLocal,
