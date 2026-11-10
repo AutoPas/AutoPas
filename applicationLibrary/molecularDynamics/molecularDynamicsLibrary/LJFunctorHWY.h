@@ -642,8 +642,9 @@ class LJFunctorHWY
    * @param sortingData Pruning data needed for sorting optimization.
    */
   template <bool newton3, bool sorted, VectorizationPattern vecPattern>
-  HWY_NOINLINE void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                 autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
+  HWY_NOINLINE void SoAFunctorPairImpl(
+      autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+      autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
     const size_t n1 = soa1.size();
     const size_t n2 = soa2.size();
     if (n1 == 0 || n2 == 0) {
@@ -1413,7 +1414,7 @@ class LJFunctorHWY
                                   const double *const __restrict halfSigma2Ptr) {
     [[maybe_unused]] double virialX = 0., virialY = 0., virialZ = 0., potentialEnergy = 0.;
 
-    std::array<double, 8> fx2Acc{}, fy2Acc{}, fz2Acc{};
+    [[maybe_unused]] std::array<double, 8> fx2Acc{}, fy2Acc{}, fz2Acc{};
 
     constexpr size_t startI = isSingleCell ? 1 : 0;
     for (size_t i = startI; i < soaSize1; ++i) {
@@ -1447,9 +1448,15 @@ class LJFunctorHWY
           fyi += fy;
           fzi += fz;
           if constexpr (newton3) {
-            fx2Acc[j] -= fx;
-            fy2Acc[j] -= fy;
-            fz2Acc[j] -= fz;
+            if constexpr (isSingleCell) {
+              fx2Acc[j] -= fx;
+              fy2Acc[j] -= fy;
+              fz2Acc[j] -= fz;
+            } else {
+              fx2Ptr[j] -= fx;
+              fy2Ptr[j] -= fy;
+              fz2Ptr[j] -= fz;
+            }
           }
           if constexpr (calculateGlobals) {
             const bool isOwnedJ = newton3 and (ownedStatePtr2[j] == autopas::OwnershipState::owned);
