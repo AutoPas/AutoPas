@@ -519,11 +519,17 @@ class LJFunctorHWY
     static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                   "OwnershipStates underlying type should be int64_t!");
 
+    const VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
+    [[maybe_unused]] VectorDouble shiftOrInvCutoffSquared = highway::Zero(tag_double);
+    if constexpr (calculateGlobals and applyShift) {
+      shiftOrInvCutoffSquared = highway::Set(tag_double, useMixing ? _invCutoffSquareAoS : _shift6AoS);
+    }
+
     for (size_t i = soaSize - 1; i >= 1; i -= 1) {
       handleILoopBody<true, true, false, VectorizationPattern::p1xVec, homogeneousParams>(
-          i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr,
-          sqrtEpsilonPtr, halfSigmaPtr, sqrtEpsilonPtr, halfSigmaPtr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0,
-          i);
+          i, cutoffSquared, shiftOrInvCutoffSquared, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr,
+          fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr, sqrtEpsilonPtr, halfSigmaPtr, sqrtEpsilonPtr, halfSigmaPtr,
+          virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0, i);
     }
 
     if constexpr (calculateGlobals) {
@@ -699,6 +705,12 @@ class LJFunctorHWY
     VectorDouble virialSumZ = highway::Zero(tag_double);
     VectorDouble uPotSum = highway::Zero(tag_double);
 
+    const VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
+    [[maybe_unused]] VectorDouble shiftOrInvCutoffSquared = highway::Zero(tag_double);
+    if constexpr (calculateGlobals and applyShift) {
+      shiftOrInvCutoffSquared = highway::Set(tag_double, useMixing ? _invCutoffSquareAoS : _shift6AoS);
+    }
+
     constexpr size_t iStep = iStepSize<vecPattern>();
     constexpr size_t jStep = jStepSize<vecPattern>();
 
@@ -718,9 +730,9 @@ class LJFunctorHWY
         jVecEnd = n2;
       }
       handleILoopBody<false, newton3, false, vecPattern, homogeneousParams>(
-          i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr,
-          fy2Ptr, fz2Ptr, sqrtEpsilon1Ptr, halfSigma1Ptr, sqrtEpsilon2Ptr, halfSigma2Ptr, virialSumX, virialSumY,
-          virialSumZ, uPotSum, 0, jVecStart, jVecEnd);
+          i, cutoffSquared, shiftOrInvCutoffSquared, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr,
+          ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr, fy2Ptr, fz2Ptr, sqrtEpsilon1Ptr, halfSigma1Ptr,
+          sqrtEpsilon2Ptr, halfSigma2Ptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, jVecStart, jVecEnd);
     }
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       const size_t restI = endI - i;
@@ -737,9 +749,9 @@ class LJFunctorHWY
         }
         if (jVecStart < jVecEnd) {
           handleILoopBody<false, newton3, true, vecPattern, homogeneousParams>(
-              i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr,
-              fx2Ptr, fy2Ptr, fz2Ptr, sqrtEpsilon1Ptr, halfSigma1Ptr, sqrtEpsilon2Ptr, halfSigma2Ptr, virialSumX,
-              virialSumY, virialSumZ, uPotSum, restI, jVecStart, jVecEnd);
+              i, cutoffSquared, shiftOrInvCutoffSquared, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr,
+              ownedStatePtr2, fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr, fy2Ptr, fz2Ptr, sqrtEpsilon1Ptr, halfSigma1Ptr,
+              sqrtEpsilon2Ptr, halfSigma2Ptr, virialSumX, virialSumY, virialSumZ, uPotSum, restI, jVecStart, jVecEnd);
         }
       }
     }
@@ -900,9 +912,10 @@ class LJFunctorHWY
   template <bool reversed, bool newton3, bool remainderI, VectorizationPattern vecPattern,
             bool homogeneousParams = not useMixing>
   HWY_INLINE void handleILoopBody(
-      const size_t i, const double *const __restrict xPtr1, const double *const __restrict yPtr1,
-      const double *const __restrict zPtr1, const autopas::OwnershipState *const __restrict ownedStatePtr1,
-      const double *const __restrict xPtr2, const double *const __restrict yPtr2, const double *const __restrict zPtr2,
+      const size_t i, const VectorDouble &cutoffSquared, [[maybe_unused]] const VectorDouble &shiftOrInvCutoffSquared,
+      const double *const __restrict xPtr1, const double *const __restrict yPtr1, const double *const __restrict zPtr1,
+      const autopas::OwnershipState *const __restrict ownedStatePtr1, const double *const __restrict xPtr2,
+      const double *const __restrict yPtr2, const double *const __restrict zPtr2,
       const autopas::OwnershipState *const __restrict ownedStatePtr2, double *const __restrict fxPtr1,
       double *const __restrict fyPtr1, double *const __restrict fzPtr1, double *const __restrict fxPtr2,
       double *const __restrict fyPtr2, double *const __restrict fzPtr2, const double *const __restrict sqrtEpsilonPtr1,
@@ -976,16 +989,18 @@ class LJFunctorHWY
 
     for (; j < jVecEndFull; j += jStep) {
       SoAKernel<newton3, false, reversed, vecPattern, homogeneousParams>(
-          j, notDummyMaskI, energyFactorI, energyFactorIPlus1, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1,
-          y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr2, halfSigmaPtr2,
-          fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0);
+          j, cutoffSquared, shiftOrInvCutoffSquared, notDummyMaskI, energyFactorI, energyFactorIPlus1,
+          reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2,
+          sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr2, halfSigmaPtr2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
+          virialSumZ, uPotSum, 0);
     }
 
     if (restJ > 0) {
       SoAKernel<newton3, true, reversed, vecPattern, homogeneousParams>(
-          j, notDummyMaskI, energyFactorI, energyFactorIPlus1, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1,
-          y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr2, halfSigmaPtr2,
-          fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restJ);
+          j, cutoffSquared, shiftOrInvCutoffSquared, notDummyMaskI, energyFactorI, energyFactorIPlus1,
+          reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2,
+          sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr2, halfSigmaPtr2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
+          virialSumZ, uPotSum, restJ);
     }
 
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
@@ -1001,13 +1016,13 @@ class LJFunctorHWY
   template <bool newton3, bool remainderJ, bool reversed, VectorizationPattern vecPattern,
             bool homogeneousParams = not useMixing>
   HWY_INLINE void SoAKernel(
-      const size_t j, [[maybe_unused]] const MaskDouble &notDummyMaskI,
-      [[maybe_unused]] const VectorDouble &energyFactorI, [[maybe_unused]] const VectorDouble &energyFactorIPlus1,
-      const int64_t *const __restrict ownedStatePtr2, const VectorDouble &x1, const VectorDouble &y1,
-      const VectorDouble &z1, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
-      const double *const __restrict z2Ptr, double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
-      double *const __restrict fz2Ptr, const VectorDouble &sqrtEpsilon1, const VectorDouble &sigmaHalf1,
-      [[maybe_unused]] const double *const __restrict sqrtEpsilonPtr2,
+      const size_t j, const VectorDouble &cutoffSquared, [[maybe_unused]] const VectorDouble &shiftOrInvCutoffSquared,
+      [[maybe_unused]] const MaskDouble &notDummyMaskI, [[maybe_unused]] const VectorDouble &energyFactorI,
+      [[maybe_unused]] const VectorDouble &energyFactorIPlus1, const int64_t *const __restrict ownedStatePtr2,
+      const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict x2Ptr,
+      const double *const __restrict y2Ptr, const double *const __restrict z2Ptr, double *const __restrict fx2Ptr,
+      double *const __restrict fy2Ptr, double *const __restrict fz2Ptr, const VectorDouble &sqrtEpsilon1,
+      const VectorDouble &sigmaHalf1, [[maybe_unused]] const double *const __restrict sqrtEpsilonPtr2,
       [[maybe_unused]] const double *const __restrict halfSigmaPtr2, VectorDouble &fxAcc, VectorDouble &fyAcc,
       VectorDouble &fzAcc, [[maybe_unused]] VectorDouble &virialSumX, [[maybe_unused]] VectorDouble &virialSumY,
       [[maybe_unused]] VectorDouble &virialSumZ, [[maybe_unused]] VectorDouble &uPotSum, const size_t restJ) const {
@@ -1021,13 +1036,11 @@ class LJFunctorHWY
     const auto drZ = highway::Sub(z1, z2);
     const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, highway::Mul(drX, drX)));
 
-    const VectorDouble cutoffSquaredVec = highway::Set(tag_double, _cutoffSquareAoS);
-
     MaskDouble cutoffMaskI;
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      cutoffMaskI = highway::Le(dr2, cutoffSquaredVec);
+      cutoffMaskI = highway::Le(dr2, cutoffSquared);
     } else {
-      cutoffMaskI = highway::MaskedLe(notDummyMaskI, dr2, cutoffSquaredVec);
+      cutoffMaskI = highway::MaskedLe(notDummyMaskI, dr2, cutoffSquared);
     }
 
     if (highway::AllFalse(tag_double, cutoffMaskI)) {
@@ -1091,13 +1104,12 @@ class LJFunctorHWY
           if constexpr (not useMixing) {
             shift6s = highway::Set(tag_double, _shift6AoS);
           } else {
-            const VectorDouble invCutoffSquared = highway::Set(tag_double, _invCutoffSquareAoS);
-            const auto tmpShift1 = highway::Mul(sigmaSquareds, invCutoffSquared);
+            const auto tmpShift1 = highway::Mul(sigmaSquareds, shiftOrInvCutoffSquared);
             const auto tmpShift2 = highway::Mul(highway::Mul(tmpShift1, tmpShift1), tmpShift1);
             shift6s = highway::Mul(epsilon24s, highway::Sub(tmpShift2, highway::Mul(tmpShift2, tmpShift2)));
           }
         } else {
-          shift6s = highway::Zero(tag_double);
+          shift6s = shiftOrInvCutoffSquared;
         }
 
         const auto virialX = highway::Mul(fx, drX);
