@@ -506,8 +506,13 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    if (behavior & IteratorBehavior::owned) this->_cells[OWNED].forEach(forEachLambda);
-    if (behavior & IteratorBehavior::halo) this->_cells[HALO].forEach(forEachLambda);
+    auto forEachBehaviorLambda = [&](auto &p) {
+      if (behavior.contains(p)) {
+        forEachLambda(p);
+      }
+    };
+    if (behavior & IteratorBehavior::owned) this->_cells[OWNED].forEach(forEachBehaviorLambda);
+    if (behavior & IteratorBehavior::halo) this->_cells[HALO].forEach(forEachBehaviorLambda);
     for (auto &buffers : _particlesToAdd) {
       for (auto &buffer : buffers) {
         buffer.forEach(forEachLambda, behavior);
@@ -527,8 +532,13 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    if (behavior & IteratorBehavior::owned) this->_cells[OWNED].reduce(reduceLambda, result);
-    if (behavior & IteratorBehavior::halo) this->_cells[HALO].reduce(reduceLambda, result);
+    auto reduceBehaviorLambda = [&](auto &p, A &res) {
+      if (behavior.contains(p)) {
+        reduceLambda(p, res);
+      }
+    };
+    if (behavior & IteratorBehavior::owned) this->_cells[OWNED].reduce(reduceBehaviorLambda, result);
+    if (behavior & IteratorBehavior::halo) this->_cells[HALO].reduce(reduceBehaviorLambda, result);
     for (auto &buffers : _particlesToAdd) {
       for (auto &buffer : buffers) {
         buffer.reduce(reduceLambda, result, behavior);
@@ -544,9 +554,19 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    using namespace autopas::utils::ArrayMath::literals;
+    // Particles can move out of their leaf by up to skin/2 between rebuilds, so leaves are searched with that margin.
+    const auto searchMin = lowerCorner - 0.5 * this->getVerletSkin();
+    const auto searchMax = higherCorner + 0.5 * this->getVerletSkin();
+    auto forEachInRegionLambda = [&](auto &p) {
+      if (utils::inBox(p.getR(), lowerCorner, higherCorner)) {
+        forEachLambda(p);
+      }
+    };
     if (behavior & IteratorBehavior::owned)
-      this->_cells[OWNED].forEachInRegion(forEachLambda, lowerCorner, higherCorner);
-    if (behavior & IteratorBehavior::halo) this->_cells[HALO].forEachInRegion(forEachLambda, lowerCorner, higherCorner);
+      this->_cells[OWNED].forEachInRegion(forEachInRegionLambda, searchMin, searchMax);
+    if (behavior & IteratorBehavior::halo)
+      this->_cells[HALO].forEachInRegion(forEachInRegionLambda, searchMin, searchMax);
     for (auto &buffers : _particlesToAdd) {
       for (auto &buffer : buffers) {
         buffer.forEach(forEachLambda, lowerCorner, higherCorner, behavior);
@@ -562,10 +582,19 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle_T>>,
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    using namespace autopas::utils::ArrayMath::literals;
+    // Particles can move out of their leaf by up to skin/2 between rebuilds, so leaves are searched with that margin.
+    const auto searchMin = lowerCorner - 0.5 * this->getVerletSkin();
+    const auto searchMax = higherCorner + 0.5 * this->getVerletSkin();
+    auto reduceInRegionLambda = [&](auto &p, A &res) {
+      if (utils::inBox(p.getR(), lowerCorner, higherCorner)) {
+        reduceLambda(p, res);
+      }
+    };
     if (behavior & IteratorBehavior::owned)
-      this->_cells[OWNED].reduceInRegion(reduceLambda, result, lowerCorner, higherCorner);
+      this->_cells[OWNED].reduceInRegion(reduceInRegionLambda, result, searchMin, searchMax);
     if (behavior & IteratorBehavior::halo)
-      this->_cells[HALO].reduceInRegion(reduceLambda, result, lowerCorner, higherCorner);
+      this->_cells[HALO].reduceInRegion(reduceInRegionLambda, result, searchMin, searchMax);
     for (auto &buffers : _particlesToAdd) {
       for (auto &buffer : buffers) {
         buffer.reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
