@@ -488,36 +488,6 @@ class LJFunctorHWY
     }
   }
 
-  /**
-   * Depending on the vectorization pattern, this function fills the registers for the loop over i. This includes the
-   * positions and the ownership state.
-   *
-   * @tparam remainder
-   * @tparam reversed
-   * @tparam vecPattern
-   * @param i Current loop index for i.
-   * @param xPtr pointer to the x coordinate of the particle at position i.
-   * @param yPtr pointer to the y coordinate of the particle at position i.
-   * @param zPtr pointer to the z coordinate of the particle at position i.
-   * @param ownedStatePtr pointer to the ownership state of the particle at position i.
-   * @param x1 The register to be filled for x coordinates.
-   * @param y1 The register to be filled for y coordinates.
-   * @param z1 The register to be filled for z coordinates.
-   * @param ownedStateI The mask to be filled for the ownership state.
-   * @param restI The number of lanes filled in case of a remainder loop.
-   */
-  template <bool remainder, bool reversed, VectorizationPattern vecPattern>
-  static void fillIRegisters(const size_t i, const double *const __restrict xPtr, const double *const __restrict yPtr,
-                             const double *const __restrict zPtr,
-                             const autopas::OwnershipState *const __restrict ownedStatePtr, VectorDouble &x1,
-                             VectorDouble &y1, VectorDouble &z1, VectorLong &ownedStateI, const size_t restI) {
-    x1 = loadRegister<true, remainder, reversed, vecPattern>(tag_double, xPtr, i, restI);
-    y1 = loadRegister<true, remainder, reversed, vecPattern>(tag_double, yPtr, i, restI);
-    z1 = loadRegister<true, remainder, reversed, vecPattern>(tag_double, zPtr, i, restI);
-    ownedStateI = loadRegister<true, remainder, reversed, vecPattern>(
-        tag_long, reinterpret_cast<const int64_t *>(ownedStatePtr), i, restI);
-  }
-
   template <bool remainder, VectorizationPattern vecPattern>
   static void handleNewton3Reduction(VectorDouble &fx, VectorDouble &fy, VectorDouble &fz,
                                      double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
@@ -711,7 +681,7 @@ class LJFunctorHWY
    * @param jVecEnd The end index for the inner "j" loop.
    */
   template <bool reversed, bool newton3, bool remainderI, VectorizationPattern vecPattern>
-  inline void handleILoopBody(
+  HWY_INLINE void handleILoopBody(
       const size_t i, const double *const __restrict xPtr1, const double *const __restrict yPtr1,
       const double *const __restrict zPtr1, const autopas::OwnershipState *const __restrict ownedStatePtr1,
       const double *const __restrict xPtr2, const double *const __restrict yPtr2, const double *const __restrict zPtr2,
@@ -722,15 +692,45 @@ class LJFunctorHWY
       const double *const __restrict halfSigmaPtr2, VectorDouble &virialSumX, VectorDouble &virialSumY,
       VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t jVecStart,
       const size_t jVecEnd) const {
-    VectorDouble fxAcc = highway::Zero(tag_double);
-    VectorDouble fyAcc = highway::Zero(tag_double);
-    VectorDouble fzAcc = highway::Zero(tag_double);
+    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+      if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) [[unlikely]] {
+        return;
+      }
+    }
 
-    VectorLong ownedStateI = highway::Zero(tag_long);
+    MaskDouble notDummyMaskI;
+    [[maybe_unused]] VectorDouble energyFactorI = highway::Zero(tag_double);
+    [[maybe_unused]] VectorDouble energyFactorIPlus1 = highway::Zero(tag_double);
 
-    VectorDouble x1 = highway::Zero(tag_double);
-    VectorDouble y1 = highway::Zero(tag_double);
-    VectorDouble z1 = highway::Zero(tag_double);
+    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+      if constexpr (calculateGlobals) {
+        const double baseFactor = (ownedStatePtr1[i] == autopas::OwnershipState::owned) ? 1.0 : 0.0;
+        energyFactorI = highway::Set(tag_double, baseFactor);
+        if constexpr (newton3) {
+          energyFactorIPlus1 = highway::Set(tag_double, baseFactor + 1.0);
+        }
+      }
+    } else {
+      const VectorLong ownedStateI = loadRegister<true, remainderI, reversed, vecPattern>(
+          tag_long, reinterpret_cast<const int64_t *>(ownedStatePtr1), i, restI);
+      notDummyMaskI = highway::RebindMask(tag_double, highway::Ne(ownedStateI, highway::Zero(tag_long)));
+      if (highway::AllFalse(tag_double, notDummyMaskI)) [[unlikely]] {
+        return;
+      }
+      if constexpr (calculateGlobals) {
+        const auto ownedVal = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
+        const auto ownedMaskI = highway::RebindMask(tag_double, highway::Eq(ownedStateI, ownedVal));
+        energyFactorI = highway::MaskedSet(tag_double, ownedMaskI, 1.0);
+        if constexpr (newton3) {
+          energyFactorIPlus1 = highway::Add(energyFactorI, highway::Set(tag_double, 1.0));
+        }
+      }
+    }
+
+    const VectorDouble x1 = loadRegister<true, remainderI, reversed, vecPattern>(tag_double, xPtr1, i, restI);
+    const VectorDouble y1 = loadRegister<true, remainderI, reversed, vecPattern>(tag_double, yPtr1, i, restI);
+    const VectorDouble z1 = loadRegister<true, remainderI, reversed, vecPattern>(tag_double, zPtr1, i, restI);
+
     VectorDouble sqrtEpsilon1 = highway::Zero(tag_double);
     VectorDouble sigmaHalf1 = highway::Zero(tag_double);
     if constexpr (useMixing) {
@@ -738,8 +738,10 @@ class LJFunctorHWY
       sigmaHalf1 = loadRegister<true, remainderI, reversed, vecPattern>(tag_double, halfSigmaPtr1, i, restI);
     }
 
-    fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedStateI,
-                                                     restI);
+    VectorDouble fxAcc = highway::Zero(tag_double);
+    VectorDouble fyAcc = highway::Zero(tag_double);
+    VectorDouble fzAcc = highway::Zero(tag_double);
+
     constexpr size_t jStep = jStepSize<vecPattern>();
     const size_t restJ = jVecEnd & (jStep - 1);
     const size_t jVecEndFull = jVecEnd - restJ;
@@ -759,9 +761,10 @@ class LJFunctorHWY
         sigmaHalf2 = loadRegister<false, false, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, 0);
       }
 
-      SoAKernel<newton3, false, vecPattern>(
-          j, ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
-          sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0);
+      SoAKernel<newton3, false, vecPattern>(j, notDummyMaskI, energyFactorI, energyFactorIPlus1, ownedStateJ, x1, y1,
+                                            z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
+                                            sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
+                                            virialSumZ, uPotSum, 0);
     }
 
     if (restJ > 0) {
@@ -771,9 +774,10 @@ class LJFunctorHWY
         sqrtEpsilon2 = loadRegister<false, true, reversed, vecPattern>(tag_double, sqrtEpsilonPtr2, j, restJ);
         sigmaHalf2 = loadRegister<false, true, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, restJ);
       }
-      SoAKernel<newton3, true, vecPattern>(
-          j, ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
-          sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restJ);
+      SoAKernel<newton3, true, vecPattern>(j, notDummyMaskI, energyFactorI, energyFactorIPlus1, ownedStateJ, x1, y1, z1,
+                                           x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1, sqrtEpsilon2,
+                                           sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum,
+                                           restJ);
     }
 
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
@@ -862,11 +866,6 @@ class LJFunctorHWY
         }
         // Round down to the nearest full SIMD lane boundary so the j-loop starts aligned.
         jVecStart = jVecStart - (jVecStart % jStep);
-        if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-          if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
-            continue;
-          }
-        }
       } else {
         jVecEnd = n2;
       }
@@ -939,55 +938,33 @@ class LJFunctorHWY
 
   /**
    * Actual inner kernel of the SoAFunctors
-   *
-   * @tparam newton3
-   * @tparam remainderJ
-   * @tparam vecPattern
-   * @param j
-   * @param ownedStateI
-   * @param ownedStateJ
-   * @param x1
-   * @param y1
-   * @param z1
-   * @param x2
-   * @param y2
-   * @param z2
-   * @param fx2Ptr
-   * @param fy2Ptr
-   * @param fz2Ptr
-   * @param sqrtEpsilon1
-   * @param sigmaHalf1
-   * @param sqrtEpsilon2
-   * @param sigmaHalf2
-   * @param fxAcc
-   * @param fyAcc
-   * @param fzAcc
-   * @param virialSumX
-   * @param virialSumY
-   * @param virialSumZ
-   * @param uPotSum
-   * @param restJ
    */
   template <bool newton3, bool remainderJ, VectorizationPattern vecPattern>
-  inline void SoAKernel(const size_t j, const VectorLong &ownedStateI, const VectorLong &ownedStateJ,
-                        const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1, const VectorDouble &x2,
-                        const VectorDouble &y2, const VectorDouble &z2, double *const __restrict fx2Ptr,
-                        double *const __restrict fy2Ptr, double *const __restrict fz2Ptr,
-                        const VectorDouble &sqrtEpsilon1, const VectorDouble &sigmaHalf1,
-                        const VectorDouble &sqrtEpsilon2, const VectorDouble &sigmaHalf2, VectorDouble &fxAcc,
-                        VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble &virialSumY,
-                        VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restJ) const {
-    // distance calculations
+  inline void SoAKernel(
+      const size_t j, [[maybe_unused]] const MaskDouble &notDummyMaskI,
+      [[maybe_unused]] const VectorDouble &energyFactorI, [[maybe_unused]] const VectorDouble &energyFactorIPlus1,
+      const VectorLong &ownedStateJ, const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1,
+      const VectorDouble &x2, const VectorDouble &y2, const VectorDouble &z2, double *const __restrict fx2Ptr,
+      double *const __restrict fy2Ptr, double *const __restrict fz2Ptr, const VectorDouble &sqrtEpsilon1,
+      const VectorDouble &sigmaHalf1, const VectorDouble &sqrtEpsilon2, const VectorDouble &sigmaHalf2,
+      VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, [[maybe_unused]] VectorDouble &virialSumX,
+      [[maybe_unused]] VectorDouble &virialSumY, [[maybe_unused]] VectorDouble &virialSumZ,
+      [[maybe_unused]] VectorDouble &uPotSum, const size_t restJ) const {
+    // distance calculations using FMA
     const auto drX = highway::Sub(x1, x2);
     const auto drY = highway::Sub(y1, y2);
     const auto drZ = highway::Sub(z1, z2);
     const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, highway::Mul(drX, drX)));
 
-    VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
+    const VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
 
-    const auto dummyMask =
-        highway::RebindMask(tag_double, highway::And(highway::Ne(ownedStateI, highway::Zero(tag_long)),
-                                                     highway::Ne(ownedStateJ, highway::Zero(tag_long))));
+    const auto notDummyMaskJ = highway::RebindMask(tag_double, highway::Ne(ownedStateJ, highway::Zero(tag_long)));
+    MaskDouble dummyMask;
+    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+      dummyMask = notDummyMaskJ;
+    } else {
+      dummyMask = highway::And(notDummyMaskI, notDummyMaskJ);
+    }
     const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, cutoffSquared);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
@@ -1055,15 +1032,13 @@ class LJFunctorHWY
         const auto uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
         const auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
 
-        // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
-        const auto owned = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
-        const auto ownedMaskI = highway::RebindMask(tag_double, highway::Eq(ownedStateI, owned));
-        const auto ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedStateJ, owned));
-
-        auto energyFactor = highway::MaskedSet(tag_double, ownedMaskI, 1.0);
-
+        VectorDouble energyFactor;
         if constexpr (newton3) {
-          energyFactor = highway::Add(energyFactor, highway::MaskedSet(tag_double, ownedMaskJ, 1.0));
+          const auto owned = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
+          const auto ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedStateJ, owned));
+          energyFactor = highway::IfThenElse(ownedMaskJ, energyFactorIPlus1, energyFactorI);
+        } else {
+          energyFactor = energyFactorI;
         }
 
         uPotSum = highway::MulAdd(energyFactor, uPotMasked, uPotSum);
@@ -1079,17 +1054,17 @@ class LJFunctorHWY
   }
 
   template <bool newton3, bool remainder = false>
-  inline void SoAKernelVerlet(const size_t j, const VectorLong &ownedStateI, const VectorDouble &x1,
-                              const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict xPtr,
-                              const double *const __restrict yPtr, const double *const __restrict zPtr,
-                              const int64_t *const __restrict ownedStatePtr, double *const __restrict fxPtr,
-                              double *const __restrict fyPtr, double *const __restrict fzPtr,
-                              const VectorDouble &sqrtEpsilon1, const VectorDouble &sigmaHalf1,
-                              const double *const __restrict sqrtEpsilonPtr,
-                              const double *const __restrict sigmaHalfPtr, const size_t *const __restrict neighborList,
-                              VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX,
-                              VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &uPotSum,
-                              [[maybe_unused]] const size_t rest = 0) const {
+  inline void SoAKernelVerlet(
+      const size_t j, [[maybe_unused]] const VectorDouble &energyFactorI, const VectorDouble &x1,
+      const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict xPtr,
+      const double *const __restrict yPtr, const double *const __restrict zPtr,
+      const int64_t *const __restrict ownedStatePtr, double *const __restrict fxPtr, double *const __restrict fyPtr,
+      double *const __restrict fzPtr, const VectorDouble &sqrtEpsilon1, const VectorDouble &sigmaHalf1,
+      const double *const __restrict sqrtEpsilonPtr, const double *const __restrict sigmaHalfPtr,
+      const size_t *const __restrict neighborList, VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc,
+      [[maybe_unused]] VectorDouble &virialSumX, [[maybe_unused]] VectorDouble &virialSumY,
+      [[maybe_unused]] VectorDouble &virialSumZ, [[maybe_unused]] VectorDouble &uPotSum,
+      [[maybe_unused]] const size_t rest = 0) const {
     [[maybe_unused]] MaskDouble restMaskDouble;
     [[maybe_unused]] MaskLong restMaskLong;
     VectorLong indices;
@@ -1134,12 +1109,10 @@ class LJFunctorHWY
     const auto drZ = highway::Sub(z1, z2);
     const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, highway::Mul(drX, drX)));
 
-    VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
+    const VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
 
-    const auto dummyMask =
-        highway::RebindMask(tag_double, highway::And(highway::Ne(ownedStateI, highway::Zero(tag_long)),
-                                                     highway::Ne(ownedState2, highway::Zero(tag_long))));
-    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, cutoffSquared);
+    const auto notDummyMask2 = highway::RebindMask(tag_double, highway::Ne(ownedState2, highway::Zero(tag_long)));
+    const auto cutoffDummyMask = highway::MaskedLe(notDummyMask2, dr2, cutoffSquared);
 
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
       return;
@@ -1233,15 +1206,13 @@ class LJFunctorHWY
         }
         const auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
 
-        // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
-        const auto owned = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
-        const auto ownedMaskI = highway::RebindMask(tag_double, highway::Eq(ownedStateI, owned));
-        const auto ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedState2, owned));
-
-        auto energyFactor = highway::MaskedSet(tag_double, ownedMaskI, 1.0);
-
+        VectorDouble energyFactor;
         if constexpr (newton3) {
-          energyFactor = highway::Add(energyFactor, highway::MaskedSet(tag_double, ownedMaskJ, 1.0));
+          const auto owned = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
+          const auto ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedState2, owned));
+          energyFactor = highway::MaskedAddOr(energyFactorI, ownedMaskJ, energyFactorI, one);
+        } else {
+          energyFactor = energyFactorI;
         }
 
         uPotSum = highway::MulAdd(energyFactor, uPotMasked, uPotSum);
@@ -1271,7 +1242,8 @@ class LJFunctorHWY
   inline void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                    std::span<const size_t> neighborList) {
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
-    if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
+    const auto stateI = ownedStatePtr[indexFirst];
+    if (stateI == autopas::OwnershipState::dummy) {
       return;
     }
 
@@ -1307,8 +1279,11 @@ class LJFunctorHWY
     const VectorDouble y1 = highway::Set(tag_double, yPtr[indexFirst]);
     const VectorDouble z1 = highway::Set(tag_double, zPtr[indexFirst]);
 
-    const auto ownedI = static_cast<int64_t>(ownedStatePtr[indexFirst]);
-    const VectorLong ownedStateI = highway::Set(tag_long, ownedI);
+    [[maybe_unused]] VectorDouble energyFactorI = highway::Zero(tag_double);
+    if constexpr (calculateGlobals) {
+      const double baseFactor = (stateI == autopas::OwnershipState::owned) ? 1.0 : 0.0;
+      energyFactorI = highway::Set(tag_double, baseFactor);
+    }
 
     const size_t neighborListSize = neighborList.size();
     const size_t rest = neighborListSize & (_vecLengthDouble - 1);
@@ -1316,14 +1291,14 @@ class LJFunctorHWY
     size_t j = 0;
 
     for (; j < vecEnd; j += _vecLengthDouble) {
-      SoAKernelVerlet<newton3, false>(j, ownedStateI, x1, y1, z1, xPtr, yPtr, zPtr,
+      SoAKernelVerlet<newton3, false>(j, energyFactorI, x1, y1, z1, xPtr, yPtr, zPtr,
                                       reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
                                       sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, neighborList.data(),
                                       fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum);
     }
 
     if (rest > 0) {
-      SoAKernelVerlet<newton3, true>(j, ownedStateI, x1, y1, z1, xPtr, yPtr, zPtr,
+      SoAKernelVerlet<newton3, true>(j, energyFactorI, x1, y1, z1, xPtr, yPtr, zPtr,
                                      reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
                                      sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, neighborList.data(), fxAcc,
                                      fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, rest);
