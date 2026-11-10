@@ -120,7 +120,9 @@ class AutoTuner {
 
   /**
    * Tell the tuner that the given config is not applicable.
-   * Since this operation might change the suggestion what configuration to try next, this next suggestion is returned.
+   * Since this operation might change the suggestion what configuration to try next, the next configuration has to be
+   * retrieved via getCurrentConfig() afterwards.
+   * If the rejected configuration was the last one in the queue, the tuner stops tuning (see handleEndOfTuningPhase()).
    *
    * @note The applicability checking logic was moved out of the tuner because it needed the container,
    * thus raising the compile complexity.
@@ -129,9 +131,8 @@ class AutoTuner {
    * @param indefinitely Whether the given config should be completely removed from the search space (aka rejected
    * indefinitely).
    * @param tuningPhase Current tuning phase.
-   * @return Tuple<Next configuration to use, still tuning>.
    */
-  [[nodiscard]] Configuration rejectConfig(const Configuration &rejectedConfig, bool indefinitely, size_t tuningPhase);
+  void rejectConfig(const Configuration &rejectedConfig, bool indefinitely, size_t tuningPhase);
 
   /**
    * Indicator function whether the search space consists of exactly one configuration.
@@ -215,12 +216,6 @@ class AutoTuner {
   bool inTuningPhase() const;
 
   /**
-   * Indicates if the tuner is in the last iteration of the tuning phase.
-   * @return
-   */
-  bool inLastTuningIteration() const;
-
-  /**
    * Getter for the internal evidence collection.
    * @return
    */
@@ -294,9 +289,11 @@ class AutoTuner {
   SortingThresholdBenchmark _sortingThresholdBenchmark;
 
   /**
-   * If it is the end of the tuning phase, determine the optimal configuration and set this as the configuration to be
-   * used until the next tuning phase, as well as setting other relevant class members (_endOfTuningPhase, _isTuning,
-   * _samplesRebuildingNeighborLists, _iterationBaseline)
+   * To be called when the config queue runs empty, either because the last configuration was measured or because it
+   * was rejected. Stops tuning and selects the best configuration of this tuner for the current tuning phase.
+   * This is only a provisional choice, used while other tuners are still tuning. Once all tuners are finished, the
+   * TuningManager makes the final choice via setOptimalConfiguration().
+   * @param tuningPhase Current tuning phase number.
    */
   void handleEndOfTuningPhase(size_t tuningPhase);
 
@@ -411,6 +408,12 @@ class AutoTuner {
   SearchSpaceType _searchSpace;
 
   /**
+   * True if the search space this tuner was constructed with consists of only one configuration. In this case, the
+   * tuner never tunes.
+   */
+  bool _initialSearchSpaceIsTrivial;
+
+  /**
    * Sorted queue of configurations that should be looked at in this tuning phase.
    * Initially this is the full search space. Tuning strategies then can filter and resort this.
    *
@@ -437,13 +440,6 @@ class AutoTuner {
    * Is set to true during a tuning phase.
    */
   bool _isTuning{false};
-
-  /**
-   * Is only set to true for the last iteration of a tuning phase.
-   * Specifically, from when tuneConfiguration() selects the optimum until it is reset to false in
-   * bumpIterationCounters().
-   */
-  bool _endOfTuningPhase{false};
 
   /**
    * Is set to true in forceRetune() to signal a new tuning phase should start outside the regular tuningInterval. Is
