@@ -747,37 +747,18 @@ class LJFunctorHWY
     const size_t jVecEndFull = jVecEnd - restJ;
     size_t j = jVecStart;
 
-    VectorDouble x2;
-    VectorDouble y2;
-    VectorDouble z2;
-    VectorDouble sqrtEpsilon2 = highway::Zero(tag_double);
-    VectorDouble sigmaHalf2 = highway::Zero(tag_double);
-    VectorLong ownedStateJ = highway::Zero(tag_long);
     for (; j < jVecEndFull; j += jStep) {
-      fillJRegisters<false, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2,
-                                        y2, z2, ownedStateJ, 0);
-      if constexpr (useMixing) {
-        sqrtEpsilon2 = loadRegister<false, false, reversed, vecPattern>(tag_double, sqrtEpsilonPtr2, j, 0);
-        sigmaHalf2 = loadRegister<false, false, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, 0);
-      }
-
-      SoAKernel<newton3, false, vecPattern>(j, notDummyMaskI, energyFactorI, energyFactorIPlus1, ownedStateJ, x1, y1,
-                                            z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1,
-                                            sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
-                                            virialSumZ, uPotSum, 0);
+      SoAKernel<newton3, false, reversed, vecPattern>(
+          j, notDummyMaskI, energyFactorI, energyFactorIPlus1, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1,
+          y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr2, halfSigmaPtr2,
+          fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0);
     }
 
     if (restJ > 0) {
-      fillJRegisters<true, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2,
-                                       y2, z2, ownedStateJ, restJ);
-      if constexpr (useMixing) {
-        sqrtEpsilon2 = loadRegister<false, true, reversed, vecPattern>(tag_double, sqrtEpsilonPtr2, j, restJ);
-        sigmaHalf2 = loadRegister<false, true, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, restJ);
-      }
-      SoAKernel<newton3, true, vecPattern>(j, notDummyMaskI, energyFactorI, energyFactorIPlus1, ownedStateJ, x1, y1, z1,
-                                           x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1, sqrtEpsilon2,
-                                           sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum,
-                                           restJ);
+      SoAKernel<newton3, true, reversed, vecPattern>(
+          j, notDummyMaskI, energyFactorI, energyFactorIPlus1, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1,
+          y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr2, halfSigmaPtr2,
+          fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restJ);
     }
 
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
@@ -909,72 +890,60 @@ class LJFunctorHWY
   }
 
   /**
-   * Depending on the vectorization pattern, this function fills the registers for the loop over j. This includes the
-   * positions and the ownership state.
-   *
-   * @tparam remainder
-   * @tparam vecPattern
-   * @param j Current loop index for j.
-   * @param x2Ptr pointer to the x coordinate of the particle at position j.
-   * @param y2Ptr pointer to the y coordinate of the particle at position j.
-   * @param z2Ptr pointer to the z coordinate of the particle at position j.
-   * @param ownedStatePtr2 pointer to the ownership state of the particle at position j.
-   * @param x2 The register to be filled for x coordinates.
-   * @param y2 The register to be filled for y coordinates.
-   * @param z2 The register to be filled for z coordinates.
-   * @param ownedStateJ The register to be filled for the ownership state.
-   * @param rest The number of lanes filled in case of a remainder loop.
+   * Actual inner kernel of the SoAFunctors.
    */
-  template <bool remainder, VectorizationPattern vecPattern>
-  static void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
-                             const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
-                             VectorDouble &x2, VectorDouble &y2, VectorDouble &z2, VectorLong &ownedStateJ,
-                             const size_t rest) {
-    x2 = loadRegister<false, remainder, false, vecPattern>(tag_double, x2Ptr, j, rest);
-    y2 = loadRegister<false, remainder, false, vecPattern>(tag_double, y2Ptr, j, rest);
-    z2 = loadRegister<false, remainder, false, vecPattern>(tag_double, z2Ptr, j, rest);
-    ownedStateJ = loadRegister<false, remainder, false, vecPattern>(tag_long, ownedStatePtr2, j, rest);
-  }
-
-  /**
-   * Actual inner kernel of the SoAFunctors
-   */
-  template <bool newton3, bool remainderJ, VectorizationPattern vecPattern>
-  inline void SoAKernel(
+  template <bool newton3, bool remainderJ, bool reversed, VectorizationPattern vecPattern>
+  HWY_INLINE void SoAKernel(
       const size_t j, [[maybe_unused]] const MaskDouble &notDummyMaskI,
       [[maybe_unused]] const VectorDouble &energyFactorI, [[maybe_unused]] const VectorDouble &energyFactorIPlus1,
-      const VectorLong &ownedStateJ, const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1,
-      const VectorDouble &x2, const VectorDouble &y2, const VectorDouble &z2, double *const __restrict fx2Ptr,
-      double *const __restrict fy2Ptr, double *const __restrict fz2Ptr, const VectorDouble &sqrtEpsilon1,
-      const VectorDouble &sigmaHalf1, const VectorDouble &sqrtEpsilon2, const VectorDouble &sigmaHalf2,
-      VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, [[maybe_unused]] VectorDouble &virialSumX,
-      [[maybe_unused]] VectorDouble &virialSumY, [[maybe_unused]] VectorDouble &virialSumZ,
-      [[maybe_unused]] VectorDouble &uPotSum, const size_t restJ) const {
+      const int64_t *const __restrict ownedStatePtr2, const VectorDouble &x1, const VectorDouble &y1,
+      const VectorDouble &z1, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
+      const double *const __restrict z2Ptr, double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
+      double *const __restrict fz2Ptr, const VectorDouble &sqrtEpsilon1, const VectorDouble &sigmaHalf1,
+      [[maybe_unused]] const double *const __restrict sqrtEpsilonPtr2,
+      [[maybe_unused]] const double *const __restrict halfSigmaPtr2, VectorDouble &fxAcc, VectorDouble &fyAcc,
+      VectorDouble &fzAcc, [[maybe_unused]] VectorDouble &virialSumX, [[maybe_unused]] VectorDouble &virialSumY,
+      [[maybe_unused]] VectorDouble &virialSumZ, [[maybe_unused]] VectorDouble &uPotSum, const size_t restJ) const {
+    const VectorDouble x2 = loadRegister<false, remainderJ, reversed, vecPattern>(tag_double, x2Ptr, j, restJ);
+    const VectorDouble y2 = loadRegister<false, remainderJ, reversed, vecPattern>(tag_double, y2Ptr, j, restJ);
+    const VectorDouble z2 = loadRegister<false, remainderJ, reversed, vecPattern>(tag_double, z2Ptr, j, restJ);
+
     // distance calculations using FMA
     const auto drX = highway::Sub(x1, x2);
     const auto drY = highway::Sub(y1, y2);
     const auto drZ = highway::Sub(z1, z2);
     const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, highway::Mul(drX, drX)));
 
-    const VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
+    const VectorDouble cutoffSquaredVec = highway::Set(tag_double, _cutoffSquareAoS);
 
-    const auto notDummyMaskJ = highway::RebindMask(tag_double, highway::Ne(ownedStateJ, highway::Zero(tag_long)));
-    MaskDouble dummyMask;
+    MaskDouble cutoffMaskI;
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      dummyMask = notDummyMaskJ;
+      cutoffMaskI = highway::Le(dr2, cutoffSquaredVec);
     } else {
-      dummyMask = highway::And(notDummyMaskI, notDummyMaskJ);
+      cutoffMaskI = highway::MaskedLe(notDummyMaskI, dr2, cutoffSquaredVec);
     }
-    const auto cutoffDummyMask = highway::MaskedLe(dummyMask, dr2, cutoffSquared);
 
-    if (highway::AllFalse(tag_double, cutoffDummyMask)) {
+    if (highway::AllFalse(tag_double, cutoffMaskI)) {
       return;
     }
 
-    VectorDouble epsilon24s = highway::Undefined(tag_double);
-    VectorDouble sigmaSquareds = highway::Undefined(tag_double);
+    const VectorLong ownedStateJ =
+        loadRegister<false, remainderJ, reversed, vecPattern>(tag_long, ownedStatePtr2, j, restJ);
+    const auto notDummyMaskJ = highway::RebindMask(tag_double, highway::Ne(ownedStateJ, highway::Zero(tag_long)));
+    const auto cutoffDummyMask = highway::And(cutoffMaskI, notDummyMaskJ);
+
+    if (highway::AllFalse(tag_double, cutoffDummyMask)) [[unlikely]] {
+      return;
+    }
+
+    VectorDouble epsilon24s;
+    VectorDouble sigmaSquareds;
 
     if constexpr (useMixing) {
+      const VectorDouble sqrtEpsilon2 =
+          loadRegister<false, remainderJ, reversed, vecPattern>(tag_double, sqrtEpsilonPtr2, j, restJ);
+      const VectorDouble sigmaHalf2 =
+          loadRegister<false, remainderJ, reversed, vecPattern>(tag_double, halfSigmaPtr2, j, restJ);
       epsilon24s = highway::Mul(sqrtEpsilon1, sqrtEpsilon2);
       const auto sigma = highway::Add(sigmaHalf1, sigmaHalf2);
       sigmaSquareds = highway::Mul(sigma, sigma);
