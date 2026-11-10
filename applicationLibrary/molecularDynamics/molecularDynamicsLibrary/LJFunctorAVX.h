@@ -16,11 +16,8 @@
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
-#include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "autopas/utils/inBox.h"
 
 namespace mdLib {
 
@@ -38,8 +35,8 @@ namespace mdLib {
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
- * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
+ * @tparam relevantForTuning Whether the auto-tuner should consider this functor.
  */
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
@@ -62,6 +59,7 @@ class LJFunctorAVX
 
   /**
    * Hook for SoALoader to load particle attributes or functor-computed mixing data.
+   * @copydoc autopas::Functor::loadSoAAttribute(const Particle_T&) const
    */
   template <typename Particle_T::AttributeNames attribute>
   inline auto loadSoAAttribute(const Particle_T &particle) const {
@@ -84,6 +82,7 @@ class LJFunctorAVX
 
   /**
    * Hook for SoALoader (non-const particle overload for ptr).
+   * @copydoc autopas::Functor::loadSoAAttribute(Particle_T&) const
    */
   template <typename Particle_T::AttributeNames attribute>
   inline auto loadSoAAttribute(Particle_T &particle) const {

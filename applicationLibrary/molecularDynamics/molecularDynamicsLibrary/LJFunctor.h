@@ -65,6 +65,7 @@ class LJFunctor
 
   /**
    * Hook for SoALoader to load particle attributes or functor-computed mixing data.
+   * @copydoc autopas::Functor::loadSoAAttribute(const Particle_T&) const
    */
   template <typename Particle_T::AttributeNames attribute>
   inline auto loadSoAAttribute(const Particle_T &particle) const {
@@ -87,6 +88,7 @@ class LJFunctor
 
   /**
    * Hook for SoALoader (non-const particle overload for ptr).
+   * @copydoc autopas::Functor::loadSoAAttribute(Particle_T&) const
    */
   template <typename Particle_T::AttributeNames attribute>
   inline auto loadSoAAttribute(Particle_T &particle) const {

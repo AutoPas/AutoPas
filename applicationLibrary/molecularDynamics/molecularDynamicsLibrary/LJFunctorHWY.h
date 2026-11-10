@@ -59,8 +59,9 @@ using VectorizationPattern = autopas::VectorizationPatternOption::Value;
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
+ * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
  * @tparam relevantForTuning Whether the auto-tuner should consider this functor.
- * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.*/
+ */
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
@@ -83,6 +84,7 @@ class LJFunctorHWY
 
   /**
    * Hook for SoALoader to load particle attributes or functor-computed mixing data.
+   * @copydoc autopas::Functor::loadSoAAttribute(const Particle_T&) const
    */
   template <typename Particle_T::AttributeNames attribute>
   inline auto loadSoAAttribute(const Particle_T &particle) const {
@@ -105,6 +107,7 @@ class LJFunctorHWY
 
   /**
    * Hook for SoALoader (non-const particle overload for ptr).
+   * @copydoc autopas::Functor::loadSoAAttribute(Particle_T&) const
    */
   template <typename Particle_T::AttributeNames attribute>
   inline auto loadSoAAttribute(Particle_T &particle) const {
@@ -514,7 +517,7 @@ class LJFunctorHWY
    * @param x1 The register to be filled for x coordinates.
    * @param y1 The register to be filled for y coordinates.
    * @param z1 The register to be filled for z coordinates.
-   * @param ownedMaskI The mask to be filled for the ownership state.
+   * @param ownedStateI The register to be filled for ownership states.
    * @param restI The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, bool reversed, VectorizationPattern vecPattern>
@@ -934,7 +937,7 @@ class LJFunctorHWY
    * @param x2 The register to be filled for x coordinates.
    * @param y2 The register to be filled for y coordinates.
    * @param z2 The register to be filled for z coordinates.
-   * @param ownedMaskJ The register to be filled for the ownership state.
+   * @param ownedStateJ The register to be filled for the ownership state.
    * @param rest The number of lanes filled in case of a remainder loop.
    */
   template <bool remainder, VectorizationPattern vecPattern>
@@ -958,8 +961,8 @@ class LJFunctorHWY
    * @tparam vecPattern
    * @param i
    * @param j
-   * @param ownedMaskI
-   * @param ownedMaskJ
+   * @param ownedStateI
+   * @param ownedStateJ
    * @param x1
    * @param y1
    * @param z1
