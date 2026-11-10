@@ -1099,32 +1099,33 @@ class LJFunctorHWY
       fzAcc = highway::Add(fzAcc, fz);
 
       if constexpr (calculateGlobals) {
-        VectorDouble shift6s;
-        if constexpr (applyShift) {
-          if constexpr (not useMixing) {
-            shift6s = highway::Set(tag_double, _shift6AoS);
-          } else {
-            const auto tmpShift1 = highway::Mul(sigmaSquareds, shiftOrInvCutoffSquared);
-            const auto tmpShift2 = highway::Mul(highway::Mul(tmpShift1, tmpShift1), tmpShift1);
-            shift6s = highway::Mul(epsilon24s, highway::Sub(tmpShift2, highway::Mul(tmpShift2, tmpShift2)));
-          }
-        } else {
-          shift6s = shiftOrInvCutoffSquared;
-        }
-
         const auto virialX = highway::Mul(fx, drX);
         const auto virialY = highway::Mul(fy, drY);
         const auto virialZ = highway::Mul(fz, drZ);
 
         const auto lj12m6 = highway::MulSub(lj6, lj6, lj6);
-        const auto uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
+        VectorDouble uPot;
+
+        if constexpr (applyShift) {
+          VectorDouble shift6s;
+          if constexpr (useMixing) {
+            const auto tmpShift1 = highway::Mul(sigmaSquareds, shiftOrInvCutoffSquared);
+            const auto tmpShift2 = highway::Mul(highway::Mul(tmpShift1, tmpShift1), tmpShift1);
+            shift6s = highway::Mul(epsilon24s, highway::Sub(tmpShift2, highway::Mul(tmpShift2, tmpShift2)));
+          } else {
+            shift6s = shiftOrInvCutoffSquared;
+          }
+          uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
+        } else {
+          uPot = highway::Mul(epsilon24s, lj12m6);
+        }
         const auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
 
         VectorDouble energyFactor;
         if constexpr (newton3) {
           const auto owned = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
           const auto ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedStateJ, owned));
-          energyFactor = highway::IfThenElse(ownedMaskJ, energyFactorIPlus1, energyFactorI);
+          energyFactor = highway::MaskedAddOr(energyFactorI, ownedMaskJ, energyFactorI, one);
         } else {
           energyFactor = energyFactorI;
         }
