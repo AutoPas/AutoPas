@@ -255,11 +255,18 @@ class LJFunctorHWY
     auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
 
-    const double *__restrict sqrtEpsilonPtr = nullptr;
-    const double *__restrict halfSigmaPtr = nullptr;
+    const double *sqrtEpsilonPtr = nullptr;
+    const double *halfSigmaPtr = nullptr;
     if constexpr (useMixing) {
       sqrtEpsilonPtr = soa.template begin<AttrSqrt24Epsilon>();
       halfSigmaPtr = soa.template begin<AttrHalfSigma>();
+    }
+
+    if (soaSize <= 7) {
+      scalarSoAKernel<true, true>(soaSize, soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr,
+                                  sqrtEpsilonPtr, halfSigmaPtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr,
+                                  sqrtEpsilonPtr, halfSigmaPtr);
+      return;
     }
 
     // initialize and declare vector variables
@@ -288,42 +295,10 @@ class LJFunctorHWY
    */
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
-    switch (_vecPattern) {
-      case VectorizationPattern::p1xVec: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::p1xVec>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::p1xVec>(soa1, soa2);
-        }
-        break;
-      }
-      case VectorizationPattern::p2xVecDiv2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
-        }
-        break;
-      }
-      case VectorizationPattern::pVecDiv2x2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
-        }
-        break;
-      }
-      case VectorizationPattern::pVecx1: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, false, VectorizationPattern::pVecx1>(soa1, soa2);
-        } else {
-          SoAFunctorPairImpl<false, false, VectorizationPattern::pVecx1>(soa1, soa2);
-        }
-        break;
-      }
-      default:
-        autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
+    if (soa1.size() == 0 or soa2.size() == 0) {
+      return;
     }
+    SoAFunctorPairDispatch<false>(soa1, soa2, newton3);
   }
 
   /**
@@ -334,42 +309,7 @@ class LJFunctorHWY
     if (soa1.size() == 0 or soa2.size() == 0) {
       return;
     }
-    switch (_vecPattern) {
-      case VectorizationPattern::p1xVec: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
-        } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
-        }
-        break;
-      }
-      case VectorizationPattern::p2xVecDiv2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
-        } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
-        }
-        break;
-      }
-      case VectorizationPattern::pVecDiv2x2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
-        } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
-        }
-        break;
-      }
-      case VectorizationPattern::pVecx1: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
-        } else {
-          SoAFunctorPairImpl<false, true, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
-        }
-        break;
-      }
-      default:
-        autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
-    }
+    SoAFunctorPairDispatch<true>(soa1, soa2, newton3, sortingData);
   }
 
  private:
@@ -404,6 +344,106 @@ class LJFunctorHWY
     fz = dz * fac;
     if constexpr (calculateGlobals) {
       pot6 = epsilon24 * lj12m6 + shift6;
+    }
+  }
+
+  /**
+   * Scalar fallback kernel for very small particle counts (N <= 7), avoiding SIMD remainder overhead and horizontal
+   * reduction trees when only a few lanes would be active.
+   */
+  template <bool isSingleCell, bool newton3>
+  HWY_INLINE void scalarSoAKernel(const size_t soaSize1, const size_t soaSize2, const double *const __restrict x1Ptr,
+                                  const double *const __restrict y1Ptr, const double *const __restrict z1Ptr,
+                                  const autopas::OwnershipState *const __restrict ownedStatePtr1,
+                                  double *const __restrict fx1Ptr, double *const __restrict fy1Ptr,
+                                  double *const __restrict fz1Ptr, const double *const __restrict sqrtEpsilon1Ptr,
+                                  const double *const __restrict halfSigma1Ptr, const double *const __restrict x2Ptr,
+                                  const double *const __restrict y2Ptr, const double *const __restrict z2Ptr,
+                                  const autopas::OwnershipState *const __restrict ownedStatePtr2,
+                                  double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
+                                  double *const __restrict fz2Ptr, const double *const __restrict sqrtEpsilon2Ptr,
+                                  const double *const __restrict halfSigma2Ptr) {
+    [[maybe_unused]] double virialX = 0., virialY = 0., virialZ = 0., potentialEnergy = 0.;
+
+    std::array<double, 8> fx2Acc{}, fy2Acc{}, fz2Acc{};
+
+    constexpr size_t startI = isSingleCell ? 1 : 0;
+    for (size_t i = startI; i < soaSize1; ++i) {
+      if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
+        continue;
+      }
+      const double xi = x1Ptr[i], yi = y1Ptr[i], zi = z1Ptr[i];
+      double sqrtEps1 = 0., halfSig1 = 0.;
+      if constexpr (useMixing) {
+        sqrtEps1 = sqrtEpsilon1Ptr[i];
+        halfSig1 = halfSigma1Ptr[i];
+      }
+      [[maybe_unused]] const bool isOwnedI = (ownedStatePtr1[i] == autopas::OwnershipState::owned);
+
+      double fxi = 0., fyi = 0., fzi = 0.;
+      const size_t endJ = isSingleCell ? i : soaSize2;
+      for (size_t j = 0; j < endJ; ++j) {
+        if (ownedStatePtr2[j] == autopas::OwnershipState::dummy) {
+          continue;
+        }
+        const double dx = xi - x2Ptr[j];
+        const double dy = yi - y2Ptr[j];
+        const double dz = zi - z2Ptr[j];
+        const double dr2 = dx * dx + dy * dy + dz * dz;
+
+        if (dr2 <= _cutoffSquareAoS) {
+          double fx = 0., fy = 0., fz = 0., pot6 = 0.;
+          computeScalarLJInteraction(dr2, dx, dy, dz, sqrtEps1, halfSig1, useMixing ? sqrtEpsilon2Ptr[j] : 0.,
+                                     useMixing ? halfSigma2Ptr[j] : 0., fx, fy, fz, pot6);
+          fxi += fx;
+          fyi += fy;
+          fzi += fz;
+          if constexpr (newton3) {
+            fx2Acc[j] -= fx;
+            fy2Acc[j] -= fy;
+            fz2Acc[j] -= fz;
+          }
+          if constexpr (calculateGlobals) {
+            const bool isOwnedJ = newton3 and (ownedStatePtr2[j] == autopas::OwnershipState::owned);
+            const double energyFactor = (isOwnedI ? 1.0 : 0.0) + (isOwnedJ ? 1.0 : 0.0);
+            potentialEnergy += energyFactor * pot6;
+            virialX += energyFactor * fx * dx;
+            virialY += energyFactor * fy * dy;
+            virialZ += energyFactor * fz * dz;
+          }
+        }
+      }
+      if constexpr (isSingleCell) {
+        fx2Acc[i] += fxi;
+        fy2Acc[i] += fyi;
+        fz2Acc[i] += fzi;
+      } else {
+        fx1Ptr[i] += fxi;
+        fy1Ptr[i] += fyi;
+        fz1Ptr[i] += fzi;
+      }
+    }
+
+    if constexpr (isSingleCell) {
+      for (size_t i = 0; i < soaSize1; ++i) {
+        fx1Ptr[i] += fx2Acc[i];
+        fy1Ptr[i] += fy2Acc[i];
+        fz1Ptr[i] += fz2Acc[i];
+      }
+    } else if constexpr (newton3) {
+      for (size_t j = 0; j < soaSize2; ++j) {
+        fx2Ptr[j] += fx2Acc[j];
+        fy2Ptr[j] += fy2Acc[j];
+        fz2Ptr[j] += fz2Acc[j];
+      }
+    }
+
+    if constexpr (calculateGlobals) {
+      const int threadnum = autopas::autopas_get_thread_num();
+      _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
+      _aosThreadData[threadnum].virialSum[0] += virialX;
+      _aosThreadData[threadnum].virialSum[1] += virialY;
+      _aosThreadData[threadnum].virialSum[2] += virialZ;
     }
   }
 
@@ -977,6 +1017,97 @@ class LJFunctorHWY
     }
 
     reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
+  }
+
+  /**
+   * Dispatches SoAFunctorPair or SoAFunctorPairSorted to scalar small-N fallback or SIMD VectorizationPattern.
+   */
+  template <bool sorted>
+  inline void SoAFunctorPairDispatch(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                                     const bool newton3,
+                                     autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
+    const size_t n1 = soa1.size();
+    const size_t n2 = soa2.size();
+
+    if constexpr (useMixing) {
+      if (n1 <= 7 and n2 <= 7) {
+        if constexpr (sorted) {
+          if (sortingData.has_value()) {
+            const auto &sd = sortingData->get();
+            if (sd.startI >= sd.endI) {
+              return;
+            }
+          }
+        }
+        const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+        const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+        const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+        const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+        auto *const __restrict fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
+        auto *const __restrict fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
+        auto *const __restrict fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+        const auto *const __restrict sqrtEpsilon1Ptr = soa1.template begin<AttrSqrt24Epsilon>();
+        const auto *const __restrict halfSigma1Ptr = soa1.template begin<AttrHalfSigma>();
+
+        const auto *const __restrict x2Ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+        const auto *const __restrict y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+        const auto *const __restrict z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
+        const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
+        auto *const __restrict fx2Ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
+        auto *const __restrict fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
+        auto *const __restrict fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+        const auto *const __restrict sqrtEpsilon2Ptr = soa2.template begin<AttrSqrt24Epsilon>();
+        const auto *const __restrict halfSigma2Ptr = soa2.template begin<AttrHalfSigma>();
+
+        if (newton3) {
+          scalarSoAKernel<false, true>(n1, n2, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, fx1Ptr, fy1Ptr, fz1Ptr,
+                                       sqrtEpsilon1Ptr, halfSigma1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx2Ptr,
+                                       fy2Ptr, fz2Ptr, sqrtEpsilon2Ptr, halfSigma2Ptr);
+        } else {
+          scalarSoAKernel<false, false>(n1, n2, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, fx1Ptr, fy1Ptr, fz1Ptr,
+                                        sqrtEpsilon1Ptr, halfSigma1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx2Ptr,
+                                        fy2Ptr, fz2Ptr, sqrtEpsilon2Ptr, halfSigma2Ptr);
+        }
+        return;
+      }
+    }
+
+    switch (_vecPattern) {
+      case VectorizationPattern::p1xVec: {
+        if (newton3) {
+          SoAFunctorPairImpl<true, sorted, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
+        } else {
+          SoAFunctorPairImpl<false, sorted, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
+        }
+        break;
+      }
+      case VectorizationPattern::p2xVecDiv2: {
+        if (newton3) {
+          SoAFunctorPairImpl<true, sorted, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
+        } else {
+          SoAFunctorPairImpl<false, sorted, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
+        }
+        break;
+      }
+      case VectorizationPattern::pVecDiv2x2: {
+        if (newton3) {
+          SoAFunctorPairImpl<true, sorted, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
+        } else {
+          SoAFunctorPairImpl<false, sorted, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
+        }
+        break;
+      }
+      case VectorizationPattern::pVecx1: {
+        if (newton3) {
+          SoAFunctorPairImpl<true, sorted, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
+        } else {
+          SoAFunctorPairImpl<false, sorted, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
+        }
+        break;
+      }
+      default:
+        autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
+    }
   }
 
   /**
