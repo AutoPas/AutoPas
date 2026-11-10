@@ -39,7 +39,11 @@
 /* ----------------------------LB4OMP_extensions------------------------------- */
 //#include <chrono> // for time measurements like in BOLD
 #include <sstream> // for debug only [need to link app with C++ std library]
+#if KMP_ARCH_X86 || KMP_ARCH_X86_64
 #include <x86intrin.h> // for time measurements with __rdtscp()
+#else
+#include <chrono> // for time measurements without __rdtscp(), see __kmp_get_ticks()
+#endif
 /* ----------------------------LB4OMP_extensions------------------------------- */
 
 /* ------------------------------------------------------------------------ */
@@ -590,6 +594,7 @@ static __forceinline long double __kmp_pow(long double x, UT y) {
 }*/
 
 // Get ticks of current time divided by CPU speed [=microseconds].
+#if KMP_ARCH_X86 || KMP_ARCH_X86_64
 static __forceinline kmp_uint64 __kmp_get_ticks() {
   unsigned int dummy;
   return __rdtscp(&dummy) / __kmp_env_cpu_speed;
@@ -598,6 +603,19 @@ static __forceinline double __kmp_get_ticks2() {
   unsigned int dummy;
   return (double)__rdtscp(&dummy) / (double)__kmp_env_cpu_speed;
 }
+#else
+// __rdtscp() is x86-only. Elsewhere, read microseconds from a monotonic clock directly, so KMP_CPU_SPEED is not used.
+static __forceinline kmp_uint64 __kmp_get_ticks() {
+  return std::chrono::duration_cast<std::chrono::microseconds>(
+             std::chrono::steady_clock::now().time_since_epoch())
+      .count();
+}
+static __forceinline double __kmp_get_ticks2() {
+  return std::chrono::duration<double, std::micro>(
+             std::chrono::steady_clock::now().time_since_epoch())
+      .count();
+}
+#endif
 
 #if KMP_DEBUG
 /* Debug prints for correctness checks. Comment out else. */
