@@ -67,7 +67,9 @@ std::deque<std::shared_timed_mutex> mutexes;
 
 #include "kmp_stats_timing.h" // by Ali
 #include "kmp_stats.h"   //by Ali
+#if KMP_ARCH_X86 || KMP_ARCH_X86_64
 #include <x86intrin.h>
+#endif
 
 #define MIN(a, b) (((a)<(b))?(a):(b))
 #define MAX(a, b) (((a)>(b))?(a):(b))
