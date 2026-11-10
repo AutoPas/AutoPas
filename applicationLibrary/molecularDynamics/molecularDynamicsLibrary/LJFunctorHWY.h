@@ -241,7 +241,8 @@ class LJFunctorHWY
    * This functor will always do a newton3 like traversal of the SoA using only the 1xVec Pattern.
    */
   inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, [[maybe_unused]] const bool newton3) final {
-    if (soa.size() == 0) return;
+    const size_t soaSize = soa.size();
+    if (soaSize <= 1) return;
 
     // obtain iterators for the various values
     const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
@@ -267,10 +268,10 @@ class LJFunctorHWY
     auto virialSumZ = highway::Zero(tag_double);
     auto uPotSum = highway::Zero(tag_double);
 
-    for (std::ptrdiff_t i = static_cast<std::ptrdiff_t>(soa.size()) - 1; i >= 0; i -= 1) {
-      static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
-                    "OwnershipStates underlying type should be int64_t!");
+    static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
+                  "OwnershipStates underlying type should be int64_t!");
 
+    for (size_t i = soaSize - 1; i >= 1; i -= 1) {
       handleILoopBody<true, true, false, VectorizationPattern::p1xVec>(
           i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr,
           sqrtEpsilonPtr, halfSigmaPtr, sqrtEpsilonPtr, halfSigmaPtr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0,
@@ -414,21 +415,6 @@ class LJFunctorHWY
     }
     autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
     return {};
-  }
-
-  /**
-   * Checks whether the inner loop over j should be continued. This depends on the respective VectorizationPattern.
-   *
-   * @tparam vecPattern
-   * @param i
-   * @param j
-   * @return  true if the inner loop over j should be continued, else false.
-   */
-  template <VectorizationPattern vecPattern>
-  static constexpr bool checkSecondLoopCondition(std::ptrdiff_t i, size_t j) {
-    const auto jStep = static_cast<std::ptrdiff_t>(jStepSize<vecPattern>());
-    const std::ptrdiff_t limit = i - (i % jStep);
-    return j < static_cast<size_t>(limit);
   }
 
   /**
@@ -754,15 +740,18 @@ class LJFunctorHWY
 
     fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedStateI,
                                                      restI);
-    auto j = static_cast<std::ptrdiff_t>(jVecStart);
+    constexpr size_t jStep = jStepSize<vecPattern>();
+    const size_t restJ = jVecEnd & (jStep - 1);
+    const size_t jVecEndFull = jVecEnd - restJ;
+    size_t j = jVecStart;
+
     VectorDouble x2;
     VectorDouble y2;
     VectorDouble z2;
     VectorDouble sqrtEpsilon2 = highway::Zero(tag_double);
     VectorDouble sigmaHalf2 = highway::Zero(tag_double);
     VectorLong ownedStateJ = highway::Zero(tag_long);
-    for (; checkSecondLoopCondition<vecPattern>(jVecEnd, j);
-         j += static_cast<std::ptrdiff_t>(jStepSize<vecPattern>())) {
+    for (; j < jVecEndFull; j += jStep) {
       fillJRegisters<false, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2,
                                         y2, z2, ownedStateJ, 0);
       if constexpr (useMixing) {
@@ -775,7 +764,6 @@ class LJFunctorHWY
           sqrtEpsilon2, sigmaHalf2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0);
     }
 
-    const size_t restJ = jVecEnd & (jStepSize<vecPattern>() - 1);
     if (restJ > 0) {
       fillJRegisters<true, vecPattern>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t *>(ownedStatePtr2), x2,
                                        y2, z2, ownedStateJ, restJ);
@@ -839,24 +827,22 @@ class LJFunctorHWY
       halfSigma2Ptr = soa2.template begin<AttrHalfSigma>();
     }
 
-    const std::ptrdiff_t startI =
-        sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().startI) : 0;
+    const size_t startI = sorted && sortingData.has_value() ? sortingData->get().startI : 0;
     // endI bounds the outer loop from above, mirroring startI: i-particles from endI onwards cannot interact
     // with any j-particle, so the loop stops there instead of running to n1 and relying on the per-block
     // jVecStart >= jVecEnd skip below.
-    const std::ptrdiff_t endI = sorted && sortingData.has_value() ? static_cast<std::ptrdiff_t>(sortingData->get().endI)
-                                                                  : static_cast<std::ptrdiff_t>(n1);
+    const size_t endI = sorted && sortingData.has_value() ? sortingData->get().endI : n1;
 
     VectorDouble virialSumX = highway::Zero(tag_double);
     VectorDouble virialSumY = highway::Zero(tag_double);
     VectorDouble virialSumZ = highway::Zero(tag_double);
     VectorDouble uPotSum = highway::Zero(tag_double);
 
-    const size_t iStep = iStepSize<vecPattern>();
-    const size_t jStep = jStepSize<vecPattern>();
+    constexpr size_t iStep = iStepSize<vecPattern>();
+    constexpr size_t jStep = jStepSize<vecPattern>();
 
-    std::ptrdiff_t i = startI;
-    for (; i + static_cast<std::ptrdiff_t>(iStep) <= endI; i += static_cast<std::ptrdiff_t>(iStep)) {
+    size_t i = startI;
+    for (; i + iStep <= endI; i += iStep) {
       size_t jVecEnd{};
       size_t jVecStart = 0;
       if constexpr (sorted) {
@@ -892,7 +878,7 @@ class LJFunctorHWY
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       // Rest I can't occur in 1xVec case. Bounded by endI, not n1: i-particles from endI onwards cannot
       // interact with any j-particle and are skipped entirely rather than processed as a no-op remainder.
-      const std::ptrdiff_t restI = endI - i;
+      const size_t restI = endI - i;
       if (restI > 0) {
         // Remainder block covers [i, i + restI - 1]. Same monotonicity argument as above.
         size_t jVecEnd = n2;
@@ -1324,9 +1310,10 @@ class LJFunctorHWY
     const auto ownedI = static_cast<int64_t>(ownedStatePtr[indexFirst]);
     const VectorLong ownedStateI = highway::Set(tag_long, ownedI);
 
-    size_t j = 0;
     const size_t neighborListSize = neighborList.size();
-    const size_t vecEnd = (neighborListSize / _vecLengthDouble) * _vecLengthDouble;
+    const size_t rest = neighborListSize & (_vecLengthDouble - 1);
+    const size_t vecEnd = neighborListSize - rest;
+    size_t j = 0;
 
     for (; j < vecEnd; j += _vecLengthDouble) {
       SoAKernelVerlet<newton3, false>(j, ownedStateI, x1, y1, z1, xPtr, yPtr, zPtr,
@@ -1334,8 +1321,6 @@ class LJFunctorHWY
                                       sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, neighborList.data(),
                                       fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum);
     }
-
-    const size_t rest = neighborListSize & (_vecLengthDouble - 1);
 
     if (rest > 0) {
       SoAKernelVerlet<newton3, true>(j, ownedStateI, x1, y1, z1, xPtr, yPtr, zPtr,
