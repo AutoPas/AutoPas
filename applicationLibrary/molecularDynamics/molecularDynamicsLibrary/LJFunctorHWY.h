@@ -995,12 +995,7 @@ class LJFunctorHWY
     const auto drX = highway::Sub(x1, x2);
     const auto drY = highway::Sub(y1, y2);
     const auto drZ = highway::Sub(z1, z2);
-
-    const auto drX2 = highway::Mul(drX, drX);
-    const auto drY2 = highway::Mul(drY, drY);
-    const auto drZ2 = highway::Mul(drZ, drZ);
-
-    const auto dr2 = highway::Add(highway::Add(drX2, drY2), drZ2);
+    const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, highway::Mul(drX, drX)));
 
     VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
 
@@ -1018,75 +1013,82 @@ class LJFunctorHWY
 
     if constexpr (useMixing) {
       epsilon24s = highway::Mul(sqrtEpsilon1, sqrtEpsilon2);
-      sigmaSquareds = highway::Add(sigmaHalf1, sigmaHalf2);
-      sigmaSquareds = highway::Mul(sigmaSquareds, sigmaSquareds);
+      const auto sigma = highway::Add(sigmaHalf1, sigmaHalf2);
+      sigmaSquareds = highway::Mul(sigma, sigma);
     } else {
       epsilon24s = highway::Set(tag_double, _epsilon24AoS);
       sigmaSquareds = highway::Set(tag_double, _sigmaSquareAoS);
     }
 
-    // compute LJ Potential
-    const auto invDr2 = highway::Div(highway::Set(tag_double, 1.0), dr2);
+    // compute LJ Potential with overlapped dependency chains and FMA
+    const auto one = highway::Set(tag_double, 1.0);
+    const auto invDr2 = highway::Div(one, dr2);
     const auto lj2 = highway::Mul(sigmaSquareds, invDr2);
+    const auto eps24InvDr2 = highway::Mul(epsilon24s, invDr2);
     const auto lj4 = highway::Mul(lj2, lj2);
     const auto lj6 = highway::Mul(lj2, lj4);
-    const auto lj12 = highway::Mul(lj6, lj6);
-    const auto lj12m6 = highway::Sub(lj12, lj6);
-    const auto lj12m6alj12 = highway::Add(lj12m6, lj12);
-    const auto lj12m6alj12e = highway::Mul(lj12m6alj12, epsilon24s);
-    const auto fac = highway::Mul(lj12m6alj12e, invDr2);
+    const auto twoLj6m1 = highway::MulSub(lj6, highway::Set(tag_double, 2.0), one);
+    const auto lj6Eps24InvDr2 = highway::Mul(lj6, eps24InvDr2);
+    const auto fac = highway::Mul(twoLj6m1, lj6Eps24InvDr2);
 
     const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
 
-    VectorDouble fx = highway::Mul(drX, facMasked);
-    VectorDouble fy = highway::Mul(drY, facMasked);
-    VectorDouble fz = highway::Mul(drZ, facMasked);
+    if constexpr (not newton3 and not calculateGlobals) {
+      fxAcc = highway::MulAdd(drX, facMasked, fxAcc);
+      fyAcc = highway::MulAdd(drY, facMasked, fyAcc);
+      fzAcc = highway::MulAdd(drZ, facMasked, fzAcc);
+    } else {
+      VectorDouble fx = highway::Mul(drX, facMasked);
+      VectorDouble fy = highway::Mul(drY, facMasked);
+      VectorDouble fz = highway::Mul(drZ, facMasked);
 
-    fxAcc = highway::Add(fxAcc, fx);
-    fyAcc = highway::Add(fyAcc, fy);
-    fzAcc = highway::Add(fzAcc, fz);
+      fxAcc = highway::Add(fxAcc, fx);
+      fyAcc = highway::Add(fyAcc, fy);
+      fzAcc = highway::Add(fzAcc, fz);
 
-    if constexpr (calculateGlobals) {
-      VectorDouble shift6s = highway::Undefined(tag_double);
-      if constexpr (applyShift) {
-        if constexpr (useMixing) {
-          const VectorDouble invCutoffSquared = highway::Set(tag_double, _invCutoffSquareAoS);
-          const auto tmpShift1 = highway::Mul(sigmaSquareds, invCutoffSquared);
-          const auto tmpShift2 = tmpShift1 * tmpShift1 * tmpShift1;
-          shift6s = epsilon24s * (tmpShift2 - tmpShift2 * tmpShift2);
+      if constexpr (calculateGlobals) {
+        VectorDouble shift6s;
+        if constexpr (applyShift) {
+          if constexpr (not useMixing) {
+            shift6s = highway::Set(tag_double, _shift6AoS);
+          } else {
+            const VectorDouble invCutoffSquared = highway::Set(tag_double, _invCutoffSquareAoS);
+            const auto tmpShift1 = highway::Mul(sigmaSquareds, invCutoffSquared);
+            const auto tmpShift2 = highway::Mul(highway::Mul(tmpShift1, tmpShift1), tmpShift1);
+            shift6s = highway::Mul(epsilon24s, highway::Sub(tmpShift2, highway::Mul(tmpShift2, tmpShift2)));
+          }
         } else {
-          shift6s = highway::Set(tag_double, _shift6AoS);
+          shift6s = highway::Zero(tag_double);
         }
-      } else {
-        shift6s = highway::Zero(tag_double);
+
+        const auto virialX = highway::Mul(fx, drX);
+        const auto virialY = highway::Mul(fy, drY);
+        const auto virialZ = highway::Mul(fz, drZ);
+
+        const auto lj12m6 = highway::MulSub(lj6, lj6, lj6);
+        const auto uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
+        const auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
+
+        // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
+        const auto owned = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
+        const auto ownedMaskI = highway::RebindMask(tag_double, highway::Eq(ownedStateI, owned));
+        const auto ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedStateJ, owned));
+
+        auto energyFactor = highway::MaskedSet(tag_double, ownedMaskI, 1.0);
+
+        if constexpr (newton3) {
+          energyFactor = highway::Add(energyFactor, highway::MaskedSet(tag_double, ownedMaskJ, 1.0));
+        }
+
+        uPotSum = highway::MulAdd(energyFactor, uPotMasked, uPotSum);
+        virialSumX = highway::MulAdd(energyFactor, virialX, virialSumX);
+        virialSumY = highway::MulAdd(energyFactor, virialY, virialSumY);
+        virialSumZ = highway::MulAdd(energyFactor, virialZ, virialSumZ);
       }
-
-      auto virialX = highway::Mul(fx, drX);
-      auto virialY = highway::Mul(fy, drY);
-      auto virialZ = highway::Mul(fz, drZ);
-
-      auto uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
-      auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
-
-      // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
-      const auto owned = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
-      const auto ownedMaskI = highway::RebindMask(tag_double, highway::Eq(ownedStateI, owned));
-      const auto ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedStateJ, owned));
-
-      auto energyFactor = highway::MaskedSet(tag_double, ownedMaskI, 1.0);
 
       if constexpr (newton3) {
-        energyFactor = highway::Add(energyFactor, highway::MaskedSet(tag_double, ownedMaskJ, 1.0));
+        handleNewton3Reduction<remainderJ, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
       }
-
-      uPotSum = highway::MulAdd(energyFactor, uPotMasked, uPotSum);
-      virialSumX = highway::MulAdd(energyFactor, virialX, virialSumX);
-      virialSumY = highway::MulAdd(energyFactor, virialY, virialSumY);
-      virialSumZ = highway::MulAdd(energyFactor, virialZ, virialSumZ);
-    }
-
-    if constexpr (newton3) {
-      handleNewton3Reduction<remainderJ, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
     }
   }
 
@@ -1144,12 +1146,7 @@ class LJFunctorHWY
     const auto drX = highway::Sub(x1, x2);
     const auto drY = highway::Sub(y1, y2);
     const auto drZ = highway::Sub(z1, z2);
-
-    const auto drX2 = highway::Mul(drX, drX);
-    const auto drY2 = highway::Mul(drY, drY);
-    const auto drZ2 = highway::Mul(drZ, drZ);
-
-    const auto dr2 = highway::Add(highway::Add(drX2, drY2), drZ2);
+    const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, highway::Mul(drX, drX)));
 
     VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
 
@@ -1167,98 +1164,105 @@ class LJFunctorHWY
 
     if constexpr (useMixing) {
       epsilon24s = highway::Mul(sqrtEpsilon1, sqrtEpsilon2);
-      sigmaSquareds = highway::Add(sigmaHalf1, sigmaHalf2);
-      sigmaSquareds = highway::Mul(sigmaSquareds, sigmaSquareds);
+      const auto sigma = highway::Add(sigmaHalf1, sigmaHalf2);
+      sigmaSquareds = highway::Mul(sigma, sigma);
     } else {
       epsilon24s = highway::Set(tag_double, _epsilon24AoS);
       sigmaSquareds = highway::Set(tag_double, _sigmaSquareAoS);
     }
 
-    const auto invDr2 = highway::Div(highway::Set(tag_double, 1.0), dr2);
+    const auto one = highway::Set(tag_double, 1.0);
+    const auto invDr2 = highway::Div(one, dr2);
     const auto lj2 = highway::Mul(sigmaSquareds, invDr2);
+    const auto eps24InvDr2 = highway::Mul(epsilon24s, invDr2);
     const auto lj4 = highway::Mul(lj2, lj2);
     const auto lj6 = highway::Mul(lj2, lj4);
-    const auto lj12 = highway::Mul(lj6, lj6);
-    const auto lj12m6 = highway::Sub(lj12, lj6);
-    const auto lj12m6alj12 = highway::Add(lj12m6, lj12);
-    const auto lj12m6alj12e = highway::Mul(lj12m6alj12, epsilon24s);
-    const auto fac = highway::Mul(lj12m6alj12e, invDr2);
+    const auto twoLj6m1 = highway::MulSub(lj6, highway::Set(tag_double, 2.0), one);
+    const auto lj6Eps24InvDr2 = highway::Mul(lj6, eps24InvDr2);
+    const auto fac = highway::Mul(twoLj6m1, lj6Eps24InvDr2);
 
     const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
 
-    const VectorDouble fx = highway::Mul(drX, facMasked);
-    const VectorDouble fy = highway::Mul(drY, facMasked);
-    const VectorDouble fz = highway::Mul(drZ, facMasked);
+    if constexpr (not newton3 and not calculateGlobals) {
+      fxAcc = highway::MulAdd(drX, facMasked, fxAcc);
+      fyAcc = highway::MulAdd(drY, facMasked, fyAcc);
+      fzAcc = highway::MulAdd(drZ, facMasked, fzAcc);
+    } else {
+      const VectorDouble fx = highway::Mul(drX, facMasked);
+      const VectorDouble fy = highway::Mul(drY, facMasked);
+      const VectorDouble fz = highway::Mul(drZ, facMasked);
 
-    fxAcc = highway::Add(fxAcc, fx);
-    fyAcc = highway::Add(fyAcc, fy);
-    fzAcc = highway::Add(fzAcc, fz);
-
-    if constexpr (newton3) {
-      if constexpr (remainder) {
-        const auto fx2Old = highway::MaskedGatherIndex(restMaskDouble, tag_double, fxPtr, indices);
-        const auto fy2Old = highway::MaskedGatherIndex(restMaskDouble, tag_double, fyPtr, indices);
-        const auto fz2Old = highway::MaskedGatherIndex(restMaskDouble, tag_double, fzPtr, indices);
-
-        const auto fx2New = highway::Sub(fx2Old, fx);
-        const auto fy2New = highway::Sub(fy2Old, fy);
-        const auto fz2New = highway::Sub(fz2Old, fz);
-
-        highway::MaskedScatterIndex(fx2New, restMaskDouble, tag_double, fxPtr, indices);
-        highway::MaskedScatterIndex(fy2New, restMaskDouble, tag_double, fyPtr, indices);
-        highway::MaskedScatterIndex(fz2New, restMaskDouble, tag_double, fzPtr, indices);
-      } else {
-        const auto fx2Old = highway::GatherIndex(tag_double, fxPtr, indices);
-        const auto fy2Old = highway::GatherIndex(tag_double, fyPtr, indices);
-        const auto fz2Old = highway::GatherIndex(tag_double, fzPtr, indices);
-
-        const auto fx2New = highway::Sub(fx2Old, fx);
-        const auto fy2New = highway::Sub(fy2Old, fy);
-        const auto fz2New = highway::Sub(fz2Old, fz);
-
-        highway::ScatterIndex(fx2New, tag_double, fxPtr, indices);
-        highway::ScatterIndex(fy2New, tag_double, fyPtr, indices);
-        highway::ScatterIndex(fz2New, tag_double, fzPtr, indices);
-      }
-    }
-
-    if constexpr (calculateGlobals) {
-      VectorDouble shift6s = highway::Undefined(tag_double);
-      if constexpr (applyShift) {
-        if constexpr (useMixing) {
-          const VectorDouble invCutoffSquared = highway::Set(tag_double, _invCutoffSquareAoS);
-          const auto tmpShift1 = highway::Mul(sigmaSquareds, invCutoffSquared);
-          const auto tmpShift2 = tmpShift1 * tmpShift1 * tmpShift1;
-          shift6s = epsilon24s * (tmpShift2 - tmpShift2 * tmpShift2);
-        } else {
-          shift6s = highway::Set(tag_double, _shift6AoS);
-        }
-      } else {
-        shift6s = highway::Zero(tag_double);
-      }
-
-      auto virialX = highway::Mul(fx, drX);
-      auto virialY = highway::Mul(fy, drY);
-      auto virialZ = highway::Mul(fz, drZ);
-
-      auto uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
-      auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
-
-      // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
-      const auto owned = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
-      const auto ownedMaskI = highway::RebindMask(tag_double, highway::Eq(ownedStateI, owned));
-      const auto ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedState2, owned));
-
-      auto energyFactor = highway::MaskedSet(tag_double, ownedMaskI, 1.0);
+      fxAcc = highway::Add(fxAcc, fx);
+      fyAcc = highway::Add(fyAcc, fy);
+      fzAcc = highway::Add(fzAcc, fz);
 
       if constexpr (newton3) {
-        energyFactor = highway::Add(energyFactor, highway::MaskedSet(tag_double, ownedMaskJ, 1.0));
+        if constexpr (remainder) {
+          const auto fx2Old = highway::MaskedGatherIndex(restMaskDouble, tag_double, fxPtr, indices);
+          const auto fy2Old = highway::MaskedGatherIndex(restMaskDouble, tag_double, fyPtr, indices);
+          const auto fz2Old = highway::MaskedGatherIndex(restMaskDouble, tag_double, fzPtr, indices);
+
+          const auto fx2New = highway::Sub(fx2Old, fx);
+          const auto fy2New = highway::Sub(fy2Old, fy);
+          const auto fz2New = highway::Sub(fz2Old, fz);
+
+          highway::MaskedScatterIndex(fx2New, restMaskDouble, tag_double, fxPtr, indices);
+          highway::MaskedScatterIndex(fy2New, restMaskDouble, tag_double, fyPtr, indices);
+          highway::MaskedScatterIndex(fz2New, restMaskDouble, tag_double, fzPtr, indices);
+        } else {
+          const auto fx2Old = highway::GatherIndex(tag_double, fxPtr, indices);
+          const auto fy2Old = highway::GatherIndex(tag_double, fyPtr, indices);
+          const auto fz2Old = highway::GatherIndex(tag_double, fzPtr, indices);
+
+          const auto fx2New = highway::Sub(fx2Old, fx);
+          const auto fy2New = highway::Sub(fy2Old, fy);
+          const auto fz2New = highway::Sub(fz2Old, fz);
+
+          highway::ScatterIndex(fx2New, tag_double, fxPtr, indices);
+          highway::ScatterIndex(fy2New, tag_double, fyPtr, indices);
+          highway::ScatterIndex(fz2New, tag_double, fzPtr, indices);
+        }
       }
 
-      uPotSum = highway::MulAdd(energyFactor, uPotMasked, uPotSum);
-      virialSumX = highway::MulAdd(energyFactor, virialX, virialSumX);
-      virialSumY = highway::MulAdd(energyFactor, virialY, virialSumY);
-      virialSumZ = highway::MulAdd(energyFactor, virialZ, virialSumZ);
+      if constexpr (calculateGlobals) {
+        const auto virialX = highway::Mul(fx, drX);
+        const auto virialY = highway::Mul(fy, drY);
+        const auto virialZ = highway::Mul(fz, drZ);
+
+        const auto lj12m6 = highway::MulSub(lj6, lj6, lj6);
+        VectorDouble uPot;
+        if constexpr (applyShift) {
+          VectorDouble shift6s;
+          if constexpr (useMixing) {
+            const VectorDouble invCutoffSquared = highway::Set(tag_double, _invCutoffSquareAoS);
+            const auto tmpShift1 = highway::Mul(sigmaSquareds, invCutoffSquared);
+            const auto tmpShift2 = highway::Mul(highway::Mul(tmpShift1, tmpShift1), tmpShift1);
+            shift6s = highway::Mul(epsilon24s, highway::Sub(tmpShift2, highway::Mul(tmpShift2, tmpShift2)));
+          } else {
+            shift6s = highway::Set(tag_double, _shift6AoS);
+          }
+          uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
+        } else {
+          uPot = highway::Mul(epsilon24s, lj12m6);
+        }
+        const auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
+
+        // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
+        const auto owned = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
+        const auto ownedMaskI = highway::RebindMask(tag_double, highway::Eq(ownedStateI, owned));
+        const auto ownedMaskJ = highway::RebindMask(tag_double, highway::Eq(ownedState2, owned));
+
+        auto energyFactor = highway::MaskedSet(tag_double, ownedMaskI, 1.0);
+
+        if constexpr (newton3) {
+          energyFactor = highway::Add(energyFactor, highway::MaskedSet(tag_double, ownedMaskJ, 1.0));
+        }
+
+        uPotSum = highway::MulAdd(energyFactor, uPotMasked, uPotSum);
+        virialSumX = highway::MulAdd(energyFactor, virialX, virialSumX);
+        virialSumY = highway::MulAdd(energyFactor, virialY, virialSumY);
+        virialSumZ = highway::MulAdd(energyFactor, virialZ, virialSumZ);
+      }
     }
   }
 
