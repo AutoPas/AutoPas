@@ -87,7 +87,7 @@ class SoAView {
     if (_soa == nullptr or _soa->template size<attribute>() <= _startIndex) {
       return static_cast<ReturnType>(nullptr);
     }
-    return _soa->template begin<attribute>() + _startIndex;
+    return std::as_const(*_soa).template begin<attribute>() + _startIndex;
   }
 
   /**
