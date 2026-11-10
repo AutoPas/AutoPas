@@ -28,10 +28,10 @@ WALL_CENTER_X = WALL_X0 + WALL_SIZE // 2
 WALL_CENTER_Y = WALL_Y0 + WALL_SIZE // 2
 
 
-ITERATIONS = 50000
+ITERATIONS = 1000000
 DELTA_T = 0.0005
 GRAVITY_Z = -0.0001
-TEMPERATURE = 0.3
+TEMPERATURE = 0.6
 VTK_WRITE_FREQUENCY = 1000
 
 EPSILON_FF = 1.0
@@ -187,7 +187,7 @@ def _sites_yaml(is_treatment, nu_wall):
 def _make_run_name(surface, wall_mode, is_treatment):
     tag = "lj_atm" if is_treatment else "lj"
     name = (
-        f"{tag}_{surface}"
+        f"run23_{tag}_{surface}"
         f"_r{RADIUS}"
         f"_zeta{ZETA}"
         f"_eps{EPSILON_FF}"
