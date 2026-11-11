@@ -450,3 +450,65 @@ TEST_F(SoATest, SoATestSelectiveResizingAndAppend) {
   EXPECT_DOUBLE_EQ(soa1.read<ParticleBaseFP64::AttributeNames::posX>(2), 5.5);
   EXPECT_DOUBLE_EQ(soa1.read<Extra0>(2), 6.5);
 }
+
+TEST_F(SoATest, SoATestSelectiveResizingAndViewAppend) {
+  using autopas::ParticleBaseFP64;
+  using SoAType = autopas::SoA<ParticleBaseFP64::SoAArraysType>;
+  constexpr size_t NumBase = SoAType::NumBaseAttrs;
+  constexpr size_t Extra0 = NumBase + 0;
+
+  SoAType soa1;
+  soa1.resizeArraysForAttributes<ParticleBaseFP64::AttributeNames::posX, Extra0>(2);
+  EXPECT_EQ(soa1.size(), 2);
+
+  soa1.write<ParticleBaseFP64::AttributeNames::posX>(0, 1.5);
+  soa1.write<Extra0>(0, 3.5);
+  soa1.write<ParticleBaseFP64::AttributeNames::posX>(1, 2.5);
+  soa1.write<Extra0>(1, 4.5);
+
+  SoAType soa2;
+  soa2.resizeArraysForAttributes<ParticleBaseFP64::AttributeNames::posX, Extra0>(2);
+  soa2.write<ParticleBaseFP64::AttributeNames::posX>(0, 5.5);
+  soa2.write<Extra0>(0, 6.5);
+  soa2.write<ParticleBaseFP64::AttributeNames::posX>(1, 7.5);
+  soa2.write<Extra0>(1, 8.5);
+
+  auto view = soa2.constructView(0, 1);
+  EXPECT_EQ(view.size(), 1);
+  EXPECT_EQ(view.size<ParticleBaseFP64::AttributeNames::posX>(), 1);
+  EXPECT_EQ(view.size<ParticleBaseFP64::AttributeNames::posY>(), 0);
+  EXPECT_EQ(view.size<Extra0>(), 1);
+
+  // Appending the view must not read from unresized columns (e.g. posY, ptr)
+  soa1.append(view);
+  EXPECT_EQ(soa1.size(), 3);
+  EXPECT_DOUBLE_EQ(soa1.read<ParticleBaseFP64::AttributeNames::posX>(2), 5.5);
+  EXPECT_DOUBLE_EQ(soa1.read<Extra0>(2), 6.5);
+}
+
+TEST_F(SoATest, SoATestUnallocatedExtraColumnAccessThrows) {
+  using autopas::ParticleBaseFP64;
+  using SoAType = autopas::SoA<ParticleBaseFP64::SoAArraysType>;
+  constexpr size_t NumBase = SoAType::NumBaseAttrs;
+  constexpr size_t Extra0 = NumBase + 0;
+  constexpr size_t Extra1 = NumBase + 1;
+
+  SoAType soa;
+  soa.resizeArrays(2);
+
+  // Extra columns were not allocated, read and write must throw std::out_of_range
+  EXPECT_THROW(soa.read<Extra0>(0), std::out_of_range);
+  EXPECT_THROW(soa.write<Extra0>(0, 1.0), std::out_of_range);
+  EXPECT_THROW((soa.readMultiple<Extra0>(0)), std::out_of_range);
+  EXPECT_THROW((soa.writeMultiple<Extra0>(0, std::array<double, 1>{1.0})), std::out_of_range);
+
+  // Even if Extra0 is allocated, Extra1 is not
+  soa.resizeArraysForAttributes<Extra0>(2);
+  EXPECT_NO_THROW(soa.write<Extra0>(0, 2.5));
+  EXPECT_DOUBLE_EQ(soa.read<Extra0>(0), 2.5);
+
+  EXPECT_THROW(soa.read<Extra1>(0), std::out_of_range);
+  EXPECT_THROW(soa.write<Extra1>(0, 3.5), std::out_of_range);
+  EXPECT_THROW((soa.readMultiple<Extra1>(0)), std::out_of_range);
+  EXPECT_THROW((soa.writeMultiple<Extra1>(0, std::array<double, 1>{3.5})), std::out_of_range);
+}

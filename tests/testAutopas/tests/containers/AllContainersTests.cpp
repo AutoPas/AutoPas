@@ -9,10 +9,15 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <random>
+
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 #include "testingHelpers/PeriodicBoundariesHelpers.h"
+#include "tests/forEach/ForEachTestHelper.h"
 
 INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTests,
                          ::testing::Combine(::testing::ValuesIn(generateAllValidContainerConfigurations())),
@@ -637,4 +642,119 @@ TEST_P(AllContainersTests, testAddParticleWhileOwnedParticleLeftBox) {
   EXPECT_EQ(leavingParticles.front().getID(), 0);
   EXPECT_EQ(container->getNumberOfParticles(autopas::IteratorBehavior::owned),
             numInitialParticles + numAddedParticles - 1);
+}
+
+/**
+ * Between rebuilds, particles move by up to skin/2 away from where the container sorted them in. Moves all particles by
+ * almost skin/2 and deletes some, as a simulation does between two rebuilds. Checks that forEach(), reduce(),
+ * forEachInRegion() and reduceInRegion() find exactly the alive particles, and for the region versions only those
+ * that are inside the region at their new position.
+ */
+TEST_P(AllContainersTests, testForEachAndReduceFindParticlesMovedSinceRebuild) {
+  using namespace autopas::utils::ArrayMath::literals;
+  const auto containerConfig = std::get<0>(GetParam());
+  auto container = getInitializedContainer<ParticleFP64>(containerConfig);
+
+  std::mt19937 generator(42);
+  std::uniform_real_distribution<double> uniformDistribution(0., 1.);
+  // Returns a random vector in [0, 1)^3.
+  auto getRandomVector = [&]() {
+    return std::array<double, 3>{uniformDistribution(generator), uniformDistribution(generator),
+                                 uniformDistribution(generator)};
+  };
+
+  // The particles are placed uniformly in the box and the halo, but not in the outer skin of the halo, so that no
+  // particle leaves the halo when it moves. expectedParticles holds the expected state of each particle by ID.
+  const auto placementMin = boxMin - cutoff;
+  const auto placementMax = boxMax + cutoff;
+  constexpr size_t numParticles = 1800;
+  std::vector<ParticleFP64> expectedParticles;
+  std::vector<std::array<double, 3>> displacements;
+  for (size_t id = 0; id < numParticles; ++id) {
+    ParticleFP64 particle(placementMin + (placementMax - placementMin) * getRandomVector(), {0., 0., 0.}, id);
+    if (autopas::utils::inBox(particle.getR(), boxMin, boxMax)) {
+      container->addParticle(particle);
+    } else {
+      particle.setOwnershipState(autopas::OwnershipState::halo);
+      container->addHaloParticle(particle);
+    }
+    expectedParticles.push_back(particle);
+    displacements.push_back(autopas::utils::ArrayMath::normalize(getRandomVector() - 0.5) * (0.95 * 0.5 * skin));
+  }
+  rebuildNeighborLists(*container, containerConfig);
+
+  // Move every particle by almost skin/2 in a random direction and delete every tenth.
+  for (auto iter = container->begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
+    auto &expectedParticle = expectedParticles[iter->getID()];
+    if (iter->getID() % 10 == 0) {
+      container->deleteParticle(*iter);
+      autopas::internal::markParticleAsDeleted(expectedParticle);
+    } else {
+      iter->addR(displacements[iter->getID()]);
+      expectedParticle.setR(iter->getR());
+    }
+  }
+
+  // A tiny region around every alive particle and some larger random ones.
+  std::vector<std::pair<std::array<double, 3>, std::array<double, 3>>> regions;
+  for (const auto &particle : expectedParticles) {
+    if (not particle.isDummy()) {
+      regions.emplace_back(particle.getR() - 1e-3, particle.getR() + 1e-3);
+    }
+  }
+  for (size_t i = 0; i < 20; ++i) {
+    const auto regionMin = placementMin + (placementMax - placementMin) * getRandomVector();
+    regions.emplace_back(regionMin, regionMin + getRandomVector() * 3.);
+  }
+
+  autopas::withStaticContainerType(*container, [&](auto &staticContainer) {
+    for (autopas::IteratorBehavior behavior :
+         {autopas::IteratorBehavior::owned, autopas::IteratorBehavior::halo, autopas::IteratorBehavior::ownedOrHalo}) {
+      SCOPED_TRACE(behavior.to_string());
+      // Returns the sorted IDs of the alive particles of this behavior that are inside the region.
+      auto getExpectedIDs = [&](const std::array<double, 3> &regionMin, const std::array<double, 3> &regionMax) {
+        std::vector<size_t> expectedIDs;
+        for (auto &particle : expectedParticles) {
+          if (behavior.contains(particle) and autopas::utils::inBox(particle.getR(), regionMin, regionMax)) {
+            expectedIDs.push_back(particle.getID());
+          }
+        }
+        return expectedIDs;
+      };
+
+      // No particle is further than skin/2 outside the placement box.
+      const auto allExpectedIDs = getExpectedIDs(placementMin - skin, placementMax + skin);
+      ForEachTestHelper::forEachParticleTest([&](auto lambda) { staticContainer.forEach(lambda, behavior); },
+                                             allExpectedIDs);
+      ForEachTestHelper::reduceParticlesTest(
+          [&](auto lambda, size_t &result) { staticContainer.reduce(lambda, result, behavior); }, allExpectedIDs);
+
+      // The mismatches are collected so that a failure is one expectation per function instead of one per region.
+      std::vector<std::string> forEachInRegionMismatches;
+      std::vector<std::string> reduceInRegionMismatches;
+      for (const auto &[regionMin, regionMax] : regions) {
+        const auto expectedIDs = getExpectedIDs(regionMin, regionMax);
+        std::vector<size_t> forEachInRegionIDs;
+        staticContainer.forEachInRegion([&](auto &p) { forEachInRegionIDs.push_back(p.getID()); }, regionMin, regionMax,
+                                        behavior);
+        std::vector<size_t> reduceInRegionIDs;
+        staticContainer.reduceInRegion([](auto &p, std::vector<size_t> &ids) { ids.push_back(p.getID()); },
+                                       reduceInRegionIDs, regionMin, regionMax, behavior);
+        std::ranges::sort(forEachInRegionIDs);
+        std::ranges::sort(reduceInRegionIDs);
+
+        using autopas::utils::ArrayUtils::to_string;
+        const auto mismatchPrefix =
+            to_string(regionMin) + " to " + to_string(regionMax) + ": expected " + to_string(expectedIDs) + ", found ";
+        if (forEachInRegionIDs != expectedIDs) {
+          forEachInRegionMismatches.push_back(mismatchPrefix + to_string(forEachInRegionIDs));
+        }
+        if (reduceInRegionIDs != expectedIDs) {
+          reduceInRegionMismatches.push_back(mismatchPrefix + to_string(reduceInRegionIDs));
+        }
+      }
+      EXPECT_THAT(forEachInRegionMismatches, ::testing::IsEmpty());
+      EXPECT_THAT(reduceInRegionMismatches, ::testing::IsEmpty());
+    }
+  });
 }

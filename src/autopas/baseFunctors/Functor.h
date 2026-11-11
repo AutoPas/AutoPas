@@ -84,9 +84,7 @@ class Functor {
    * @return Attributes needed for computation.
    * @todo C++20: make this function virtual
    */
-  constexpr static std::array<typename Particle_T::AttributeNames, 0> getNeededAttr(std::false_type) {
-    return Functor_T::getNeededAttr();
-  }
+  constexpr static auto getNeededAttr(std::false_type) { return Functor_T::getNeededAttr(); }
 
   /**
    * Get attributes computed by this functor.
@@ -144,9 +142,9 @@ class Functor {
    * @param particle Particle from where the data is loaded.
    * @return Attribute value.
    */
-  template <typename Particle_T::AttributeNames attribute>
+  template <auto attribute>
   inline auto loadSoAAttribute(Particle_T &particle) const {
-    return particle.template get<attribute>();
+    return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
   }
 
   /**
@@ -155,9 +153,9 @@ class Functor {
    * @param particle Particle from where the data is loaded.
    * @return Attribute value.
    */
-  template <typename Particle_T::AttributeNames attribute>
+  template <auto attribute>
   inline auto loadSoAAttribute(const Particle_T &particle) const {
-    return particle.template get<attribute>();
+    return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
   }
 
   /**

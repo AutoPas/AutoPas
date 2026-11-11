@@ -34,14 +34,13 @@ namespace mdLib {
  * This functor is applicable with the 1xVectorLength pattern only.
  *
  * @tparam Particle_T The type of particle.
- * @tparam ParticleCell The type of particlecell.
  * @tparam applyShift Switch for the lj potential to be truncated shifted.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
- * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
+ * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
 template <class Particle_T, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
@@ -51,10 +50,8 @@ class LJFunctorSVE
                                                                calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle_T::SoAArraysType;
 
-  static constexpr auto AttrSqrt24Epsilon =
-      static_cast<typename Particle_T::AttributeNames>(std::tuple_size_v<SoAArraysType> + 0);
-  static constexpr auto AttrHalfSigma =
-      static_cast<typename Particle_T::AttributeNames>(std::tuple_size_v<SoAArraysType> + 1);
+  static constexpr size_t AttrSqrt24Epsilon = std::tuple_size_v<SoAArraysType> + 0;
+  static constexpr size_t AttrHalfSigma = std::tuple_size_v<SoAArraysType> + 1;
 
  public:
   /**
@@ -64,8 +61,9 @@ class LJFunctorSVE
 
   /**
    * Hook for SoALoader to load particle attributes or functor-computed mixing data.
+   * @copydoc autopas::Functor::loadSoAAttribute(const Particle_T&) const
    */
-  template <typename Particle_T::AttributeNames attribute>
+  template <auto attribute>
   inline auto loadSoAAttribute(const Particle_T &particle) const {
     if constexpr (attribute == AttrSqrt24Epsilon) {
       if constexpr (useMixing) {
@@ -80,14 +78,15 @@ class LJFunctorSVE
         return 0.0;
       }
     } else {
-      return particle.template get<attribute>();
+      return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
     }
   }
 
   /**
    * Hook for SoALoader (non-const particle overload for ptr).
+   * @copydoc autopas::Functor::loadSoAAttribute(Particle_T&) const
    */
-  template <typename Particle_T::AttributeNames attribute>
+  template <auto attribute>
   inline auto loadSoAAttribute(Particle_T &particle) const {
     if constexpr (attribute == AttrSqrt24Epsilon) {
       if constexpr (useMixing) {
@@ -102,7 +101,7 @@ class LJFunctorSVE
         return 0.0;
       }
     } else {
-      return particle.template get<attribute>();
+      return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
     }
   }
 
@@ -814,22 +813,25 @@ class LJFunctorSVE
    */
   constexpr static auto getNeededAttr() {
     if constexpr (useMixing) {
-      return std::array<typename Particle_T::AttributeNames, 10>{Particle_T::AttributeNames::id,
-                                                                 Particle_T::AttributeNames::posX,
-                                                                 Particle_T::AttributeNames::posY,
-                                                                 Particle_T::AttributeNames::posZ,
-                                                                 Particle_T::AttributeNames::forceX,
-                                                                 Particle_T::AttributeNames::forceY,
-                                                                 Particle_T::AttributeNames::forceZ,
-                                                                 AttrSqrt24Epsilon,
-                                                                 AttrHalfSigma,
-                                                                 Particle_T::AttributeNames::ownershipState};
+      return std::array<size_t, 10>{static_cast<size_t>(Particle_T::AttributeNames::id),
+                                    static_cast<size_t>(Particle_T::AttributeNames::posX),
+                                    static_cast<size_t>(Particle_T::AttributeNames::posY),
+                                    static_cast<size_t>(Particle_T::AttributeNames::posZ),
+                                    static_cast<size_t>(Particle_T::AttributeNames::forceX),
+                                    static_cast<size_t>(Particle_T::AttributeNames::forceY),
+                                    static_cast<size_t>(Particle_T::AttributeNames::forceZ),
+                                    AttrSqrt24Epsilon,
+                                    AttrHalfSigma,
+                                    static_cast<size_t>(Particle_T::AttributeNames::ownershipState)};
     } else {
-      return std::array<typename Particle_T::AttributeNames, 8>{
-          Particle_T::AttributeNames::id,     Particle_T::AttributeNames::posX,
-          Particle_T::AttributeNames::posY,   Particle_T::AttributeNames::posZ,
-          Particle_T::AttributeNames::forceX, Particle_T::AttributeNames::forceY,
-          Particle_T::AttributeNames::forceZ, Particle_T::AttributeNames::ownershipState};
+      return std::array<size_t, 8>{static_cast<size_t>(Particle_T::AttributeNames::id),
+                                   static_cast<size_t>(Particle_T::AttributeNames::posX),
+                                   static_cast<size_t>(Particle_T::AttributeNames::posY),
+                                   static_cast<size_t>(Particle_T::AttributeNames::posZ),
+                                   static_cast<size_t>(Particle_T::AttributeNames::forceX),
+                                   static_cast<size_t>(Particle_T::AttributeNames::forceY),
+                                   static_cast<size_t>(Particle_T::AttributeNames::forceZ),
+                                   static_cast<size_t>(Particle_T::AttributeNames::ownershipState)};
     }
   }
 
@@ -838,17 +840,18 @@ class LJFunctorSVE
    */
   constexpr static auto getNeededAttr(std::false_type) {
     if constexpr (useMixing) {
-      return std::array<typename Particle_T::AttributeNames, 7>{Particle_T::AttributeNames::id,
-                                                                Particle_T::AttributeNames::posX,
-                                                                Particle_T::AttributeNames::posY,
-                                                                Particle_T::AttributeNames::posZ,
-                                                                AttrSqrt24Epsilon,
-                                                                AttrHalfSigma,
-                                                                Particle_T::AttributeNames::ownershipState};
+      return std::array<size_t, 7>{static_cast<size_t>(Particle_T::AttributeNames::id),
+                                   static_cast<size_t>(Particle_T::AttributeNames::posX),
+                                   static_cast<size_t>(Particle_T::AttributeNames::posY),
+                                   static_cast<size_t>(Particle_T::AttributeNames::posZ),
+                                   AttrSqrt24Epsilon,
+                                   AttrHalfSigma,
+                                   static_cast<size_t>(Particle_T::AttributeNames::ownershipState)};
     } else {
-      return std::array<typename Particle_T::AttributeNames, 5>{
-          Particle_T::AttributeNames::id, Particle_T::AttributeNames::posX, Particle_T::AttributeNames::posY,
-          Particle_T::AttributeNames::posZ, Particle_T::AttributeNames::ownershipState};
+      return std::array<size_t, 5>{
+          static_cast<size_t>(Particle_T::AttributeNames::id), static_cast<size_t>(Particle_T::AttributeNames::posX),
+          static_cast<size_t>(Particle_T::AttributeNames::posY), static_cast<size_t>(Particle_T::AttributeNames::posZ),
+          static_cast<size_t>(Particle_T::AttributeNames::ownershipState)};
     }
   }
 
