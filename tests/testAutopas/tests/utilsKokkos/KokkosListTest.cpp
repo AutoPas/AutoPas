@@ -450,6 +450,28 @@ TEST_F(KokkosListTest, testPerAttributeSyncSoA) {
   }
 }
 
+/**
+ * Adds particles to a default-constructed list. Its DualViews have no modified flags until the first resize, so the
+ * first addParticle() has to mark the host as modified only after growing the views. Otherwise, the device is marked as
+ * modified, and the next addParticle() overwrites the first particle on the host with uninitialized device memory.
+ */
+TEST_F(KokkosListTest, testAddParticleDefaultConstructedDevice) {
+  List list{};
+
+  addParticles(list, 0, 3);
+  EXPECT_EQ(list.size(), 3u);
+  EXPECT_EQ(list.getCapacity(), 4u);
+
+  for (size_t i = 0; i < 3; ++i) {
+    expectOnHost(list, i);
+  }
+
+  list.syncAll<DeviceExecSpace>();
+
+  expectDeviceStorage(list, 3);
+  EXPECT_EQ(countDeviceMismatches(list, 0, 3), 0);
+}
+
 /* The following tests are described in the respective test functions in separate comments */
 
 TEST_F(KokkosListTest, testResizeFullSoADevice) {

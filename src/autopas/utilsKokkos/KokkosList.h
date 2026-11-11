@@ -102,14 +102,14 @@ class KokkosList {
   size_t getCapacity() const { return _capacity; }
 
   void addParticle(const Particle_T &p) {
-    syncAll<HostExecSpace>();
-    modifyAll<HostExecSpace>();
-
     if (_size == _capacity) {
       size_t newCapacity = _capacity == 0 ? 2 : _capacity * 2;
       resize(newCapacity);
       _capacity = newCapacity;
     }
+
+    syncAll<HostExecSpace>();
+    modifyAll<HostExecSpace>();
 
     switch (_activeDataLayout) {
       case DataLayoutOption::Value::aos: {
