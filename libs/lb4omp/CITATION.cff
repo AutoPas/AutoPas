@@ -1,0 +1,41 @@
+# This CITATION.cff file was generated with cffinit.
+
+cff-version: 1.2.0
+title: LB4OMP
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Jonas H.
+    family-names: Müller Korndörfer
+    email: jonas.korndorfer@unibas.ch
+    affiliation: 'University of Basel, Switzerland'
+    orcid: 'https://orcid.org/0000-0003-3014-3275'
+  - given-names: Ali
+    family-names: Mohammed
+    orcid: 'https://orcid.org/0000-0002-8465-0398'
+    affiliation: >-
+      HPE’s HPC/AI EMEA Research Lab (ERL),
+      Switzerland
+    email: ali.mohammed@hpe.com
+  - given-names: Ahmed
+    family-names: Eleliemy
+    email: ahmed.eleliemy@unibas.ch
+    affiliation: 'University of Basel, Switzerland'
+    orcid: 'https://orcid.org/0000-0003-3258-1738'
+  - given-names: Florina
+    family-names: M. Ciorba
+    email: florina.ciroba@unibas.ch
+    affiliation: 'University of Basel, Switzerland'
+    orcid: 'https://orcid.org/0000-0002-2773-4499'
+keywords:
+  - hierarchical parallelism
+  - dynamic load balancing
+  - self-scheduling
+  - runtime library
+  - OpenMP
+  - multithreaded programming
+  - shared-memory systems
+license: MIT
+repository-code: https://github.com/unibas-dmi-hpc/LB4OMP/
