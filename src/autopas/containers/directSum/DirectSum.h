@@ -225,11 +225,11 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
     if (behavior & IteratorBehavior::owned) {
-      getOwnedCell().forEach(forEachLambda);
+      getOwnedCell().forEach(forEachLambda, behavior);
     }
     if (behavior & IteratorBehavior::halo) {
       for (auto cellIt = ++this->_cells.begin(); cellIt != this->_cells.end(); cellIt++) {
-        cellIt->forEach(forEachLambda);
+        cellIt->forEach(forEachLambda, behavior);
       }
     }
     // sanity check
@@ -244,11 +244,11 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle_T>
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
     if (behavior & IteratorBehavior::owned) {
-      getOwnedCell().reduce(reduceLambda, result);
+      getOwnedCell().reduce(reduceLambda, result, behavior);
     }
     if (behavior & IteratorBehavior::halo) {
       for (auto cellIt = ++this->_cells.begin(); cellIt != this->_cells.end(); cellIt++) {
-        cellIt->reduce(reduceLambda, result);
+        cellIt->reduce(reduceLambda, result, behavior);
       }
     }
     // sanity check
