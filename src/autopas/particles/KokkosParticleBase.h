@@ -291,12 +291,9 @@ class KokkosParticleBase {
     // clang-format off
     text << "Particle"
          << "\nID      : " << _id
-         << "\nPosition: "
-         // todo
-         << "\nVelocity: "
-         // todo
-         << "\nForce   : "
-         // todo
+         << "\nPosition: " << getR()
+         << "\nVelocity: " << getV()
+         << "\nForce   : " << getF()
          << "\nOwnershipState : "
          << _ownershipState;
     // clang-format on
@@ -596,8 +593,8 @@ template <typename floatType, typename idType>
 std::ostream &operator<<(std::ostream &os, const KokkosParticleBase<floatType, idType> &particle) {
   using utils::ArrayUtils::operator<<;
   os << "Particle"
-     << "\nID      : " << particle._id << "\nPosition: " << particle._r << "\nVelocity: " << particle._v
-     << "\nForce   : " << particle._f << "\nOwnershipState : " << particle._ownershipState;
+     << "\nID      : " << particle._id << "\nPosition: " << particle.getF() << "\nVelocity: " << particle.getV()
+     << "\nForce   : " << particle.getF() << "\nOwnershipState : " << particle._ownershipState;
   // clang-format on
   return os;
 }
