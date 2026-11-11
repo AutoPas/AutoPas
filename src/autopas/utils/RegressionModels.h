@@ -6,7 +6,6 @@
 
 #pragma once
 
-#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
 #include <algorithm>
 #include <climits>
 #include <iostream>
@@ -15,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Math.h"
 
 namespace autopas::utils::RegressionModels {
@@ -143,6 +143,78 @@ class RunningMean : public RegressionBase {
     auto runningMean = static_cast<double>(_sumY) / static_cast<double>(_n);
     return Result{runningMean, ReturnCode::OK_REG, true};
   }
+};
+
+class RebuildEstimateManager {
+ public:
+  /**
+   * Default constructor.
+   */
+  RebuildEstimateManager() { _rebuildTimes.assign(_numMaxSamples, 0); };
+
+  /**
+   * Adds a new rebuild time sample to the manager.
+   * @param rebuildTime The rebuild time sample to add.
+   */
+  void addNewPoint(long const rebuildTime) {
+    _rebuildTimesSum -= _rebuildTimes[_currentIndex];
+    _rebuildTimes[_currentIndex] = rebuildTime;
+    _rebuildTimesSum += rebuildTime;
+
+    if (_rebuildTimesSum < rebuildTime) {
+      throw autopas::utils::ExceptionHandler::AutoPasException("Overflow detected in rebuild time manager.");
+    }
+
+    _currentIndex = (_currentIndex + 1) % _numMaxSamples;
+    _numSamples++;
+  }
+
+  /*
+   * Predicts the rebuild time based on the current samples.
+   * @return The predicted rebuild time.
+   */
+  double predict() {
+    if (_numSamples == 0) {
+      throw autopas::utils::ExceptionHandler::AutoPasException("No rebuild samples available for prediction.");
+    }
+    auto rebuildEstimate = static_cast<double>(_rebuildTimesSum) / std::min(_numMaxSamples, _numSamples);
+    return rebuildEstimate;
+  }
+
+  void reset() {
+    _rebuildTimes.assign(_numMaxSamples, 0);
+    _currentIndex = 0;
+    _rebuildTimesSum = 0;
+  }
+
+ private:
+  /**
+   * Stores upto last five samples of the rebuild times.
+   */
+  std::vector<long> _rebuildTimes;
+
+  /**
+   * Stores the sum of the current samples of the rebuild times.
+   */
+  long _rebuildTimesSum = 0;
+
+  /**
+   * Stores the current number of samples in the _rebuildTimes vector.
+   */
+  size_t _numSamples = 0;
+
+  /**
+   * Stores the current index in the _rebuildTimes vector where the next sample will be added.
+   */
+  size_t _currentIndex = 0;
+
+  /**
+   * Stores the maximum number of samples in the _rebuildTimes vector.
+   * The values is set to 5 to ensure that the estimate is reliable and reflects the current state of the simulation and
+   * is not overly influenced by older samples. The magic number 5 was chosen by trial and error with different number
+   * of samples.
+   */
+  size_t _numMaxSamples = 5;
 };
 
 /**
@@ -355,6 +427,11 @@ class SimpleLinearRegressionSeparateZero {
  */
 class RebuildDecisionContext {
  public:
+  /**
+   * Default constructor.
+   */
+  RebuildDecisionContext() : _rebuildTimeEstimator(){};
+
   /// For rebuildNeighborTimeEstimate logging.
   [[nodiscard]] double getRebuildNeighborTimeEstimate() const { return _rebuildNeighborTimeEstimate; }
   /// For remainderTraversalTimeEstimate  logging.
@@ -369,7 +446,7 @@ class RebuildDecisionContext {
    * @param rebuildTime Measured remainder traversal time
    */
   void afterRebuild(const long rebuildTime) {
-    _rebuildNeighborTimeMean.addNewPoint(rebuildTime);
+    _rebuildTimeEstimator.addNewPoint(rebuildTime);
     _remainderTraversalTimePredictor.reset();
     _remainderTraversalTimeEstimate = std::numeric_limits<double>::quiet_NaN();
   }
@@ -428,12 +505,12 @@ class RebuildDecisionContext {
    */
   bool decideToRebuildOnParticleBufferFullness(const unsigned int curr_iter) {
     bool doDynamicRebuild{false};
-    const auto [value_rebuild, returnCode_rebuild, isOk_rebuild] = _rebuildNeighborTimeMean.predict();
+    const auto value_rebuild = _rebuildTimeEstimator.predict();
 
     const auto [value_remainder, returnCode_remainder, isOk_remainder] =
         _remainderTraversalTimePredictor.predict(static_cast<long>(_numParticlesBufferEstimate));
 
-    if (isOk_rebuild and isOk_remainder and value_remainder > 0) {
+    if (isOk_remainder and value_remainder > 0) {
       // log
       _rebuildNeighborTimeEstimate = value_rebuild;
       _remainderTraversalTimeEstimate = value_remainder;
@@ -449,9 +526,7 @@ class RebuildDecisionContext {
       if (remainderIncline >= value_rebuild) {
         doDynamicRebuild = true;
       }
-    } else if (returnCode_rebuild == RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG ||
-               returnCode_rebuild == RegressionBase::ReturnCode::OVERFLOW_REG ||
-               returnCode_remainder == RegressionBase::ReturnCode::OVERFLOW_REG ||
+    } else if (returnCode_remainder == RegressionBase::ReturnCode::OVERFLOW_REG ||
                returnCode_remainder == RegressionBase::ReturnCode::UNKNOWN_ERROR_REG) {
       doDynamicRebuild = true;
     }
@@ -460,11 +535,10 @@ class RebuildDecisionContext {
 
  private:
   /**
-   * Stores rebuild neighbor list times.
-   * The rebuild time is assumed to be approximately constant and is therefore
-   * estimated using a running mean.
+   * Handles storing past rebuild times samples and predicting next rebuild time based on simple arithmetic mean of the
+   * collected samples.
    */
-  Mean _rebuildNeighborTimeMean = Mean(5);
+  RebuildEstimateManager _rebuildTimeEstimator;
 
   /**
    * Stores (numParticlesBuffer, remainderTraversalTime) pairs for each iteration.
@@ -507,4 +581,3 @@ class RebuildDecisionContext {
   double _remainderTraversalTimeEstimate{std::numeric_limits<double>::quiet_NaN()};
 };
 }  // namespace autopas::utils::RegressionModels
-#endif

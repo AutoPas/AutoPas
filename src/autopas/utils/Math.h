@@ -14,6 +14,8 @@
 #include <utility>
 #include <vector>
 
+#include "autopas/utils/ExceptionHandler.h"
+
 namespace autopas::utils::Math {
 /**
  * Factor of PDF of standard normal distribution.
