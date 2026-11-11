@@ -10,6 +10,7 @@
 #include <stdexcept>
 
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/Quaternion.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace TimeDiscretization {
@@ -17,7 +18,7 @@ namespace TimeDiscretization {
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                       const double &deltaT, const std::array<double, 3> &globalForce,
-                                      bool fastParticlesThrow) {
+                                      const std::array<double, 3> &gravity, bool fastParticlesThrow) {
   using autopas::utils::ArrayUtils::operator<<;
   using autopas::utils::ArrayMath::dot;
   using namespace autopas::utils::ArrayMath::literals;
@@ -37,7 +38,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     auto v = iter->getV();
     auto f = iter->getF();
     iter->setOldF(f);
-    iter->setF(globalForce);
+    iter->setF(globalForce + gravity * m);
     v *= deltaT;
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
@@ -70,7 +71,8 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 
 void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                         const double &deltaT, const std::array<double, 3> &globalForce) {
+                                         const double &deltaT, const std::array<double, 3> &globalForce,
+                                         const std::array<double, 3> &gravity) {
   using namespace autopas::utils::ArrayMath::literals;
   using autopas::utils::ArrayMath::cross;
   using autopas::utils::ArrayMath::div;
@@ -132,13 +134,23 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 
     // Reset torque
     iter->setTorque({0., 0., 0.});
-    if (std::any_of(globalForce.begin(), globalForce.end(),
-                    [](double i) { return std::abs(i) > std::numeric_limits<double>::epsilon(); })) {
-      // Get torque from global force
+    const bool hasGlobalForce = std::any_of(globalForce.begin(), globalForce.end(), [](double i) {
+      return std::abs(i) > std::numeric_limits<double>::epsilon();
+    });
+    const bool hasGravity = std::any_of(gravity.begin(), gravity.end(),
+                                        [](double i) { return std::abs(i) > std::numeric_limits<double>::epsilon(); });
+    if (hasGlobalForce or hasGravity) {
+      // Get torque from global force and gravity
       const auto unrotatedSitePositions = particlePropertiesLibrary.getSitePositions(iter->getTypeId());
       const auto rotatedSitePositions = rotateVectorOfPositions(qFullStep, unrotatedSitePositions);
+      const auto siteTypes = particlePropertiesLibrary.getSiteTypes(iter->getTypeId());
       for (size_t site = 0; site < particlePropertiesLibrary.getNumSites(iter->getTypeId()); site++) {
-        iter->addTorque(cross(rotatedSitePositions[site], globalForce));
+        std::array<double, 3> siteForce = globalForce;
+        if (hasGravity) {
+          const auto siteMass = particlePropertiesLibrary.getSiteMass(siteTypes[site]);
+          siteForce += gravity * siteMass;
+        }
+        iter->addTorque(cross(rotatedSitePositions[site], siteForce));
       }
     }
   }

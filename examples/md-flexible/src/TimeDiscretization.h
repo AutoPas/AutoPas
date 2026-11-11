@@ -7,8 +7,6 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
-#include "autopas/utils/Quaternion.h"
-#include "src/configuration/MDFlexConfig.h"
 
 /**
  * Functions for updating velocities and positions as simulation time progresses.
@@ -22,19 +20,20 @@ namespace TimeDiscretization {
  *                      {   velTerm }   {        forceTerm          }
  *
  * In addition, pushes the force stored in the force vector to the old force vector and sets the force vector to the
- * global force in preparation for the calculate forces stage.
+ * global force plus mass-scaled gravity in preparation for the calculate forces stage.
  *
  * @param autoPasContainer The container for which to update the positions.
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
  * @param globalForce Base force value to which every particle is reset.
+ * @param gravity Gravitational acceleration which is scaled by particle mass.
  * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
  * (>skin/rebuildFrequency/2). Does nothing if dynamic containers are enabled.
  */
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                       const double &deltaT, const std::array<double, 3> &globalForce,
-                                      bool fastParticlesThrow);
+                                      const std::array<double, 3> &gravity, bool fastParticlesThrow);
 
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
@@ -42,7 +41,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
  * (method A); with slight adaptations to account for md-flexible primarily using (angular) velocities rather than
  * (angular) momentums. Code lines are commented with references to corresponding equations within the paper.
  *
- * In addition, resets the torques to that determined by the global force only.
+ * In addition, resets the torques to that determined by the global force and gravity.
  *
  * @note Throws error if md-flexible is compiled without multi-site support.
  *
@@ -50,13 +49,15 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
  * @param particlePropertiesLibrary
  * @param deltaT
  * @param globalForce
+ * @param gravity
  */
 void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                         const double &deltaT, const std::array<double, 3> &globalForce);
+                                         const double &deltaT, const std::array<double, 3> &globalForce,
+                                         const std::array<double, 3> &gravity);
 
 /**
- * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
+ * Calculate and update the velocity for every particle using the Störmer-Verlet Algorithm.
  *
  * Specifically
  *      v_{n+1} = v_n + delta_t / (2 * mass) * (F_n + F_{n-1})

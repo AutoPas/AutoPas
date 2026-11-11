@@ -828,13 +828,10 @@ class MDFlexConfig {
       "Brownian motion. Possible Values: (true false) Default: true"};
 
   /**
-   * Global external force like e.g. gravity
+   * Global external force
    */
   MDFlexOption<std::array<double, 3>, __LINE__> globalForce{
-      {0, 0, 0},
-      "globalForce",
-      true,
-      "Global force applied on every particle. Useful to model e.g. gravity. Default: {0,0,0}"};
+      {0, 0, 0}, "globalForce", true, "Global force applied on every particle. Default: {0,0,0}"};
 
   /**
    * Convenience function testing if the global force contains only 0 entries.
@@ -844,6 +841,27 @@ class MDFlexConfig {
     bool isZero = true;
     for (auto gf : globalForce.value) {
       isZero &= gf == 0;
+    }
+    return isZero;
+  }
+
+  /**
+   * Gravitational acceleration
+   */
+  MDFlexOption<std::array<double, 3>, __LINE__> gravity{
+      {0, 0, 0},
+      "gravity",
+      true,
+      "Gravitational acceleration applied on every particle (resulting force scales with mass). Default: {0,0,0}"};
+
+  /**
+   * Convenience function testing if gravity contains only 0 entries.
+   * @return false if any entry in gravity.value is != 0.
+   */
+  [[nodiscard]] bool gravityIsZero() const {
+    bool isZero = true;
+    for (auto g : gravity.value) {
+      isZero &= g == 0;
     }
     return isZero;
   }

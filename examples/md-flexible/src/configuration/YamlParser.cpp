@@ -695,6 +695,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.globalForce.description;
 
         config.globalForce.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
+      } else if (key == config.gravity.name) {
+        expected = "YAML-sequence of three floats. Example: [0, 0, -9.81].";
+        description = config.gravity.description;
+
+        config.gravity.value = {node[key][0].as<double>(), node[key][1].as<double>(), node[key][2].as<double>()};
       } else if (key == MDFlexConfig::siteStr) {
         expected = "See AllOptions.yaml for examples.";
         description = "";

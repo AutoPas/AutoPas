@@ -245,3 +245,44 @@ TEST_F(MDFlexConfigTest, UserSpecifiedBoxMinMaxPreserved) {
   EXPECT_EQ(config.boxMin.value, expectedBoxMin);
   EXPECT_EQ(config.boxMax.value, expectedBoxMax);
 }
+
+/**
+ * Test parsing gravity from CLI arguments.
+ */
+TEST_F(MDFlexConfigTest, parseGravityCLI) {
+  std::vector<std::string> arguments = {"md-flexible", "--gravity", "-9.81"};
+
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
+
+  const MDFlexConfig configuration(3, argv);
+
+  constexpr std::array<double, 3> expectedGravity = {0.0, 0.0, -9.81};
+  EXPECT_EQ(configuration.gravity.value, expectedGravity);
+  EXPECT_FALSE(configuration.gravityIsZero());
+}
+
+/**
+ * Test parsing gravity from YAML file.
+ */
+TEST_F(MDFlexConfigTest, parseGravityYaml) {
+  std::vector<std::string> argumentsTest = {"md-flexible", "--yaml-filename",
+                                            std::string(YAMLDIRECTORY) + "gravityTest.yaml"};
+
+  char *argv[3] = {&argumentsTest[0][0], &argumentsTest[1][0], &argumentsTest[2][0]};
+
+  MDFlexConfig configuration(3, argv);
+
+  constexpr std::array<double, 3> expectedGravity = {1.5, -2.5, 9.81};
+  EXPECT_EQ(configuration.gravity.value, expectedGravity);
+  EXPECT_FALSE(configuration.gravityIsZero());
+}
+
+/**
+ * Test that non-zero gravity is printed in configuration output.
+ */
+TEST_F(MDFlexConfigTest, printGravityOption) {
+  MDFlexConfig configuration;
+  configuration.gravity.value = {1.0, 2.0, 3.0};
+  const std::string configStr = configuration.to_string();
+  EXPECT_NE(configStr.find("gravity"), std::string::npos);
+}
