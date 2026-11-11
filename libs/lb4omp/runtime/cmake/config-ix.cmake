@@ -114,7 +114,8 @@ elseif(NOT APPLE)
   libomp_check_linker_flag(-Wl,-x LIBOMP_HAVE_X_FLAG)
   libomp_check_linker_flag(-Wl,--warn-shared-textrel LIBOMP_HAVE_WARN_SHARED_TEXTREL_FLAG)
   libomp_check_linker_flag(-Wl,--as-needed LIBOMP_HAVE_AS_NEEDED_FLAG)
-  libomp_check_linker_flag("-Wl,--version-script=${LIBOMP_SRC_DIR}/exports_so.txt" LIBOMP_HAVE_VERSION_SCRIPT_FLAG)
+  libomp_check_linker_flag("-Wl,--version-script=${LIBOMP_SRC_DIR}/exports_test_so.txt" LIBOMP_HAVE_VERSION_SCRIPT_FLAG)
+  libomp_check_linker_flag("-Wl,--undefined-version" LIBOMP_HAVE_UNDEFINED_VERSION_FLAG)  # FIXME issue #58858
   libomp_check_linker_flag(-static-libgcc LIBOMP_HAVE_STATIC_LIBGCC_FLAG)
   libomp_check_linker_flag(-Wl,-z,noexecstack LIBOMP_HAVE_Z_NOEXECSTACK_FLAG)
   libomp_check_linker_flag(-Wl,-fini=__kmp_internal_end_fini LIBOMP_HAVE_FINI_FLAG)
@@ -172,7 +173,11 @@ endif()
 
 # Checking features
 # Check if version symbol assembler directives are supported
-libomp_check_version_symbols(LIBOMP_HAVE_VERSION_SYMBOLS)
+if (LIBOMP_HAVE_VERSION_SCRIPT_FLAG)
+  libomp_check_version_symbols(LIBOMP_HAVE_VERSION_SYMBOLS)
+else()
+  set(LIBOMP_HAVE_VERSION_SYMBOLS FALSE)
+endif()
 
 # Check if quad precision types are available
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
