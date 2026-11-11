@@ -761,8 +761,8 @@ class LJFunctorHWY
       shiftOrInvCutoffSquared = highway::Set(tag_double, useMixing ? _invCutoffSquareAoS : _shift6AoS);
     }
 
-    constexpr size_t iStep = iStepSize<vecPattern>();
-    constexpr size_t jStep = jStepSize<vecPattern>();
+    HWY_LANES_CONSTEXPR size_t iStep = iStepSize<vecPattern>();
+    HWY_LANES_CONSTEXPR size_t jStep = jStepSize<vecPattern>();
 
     size_t i = startI;
     for (; i + iStep <= endI; i += iStep) {
@@ -1032,7 +1032,7 @@ class LJFunctorHWY
     VectorDouble fyAcc = highway::Zero(tag_double);
     VectorDouble fzAcc = highway::Zero(tag_double);
 
-    constexpr size_t jStep = jStepSize<vecPattern>();
+    HWY_LANES_CONSTEXPR size_t jStep = jStepSize<vecPattern>();
     const size_t restJ = jVecEnd & (jStep - 1);
     const size_t jVecEndFull = jVecEnd - restJ;
     size_t j = jVecStart;
@@ -1284,9 +1284,6 @@ class LJFunctorHWY
       fx2Old = highway::GatherIndex(tag_double, fxPtr, indices);
       fy2Old = highway::GatherIndex(tag_double, fyPtr, indices);
       fz2Old = highway::GatherIndex(tag_double, fzPtr, indices);
-      if constexpr (homogeneousParams) {
-        asm("" : "+v"(invDr2), "+v"(fx2Old), "+v"(fy2Old), "+v"(fz2Old));
-      }
     }
 
     const auto lj2 = highway::Mul(sigmaSquareds, invDr2);
@@ -1560,7 +1557,7 @@ class LJFunctorHWY
    * @tparam vecPattern
    */
   template <VectorizationPattern vecPattern>
-  HWY_INLINE constexpr static size_t iStepSize() {
+  HWY_INLINE HWY_LANES_CONSTEXPR static size_t iStepSize() {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       return 1;
     }
@@ -1582,7 +1579,7 @@ class LJFunctorHWY
    * @tparam vecPattern
    */
   template <VectorizationPattern vecPattern>
-  HWY_INLINE constexpr static size_t jStepSize() {
+  HWY_INLINE HWY_LANES_CONSTEXPR static size_t jStepSize() {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       return _vecLengthDouble;
     }
