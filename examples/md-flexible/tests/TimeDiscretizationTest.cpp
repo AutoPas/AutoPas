@@ -621,7 +621,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternionWithGravity) {
 
   ParticleType mol;
   mol.setR({5., 5., 5.});
-  mol.setQuaternion({0., 0., 0., 1.});
+  mol.setQuaternion({1., 0., 0., 0.});
   mol.setF({0., 0., 0.});
   mol.setV({0., 0., 0.});
   mol.setTorque({0., 0., 0.});
