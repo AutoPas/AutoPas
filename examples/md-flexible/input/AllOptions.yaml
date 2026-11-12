@@ -53,6 +53,7 @@ mpi-tuning-max-difference-for-bucket :  0.2
 mpi-tuning-weight-for-max-density    :  0.1
 fastParticlesThrow                   :  false
 globalForce                          :  [0, 0, 0]
+gravity                              :  [0, 0, 0]
 load-balancer                        :  InvertedPressure
 Sites:
   0:

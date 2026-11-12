@@ -1,0 +1,2 @@
+# Yaml input for testing gravity parsing
+gravity: [1.5, -2.5, 9.81]

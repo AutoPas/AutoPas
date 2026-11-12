@@ -21,7 +21,7 @@ deltaT                           :  0.0005
 iterations                       :  15000
 energy-sensor                    :  rapl
 boundary-type                    :  [reflective,reflective,reflective]
-globalForce                      :  [0,0,-12]
+gravity                          :  [0,0,-12]
 Sites:
   0:
     epsilon                      :  1.

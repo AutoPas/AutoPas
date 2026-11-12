@@ -70,6 +70,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.functorOption3B,
       config.generatorOption,
       config.globalForce,
+      config.gravity,
       config.iterations,
       config.loadBalancer,
       config.loadBalancingInterval,
@@ -746,6 +747,18 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         } catch (const exception &) {
           cerr << "Error parsing global force: " << optarg << endl;
           cerr << "Expecting one double as force along the z-axis." << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.gravity)::getoptChar: {
+        // when passing via cli gravity can only be in z-direction. For fancier gravity use yaml input.
+        try {
+          auto grav = stod(strArg);
+          config.gravity.value = {0, 0, grav};
+        } catch (const exception &) {
+          cerr << "Error parsing gravity: " << optarg << endl;
+          cerr << "Expecting one double as gravity along the z-axis." << endl;
           displayHelp = true;
         }
         break;
