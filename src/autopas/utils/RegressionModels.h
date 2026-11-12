@@ -267,6 +267,129 @@ class Mean : public RegressionBase {
 };
 
 /**
+ * Manages the estimation of the remainder traversal time based on the number of particles in the buffer.
+ */
+class RemainderTraversalEstimateManager {
+ public:
+  /**
+   * Default constructor.
+   */
+  RemainderTraversalEstimateManager() {
+    _numParticlesInBuffer.reserve(_maxSamples);
+    _remainderTraverlsalTime.reserve(_maxSamples);
+  };
+
+  /**
+   * Maintains a ring buffer over distinct _numParticlesInBuffer values.
+   * When the buffer is full and a new (larger) numParticleBuffer value is added, the oldest sample is removed.
+   * The accumulated _sumRemainderTraversalTime is not treated as a ring buffer.
+   */
+  void addNewPoint(const long numParticleBuffer, const long remainderTraversalTime) {
+    _sumRemainderTraversalTime += remainderTraversalTime;
+
+    if (_sumRemainderTraversalTime < remainderTraversalTime) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Overflow detected in remainder traversal time manager.");
+    }
+
+    // Ensures that added points are monotonically increasing in numParticleBuffer, which should be the case.
+    if (_currentMaxNumParticlesInBuffer < numParticleBuffer) {
+      _currentMaxNumParticlesInBuffer = numParticleBuffer;
+      if (_numDifferentXConsidered < _maxSamples) {
+        _numParticlesInBuffer.push_back(numParticleBuffer);
+        _remainderTraverlsalTime.push_back(remainderTraversalTime);
+        _numDifferentXConsidered++;
+      } else {
+        _numParticlesInBuffer[_currentIndex] = numParticleBuffer;
+        _remainderTraverlsalTime[_currentIndex] = remainderTraversalTime;
+        _currentIndex = (_currentIndex + 1) % _maxSamples;
+      }
+    }
+  }
+
+  /**
+   * Returns the sum of all remainder traversal times, including those with an empty buffer.
+   */
+  [[nodiscard]] long getSumRemainderTraversalTime() const { return _sumRemainderTraversalTime; }
+
+  /**
+   * Reset the manager to the empty state.
+   */
+  void reset() {
+    _numParticlesInBuffer.clear();
+    _remainderTraverlsalTime.clear();
+    _currentIndex = 0;
+    _numDifferentXConsidered = 0;
+    _sumRemainderTraversalTime = 0;
+    _currentMaxNumParticlesInBuffer = LONG_MIN;
+  }
+
+  /**
+   * Predict the next remainder traversal time based on the current samples of the number of particles in the buffer and
+   * their corresponding remainder traversal times.
+   * @param numParticlesInBuffer The number of particles in the buffer for which the remainder traversal time should be
+   * predicted.
+   */
+  [[nodiscard]] double predict(const long numParticlesInBuffer) const {
+    if (_numDifferentXConsidered < _minSamples) {
+      return 0;
+    }
+    std::pair<double, double> linRegCoeffs;
+    linRegCoeffs = utils::Math::simpleLeastSquares(_numParticlesInBuffer, _remainderTraverlsalTime);
+    const double prediction = linRegCoeffs.first + linRegCoeffs.second * static_cast<double>(numParticlesInBuffer);
+  }
+
+ private:
+  /**
+   * Vector storing the current samples of the number of particles in the buffer for past iterations.
+   * These are used for the linear regression to predict the remainder traversal time in the next iteration.
+   */
+  std::vector<long> _numParticlesInBuffer;
+
+  /**
+   * Vector storing the current samples of the remainder traversal time for past iterations.
+   * These are used for the linear regression to predict the remainder traversal time in the next iteration.
+   */
+  std::vector<long> _remainderTraverlsalTime;
+
+  /**
+   * Stores the current index where the next sample will be added in the _numParticlesInBuffer and
+   * _remainderTraverlsalTime vectors.
+   */
+  size_t _currentIndex = 0;
+
+  /**
+   * Minimum number of samples needed to make a prediction.
+   * Set to 2 as a linear regression requires at least two points to define a line.
+   */
+  size_t _minSamples = 2;
+
+  /**
+   * Maximum number of samples considered to make a prediction.
+   * Set to 5 based on trials with different numbers of samples to ensure that the estimate is reliable while keeping
+   * computation time low.
+   */
+  size_t _maxSamples = 5;
+
+  /**
+   * Counter to keep track of different number of buffer particles considered for prediction.
+   */
+  size_t _numDifferentXConsidered = 0;
+
+  /**
+   * To keep a running sum of the remainder traversal times for all the iterations, including where the particle buffer
+   * size is zero.
+   */
+  long _sumRemainderTraversalTime = 0;
+
+  /**
+   * Used to track the largest _numParticlesInBuffer seen so far.
+   * To ensure that incoming _numParticlesInBuffer values are non-decreasing.
+   */
+  long _currentMaxNumParticlesInBuffer = LONG_MIN;
+};
+
+/**
  * Streaming implementation of simple linear regression with x as predictor and y as response variable.
  *
  * Assumes that x values are strictly non-decreasing and positive. This property
@@ -430,7 +553,7 @@ class RebuildDecisionContext {
   /**
    * Default constructor.
    */
-  RebuildDecisionContext() : _rebuildTimeEstimator(){};
+  RebuildDecisionContext() : _rebuildTimeEstimator(), _remainderTraversalTimePredictor(){};
 
   /// For rebuildNeighborTimeEstimate logging.
   [[nodiscard]] double getRebuildNeighborTimeEstimate() const { return _rebuildNeighborTimeEstimate; }
@@ -452,7 +575,7 @@ class RebuildDecisionContext {
   }
 
   /**
-   * Called after the remainder traversal has been executed.
+   * The function is called the remainder traversal have been executed for all the functors.
    *
    * Updates the traversal time estimators depending on the current particle
    * buffer size and detects numerical overflow conditions that may trigger
@@ -467,12 +590,11 @@ class RebuildDecisionContext {
    * the buffer increase cannot be computed from the immediately preceding
    * iteration and must instead refer to an earlier one.
    *
-   * @param remainderTraversalTime Measured remainder traversal time
+   * @param remainderTraversalTime Measured total remainder traversal time (over all computeInteraction calls, e.g.
+   * 2B+3B)
    * @param numParticlesBuffer     Current number of particles in the particle buffer
-   *
-   * @return True if a dynamic rebuild should be triggered in the next iteration (e.g. due to overflow)
    */
-  bool afterRemainderTraversal(const long remainderTraversalTime, const size_t numParticlesBuffer) {
+  void afterRemainderTraversal(const long remainderTraversalTime, const size_t numParticlesBuffer) {
     _lastRemainderTraversalTime = remainderTraversalTime;
 
     if (numParticlesBuffer > 0) {
@@ -483,9 +605,7 @@ class RebuildDecisionContext {
                                             : 0;
     }
 
-    return _remainderTraversalTimePredictor.addNewPoint(static_cast<long>(numParticlesBuffer),
-                                                        remainderTraversalTime) ==
-           RegressionBase::ReturnCode::OVERFLOW_REG;
+    _remainderTraversalTimePredictor.addNewPoint(static_cast<long>(numParticlesBuffer), remainderTraversalTime);
   }
 
   void updateNumParticlesBufferEstimate(const long currentNumParticlesBuffer) {
@@ -500,20 +620,19 @@ class RebuildDecisionContext {
    * Updates the internal dynamic rebuild flag (_doDynamicRebuild).
    *
    * @param curr_iter current iteration, or current rebuild frequency if one would rebuild in the current iteration
-   * @return True if a dynamic rebuild should be triggered due to particle buffer fullness, or if an error or overflow
-   * occurred.
+   * @return True if a dynamic rebuild should be triggered due to particle buffer fullness.
    */
-  bool decideToRebuildOnParticleBufferFullness(const unsigned int curr_iter) {
+  bool decideToRebuildOnParticleBufferFullness(const unsigned int currIter) {
     bool doDynamicRebuild{false};
-    const auto value_rebuild = _rebuildTimeEstimator.predict();
+    const auto valueRebuild = _rebuildTimeEstimator.predict();
 
-    const auto [value_remainder, returnCode_remainder, isOk_remainder] =
+    const auto valueRemainder =
         _remainderTraversalTimePredictor.predict(static_cast<long>(_numParticlesBufferEstimate));
 
-    if (isOk_remainder and value_remainder > 0) {
-      // log
-      _rebuildNeighborTimeEstimate = value_rebuild;
-      _remainderTraversalTimeEstimate = value_remainder;
+    if (valueRemainder > 0) {
+      // for logging
+      _rebuildNeighborTimeEstimate = valueRebuild;
+      _remainderTraversalTimeEstimate = valueRemainder;
 
       // First full term: value_rebuild / (curr_iter * (curr_iter + 1)), but denominator is the same, so can be ignored.
       // const double rebuildIncline = value_rebuild / (curr_iter * (curr_iter + 1));
@@ -522,13 +641,11 @@ class RebuildDecisionContext {
       // static_cast<double>(_remainderTraversalTimePredictor.getSumY())) / (curr_iter * (curr_iter + 1)), but the
       // denominator is same and can be ignored.
       const double remainderIncline =
-          (value_remainder * curr_iter - static_cast<double>(_remainderTraversalTimePredictor.getSumY()));
-      if (remainderIncline >= value_rebuild) {
+          (valueRemainder * currIter -
+           static_cast<double>(_remainderTraversalTimePredictor.getSumRemainderTraversalTime()));
+      if (remainderIncline >= valueRebuild) {
         doDynamicRebuild = true;
       }
-    } else if (returnCode_remainder == RegressionBase::ReturnCode::OVERFLOW_REG ||
-               returnCode_remainder == RegressionBase::ReturnCode::UNKNOWN_ERROR_REG) {
-      doDynamicRebuild = true;
     }
     return doDynamicRebuild;
   }
@@ -551,7 +668,7 @@ class RebuildDecisionContext {
    * size is zero. Zero buffer sizes distort linear regression and are therefore
    * handled separately using a mean estimator, because the sum of all times since the last rebuild are still needed.
    */
-  SimpleLinearRegressionSeparateZero _remainderTraversalTimePredictor{};
+  RemainderTraversalEstimateManager _remainderTraversalTimePredictor;
 
   /**
    * Stores the remainder traversal time of the previous iteration.

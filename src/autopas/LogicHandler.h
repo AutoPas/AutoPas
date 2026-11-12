@@ -170,8 +170,8 @@ class LogicHandler {
   std::vector<Particle_T> updateContainer() {
 #ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
     if (_totalRemainderTraversalTimeCurrentIter > 0) {
-      _doDynamicRebuild = _rebuildDecisionContext.afterRemainderTraversal(_totalRemainderTraversalTimeCurrentIter,
-                                                                          getNumberOfParticlesBuffer());
+      _rebuildDecisionContext.afterRemainderTraversal(_totalRemainderTraversalTimeCurrentIter,
+                                                      getNumberOfParticlesBuffer());
       _totalRemainderTraversalTimeCurrentIter = 0;
     }
 #endif
