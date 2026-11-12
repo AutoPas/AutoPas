@@ -97,27 +97,27 @@ void testAddParticleGrowthDevice(autopas::DataLayoutOption layout) {
 }
 
 /**
- * Shrinks a full list and checks that the remaining particles are still correct on the device.
+ * Shrinks a filled list and checks that the remaining particles are still correct on the device.
  * DualView::resize() takes a different code path depending on which side holds the newest data, so both are tested.
  * @param layout
  * @param syncBeforeResize If true the device is up to date before the resize, otherwise the host holds the newest data.
  */
-void testResizeFullDevice(autopas::DataLayoutOption layout, bool syncBeforeResize) {
-  List list{layout, 8};
+void testResizeFilledDevice(autopas::DataLayoutOption layout, bool syncBeforeResize) {
+  List list{layout, 16};
   addParticles(list, 0, 8);
 
   if (syncBeforeResize) {
     list.syncAll<DeviceExecSpace>();
   }
 
-  list.resize(4);
+  list.resize(8);
   list.syncAll<DeviceExecSpace>();
 
-  EXPECT_EQ(list.size(), 4u);
-  EXPECT_EQ(list.getCapacity(), 4u);
-  expectDeviceExtents(list, 4);
-  expectDeviceStorage(list, 4);
-  EXPECT_EQ(countDeviceMismatches(list, 0, 4), 0);
+  EXPECT_EQ(list.size(), 8);
+  EXPECT_EQ(list.getCapacity(), 8);
+  expectDeviceExtents(list, 8);
+  expectDeviceStorage(list, 8);
+  EXPECT_EQ(countDeviceMismatches(list, 0, 8), 0);
 }
 
 /**
@@ -201,7 +201,7 @@ TEST_F(KokkosListTest, testResizeEmpty) {
   List kokkosList{autopas::DataLayoutOption::soa, 42};
 
   // Case 1: downsize the list
-  kokkosList.resize(16);  // todo: expect that warning is issued
+  kokkosList.resize(16);
 
   auto sizeA = kokkosList.size();
   auto capacityA = kokkosList.getCapacity();
@@ -222,6 +222,33 @@ TEST_F(KokkosListTest, testResizeEmpty) {
 }
 
 /**
+ * Tests multiple resize cases, e.g. increasing or decreasing size for a filled KokkosList and if the stored data
+ * survives the resize
+ */
+TEST_F(KokkosListTest, testResizeFilled) {
+  List kokkosList{autopas::DataLayoutOption::soa, 16};
+
+  addParticles(kokkosList, 0, 8);
+
+  size_t sizeA = kokkosList.size();
+  size_t capacityA = kokkosList.getCapacity();
+  EXPECT_EQ(sizeA, 8);
+  EXPECT_EQ(capacityA, 16);
+  expectDeviceExtents(kokkosList, 16);
+
+  kokkosList.resize(8);
+  kokkosList.syncAll<DeviceExecSpace>();
+  expectDeviceStorage(kokkosList, 8);
+  EXPECT_EQ(countDeviceMismatches(kokkosList, 0, 8), 0);
+
+  size_t sizeB = kokkosList.size();
+  size_t capacityB = kokkosList.getCapacity();
+  EXPECT_EQ(sizeB, 8);
+  EXPECT_EQ(capacityB, 8);
+  expectDeviceExtents(kokkosList, 8);
+}
+
+/**
  * Tests multiple resize cases, e.g. increasing or decreasing size for an full KokkosList and if the stored data
  * survives the resize
  */
@@ -236,16 +263,7 @@ TEST_F(KokkosListTest, testResizeFull) {
   EXPECT_EQ(capacityA, 8);
   expectDeviceExtents(kokkosList, 8);
 
-  kokkosList.resize(4);
-  kokkosList.syncAll<DeviceExecSpace>();
-  expectDeviceStorage(kokkosList, 4);
-  EXPECT_EQ(countDeviceMismatches(kokkosList, 0, 4), 0);
-
-  size_t sizeB = kokkosList.size();
-  size_t capacityB = kokkosList.getCapacity();
-  EXPECT_EQ(sizeB, 4);
-  EXPECT_EQ(capacityB, 4);
-  expectDeviceExtents(kokkosList, 4);
+  EXPECT_THROW(kokkosList.resize(4), autopas::utils::ExceptionHandler::AutoPasException);
 }
 
 /**
@@ -472,14 +490,14 @@ TEST_F(KokkosListTest, testAddParticleDefaultConstructedDevice) {
 
 /* The following tests are described in the respective test functions in separate comments */
 
-TEST_F(KokkosListTest, testResizeFullSoADevice) {
-  testResizeFullDevice(autopas::DataLayoutOption::soa, true);
-  testResizeFullDevice(autopas::DataLayoutOption::soa, false);
+TEST_F(KokkosListTest, testResizeFilledSoADevice) {
+  testResizeFilledDevice(autopas::DataLayoutOption::soa, true);
+  testResizeFilledDevice(autopas::DataLayoutOption::soa, false);
 }
 
 TEST_F(KokkosListTest, testResizeFullAoSDevice) {
-  testResizeFullDevice(autopas::DataLayoutOption::aos, true);
-  testResizeFullDevice(autopas::DataLayoutOption::aos, false);
+  testResizeFilledDevice(autopas::DataLayoutOption::aos, true);
+  testResizeFilledDevice(autopas::DataLayoutOption::aos, false);
 }
 
 TEST_F(KokkosListTest, testAddParticleSoADevice) { testAddParticleDevice(autopas::DataLayoutOption::soa); }

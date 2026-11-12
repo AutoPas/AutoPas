@@ -41,10 +41,10 @@ class KokkosList {
 
   void resize(size_t size) {
     if (size < _size) {
-      // todo: warn about that the new size is smaller than the current size and that particle data is lost by this
-      // action todo: maybe even throw and exception since this can lead to bugs/undesired behavior when people are not
-      // aware of that
-      _size = size;
+      utils::ExceptionHandler::exception(
+          "KokkosList::resize(): invalid size {}. The requested size is smaller than the current size. This would lead "
+          "to particles being deleted silently, which is not valid.",
+          size);
     }
 
     _capacity = size;
