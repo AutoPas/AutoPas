@@ -52,6 +52,6 @@ class KokkosAoS {
   Kokkos::DualView<Particle_T *, DeviceExecSpace::device_type> _particles{};
 };
 
-}  // namespace autopas::utilsKokkos
+}  // namespace autopas::utils::kokkos
 
 #endif

@@ -136,6 +136,6 @@ class KokkosSoA {
   Type _particleData{};
 };
 
-}  // namespace autopas::utilsKokkos
+}  // namespace autopas::utils::kokkos
 
 #endif

@@ -140,6 +140,6 @@ class KokkosList {
   Particle_T::KokkosSoAArraysType _soa{};
 };
 
-}  // namespace autopas::utilsKokkos
+}  // namespace autopas::utils::kokkos
 
 #endif

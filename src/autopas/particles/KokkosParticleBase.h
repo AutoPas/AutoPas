@@ -14,8 +14,8 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAType.h"
-#include "autopas/utils/markParticleAsDeleted.h"
 #include "autopas/utils/kokkos/KokkosSoA.h"
+#include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
 

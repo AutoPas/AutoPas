@@ -159,9 +159,7 @@ void testDeviceRoundTrip(autopas::DataLayoutOption layout) {
 /**
  * Tests if the initialization of an empty KokkosList works with the default constructor
  */
-TEST_F(KokkosListTest, testInitialization) {
-  List kokkosList{};
-}
+TEST_F(KokkosListTest, testInitialization) { List kokkosList{}; }
 
 /**
  * Tests if the initialization of a allocated KokkosList works with the custom constructor
