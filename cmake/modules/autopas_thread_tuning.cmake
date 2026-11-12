@@ -1,0 +1,6 @@
+if (AUTOPAS_OPENMP)
+    option(AUTOPAS_OPENMP_TUNE_THREADS "Tune number of OpenMP threads used by AutoPas." ON)
+    if(AUTOPAS_OPENMP_TUNE_THREADS)
+        target_compile_definitions(autopas PUBLIC AUTOPAS_TUNE_THREADS)
+    endif()
+endif ()

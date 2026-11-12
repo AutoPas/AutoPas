@@ -14,6 +14,12 @@ endif ()
 # includes the gtest modules
 include(autopas_gtest)
 
+# Shared testing helpers
+add_library(testingHelpers INTERFACE)
+target_include_directories(testingHelpers INTERFACE
+    "${CMAKE_CURRENT_SOURCE_DIR}/testingHelpers"
+)
+
 # add AutoPas tests:
 add_subdirectory(testAutopas)
 add_subdirectory(MPIParallelAutoPasTests)

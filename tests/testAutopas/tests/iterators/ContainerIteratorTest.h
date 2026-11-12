@@ -10,11 +10,16 @@
 
 #include <tuple>
 
+#include "NumThreadGuard.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/IteratorBehavior.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "testingHelpers/GenerateValidConfigurations.h"
 
 class ContainerIteratorTestBase : public testing::Test {
+ protected:
+  NumThreadGuard _numThreadGuard{autopas::autopas_get_max_threads(), TUNED_THREADS};
+
  public:
   struct PrintToStringParamName {
     template <class ParamType>
