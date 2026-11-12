@@ -15,7 +15,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAType.h"
 #include "autopas/utils/markParticleAsDeleted.h"
-#include "autopas/utilsKokkos/KokkosSoA.h"
+#include "autopas/utils/kokkos/KokkosSoA.h"
 
 namespace autopas {
 
@@ -65,7 +65,7 @@ class KokkosParticleBase {
   }
 
   /**
-   * Destructor of ParticleBase class
+   * Destructor of KokkosParticleBase class
    */
   ~KokkosParticleBase() = default;
 
@@ -104,7 +104,7 @@ class KokkosParticleBase {
 
  public:
   /**
-   * Stream operator for instances of ParticleBase class.
+   * Stream operator for instances of KokkosParticleBase class.
    * @return String representation.
    */
   template <typename T, typename P>
@@ -137,8 +137,8 @@ class KokkosParticleBase {
   }
 
   /**
-   * Substract a partial force from the force acting on the particle
-   * @param f partial force to be substracted
+   * Subtract a partial force from the force acting on the particle
+   * @param f partial force to be subtracted
    */
   void subF(const Kokkos::Array<floatType, 3> &f) {
     _f[0] -= f[0];
@@ -308,7 +308,6 @@ class KokkosParticleBase {
   /**
    * Defines whether the particle is a halo particle, i.e., not owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is not owned by the current AutoPas object, false otherwise.
-   * @note when a
    */
   [[nodiscard]] bool isHalo() const { return _ownershipState == OwnershipState::halo; }
 
@@ -380,7 +379,7 @@ class KokkosParticleBase {
   /**
    * The type for the Kokkos SoA storage. Same columns as SoAArraysType but without ptr, so the first column is id.
    */
-  using KokkosSoAArraysType = autopas::utilsKokkos::KokkosSoA<
+  using KokkosSoAArraysType = autopas::utils::kokkos::KokkosSoA<
       AttributeNames, AttributeNames::id, idType * /*id*/, floatType * /*x*/, floatType * /*y*/, floatType * /*z*/,
 #ifdef AUTOPAS_ENABLE_DYNAMIC_CONTAINERS
       floatType * /*rebuildX*/, floatType * /*rebuildY*/, floatType * /*rebuildZ*/,
@@ -475,7 +474,6 @@ class KokkosParticleBase {
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @return Value of the requested attribute.
-   * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
@@ -520,7 +518,6 @@ class KokkosParticleBase {
    * Setter, which allows set an attribute using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @param value New value of the requested attribute.
-   * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
@@ -582,8 +579,8 @@ class KokkosParticleBase {
 };
 
 /**
- * Stream operator for instances of ParticleBase class.
- * This function enables passing ParticleBase objects to an ostream via `<<`
+ * Stream operator for instances of KokkosParticleBase class.
+ * This function enables passing KokkosParticleBase objects to an ostream via `<<`
  * @tparam Floating point type to be used for the SoAs.
  * @param os
  * @param particle
@@ -593,7 +590,7 @@ template <typename floatType, typename idType>
 std::ostream &operator<<(std::ostream &os, const KokkosParticleBase<floatType, idType> &particle) {
   using utils::ArrayUtils::operator<<;
   os << "Particle"
-     << "\nID      : " << particle._id << "\nPosition: " << particle.getF() << "\nVelocity: " << particle.getV()
+     << "\nID      : " << particle._id << "\nPosition: " << particle.getR() << "\nVelocity: " << particle.getV()
      << "\nForce   : " << particle.getF() << "\nOwnershipState : " << particle._ownershipState;
   // clang-format on
   return os;

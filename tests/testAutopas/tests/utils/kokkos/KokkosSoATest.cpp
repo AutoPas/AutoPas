@@ -22,13 +22,13 @@ namespace {
  */
 enum class TestColumns { first, second, third };
 
-using TestSoA = autopas::utilsKokkos::KokkosSoA<TestColumns, TestColumns::first, unsigned int *, float *, double *>;
+using TestSoA = autopas::utils::kokkos::KokkosSoA<TestColumns, TestColumns::first, unsigned int *, float *, double *>;
 
 static_assert(
     std::is_same_v<TestSoA::Type,
-                   std::tuple<Kokkos::DualView<unsigned int *, autopas::utilsKokkos::DeviceMemSpace::device_type>,
-                              Kokkos::DualView<float *, autopas::utilsKokkos::DeviceMemSpace::device_type>,
-                              Kokkos::DualView<double *, autopas::utilsKokkos::DeviceMemSpace::device_type>>>,
+                   std::tuple<Kokkos::DualView<unsigned int *, autopas::utils::kokkos::DeviceMemSpace::device_type>,
+                              Kokkos::DualView<float *, autopas::utils::kokkos::DeviceMemSpace::device_type>,
+                              Kokkos::DualView<double *, autopas::utils::kokkos::DeviceMemSpace::device_type>>>,
     "KokkosSoA must store one DualView per attribute.");
 
 static_assert(std::is_same_v<decltype(std::get<0>(std::declval<TestSoA::Type &>()).view_host().data()), unsigned int *>,
@@ -70,7 +70,7 @@ TEST_F(KokkosSoATest, testInitialization) { SoA soa; }
  * and resizing it to 0. Also tests if the data type of the stored SoA attributes are as expected.
  */
 TEST_F(KokkosSoATest, testGetView) {
-  autopas::utilsKokkos::KokkosSoA<TestColumns, TestColumns::first, unsigned int *, float *, double *> soa{};
+  autopas::utils::kokkos::KokkosSoA<TestColumns, TestColumns::first, unsigned int *, float *, double *> soa{};
 
   soa.resize(1);
 

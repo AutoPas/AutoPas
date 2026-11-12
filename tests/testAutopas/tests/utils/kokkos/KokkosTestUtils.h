@@ -17,9 +17,9 @@
 #include <type_traits>
 
 #include "autopas/particles/ParticleDefinitions.h"
-#include "autopas/utilsKokkos/KokkosAoS.h"
-#include "autopas/utilsKokkos/KokkosSoA.h"
-#include "autopas/utilsKokkos/KokkosSpaces.h"
+#include "autopas/utils/kokkos/KokkosAoS.h"
+#include "autopas/utils/kokkos/KokkosSoA.h"
+#include "autopas/utils/kokkos/KokkosSpaces.h"
 
 namespace kokkosTestUtils {
 
@@ -38,9 +38,9 @@ using SoA = Particle::KokkosSoAArraysType;
 /**
  * AoS storage of the particle type.
  */
-using AoS = autopas::utilsKokkos::KokkosAoS<Particle>;
-using autopas::utilsKokkos::DeviceExecSpace;
-using autopas::utilsKokkos::HostExecSpace;
+using AoS = autopas::utils::kokkos::KokkosAoS<Particle>;
+using autopas::utils::kokkos::DeviceExecSpace;
+using autopas::utils::kokkos::HostExecSpace;
 
 /**
  * True if host and device share one memory space (e.g. OpenMP-only builds).
@@ -48,7 +48,7 @@ using autopas::utilsKokkos::HostExecSpace;
  * always false. Tests that rely on stale data or sync flags have to be skipped in this case.
  */
 inline constexpr bool hostAndDeviceShareMemory =
-    std::is_same_v<autopas::utilsKokkos::DeviceMemSpace, autopas::utilsKokkos::HostMemSpace>;
+    std::is_same_v<autopas::utils::kokkos::DeviceMemSpace, autopas::utils::kokkos::HostMemSpace>;
 
 /**
  * Attribute values a particle is expected to hold.

@@ -10,7 +10,7 @@
 
 #include "Kokkos_Core.hpp"
 
-namespace autopas::utilsKokkos {
+namespace autopas::utils::kokkos {
 
 using DeviceExecSpace = Kokkos::DefaultExecutionSpace;
 

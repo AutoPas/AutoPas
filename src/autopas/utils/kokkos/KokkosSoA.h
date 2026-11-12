@@ -12,9 +12,9 @@
 #include <type_traits>
 
 #include "Kokkos_DualView.hpp"
-#include "autopas/utilsKokkos/KokkosSpaces.h"
+#include "autopas/utils/kokkos/KokkosSpaces.h"
 
-namespace autopas::utilsKokkos {
+namespace autopas::utils::kokkos {
 
 /**
  * Structure of arrays with one DualView per attribute.

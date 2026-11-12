@@ -17,7 +17,7 @@ using namespace kokkosTestUtils;
 
 namespace {
 
-using List = autopas::utilsKokkos::KokkosList<Particle>;
+using List = autopas::utils::kokkos::KokkosList<Particle>;
 
 /**
  * Adds the particles with the indices [first, last) to the list.
@@ -160,14 +160,14 @@ void testDeviceRoundTrip(autopas::DataLayoutOption layout) {
  * Tests if the initialization of an empty KokkosList works with the default constructor
  */
 TEST_F(KokkosListTest, testInitialization) {
-  autopas::utilsKokkos::KokkosList<autopas::KokkosParticleBaseFP32> kokkosList{};
+  List kokkosList{};
 }
 
 /**
  * Tests if the initialization of a allocated KokkosList works with the custom constructor
  */
 TEST_F(KokkosListTest, testConstructor) {
-  autopas::utilsKokkos::KokkosList<autopas::KokkosParticleBaseFP32> kokkosList{autopas::DataLayoutOption::soa, 42};
+  List kokkosList{autopas::DataLayoutOption::soa, 42};
 
   auto activeLayout = kokkosList.getActiveDataLayout();
   auto size = kokkosList.size();
@@ -200,7 +200,7 @@ TEST_F(KokkosListTest, testConstructorInvalidLayout) {
  * Tests multiple resize cases, e.g. increasing or decreasing size for an empty KokkosList
  */
 TEST_F(KokkosListTest, testResizeEmpty) {
-  autopas::utilsKokkos::KokkosList<autopas::KokkosParticleBaseFP32> kokkosList{autopas::DataLayoutOption::soa, 42};
+  List kokkosList{autopas::DataLayoutOption::soa, 42};
 
   // Case 1: downsize the list
   kokkosList.resize(16);  // todo: expect that warning is issued
@@ -228,7 +228,7 @@ TEST_F(KokkosListTest, testResizeEmpty) {
  * survives the resize
  */
 TEST_F(KokkosListTest, testResizeFull) {
-  autopas::utilsKokkos::KokkosList<autopas::KokkosParticleBaseFP32> kokkosList{autopas::DataLayoutOption::soa, 8};
+  List kokkosList{autopas::DataLayoutOption::soa, 8};
 
   addParticles(kokkosList, 0, 8);
 
@@ -254,7 +254,7 @@ TEST_F(KokkosListTest, testResizeFull) {
  * Tests if a particle is correctly added to the KokkosList on the Host with SoA as the active storage format
  */
 TEST_F(KokkosListTest, testAddParticleSoAHost) {
-  autopas::utilsKokkos::KokkosList<autopas::KokkosParticleBaseFP32> kokkosList{autopas::DataLayoutOption::soa, 0};
+  List kokkosList{autopas::DataLayoutOption::soa, 0};
 
   autopas::KokkosParticleBaseFP32 particle{};
 
@@ -338,7 +338,7 @@ TEST_F(KokkosListTest, testAddParticleSoAHost) {
  * Tests if a particle is correctly added to the KokkosList on the Host with AoS as the active storage format
  */
 TEST_F(KokkosListTest, testAddParticleAoSHost) {
-  autopas::utilsKokkos::KokkosList<autopas::KokkosParticleBaseFP32> kokkosList{autopas::DataLayoutOption::aos, 0};
+  List kokkosList{autopas::DataLayoutOption::aos, 0};
 
   autopas::KokkosParticleBaseFP32 particle{};
 

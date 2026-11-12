@@ -15,7 +15,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace autopas::utilsKokkos {
+namespace autopas::utils::kokkos {
 
 template <typename Particle_T>
 class KokkosList {

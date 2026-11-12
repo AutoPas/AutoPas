@@ -10,7 +10,7 @@
 
 #include "KokkosTestBase.h"
 #include "autopas/particles/ParticleDefinitions.h"
-#include "autopas/utilsKokkos/KokkosList.h"
+#include "autopas/utils/kokkos/KokkosList.h"
 
 class KokkosListTest : public KokkosTestBase {};
 
