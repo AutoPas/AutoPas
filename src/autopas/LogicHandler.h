@@ -295,9 +295,6 @@ class LogicHandler {
     const auto interactionLengthInv = 1. / _currentContainer->getInteractionLength();
     initSpatialLocks(boxLength, interactionLengthInv);
 
-    // Set this flag, s.t., the container is rebuilt!
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
-
     return particlesNowOutside;
   }
 
@@ -408,26 +405,23 @@ class LogicHandler {
   }
 
   /**
-   * Takes a particle, checks if it is in any of the particle buffers, and deletes it from them if found.
-   * @param particle Particle to delete. If something was deleted this reference might point to a different particle or
-   * invalid memory.
-   * @return Tuple: <True iff the particle was found and deleted, True iff the reference is valid>
+   * Takes a particle, checks if it is in any of the particle buffers, and marks it as deleted if found. No particle is
+   * moved by this. The particle is removed from the buffer by the next updateContainer().
+   * @param particle Particle to delete.
+   * @return True iff the particle was found and marked as deleted.
    */
-  std::tuple<bool, bool> deleteParticleFromBuffers(Particle_T &particle) {
+  bool deleteParticleFromBuffers(Particle_T &particle) {
     // find the buffer the particle belongs to
     auto &bufferCollection = particle.isOwned() ? _particleBuffer : _haloParticleBuffer;
     for (auto &cell : bufferCollection) {
       auto &buffer = cell._particles;
       // if the address of the particle is between start and end of the buffer it is in this buffer
       if (not buffer.empty() and &(buffer.front()) <= &particle and &particle <= &(buffer.back())) {
-        const bool isRearParticle = &particle == &buffer.back();
-        // swap-delete
-        particle = buffer.back();
-        buffer.pop_back();
-        return {true, not isRearParticle};
+        internal::markParticleAsDeleted(particle);
+        return true;
       }
     }
-    return {false, true};
+    return false;
   }
 
   /**
@@ -785,6 +779,7 @@ class LogicHandler {
 
   /**
    * Sets the current container to the given one and transfers all particles from the old container to the new one.
+   * Invalidates the neighbor lists, so the new container is rebuilt before the next traversal.
    * @param newContainer The new container to set.
    */
   void setCurrentContainer(std::unique_ptr<ParticleContainerInterface<Particle_T>> newContainer);
@@ -1243,7 +1238,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     }
     numRejectedConfigs++;
     // if no config is left after rejecting this one, an exception is thrown here.
-    configuration = _tuningManager->rejectConfiguration(configuration, rejectIndefinitely, interactionType);
+    std::tie(configuration, stillTuning) =
+        _tuningManager->rejectConfiguration(configuration, rejectIndefinitely, interactionType);
   } while (true);
 }
 
@@ -1271,6 +1267,7 @@ void LogicHandler<Particle_T>::setCurrentContainer(
   }
 
   _currentContainer = std::move(newContainer);
+  _neighborListsAreValid.store(false, std::memory_order_relaxed);
 }
 
 template <typename Particle_T>
