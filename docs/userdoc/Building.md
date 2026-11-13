@@ -43,6 +43,16 @@ Here is an example of a parallel compilation of the md-flexible example:
 cmake --build . --target md-flexible --parallel 12
 ```
 
+### The ccmake menu
+
+`ccmake` is recommended for configuring the build. This provides a menu with the various AutoPas compile-time options.
+
+```bash
+ccmake ..
+```
+
+It can otherwise be used similarly to `cmake`.
+
 ### Building the Stand-Alone Tools
 The stand-alone tools in [tools/](/tools), namely `ruleChecker` and `tuningLogToSQL`, are not built by default.
 They can be enabled via the CMake option:
@@ -63,6 +73,19 @@ Both tuning strategies can be enabled via the CMake option:
 ```bash
 cmake -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON .. 
 ```
+
+### Enabling Python-Based Tuning
+
+Python-based tuning requires the dependencies pybind 11 and json.
+These are bundled with AutoPas, but can take some time to compile.
+As such, this is disabled by default.
+
+This tuning strategy can be enabled via the CMake option:
+```bash
+cmake -DAUTOPAS_ENABLE_PYTHON_BASED_TUNING=ON .. 
+```
+
+The python version you wish to use should be findable before enabling this option. This is particularly relevant on HPC systems where the default python version is unsuitable, and a modern version should be loaded.
 
 ### Energy Measurements and Tuning
 

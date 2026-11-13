@@ -14,6 +14,9 @@ venv/
 .clangd/
 .cache/
 
+# python stuff
+__pycache__/
+
 # benchmark output folder
 *testTuning_*/
 *measurePerf_*/
