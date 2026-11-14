@@ -19,6 +19,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -374,9 +375,15 @@ class LJFunctorSVE
     auto *const __restrict fx1ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
     auto *const __restrict fy1ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fz1ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
-    auto *const __restrict fx2ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fy2ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fz2ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    // getNeededAttr(false_type) omits force columns for soa2, so only request them when newton3 is enabled.
+    double *__restrict fx2ptr = nullptr;
+    double *__restrict fy2ptr = nullptr;
+    double *__restrict fz2ptr = nullptr;
+    if constexpr (newton3) {
+      fx2ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
+      fy2ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
+      fz2ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    }
 
     const double *__restrict sqrtEpsilon1ptr = nullptr;
     const double *__restrict halfSigma1ptr = nullptr;
@@ -593,7 +600,7 @@ class LJFunctorSVE
 
   template <bool newton3, bool indexed>
   // FCC needs to be forced to inline this function. Otherwise a dramatic loss in performance can be observed.
-  __attribute__((always_inline)) inline void SoAKernel(
+  AUTOPAS_ALWAYS_INLINE void SoAKernel(
       const size_t j, const bool ownedStateIisOwned, const int64_t *const __restrict ownedStatePtr2,
       const svfloat64_t &x1, const svfloat64_t &y1, const svfloat64_t &z1, const double *const __restrict x2ptr,
       const double *const __restrict y2ptr, const double *const __restrict z2ptr, double *const __restrict fx2ptr,

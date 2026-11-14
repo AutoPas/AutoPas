@@ -823,9 +823,15 @@ class LJFunctorHWY
     auto *const __restrict fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
     auto *const __restrict fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
-    auto *const __restrict fx2Ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    // getNeededAttr(false_type) omits force columns for soa2, so only request them when newton3 is enabled.
+    double *__restrict fx2Ptr = nullptr;
+    double *__restrict fy2Ptr = nullptr;
+    double *__restrict fz2Ptr = nullptr;
+    if constexpr (newton3) {
+      fx2Ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
+      fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
+      fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    }
     const double *__restrict sqrtEpsilon1Ptr = nullptr;
     const double *__restrict halfSigma1Ptr = nullptr;
     const double *__restrict sqrtEpsilon2Ptr = nullptr;
