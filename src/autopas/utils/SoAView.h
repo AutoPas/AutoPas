@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <span>
 #include <utility>
 
 #include "autopas/utils/AutoPasMacros.h"
@@ -120,20 +121,27 @@ class SoAView {
   [[nodiscard]] size_t numExtraColumns() const { return _soa ? _soa->numExtraColumns() : 0; }
 
   /**
+   * Returns a const span over the available elements of the given extra column in this view.
+   * @param col Index of the extra column (0-based).
+   * @return Span of elements within the view, or an empty span if unavailable.
+   */
+  [[nodiscard]] std::span<const double> extraColumn(size_t col) const {
+    if (_soa == nullptr) {
+      return {};
+    }
+    const auto colSpan = _soa->extraColumn(col);
+    if (colSpan.size() <= _startIndex) {
+      return {};
+    }
+    return colSpan.subspan(_startIndex, std::min(colSpan.size() - _startIndex, size()));
+  }
+
+  /**
    * Returns the available size of the given extra column in this view.
    * @param col Index of the extra column (0-based).
    * @return Number of available elements for this extra column in the view.
    */
-  [[nodiscard]] size_t extraColumnSize(size_t col) const {
-    if (_soa == nullptr) {
-      return 0;
-    }
-    const size_t total = _soa->extraColumnSize(col);
-    if (total <= _startIndex) {
-      return 0;
-    }
-    return std::min(total - _startIndex, size());
-  }
+  [[nodiscard]] size_t extraColumnSize(size_t col) const { return extraColumn(col).size(); }
 
   /**
    * Returns a const pointer to the beginning of the given extra column in this view.
@@ -141,10 +149,8 @@ class SoAView {
    * @return Pointer to data within the view, or nullptr if unavailable.
    */
   [[nodiscard]] const double *extraColumnBegin(size_t col) const {
-    if (_soa == nullptr or _soa->extraColumnSize(col) <= _startIndex) {
-      return nullptr;
-    }
-    return _soa->extraColumnBegin(col) + _startIndex;
+    const auto colSpan = extraColumn(col);
+    return colSpan.empty() ? nullptr : colSpan.data();
   }
 
   /**
@@ -153,10 +159,7 @@ class SoAView {
    * @return Pointer to data within the view, or nullptr if unavailable.
    */
   [[nodiscard]] double *extraColumnBegin(size_t col) {
-    if (_soa == nullptr or _soa->extraColumnSize(col) <= _startIndex) {
-      return nullptr;
-    }
-    return _soa->extraColumnBegin(col) + _startIndex;
+    return const_cast<double *>(std::as_const(*this).extraColumnBegin(col));
   }
 
  private:

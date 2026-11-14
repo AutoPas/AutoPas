@@ -8,7 +8,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <span>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "autopas/utils/AlignedAllocator.h"
@@ -85,11 +87,9 @@ class SoA {
     if constexpr (sizeof...(attributes) > 0) {
       constexpr size_t maxAttr = std::max({size_t{0}, attributes...});
       if constexpr (maxAttr >= NumBaseAttrs) {
-        if (_extraColumns.size() <= maxAttr - NumBaseAttrs) {
-          _extraColumns.resize(maxAttr - NumBaseAttrs + 1);
-        }
+        ensureExtraColumnCount(maxAttr - NumBaseAttrs + 1);
       }
-      (resizeSingleAttribute<attributes>(length), ...);
+      (resizeSingleAttributeUnchecked<attributes>(length), ...);
     }
   }
 
@@ -100,14 +100,7 @@ class SoA {
    */
   template <size_t attribute>
   void resizeSingleAttribute(size_t length) {
-    if constexpr (attribute < NumBaseAttrs) {
-      soaStorage.template get<attribute>().resize(length);
-    } else {
-      if (_extraColumns.size() <= attribute - NumBaseAttrs) {
-        _extraColumns.resize(attribute - NumBaseAttrs + 1);
-      }
-      _extraColumns[attribute - NumBaseAttrs].resize(length);
-    }
+    getOrCreateColumnVector<attribute>().resize(length);
   }
 
   /**
@@ -117,16 +110,9 @@ class SoA {
    */
   template <size_t attribute>
   void push(const double value) {
-    if constexpr (attribute < NumBaseAttrs) {
-      soaStorage.template get<attribute>().push_back(value);
-      _size = std::max(_size, soaStorage.template get<attribute>().size());
-    } else {
-      if (_extraColumns.size() <= attribute - NumBaseAttrs) {
-        _extraColumns.resize(attribute - NumBaseAttrs + 1);
-      }
-      _extraColumns[attribute - NumBaseAttrs].push_back(value);
-      _size = std::max(_size, _extraColumns[attribute - NumBaseAttrs].size());
-    }
+    auto &column = getOrCreateColumnVector<attribute>();
+    column.push_back(value);
+    _size = std::max(_size, column.size());
   }
 
   /**
@@ -153,9 +139,7 @@ class SoA {
     if (other.size() > 0) {
       _size += other.size();
       append_impl(other.soaStorage, std::make_index_sequence<NumBaseAttrs>{});
-      if (_extraColumns.size() < other._extraColumns.size()) {
-        _extraColumns.resize(other._extraColumns.size());
-      }
+      ensureExtraColumnCount(other._extraColumns.size());
       for (size_t col = 0; col < other._extraColumns.size(); ++col) {
         _extraColumns[col].insert(_extraColumns[col].end(), other._extraColumns[col].begin(),
                                   other._extraColumns[col].end());
@@ -172,14 +156,11 @@ class SoA {
     if (other.size() > 0) {
       _size += other.size();
       append_impl(other, std::make_index_sequence<NumBaseAttrs>{});
-      if (_extraColumns.size() < other.numExtraColumns()) {
-        _extraColumns.resize(other.numExtraColumns());
-      }
-      for (size_t col = 0; col < other.numExtraColumns(); ++col) {
-        const size_t count = other.extraColumnSize(col);
-        if (count > 0) {
-          const auto *const otherBegin = other.extraColumnBegin(col);
-          _extraColumns[col].insert(_extraColumns[col].end(), otherBegin, otherBegin + count);
+      const size_t numExtra = other.numExtraColumns();
+      ensureExtraColumnCount(numExtra);
+      for (size_t col = 0; col < numExtra; ++col) {
+        if (const auto otherCol = other.extraColumn(col); not otherCol.empty()) {
+          _extraColumns[col].insert(_extraColumns[col].end(), otherCol.begin(), otherCol.end());
         }
       }
     }
@@ -332,16 +313,23 @@ class SoA {
   [[nodiscard]] size_t numExtraColumns() const { return _extraColumns.size(); }
 
   /**
+   * Returns a const span over the elements of the given extra column.
+   * @param col Index of the extra column (0-based).
+   * @return Span of elements, or an empty span if col is out of range.
+   */
+  [[nodiscard]] std::span<const double> extraColumn(size_t col) const {
+    if (col < _extraColumns.size()) {
+      return _extraColumns[col];
+    }
+    return {};
+  }
+
+  /**
    * Returns the allocated size of the given extra column.
    * @param col Index of the extra column (0-based).
    * @return Number of elements in the extra column, or 0 if col is out of range.
    */
-  [[nodiscard]] size_t extraColumnSize(size_t col) const {
-    if (col < _extraColumns.size()) {
-      return _extraColumns[col].size();
-    }
-    return 0;
-  }
+  [[nodiscard]] size_t extraColumnSize(size_t col) const { return extraColumn(col).size(); }
 
   /**
    * Returns a const pointer to the beginning of the given extra column.
@@ -349,10 +337,8 @@ class SoA {
    * @return Pointer to data, or nullptr if empty or out of range.
    */
   [[nodiscard]] const double *extraColumnBegin(size_t col) const {
-    if (col < _extraColumns.size() and not _extraColumns[col].empty()) {
-      return _extraColumns[col].data();
-    }
-    return nullptr;
+    const auto colSpan = extraColumn(col);
+    return colSpan.empty() ? nullptr : colSpan.data();
   }
 
   /**
@@ -361,10 +347,7 @@ class SoA {
    * @return Pointer to data, or nullptr if empty or out of range.
    */
   [[nodiscard]] double *extraColumnBegin(size_t col) {
-    if (col < _extraColumns.size() and not _extraColumns[col].empty()) {
-      return _extraColumns[col].data();
-    }
-    return nullptr;
+    return const_cast<double *>(std::as_const(*this).extraColumnBegin(col));
   }
 
   /**
@@ -466,60 +449,59 @@ class SoA {
   template <class ValueArrayType>
   void write_impl(size_t particleId, const ValueArrayType &values, int _current = 0) {}
 
-  // helper function to append a single array
+  // ensures _extraColumns holds at least minColumns vectors
+  void ensureExtraColumnCount(const size_t minColumns) {
+    if (_extraColumns.size() < minColumns) {
+      _extraColumns.resize(minColumns);
+    }
+  }
+
+  // returns reference to the vector backing attribute, allocating extra columns if needed
   template <size_t attribute>
-  void appendSingleArray(const utils::SoAStorage<SoAArraysType> &valArrays) {
+  auto &getOrCreateColumnVector() {
+    if constexpr (attribute < NumBaseAttrs) {
+      return soaStorage.template get<attribute>();
+    } else {
+      ensureExtraColumnCount(attribute - NumBaseAttrs + 1);
+      return _extraColumns[attribute - NumBaseAttrs];
+    }
+  }
+
+  // resizes a single attribute array, assuming any required extra column already exists
+  template <size_t attribute>
+  void resizeSingleAttributeUnchecked(size_t length) {
+    if constexpr (attribute < NumBaseAttrs) {
+      soaStorage.template get<attribute>().resize(length);
+    } else {
+      assert(_extraColumns.size() > attribute - NumBaseAttrs);
+      _extraColumns[attribute - NumBaseAttrs].resize(length);
+    }
+  }
+
+  // helper function to append a single base array from SoAStorage
+  template <size_t attribute>
+  void appendSingleBaseArray(const utils::SoAStorage<SoAArraysType> &valArrays) {
     auto &currentVector = soaStorage.template get<attribute>();
     auto &otherVector = valArrays.template get<attribute>();
     currentVector.insert(currentVector.end(), otherVector.begin(), otherVector.end());
   }
 
-  // helper function to append a single array
-  template <size_t attribute>
-  void appendSingleArray(const SoAView<SoAArraysType> &valArrays) {
-    const size_t count = valArrays.template size<attribute>();
+  // helper function to append a single array from a SoA or SoAView
+  template <size_t attribute, class SoASource_T>
+  void appendSingleArray(const SoASource_T &other) {
+    const size_t count = other.template size<attribute>();
     if (count == 0) {
       return;
     }
-    if constexpr (attribute < NumBaseAttrs) {
-      auto &currentVector = soaStorage.template get<attribute>();
-      auto otherVectorIterator = valArrays.template begin<attribute>();
-      currentVector.insert(currentVector.end(), otherVectorIterator, otherVectorIterator + count);
-    } else {
-      if (_extraColumns.size() <= attribute - NumBaseAttrs) {
-        _extraColumns.resize(attribute - NumBaseAttrs + 1);
-      }
-      auto &currentVector = _extraColumns[attribute - NumBaseAttrs];
-      auto otherVectorIterator = valArrays.template begin<attribute>();
-      currentVector.insert(currentVector.end(), otherVectorIterator, otherVectorIterator + count);
-    }
-  }
-
-  // helper function to append a single array
-  template <size_t attribute>
-  void appendSingleArray(const SoA<SoAArraysType> &other) {
-    const size_t count = other.size<attribute>();
-    if (count == 0) {
-      return;
-    }
-    if constexpr (attribute < NumBaseAttrs) {
-      auto &currentVector = soaStorage.template get<attribute>();
-      auto otherVectorIterator = other.begin<attribute>();
-      currentVector.insert(currentVector.end(), otherVectorIterator, otherVectorIterator + count);
-    } else {
-      if (_extraColumns.size() <= attribute - NumBaseAttrs) {
-        _extraColumns.resize(attribute - NumBaseAttrs + 1);
-      }
-      auto &currentVector = _extraColumns[attribute - NumBaseAttrs];
-      auto otherVectorIterator = other.begin<attribute>();
-      currentVector.insert(currentVector.end(), otherVectorIterator, otherVectorIterator + count);
-    }
+    auto &currentVector = getOrCreateColumnVector<attribute>();
+    const auto otherBegin = other.template begin<attribute>();
+    currentVector.insert(currentVector.end(), otherBegin, otherBegin + count);
   }
 
   // actual implementation of append
   template <size_t... Is>
   void append_impl(const utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
-    (appendSingleArray<Is>(valArrays), ...);
+    (appendSingleBaseArray<Is>(valArrays), ...);
   }
 
   // actual implementation of append
