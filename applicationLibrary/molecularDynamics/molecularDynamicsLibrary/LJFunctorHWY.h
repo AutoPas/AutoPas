@@ -1467,7 +1467,7 @@ class LJFunctorHWY
                                   const double *const __restrict halfSigma2Ptr) {
     [[maybe_unused]] double virialX = 0., virialY = 0., virialZ = 0., potentialEnergy = 0.;
 
-    [[maybe_unused]] std::array<double, 8> fx2Acc{}, fy2Acc{}, fz2Acc{};
+    [[maybe_unused]] std::array<double, isSingleCell ? _maxVecLengthDouble : 0> fx2Acc{}, fy2Acc{}, fz2Acc{};
 
     constexpr size_t startI = isSingleCell ? 1 : 0;
     for (size_t i = startI; i < soaSize1; ++i) {
@@ -1537,12 +1537,6 @@ class LJFunctorHWY
         fx1Ptr[i] += fx2Acc[i];
         fy1Ptr[i] += fy2Acc[i];
         fz1Ptr[i] += fz2Acc[i];
-      }
-    } else if constexpr (newton3) {
-      for (size_t j = 0; j < soaSize2; ++j) {
-        fx2Ptr[j] += fx2Acc[j];
-        fy2Ptr[j] += fy2Acc[j];
-        fz2Ptr[j] += fz2Acc[j];
       }
     }
 
