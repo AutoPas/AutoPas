@@ -620,9 +620,10 @@ class LJFunctorHWY
         const auto *const __restrict y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
         const auto *const __restrict z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
         const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
-        auto *const __restrict fx2Ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
-        auto *const __restrict fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
-        auto *const __restrict fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+        // getNeededAttr(false_type) omits force columns for soa2, so only request them when newton3 is enabled.
+        double *const __restrict fx2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceX>() : nullptr;
+        double *const __restrict fy2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceY>() : nullptr;
+        double *const __restrict fz2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceZ>() : nullptr;
         const auto *const __restrict sqrtEpsilon2Ptr = soa2.template begin<AttrSqrt24Epsilon>();
         const auto *const __restrict halfSigma2Ptr = soa2.template begin<AttrHalfSigma>();
 
@@ -743,9 +744,15 @@ class LJFunctorHWY
     auto *const __restrict fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
     auto *const __restrict fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
-    auto *const __restrict fx2Ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    // getNeededAttr(false_type) omits force columns for soa2, so only request them when newton3 is enabled.
+    double *__restrict fx2Ptr = nullptr;
+    double *__restrict fy2Ptr = nullptr;
+    double *__restrict fz2Ptr = nullptr;
+    if constexpr (newton3) {
+      fx2Ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
+      fy2Ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
+      fz2Ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    }
 
     const size_t startI = sorted && sortingData.has_value() ? sortingData->get().startI : 0;
     const size_t endI = sorted && sortingData.has_value() ? sortingData->get().endI : n1;

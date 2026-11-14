@@ -89,20 +89,23 @@ class SortedSoAView {
    * via +=. Must be called after the functor to commit writes.
    */
   void scatterBack() {
+    if (_projIdx.empty()) {
+      return;
+    }
     scatterBackImpl(std::make_index_sequence<Functor_T::getComputedAttr().size()>{}, _projIdx.size());
   }
 
  private:
   /**
    * Copies the attribute at compile-time index AttrIdx from _source into _sortedSoa in sorted order.
-   * @tparam AttrIdx Index into Functor_T::getNeededAttr(std::false_type).
+   * @tparam attribute Index into Functor_T::getNeededAttr(std::false_type).
    * @param n Number of particles.
    */
-  template <size_t AttrIdx>
+  template <size_t attribute>
   void packAttr(size_t n) {
     // std::false_type as this variant of getNeededAttr includes only the read only attributes, preventing race
     // conditions.
-    constexpr size_t attr = static_cast<size_t>(Functor_T::getNeededAttr(std::false_type())[AttrIdx]);
+    constexpr auto attr = static_cast<size_t>(Functor_T::getNeededAttr(std::false_type())[attribute]);
     auto *dst = _sortedSoa.template begin<attr>();
     const auto *src = _source.template begin<attr>();
     for (size_t i = 0; i < n; ++i) {
@@ -112,58 +115,59 @@ class SortedSoAView {
 
   /**
    * Expands the index sequence and calls packAttr for each needed attribute.
-   * @tparam AttrIdxs Indices into Functor_T::getNeededAttr(std::false_type).
+   * @tparam attributes Indices into Functor_T::getNeededAttr(std::false_type).
    * @param n Number of particles.
    */
-  template <size_t... AttrIdxs>
-  void packNeededImpl(std::index_sequence<AttrIdxs...>, size_t n) {
-    (packAttr<AttrIdxs>(n), ...);
+  template <size_t... attributes>
+  void packNeededImpl(std::index_sequence<attributes...>, size_t n) {
+    (packAttr<attributes>(n), ...);
   }
 
   /**
    * Zeroes the computed attribute at compile-time index AttrIdx in _sortedSoa.
-   * @tparam AttrIdx Index into Functor_T::getComputedAttr().
+   * @tparam attribute Index into Functor_T::getComputedAttr().
    * @param n Number of particles.
    */
-  template <size_t AttrIdx>
+  template <size_t attribute>
   void zeroAttr(size_t n) {
-    constexpr size_t attr = static_cast<size_t>(Functor_T::getComputedAttr()[AttrIdx]);
+    constexpr auto attr = static_cast<size_t>(Functor_T::getComputedAttr()[attribute]);
     auto *ptr = _sortedSoa.template begin<attr>();
     std::fill(ptr, ptr + n, 0);
   }
 
   /**
    * Expands the index sequence and calls zeroAttr for each computed attribute.
-   * @tparam AttrIdxs Indices into Functor_T::getComputedAttr().
+   * @tparam attributes Indices into Functor_T::getComputedAttr().
    * @param n Number of particles.
    */
-  template <size_t... AttrIdxs>
-  void zeroComputedImpl(std::index_sequence<AttrIdxs...>, size_t n) {
-    (zeroAttr<AttrIdxs>(n), ...);
+  template <size_t... attributes>
+  void zeroComputedImpl(std::index_sequence<attributes...>, size_t n) {
+    (zeroAttr<attributes>(n), ...);
   }
 
   /**
    * Resizes _sortedSoa for all needed and computed attributes of Functor_T.
-   * @tparam NeededIdxs Indices into Functor_T::getNeededAttr(std::false_type()).
-   * @tparam ComputedIdxs Indices into Functor_T::getComputedAttr().
+   * @tparam neededAttributes Indices into Functor_T::getNeededAttr(std::false_type()).
+   * @tparam computedAttributes Indices into Functor_T::getComputedAttr().
    * @param n Number of particles.
    */
-  template <size_t... NeededIdxs, size_t... ComputedIdxs>
-  void resizeArraysImpl(std::index_sequence<NeededIdxs...>, std::index_sequence<ComputedIdxs...>, size_t n) {
+  template <size_t... neededAttributes, size_t... computedAttributes>
+  void resizeArraysImpl(std::index_sequence<neededAttributes...>, std::index_sequence<computedAttributes...>,
+                        size_t n) {
     _sortedSoa.template resizeArraysForAttributes<
-        static_cast<size_t>(Functor_T::getNeededAttr(std::false_type())[NeededIdxs])...,
-        static_cast<size_t>(Functor_T::getComputedAttr()[ComputedIdxs])...>(n);
+        static_cast<size_t>(Functor_T::getNeededAttr(std::false_type())[neededAttributes])...,
+        static_cast<size_t>(Functor_T::getComputedAttr()[computedAttributes])...>(n);
   }
 
   /**
    * Adds the computed attribute at compile-time index AttrIdx from _sortedSoa back to _source
    * using the original-index mapping in projIdx.
-   * @tparam AttrIdx Index into Functor_T::getComputedAttr().
+   * @tparam attribute Index into Functor_T::getComputedAttr().
    * @param n Number of particles.
    */
-  template <size_t AttrIdx>
+  template <size_t attribute>
   void scatterAttr(size_t n) {
-    constexpr size_t attr = static_cast<size_t>(Functor_T::getComputedAttr()[AttrIdx]);
+    constexpr auto attr = static_cast<size_t>(Functor_T::getComputedAttr()[attribute]);
     auto *orig = _source.template begin<attr>();
     const auto *sorted = _sortedSoa.template begin<attr>();
     for (size_t i = 0; i < n; ++i) {
@@ -173,12 +177,12 @@ class SortedSoAView {
 
   /**
    * Expands the index sequence and calls scatterAttr for each computed attribute.
-   * @tparam AttrIdxs Indices into Functor_T::getComputedAttr().
+   * @tparam attributes Indices into Functor_T::getComputedAttr().
    * @param n Number of particles.
    */
-  template <size_t... AttrIdxs>
-  void scatterBackImpl(std::index_sequence<AttrIdxs...>, size_t n) {
-    (scatterAttr<AttrIdxs>(n), ...);
+  template <size_t... attributes>
+  void scatterBackImpl(std::index_sequence<attributes...>, size_t n) {
+    (scatterAttr<attributes>(n), ...);
   }
 
   SoAView<SoAArraysType> _source;
