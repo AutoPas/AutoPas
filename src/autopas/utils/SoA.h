@@ -233,7 +233,7 @@ class SoA {
    * @param values
    */
   template <size_t... attributes, size_t N = sizeof...(attributes)>
-  inline void writeMultiple(size_t particleId, const std::array<double, N> &values) {
+  void writeMultiple(size_t particleId, const std::array<double, N> &values) {
     write_impl<attributes...>(particleId, values);
   }
 
@@ -323,7 +323,7 @@ class SoA {
    * Returns the number of particles.
    * @return Number of particles.
    */
-  [[nodiscard]] inline size_t size() const { return _size; }
+  [[nodiscard]] AUTOPAS_ALWAYS_INLINE size_t size() const { return _size; }
 
   /**
    * Returns the number of dynamically allocated extra columns.
@@ -419,7 +419,7 @@ class SoA {
    * Constructs a SoAView for the whole SoA and returns it.
    * @return the constructed SoAView on the whole SoA.
    */
-  SoAView<SoAArraysType> constructView() { return {this, 0, size()}; }
+  AUTOPAS_ALWAYS_INLINE SoAView<SoAArraysType> constructView() { return SoAView<SoAArraysType>{this}; }
 
   /**
    * Constructs a view that starts at \p startIndex (inclusive) and ends at \p endIndex (exclusive).
@@ -430,7 +430,9 @@ class SoA {
    * @param endIndex The index of the entry after the last entry to view.
    * @return the constructed SoAView from \p startIndex (inclusive) to \p endIndex (exclusive).
    */
-  SoAView<SoAArraysType> constructView(size_t startIndex, size_t endIndex) { return {this, startIndex, endIndex}; }
+  AUTOPAS_ALWAYS_INLINE SoAView<SoAArraysType> constructView(size_t startIndex, size_t endIndex) {
+    return {this, startIndex, endIndex};
+  }
 
  private:
   // actual implementation of read

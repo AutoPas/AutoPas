@@ -43,9 +43,9 @@ class SoAView {
    * @param startIndex The index of the first entry to view of the SoA.
    * @param endIndex The index of the entry after the last entry to view of the SoA.
    */
-  SoAView(SoA<SoAArraysType> *soa, size_t startIndex, size_t endIndex)
+  SoAView(SoA<SoAArraysType> *soa, const size_t startIndex, size_t endIndex)
       : _soa(soa), _startIndex(startIndex), _endIndex(endIndex) {
-    if (not(soa->size() >= endIndex and endIndex >= startIndex)) /* @todo C++20 [[unlikely]] */ {
+    if (not(soa->size() >= endIndex and endIndex >= startIndex)) [[unlikely]] {
       utils::ExceptionHandler::exception("SoAView: Trying to view particles outside of the SoA.");
     }
   }
@@ -109,10 +109,9 @@ class SoAView {
 
   /**
    * Returns the number of particles in the view.
-   *
    * @return Number of particles.
    */
-  [[nodiscard]] size_t size() const { return _endIndex - _startIndex; }
+  [[nodiscard]] AUTOPAS_ALWAYS_INLINE size_t size() const { return _endIndex - _startIndex; }
 
   /**
    * Returns the number of extra columns in the underlying SoA.
