@@ -273,10 +273,12 @@ class LJFunctorHWY
    */
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                              bool newton3) final {
-    if (soa1.size() == 0 or soa2.size() == 0) {
+    const size_t soa1Size = soa1.size();
+    const size_t soa2Size = soa2.size();
+    if (soa1Size == 0 or soa2Size == 0) {
       return;
     }
-    SoAFunctorPairDispatch<false>(soa1, soa2, newton3);
+    SoAFunctorPairDispatch<false>(soa1, soa2, soa1Size, soa2Size, newton3);
   }
 
   /**
@@ -284,10 +286,15 @@ class LJFunctorHWY
    */
   inline void SoAFunctorPairSorted(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                                    const autopas::SoASortingData &sortingData, bool newton3) final {
-    if (soa1.size() == 0 or soa2.size() == 0) {
+    if (sortingData.startI >= sortingData.endI) {
       return;
     }
-    SoAFunctorPairDispatch<true>(soa1, soa2, newton3, sortingData);
+    const size_t soa1Size = soa1.size();
+    const size_t soa2Size = soa2.size();
+    if (soa1Size == 0 or soa2Size == 0) {
+      return;
+    }
+    SoAFunctorPairDispatch<true>(soa1, soa2, soa1Size, soa2Size, newton3, sortingData);
   }
 
   /**
@@ -591,50 +598,14 @@ class LJFunctorHWY
    */
   template <bool sorted>
   inline void SoAFunctorPairDispatch(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                     const bool newton3,
+                                     const size_t soa1Size, const size_t soa2Size, const bool newton3,
                                      autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
-    const size_t n1 = soa1.size();
-    const size_t n2 = soa2.size();
-
     if constexpr (useMixing) {
-      if (n1 < _vecLengthDouble and n2 < _vecLengthDouble) {
-        if constexpr (sorted) {
-          if (sortingData.has_value()) {
-            const auto &sd = sortingData->get();
-            if (sd.startI >= sd.endI) {
-              return;
-            }
-          }
-        }
-        const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
-        const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
-        const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
-        const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
-        auto *const __restrict fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
-        auto *const __restrict fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
-        auto *const __restrict fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
-        const auto *const __restrict sqrtEpsilon1Ptr = soa1.template begin<AttrSqrt24Epsilon>();
-        const auto *const __restrict halfSigma1Ptr = soa1.template begin<AttrHalfSigma>();
-
-        const auto *const __restrict x2Ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
-        const auto *const __restrict y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
-        const auto *const __restrict z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
-        const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
-        // getNeededAttr(false_type) omits force columns for soa2, so only request them when newton3 is enabled.
-        double *const __restrict fx2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceX>() : nullptr;
-        double *const __restrict fy2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceY>() : nullptr;
-        double *const __restrict fz2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceZ>() : nullptr;
-        const auto *const __restrict sqrtEpsilon2Ptr = soa2.template begin<AttrSqrt24Epsilon>();
-        const auto *const __restrict halfSigma2Ptr = soa2.template begin<AttrHalfSigma>();
-
+      if (soa1Size < _vecLengthDouble and soa2Size < _vecLengthDouble) {
         if (newton3) {
-          scalarSoAKernel<false, true>(n1, n2, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, fx1Ptr, fy1Ptr, fz1Ptr,
-                                       sqrtEpsilon1Ptr, halfSigma1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx2Ptr,
-                                       fy2Ptr, fz2Ptr, sqrtEpsilon2Ptr, halfSigma2Ptr);
+          scalarSoAPairDispatch<true>(soa1, soa2, soa1Size, soa2Size);
         } else {
-          scalarSoAKernel<false, false>(n1, n2, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, fx1Ptr, fy1Ptr, fz1Ptr,
-                                        sqrtEpsilon1Ptr, halfSigma1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx2Ptr,
-                                        fy2Ptr, fz2Ptr, sqrtEpsilon2Ptr, halfSigma2Ptr);
+          scalarSoAPairDispatch<false>(soa1, soa2, soa1Size, soa2Size);
         }
         return;
       }
@@ -643,39 +614,75 @@ class LJFunctorHWY
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec: {
         if (newton3) {
-          SoAFunctorPairImpl<true, sorted, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<true, sorted, VectorizationPattern::p1xVec>(soa1, soa2, soa1Size, soa2Size, sortingData);
         } else {
-          SoAFunctorPairImpl<false, sorted, VectorizationPattern::p1xVec>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<false, sorted, VectorizationPattern::p1xVec>(soa1, soa2, soa1Size, soa2Size, sortingData);
         }
         break;
       }
       case VectorizationPattern::p2xVecDiv2: {
         if (newton3) {
-          SoAFunctorPairImpl<true, sorted, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<true, sorted, VectorizationPattern::p2xVecDiv2>(soa1, soa2, soa1Size, soa2Size,
+                                                                             sortingData);
         } else {
-          SoAFunctorPairImpl<false, sorted, VectorizationPattern::p2xVecDiv2>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<false, sorted, VectorizationPattern::p2xVecDiv2>(soa1, soa2, soa1Size, soa2Size,
+                                                                              sortingData);
         }
         break;
       }
       case VectorizationPattern::pVecDiv2x2: {
         if (newton3) {
-          SoAFunctorPairImpl<true, sorted, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<true, sorted, VectorizationPattern::pVecDiv2x2>(soa1, soa2, soa1Size, soa2Size,
+                                                                             sortingData);
         } else {
-          SoAFunctorPairImpl<false, sorted, VectorizationPattern::pVecDiv2x2>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<false, sorted, VectorizationPattern::pVecDiv2x2>(soa1, soa2, soa1Size, soa2Size,
+                                                                              sortingData);
         }
         break;
       }
       case VectorizationPattern::pVecx1: {
         if (newton3) {
-          SoAFunctorPairImpl<true, sorted, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<true, sorted, VectorizationPattern::pVecx1>(soa1, soa2, soa1Size, soa2Size, sortingData);
         } else {
-          SoAFunctorPairImpl<false, sorted, VectorizationPattern::pVecx1>(soa1, soa2, sortingData);
+          SoAFunctorPairImpl<false, sorted, VectorizationPattern::pVecx1>(soa1, soa2, soa1Size, soa2Size, sortingData);
         }
         break;
       }
       default:
         autopas::utils::ExceptionHandler::exception("Unknown VectorizationPattern!");
     }
+  }
+
+  /**
+   * Out-of-line small-N scalar dispatcher for SoAFunctorPair / SoAFunctorPairSorted when useMixing is enabled.
+   */
+  template <bool newton3>
+  HWY_NOINLINE void scalarSoAPairDispatch(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                                          const size_t soa1Size, const size_t soa2Size) {
+    const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+    auto *const __restrict fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+    const auto *const __restrict sqrtEpsilon1Ptr = soa1.template begin<AttrSqrt24Epsilon>();
+    const auto *const __restrict halfSigma1Ptr = soa1.template begin<AttrHalfSigma>();
+
+    const auto *const __restrict x2Ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
+    // getNeededAttr(false_type) omits force columns for soa2, so only request them when newton3 is enabled.
+    double *const __restrict fx2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceX>() : nullptr;
+    double *const __restrict fy2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceY>() : nullptr;
+    double *const __restrict fz2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceZ>() : nullptr;
+    const auto *const __restrict sqrtEpsilon2Ptr = soa2.template begin<AttrSqrt24Epsilon>();
+    const auto *const __restrict halfSigma2Ptr = soa2.template begin<AttrHalfSigma>();
+
+    scalarSoAKernel<false, newton3>(soa1Size, soa2Size, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, fx1Ptr, fy1Ptr, fz1Ptr,
+                                    sqrtEpsilon1Ptr, halfSigma1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx2Ptr, fy2Ptr,
+                                    fz2Ptr, sqrtEpsilon2Ptr, halfSigma2Ptr);
   }
 
   /**
@@ -689,18 +696,14 @@ class LJFunctorHWY
    * @tparam vecPattern Vectorization pattern.
    * @param soa1
    * @param soa2
+   * @param soa1Size
+   * @param soa2Size
    * @param sortingData Pruning data needed for sorting optimization.
    */
   template <bool newton3, bool sorted, VectorizationPattern vecPattern>
   HWY_NOINLINE void SoAFunctorPairImpl(
-      autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-      autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
-    const size_t n1 = soa1.size();
-    const size_t n2 = soa2.size();
-    if (n1 == 0 || n2 == 0) {
-      return;
-    }
-
+      autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const size_t soa1Size,
+      const size_t soa2Size, autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
     const double *sqrtEpsilon1Ptr = nullptr;
     const double *halfSigma1Ptr = nullptr;
     const double *sqrtEpsilon2Ptr = nullptr;
@@ -711,28 +714,27 @@ class LJFunctorHWY
       sqrtEpsilon2Ptr = soa2.template begin<AttrSqrt24Epsilon>();
       halfSigma2Ptr = soa2.template begin<AttrHalfSigma>();
 
-      if (soaIsHomogeneous(sqrtEpsilon1Ptr, halfSigma1Ptr, n1) and
-          soaIsHomogeneous(sqrtEpsilon2Ptr, halfSigma2Ptr, n2)) {
-        runPairLoop<newton3, sorted, vecPattern, true>(soa1, soa2, sortingData, sqrtEpsilon1Ptr, halfSigma1Ptr,
-                                                       sqrtEpsilon2Ptr, halfSigma2Ptr);
+      if (soaIsHomogeneous(sqrtEpsilon1Ptr, halfSigma1Ptr, soa1Size) and
+          soaIsHomogeneous(sqrtEpsilon2Ptr, halfSigma2Ptr, soa2Size)) {
+        runPairLoop<newton3, sorted, vecPattern, true>(soa1, soa2, soa1Size, soa2Size, sortingData, sqrtEpsilon1Ptr,
+                                                       halfSigma1Ptr, sqrtEpsilon2Ptr, halfSigma2Ptr);
         return;
       }
-      runPairLoop<newton3, sorted, vecPattern, false>(soa1, soa2, sortingData, sqrtEpsilon1Ptr, halfSigma1Ptr,
-                                                      sqrtEpsilon2Ptr, halfSigma2Ptr);
+      runPairLoop<newton3, sorted, vecPattern, false>(soa1, soa2, soa1Size, soa2Size, sortingData, sqrtEpsilon1Ptr,
+                                                      halfSigma1Ptr, sqrtEpsilon2Ptr, halfSigma2Ptr);
     } else {
-      runPairLoop<newton3, sorted, vecPattern, true>(soa1, soa2, sortingData, nullptr, nullptr, nullptr, nullptr);
+      runPairLoop<newton3, sorted, vecPattern, true>(soa1, soa2, soa1Size, soa2Size, sortingData, nullptr, nullptr,
+                                                     nullptr, nullptr);
     }
   }
 
   template <bool newton3, bool sorted, VectorizationPattern vecPattern, bool homogeneousParams>
   inline void runPairLoop(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                          const size_t soa1Size, const size_t soa2Size,
                           autopas::utils::optRef<const autopas::SoASortingData> sortingData,
                           const double *const __restrict sqrtEpsilon1Ptr, const double *const __restrict halfSigma1Ptr,
                           const double *const __restrict sqrtEpsilon2Ptr,
                           const double *const __restrict halfSigma2Ptr) {
-    const size_t n1 = soa1.size();
-    const size_t n2 = soa2.size();
-
     const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
     const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
     const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
@@ -755,7 +757,7 @@ class LJFunctorHWY
     }
 
     const size_t startI = sorted && sortingData.has_value() ? sortingData->get().startI : 0;
-    const size_t endI = sorted && sortingData.has_value() ? sortingData->get().endI : n1;
+    const size_t endI = sorted && sortingData.has_value() ? sortingData->get().endI : soa1Size;
 
     VectorDouble virialSumX = highway::Zero(tag_double);
     VectorDouble virialSumY = highway::Zero(tag_double);
@@ -784,7 +786,7 @@ class LJFunctorHWY
         }
         jVecStart = jVecStart - (jVecStart % jStep);
       } else {
-        jVecEnd = n2;
+        jVecEnd = soa2Size;
       }
       handleILoopBody<false, newton3, false, vecPattern, homogeneousParams>(
           i, cutoffSquared, shiftOrInvCutoffSquared, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr,
@@ -794,7 +796,7 @@ class LJFunctorHWY
     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
       const size_t restI = endI - i;
       if (restI > 0) {
-        size_t jVecEnd = n2;
+        size_t jVecEnd = soa2Size;
         size_t jVecStart = 0;
         if constexpr (sorted) {
           const auto &sd = sortingData->get();
@@ -1450,8 +1452,8 @@ class LJFunctorHWY
   }
 
   /**
-   * Scalar fallback kernel for very small particle counts (N < VecLength), avoiding SIMD remainder overhead and horizontal
-   * reduction trees when only a few lanes would be active.
+   * Scalar fallback kernel for very small particle counts (N < VecLength), avoiding SIMD remainder overhead and
+   * horizontal reduction trees when only a few lanes would be active.
    */
   template <bool isSingleCell, bool newton3>
   HWY_INLINE void scalarSoAKernel(const size_t soaSize1, const size_t soaSize2, const double *const __restrict x1Ptr,
