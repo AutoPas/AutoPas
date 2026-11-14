@@ -248,7 +248,7 @@ class LJFunctorHWY
       halfSigmaPtr = soa.template begin<AttrHalfSigma>();
     }
 
-    if (soaSize <= 7) {
+    if (soaSize < _vecLengthDouble) {
       scalarSoAKernel<true, true>(soaSize, soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr,
                                   sqrtEpsilonPtr, halfSigmaPtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr,
                                   sqrtEpsilonPtr, halfSigmaPtr);
@@ -597,7 +597,7 @@ class LJFunctorHWY
     const size_t n2 = soa2.size();
 
     if constexpr (useMixing) {
-      if (n1 <= 7 and n2 <= 7) {
+      if (n1 < _vecLengthDouble and n2 < _vecLengthDouble) {
         if constexpr (sorted) {
           if (sortingData.has_value()) {
             const auto &sd = sortingData->get();
@@ -1450,7 +1450,7 @@ class LJFunctorHWY
   }
 
   /**
-   * Scalar fallback kernel for very small particle counts (N <= 7), avoiding SIMD remainder overhead and horizontal
+   * Scalar fallback kernel for very small particle counts (N < VecLength), avoiding SIMD remainder overhead and horizontal
    * reduction trees when only a few lanes would be active.
    */
   template <bool isSingleCell, bool newton3>
