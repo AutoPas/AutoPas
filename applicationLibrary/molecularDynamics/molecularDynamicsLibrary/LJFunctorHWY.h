@@ -86,52 +86,6 @@ class LJFunctorHWY
   LJFunctorHWY() = delete;
 
   /**
-   * Hook for SoALoader to load particle attributes or functor-computed mixing data.
-   * @copydoc autopas::Functor::loadSoAAttribute(const Particle_T&) const
-   */
-  template <auto attribute>
-  inline auto loadSoAAttribute(const Particle_T &particle) const {
-    if constexpr (attribute == AttrSqrt24Epsilon) {
-      if constexpr (useMixing) {
-        return _PPLibrary->get().getSqrt24Epsilon(particle.getTypeId());
-      } else {
-        return 0.0;
-      }
-    } else if constexpr (attribute == AttrHalfSigma) {
-      if constexpr (useMixing) {
-        return _PPLibrary->get().getHalfSigma(particle.getTypeId());
-      } else {
-        return 0.0;
-      }
-    } else {
-      return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
-    }
-  }
-
-  /**
-   * Hook for SoALoader (non-const particle overload for ptr).
-   * @copydoc autopas::Functor::loadSoAAttribute(Particle_T&) const
-   */
-  template <auto attribute>
-  inline auto loadSoAAttribute(Particle_T &particle) const {
-    if constexpr (attribute == AttrSqrt24Epsilon) {
-      if constexpr (useMixing) {
-        return _PPLibrary->get().getSqrt24Epsilon(particle.getTypeId());
-      } else {
-        return 0.0;
-      }
-    } else if constexpr (attribute == AttrHalfSigma) {
-      if constexpr (useMixing) {
-        return _PPLibrary->get().getHalfSigma(particle.getTypeId());
-      } else {
-        return 0.0;
-      }
-    } else {
-      return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
-    }
-  }
-
-  /**
    * Constructor for Functor with mixing enabled/disabled. When using this functor without particlePropertiesLibrary it
    * is necessary to call setParticleProperties() to set internal constants.
    * @param cutoff
@@ -348,8 +302,9 @@ class LJFunctorHWY
 
   /**
    * Hook for SoALoader to load particle attributes or functor-computed mixing data.
+   * @copydoc autopas::Functor::loadSoAAttribute(const Particle_T&) const
    */
-  template <typename Particle_T::AttributeNames attribute>
+  template <auto attribute>
   inline auto loadSoAAttribute(const Particle_T &particle) const {
     if constexpr (attribute == AttrSqrt24Epsilon) {
       if constexpr (useMixing) {
@@ -364,14 +319,15 @@ class LJFunctorHWY
         return 0.0;
       }
     } else {
-      return particle.template get<attribute>();
+      return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
     }
   }
 
   /**
    * Hook for SoALoader (non-const particle overload for ptr).
+   * @copydoc autopas::Functor::loadSoAAttribute(Particle_T&) const
    */
-  template <typename Particle_T::AttributeNames attribute>
+  template <auto attribute>
   inline auto loadSoAAttribute(Particle_T &particle) const {
     if constexpr (attribute == AttrSqrt24Epsilon) {
       if constexpr (useMixing) {
@@ -386,7 +342,7 @@ class LJFunctorHWY
         return 0.0;
       }
     } else {
-      return particle.template get<attribute>();
+      return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
     }
   }
 
@@ -1434,7 +1390,9 @@ class LJFunctorHWY
       sigmaSquared = sig * sig;
       epsilon24 = sqrtEps1 * sqrtEps2;
       if constexpr (calculateGlobals and applyShift) {
-        shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquareAoS);
+        const double sigmaDivCutoffPow2 = sigmaSquared * _invCutoffSquareAoS;
+        const double sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
+        shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
       }
     }
     const double invdr2 = 1.0 / dr2;
