@@ -270,3 +270,59 @@ using MyTypes = ::testing::Types<Newton3True<LJFunShiftMixNoGlob>, Newton3False<
 #endif
                                  >;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestNoGlobals, MyTypes);
+
+namespace {
+// Particle with an unscoped enum with values 0..15 without fixed underlying type.
+// If synthetic attributes (16, 17) are cast to AttributeNames, this would fail to compile
+// or trigger undefined behavior / sanitizers.
+class CustomParticle16Attrs : public autopas::ParticleBaseFP64 {
+ public:
+  enum AttributeNames {
+    ptr = 0,
+    id = 1,
+    posX = 2,
+    posY = 3,
+    posZ = 4,
+    velocityX = 5,
+    velocityY = 6,
+    velocityZ = 7,
+    forceX = 8,
+    forceY = 9,
+    forceZ = 10,
+    oldForceX = 11,
+    oldForceY = 12,
+    oldForceZ = 13,
+    typeId = 14,
+    ownershipState = 15
+  };
+
+  using SoAArraysType = typename autopas::utils::SoAType<CustomParticle16Attrs *, size_t, double, double, double,
+                                                         double, double, double, double, double, double, double, double,
+                                                         double, size_t, autopas::OwnershipState>::Type;
+  using ParticleSoAFloatPrecision = double;
+
+  [[nodiscard]] size_t getTypeId() const { return 0; }
+};
+}  // namespace
+
+TEST(LJFunctorTest, testCustomParticleEnumWithoutFixedUnderlyingType) {
+  using FuncType = mdLib::LJFunctor<CustomParticle16Attrs, /*applyShift=*/false, /*useMixing=*/true>;
+  constexpr auto needed = FuncType::getNeededAttr();
+  EXPECT_EQ(needed.size(), 10);
+  EXPECT_EQ(needed[7], 16);
+  EXPECT_EQ(needed[8], 17);
+
+#ifdef __AVX__
+  using FuncAVX = mdLib::LJFunctorAVX<CustomParticle16Attrs, /*applyShift=*/false, /*useMixing=*/true>;
+  constexpr auto neededAVX = FuncAVX::getNeededAttr();
+  EXPECT_EQ(neededAVX.size(), 10);
+  EXPECT_EQ(neededAVX[7], 16);
+  EXPECT_EQ(neededAVX[8], 17);
+#endif
+
+  using FuncHWY = mdLib::LJFunctorHWY<CustomParticle16Attrs, /*applyShift=*/false, /*useMixing=*/true>;
+  constexpr auto neededHWY = FuncHWY::getNeededAttr();
+  EXPECT_EQ(neededHWY.size(), 10);
+  EXPECT_EQ(neededHWY[7], 16);
+  EXPECT_EQ(neededHWY[8], 17);
+}

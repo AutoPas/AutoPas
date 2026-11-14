@@ -334,6 +334,29 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
       EXPECT_DOUBLE_EQ(allMixingData.shift6, shift6);
     }
   }
+
+  // Check 1D site pre-transformed data
+  const std::array<double, 3> expectedEpsilons = {epsilon0, epsilon1, epsilon2};
+  const std::array<double, 3> expectedSigmas = {sigma0, sigma1, sigma2};
+  for (unsigned int i = 0; i < PPL->getNumberRegisteredSiteTypes(); ++i) {
+    const auto expectedSqrt24Eps = std::sqrt(24.0 * expectedEpsilons[i]);
+    const auto expectedHalfSig = 0.5 * expectedSigmas[i];
+    EXPECT_DOUBLE_EQ(PPL->getSqrt24Epsilon(i), expectedSqrt24Eps);
+    EXPECT_DOUBLE_EQ(PPL->getHalfSigma(i), expectedHalfSig);
+    EXPECT_DOUBLE_EQ(PPL->getSiteLJData(i).sqrt24Epsilon, expectedSqrt24Eps);
+    EXPECT_DOUBLE_EQ(PPL->getSiteLJData(i).halfSigma, expectedHalfSig);
+  }
+
+  // Check relationship between 1D pre-transformed site data and 2D mixed values
+  for (unsigned int i = 0; i < PPL->getNumberRegisteredSiteTypes(); ++i) {
+    for (unsigned int j = 0; j < PPL->getNumberRegisteredSiteTypes(); ++j) {
+      const auto eps24From1D = PPL->getSqrt24Epsilon(i) * PPL->getSqrt24Epsilon(j);
+      EXPECT_DOUBLE_EQ(PPL->getMixing24Epsilon(i, j), eps24From1D);
+
+      const auto sigmaFrom1D = PPL->getHalfSigma(i) + PPL->getHalfSigma(j);
+      EXPECT_DOUBLE_EQ(PPL->getMixingSigmaSquared(i, j), sigmaFrom1D * sigmaFrom1D);
+    }
+  }
 }
 
 /**

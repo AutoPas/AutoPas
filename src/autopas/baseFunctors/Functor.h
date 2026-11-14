@@ -84,9 +84,7 @@ class Functor {
    * @return Attributes needed for computation.
    * @todo C++20: make this function virtual
    */
-  constexpr static std::array<typename Particle_T::AttributeNames, 0> getNeededAttr(std::false_type) {
-    return Functor_T::getNeededAttr();
-  }
+  constexpr static auto getNeededAttr(std::false_type) { return Functor_T::getNeededAttr(); }
 
   /**
    * Get attributes computed by this functor.
@@ -126,6 +124,38 @@ class Functor {
   template <class ParticleCell>
   void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize) {
     SoALoaderImpl(cell, soa, offset, skipSoAResize, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
+  }
+
+  /**
+   * Resizes the SoA buffer for all needed attributes of this functor.
+   * @param soa Structure of arrays to resize.
+   * @param length New size of the SoA buffer.
+   */
+  void resizeSoA(::autopas::SoA<SoAArraysType> &soa, size_t length) {
+    resizeSoAImpl(soa, length, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
+  }
+
+  /**
+   * Loads an attribute value from a particle into the SoA buffer.
+   * Can be specialized by derived functors to provide computed or pre-transformed values (e.g. from PPL).
+   * @tparam attribute Attribute to load.
+   * @param particle Particle from where the data is loaded.
+   * @return Attribute value.
+   */
+  template <auto attribute>
+  inline auto loadSoAAttribute(Particle_T &particle) const {
+    return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
+  }
+
+  /**
+   * Loads an attribute value from a const particle into the SoA buffer.
+   * @tparam attribute Attribute to load.
+   * @param particle Particle from where the data is loaded.
+   * @return Attribute value.
+   */
+  template <auto attribute>
+  inline auto loadSoAAttribute(const Particle_T &particle) const {
+    return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
   }
 
   /**
@@ -219,6 +249,14 @@ class Functor {
 
  private:
   /**
+   * Helper to resize SoA buffer for needed attributes.
+   */
+  template <std::size_t... I>
+  void resizeSoAImpl(::autopas::SoA<SoAArraysType> &soa, size_t length, std::index_sequence<I...>) {
+    soa.template resizeArraysForAttributes<static_cast<std::size_t>(Functor_T::getNeededAttr()[I])...>(length);
+  }
+
+  /**
    * Implements loading of SoA buffers.
    * @tparam cell_t Cell type.
    * @tparam I Attribute.
@@ -229,12 +267,12 @@ class Functor {
    * be ensured before the call that there is sufficient capacity in the SoA.
    * to the SoA with the specified offset.
    */
-
   template <typename cell_t, std::size_t... I>
   void SoALoaderImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize,
                      std::index_sequence<I...>) {
     if (not skipSoAResize) {
-      soa.resizeArrays(offset + cell.size());
+      soa.template resizeArraysForAttributes<static_cast<std::size_t>(Functor_T::getNeededAttr()[I])...>(offset +
+                                                                                                         cell.size());
     }
 
     if (cell.isEmpty()) return;
@@ -252,11 +290,11 @@ class Functor {
       /**
        * The following statement writes the values of all attributes defined in neededAttr into the respective position
        * inside the SoA buffer. I represents the index inside neededAttr. The whole expression is folded sizeof...(I)
-       * times over the comma operator. E.g. like this (std::index_sequence<I...> = 0, 1):
-       * ((std::get<0>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[0]>()),
-       * (std::get<1>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[1]>()))
+       * times over the comma operator.
        */
-      ((std::get<I>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[I]>()), ...);
+      ((std::get<I>(pointer)[i] =
+            static_cast<const Functor_T *>(this)->template loadSoAAttribute<Functor_T::getNeededAttr()[I]>(*cellIter)),
+       ...);
     }
   }
 
