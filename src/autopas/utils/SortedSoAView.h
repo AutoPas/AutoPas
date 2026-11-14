@@ -89,6 +89,9 @@ class SortedSoAView {
    * via +=. Must be called after the functor to commit writes.
    */
   void scatterBack() {
+    if (_projIdx.empty()) {
+      return;
+    }
     scatterBackImpl(std::make_index_sequence<Functor_T::getComputedAttr().size()>{}, _projIdx.size());
   }
 

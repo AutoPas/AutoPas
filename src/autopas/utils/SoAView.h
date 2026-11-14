@@ -7,8 +7,10 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <utility>
 
+#include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
@@ -62,31 +64,27 @@ class SoAView {
 
   /**
    * Returns a pointer to the given attribute vector.
-   * If the underlying SoA column has no elements for this view range, returns nullptr.
+   * Caller must ensure the view is backed by a valid SoA and the attribute column has at least _startIndex elements.
    * @tparam attribute ID of the desired attribute.
-   * @return Pointer to the beginning of the attribute vector within this view, or nullptr.
+   * @return Pointer to the beginning of the attribute vector within this view.
    */
   template <size_t attribute>
-  [[nodiscard]] auto begin() {
-    using ReturnType = decltype(_soa->template begin<attribute>());
-    if (_soa == nullptr or _soa->template size<attribute>() <= _startIndex) {
-      return static_cast<ReturnType>(nullptr);
-    }
+  [[nodiscard]] AUTOPAS_ALWAYS_INLINE auto begin() {
+    assert(_soa != nullptr);
+    assert(_soa->template size<attribute>() >= _startIndex);
     return _soa->template begin<attribute>() + _startIndex;
   }
 
   /**
    * Returns a pointer to the given attribute vector const.
-   * If the underlying SoA column has no elements for this view range, returns nullptr.
+   * Caller must ensure the view is backed by a valid SoA and the attribute column has at least _startIndex elements.
    * @tparam attribute ID of the desired attribute.
-   * @return Pointer to the beginning of the attribute vector const within this view, or nullptr.
+   * @return Pointer to the beginning of the attribute vector const within this view.
    */
   template <size_t attribute>
-  [[nodiscard]] auto begin() const {
-    using ReturnType = decltype(std::as_const(*_soa).template begin<attribute>());
-    if (_soa == nullptr or _soa->template size<attribute>() <= _startIndex) {
-      return static_cast<ReturnType>(nullptr);
-    }
+  [[nodiscard]] AUTOPAS_ALWAYS_INLINE auto begin() const {
+    assert(_soa != nullptr);
+    assert(_soa->template size<attribute>() >= _startIndex);
     return std::as_const(*_soa).template begin<attribute>() + _startIndex;
   }
 

@@ -7,12 +7,14 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <initializer_list>
 #include <map>
 #include <tuple>
 #include <vector>
 
 #include "autopas/utils/AlignedAllocator.h"
+#include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
@@ -275,41 +277,33 @@ class SoA {
 
   /**
    * Returns a pointer to the given attribute vector.
+   * Caller must ensure any extra-column attribute has been allocated.
    * @tparam attribute ID of the desired attribute.
-   * @return Pointer to the beginning of the attribute vector
+   * @return Pointer to the beginning of the attribute vector.
    */
   template <std::size_t attribute>
-  auto begin() {
+  [[nodiscard]] AUTOPAS_ALWAYS_INLINE auto begin() {
     if constexpr (attribute < NumBaseAttrs) {
-      if (soaStorage.template get<attribute>().empty()) {
-        return static_cast<typename std::tuple_element_t<attribute, SoAArraysType>::value_type *>(nullptr);
-      }
       return soaStorage.template get<attribute>().data();
     } else {
-      if (_extraColumns.size() <= attribute - NumBaseAttrs or _extraColumns[attribute - NumBaseAttrs].empty()) {
-        return static_cast<double *>(nullptr);
-      }
+      assert(_extraColumns.size() > attribute - NumBaseAttrs);
       return _extraColumns[attribute - NumBaseAttrs].data();
     }
   }
 
   /**
    * Returns a const pointer to the given attribute vector.
+   * Caller must ensure any extra-column attribute has been allocated.
    * @tparam attribute ID of the desired attribute.
-   * @return Pointer to the beginning of the attribute vector
+   * @return Pointer to the beginning of the attribute vector.
    */
   template <std::size_t attribute>
-  auto begin() const {
+  [[nodiscard]] AUTOPAS_ALWAYS_INLINE auto begin() const {
     if constexpr (attribute < NumBaseAttrs) {
-      if (soaStorage.template get<attribute>().empty()) {
-        return static_cast<const typename std::tuple_element_t<attribute, SoAArraysType>::value_type *>(nullptr);
-      }
       return soaStorage.template get<attribute>().data();
     } else {
-      if (_extraColumns.size() <= attribute - NumBaseAttrs or _extraColumns[attribute - NumBaseAttrs].empty()) {
-        return static_cast<const double *>(nullptr);
-      }
-      return _extraColumns[attribute - NumBaseAttrs].data();
+      assert(_extraColumns.size() > attribute - NumBaseAttrs);
+      return static_cast<const double *>(_extraColumns[attribute - NumBaseAttrs].data());
     }
   }
 
