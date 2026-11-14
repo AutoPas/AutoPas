@@ -21,7 +21,7 @@ class SoA;
 /**
  * View on a fixed part of a SoA between a start index and an end index.
  *
- * It is the user`s responsibility to ensure that modifications to the underlying SoA don't let the start index get
+ * It is the user's responsibility to ensure that modifications to the underlying SoA don't let the start index get
  * bigger than the highest index in the SoA, or the end index higher than the number of entries in the SoA.
  *
  * @tparam SoAArraysType The SoAArrayType of the SoA.

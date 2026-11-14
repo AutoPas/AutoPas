@@ -8,8 +8,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <initializer_list>
-#include <map>
 #include <tuple>
 #include <vector>
 
@@ -17,13 +15,12 @@
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"
-#include "autopas/utils/SoAType.h"
 #include "autopas/utils/SoAView.h"
 
 namespace autopas {
 
 /**
- * Structur of the array class.
+ * Structure of the array class.
  * @tparam SoAArraysType The SoAArrayType to be used for storage.
  */
 template <class SoAArraysType>
@@ -79,37 +76,37 @@ class SoA {
 
   /**
    * Resizes only the arrays for the specified attributes, allocating extra columns as needed.
-   * @tparam Attrs Attributes to resize.
+   * @tparam attributes Attributes to resize.
    * @param length new length.
    */
-  template <std::size_t... Attrs>
-  void resizeArraysForAttributes(size_t length) {
+  template <size_t... attributes>
+  void resizeArraysForAttributes(const size_t length) {
     _size = length;
-    if constexpr (sizeof...(Attrs) > 0) {
-      constexpr size_t maxAttr = std::max({std::size_t{0}, Attrs...});
+    if constexpr (sizeof...(attributes) > 0) {
+      constexpr size_t maxAttr = std::max({size_t{0}, attributes...});
       if constexpr (maxAttr >= NumBaseAttrs) {
         if (_extraColumns.size() <= maxAttr - NumBaseAttrs) {
           _extraColumns.resize(maxAttr - NumBaseAttrs + 1);
         }
       }
-      (resizeSingleAttribute<Attrs>(length), ...);
+      (resizeSingleAttribute<attributes>(length), ...);
     }
   }
 
   /**
    * Resizes a single attribute array to the given length.
-   * @tparam Attr Attribute to resize.
+   * @tparam attribute Attribute to resize.
    * @param length new length.
    */
-  template <std::size_t Attr>
+  template <size_t attribute>
   void resizeSingleAttribute(size_t length) {
-    if constexpr (Attr < NumBaseAttrs) {
-      soaStorage.template get<Attr>().resize(length);
+    if constexpr (attribute < NumBaseAttrs) {
+      soaStorage.template get<attribute>().resize(length);
     } else {
-      if (_extraColumns.size() <= Attr - NumBaseAttrs) {
-        _extraColumns.resize(Attr - NumBaseAttrs + 1);
+      if (_extraColumns.size() <= attribute - NumBaseAttrs) {
+        _extraColumns.resize(attribute - NumBaseAttrs + 1);
       }
-      _extraColumns[Attr - NumBaseAttrs].resize(length);
+      _extraColumns[attribute - NumBaseAttrs].resize(length);
     }
   }
 
@@ -118,7 +115,7 @@ class SoA {
    * @tparam attribute Index of array to push to.
    * @param value Value to push.
    */
-  template <std::size_t attribute>
+  template <size_t attribute>
   void push(const double value) {
     if constexpr (attribute < NumBaseAttrs) {
       soaStorage.template get<attribute>().push_back(value);
@@ -139,7 +136,7 @@ class SoA {
    * @param particleId Particle to update.
    * @param value New value.
    */
-  template <std::size_t attribute, class ValueType>
+  template <size_t attribute, class ValueType>
   void write(size_t particleId, const ValueType &value) {
     if constexpr (attribute < NumBaseAttrs) {
       soaStorage.template get<attribute>().at(particleId) = value;
@@ -193,11 +190,11 @@ class SoA {
    * @tparam attributes Attributes to append.
    * @param other Other buffer.
    */
-  template <int... attributes>
+  template <size_t... attributes>
   void append(const SoA<SoAArraysType> &other) {
     if (other.size() > 0) {
       const auto newSize = size() + other.size();
-      (appendSingleArray<static_cast<std::size_t>(attributes)>(other), ...);
+      (appendSingleArray<attributes>(other), ...);
       _size = newSize;
     }
   }
@@ -207,11 +204,11 @@ class SoA {
    * @tparam attributes Attributes to append.
    * @param other Other buffer.
    */
-  template <int... attributes>
+  template <size_t... attributes>
   void append(const SoAView<SoAArraysType> &other) {
     if (other.size() > 0) {
       const auto newSize = size() + other.size();
-      (appendSingleArray<static_cast<std::size_t>(attributes)>(other), ...);
+      (appendSingleArray<attributes>(other), ...);
       _size = newSize;
     }
   }
@@ -223,7 +220,7 @@ class SoA {
    * @param particleId Particle to update.
    * @param values New value.
    */
-  template <int... attributes, class ValueArrayType>
+  template <size_t... attributes, class ValueArrayType>
   void writeMultiple(size_t particleId, const ValueArrayType &values) {
     write_impl<attributes...>(particleId, values);
   }
@@ -235,24 +232,22 @@ class SoA {
    * @param particleId
    * @param values
    */
-  template <int... attributes, size_t N = sizeof...(attributes)>
+  template <size_t... attributes, size_t N = sizeof...(attributes)>
   inline void writeMultiple(size_t particleId, const std::array<double, N> &values) {
     write_impl<attributes...>(particleId, values);
   }
 
   /**
    * Reads from all given attribute arrays at position `particleId`.
-   * @tparam ArrayLength length of the returned array. Should be equal
-   * attributes.size().
    * @tparam attributes Attributes to read from.
    * @param particleId Position to read from.
    * @return Array of attributes ordered by given attribute order.
    */
-  template <int... attributes>
+  template <size_t... attributes>
   std::array<double, sizeof...(attributes)> readMultiple(size_t particleId) const {
     std::array<double, sizeof...(attributes)> retArray;
     if (particleId >= size()) {
-      autopas::utils::ExceptionHandler::exception(
+      utils::ExceptionHandler::exception(
           "SoA::read: requested particle id ({}) is bigger than number of particles ({})", particleId, size());
       return retArray;
     }
@@ -266,7 +261,7 @@ class SoA {
    * @param particleId Position to read from.
    * @return Attribute value.
    */
-  template <std::size_t attribute>
+  template <size_t attribute>
   auto read(size_t particleId) const {
     if constexpr (attribute < NumBaseAttrs) {
       return soaStorage.template get<attribute>().at(particleId);
@@ -281,7 +276,7 @@ class SoA {
    * @tparam attribute ID of the desired attribute.
    * @return Pointer to the beginning of the attribute vector.
    */
-  template <std::size_t attribute>
+  template <size_t attribute>
   [[nodiscard]] AUTOPAS_ALWAYS_INLINE auto begin() {
     if constexpr (attribute < NumBaseAttrs) {
       return soaStorage.template get<attribute>().data();
@@ -297,13 +292,13 @@ class SoA {
    * @tparam attribute ID of the desired attribute.
    * @return Pointer to the beginning of the attribute vector.
    */
-  template <std::size_t attribute>
+  template <size_t attribute>
   [[nodiscard]] AUTOPAS_ALWAYS_INLINE auto begin() const {
     if constexpr (attribute < NumBaseAttrs) {
       return soaStorage.template get<attribute>().data();
     } else {
       assert(_extraColumns.size() > attribute - NumBaseAttrs);
-      return static_cast<const double *>(_extraColumns[attribute - NumBaseAttrs].data());
+      return _extraColumns[attribute - NumBaseAttrs].data();
     }
   }
 
@@ -312,7 +307,7 @@ class SoA {
    * @tparam attribute ID of the desired attribute.
    * @return Number of elements in the attribute's array.
    */
-  template <std::size_t attribute>
+  template <size_t attribute>
   [[nodiscard]] size_t size() const {
     if constexpr (attribute < NumBaseAttrs) {
       return soaStorage.template get<attribute>().size();
@@ -326,7 +321,6 @@ class SoA {
 
   /**
    * Returns the number of particles.
-   *
    * @return Number of particles.
    */
   [[nodiscard]] inline size_t size() const { return _size; }
@@ -389,7 +383,7 @@ class SoA {
    * @param a position of the first particle
    * @param b position of the second particle
    */
-  void swap(std::size_t a, std::size_t b) {
+  void swap(size_t a, size_t b) {
     soaStorage.apply([=](auto &list) {
       if (not list.empty()) {
         std::swap(list[a], list[b]);
@@ -440,12 +434,12 @@ class SoA {
 
  private:
   // actual implementation of read
-  template <int attribute, int... attributes, class ValueArrayType>
+  template <size_t attribute, size_t... attributes, class ValueArrayType>
   void read_impl(size_t particleId, ValueArrayType &values, int _current = 0) const {
-    if constexpr (static_cast<size_t>(attribute) < NumBaseAttrs) {
+    if constexpr (attribute < NumBaseAttrs) {
       values[_current] = soaStorage.template get<attribute>().at(particleId);
     } else {
-      values[_current] = _extraColumns.at(static_cast<size_t>(attribute) - NumBaseAttrs).at(particleId);
+      values[_current] = _extraColumns.at(attribute - NumBaseAttrs).at(particleId);
     }
     read_impl<attributes...>(particleId, values, _current + 1);
   }
@@ -456,12 +450,12 @@ class SoA {
 
   // actual implementation of the write function.
   // uses a recursive call.
-  template <int attribute, int... attributes, class ValueArrayType>
+  template <size_t attribute, size_t... attributes, class ValueArrayType>
   void write_impl(size_t particleId, const ValueArrayType &values, int _current = 0) {
-    if constexpr (static_cast<size_t>(attribute) < NumBaseAttrs) {
+    if constexpr (attribute < NumBaseAttrs) {
       soaStorage.template get<attribute>().at(particleId) = values[_current];
     } else {
-      _extraColumns.at(static_cast<size_t>(attribute) - NumBaseAttrs).at(particleId) = values[_current];
+      _extraColumns.at(attribute - NumBaseAttrs).at(particleId) = values[_current];
     }
     write_impl<attributes...>(particleId, values, _current + 1);
   }
@@ -471,7 +465,7 @@ class SoA {
   void write_impl(size_t particleId, const ValueArrayType &values, int _current = 0) {}
 
   // helper function to append a single array
-  template <std::size_t attribute>
+  template <size_t attribute>
   void appendSingleArray(const utils::SoAStorage<SoAArraysType> &valArrays) {
     auto &currentVector = soaStorage.template get<attribute>();
     auto &otherVector = valArrays.template get<attribute>();
@@ -479,7 +473,7 @@ class SoA {
   }
 
   // helper function to append a single array
-  template <std::size_t attribute>
+  template <size_t attribute>
   void appendSingleArray(const SoAView<SoAArraysType> &valArrays) {
     const size_t count = valArrays.template size<attribute>();
     if (count == 0) {
@@ -500,34 +494,34 @@ class SoA {
   }
 
   // helper function to append a single array
-  template <std::size_t attribute>
+  template <size_t attribute>
   void appendSingleArray(const SoA<SoAArraysType> &other) {
-    const size_t count = other.template size<attribute>();
+    const size_t count = other.size<attribute>();
     if (count == 0) {
       return;
     }
     if constexpr (attribute < NumBaseAttrs) {
       auto &currentVector = soaStorage.template get<attribute>();
-      auto otherVectorIterator = other.template begin<attribute>();
+      auto otherVectorIterator = other.begin<attribute>();
       currentVector.insert(currentVector.end(), otherVectorIterator, otherVectorIterator + count);
     } else {
       if (_extraColumns.size() <= attribute - NumBaseAttrs) {
         _extraColumns.resize(attribute - NumBaseAttrs + 1);
       }
       auto &currentVector = _extraColumns[attribute - NumBaseAttrs];
-      auto otherVectorIterator = other.template begin<attribute>();
+      auto otherVectorIterator = other.begin<attribute>();
       currentVector.insert(currentVector.end(), otherVectorIterator, otherVectorIterator + count);
     }
   }
 
   // actual implementation of append
-  template <std::size_t... Is>
+  template <size_t... Is>
   void append_impl(const utils::SoAStorage<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
     (appendSingleArray<Is>(valArrays), ...);
   }
 
   // actual implementation of append
-  template <std::size_t... Is>
+  template <size_t... Is>
   void append_impl(const SoAView<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
     (appendSingleArray<Is>(valArrays), ...);
   }
