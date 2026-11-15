@@ -44,6 +44,46 @@ using MaskLong = decltype(highway::FirstN(tag_long, 2));
 namespace hwy_helpers {
 
 /**
+ * Builds a vector from indexed scalar loads in registers on fixed-width targets, avoiding stack-buffer STLF stalls
+ * and microcoded gather instructions; falls back to GatherIndex on scalable targets.
+ * @tparam Scalar_T The scalar type of the array to gather from.
+ * @tparam Tag_T The Highway tag type for the vector to gather into.
+ * @param tag The Highway tag for the vector to gather into.
+ * @param ptr Pointer to the scalar array to gather from.
+ * @param idxPtr Pointer to the array of indices to gather from.
+ * @param vecIndices A vector of indices to gather from, used on scalable targets.
+ * @return A vector of type VFromD<D> containing the gathered values.
+ */
+template <typename Scalar_T, class Tag_T>
+HWY_INLINE highway::VFromD<Tag_T> gatherInRegisters(Tag_T tag, const Scalar_T *const __restrict ptr,
+                                                const size_t *const __restrict idxPtr,
+                                                [[maybe_unused]] const VectorLong &vecIndices) {
+#if !HWY_HAVE_SCALABLE
+  if constexpr (highway::MaxLanes(Tag_T{}) == 8) {
+    const highway::Half<Tag_T> dh;
+    const highway::Half<decltype(dh)> dq;
+    const auto v01 = highway::Dup128VecFromValues(dq, ptr[idxPtr[0]], ptr[idxPtr[1]]);
+    const auto v23 = highway::Dup128VecFromValues(dq, ptr[idxPtr[2]], ptr[idxPtr[3]]);
+    const auto v45 = highway::Dup128VecFromValues(dq, ptr[idxPtr[4]], ptr[idxPtr[5]]);
+    const auto v67 = highway::Dup128VecFromValues(dq, ptr[idxPtr[6]], ptr[idxPtr[7]]);
+    return highway::Combine(tag, highway::Combine(dh, v67, v45), highway::Combine(dh, v23, v01));
+  } else if constexpr (highway::MaxLanes(Tag_T{}) == 4) {
+    const highway::Half<Tag_T> dh;
+    const auto v01 = highway::Dup128VecFromValues(dh, ptr[idxPtr[0]], ptr[idxPtr[1]]);
+    const auto v23 = highway::Dup128VecFromValues(dh, ptr[idxPtr[2]], ptr[idxPtr[3]]);
+    return highway::Combine(tag, v23, v01);
+  } else if constexpr (highway::MaxLanes(Tag_T{}) == 2) {
+    return highway::Dup128VecFromValues(tag, ptr[idxPtr[0]], ptr[idxPtr[1]]);
+  } else if constexpr (highway::MaxLanes(Tag_T{}) == 1) {
+    return highway::Set(tag, ptr[idxPtr[0]]);
+  } else
+#endif
+  {
+    return highway::GatherIndex(tag, ptr, vecIndices);
+  }
+}
+
+/**
  * Selects the tuned fixed-width halving/interleave horizontal reduction path over the generic highway::ReduceSum
  * fallback.
  *

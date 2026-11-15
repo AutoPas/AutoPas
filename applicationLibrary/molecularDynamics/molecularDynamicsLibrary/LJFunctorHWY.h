@@ -1159,51 +1159,48 @@ class LJFunctorHWY
       [[maybe_unused]] VectorDouble &uPotSum, [[maybe_unused]] const size_t rest = 0) const {
     [[maybe_unused]] MaskDouble restMaskDouble;
     [[maybe_unused]] MaskLong restMaskLong;
-    VectorLong indices;
+    [[maybe_unused]] VectorLong indices;
 
     if constexpr (remainder) {
       restMaskDouble = highway::FirstN(tag_double, rest);
       restMaskLong = highway::FirstN(tag_long, rest);
       indices = highway::LoadN(tag_long, reinterpret_cast<const int64_t *>(neighborList + j), rest);
-    } else {
+    } else if constexpr (newton3 or HWY_HAVE_SCALABLE or (_maxVecLengthDouble > 8)) {
       indices = highway::LoadU(tag_long, reinterpret_cast<const int64_t *>(neighborList + j));
     }
 
     VectorDouble x2;
     VectorDouble y2;
     VectorDouble z2;
-    VectorLong ownedState2;
-    VectorDouble sqrtEpsilon2 = highway::Zero(tag_double);
-    VectorDouble sigmaHalf2 = highway::Zero(tag_double);
 
     if constexpr (remainder) {
       x2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, xPtr, indices);
       y2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, yPtr, indices);
       z2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, zPtr, indices);
-      ownedState2 = highway::MaskedGatherIndex(restMaskLong, tag_long, ownedStatePtr, indices);
-      if constexpr (useMixing and not homogeneousParams) {
-        sqrtEpsilon2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, sqrtEpsilonPtr, indices);
-        sigmaHalf2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, sigmaHalfPtr, indices);
-      }
     } else {
-      x2 = highway::GatherIndex(tag_double, xPtr, indices);
-      y2 = highway::GatherIndex(tag_double, yPtr, indices);
-      z2 = highway::GatherIndex(tag_double, zPtr, indices);
-      ownedState2 = highway::GatherIndex(tag_long, ownedStatePtr, indices);
-      if constexpr (useMixing and not homogeneousParams) {
-        sigmaHalf2 = highway::GatherIndex(tag_double, sigmaHalfPtr, indices);
-        HWY_ALIGN std::array<double, _maxVecLengthDouble> sqrtEpsArr;
-        for (size_t k = 0; k < _vecLengthDouble; ++k) {
-          sqrtEpsArr[k] = sqrtEpsilonPtr[neighborList[j + k]];
-        }
-        sqrtEpsilon2 = highway::Load(tag_double, sqrtEpsArr.data());
-      }
+      x2 = hwy_helpers::gatherInRegisters(tag_double, xPtr, neighborList + j, indices);
+      y2 = hwy_helpers::gatherInRegisters(tag_double, yPtr, neighborList + j, indices);
+      z2 = hwy_helpers::gatherInRegisters(tag_double, zPtr, neighborList + j, indices);
     }
 
     const auto drX = highway::Sub(x1, x2);
     const auto drY = highway::Sub(y1, y2);
     const auto drZ = highway::Sub(z1, z2);
     const auto dr2 = highway::MulAdd(drZ, drZ, highway::MulAdd(drY, drY, highway::Mul(drX, drX)));
+
+    VectorLong ownedState2;
+    if constexpr (remainder) {
+      ownedState2 = highway::MaskedGatherIndex(restMaskLong, tag_long, ownedStatePtr, indices);
+    } else {
+      ownedState2 = hwy_helpers::gatherInRegisters(tag_long, ownedStatePtr, neighborList + j, indices);
+    }
+
+    const auto notDummyMask2 = highway::RebindMask(tag_double, highway::Ne(ownedState2, highway::Zero(tag_long)));
+    const auto cutoffDummyMask = highway::MaskedLe(notDummyMask2, dr2, cutoffSquared);
+
+    if (highway::AllFalse(tag_double, cutoffDummyMask)) [[unlikely]] {
+      return;
+    }
 
     VectorDouble epsilon24s;
     VectorDouble sigmaSquareds;
@@ -1212,18 +1209,18 @@ class LJFunctorHWY
       epsilon24s = sqrtEpsilon1;
       sigmaSquareds = sigmaHalf1;
     } else {
+      VectorDouble sqrtEpsilon2;
+      VectorDouble sigmaHalf2;
+      if constexpr (remainder) {
+        sqrtEpsilon2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, sqrtEpsilonPtr, indices);
+        sigmaHalf2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, sigmaHalfPtr, indices);
+      } else {
+        sqrtEpsilon2 = hwy_helpers::gatherInRegisters(tag_double, sqrtEpsilonPtr, neighborList + j, indices);
+        sigmaHalf2 = hwy_helpers::gatherInRegisters(tag_double, sigmaHalfPtr, neighborList + j, indices);
+      }
       epsilon24s = highway::Mul(sqrtEpsilon1, sqrtEpsilon2);
       const auto sigma = highway::Add(sigmaHalf1, sigmaHalf2);
       sigmaSquareds = highway::Mul(sigma, sigma);
-    }
-
-    const auto notDummyMask2 = highway::RebindMask(tag_double, highway::Ne(ownedState2, highway::Zero(tag_long)));
-    const auto cutoffDummyMask = highway::MaskedLe(notDummyMask2, dr2, cutoffSquared);
-
-    if constexpr (remainder or not useMixing) {
-      if (highway::AllFalse(tag_double, cutoffDummyMask)) {
-        return;
-      }
     }
 
     const auto one = highway::Set(tag_double, 1.0);
