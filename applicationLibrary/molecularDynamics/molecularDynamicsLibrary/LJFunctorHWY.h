@@ -14,40 +14,17 @@
 #include <optional>
 #include <vector>
 
+#include "HWYHelpers.h"
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/particles/OwnershipState.h"
-#include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/optRef.h"
 
 namespace mdLib {
 
-namespace highway = hwy::HWY_NAMESPACE;
-/** Highway tag for full double register */
-constexpr highway::ScalableTag<double> tag_double;
-/** Highway tag for full long register */
-constexpr highway::ScalableTag<int64_t> tag_long;
-/**
- * Number of double values in a full register. Not constexpr on all architectures, so cannot be assumed, but, when
- * possible (e.g. on x86), we provide this constexpr so compilers may make optimizations.*/
-HWY_LANES_CONSTEXPR inline size_t _vecLengthDouble{highway::Lanes(tag_double)};
-/**
- * Upper bound on the number of double values in a full register. Always constexpr.
- */
-constexpr size_t _maxVecLengthDouble{highway::MaxLanes(tag_double)};
-/** Type for a Double vector register */
-using VectorDouble = decltype(highway::Zero(tag_double));
-/** Type for a Long vector register */
-using VectorLong = decltype(highway::Zero(tag_long));
-/** Highway tag for a half-filled double register */
-constexpr highway::Half<highway::DFromV<VectorDouble>> tag_double_half;
-/** Type for a Double Mask */
-using MaskDouble = decltype(highway::FirstN(tag_double, 1));
-/** Type for a Long Mask */
-using MaskLong = decltype(highway::FirstN(tag_long, 2));
 /** Vectorization Pattern Type */
 using VectorizationPattern = autopas::VectorizationPatternOption::Value;
 
@@ -282,7 +259,7 @@ class LJFunctorHWY
 
   /**
    * Specifies whether the functor is capable of using the specified Vectorization Pattern in the SoA functor.
-   * This functor can handle p1xVec, p2xVecDiv2, pVecDiv2x2, pVecx1
+   * Supports p1xVec, pVecx1, and (when registers hold at least 2 double lanes) p2xVecDiv2, pVecDiv2x2.
    *
    * @param vecPattern
    * @return whether the functor is capable of using the specified Vectorization Pattern
@@ -319,7 +296,7 @@ class LJFunctorHWY
         return 0.0;
       }
     } else {
-      return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
+      return particle.template get<static_cast<Particle_T::AttributeNames>(attribute)>();
     }
   }
 
@@ -342,7 +319,7 @@ class LJFunctorHWY
         return 0.0;
       }
     } else {
-      return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
+      return particle.template get<static_cast<Particle_T::AttributeNames>(attribute)>();
     }
   }
 
@@ -577,22 +554,32 @@ class LJFunctorHWY
         break;
       }
       case VectorizationPattern::p2xVecDiv2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, sorted, VectorizationPattern::p2xVecDiv2>(soa1, soa2, soa1Size, soa2Size,
-                                                                             sortingData);
+        if constexpr (_maxVecLengthDouble >= 2) {
+          if (newton3) {
+            SoAFunctorPairImpl<true, sorted, VectorizationPattern::p2xVecDiv2>(soa1, soa2, soa1Size, soa2Size,
+                                                                               sortingData);
+          } else {
+            SoAFunctorPairImpl<false, sorted, VectorizationPattern::p2xVecDiv2>(soa1, soa2, soa1Size, soa2Size,
+                                                                                sortingData);
+          }
         } else {
-          SoAFunctorPairImpl<false, sorted, VectorizationPattern::p2xVecDiv2>(soa1, soa2, soa1Size, soa2Size,
-                                                                              sortingData);
+          autopas::utils::ExceptionHandler::exception(
+              "VectorizationPattern::p2xVecDiv2 requires at least 2 double lanes.");
         }
         break;
       }
       case VectorizationPattern::pVecDiv2x2: {
-        if (newton3) {
-          SoAFunctorPairImpl<true, sorted, VectorizationPattern::pVecDiv2x2>(soa1, soa2, soa1Size, soa2Size,
-                                                                             sortingData);
+        if constexpr (_maxVecLengthDouble >= 2) {
+          if (newton3) {
+            SoAFunctorPairImpl<true, sorted, VectorizationPattern::pVecDiv2x2>(soa1, soa2, soa1Size, soa2Size,
+                                                                               sortingData);
+          } else {
+            SoAFunctorPairImpl<false, sorted, VectorizationPattern::pVecDiv2x2>(soa1, soa2, soa1Size, soa2Size,
+                                                                                sortingData);
+          }
         } else {
-          SoAFunctorPairImpl<false, sorted, VectorizationPattern::pVecDiv2x2>(soa1, soa2, soa1Size, soa2Size,
-                                                                              sortingData);
+          autopas::utils::ExceptionHandler::exception(
+              "VectorizationPattern::pVecDiv2x2 requires at least 2 double lanes.");
         }
         break;
       }
@@ -848,8 +835,8 @@ class LJFunctorHWY
                                         fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum);
       }
 
-      reduceAdd3_InterleaveFirst(tag_double, fxAcc, fyAcc, fzAcc, fxPtr[indexFirst], fyPtr[indexFirst],
-                                 fzPtr[indexFirst]);
+      hwy_helpers::reduceAdd3_InterleaveFirst(tag_double, fxAcc, fyAcc, fzAcc, fxPtr[indexFirst], fyPtr[indexFirst],
+                                              fzPtr[indexFirst]);
 
       if constexpr (calculateGlobals) {
         computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
@@ -1629,174 +1616,8 @@ class LJFunctorHWY
   }
 
   // ===========================================================================
-  // SIMD Tree Reductions & Force Writeback
+  // Force Writeback & Global Accumulation
   // ===========================================================================
-
-  /**
-   * Recursively folds a vector in half down to 2 lanes by adding its lower and upper halves.
-   */
-  template <class D>
-  HWY_INLINE static auto foldTo2Lanes(D d, const highway::VFromD<D> &v) {
-    if constexpr (highway::MaxLanes(d) == 8) {
-      const highway::Half<D> d4;
-      const auto v4 = highway::Add(highway::LowerHalf(d4, v), highway::UpperHalf(d4, v));
-      const highway::Half<decltype(d4)> d2;
-      return highway::Add(highway::LowerHalf(d2, v4), highway::UpperHalf(d2, v4));
-    } else if constexpr (highway::MaxLanes(d) == 4) {
-      const highway::Half<D> d2;
-      return highway::Add(highway::LowerHalf(d2, v), highway::UpperHalf(d2, v));
-    } else {
-      return v;
-    }
-  }
-
-  /**
-   * Reduces a single vector to a scalar using a halving tree down to 2 lanes before calling highway::ReduceSum.
-   */
-  template <class D>
-  HWY_INLINE static double reduceSumHalving(D d, const highway::VFromD<D> &v) {
-    if constexpr (highway::MaxLanes(d) <= 2) {
-      return highway::ReduceSum(d, v);
-    } else {
-      const auto v2 = foldTo2Lanes(d, v);
-      const highway::DFromV<decltype(v2)> d2;
-      return highway::ReduceSum(d2, v2);
-    }
-  }
-
-  /**
-   * Reduces two vectors simultaneously by interleaving their even/odd lanes and folding to 2 lanes,
-   * adding the results to output scalar accumulators.
-   */
-  template <class D>
-  HWY_INLINE static void reduceAdd2_InterleaveFirst(D d, const highway::VFromD<D> &va, const highway::VFromD<D> &vb,
-                                                    double &outA, double &outB) {
-    if constexpr (highway::MaxLanes(d) == 1) {
-      outA += highway::GetLane(va);
-      outB += highway::GetLane(vb);
-    } else {
-      const auto ab = highway::Add(highway::InterleaveLower(d, va, vb), highway::InterleaveUpper(d, va, vb));
-      const auto ab2 = foldTo2Lanes(d, ab);
-      outA += highway::GetLane(ab2);
-      outB += highway::ExtractLane(ab2, 1);
-    }
-  }
-
-  /**
-   * Reduces two vectors simultaneously by interleaving their even/odd lanes and folding to 2 lanes,
-   * subtracting the results from output scalar accumulators.
-   */
-  template <class D>
-  HWY_INLINE static void reduceSub2_InterleaveFirst(D d, const highway::VFromD<D> &va, const highway::VFromD<D> &vb,
-                                                    double &outA, double &outB) {
-    if constexpr (highway::MaxLanes(d) == 1) {
-      outA -= highway::GetLane(va);
-      outB -= highway::GetLane(vb);
-    } else {
-      const auto ab = highway::Add(highway::InterleaveLower(d, va, vb), highway::InterleaveUpper(d, va, vb));
-      const auto ab2 = foldTo2Lanes(d, ab);
-      outA -= highway::GetLane(ab2);
-      outB -= highway::ExtractLane(ab2, 1);
-    }
-  }
-
-  /**
-   * Reduces 3 vectors (x, y, z) into scalar accumulators by interleaving (x, y) and halving z.
-   */
-  template <class D>
-  HWY_INLINE static void reduceAdd3_InterleaveFirst(D d, const highway::VFromD<D> &fx, const highway::VFromD<D> &fy,
-                                                    const highway::VFromD<D> &fz, double &outX, double &outY,
-                                                    double &outZ) {
-    reduceAdd2_InterleaveFirst(d, fx, fy, outX, outY);
-    outZ += reduceSumHalving(d, fz);
-  }
-
-  /**
-   * Reduces 3 vectors (x, y, z) into scalar accumulators by interleaving (x, y) and halving z,
-   * subtracting the results from output scalar accumulators.
-   */
-  template <class D>
-  HWY_INLINE static void reduceSub3_InterleaveFirst(D d, const highway::VFromD<D> &fx, const highway::VFromD<D> &fy,
-                                                    const highway::VFromD<D> &fz, double &outX, double &outY,
-                                                    double &outZ) {
-    reduceSub2_InterleaveFirst(d, fx, fy, outX, outY);
-    outZ -= reduceSumHalving(d, fz);
-  }
-
-  /**
-   * Reduces 4 vectors into scalar accumulators using two parallel interleaved pairs.
-   */
-  template <class D>
-  HWY_INLINE static void reduceAdd4_Interleaved(D d, const highway::VFromD<D> &v0, const highway::VFromD<D> &v1,
-                                                const highway::VFromD<D> &v2, const highway::VFromD<D> &v3,
-                                                double &out0, double &out1, double &out2, double &out3) {
-    reduceAdd2_InterleaveFirst(d, v0, v1, out0, out1);
-    reduceAdd2_InterleaveFirst(d, v2, v3, out2, out3);
-  }
-
-  /**
-   * Pairs lower and upper half-vectors for 3 dimensions into 2-lane vectors and adds them directly
-   * to memory at 2 contiguous particle positions using 128-bit vector stores.
-   */
-  template <class DHalf>
-  HWY_INLINE static void reduceAdd6Half_Vec2Store(DHalf dh, const highway::VFromD<DHalf> &lfx,
-                                                  const highway::VFromD<DHalf> &lfy, const highway::VFromD<DHalf> &lfz,
-                                                  const highway::VFromD<DHalf> &ufx, const highway::VFromD<DHalf> &ufy,
-                                                  const highway::VFromD<DHalf> &ufz, double *const __restrict fxPtr,
-                                                  double *const __restrict fyPtr, double *const __restrict fzPtr) {
-    if constexpr (highway::MaxLanes(dh) == 1) {
-      fxPtr[0] += highway::GetLane(lfx);
-      fyPtr[0] += highway::GetLane(lfy);
-      fzPtr[0] += highway::GetLane(lfz);
-      fxPtr[1] += highway::GetLane(ufx);
-      fyPtr[1] += highway::GetLane(ufy);
-      fzPtr[1] += highway::GetLane(ufz);
-    } else {
-      const auto fxLU = highway::Add(highway::InterleaveLower(dh, lfx, ufx), highway::InterleaveUpper(dh, lfx, ufx));
-      const auto fyLU = highway::Add(highway::InterleaveLower(dh, lfy, ufy), highway::InterleaveUpper(dh, lfy, ufy));
-      const auto fzLU = highway::Add(highway::InterleaveLower(dh, lfz, ufz), highway::InterleaveUpper(dh, lfz, ufz));
-      const auto fx2 = foldTo2Lanes(dh, fxLU);
-      const auto fy2 = foldTo2Lanes(dh, fyLU);
-      const auto fz2 = foldTo2Lanes(dh, fzLU);
-      const highway::DFromV<decltype(fx2)> d2;
-
-      highway::StoreU(highway::Add(highway::LoadU(d2, fxPtr), fx2), d2, fxPtr);
-      highway::StoreU(highway::Add(highway::LoadU(d2, fyPtr), fy2), d2, fyPtr);
-      highway::StoreU(highway::Add(highway::LoadU(d2, fzPtr), fz2), d2, fzPtr);
-    }
-  }
-
-  /**
-   * Pairs lower and upper half-vectors for 3 dimensions into 2-lane vectors and subtracts them directly
-   * from memory at 2 contiguous particle positions using 128-bit vector stores.
-   */
-  template <class DHalf>
-  HWY_INLINE static void reduceSub6Half_Vec2Store(DHalf dh, const highway::VFromD<DHalf> &lfx,
-                                                  const highway::VFromD<DHalf> &lfy, const highway::VFromD<DHalf> &lfz,
-                                                  const highway::VFromD<DHalf> &ufx, const highway::VFromD<DHalf> &ufy,
-                                                  const highway::VFromD<DHalf> &ufz, double *const __restrict fxPtr,
-                                                  double *const __restrict fyPtr, double *const __restrict fzPtr) {
-    if constexpr (highway::MaxLanes(dh) == 1) {
-      fxPtr[0] -= highway::GetLane(lfx);
-      fyPtr[0] -= highway::GetLane(lfy);
-      fzPtr[0] -= highway::GetLane(lfz);
-      fxPtr[1] -= highway::GetLane(ufx);
-      fyPtr[1] -= highway::GetLane(ufy);
-      fzPtr[1] -= highway::GetLane(ufz);
-    } else {
-      const auto fxLU = highway::Add(highway::InterleaveLower(dh, lfx, ufx), highway::InterleaveUpper(dh, lfx, ufx));
-      const auto fyLU = highway::Add(highway::InterleaveLower(dh, lfy, ufy), highway::InterleaveUpper(dh, lfy, ufy));
-      const auto fzLU = highway::Add(highway::InterleaveLower(dh, lfz, ufz), highway::InterleaveUpper(dh, lfz, ufz));
-      const auto fx2 = foldTo2Lanes(dh, fxLU);
-      const auto fy2 = foldTo2Lanes(dh, fyLU);
-      const auto fz2 = foldTo2Lanes(dh, fzLU);
-      const highway::DFromV<decltype(fx2)> d2;
-
-      highway::StoreU(highway::Sub(highway::LoadU(d2, fxPtr), fx2), d2, fxPtr);
-      highway::StoreU(highway::Sub(highway::LoadU(d2, fyPtr), fy2), d2, fyPtr);
-      highway::StoreU(highway::Sub(highway::LoadU(d2, fzPtr), fz2), d2, fzPtr);
-    }
-  }
 
   template <bool remainder, VectorizationPattern vecPattern>
   HWY_INLINE static void handleNewton3Reduction(const VectorDouble &fx, const VectorDouble &fy, const VectorDouble &fz,
@@ -1861,17 +1682,18 @@ class LJFunctorHWY
       const auto lowerFz = highway::LowerHalf(tag_double_half, fz);
 
       if constexpr (remainder) {
-        reduceSub3_InterleaveFirst(tag_double_half, lowerFx, lowerFy, lowerFz, fx2Ptr[j], fy2Ptr[j], fz2Ptr[j]);
+        hwy_helpers::reduceSub3_InterleaveFirst(tag_double_half, lowerFx, lowerFy, lowerFz, fx2Ptr[j], fy2Ptr[j],
+                                                fz2Ptr[j]);
       } else {
         const auto upperFx = highway::UpperHalf(tag_double_half, fx);
         const auto upperFy = highway::UpperHalf(tag_double_half, fy);
         const auto upperFz = highway::UpperHalf(tag_double_half, fz);
 
-        reduceSub6Half_Vec2Store(tag_double_half, lowerFx, lowerFy, lowerFz, upperFx, upperFy, upperFz, &fx2Ptr[j],
-                                 &fy2Ptr[j], &fz2Ptr[j]);
+        hwy_helpers::reduceSub6Half_Vec2Store(tag_double_half, lowerFx, lowerFy, lowerFz, upperFx, upperFy, upperFz,
+                                              &fx2Ptr[j], &fy2Ptr[j], &fz2Ptr[j]);
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-      reduceSub3_InterleaveFirst(tag_double, fx, fy, fz, fx2Ptr[j], fy2Ptr[j], fz2Ptr[j]);
+      hwy_helpers::reduceSub3_InterleaveFirst(tag_double, fx, fy, fz, fx2Ptr[j], fy2Ptr[j], fz2Ptr[j]);
     }
   }
 
@@ -1881,25 +1703,26 @@ class LJFunctorHWY
                                                 const VectorDouble &fxAcc, const VectorDouble &fyAcc,
                                                 const VectorDouble &fzAcc, const size_t restI) {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      reduceAdd3_InterleaveFirst(tag_double, fxAcc, fyAcc, fzAcc, fxPtr[i], fyPtr[i], fzPtr[i]);
+      hwy_helpers::reduceAdd3_InterleaveFirst(tag_double, fxAcc, fyAcc, fzAcc, fxPtr[i], fyPtr[i], fzPtr[i]);
     } else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
       const auto lowerFxAcc = highway::LowerHalf(tag_double_half, fxAcc);
       const auto lowerFyAcc = highway::LowerHalf(tag_double_half, fyAcc);
       const auto lowerFzAcc = highway::LowerHalf(tag_double_half, fzAcc);
 
       if constexpr (remainder) {
-        reduceAdd3_InterleaveFirst(tag_double_half, lowerFxAcc, lowerFyAcc, lowerFzAcc, fxPtr[i], fyPtr[i], fzPtr[i]);
+        hwy_helpers::reduceAdd3_InterleaveFirst(tag_double_half, lowerFxAcc, lowerFyAcc, lowerFzAcc, fxPtr[i], fyPtr[i],
+                                                fzPtr[i]);
       } else {
         const auto upperFxAcc = highway::UpperHalf(tag_double_half, fxAcc);
         const auto upperFyAcc = highway::UpperHalf(tag_double_half, fyAcc);
         const auto upperFzAcc = highway::UpperHalf(tag_double_half, fzAcc);
 
         if constexpr (reversed) {
-          reduceAdd6Half_Vec2Store(tag_double_half, upperFxAcc, upperFyAcc, upperFzAcc, lowerFxAcc, lowerFyAcc,
-                                   lowerFzAcc, &fxPtr[i - 1], &fyPtr[i - 1], &fzPtr[i - 1]);
+          hwy_helpers::reduceAdd6Half_Vec2Store(tag_double_half, upperFxAcc, upperFyAcc, upperFzAcc, lowerFxAcc,
+                                                lowerFyAcc, lowerFzAcc, &fxPtr[i - 1], &fyPtr[i - 1], &fzPtr[i - 1]);
         } else {
-          reduceAdd6Half_Vec2Store(tag_double_half, lowerFxAcc, lowerFyAcc, lowerFzAcc, upperFxAcc, upperFyAcc,
-                                   upperFzAcc, &fxPtr[i], &fyPtr[i], &fzPtr[i]);
+          hwy_helpers::reduceAdd6Half_Vec2Store(tag_double_half, lowerFxAcc, lowerFyAcc, lowerFzAcc, upperFxAcc,
+                                                upperFyAcc, upperFzAcc, &fxPtr[i], &fyPtr[i], &fzPtr[i]);
         }
       }
     } else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
@@ -1964,9 +1787,10 @@ class LJFunctorHWY
                                  const VectorDouble &virialSumZ, const VectorDouble &uPotSum) {
     const int threadID = autopas::autopas_get_thread_num();
 
-    reduceAdd4_Interleaved(tag_double, virialSumX, virialSumY, virialSumZ, uPotSum,
-                           _aosThreadData[threadID].virialSum[0], _aosThreadData[threadID].virialSum[1],
-                           _aosThreadData[threadID].virialSum[2], _aosThreadData[threadID].potentialEnergySum);
+    hwy_helpers::reduceAdd4_Interleaved(tag_double, virialSumX, virialSumY, virialSumZ, uPotSum,
+                                        _aosThreadData[threadID].virialSum[0], _aosThreadData[threadID].virialSum[1],
+                                        _aosThreadData[threadID].virialSum[2],
+                                        _aosThreadData[threadID].potentialEnergySum);
   }
 
   // ===========================================================================
@@ -2016,9 +1840,14 @@ class LJFunctorHWY
   // The Vectorization Pattern currently used in the SoA functor.
   VectorizationPattern _vecPattern{};
 
-  // Vectorization Pattern that the functor can handle.
-  static constexpr std::array<VectorizationPattern, 4> _vecPatternsAllowed = {
-      VectorizationPattern::p1xVec, VectorizationPattern::p2xVecDiv2, VectorizationPattern::pVecDiv2x2,
-      VectorizationPattern::pVecx1};
+  // Vectorization patterns supported for the active target vector width (split-half patterns need >= 2 double lanes).
+  static constexpr std::array<VectorizationPattern, (_maxVecLengthDouble >= 2 ? 4 : 2)> _vecPatternsAllowed = []() {
+    if constexpr (_maxVecLengthDouble >= 2) {
+      return std::array<VectorizationPattern, 4>{VectorizationPattern::p1xVec, VectorizationPattern::p2xVecDiv2,
+                                                 VectorizationPattern::pVecDiv2x2, VectorizationPattern::pVecx1};
+    } else {
+      return std::array<VectorizationPattern, 2>{VectorizationPattern::p1xVec, VectorizationPattern::pVecx1};
+    }
+  }();
 };
 }  // namespace mdLib
