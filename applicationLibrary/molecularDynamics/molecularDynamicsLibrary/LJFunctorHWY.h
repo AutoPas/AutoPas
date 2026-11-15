@@ -75,7 +75,7 @@ class LJFunctorHWY
         _invCutoffSquareAoS{1.0 / (cutoff * cutoff)},
         _PPLibrary{particlePropertiesLibrary} {
     if constexpr (calculateGlobals) {
-      _aosThreadData.resize(autopas::autopas_get_max_threads());
+      _threadData.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
       AutoPasLog(DEBUG, "Using LJFunctorHWY with countFLOPs but FLOP counting is not implemented.");
@@ -141,14 +141,14 @@ class LJFunctorHWY
       const int threadID = autopas::autopas_get_thread_num();
 
       if (i.isOwned()) {
-        _aosThreadData[threadID].potentialEnergySum += potentialEnergy6;
-        _aosThreadData[threadID].virialSum += virial;
+        _threadData[threadID].potentialEnergySum += potentialEnergy6;
+        _threadData[threadID].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         // for non-newton3 the division is in the post-processing step.
-        _aosThreadData[threadID].potentialEnergySum += potentialEnergy6;
-        _aosThreadData[threadID].virialSum += virial;
+        _threadData[threadID].potentialEnergySum += potentialEnergy6;
+        _threadData[threadID].virialSum += virial;
       }
     }
   }
@@ -401,8 +401,8 @@ class LJFunctorHWY
     _potentialEnergySum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
-    for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-      _aosThreadData[i].setZero();
+    for (size_t i = 0; i < _threadData.size(); ++i) {
+      _threadData[i].setZero();
     }
   }
 
@@ -419,9 +419,9 @@ class LJFunctorHWY
     }
 
     if constexpr (calculateGlobals) {
-      for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
-        _virialSum += _aosThreadData[i].virialSum;
+      for (size_t i = 0; i < _threadData.size(); ++i) {
+        _potentialEnergySum += _threadData[i].potentialEnergySum;
+        _virialSum += _threadData[i].virialSum;
       }
       // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
       // contribution is only counted once per pair.
@@ -894,10 +894,10 @@ class LJFunctorHWY
       fzPtr[indexFirst] += fzi;
       if constexpr (calculateGlobals) {
         const int threadID = autopas::autopas_get_thread_num();
-        _aosThreadData[threadID].potentialEnergySum += pot6Sum;
-        _aosThreadData[threadID].virialSum[0] += virX;
-        _aosThreadData[threadID].virialSum[1] += virY;
-        _aosThreadData[threadID].virialSum[2] += virZ;
+        _threadData[threadID].potentialEnergySum += pot6Sum;
+        _threadData[threadID].virialSum[0] += virX;
+        _threadData[threadID].virialSum[1] += virY;
+        _threadData[threadID].virialSum[2] += virZ;
       }
     }
   }
@@ -1489,10 +1489,10 @@ class LJFunctorHWY
 
     if constexpr (calculateGlobals) {
       const int threadID = autopas::autopas_get_thread_num();
-      _aosThreadData[threadID].potentialEnergySum += potentialEnergy;
-      _aosThreadData[threadID].virialSum[0] += virialX;
-      _aosThreadData[threadID].virialSum[1] += virialY;
-      _aosThreadData[threadID].virialSum[2] += virialZ;
+      _threadData[threadID].potentialEnergySum += potentialEnergy;
+      _threadData[threadID].virialSum[0] += virialX;
+      _threadData[threadID].virialSum[1] += virialY;
+      _threadData[threadID].virialSum[2] += virialZ;
     }
   }
 
@@ -1785,12 +1785,16 @@ class LJFunctorHWY
 
   HWY_INLINE void computeGlobals(const VectorDouble &virialSumX, const VectorDouble &virialSumY,
                                  const VectorDouble &virialSumZ, const VectorDouble &uPotSum) {
-    const int threadID = autopas::autopas_get_thread_num();
+    double virialX = 0., virialY = 0., virialZ = 0., uPot = 0.;
 
-    hwy_helpers::reduceAdd4_Interleaved(tag_double, virialSumX, virialSumY, virialSumZ, uPotSum,
-                                        _aosThreadData[threadID].virialSum[0], _aosThreadData[threadID].virialSum[1],
-                                        _aosThreadData[threadID].virialSum[2],
-                                        _aosThreadData[threadID].potentialEnergySum);
+    hwy_helpers::reduceAdd4_Interleaved(tag_double, virialSumX, virialSumY, virialSumZ, uPotSum, virialX, virialY,
+                                        virialZ, uPot);
+
+    const int threadID = autopas::autopas_get_thread_num();
+    _threadData[threadID].virialSum[0] += virialX;
+    _threadData[threadID].virialSum[1] += virialY;
+    _threadData[threadID].virialSum[2] += virialZ;
+    _threadData[threadID].potentialEnergySum += uPot;
   }
 
   // ===========================================================================
@@ -1832,7 +1836,7 @@ class LJFunctorHWY
   // accumulators for the globals (potential energy and virial).
   double _potentialEnergySum{0.};
   std::array<double, 3> _virialSum{0., 0., 0.};
-  std::vector<ThreadData> _aosThreadData{};
+  std::vector<ThreadData> _threadData{};
 
   // flag to indicate whether post-processing has been performed.
   bool _postProcessed{false};
