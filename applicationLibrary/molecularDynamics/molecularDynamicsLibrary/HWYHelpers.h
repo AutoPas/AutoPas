@@ -56,8 +56,8 @@ namespace hwy_helpers {
  */
 template <typename Scalar_T, class Tag_T>
 HWY_INLINE highway::VFromD<Tag_T> gatherInRegisters(Tag_T tag, const Scalar_T *const __restrict ptr,
-                                                const size_t *const __restrict idxPtr,
-                                                [[maybe_unused]] const VectorLong &vecIndices) {
+                                                    const size_t *const __restrict idxPtr,
+                                                    [[maybe_unused]] const VectorLong &vecIndices) {
 #if !HWY_HAVE_SCALABLE
   if constexpr (highway::MaxLanes(Tag_T{}) == 8) {
     const highway::Half<Tag_T> dh;

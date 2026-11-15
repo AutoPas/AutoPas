@@ -765,7 +765,7 @@ class LJFunctorHWY
 
   template <bool newton3>
   HWY_NOINLINE void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                         std::span<const size_t> neighborList) {
+                                         const std::span<const size_t> neighborList) {
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
     const auto stateI = ownedStatePtr[indexFirst];
     if (stateI == autopas::OwnershipState::dummy) {
@@ -834,16 +834,19 @@ class LJFunctorHWY
                                         fzPtr, sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, nlData, fxAcc,
                                         fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum);
       }
-
+      if (rest > 0) {
+        SoAKernelVerlet<newton3, true>(j, cutoffSquared, shiftOrInvCutoffSquared, energyFactorI, x1, y1, z1, xPtr, yPtr,
+                                       zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
+                                       sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, nlData, fxAcc, fyAcc,
+                                       fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, rest);
+      }
       hwy_helpers::reduceAdd3_InterleaveFirst(tag_double, fxAcc, fyAcc, fzAcc, fxPtr[indexFirst], fyPtr[indexFirst],
                                               fzPtr[indexFirst]);
 
       if constexpr (calculateGlobals) {
         computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
       }
-    }
-
-    if (j < neighborListSize) {
+    } else if (neighborListSize > 0) {
       const double xi = xPtr[indexFirst];
       const double yi = yPtr[indexFirst];
       const double zi = zPtr[indexFirst];
@@ -858,6 +861,12 @@ class LJFunctorHWY
       const double cutoffSq = _cutoffSquareAoS;
       double fxi = 0., fyi = 0., fzi = 0.;
       [[maybe_unused]] double virX = 0., virY = 0., virZ = 0., pot6Sum = 0.;
+
+      // For small neighbor lists, the compiler may decide to vectorize the loop, which is not beneficial. (tested with
+      // gcc 14)
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC novector
+#endif
       for (; j < neighborListSize; ++j) {
         const size_t idxJ = nlData[j];
         const auto stateJ = ownedStatePtr[idxJ];
