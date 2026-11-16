@@ -96,7 +96,7 @@ template <bool forceGenericFallback = false, class D>
 HWY_INLINE double reduceSumHalving([[maybe_unused]] D d, const highway::VFromD<D> &v) {
   if constexpr (useFixedHalvingReduction<D, forceGenericFallback>() && highway::MaxLanes(D{}) > 2) {
     const auto v2 = foldTo2Lanes(d, v);
-    const highway::FixedTag<double, 2> d2;
+    const highway::CappedTag<double, 2> d2;
     return highway::ReduceSum(d2, v2);
   } else if constexpr (highway::MaxLanes(D{}) == 1) {
     return highway::GetLane(v);
@@ -208,9 +208,9 @@ HWY_INLINE void reduceAdd4_Interleaved(D d, const highway::VFromD<D> &v0, const 
  * Shared implementation for reduceAdd6Half_Vec2Store and reduceSub6Half_Vec2Store.
  *
  * Updates strictly 2 contiguous scalar positions per coordinate (ptr[0] from lf*, ptr[1] from uf*). On fixed
- * 4/8-lane AVX targets this uses 2-lane vector memory ops via FixedTag<double, 2>; on scalable/SVE/scalar targets it
- * accumulates via GetLane or highway::ReduceSum and scalar updates so vector-length mismatches or SVE DFromV typing
- * never over-read or overwrite adjacent elements.
+ * 4/8-lane AVX targets this uses 2-lane vector memory ops via CappedTag<double, 2>; on scalable/SVE/scalar targets
+ * it accumulates via GetLane or highway::ReduceSum and scalar updates so vector-length mismatches or SVE DFromV
+ * typing never over-read or overwrite adjacent elements.
  */
 template <bool subtract, bool forceGenericFallback = false, class DHalf>
 HWY_INLINE void reduce6Half_Vec2Store([[maybe_unused]] DHalf dh, const highway::VFromD<DHalf> &lfx,
@@ -225,7 +225,7 @@ HWY_INLINE void reduce6Half_Vec2Store([[maybe_unused]] DHalf dh, const highway::
     const auto fx2 = foldTo2Lanes(dh, fxLU);
     const auto fy2 = foldTo2Lanes(dh, fyLU);
     const auto fz2 = foldTo2Lanes(dh, fzLU);
-    const highway::FixedTag<double, 2> d2;
+    const highway::CappedTag<double, 2> d2;
 
     if constexpr (subtract) {
       highway::StoreU(highway::Sub(highway::LoadU(d2, fxPtr), fx2), d2, fxPtr);
