@@ -528,10 +528,12 @@ class LJFunctorHWY
    * Dispatches SoAFunctorPair or SoAFunctorPairSorted to scalar small-N fallback or SIMD VectorizationPattern.
    */
   template <bool sorted>
-  inline void SoAFunctorPairDispatch(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                     const size_t soa1Size, const size_t soa2Size, const bool newton3,
-                                     autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
-    if (soa1Size < _vecLengthDouble and soa2Size < _vecLengthDouble) {
+  inline void SoAFunctorPairDispatch(
+      autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const size_t soa1Size,
+      const size_t soa2Size, const bool newton3,
+      const autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
+    HWY_LANES_CONSTEXPR size_t scalarPairThreshold = std::min<size_t>(3, _vecLengthDouble);
+    if (soa1Size < scalarPairThreshold and soa2Size < scalarPairThreshold) [[unlikely]] {
       if (newton3) {
         scalarSoAPairDispatch<true>(soa1, soa2, soa1Size, soa2Size);
       } else {
@@ -1329,6 +1331,11 @@ class LJFunctorHWY
     [[maybe_unused]] std::array<double, isSingleCell ? _maxVecLengthDouble : 0> fx2Acc{}, fy2Acc{}, fz2Acc{};
 
     constexpr size_t startI = isSingleCell ? 1 : 0;
+#if defined(__clang__)
+#pragma clang loop vectorize(disable) interleave(disable)
+#elif defined(__GNUC__) && (__GNUC__ >= 14)
+#pragma GCC novector
+#endif
     for (size_t i = startI; i < soaSize1; ++i) {
       if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
         continue;
