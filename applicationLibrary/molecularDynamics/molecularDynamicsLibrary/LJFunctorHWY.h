@@ -772,6 +772,18 @@ class LJFunctorHWY
       return;
     }
 
+    const size_t neighborListSize = neighborList.size();
+    const size_t rest = neighborListSize & (_vecLengthDouble - 1);
+    const size_t vecEnd = neighborListSize - rest;
+
+    HWY_LANES_CONSTEXPR size_t minN3OffVec = std::max<size_t>(4, _vecLengthDouble / 2);
+    if (vecEnd == 0 and (newton3 or rest < minN3OffVec)) [[unlikely]] {
+      if (neighborListSize > 0) {
+        SoAFunctorVerletScalar<newton3>(soa, indexFirst, stateI, neighborList);
+      }
+      return;
+    }
+
     const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
     const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
     const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
@@ -787,127 +799,60 @@ class LJFunctorHWY
       halfSigmaPtr = soa.template begin<AttrHalfSigma>();
     }
 
-    const size_t neighborListSize = neighborList.size();
-    const size_t rest = neighborListSize & (_vecLengthDouble - 1);
-    const size_t vecEnd = neighborListSize - rest;
     const size_t *const __restrict nlData = neighborList.data();
+
+    VectorDouble sqrtEpsilon1;
+    VectorDouble sigmaHalf1;
+    if constexpr (useMixing) {
+      sqrtEpsilon1 = highway::Set(tag_double, sqrtEpsilonPtr[indexFirst]);
+      sigmaHalf1 = highway::Set(tag_double, halfSigmaPtr[indexFirst]);
+    } else {
+      sqrtEpsilon1 = highway::Set(tag_double, _epsilon24AoS);
+      sigmaHalf1 = highway::Set(tag_double, _sigmaSquareAoS);
+    }
+
+    const VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
+    [[maybe_unused]] VectorDouble shiftOrInvCutoffSquared = highway::Zero(tag_double);
+    if constexpr (calculateGlobals and applyShift) {
+      shiftOrInvCutoffSquared = highway::Set(tag_double, useMixing ? _invCutoffSquareAoS : _shift6AoS);
+    }
+
+    VectorDouble virialSumX = highway::Zero(tag_double);
+    VectorDouble virialSumY = highway::Zero(tag_double);
+    VectorDouble virialSumZ = highway::Zero(tag_double);
+    VectorDouble uPotSum = highway::Zero(tag_double);
+    VectorDouble fxAcc = highway::Zero(tag_double);
+    VectorDouble fyAcc = highway::Zero(tag_double);
+    VectorDouble fzAcc = highway::Zero(tag_double);
+
+    const VectorDouble x1 = highway::Set(tag_double, xPtr[indexFirst]);
+    const VectorDouble y1 = highway::Set(tag_double, yPtr[indexFirst]);
+    const VectorDouble z1 = highway::Set(tag_double, zPtr[indexFirst]);
+
+    [[maybe_unused]] VectorDouble energyFactorI = highway::Zero(tag_double);
+    if constexpr (calculateGlobals) {
+      const double baseFactor = (stateI == autopas::OwnershipState::owned) ? 1.0 : 0.0;
+      energyFactorI = highway::Set(tag_double, baseFactor);
+    }
+
     size_t j = 0;
+    for (; j < vecEnd; j += _vecLengthDouble) {
+      SoAKernelVerlet<newton3, false>(j, cutoffSquared, shiftOrInvCutoffSquared, energyFactorI, x1, y1, z1, xPtr, yPtr,
+                                      zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
+                                      sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, nlData, fxAcc, fyAcc,
+                                      fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum);
+    }
+    if (rest > 0) {
+      SoAKernelVerlet<newton3, true>(j, cutoffSquared, shiftOrInvCutoffSquared, energyFactorI, x1, y1, z1, xPtr, yPtr,
+                                     zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
+                                     sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, nlData, fxAcc, fyAcc,
+                                     fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, rest);
+    }
+    hwy_helpers::reduceAdd3_InterleaveFirst(tag_double, fxAcc, fyAcc, fzAcc, fxPtr[indexFirst], fyPtr[indexFirst],
+                                            fzPtr[indexFirst]);
 
-    if (vecEnd > 0) {
-      VectorDouble sqrtEpsilon1;
-      VectorDouble sigmaHalf1;
-      if constexpr (useMixing) {
-        sqrtEpsilon1 = highway::Set(tag_double, sqrtEpsilonPtr[indexFirst]);
-        sigmaHalf1 = highway::Set(tag_double, halfSigmaPtr[indexFirst]);
-      } else {
-        sqrtEpsilon1 = highway::Set(tag_double, _epsilon24AoS);
-        sigmaHalf1 = highway::Set(tag_double, _sigmaSquareAoS);
-      }
-
-      const VectorDouble cutoffSquared = highway::Set(tag_double, _cutoffSquareAoS);
-      [[maybe_unused]] VectorDouble shiftOrInvCutoffSquared = highway::Zero(tag_double);
-      if constexpr (calculateGlobals and applyShift) {
-        shiftOrInvCutoffSquared = highway::Set(tag_double, useMixing ? _invCutoffSquareAoS : _shift6AoS);
-      }
-
-      VectorDouble virialSumX = highway::Zero(tag_double);
-      VectorDouble virialSumY = highway::Zero(tag_double);
-      VectorDouble virialSumZ = highway::Zero(tag_double);
-      VectorDouble uPotSum = highway::Zero(tag_double);
-      VectorDouble fxAcc = highway::Zero(tag_double);
-      VectorDouble fyAcc = highway::Zero(tag_double);
-      VectorDouble fzAcc = highway::Zero(tag_double);
-
-      const VectorDouble x1 = highway::Set(tag_double, xPtr[indexFirst]);
-      const VectorDouble y1 = highway::Set(tag_double, yPtr[indexFirst]);
-      const VectorDouble z1 = highway::Set(tag_double, zPtr[indexFirst]);
-
-      [[maybe_unused]] VectorDouble energyFactorI = highway::Zero(tag_double);
-      if constexpr (calculateGlobals) {
-        const double baseFactor = (stateI == autopas::OwnershipState::owned) ? 1.0 : 0.0;
-        energyFactorI = highway::Set(tag_double, baseFactor);
-      }
-
-      for (; j < vecEnd; j += _vecLengthDouble) {
-        SoAKernelVerlet<newton3, false>(j, cutoffSquared, shiftOrInvCutoffSquared, energyFactorI, x1, y1, z1, xPtr,
-                                        yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr,
-                                        fzPtr, sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, nlData, fxAcc,
-                                        fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum);
-      }
-      if (rest > 0) {
-        SoAKernelVerlet<newton3, true>(j, cutoffSquared, shiftOrInvCutoffSquared, energyFactorI, x1, y1, z1, xPtr, yPtr,
-                                       zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr), fxPtr, fyPtr, fzPtr,
-                                       sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr, halfSigmaPtr, nlData, fxAcc, fyAcc,
-                                       fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, rest);
-      }
-      hwy_helpers::reduceAdd3_InterleaveFirst(tag_double, fxAcc, fyAcc, fzAcc, fxPtr[indexFirst], fyPtr[indexFirst],
-                                              fzPtr[indexFirst]);
-
-      if constexpr (calculateGlobals) {
-        computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
-      }
-    } else if (neighborListSize > 0) {
-      const double xi = xPtr[indexFirst];
-      const double yi = yPtr[indexFirst];
-      const double zi = zPtr[indexFirst];
-      double sqrtEpsI = 0.;
-      double halfSigI = 0.;
-      if constexpr (useMixing) {
-        sqrtEpsI = sqrtEpsilonPtr[indexFirst];
-        halfSigI = halfSigmaPtr[indexFirst];
-      }
-      [[maybe_unused]] const double baseFactor =
-          (calculateGlobals and stateI == autopas::OwnershipState::owned) ? 1.0 : 0.0;
-      const double cutoffSq = _cutoffSquareAoS;
-      double fxi = 0., fyi = 0., fzi = 0.;
-      [[maybe_unused]] double virX = 0., virY = 0., virZ = 0., pot6Sum = 0.;
-
-      // For small neighbor lists, the compiler may decide to vectorize the loop, which is not beneficial. (tested with
-      // gcc 14)
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC novector
-#endif
-      for (; j < neighborListSize; ++j) {
-        const size_t idxJ = nlData[j];
-        const auto stateJ = ownedStatePtr[idxJ];
-        if (stateJ == autopas::OwnershipState::dummy) {
-          continue;
-        }
-        const double dx = xi - xPtr[idxJ];
-        const double dy = yi - yPtr[idxJ];
-        const double dz = zi - zPtr[idxJ];
-        const double dr2 = dx * dx + dy * dy + dz * dz;
-        if (dr2 <= cutoffSq) {
-          double fx = 0., fy = 0., fz = 0., pot6 = 0.;
-          computeScalarLJInteraction(dr2, dx, dy, dz, sqrtEpsI, halfSigI, useMixing ? sqrtEpsilonPtr[idxJ] : 0.,
-                                     useMixing ? halfSigmaPtr[idxJ] : 0., fx, fy, fz, pot6);
-          fxi += fx;
-          fyi += fy;
-          fzi += fz;
-          if constexpr (newton3) {
-            fxPtr[idxJ] -= fx;
-            fyPtr[idxJ] -= fy;
-            fzPtr[idxJ] -= fz;
-          }
-          if constexpr (calculateGlobals) {
-            const double factor = baseFactor + ((newton3 and stateJ == autopas::OwnershipState::owned) ? 1.0 : 0.0);
-            pot6Sum += factor * pot6;
-            virX += factor * fx * dx;
-            virY += factor * fy * dy;
-            virZ += factor * fz * dz;
-          }
-        }
-      }
-      fxPtr[indexFirst] += fxi;
-      fyPtr[indexFirst] += fyi;
-      fzPtr[indexFirst] += fzi;
-      if constexpr (calculateGlobals) {
-        const int threadID = autopas::autopas_get_thread_num();
-        _threadData[threadID].potentialEnergySum += pot6Sum;
-        _threadData[threadID].virialSum[0] += virX;
-        _threadData[threadID].virialSum[1] += virY;
-        _threadData[threadID].virialSum[2] += virZ;
-      }
+    if constexpr (calculateGlobals) {
+      computeGlobals(virialSumX, virialSumY, virialSumZ, uPotSum);
     }
   }
 
@@ -1174,7 +1119,7 @@ class LJFunctorHWY
       restMaskDouble = highway::FirstN(tag_double, rest);
       restMaskLong = highway::FirstN(tag_long, rest);
       indices = highway::LoadN(tag_long, reinterpret_cast<const int64_t *>(neighborList + j), rest);
-    } else if constexpr (newton3 or HWY_HAVE_SCALABLE or (_maxVecLengthDouble > 8)) {
+    } else {
       indices = highway::LoadU(tag_long, reinterpret_cast<const int64_t *>(neighborList + j));
     }
 
@@ -1187,9 +1132,9 @@ class LJFunctorHWY
       y2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, yPtr, indices);
       z2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, zPtr, indices);
     } else {
-      x2 = hwy_helpers::gatherInRegisters(tag_double, xPtr, neighborList + j, indices);
-      y2 = hwy_helpers::gatherInRegisters(tag_double, yPtr, neighborList + j, indices);
-      z2 = hwy_helpers::gatherInRegisters(tag_double, zPtr, neighborList + j, indices);
+      x2 = highway::GatherIndex(tag_double, xPtr, indices);
+      y2 = highway::GatherIndex(tag_double, yPtr, indices);
+      z2 = highway::GatherIndex(tag_double, zPtr, indices);
     }
 
     const auto drX = highway::Sub(x1, x2);
@@ -1201,7 +1146,7 @@ class LJFunctorHWY
     if constexpr (remainder) {
       ownedState2 = highway::MaskedGatherIndex(restMaskLong, tag_long, ownedStatePtr, indices);
     } else {
-      ownedState2 = hwy_helpers::gatherInRegisters(tag_long, ownedStatePtr, neighborList + j, indices);
+      ownedState2 = highway::GatherIndex(tag_long, ownedStatePtr, indices);
     }
 
     const auto notDummyMask2 = highway::RebindMask(tag_double, highway::Ne(ownedState2, highway::Zero(tag_long)));
@@ -1224,8 +1169,8 @@ class LJFunctorHWY
         sqrtEpsilon2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, sqrtEpsilonPtr, indices);
         sigmaHalf2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, sigmaHalfPtr, indices);
       } else {
-        sqrtEpsilon2 = hwy_helpers::gatherInRegisters(tag_double, sqrtEpsilonPtr, neighborList + j, indices);
-        sigmaHalf2 = hwy_helpers::gatherInRegisters(tag_double, sigmaHalfPtr, neighborList + j, indices);
+        sqrtEpsilon2 = highway::GatherIndex(tag_double, sqrtEpsilonPtr, indices);
+        sigmaHalf2 = highway::GatherIndex(tag_double, sigmaHalfPtr, indices);
       }
       epsilon24s = highway::Mul(sqrtEpsilon1, sqrtEpsilon2);
       const auto sigma = highway::Add(sigmaHalf1, sigmaHalf2);
@@ -1499,6 +1444,90 @@ class LJFunctorHWY
       _threadData[threadID].virialSum[0] += virialX;
       _threadData[threadID].virialSum[1] += virialY;
       _threadData[threadID].virialSum[2] += virialZ;
+    }
+  }
+
+  template <bool newton3>
+  HWY_NOINLINE void SoAFunctorVerletScalar(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                                           const autopas::OwnershipState stateI,
+                                           const std::span<const size_t> neighborList) {
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
+    const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
+
+    auto *const __restrict fxPtr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
+
+    const double *sqrtEpsilonPtr = nullptr;
+    const double *halfSigmaPtr = nullptr;
+    double sqrtEpsI = 0.;
+    double halfSigI = 0.;
+    if constexpr (useMixing) {
+      sqrtEpsilonPtr = soa.template begin<AttrSqrt24Epsilon>();
+      halfSigmaPtr = soa.template begin<AttrHalfSigma>();
+      sqrtEpsI = sqrtEpsilonPtr[indexFirst];
+      halfSigI = halfSigmaPtr[indexFirst];
+    }
+
+    const size_t neighborListSize = neighborList.size();
+    const size_t *const __restrict nlData = neighborList.data();
+    const double xi = xPtr[indexFirst];
+    const double yi = yPtr[indexFirst];
+    const double zi = zPtr[indexFirst];
+    [[maybe_unused]] const double baseFactor =
+        (calculateGlobals and stateI == autopas::OwnershipState::owned) ? 1.0 : 0.0;
+    const double cutoffSq = _cutoffSquareAoS;
+    double fxi = 0., fyi = 0., fzi = 0.;
+    [[maybe_unused]] double virX = 0., virY = 0., virZ = 0., pot6Sum = 0.;
+
+    // For small neighbor lists, keep the tail purely scalar across compilers (avoid narrow masked gathers).
+#if defined(__clang__)
+#pragma clang loop vectorize(disable) interleave(disable)
+#elif defined(__GNUC__) && (__GNUC__ >= 14)
+#pragma GCC novector
+#endif
+    for (size_t j = 0; j < neighborListSize; ++j) {
+      const size_t idxJ = nlData[j];
+      const auto stateJ = ownedStatePtr[idxJ];
+      if (stateJ == autopas::OwnershipState::dummy) {
+        continue;
+      }
+      const double dx = xi - xPtr[idxJ];
+      const double dy = yi - yPtr[idxJ];
+      const double dz = zi - zPtr[idxJ];
+      const double dr2 = dx * dx + dy * dy + dz * dz;
+      if (dr2 <= cutoffSq) {
+        double fx = 0., fy = 0., fz = 0., pot6 = 0.;
+        computeScalarLJInteraction(dr2, dx, dy, dz, sqrtEpsI, halfSigI, useMixing ? sqrtEpsilonPtr[idxJ] : 0.,
+                                   useMixing ? halfSigmaPtr[idxJ] : 0., fx, fy, fz, pot6);
+        fxi += fx;
+        fyi += fy;
+        fzi += fz;
+        if constexpr (newton3) {
+          fxPtr[idxJ] -= fx;
+          fyPtr[idxJ] -= fy;
+          fzPtr[idxJ] -= fz;
+        }
+        if constexpr (calculateGlobals) {
+          const double factor = baseFactor + ((newton3 and stateJ == autopas::OwnershipState::owned) ? 1.0 : 0.0);
+          pot6Sum += factor * pot6;
+          virX += factor * fx * dx;
+          virY += factor * fy * dy;
+          virZ += factor * fz * dz;
+        }
+      }
+    }
+    fxPtr[indexFirst] += fxi;
+    fyPtr[indexFirst] += fyi;
+    fzPtr[indexFirst] += fzi;
+    if constexpr (calculateGlobals) {
+      const int threadID = autopas::autopas_get_thread_num();
+      _threadData[threadID].potentialEnergySum += pot6Sum;
+      _threadData[threadID].virialSum[0] += virX;
+      _threadData[threadID].virialSum[1] += virY;
+      _threadData[threadID].virialSum[2] += virZ;
     }
   }
 
