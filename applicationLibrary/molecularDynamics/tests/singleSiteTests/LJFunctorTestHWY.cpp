@@ -956,6 +956,13 @@ void verifyReductionBothModes(D d) {
   verifyReductionHelpersForTag<true>(d, kTol);
 }
 
+template <size_t kLanes, size_t kMaxLanes = mdLib::_maxVecLengthDouble>
+void verifyFixedTagIfSupported() {
+  if constexpr (kMaxLanes >= kLanes) {
+    verifyReductionBothModes(mdLib::highway::FixedTag<double, kLanes>{});
+  }
+}
+
 template <class SoAType>
 void expectSoAForcesNear(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2, double tol,
                          const std::string &context) {
@@ -986,18 +993,13 @@ TEST(LJFunctorTestHWYReduction, FixedAndFallbackMatchReference) {
   verifyReductionBothModes(mdLib::highway::FixedTag<double, 1>{});
   verifyReductionBothModes(mdLib::highway::Half<mdLib::highway::CappedTag<double, 2>>{});
   verifyReductionBothModes(mdLib::highway::CappedTag<double, 1>{});
+  verifyReductionBothModes(mdLib::highway::CappedTag<double, 2>{});
+  verifyReductionBothModes(mdLib::highway::CappedTag<double, 4>{});
+  verifyReductionBothModes(mdLib::highway::CappedTag<double, 8>{});
 
-  if constexpr (mdLib::_maxVecLengthDouble >= 2) {
-    verifyReductionBothModes(mdLib::highway::FixedTag<double, 2>{});
-    verifyReductionBothModes(mdLib::highway::CappedTag<double, 2>{});
-  }
-  if constexpr (mdLib::_maxVecLengthDouble >= 4) {
-    verifyReductionBothModes(mdLib::highway::FixedTag<double, 4>{});
-    verifyReductionBothModes(mdLib::highway::CappedTag<double, 4>{});
-  }
-  if constexpr (mdLib::_maxVecLengthDouble >= 8) {
-    verifyReductionBothModes(mdLib::highway::FixedTag<double, 8>{});
-  }
+  verifyFixedTagIfSupported<2>();
+  verifyFixedTagIfSupported<4>();
+  verifyFixedTagIfSupported<8>();
 }
 
 /**
