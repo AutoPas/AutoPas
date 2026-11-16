@@ -16,6 +16,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/logging/OctreeLogger.h"
+#include <cstddef>
 
 namespace autopas {
 
@@ -82,9 +83,12 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle_T>>,
     OctreeLogger<Particle_T>::octreeToJSON(this->getOwned()->getRaw(), this->getHalo()->getRaw(), this->_ownedLeaves,
                                            this->_haloLeaves);
 
+    //avoids comparing an int with the unsigned result of size()
+    const auto numLeaves = static_cast<std::ptrdiff_t>(this->_ownedLeaves.size());
+
     // Get neighboring cells for each leaf
-    // #pragma omp parallel for
-    for (int i = 0; i < this->_ownedLeaves.size(); ++i) {
+    #pragma omp parallel for schedule(dynamic)
+    for (std::ptrdiff_t i = 0; i < numLeaves; ++i) {
       OctreeLeafNode<Particle_T> *leaf = this->_ownedLeaves[i];
 
       // Process cell itself

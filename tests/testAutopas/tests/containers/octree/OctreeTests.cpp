@@ -8,6 +8,9 @@
 
 #include <testingHelpers/commonTypedefs.h>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -26,14 +29,21 @@
 #include "mocks/MockPairwiseFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/octree/traversals/OTC01ParallelTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 
 using ::testing::_;
 
+/**
+ * Test whether the parallel octree traversal calculates the same forces as the sequential OTC01 traversal
+ * for both AoS and SoA data layouts.
+ */
+
 TEST_F(OctreeTest, testParallelTraversalForces) {
   using namespace autopas;
 
+#ifndef _OPENMP
+  GTEST_SKIP() << "OpenMP is not enabled.";
+#else
   constexpr double cutoff = 1.0;
   constexpr double skin = 0.1;
   constexpr size_t numParticles = 500;
@@ -41,6 +51,15 @@ TEST_F(OctreeTest, testParallelTraversalForces) {
 
   const std::array<double, 3> boxMin{0., 0., 0.};
   const std::array<double, 3> boxMax{10., 10., 10.};
+
+  // Save the original OpenMP thread setting.
+  const int originalNumThreads = omp_get_max_threads();
+
+  // Restore the original setting when leaving the test.
+  struct ThreadCountGuard {
+    int original;
+    ~ThreadCountGuard() { omp_set_num_threads(original); }
+  } threadCountGuard{originalNumThreads};
 
   // Use deterministic particle positions.
   std::vector<std::array<double, 3>> positions;
@@ -66,9 +85,11 @@ TEST_F(OctreeTest, testParallelTraversalForces) {
     });
   }
 
-  // Runs either traversal and returns forces indexed by particle ID.
-  auto calculateForces = [&](TraversalOption traversalOption,
-                             DataLayoutOption dataLayout) {
+  // Runs OTC01 with the specified number of threads
+  // and returns forces indexed by particle ID.
+  auto calculateForces = [&](DataLayoutOption dataLayout,
+                             int threadCount) {
+    omp_set_num_threads(threadCount);
 
     auto container = ContainerSelector<Molecule>::generateContainer(
         ContainerOption::octree,
@@ -99,10 +120,10 @@ TEST_F(OctreeTest, testParallelTraversalForces) {
       container->addHaloParticle(particle);
     }
 
-    // Select the requested traversal.
+    // Select the existing OTC01 traversal.
     auto traversal = TraversalSelector::generateTraversal<
         FullParticleCell<Molecule>, decltype(functor)>(
-            traversalOption,
+            TraversalOption::ot_c01,
             functor,
             container->getTraversalSelectorInfo(),
             dataLayout,
@@ -138,11 +159,13 @@ TEST_F(OctreeTest, testParallelTraversalForces) {
   // Test both AoS and SoA data layouts.
   for (auto layout : {DataLayoutOption::aos, DataLayoutOption::soa}) {
 
+    // Reference: OTC01 running with one thread.
     const auto sequentialForces =
-        calculateForces(TraversalOption::ot_c01, layout);
+        calculateForces(layout, 1);
 
+    // Parallel: same OTC01 traversal running with four threads.
     const auto parallelForces =
-        calculateForces(TraversalOption::ot_c01_parallel, layout);
+        calculateForces(layout, 4);
 
     ASSERT_EQ(sequentialForces.size(), parallelForces.size());
 
@@ -158,71 +181,12 @@ TEST_F(OctreeTest, testParallelTraversalForces) {
         EXPECT_NEAR(actual, expected, tolerance)
             << "Particle: " << i
             << ", dimension: " << d
-            << ", layout: " << (layout == DataLayoutOption::aos ? "AoS" : "SoA");
+            << ", layout: "
+            << (layout == DataLayoutOption::aos ? "AoS" : "SoA");
       }
     }
   }
-}
-
-
-TEST_F(OctreeTest, testParallelTraversalSelection) {
-  using namespace autopas;
-
-  // Check that the new traversal option is registered.
-  const TraversalOption option = TraversalOption::ot_c01_parallel;
-
-  EXPECT_EQ(option.to_string(), "ot_c01_parallel");
-
-  // Check that the traversal is compatible with the octree.
-  const auto compatible =
-      compatibleTraversals::allCompatibleTraversals(
-          ContainerOption::octree,
-          InteractionTypeOption::pairwise);
-
-  EXPECT_TRUE(compatible.count(option) > 0);
-
-  // Create a small octree container.
-  constexpr double cutoff = 1.0;
-  constexpr double skin = 0.1;
-
-  auto container = ContainerSelector<Molecule>::generateContainer(
-      ContainerOption::octree,
-      ContainerSelectorInfo{
-          {0., 0., 0.},
-          {10., 10., 10.},
-          cutoff,
-          1.0,
-          skin,
-          32, 8, 8,
-          LoadEstimatorOption::none
-      });
-
-  // Generate the traversal through AutoPas's selector.
-  auto traversal =
-      TraversalSelector::generateTraversal<
-          FullParticleCell<Molecule>,
-          MockPairwiseFunctor<Molecule>>(
-              option,
-              mockFunctor,
-              container->getTraversalSelectorInfo(),
-              DataLayoutOption::aos,
-              false
-          );
-
-  ASSERT_NE(traversal, nullptr);
-
-  // Check that it reports the correct traversal option.
-  EXPECT_EQ(traversal->getTraversalType(), option);
-
-  // Check that the selector created our actual class.
-  auto *parallelTraversal =
-      dynamic_cast<
-          OTC01ParallelTraversal<
-              Molecule,
-              MockPairwiseFunctor<Molecule>> *>(
-                  traversal.get());
-
-  EXPECT_NE(parallelTraversal, nullptr);
+#endif
 }
 
 
