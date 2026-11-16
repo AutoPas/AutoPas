@@ -157,9 +157,14 @@ class LJFunctorHWY
    * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always do a newton3 like traversal of the SoA using only the 1xVec Pattern.
    */
-  HWY_NOINLINE void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, [[maybe_unused]] const bool newton3) final {
+  inline  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, [[maybe_unused]] const bool newton3) final {
     const size_t soaSize = soa.size();
     if (soaSize <= 1) return;
+
+    if (soaSize < _vecLengthDouble) {
+      scalarSoASingleDispatch(soa, soaSize);
+      return;
+    }
 
     // obtain iterators for the various values
     const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
@@ -177,13 +182,6 @@ class LJFunctorHWY
     if constexpr (useMixing) {
       sqrtEpsilonPtr = soa.template begin<AttrSqrt24Epsilon>();
       halfSigmaPtr = soa.template begin<AttrHalfSigma>();
-    }
-
-    if (soaSize < _vecLengthDouble) {
-      scalarSoAKernel<true, true>(soaSize, soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr,
-                                  sqrtEpsilonPtr, halfSigmaPtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr,
-                                  sqrtEpsilonPtr, halfSigmaPtr);
-      return;
     }
 
     if constexpr (useMixing) {
@@ -494,7 +492,7 @@ class LJFunctorHWY
   // ===========================================================================
 
   template <bool homogeneousParams>
-  inline void runSingleLoop(const size_t soaSize, const double *const __restrict xPtr,
+  HWY_NOINLINE void runSingleLoop(const size_t soaSize, const double *const __restrict xPtr,
                             const double *const __restrict yPtr, const double *const __restrict zPtr,
                             const autopas::OwnershipState *const __restrict ownedStatePtr,
                             double *const __restrict fxPtr, double *const __restrict fyPtr,
@@ -533,7 +531,6 @@ class LJFunctorHWY
   inline void SoAFunctorPairDispatch(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                                      const size_t soa1Size, const size_t soa2Size, const bool newton3,
                                      autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
-    if constexpr (useMixing) {
       if (soa1Size < _vecLengthDouble and soa2Size < _vecLengthDouble) {
         if (newton3) {
           scalarSoAPairDispatch<true>(soa1, soa2, soa1Size, soa2Size);
@@ -542,7 +539,6 @@ class LJFunctorHWY
         }
         return;
       }
-    }
 
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec: {
@@ -597,38 +593,6 @@ class LJFunctorHWY
   }
 
   /**
-   * Out-of-line small-N scalar dispatcher for SoAFunctorPair / SoAFunctorPairSorted when useMixing is enabled.
-   */
-  template <bool newton3>
-  HWY_NOINLINE void scalarSoAPairDispatch(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                          const size_t soa1Size, const size_t soa2Size) {
-    const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
-    const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
-    const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
-    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
-    auto *const __restrict fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
-    const auto *const __restrict sqrtEpsilon1Ptr = soa1.template begin<AttrSqrt24Epsilon>();
-    const auto *const __restrict halfSigma1Ptr = soa1.template begin<AttrHalfSigma>();
-
-    const auto *const __restrict x2Ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
-    const auto *const __restrict y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
-    const auto *const __restrict z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
-    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
-    // getNeededAttr(false_type) omits force columns for soa2, so only request them when newton3 is enabled.
-    double *const __restrict fx2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceX>() : nullptr;
-    double *const __restrict fy2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceY>() : nullptr;
-    double *const __restrict fz2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceZ>() : nullptr;
-    const auto *const __restrict sqrtEpsilon2Ptr = soa2.template begin<AttrSqrt24Epsilon>();
-    const auto *const __restrict halfSigma2Ptr = soa2.template begin<AttrHalfSigma>();
-
-    scalarSoAKernel<false, newton3>(soa1Size, soa2Size, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, fx1Ptr, fy1Ptr, fz1Ptr,
-                                    sqrtEpsilon1Ptr, halfSigma1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx2Ptr, fy2Ptr,
-                                    fz2Ptr, sqrtEpsilon2Ptr, halfSigma2Ptr);
-  }
-
-  /**
    * Templatized implementation of SoAFunctorPair.
    *
    * When sorted=false the original SoA arrays are iterated directly.
@@ -672,7 +636,7 @@ class LJFunctorHWY
   }
 
   template <bool newton3, bool sorted, VectorizationPattern vecPattern, bool homogeneousParams>
-  inline void runPairLoop(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+  HWY_NOINLINE void runPairLoop(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                           const size_t soa1Size, const size_t soa2Size,
                           autopas::utils::optRef<const autopas::SoASortingData> sortingData,
                           const double *const __restrict sqrtEpsilon1Ptr, const double *const __restrict halfSigma1Ptr,
@@ -872,9 +836,9 @@ class LJFunctorHWY
       const double *const __restrict xPtr1, const double *const __restrict yPtr1, const double *const __restrict zPtr1,
       const autopas::OwnershipState *const __restrict ownedStatePtr1, const double *const __restrict xPtr2,
       const double *const __restrict yPtr2, const double *const __restrict zPtr2,
-      const autopas::OwnershipState *const __restrict ownedStatePtr2, double *const __restrict fxPtr1,
-      double *const __restrict fyPtr1, double *const __restrict fzPtr1, double *const __restrict fxPtr2,
-      double *const __restrict fyPtr2, double *const __restrict fzPtr2, const double *const __restrict sqrtEpsilonPtr1,
+      const autopas::OwnershipState *const __restrict ownedStatePtr2, double *const fxPtr1,
+      double *const fyPtr1, double *const fzPtr1, double *const fxPtr2,
+      double *const fyPtr2, double *const fzPtr2, const double *const __restrict sqrtEpsilonPtr1,
       const double *const __restrict halfSigmaPtr1, const double *const __restrict sqrtEpsilonPtr2,
       const double *const __restrict halfSigmaPtr2, VectorDouble &virialSumX, VectorDouble &virialSumY,
       VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t jVecStart,
@@ -887,15 +851,11 @@ class LJFunctorHWY
 
     MaskDouble notDummyMaskI;
     [[maybe_unused]] VectorDouble energyFactorI = highway::Zero(tag_double);
-    [[maybe_unused]] VectorDouble energyFactorIPlus1 = highway::Zero(tag_double);
 
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       if constexpr (calculateGlobals) {
         const double baseFactor = (ownedStatePtr1[i] == autopas::OwnershipState::owned) ? 1.0 : 0.0;
         energyFactorI = highway::Set(tag_double, baseFactor);
-        if constexpr (newton3) {
-          energyFactorIPlus1 = highway::Set(tag_double, baseFactor + 1.0);
-        }
       }
     } else {
       const VectorLong ownedStateI = loadRegister<true, remainderI, reversed, vecPattern>(
@@ -908,9 +868,6 @@ class LJFunctorHWY
         const auto ownedVal = highway::Set(tag_long, static_cast<int64_t>(autopas::OwnershipState::owned));
         const auto ownedMaskI = highway::RebindMask(tag_double, highway::Eq(ownedStateI, ownedVal));
         energyFactorI = highway::MaskedSet(tag_double, ownedMaskI, 1.0);
-        if constexpr (newton3) {
-          energyFactorIPlus1 = highway::Add(energyFactorI, highway::Set(tag_double, 1.0));
-        }
       }
     }
 
@@ -945,7 +902,7 @@ class LJFunctorHWY
 
     for (; j < jVecEndFull; j += jStep) {
       SoAKernel<newton3, false, reversed, vecPattern, homogeneousParams>(
-          j, cutoffSquared, shiftOrInvCutoffSquared, notDummyMaskI, energyFactorI, energyFactorIPlus1,
+          j, cutoffSquared, shiftOrInvCutoffSquared, notDummyMaskI, energyFactorI,
           reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2,
           sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr2, halfSigmaPtr2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
           virialSumZ, uPotSum, 0);
@@ -953,7 +910,7 @@ class LJFunctorHWY
 
     if (restJ > 0) {
       SoAKernel<newton3, true, reversed, vecPattern, homogeneousParams>(
-          j, cutoffSquared, shiftOrInvCutoffSquared, notDummyMaskI, energyFactorI, energyFactorIPlus1,
+          j, cutoffSquared, shiftOrInvCutoffSquared, notDummyMaskI, energyFactorI,
           reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2,
           sqrtEpsilon1, sigmaHalf1, sqrtEpsilonPtr2, halfSigmaPtr2, fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
           virialSumZ, uPotSum, restJ);
@@ -974,7 +931,7 @@ class LJFunctorHWY
   HWY_INLINE void SoAKernel(
       const size_t j, const VectorDouble &cutoffSquared, [[maybe_unused]] const VectorDouble &shiftOrInvCutoffSquared,
       [[maybe_unused]] const MaskDouble &notDummyMaskI, [[maybe_unused]] const VectorDouble &energyFactorI,
-      [[maybe_unused]] const VectorDouble &energyFactorIPlus1, const int64_t *const __restrict ownedStatePtr2,
+      const int64_t *const __restrict ownedStatePtr2,
       const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict x2Ptr,
       const double *const __restrict y2Ptr, const double *const __restrict z2Ptr, double *const __restrict fx2Ptr,
       double *const __restrict fy2Ptr, double *const __restrict fz2Ptr, const VectorDouble &sqrtEpsilon1,
@@ -994,12 +951,16 @@ class LJFunctorHWY
 
     MaskDouble cutoffMaskI;
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-      cutoffMaskI = highway::Le(dr2, cutoffSquared);
+      if constexpr (remainderJ) {
+        cutoffMaskI = highway::MaskedLe(highway::FirstN(tag_double, restJ), dr2, cutoffSquared);
+      } else {
+        cutoffMaskI = highway::Le(dr2, cutoffSquared);
+      }
     } else {
       cutoffMaskI = highway::MaskedLe(notDummyMaskI, dr2, cutoffSquared);
     }
 
-    if (highway::AllFalse(tag_double, cutoffMaskI)) {
+    if (highway::AllFalse(tag_double, cutoffMaskI)) [[unlikely]]{
       return;
     }
 
@@ -1445,6 +1406,66 @@ class LJFunctorHWY
       _threadData[threadID].virialSum[1] += virialY;
       _threadData[threadID].virialSum[2] += virialZ;
     }
+  }
+
+  /**
+   * Out-of-line dispatch function for scalar SoA kernel to avoid code bloat from template instantiations.
+   */
+   HWY_NOINLINE void scalarSoASingleDispatch(autopas::SoAView<SoAArraysType> soa, const size_t soaSize) {
+    const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
+    auto *const __restrict fxPtr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
+    const double *__restrict sqrtEpsilonPtr = nullptr;
+    const double *__restrict halfSigmaPtr = nullptr;
+    if constexpr (useMixing) {
+      sqrtEpsilonPtr = soa.template begin<AttrSqrt24Epsilon>();
+      halfSigmaPtr = soa.template begin<AttrHalfSigma>();
+    }
+        scalarSoAKernel<true, true>(soaSize, soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr,
+                                        sqrtEpsilonPtr, halfSigmaPtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr,
+                                        sqrtEpsilonPtr, halfSigmaPtr);
+  }
+
+    /**
+   * Out-of-line small-N scalar dispatcher for SoAFunctorPair / SoAFunctorPairSorted.
+   */
+  template <bool newton3>
+  HWY_NOINLINE void scalarSoAPairDispatch(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                                          const size_t soa1Size, const size_t soa2Size) {
+    const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
+    auto *const __restrict fx1Ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fy1Ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fz1Ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
+
+    const auto *const __restrict x2Ptr = soa2.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict y2Ptr = soa2.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict z2Ptr = soa2.template begin<Particle_T::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();
+    // getNeededAttr(false_type) omits force columns for soa2, so only request them when newton3 is enabled.
+    double *const __restrict fx2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceX>() : nullptr;
+    double *const __restrict fy2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceY>() : nullptr;
+    double *const __restrict fz2Ptr = newton3 ? soa2.template begin<Particle_T::AttributeNames::forceZ>() : nullptr;
+
+    const double *__restrict sqrtEpsilon1Ptr = nullptr;
+    const double *__restrict halfSigma1Ptr = nullptr;
+    const double *__restrict sqrtEpsilon2Ptr = nullptr;
+    const double *__restrict halfSigma2Ptr = nullptr;
+    if constexpr (useMixing) {
+      sqrtEpsilon1Ptr = soa1.template begin<AttrSqrt24Epsilon>();
+      halfSigma1Ptr = soa1.template begin<AttrHalfSigma>();
+      sqrtEpsilon2Ptr = soa2.template begin<AttrSqrt24Epsilon>();
+      halfSigma2Ptr = soa2.template begin<AttrHalfSigma>();
+    }
+    scalarSoAKernel<false, newton3>(soa1Size, soa2Size, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, fx1Ptr, fy1Ptr, fz1Ptr,
+                                    sqrtEpsilon1Ptr, halfSigma1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, fx2Ptr, fy2Ptr,
+                                    fz2Ptr, sqrtEpsilon2Ptr, halfSigma2Ptr);
   }
 
   template <bool newton3>
