@@ -90,6 +90,11 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 
   const double tol = 1e-13;  // tolerance given in paper
   const double tolSquared = tol * tol;
+  const bool hasGlobalForce = std::any_of(globalForce.begin(), globalForce.end(), [](double i) {
+    return std::abs(i) > std::numeric_limits<double>::epsilon();
+  });
+  const bool hasGravity = std::any_of(gravity.begin(), gravity.end(),
+                                      [](double i) { return std::abs(i) > std::numeric_limits<double>::epsilon(); });
 
   AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
@@ -134,17 +139,12 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 
     // Reset torque
     iter->setTorque({0., 0., 0.});
-    const bool hasGlobalForce = std::any_of(globalForce.begin(), globalForce.end(), [](double i) {
-      return std::abs(i) > std::numeric_limits<double>::epsilon();
-    });
-    const bool hasGravity = std::any_of(gravity.begin(), gravity.end(),
-                                        [](double i) { return std::abs(i) > std::numeric_limits<double>::epsilon(); });
     if (hasGlobalForce or hasGravity) {
       // Get torque from global force and gravity
       const auto unrotatedSitePositions = particlePropertiesLibrary.getSitePositions(iter->getTypeId());
       const auto rotatedSitePositions = rotateVectorOfPositions(qFullStep, unrotatedSitePositions);
       const auto siteTypes = particlePropertiesLibrary.getSiteTypes(iter->getTypeId());
-      for (size_t site = 0; site < particlePropertiesLibrary.getNumSites(iter->getTypeId()); site++) {
+      for (size_t site = 0; site < particlePropertiesLibrary.getNumSites(iter->getTypeId()); ++site) {
         std::array<double, 3> siteForce = globalForce;
         if (hasGravity) {
           const auto siteMass = particlePropertiesLibrary.getSiteMass(siteTypes[site]);
