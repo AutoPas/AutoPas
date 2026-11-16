@@ -157,7 +157,7 @@ class LJFunctorHWY
    * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always do a newton3 like traversal of the SoA using only the 1xVec Pattern.
    */
-  inline  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, [[maybe_unused]] const bool newton3) final {
+  inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, [[maybe_unused]] const bool newton3) final {
     const size_t soaSize = soa.size();
     if (soaSize <= 1) return;
 
@@ -493,11 +493,11 @@ class LJFunctorHWY
 
   template <bool homogeneousParams>
   HWY_NOINLINE void runSingleLoop(const size_t soaSize, const double *const __restrict xPtr,
-                            const double *const __restrict yPtr, const double *const __restrict zPtr,
-                            const autopas::OwnershipState *const __restrict ownedStatePtr,
-                            double *const __restrict fxPtr, double *const __restrict fyPtr,
-                            double *const __restrict fzPtr, const double *const __restrict sqrtEpsilonPtr,
-                            const double *const __restrict halfSigmaPtr) {
+                                  const double *const __restrict yPtr, const double *const __restrict zPtr,
+                                  const autopas::OwnershipState *const __restrict ownedStatePtr,
+                                  double *const __restrict fxPtr, double *const __restrict fyPtr,
+                                  double *const __restrict fzPtr, const double *const __restrict sqrtEpsilonPtr,
+                                  const double *const __restrict halfSigmaPtr) {
     auto virialSumX = highway::Zero(tag_double);
     auto virialSumY = highway::Zero(tag_double);
     auto virialSumZ = highway::Zero(tag_double);
@@ -531,14 +531,14 @@ class LJFunctorHWY
   inline void SoAFunctorPairDispatch(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                                      const size_t soa1Size, const size_t soa2Size, const bool newton3,
                                      autopas::utils::optRef<const autopas::SoASortingData> sortingData = std::nullopt) {
-      if (soa1Size < _vecLengthDouble and soa2Size < _vecLengthDouble) {
-        if (newton3) {
-          scalarSoAPairDispatch<true>(soa1, soa2, soa1Size, soa2Size);
-        } else {
-          scalarSoAPairDispatch<false>(soa1, soa2, soa1Size, soa2Size);
-        }
-        return;
+    if (soa1Size < _vecLengthDouble and soa2Size < _vecLengthDouble) {
+      if (newton3) {
+        scalarSoAPairDispatch<true>(soa1, soa2, soa1Size, soa2Size);
+      } else {
+        scalarSoAPairDispatch<false>(soa1, soa2, soa1Size, soa2Size);
       }
+      return;
+    }
 
     switch (_vecPattern) {
       case VectorizationPattern::p1xVec: {
@@ -637,11 +637,12 @@ class LJFunctorHWY
 
   template <bool newton3, bool sorted, VectorizationPattern vecPattern, bool homogeneousParams>
   HWY_NOINLINE void runPairLoop(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                          const size_t soa1Size, const size_t soa2Size,
-                          autopas::utils::optRef<const autopas::SoASortingData> sortingData,
-                          const double *const __restrict sqrtEpsilon1Ptr, const double *const __restrict halfSigma1Ptr,
-                          const double *const __restrict sqrtEpsilon2Ptr,
-                          const double *const __restrict halfSigma2Ptr) {
+                                const size_t soa1Size, const size_t soa2Size,
+                                autopas::utils::optRef<const autopas::SoASortingData> sortingData,
+                                const double *const __restrict sqrtEpsilon1Ptr,
+                                const double *const __restrict halfSigma1Ptr,
+                                const double *const __restrict sqrtEpsilon2Ptr,
+                                const double *const __restrict halfSigma2Ptr) {
     const auto *const __restrict x1Ptr = soa1.template begin<Particle_T::AttributeNames::posX>();
     const auto *const __restrict y1Ptr = soa1.template begin<Particle_T::AttributeNames::posY>();
     const auto *const __restrict z1Ptr = soa1.template begin<Particle_T::AttributeNames::posZ>();
@@ -836,13 +837,12 @@ class LJFunctorHWY
       const double *const __restrict xPtr1, const double *const __restrict yPtr1, const double *const __restrict zPtr1,
       const autopas::OwnershipState *const __restrict ownedStatePtr1, const double *const __restrict xPtr2,
       const double *const __restrict yPtr2, const double *const __restrict zPtr2,
-      const autopas::OwnershipState *const __restrict ownedStatePtr2, double *const fxPtr1,
-      double *const fyPtr1, double *const fzPtr1, double *const fxPtr2,
-      double *const fyPtr2, double *const fzPtr2, const double *const __restrict sqrtEpsilonPtr1,
-      const double *const __restrict halfSigmaPtr1, const double *const __restrict sqrtEpsilonPtr2,
-      const double *const __restrict halfSigmaPtr2, VectorDouble &virialSumX, VectorDouble &virialSumY,
-      VectorDouble &virialSumZ, VectorDouble &uPotSum, const size_t restI, const size_t jVecStart,
-      const size_t jVecEnd) const {
+      const autopas::OwnershipState *const __restrict ownedStatePtr2, double *const fxPtr1, double *const fyPtr1,
+      double *const fzPtr1, double *const fxPtr2, double *const fyPtr2, double *const fzPtr2,
+      const double *const __restrict sqrtEpsilonPtr1, const double *const __restrict halfSigmaPtr1,
+      const double *const __restrict sqrtEpsilonPtr2, const double *const __restrict halfSigmaPtr2,
+      VectorDouble &virialSumX, VectorDouble &virialSumY, VectorDouble &virialSumZ, VectorDouble &uPotSum,
+      const size_t restI, const size_t jVecStart, const size_t jVecEnd) const {
     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
       if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) [[unlikely]] {
         return;
@@ -931,11 +931,11 @@ class LJFunctorHWY
   HWY_INLINE void SoAKernel(
       const size_t j, const VectorDouble &cutoffSquared, [[maybe_unused]] const VectorDouble &shiftOrInvCutoffSquared,
       [[maybe_unused]] const MaskDouble &notDummyMaskI, [[maybe_unused]] const VectorDouble &energyFactorI,
-      const int64_t *const __restrict ownedStatePtr2,
-      const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict x2Ptr,
-      const double *const __restrict y2Ptr, const double *const __restrict z2Ptr, double *const __restrict fx2Ptr,
-      double *const __restrict fy2Ptr, double *const __restrict fz2Ptr, const VectorDouble &sqrtEpsilon1,
-      const VectorDouble &sigmaHalf1, [[maybe_unused]] const double *const __restrict sqrtEpsilonPtr2,
+      const int64_t *const __restrict ownedStatePtr2, const VectorDouble &x1, const VectorDouble &y1,
+      const VectorDouble &z1, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
+      const double *const __restrict z2Ptr, double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
+      double *const __restrict fz2Ptr, const VectorDouble &sqrtEpsilon1, const VectorDouble &sigmaHalf1,
+      [[maybe_unused]] const double *const __restrict sqrtEpsilonPtr2,
       [[maybe_unused]] const double *const __restrict halfSigmaPtr2, VectorDouble &fxAcc, VectorDouble &fyAcc,
       VectorDouble &fzAcc, [[maybe_unused]] VectorDouble &virialSumX, [[maybe_unused]] VectorDouble &virialSumY,
       [[maybe_unused]] VectorDouble &virialSumZ, [[maybe_unused]] VectorDouble &uPotSum, const size_t restJ) const {
@@ -960,7 +960,7 @@ class LJFunctorHWY
       cutoffMaskI = highway::MaskedLe(notDummyMaskI, dr2, cutoffSquared);
     }
 
-    if (highway::AllFalse(tag_double, cutoffMaskI)) [[unlikely]]{
+    if (highway::AllFalse(tag_double, cutoffMaskI)) [[unlikely]] {
       return;
     }
 
@@ -1411,7 +1411,7 @@ class LJFunctorHWY
   /**
    * Out-of-line dispatch function for scalar SoA kernel to avoid code bloat from template instantiations.
    */
-   HWY_NOINLINE void scalarSoASingleDispatch(autopas::SoAView<SoAArraysType> soa, const size_t soaSize) {
+  HWY_NOINLINE void scalarSoASingleDispatch(autopas::SoAView<SoAArraysType> soa, const size_t soaSize) {
     const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
     const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
     const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
@@ -1425,12 +1425,12 @@ class LJFunctorHWY
       sqrtEpsilonPtr = soa.template begin<AttrSqrt24Epsilon>();
       halfSigmaPtr = soa.template begin<AttrHalfSigma>();
     }
-        scalarSoAKernel<true, true>(soaSize, soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr,
-                                        sqrtEpsilonPtr, halfSigmaPtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr,
-                                        sqrtEpsilonPtr, halfSigmaPtr);
+    scalarSoAKernel<true, true>(soaSize, soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, sqrtEpsilonPtr,
+                                halfSigmaPtr, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, sqrtEpsilonPtr,
+                                halfSigmaPtr);
   }
 
-    /**
+  /**
    * Out-of-line small-N scalar dispatcher for SoAFunctorPair / SoAFunctorPairSorted.
    */
   template <bool newton3>

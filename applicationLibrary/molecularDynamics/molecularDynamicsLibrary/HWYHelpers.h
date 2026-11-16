@@ -55,6 +55,7 @@ namespace hwy_helpers {
  *
  * @tparam D Highway Simd tag for the vector to reduce.
  * @tparam forceGenericFallback Test hook to force the generic ReduceSum fallback on fixed-width targets.
+ * @return True if the fixed-width halving/interleave path should be used; false when the generic fallback applies.
  */
 template <class D, bool forceGenericFallback = false>
 constexpr bool useFixedHalvingReduction() {
@@ -68,10 +69,16 @@ constexpr bool useFixedHalvingReduction() {
 }
 
 /**
- * Recursively folds a fixed 4- or 8-lane double vector down to 2 lanes by adding its lower and upper halves.
+ * Recursively folds a fixed 4- or 8-lane double vector down to 2 lanes by adding its lower and upper halves; returns
+ * 2-lane (or narrower) inputs unchanged.
+ *
+ * @tparam D Highway Simd tag for the input vector (fixed non-SVE, at most 8 lanes).
+ * @param d Highway Simd tag instance (used for type deduction).
+ * @param v Input vector register to fold.
+ * @return Two-lane vector containing pairwise-folded partial sums (or the input vector if MaxLanes <= 2).
  */
 template <class D>
-HWY_INLINE auto foldTo2Lanes(D /*d*/, const highway::VFromD<D> &v) {
+HWY_INLINE auto foldTo2Lanes([[maybe_unused]] D d, const highway::VFromD<D> &v) {
   constexpr size_t maxLanes = highway::MaxLanes(D{});
   static_assert(maxLanes <= 8 && !HWY_HAVE_SCALABLE && ((HWY_TARGET & HWY_ALL_SVE) == 0),
                 "foldTo2Lanes is only valid for fixed non-SVE vectors with at most 8 double lanes.");
@@ -89,8 +96,15 @@ HWY_INLINE auto foldTo2Lanes(D /*d*/, const highway::VFromD<D> &v) {
 }
 
 /**
- * Reduces a single vector to a scalar sum, using tree halving on fixed 4/8-lane AVX targets and highway::ReduceSum
- * elsewhere (scalable SVE/RVV, fixed SVE, 128-bit, >8-lane, and scalar).
+ * Reduces a single vector to a scalar sum, using tree halving (foldTo2Lanes followed by highway::ReduceSum) on fixed
+ * 4/8-lane AVX targets and highway::GetLane / highway::ReduceSum elsewhere (scalable SVE/RVV, fixed SVE, 128-bit,
+ * >8-lane, and scalar).
+ *
+ * @tparam forceGenericFallback Test hook to force the generic fallback on fixed-width targets.
+ * @tparam D Highway Simd tag for the input vector.
+ * @param d Highway Simd tag instance.
+ * @param v Input vector register to sum across lanes.
+ * @return Scalar sum of all active lanes in v.
  */
 template <bool forceGenericFallback = false, class D>
 HWY_INLINE double reduceSumHalving([[maybe_unused]] D d, const highway::VFromD<D> &v) {
@@ -110,6 +124,18 @@ HWY_INLINE double reduceSumHalving([[maybe_unused]] D d, const highway::VFromD<D
 
 /**
  * Shared implementation for reduceAdd2_InterleaveFirst and reduceSub2_InterleaveFirst.
+ *
+ * Adds or subtracts the reduced sums of two vectors using interleave-first halving on fixed 4/8-lane targets or
+ * highway::GetLane / highway::ReduceSum elsewhere.
+ *
+ * @tparam subtract If true, subtracts the lane sums from outA and outB; otherwise adds them.
+ * @tparam forceGenericFallback Test hook to force the generic fallback on fixed-width targets.
+ * @tparam D Highway Simd tag for the input vectors.
+ * @param d Highway Simd tag instance.
+ * @param va First input vector register.
+ * @param vb Second input vector register.
+ * @param outA Scalar accumulator updated with the sum of va.
+ * @param outB Scalar accumulator updated with the sum of vb.
  */
 template <bool subtract, bool forceGenericFallback = false, class D>
 HWY_INLINE void reduce2_InterleaveFirst([[maybe_unused]] D d, const highway::VFromD<D> &va,
@@ -144,6 +170,14 @@ HWY_INLINE void reduce2_InterleaveFirst([[maybe_unused]] D d, const highway::VFr
 
 /**
  * Reduces two vectors simultaneously and adds the results to output scalar accumulators.
+ *
+ * @tparam forceGenericFallback Test hook to force the generic fallback on fixed-width targets.
+ * @tparam D Highway Simd tag for the input vectors.
+ * @param d Highway Simd tag instance.
+ * @param va First input vector register.
+ * @param vb Second input vector register.
+ * @param outA Scalar accumulator incremented by the sum of va.
+ * @param outB Scalar accumulator incremented by the sum of vb.
  */
 template <bool forceGenericFallback = false, class D>
 HWY_INLINE void reduceAdd2_InterleaveFirst(D d, const highway::VFromD<D> &va, const highway::VFromD<D> &vb,
@@ -153,6 +187,14 @@ HWY_INLINE void reduceAdd2_InterleaveFirst(D d, const highway::VFromD<D> &va, co
 
 /**
  * Reduces two vectors simultaneously and subtracts the results from output scalar accumulators.
+ *
+ * @tparam forceGenericFallback Test hook to force the generic fallback on fixed-width targets.
+ * @tparam D Highway Simd tag for the input vectors.
+ * @param d Highway Simd tag instance.
+ * @param va First input vector register.
+ * @param vb Second input vector register.
+ * @param outA Scalar accumulator decremented by the sum of va.
+ * @param outB Scalar accumulator decremented by the sum of vb.
  */
 template <bool forceGenericFallback = false, class D>
 HWY_INLINE void reduceSub2_InterleaveFirst(D d, const highway::VFromD<D> &va, const highway::VFromD<D> &vb,
@@ -162,6 +204,20 @@ HWY_INLINE void reduceSub2_InterleaveFirst(D d, const highway::VFromD<D> &va, co
 
 /**
  * Shared implementation for reduceAdd3_InterleaveFirst and reduceSub3_InterleaveFirst.
+ *
+ * Reduces three vectors horizontally by interleaving (fx, fy) and halving/reducing fz, adding or subtracting into
+ * three scalar accumulators.
+ *
+ * @tparam subtract If true, subtracts the lane sums from outX, outY, and outZ; otherwise adds them.
+ * @tparam forceGenericFallback Test hook to force the generic fallback on fixed-width targets.
+ * @tparam D Highway Simd tag for the input vectors.
+ * @param d Highway Simd tag instance.
+ * @param fx X-component vector register.
+ * @param fy Y-component vector register.
+ * @param fz Z-component vector register.
+ * @param outX Scalar accumulator updated with the sum of fx.
+ * @param outY Scalar accumulator updated with the sum of fy.
+ * @param outZ Scalar accumulator updated with the sum of fz.
  */
 template <bool subtract, bool forceGenericFallback = false, class D>
 HWY_INLINE void reduce3_InterleaveFirst(D d, const highway::VFromD<D> &fx, const highway::VFromD<D> &fy,
@@ -177,6 +233,16 @@ HWY_INLINE void reduce3_InterleaveFirst(D d, const highway::VFromD<D> &fx, const
 
 /**
  * Reduces 3 vectors (x, y, z) into scalar accumulators by interleaving (x, y) and halving/reducing z.
+ *
+ * @tparam forceGenericFallback Test hook to force the generic fallback on fixed-width targets.
+ * @tparam D Highway Simd tag for the input vectors.
+ * @param d Highway Simd tag instance.
+ * @param fx X-component vector register.
+ * @param fy Y-component vector register.
+ * @param fz Z-component vector register.
+ * @param outX Scalar accumulator incremented by the sum of fx.
+ * @param outY Scalar accumulator incremented by the sum of fy.
+ * @param outZ Scalar accumulator incremented by the sum of fz.
  */
 template <bool forceGenericFallback = false, class D>
 HWY_INLINE void reduceAdd3_InterleaveFirst(D d, const highway::VFromD<D> &fx, const highway::VFromD<D> &fy,
@@ -186,6 +252,16 @@ HWY_INLINE void reduceAdd3_InterleaveFirst(D d, const highway::VFromD<D> &fx, co
 
 /**
  * Reduces 3 vectors (x, y, z) and subtracts the results from output scalar accumulators.
+ *
+ * @tparam forceGenericFallback Test hook to force the generic fallback on fixed-width targets.
+ * @tparam D Highway Simd tag for the input vectors.
+ * @param d Highway Simd tag instance.
+ * @param fx X-component vector register.
+ * @param fy Y-component vector register.
+ * @param fz Z-component vector register.
+ * @param outX Scalar accumulator decremented by the sum of fx.
+ * @param outY Scalar accumulator decremented by the sum of fy.
+ * @param outZ Scalar accumulator decremented by the sum of fz.
  */
 template <bool forceGenericFallback = false, class D>
 HWY_INLINE void reduceSub3_InterleaveFirst(D d, const highway::VFromD<D> &fx, const highway::VFromD<D> &fy,
@@ -195,6 +271,18 @@ HWY_INLINE void reduceSub3_InterleaveFirst(D d, const highway::VFromD<D> &fx, co
 
 /**
  * Reduces 4 vectors into scalar accumulators using two parallel interleaved pairs (or fallback ReduceSum).
+ *
+ * @tparam forceGenericFallback Test hook to force the generic fallback on fixed-width targets.
+ * @tparam D Highway Simd tag for the input vectors.
+ * @param d Highway Simd tag instance.
+ * @param v0 First input vector register.
+ * @param v1 Second input vector register.
+ * @param v2 Third input vector register.
+ * @param v3 Fourth input vector register.
+ * @param out0 Scalar accumulator incremented by the sum of v0.
+ * @param out1 Scalar accumulator incremented by the sum of v1.
+ * @param out2 Scalar accumulator incremented by the sum of v2.
+ * @param out3 Scalar accumulator incremented by the sum of v3.
  */
 template <bool forceGenericFallback = false, class D>
 HWY_INLINE void reduceAdd4_Interleaved(D d, const highway::VFromD<D> &v0, const highway::VFromD<D> &v1,
@@ -211,6 +299,20 @@ HWY_INLINE void reduceAdd4_Interleaved(D d, const highway::VFromD<D> &v0, const 
  * 4/8-lane AVX targets this uses 2-lane vector memory ops via CappedTag<double, 2>; on scalable/SVE/scalar targets
  * it accumulates via GetLane or highway::ReduceSum and scalar updates so vector-length mismatches or SVE DFromV
  * typing never over-read or overwrite adjacent elements.
+ *
+ * @tparam subtract If true, subtracts the reduced sums from ptr[0..1]; otherwise adds them.
+ * @tparam forceGenericFallback Test hook to force the generic fallback on fixed-width targets.
+ * @tparam DHalf Highway Simd tag for the half-width force vectors.
+ * @param dh Half-vector Highway Simd tag instance.
+ * @param lfx Lower-half x-force vector (accumulated into fxPtr[0]).
+ * @param lfy Lower-half y-force vector (accumulated into fyPtr[0]).
+ * @param lfz Lower-half z-force vector (accumulated into fzPtr[0]).
+ * @param ufx Upper-half x-force vector (accumulated into fxPtr[1]).
+ * @param ufy Upper-half y-force vector (accumulated into fyPtr[1]).
+ * @param ufz Upper-half z-force vector (accumulated into fzPtr[1]).
+ * @param fxPtr Restricted pointer to at least 2 contiguous x-force values.
+ * @param fyPtr Restricted pointer to at least 2 contiguous y-force values.
+ * @param fzPtr Restricted pointer to at least 2 contiguous z-force values.
  */
 template <bool subtract, bool forceGenericFallback = false, class DHalf>
 HWY_INLINE void reduce6Half_Vec2Store([[maybe_unused]] DHalf dh, const highway::VFromD<DHalf> &lfx,
@@ -278,6 +380,19 @@ HWY_INLINE void reduce6Half_Vec2Store([[maybe_unused]] DHalf dh, const highway::
 
 /**
  * Reduces 6 half-vectors (lower and upper halves of 3 force components) and adds them to 2 contiguous particles.
+ *
+ * @tparam forceGenericFallback Test hook to force the generic fallback on fixed-width targets.
+ * @tparam DHalf Highway Simd tag for the half-width force vectors.
+ * @param dh Half-vector Highway Simd tag instance.
+ * @param lfx Lower-half x-force vector (added to fxPtr[0]).
+ * @param lfy Lower-half y-force vector (added to fyPtr[0]).
+ * @param lfz Lower-half z-force vector (added to fzPtr[0]).
+ * @param ufx Upper-half x-force vector (added to fxPtr[1]).
+ * @param ufy Upper-half y-force vector (added to fyPtr[1]).
+ * @param ufz Upper-half z-force vector (added to fzPtr[1]).
+ * @param fxPtr Restricted pointer to at least 2 contiguous x-force values.
+ * @param fyPtr Restricted pointer to at least 2 contiguous y-force values.
+ * @param fzPtr Restricted pointer to at least 2 contiguous z-force values.
  */
 template <bool forceGenericFallback = false, class DHalf>
 HWY_INLINE void reduceAdd6Half_Vec2Store(DHalf dh, const highway::VFromD<DHalf> &lfx, const highway::VFromD<DHalf> &lfy,
@@ -291,6 +406,19 @@ HWY_INLINE void reduceAdd6Half_Vec2Store(DHalf dh, const highway::VFromD<DHalf> 
 /**
  * Reduces 6 half-vectors (lower and upper halves of 3 force components) and subtracts them from 2 contiguous
  * particles.
+ *
+ * @tparam forceGenericFallback Test hook to force the generic fallback on fixed-width targets.
+ * @tparam DHalf Highway Simd tag for the half-width force vectors.
+ * @param dh Half-vector Highway Simd tag instance.
+ * @param lfx Lower-half x-force vector (subtracted from fxPtr[0]).
+ * @param lfy Lower-half y-force vector (subtracted from fyPtr[0]).
+ * @param lfz Lower-half z-force vector (subtracted from fzPtr[0]).
+ * @param ufx Upper-half x-force vector (subtracted from fxPtr[1]).
+ * @param ufy Upper-half y-force vector (subtracted from fyPtr[1]).
+ * @param ufz Upper-half z-force vector (subtracted from fzPtr[1]).
+ * @param fxPtr Restricted pointer to at least 2 contiguous x-force values.
+ * @param fyPtr Restricted pointer to at least 2 contiguous y-force values.
+ * @param fzPtr Restricted pointer to at least 2 contiguous z-force values.
  */
 template <bool forceGenericFallback = false, class DHalf>
 HWY_INLINE void reduceSub6Half_Vec2Store(DHalf dh, const highway::VFromD<DHalf> &lfx, const highway::VFromD<DHalf> &lfy,
