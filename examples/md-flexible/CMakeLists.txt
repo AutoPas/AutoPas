@@ -184,11 +184,26 @@ add_test(
         COMMAND measurePerf.sh md-flexible -silent
         CONFIGURATIONS checkExamples
 )
+
+# simulation without any particles tested with all configurations
+add_test(
+        NAME md-flexible.test-zero-particles
+        COMMAND
+        md-flexible
+        --yaml-filename ${CMAKE_CURRENT_SOURCE_DIR}/tests/yamlTestFiles/noObjects.yaml
+        --container all
+        --traversal all
+        --tuning-phases 1
+        --no-end-config
+        --no-progress-bar
+        CONFIGURATIONS checkExamples
+)
 # cmake-format: on
 
 set_tests_properties(
         md-flexible.test-static
         md-flexible.test-sim
+        md-flexible.test-zero-particles
         md-flexMeasurePerf
         # This adds lsanignoreList.txt to ignore MPI internal leaks
         PROPERTIES
