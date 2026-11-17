@@ -27,8 +27,11 @@ class IterationLogger {
    * Constructor initializes the logger and sets the output file name.
    * @param outputSuffix Suffix for all output files produced by this class.
    * @param energyMeasurements Should the logger include energy measurements?
+   * @param usingFastParticlesBuffer Should logger include additional information for dynamic rebuilding with Fast
+   * Particles Buffer (FPB)
    */
-  explicit IterationLogger(const std::string &outputSuffix = "", bool energyMeasurements = false);
+  explicit IterationLogger(const std::string &outputSuffix = "", bool energyMeasurements = false,
+                           bool usingFastParticlesBuffer = false);
 
   /**
    * Destructor drops the logger from the spd registry.
@@ -45,7 +48,8 @@ class IterationLogger {
    * @param measurements Struct that holds all measurements from a computeInteractions() iteration.
    */
   void logIteration(const Configuration &configuration, size_t iteration, const std::string &functorName,
-                    bool inTuningPhase, long timeTuning, const IterationMeasurements &measurements) const;
+                    bool inTuningPhase, long timeTuning, const IterationMeasurements &measurements,
+                    bool usingFastParticlesBuffer) const;
 
  private:
   std::string _loggerName;

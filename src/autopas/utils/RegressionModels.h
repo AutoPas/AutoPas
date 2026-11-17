@@ -6,7 +6,6 @@
 
 #pragma once
 
-#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
 #include <algorithm>
 #include <climits>
 #include <iostream>
@@ -507,4 +506,3 @@ class RebuildDecisionContext {
   double _remainderTraversalTimeEstimate{std::numeric_limits<double>::quiet_NaN()};
 };
 }  // namespace autopas::utils::RegressionModels
-#endif
