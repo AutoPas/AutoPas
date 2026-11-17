@@ -161,40 +161,12 @@ class LJFunctorHWY
     const size_t soaSize = soa.size();
     if (soaSize <= 1) return;
 
-    if (soaSize < _vecLengthDouble) {
+    HWY_LANES_CONSTEXPR size_t scalarSingleThreshold = _vecLengthDouble / 2;
+    if (soaSize <= scalarSingleThreshold) {
       scalarSoASingleDispatch(soa, soaSize);
       return;
     }
-
-    // obtain iterators for the various values
-    const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
-    const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
-    const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
-
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
-
-    auto *const __restrict fxPtr = soa.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
-
-    const double *sqrtEpsilonPtr = nullptr;
-    const double *halfSigmaPtr = nullptr;
-    if constexpr (useMixing) {
-      sqrtEpsilonPtr = soa.template begin<AttrSqrt24Epsilon>();
-      halfSigmaPtr = soa.template begin<AttrHalfSigma>();
-    }
-
-    if constexpr (useMixing) {
-      if (soaIsHomogeneous(sqrtEpsilonPtr, halfSigmaPtr, soaSize)) {
-        runSingleLoop<true>(soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, sqrtEpsilonPtr,
-                            halfSigmaPtr);
-      } else {
-        runSingleLoop<false>(soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, sqrtEpsilonPtr,
-                             halfSigmaPtr);
-      }
-    } else {
-      runSingleLoop<true>(soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, nullptr, nullptr);
-    }
+    simdSoASingleDispatch(soa, soaSize);
   }
 
   /**
@@ -491,13 +463,40 @@ class LJFunctorHWY
   // Outer Loop Traversals & Dispatchers
   // ===========================================================================
 
+  HWY_NOINLINE void simdSoASingleDispatch(autopas::SoAView<SoAArraysType> soa, const size_t soaSize) {
+    // obtain iterators for the various values
+    const auto *const __restrict xPtr = soa.template begin<Particle_T::AttributeNames::posX>();
+    const auto *const __restrict yPtr = soa.template begin<Particle_T::AttributeNames::posY>();
+    const auto *const __restrict zPtr = soa.template begin<Particle_T::AttributeNames::posZ>();
+
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
+
+    auto *const __restrict fxPtr = soa.template begin<Particle_T::AttributeNames::forceX>();
+    auto *const __restrict fyPtr = soa.template begin<Particle_T::AttributeNames::forceY>();
+    auto *const __restrict fzPtr = soa.template begin<Particle_T::AttributeNames::forceZ>();
+
+    if constexpr (useMixing) {
+      const double *const __restrict sqrtEpsilonPtr = soa.template begin<AttrSqrt24Epsilon>();
+      const double *const __restrict halfSigmaPtr = soa.template begin<AttrHalfSigma>();
+      if (soaSize >= 2 * _vecLengthDouble and soaIsHomogeneous(sqrtEpsilonPtr, halfSigmaPtr, soaSize)) {
+        runSingleLoop<true>(soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, sqrtEpsilonPtr,
+                            halfSigmaPtr);
+      } else {
+        runSingleLoop<false>(soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, sqrtEpsilonPtr,
+                             halfSigmaPtr);
+      }
+    } else {
+      runSingleLoop<true>(soaSize, xPtr, yPtr, zPtr, ownedStatePtr, fxPtr, fyPtr, fzPtr, nullptr, nullptr);
+    }
+  }
+
   template <bool homogeneousParams>
-  HWY_NOINLINE void runSingleLoop(const size_t soaSize, const double *const __restrict xPtr,
-                                  const double *const __restrict yPtr, const double *const __restrict zPtr,
-                                  const autopas::OwnershipState *const __restrict ownedStatePtr,
-                                  double *const __restrict fxPtr, double *const __restrict fyPtr,
-                                  double *const __restrict fzPtr, const double *const __restrict sqrtEpsilonPtr,
-                                  const double *const __restrict halfSigmaPtr) {
+  HWY_INLINE void runSingleLoop(const size_t soaSize, const double *const __restrict xPtr,
+                                const double *const __restrict yPtr, const double *const __restrict zPtr,
+                                const autopas::OwnershipState *const __restrict ownedStatePtr,
+                                double *const __restrict fxPtr, double *const __restrict fyPtr,
+                                double *const __restrict fzPtr, const double *const __restrict sqrtEpsilonPtr,
+                                const double *const __restrict halfSigmaPtr) {
     auto virialSumX = highway::Zero(tag_double);
     auto virialSumY = highway::Zero(tag_double);
     auto virialSumZ = highway::Zero(tag_double);
