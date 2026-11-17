@@ -15,8 +15,12 @@
 using ::testing::_;
 
 void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
-  // Get LJ Functor with FLOP Counting enabled
-  LJFunctorType</*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ false, /*flops*/ true>
+  NumThreadGuard numThreadGuard(4);
+
+  // Get LJ Functor with FLOP Counting enabled. The AutoVec functor is used directly, because the HWY functor used by
+  // LJFunctorType does not implement FLOP counting.
+  mdLib::LJFunctor<Molecule, /*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ false,
+                   /*flops*/ true>
       ljFunctor(1.);
   std::vector<FMCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
@@ -24,8 +28,6 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
   autopas::generators::GridGenerator::fillWithParticles(cells, edgeLength, edgeLength,
                                                         autopas::utils::ParticleTypeTrait<FMCell>::value(),
                                                         {0.99, 0.99, 0.99}, {0.5, 0.5, 0.5}, {1., 1., 1.});
-
-  NumThreadGuard numThreadGuard(4);
 
   autopas::LCSlicedTraversal<FMCell, decltype(ljFunctor)> slicedTraversal(edgeLength, ljFunctor, 1., {1., 1., 1.},
                                                                           autopas::DataLayoutOption::aos, true);
