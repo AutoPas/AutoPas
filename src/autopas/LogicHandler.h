@@ -1112,8 +1112,7 @@ size_t LogicHandler<Particle_T>::getNumParticlesBufferEstimate() const {
 
 template <typename Particle_T>
 bool LogicHandler<Particle_T>::neighborListsAreValid() {
-  if (
-      _doDynamicRebuild or
+  if (_doDynamicRebuild or
 #ifndef AUTOPAS_DYNAMIC_CONTAINERS_FPB
       // Fixed-interval rebuild of the neighbor list; FPB rebuilds on demand instead.
       // Standard dynamic rebuilding still makes use of this to avoid excessive buffer filling.

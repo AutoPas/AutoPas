@@ -46,6 +46,7 @@ class IterationLogger {
    * @param inTuningPhase True if the logged iteration is in a tuning phase.
    * @param timeTuning Time for finding the next configuration.
    * @param measurements Struct that holds all measurements from a computeInteractions() iteration.
+   * @param usingFastParticlesBuffer True if using dynamic rebuilding with fast particles buffer.
    */
   void logIteration(const Configuration &configuration, size_t iteration, const std::string &functorName,
                     bool inTuningPhase, long timeTuning, const IterationMeasurements &measurements,
