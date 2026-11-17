@@ -390,12 +390,18 @@ TEST_F(TuningManagerTest, testAllConfigurations) {
   // Need to resize cells during loading, otherwise we get exceptions in SoAFunctors
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Molecule> &>(_), _, _, _))
       .Times(testing::AtLeast(1))
-      .WillRepeatedly(
-          testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
+      .WillRepeatedly(testing::Invoke([](auto &cell, auto &buf, size_t offset, bool skipSoAResize) {
+        if (not skipSoAResize) {
+          buf.resizeArrays(cell.size() + offset);
+        }
+      }));
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<FMCell &>(_), _, _, _))
       .Times(testing::AtLeast(1))
-      .WillRepeatedly(
-          testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
+      .WillRepeatedly(testing::Invoke([](auto &cell, auto &buf, size_t offset, bool skipSoAResize) {
+        if (not skipSoAResize) {
+          buf.resizeArrays(cell.size() + offset);
+        }
+      }));
 
   const auto searchSpace = generateAllValidConfigurations(autopas::InteractionTypeOption::pairwise);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};

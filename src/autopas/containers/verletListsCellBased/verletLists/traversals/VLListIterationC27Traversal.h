@@ -69,7 +69,7 @@ class VLListIterationC27Traversal : public TraversalInterface, public VLTraversa
     }
 
     if (_dataLayout == DataLayoutOption::soa) {
-      _soa.resizeArrays(offsets.back());
+      _functor.resizeSoA(_soa, offsets.back());
 
       AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {

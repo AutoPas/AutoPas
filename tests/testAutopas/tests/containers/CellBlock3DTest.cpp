@@ -208,7 +208,8 @@ TEST_F(CellBlock3DTest, testGetCellBoundingBox) {
   constexpr size_t cellsPerDimensionWithHalo = cellsPerDimensionWithoutHalo + 2;
   constexpr std::array<double, 3> boxMin = {0.1, 0.1, 0.1};
   constexpr std::array<double, 3> boxMax = boxMin + cellsPerDimensionWithoutHalo * desiredCellLength;
-  autopas::internal::CellBlock3D<FMCell> cellBlock{_vec1, boxMin, boxMax, desiredCellLength, cellSizeFactor};
+  std::vector<FMCell> cells;
+  autopas::internal::CellBlock3D<FMCell> cellBlock{cells, boxMin, boxMax, desiredCellLength, cellSizeFactor};
 
   // helper function to avoid code duplication
   // calls getCellBoundingBox with 1D and 3D indices and compares it to the expected values

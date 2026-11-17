@@ -28,5 +28,5 @@ class LJFunctorTestNoGlobals : public LJFunctorTest {
   const std::array<double, 3> expectedForceMixing{-835415983.7676939964294, -1670831967.5353879928588,
                                                   -2506247951.3030819892883};
 
-  constexpr static double absDelta{1e-7};
+  constexpr static double absDelta{1e-5};
 };

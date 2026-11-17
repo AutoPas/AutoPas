@@ -36,6 +36,8 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
 
   FMCell cell1PPL(cell1NoPPL);
   FMCell cell2PPL(cell2NoPPL);
+  funPPL.SoALoader(cell1PPL, cell1PPL._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  funPPL.SoALoader(cell2PPL, cell2PPL._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   constexpr bool newton3 = true;
   funNoPPL.SoAFunctorPair(cell1NoPPL._particleSoABuffer, cell2NoPPL._particleSoABuffer, newton3);

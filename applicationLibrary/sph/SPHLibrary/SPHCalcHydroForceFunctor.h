@@ -254,8 +254,10 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle_T, SPH
     double *const __restrict smthptr2 = soa2.template begin<Particle_T::AttributeNames::smth>();
     double *const __restrict soundSpeedptr2 = soa2.template begin<Particle_T::AttributeNames::soundSpeed>();
     double *const __restrict pressureptr2 = soa2.template begin<Particle_T::AttributeNames::pressure>();
-    double *const __restrict vsigmaxptr2 = soa2.template begin<Particle_T::AttributeNames::vsigmax>();
-    double *const __restrict engDotptr2 = soa2.template begin<Particle_T::AttributeNames::engDot>();
+    // getNeededAttr(false_type) omits output columns for soa2, so only request them when newton3 is enabled.
+    double *const __restrict vsigmaxptr2 =
+        newton3 ? soa2.template begin<Particle_T::AttributeNames::vsigmax>() : nullptr;
+    double *const __restrict engDotptr2 = newton3 ? soa2.template begin<Particle_T::AttributeNames::engDot>() : nullptr;
 
     double *const __restrict xptr2 = soa2.template begin<Particle_T::AttributeNames::posX>();
     double *const __restrict yptr2 = soa2.template begin<Particle_T::AttributeNames::posY>();
@@ -263,9 +265,9 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle_T, SPH
     double *const __restrict velXptr2 = soa2.template begin<Particle_T::AttributeNames::velX>();
     double *const __restrict velYptr2 = soa2.template begin<Particle_T::AttributeNames::velY>();
     double *const __restrict velZptr2 = soa2.template begin<Particle_T::AttributeNames::velZ>();
-    double *const __restrict accXptr2 = soa2.template begin<Particle_T::AttributeNames::accX>();
-    double *const __restrict accYptr2 = soa2.template begin<Particle_T::AttributeNames::accY>();
-    double *const __restrict accZptr2 = soa2.template begin<Particle_T::AttributeNames::accZ>();
+    double *const __restrict accXptr2 = newton3 ? soa2.template begin<Particle_T::AttributeNames::accX>() : nullptr;
+    double *const __restrict accYptr2 = newton3 ? soa2.template begin<Particle_T::AttributeNames::accY>() : nullptr;
+    double *const __restrict accZptr2 = newton3 ? soa2.template begin<Particle_T::AttributeNames::accZ>() : nullptr;
 
     const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle_T::AttributeNames::ownershipState>();
     const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle_T::AttributeNames::ownershipState>();

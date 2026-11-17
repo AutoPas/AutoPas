@@ -145,7 +145,9 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle_T, SPHCal
     double *const __restrict yptr2 = soa2.template begin<Particle_T::AttributeNames::posY>();
     double *const __restrict zptr2 = soa2.template begin<Particle_T::AttributeNames::posZ>();
 
-    double *const __restrict densityptr2 = soa2.template begin<Particle_T::AttributeNames::density>();
+    // getNeededAttr(false_type) omits density for soa2, so only request it when newton3 is enabled.
+    double *const __restrict densityptr2 =
+        newton3 ? soa2.template begin<Particle_T::AttributeNames::density>() : nullptr;
     double *const __restrict smthptr2 = soa2.template begin<Particle_T::AttributeNames::smth>();
     double *const __restrict massptr2 = soa2.template begin<Particle_T::AttributeNames::mass>();
 

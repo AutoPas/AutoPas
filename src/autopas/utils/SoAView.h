@@ -6,6 +6,12 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cassert>
+#include <span>
+#include <utility>
+
+#include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas {
@@ -16,7 +22,7 @@ class SoA;
 /**
  * View on a fixed part of a SoA between a start index and an end index.
  *
- * It is the user`s responsibility to ensure that modifications to the underlying SoA don't let the start index get
+ * It is the user's responsibility to ensure that modifications to the underlying SoA don't let the start index get
  * bigger than the highest index in the SoA, or the end index higher than the number of entries in the SoA.
  *
  * @tparam SoAArraysType The SoAArrayType of the SoA.
@@ -38,9 +44,9 @@ class SoAView {
    * @param startIndex The index of the first entry to view of the SoA.
    * @param endIndex The index of the entry after the last entry to view of the SoA.
    */
-  SoAView(SoA<SoAArraysType> *soa, size_t startIndex, size_t endIndex)
+  SoAView(SoA<SoAArraysType> *soa, const size_t startIndex, size_t endIndex)
       : _soa(soa), _startIndex(startIndex), _endIndex(endIndex) {
-    if (not(soa->size() >= endIndex and endIndex >= startIndex)) /* @todo C++20 [[unlikely]] */ {
+    if (not(soa->size() >= endIndex and endIndex >= startIndex)) [[unlikely]] {
       utils::ExceptionHandler::exception("SoAView: Trying to view particles outside of the SoA.");
     }
   }
@@ -59,30 +65,102 @@ class SoAView {
 
   /**
    * Returns a pointer to the given attribute vector.
+   * Caller must ensure the view is backed by a valid SoA and the attribute column has at least _startIndex elements.
    * @tparam attribute ID of the desired attribute.
-   * @return Pointer to the beginning of the attribute vector
+   * @return Pointer to the beginning of the attribute vector within this view.
    */
   template <size_t attribute>
-  [[nodiscard]] auto begin() {
+  [[nodiscard]] AUTOPAS_ALWAYS_INLINE auto begin() {
+    assert(_soa != nullptr);
+    assert(_soa->template size<attribute>() >= _startIndex);
     return _soa->template begin<attribute>() + _startIndex;
   }
 
   /**
    * Returns a pointer to the given attribute vector const.
+   * Caller must ensure the view is backed by a valid SoA and the attribute column has at least _startIndex elements.
    * @tparam attribute ID of the desired attribute.
-   * @return Pointer to the beginning of the attribute vector const
+   * @return Pointer to the beginning of the attribute vector const within this view.
    */
   template <size_t attribute>
-  [[nodiscard]] auto begin() const {
-    return _soa->template begin<attribute>() + _startIndex;
+  [[nodiscard]] AUTOPAS_ALWAYS_INLINE auto begin() const {
+    assert(_soa != nullptr);
+    assert(_soa->template size<attribute>() >= _startIndex);
+    return std::as_const(*_soa).template begin<attribute>() + _startIndex;
+  }
+
+  /**
+   * Returns the number of valid elements for the given attribute in this view.
+   * If the underlying SoA column has fewer elements than the view range (e.g. because
+   * it was not loaded/resized for this functor), this returns the actual available count.
+   * @tparam attribute ID of the desired attribute.
+   * @return Available number of elements for this attribute.
+   */
+  template <size_t attribute>
+  [[nodiscard]] size_t size() const {
+    if (_soa == nullptr) {
+      return 0;
+    }
+    const size_t underlyingSize = _soa->template size<attribute>();
+    if (underlyingSize <= _startIndex) {
+      return 0;
+    }
+    return std::min(underlyingSize - _startIndex, size());
   }
 
   /**
    * Returns the number of particles in the view.
-   *
    * @return Number of particles.
    */
-  [[nodiscard]] size_t size() const { return _endIndex - _startIndex; }
+  [[nodiscard]] AUTOPAS_ALWAYS_INLINE size_t size() const { return _endIndex - _startIndex; }
+
+  /**
+   * Returns the number of extra columns in the underlying SoA.
+   * @return Number of extra columns.
+   */
+  [[nodiscard]] size_t numExtraColumns() const { return _soa ? _soa->numExtraColumns() : 0; }
+
+  /**
+   * Returns a const span over the available elements of the given extra column in this view.
+   * @param col Index of the extra column (0-based).
+   * @return Span of elements within the view, or an empty span if unavailable.
+   */
+  [[nodiscard]] std::span<const double> extraColumn(size_t col) const {
+    if (_soa == nullptr) {
+      return {};
+    }
+    const auto colSpan = _soa->extraColumn(col);
+    if (colSpan.size() <= _startIndex) {
+      return {};
+    }
+    return colSpan.subspan(_startIndex, std::min(colSpan.size() - _startIndex, size()));
+  }
+
+  /**
+   * Returns the available size of the given extra column in this view.
+   * @param col Index of the extra column (0-based).
+   * @return Number of available elements for this extra column in the view.
+   */
+  [[nodiscard]] size_t extraColumnSize(size_t col) const { return extraColumn(col).size(); }
+
+  /**
+   * Returns a const pointer to the beginning of the given extra column in this view.
+   * @param col Index of the extra column (0-based).
+   * @return Pointer to data within the view, or nullptr if unavailable.
+   */
+  [[nodiscard]] const double *extraColumnBegin(size_t col) const {
+    const auto colSpan = extraColumn(col);
+    return colSpan.empty() ? nullptr : colSpan.data();
+  }
+
+  /**
+   * Returns a pointer to the beginning of the given extra column in this view.
+   * @param col Index of the extra column (0-based).
+   * @return Pointer to data within the view, or nullptr if unavailable.
+   */
+  [[nodiscard]] double *extraColumnBegin(size_t col) {
+    return const_cast<double *>(std::as_const(*this).extraColumnBegin(col));
+  }
 
  private:
   /**

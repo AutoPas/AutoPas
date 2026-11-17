@@ -52,11 +52,60 @@ class LJFunctor
    */
   using SoAFloatPrecision = typename Particle_T::ParticleSoAFloatPrecision;
 
+  static constexpr size_t AttrSqrt24Epsilon = std::tuple_size_v<SoAArraysType> + 0;
+  static constexpr size_t AttrHalfSigma = std::tuple_size_v<SoAArraysType> + 1;
+
  public:
   /**
    * Deleted default constructor
    */
   LJFunctor() = delete;
+
+  /**
+   * Hook for SoALoader to load particle attributes or functor-computed mixing data.
+   * @copydoc autopas::Functor::loadSoAAttribute(const Particle_T&) const
+   */
+  template <auto attribute>
+  inline auto loadSoAAttribute(const Particle_T &particle) const {
+    if constexpr (attribute == AttrSqrt24Epsilon) {
+      if constexpr (useMixing) {
+        return _PPLibrary->getSqrt24Epsilon(particle.getTypeId());
+      } else {
+        return 0.0;
+      }
+    } else if constexpr (attribute == AttrHalfSigma) {
+      if constexpr (useMixing) {
+        return _PPLibrary->getHalfSigma(particle.getTypeId());
+      } else {
+        return 0.0;
+      }
+    } else {
+      return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
+    }
+  }
+
+  /**
+   * Hook for SoALoader (non-const particle overload for ptr).
+   * @copydoc autopas::Functor::loadSoAAttribute(Particle_T&) const
+   */
+  template <auto attribute>
+  inline auto loadSoAAttribute(Particle_T &particle) const {
+    if constexpr (attribute == AttrSqrt24Epsilon) {
+      if constexpr (useMixing) {
+        return _PPLibrary->getSqrt24Epsilon(particle.getTypeId());
+      } else {
+        return 0.0;
+      }
+    } else if constexpr (attribute == AttrHalfSigma) {
+      if constexpr (useMixing) {
+        return _PPLibrary->getHalfSigma(particle.getTypeId());
+      } else {
+        return 0.0;
+      }
+    } else {
+      return particle.template get<static_cast<typename Particle_T::AttributeNames>(attribute)>();
+    }
+  }
 
  private:
   /**
@@ -68,6 +117,7 @@ class LJFunctor
       : autopas::PairwiseFunctor<Particle_T, LJFunctor<Particle_T, applyShift, useMixing, useNewton3, calculateGlobals,
                                                        countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
+        _invCutoffSquared{1.0 / (cutoff * cutoff)},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _postProcessed{false} {
@@ -133,21 +183,23 @@ class LJFunctor
       ++_aosThreadDataFLOPs[threadnum].numDistCalls;
     }
 
-    auto sigmaSquared = _sigmaSquared;
-    auto epsilon24 = _epsilon24;
-    auto shift6 = _shift6;
-    if constexpr (useMixing) {
-      sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
-      if constexpr (applyShift) {
-        shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
-      }
-    }
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffSquared) {
       return;
+    }
+
+    auto sigmaSquared = _sigmaSquared;
+    auto epsilon24 = _epsilon24;
+    auto shift6 = _shift6;
+    if constexpr (useMixing) {
+      const auto &mixingData = _PPLibrary->getLJMixingData(i.getTypeId(), j.getTypeId());
+      sigmaSquared = mixingData.sigmaSquared;
+      epsilon24 = mixingData.epsilon24;
+      if constexpr (applyShift and calculateGlobals) {
+        shift6 = mixingData.shift6;
+      }
     }
 
     double invdr2 = 1. / dr2;
@@ -214,8 +266,12 @@ class LJFunctor
     SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle_T::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
-
-    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle_T::AttributeNames::typeId>();
+    const SoAFloatPrecision *__restrict sqrtEpsilonptr = nullptr;
+    const SoAFloatPrecision *__restrict halfSigmaptr = nullptr;
+    if constexpr (useMixing) {
+      sqrtEpsilonptr = soa.template begin<AttrSqrt24Epsilon>();
+      halfSigmaptr = soa.template begin<AttrHalfSigma>();
+    }
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
@@ -238,7 +294,7 @@ class LJFunctor
       sigmaSquareds.resize(soa.size());
       epsilon24s.resize(soa.size());
       // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
-      if constexpr (applyShift) {
+      if constexpr (applyShift and calculateGlobals) {
         shift6s.resize(soa.size());
       }
     }
@@ -259,11 +315,13 @@ class LJFunctor
 
       if constexpr (useMixing) {
         for (unsigned int j = 0; j < soa.size(); ++j) {
-          auto mixingData = _PPLibrary->getLJMixingData(typeptr[i], typeptr[j]);
-          sigmaSquareds[j] = mixingData.sigmaSquared;
-          epsilon24s[j] = mixingData.epsilon24;
-          if constexpr (applyShift) {
-            shift6s[j] = mixingData.shift6;
+          const SoAFloatPrecision sigma = halfSigmaptr[i] + halfSigmaptr[j];
+          sigmaSquareds[j] = sigma * sigma;
+          epsilon24s[j] = sqrtEpsilonptr[i] * sqrtEpsilonptr[j];
+          if constexpr (applyShift and calculateGlobals) {
+            const SoAFloatPrecision tmpShift1 = sigmaSquareds[j] * _invCutoffSquared;
+            const SoAFloatPrecision tmpShift2 = tmpShift1 * tmpShift1 * tmpShift1;
+            shift6s[j] = epsilon24s[j] * (tmpShift2 - tmpShift2 * tmpShift2);
           }
         }
       }
@@ -278,7 +336,7 @@ class LJFunctor
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
           epsilon24 = epsilon24s[j];
-          if constexpr (applyShift) {
+          if constexpr (applyShift and calculateGlobals) {
             shift6 = shift6s[j];
           }
         }
@@ -401,11 +459,25 @@ class LJFunctor
     auto *const __restrict fx1ptr = soa1.template begin<Particle_T::AttributeNames::forceX>();
     auto *const __restrict fy1ptr = soa1.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fz1ptr = soa1.template begin<Particle_T::AttributeNames::forceZ>();
-    auto *const __restrict fx2ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
-    auto *const __restrict fy2ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
-    auto *const __restrict fz2ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
-    [[maybe_unused]] auto *const __restrict typeptr1 = soa1.template begin<Particle_T::AttributeNames::typeId>();
-    [[maybe_unused]] auto *const __restrict typeptr2 = soa2.template begin<Particle_T::AttributeNames::typeId>();
+    // getNeededAttr(false_type) omits force columns for soa2, so only request them when newton3 is enabled.
+    SoAFloatPrecision *__restrict fx2ptr = nullptr;
+    SoAFloatPrecision *__restrict fy2ptr = nullptr;
+    SoAFloatPrecision *__restrict fz2ptr = nullptr;
+    if constexpr (newton3) {
+      fx2ptr = soa2.template begin<Particle_T::AttributeNames::forceX>();
+      fy2ptr = soa2.template begin<Particle_T::AttributeNames::forceY>();
+      fz2ptr = soa2.template begin<Particle_T::AttributeNames::forceZ>();
+    }
+    const SoAFloatPrecision *__restrict sqrtEpsilonptr1 = nullptr;
+    const SoAFloatPrecision *__restrict halfSigmaptr1 = nullptr;
+    const SoAFloatPrecision *__restrict sqrtEpsilonptr2 = nullptr;
+    const SoAFloatPrecision *__restrict halfSigmaptr2 = nullptr;
+    if constexpr (useMixing) {
+      sqrtEpsilonptr1 = soa1.template begin<AttrSqrt24Epsilon>();
+      halfSigmaptr1 = soa1.template begin<AttrHalfSigma>();
+      sqrtEpsilonptr2 = soa2.template begin<AttrSqrt24Epsilon>();
+      halfSigmaptr2 = soa2.template begin<AttrHalfSigma>();
+    }
 
     // Checks whether the cells are halo cells.
     SoAFloatPrecision potentialEnergySum = 0.;
@@ -432,7 +504,7 @@ class LJFunctor
       sigmaSquareds.resize(soa2.size());
       epsilon24s.resize(soa2.size());
       // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
-      if constexpr (applyShift) {
+      if constexpr (applyShift and calculateGlobals) {
         shift6s.resize(soa2.size());
       }
     }
@@ -450,10 +522,13 @@ class LJFunctor
       // preload all sigma and epsilons for next vectorized region
       if constexpr (useMixing) {
         for (unsigned int j = 0; j < soa2.size(); ++j) {
-          sigmaSquareds[j] = _PPLibrary->getMixingSigmaSquared(typeptr1[i], typeptr2[j]);
-          epsilon24s[j] = _PPLibrary->getMixing24Epsilon(typeptr1[i], typeptr2[j]);
-          if constexpr (applyShift) {
-            shift6s[j] = _PPLibrary->getMixingShift6(typeptr1[i], typeptr2[j]);
+          const SoAFloatPrecision sigma = halfSigmaptr1[i] + halfSigmaptr2[j];
+          sigmaSquareds[j] = sigma * sigma;
+          epsilon24s[j] = sqrtEpsilonptr1[i] * sqrtEpsilonptr2[j];
+          if constexpr (applyShift and calculateGlobals) {
+            const SoAFloatPrecision tmpShift1 = sigmaSquareds[j] * _invCutoffSquared;
+            const SoAFloatPrecision tmpShift2 = tmpShift1 * tmpShift1 * tmpShift1;
+            shift6s[j] = epsilon24s[j] * (tmpShift2 - tmpShift2 * tmpShift2);
           }
         }
       }
@@ -465,7 +540,7 @@ class LJFunctor
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
           epsilon24 = epsilon24s[j];
-          if constexpr (applyShift) {
+          if constexpr (applyShift and calculateGlobals) {
             shift6 = shift6s[j];
           }
         }
@@ -594,25 +669,47 @@ class LJFunctor
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle_T::AttributeNames, 9>{Particle_T::AttributeNames::id,
-                                                              Particle_T::AttributeNames::posX,
-                                                              Particle_T::AttributeNames::posY,
-                                                              Particle_T::AttributeNames::posZ,
-                                                              Particle_T::AttributeNames::forceX,
-                                                              Particle_T::AttributeNames::forceY,
-                                                              Particle_T::AttributeNames::forceZ,
-                                                              Particle_T::AttributeNames::typeId,
-                                                              Particle_T::AttributeNames::ownershipState};
+    if constexpr (useMixing) {
+      return std::array<size_t, 10>{static_cast<size_t>(Particle_T::AttributeNames::id),
+                                    static_cast<size_t>(Particle_T::AttributeNames::posX),
+                                    static_cast<size_t>(Particle_T::AttributeNames::posY),
+                                    static_cast<size_t>(Particle_T::AttributeNames::posZ),
+                                    static_cast<size_t>(Particle_T::AttributeNames::forceX),
+                                    static_cast<size_t>(Particle_T::AttributeNames::forceY),
+                                    static_cast<size_t>(Particle_T::AttributeNames::forceZ),
+                                    AttrSqrt24Epsilon,
+                                    AttrHalfSigma,
+                                    static_cast<size_t>(Particle_T::AttributeNames::ownershipState)};
+    } else {
+      return std::array<size_t, 8>{static_cast<size_t>(Particle_T::AttributeNames::id),
+                                   static_cast<size_t>(Particle_T::AttributeNames::posX),
+                                   static_cast<size_t>(Particle_T::AttributeNames::posY),
+                                   static_cast<size_t>(Particle_T::AttributeNames::posZ),
+                                   static_cast<size_t>(Particle_T::AttributeNames::forceX),
+                                   static_cast<size_t>(Particle_T::AttributeNames::forceY),
+                                   static_cast<size_t>(Particle_T::AttributeNames::forceZ),
+                                   static_cast<size_t>(Particle_T::AttributeNames::ownershipState)};
+    }
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle_T::AttributeNames, 6>{
-        Particle_T::AttributeNames::id,     Particle_T::AttributeNames::posX,
-        Particle_T::AttributeNames::posY,   Particle_T::AttributeNames::posZ,
-        Particle_T::AttributeNames::typeId, Particle_T::AttributeNames::ownershipState};
+    if constexpr (useMixing) {
+      return std::array<size_t, 7>{static_cast<size_t>(Particle_T::AttributeNames::id),
+                                   static_cast<size_t>(Particle_T::AttributeNames::posX),
+                                   static_cast<size_t>(Particle_T::AttributeNames::posY),
+                                   static_cast<size_t>(Particle_T::AttributeNames::posZ),
+                                   AttrSqrt24Epsilon,
+                                   AttrHalfSigma,
+                                   static_cast<size_t>(Particle_T::AttributeNames::ownershipState)};
+    } else {
+      return std::array<size_t, 5>{
+          static_cast<size_t>(Particle_T::AttributeNames::id), static_cast<size_t>(Particle_T::AttributeNames::posX),
+          static_cast<size_t>(Particle_T::AttributeNames::posY), static_cast<size_t>(Particle_T::AttributeNames::posZ),
+          static_cast<size_t>(Particle_T::AttributeNames::ownershipState)};
+    }
   }
 
   /**
@@ -814,8 +911,12 @@ class LJFunctor
     auto *const __restrict fxptr = soa.template begin<Particle_T::AttributeNames::forceX>();
     auto *const __restrict fyptr = soa.template begin<Particle_T::AttributeNames::forceY>();
     auto *const __restrict fzptr = soa.template begin<Particle_T::AttributeNames::forceZ>();
-    [[maybe_unused]] auto *const __restrict typeptr1 = soa.template begin<Particle_T::AttributeNames::typeId>();
-    [[maybe_unused]] auto *const __restrict typeptr2 = soa.template begin<Particle_T::AttributeNames::typeId>();
+    const SoAFloatPrecision *__restrict sqrtEpsilonptr = nullptr;
+    const SoAFloatPrecision *__restrict halfSigmaptr = nullptr;
+    if constexpr (useMixing) {
+      sqrtEpsilonptr = soa.template begin<AttrSqrt24Epsilon>();
+      halfSigmaptr = soa.template begin<AttrHalfSigma>();
+    }
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle_T::AttributeNames::ownershipState>();
 
@@ -887,11 +988,13 @@ class LJFunctor
         [[maybe_unused]] alignas(autopas::DEFAULT_CACHE_LINE_SIZE) std::array<SoAFloatPrecision, vecsize> shift6s;
         if constexpr (useMixing) {
           for (size_t j = 0; j < vecsize; j++) {
-            sigmaSquareds[j] =
-                _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[neighborList[joff + j]]);
-            epsilon24s[j] = _PPLibrary->getMixing24Epsilon(typeptr1[indexFirst], typeptr2[neighborList[joff + j]]);
-            if constexpr (applyShift) {
-              shift6s[j] = _PPLibrary->getMixingShift6(typeptr1[indexFirst], typeptr2[neighborList[joff + j]]);
+            const SoAFloatPrecision sigma = halfSigmaptr[indexFirst] + halfSigmaptr[neighborList[joff + j]];
+            sigmaSquareds[j] = sigma * sigma;
+            epsilon24s[j] = sqrtEpsilonptr[indexFirst] * sqrtEpsilonptr[neighborList[joff + j]];
+            if constexpr (applyShift and calculateGlobals) {
+              const SoAFloatPrecision tmpShift1 = sigmaSquareds[j] * _invCutoffSquared;
+              const SoAFloatPrecision tmpShift2 = tmpShift1 * tmpShift1 * tmpShift1;
+              shift6s[j] = epsilon24s[j] * (tmpShift2 - tmpShift2 * tmpShift2);
             }
           }
         }
@@ -910,7 +1013,7 @@ class LJFunctor
           if constexpr (useMixing) {
             sigmaSquared = sigmaSquareds[j];
             epsilon24 = epsilon24s[j];
-            if constexpr (applyShift) {
+            if constexpr (applyShift and calculateGlobals) {
               shift6 = shift6s[j];
             }
           }
@@ -1002,13 +1105,6 @@ class LJFunctor
     for (size_t jNeighIndex = joff; jNeighIndex < neighborListSize; ++jNeighIndex) {
       size_t j = neighborList[jNeighIndex];
       if (indexFirst == j) continue;
-      if constexpr (useMixing) {
-        sigmaSquared = _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[j]);
-        epsilon24 = _PPLibrary->getMixing24Epsilon(typeptr1[indexFirst], typeptr2[j]);
-        if constexpr (applyShift) {
-          shift6 = _PPLibrary->getMixingShift6(typeptr1[indexFirst], typeptr2[j]);
-        }
-      }
 
       const auto ownedStateJ = ownedStatePtr[j];
       if (ownedStateJ == autopas::OwnershipState::dummy) {
@@ -1031,6 +1127,17 @@ class LJFunctor
 
       if (dr2 > cutoffSquared) {
         continue;
+      }
+
+      if constexpr (useMixing) {
+        const SoAFloatPrecision sigma = halfSigmaptr[indexFirst] + halfSigmaptr[j];
+        sigmaSquared = sigma * sigma;
+        epsilon24 = sqrtEpsilonptr[indexFirst] * sqrtEpsilonptr[j];
+        if constexpr (applyShift and calculateGlobals) {
+          const SoAFloatPrecision tmpShift1 = sigmaSquared * _invCutoffSquared;
+          const SoAFloatPrecision tmpShift2 = tmpShift1 * tmpShift1 * tmpShift1;
+          shift6 = epsilon24 * (tmpShift2 - tmpShift2 * tmpShift2);
+        }
       }
 
       const SoAFloatPrecision invdr2 = 1. / dr2;
@@ -1193,9 +1300,13 @@ class LJFunctor
   static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
   const double _cutoffSquared;
+  const double _invCutoffSquared;
   // not const because they might be reset through PPL
   double _epsilon24, _sigmaSquared, _shift6 = 0;
 
+  // Kept only so the useMixing constructor can require a ParticlePropertiesLibrary (for API/behavioral
+  // compatibility with other functors). The mixing math itself no longer looks anything up here: epsilon and sigma
+  // are read directly from the interacting particles/SoA columns and mixed inline.
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true

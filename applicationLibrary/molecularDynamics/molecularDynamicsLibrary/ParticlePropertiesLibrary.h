@@ -216,6 +216,35 @@ class ParticlePropertiesLibrary {
   floatType getMoleculesLargestSigma(intType i) const;
 
   /**
+   * Struct holding pre-transformed Lennard-Jones parameters for a single site.
+   */
+  struct alignas(16) SiteLJData {
+    floatType sqrt24Epsilon;  ///< std::sqrt(24.0 * epsilon)
+    floatType halfSigma;      ///< 0.5 * sigma
+  };
+
+  /**
+   * Returns precomputed 1D site data (sqrt(24 * epsilon) and half sigma) for a given site type.
+   * @param siteId Type Id of the site.
+   * @return Pre-transformed LJ data for the site.
+   */
+  [[nodiscard]] const SiteLJData &getSiteLJData(intType siteId) const { return _computedSiteLJData[siteId]; }
+
+  /**
+   * Returns precomputed sqrt(24 * epsilon) for a given site type.
+   * @param siteId Type Id of the site.
+   * @return sqrt(24 * epsilon)
+   */
+  [[nodiscard]] floatType getSqrt24Epsilon(intType siteId) const { return _computedSiteLJData[siteId].sqrt24Epsilon; }
+
+  /**
+   * Returns precomputed half sigma (0.5 * sigma) for a given site type.
+   * @param siteId Type Id of the site.
+   * @return 0.5 * sigma
+   */
+  [[nodiscard]] floatType getHalfSigma(intType siteId) const { return _computedSiteLJData[siteId].halfSigma; }
+
+  /**
    * Returns the precomputed mixed epsilon * 24.
    * @param  i Id of site one.
    * @param  j Id of site two.
@@ -332,6 +361,7 @@ class ParticlePropertiesLibrary {
   };
 
   std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> _computedLJMixingData;
+  std::vector<SiteLJData, autopas::AlignedAllocator<SiteLJData>> _computedSiteLJData;
   std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMMixingData;
 };
 
@@ -451,6 +481,12 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
   if (_storeLJData) {
     const auto cutoffSquared = _cutoff * _cutoff;
     _computedLJMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
+    _computedSiteLJData.resize(_numRegisteredSiteTypes);
+
+    for (size_t siteId = 0ul; siteId < _numRegisteredSiteTypes; ++siteId) {
+      _computedSiteLJData[siteId] = {static_cast<floatType>(std::sqrt(24.0 * _epsilons[siteId])),
+                                     static_cast<floatType>(0.5 * _sigmas[siteId])};
+    }
 
     for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
       for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
