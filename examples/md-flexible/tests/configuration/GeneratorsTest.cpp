@@ -336,6 +336,12 @@ TEST_F(GeneratorsTest, CubeClosestPackedDensityScenarios) {
        2.0,
        false,
        "FCC cubic high density uncentered"},
+      {CubeClosestPacked::LatticeStructure::FCC,
+       {10.0, 10.0, 10.0},
+       {0.0, 0.0, 0.0},
+       0.75,
+       false,
+       "FCC cubic large uncentered"},
 
       // FCC Anisotropic boxes
       {CubeClosestPacked::LatticeStructure::FCC,
@@ -400,6 +406,12 @@ TEST_F(GeneratorsTest, CubeClosestPackedDensityScenarios) {
        2.0,
        false,
        "HCP cubic high density uncentered"},
+      {CubeClosestPacked::LatticeStructure::HCP,
+       {10.0, 10.0, 10.0},
+       {0.0, 0.0, 0.0},
+       0.5,
+       false,
+       "HCP cubic large uncentered"},
 
       // HCP Anisotropic boxes
       {CubeClosestPacked::LatticeStructure::HCP,
@@ -440,6 +452,12 @@ TEST_F(GeneratorsTest, CubeClosestPackedDensityScenarios) {
     EXPECT_GE(cube.getParticleSpacing(), s0 - 1e-12);
     EXPECT_GT(cube.getParticlesTotal(), 0);
     EXPECT_DOUBLE_EQ(cube.getParticleDensity(), static_cast<double>(cube.getParticlesTotal()) / volume);
+
+    // Optimizing the spacing must not result in a worse particle count than if we just used s0.
+    const double targetParticles = std::round(density * volume);
+    const CubeClosestPacked cubeAtS0(velocity, typeId, s0, boxLength, bottomLeft, structure, centered);
+    EXPECT_LE(std::abs(static_cast<double>(cube.getParticlesTotal()) - targetParticles),
+              std::abs(static_cast<double>(cubeAtS0.getParticlesTotal()) - targetParticles));
 
     std::vector<ParticleType> particles;
     cube.generate(particles);
