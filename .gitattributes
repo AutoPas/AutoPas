@@ -23,6 +23,7 @@ libs/eigen/**      linguist-vendored linguist-generated
 libs/googletest/** linguist-vendored linguist-generated
 libs/harmony/**    linguist-vendored linguist-generated
 libs/highway/**    linguist-vendored linguist-generated
+libs/lb4omp/**     linguist-vendored linguist-generated
 libs/pmt/**        linguist-vendored linguist-generated
 libs/spdlog/**     linguist-vendored linguist-generated
 libs/utfcpp/**     linguist-vendored linguist-generated

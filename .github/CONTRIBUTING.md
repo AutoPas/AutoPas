@@ -218,6 +218,7 @@ The table below lists the dependencies. The **Path** column currently reflects t
 | eigen      | [`libs/eigen`](/libs/eigen)                             | https://gitlab.com/libeigen/eigen                   | tag `5.0.1`            | —                                          |
 | googletest | [`libs/googletest`](/libs/googletest)                   | https://github.com/google/googletest                | tag `v1.17.0`          | —                                          |
 | highway    | [`libs/highway`](/libs/highway)                         | https://github.com/google/highway                   | tag `1.4.0`            | —                                          |
+| lb4omp     | [`libs/lb4omp`](/libs/lb4omp)                           | https://github.com/unibas-dmi-hpc/LB4OMP            | commit `b9d25eca`      | AutoPas-specific fixes (2 commits)         |
 | pmt        | [`libs/pmt`](/libs/pmt)                                 | https://git.astron.nl/RD/pmt                        | commit `7a56fa3a`      | AutoPas-specific patch (in `libs/patches`) |
 | spdlog     | [`libs/spdlog`](/libs/spdlog)                           | https://github.com/gabime/spdlog                    | tag `v1.17.0`          | —                                          |
 | yaml-cpp   | [`libs/yaml-cpp`](/libs/yaml-cpp)                       | https://github.com/jbeder/yaml-cpp                  | tag `yaml-cpp-0.9.0`   | —                                          |
