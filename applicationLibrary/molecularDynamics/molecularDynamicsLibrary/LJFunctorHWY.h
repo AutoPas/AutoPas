@@ -1094,9 +1094,10 @@ class LJFunctorHWY
       y2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, yPtr, indices);
       z2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, zPtr, indices);
     } else {
-      x2 = highway::GatherIndex(tag_double, xPtr, indices);
-      y2 = highway::GatherIndex(tag_double, yPtr, indices);
-      z2 = highway::GatherIndex(tag_double, zPtr, indices);
+      const size_t *const __restrict nlChunk = neighborList + j;
+      x2 = hwy_helpers::gatherInRegisters(tag_double, xPtr, nlChunk, indices);
+      y2 = hwy_helpers::gatherInRegisters(tag_double, yPtr, nlChunk, indices);
+      z2 = hwy_helpers::gatherInRegisters(tag_double, zPtr, nlChunk, indices);
     }
 
     const auto drX = highway::Sub(x1, x2);
@@ -1108,7 +1109,7 @@ class LJFunctorHWY
     if constexpr (remainder) {
       ownedState2 = highway::MaskedGatherIndex(restMaskLong, tag_long, ownedStatePtr, indices);
     } else {
-      ownedState2 = highway::GatherIndex(tag_long, ownedStatePtr, indices);
+      ownedState2 = hwy_helpers::gatherInRegisters(tag_long, ownedStatePtr, neighborList + j, indices);
     }
 
     const auto notDummyMask2 = highway::RebindMask(tag_double, highway::Ne(ownedState2, highway::Zero(tag_long)));
@@ -1131,8 +1132,9 @@ class LJFunctorHWY
         sqrtEpsilon2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, sqrtEpsilonPtr, indices);
         sigmaHalf2 = highway::MaskedGatherIndex(restMaskDouble, tag_double, sigmaHalfPtr, indices);
       } else {
-        sqrtEpsilon2 = highway::GatherIndex(tag_double, sqrtEpsilonPtr, indices);
-        sigmaHalf2 = highway::GatherIndex(tag_double, sigmaHalfPtr, indices);
+        const size_t *const __restrict nlChunk = neighborList + j;
+        sqrtEpsilon2 = hwy_helpers::gatherInRegisters(tag_double, sqrtEpsilonPtr, nlChunk, indices);
+        sigmaHalf2 = hwy_helpers::gatherInRegisters(tag_double, sigmaHalfPtr, nlChunk, indices);
       }
       epsilon24s = highway::Mul(sqrtEpsilon1, sqrtEpsilon2);
       const auto sigma = highway::Add(sigmaHalf1, sigmaHalf2);
@@ -1146,9 +1148,10 @@ class LJFunctorHWY
     [[maybe_unused]] VectorDouble fy2Old;
     [[maybe_unused]] VectorDouble fz2Old;
     if constexpr (newton3 and not remainder and (homogeneousParams or not calculateGlobals)) {
-      fx2Old = highway::GatherIndex(tag_double, fxPtr, indices);
-      fy2Old = highway::GatherIndex(tag_double, fyPtr, indices);
-      fz2Old = highway::GatherIndex(tag_double, fzPtr, indices);
+      const size_t *const __restrict nlChunk = neighborList + j;
+      fx2Old = hwy_helpers::gatherInRegisters(tag_double, fxPtr, nlChunk, indices);
+      fy2Old = hwy_helpers::gatherInRegisters(tag_double, fyPtr, nlChunk, indices);
+      fz2Old = hwy_helpers::gatherInRegisters(tag_double, fzPtr, nlChunk, indices);
     }
 
     const auto lj2 = highway::Mul(sigmaSquareds, invDr2);
@@ -1180,9 +1183,10 @@ class LJFunctorHWY
           fy2Old = highway::MaskedGatherIndex(restMaskDouble, tag_double, fyPtr, indices);
           fz2Old = highway::MaskedGatherIndex(restMaskDouble, tag_double, fzPtr, indices);
         } else if constexpr (not homogeneousParams and calculateGlobals) {
-          fx2Old = highway::GatherIndex(tag_double, fxPtr, indices);
-          fy2Old = highway::GatherIndex(tag_double, fyPtr, indices);
-          fz2Old = highway::GatherIndex(tag_double, fzPtr, indices);
+          const size_t *const __restrict nlChunk = neighborList + j;
+          fx2Old = hwy_helpers::gatherInRegisters(tag_double, fxPtr, nlChunk, indices);
+          fy2Old = hwy_helpers::gatherInRegisters(tag_double, fyPtr, nlChunk, indices);
+          fz2Old = hwy_helpers::gatherInRegisters(tag_double, fzPtr, nlChunk, indices);
         }
 
         const auto fx2New = highway::Sub(fx2Old, fx);

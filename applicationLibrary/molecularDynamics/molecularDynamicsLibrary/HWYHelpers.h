@@ -43,6 +43,40 @@ using MaskLong = decltype(highway::FirstN(tag_long, 2));
 
 namespace hwy_helpers {
 /**
+ * Gathers elements by index using scalar loads combined in registers on narrow fixed-width targets (<= 4 lanes, e.g.
+ * SSE2/NEON/AVX2), avoiding microcoded vector gather instructions; falls back to GatherIndex on wider or scalable
+ * targets (AVX-512, SVE, RVV).
+ *
+ * @tparam Scalar_T The scalar type of the array to gather from.
+ * @tparam Tag_T The Highway tag type for the vector to gather into.
+ * @param tag The Highway tag for the vector to gather into.
+ * @param ptr Restricted pointer to the scalar array to gather from.
+ * @param idxPtr Restricted pointer to the neighbor index slice starting at the current chunk.
+ * @param vecIndices A vector of indices to gather from, used on wider/scalable targets.
+ * @return A vector of type VFromD<Tag_T> containing the gathered values.
+ */
+template <typename Scalar_T, class Tag_T>
+HWY_INLINE highway::VFromD<Tag_T> gatherInRegisters(Tag_T tag, const Scalar_T *const __restrict ptr,
+                                                    const size_t *const __restrict idxPtr,
+                                                    [[maybe_unused]] const VectorLong &vecIndices) {
+#if !HWY_HAVE_SCALABLE
+  if constexpr (highway::MaxLanes(Tag_T{}) == 4) {
+    const highway::Half<Tag_T> dh;
+    const auto v01 = highway::Dup128VecFromValues(dh, ptr[idxPtr[0]], ptr[idxPtr[1]]);
+    const auto v23 = highway::Dup128VecFromValues(dh, ptr[idxPtr[2]], ptr[idxPtr[3]]);
+    return highway::Combine(tag, v23, v01);
+  } else if constexpr (highway::MaxLanes(Tag_T{}) == 2) {
+    return highway::Dup128VecFromValues(tag, ptr[idxPtr[0]], ptr[idxPtr[1]]);
+  } else if constexpr (highway::MaxLanes(Tag_T{}) == 1) {
+    return highway::Set(tag, ptr[idxPtr[0]]);
+  } else
+#endif
+  {
+    return highway::GatherIndex(tag, ptr, vecIndices);
+  }
+}
+
+/**
  * Selects the tuned fixed-width halving/interleave horizontal reduction path over the generic highway::ReduceSum
  * fallback.
  *
