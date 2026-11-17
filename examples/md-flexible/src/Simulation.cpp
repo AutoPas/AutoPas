@@ -9,6 +9,7 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -466,7 +467,7 @@ void Simulation::updatePositionsAndResetForces() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
+      _configuration.globalForce.value, _configuration.gravity.value, _configuration.fastParticlesThrow.value);
   _timers.positionUpdate.stop();
 }
 
@@ -474,7 +475,7 @@ void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.start();
   TimeDiscretization::calculateQuaternionsAndResetTorques(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value);
+      _configuration.globalForce.value, _configuration.gravity.value);
   _timers.quaternionUpdate.stop();
 }
 
@@ -616,8 +617,10 @@ void Simulation::updateSimulationPauseState() {
     std::cout << "Iteration " << _iteration << ": Resuming simulation after tuning phase.\n";
 
     // reset the forces which accumulated during the tuning phase
+    using namespace autopas::utils::ArrayMath::literals;
     for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      particle->setF(_configuration.globalForce.value);
+      const auto m = _configuration.getParticlePropertiesLibrary()->getMolMass(particle->getTypeId());
+      particle->setF(_configuration.globalForce.value + _configuration.gravity.value * m);
     }
 
     // calculate the forces of the latest iteration again
