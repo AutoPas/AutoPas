@@ -47,6 +47,9 @@ namespace autopas {
 #ifdef KOKKOS_ENABLE_CUDA
 using DeviceSpace = Kokkos::CudaSpace;
 constexpr bool useHostView = false;
+#elifdef KOKKOS_ENABLE_HIP
+using DeviceSpace = Kokkos::HIP;
+constexpr bool useHostView = false;
 #else
 using DeviceSpace = Kokkos::HostSpace;
 constexpr bool useHostView = true;

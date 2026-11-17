@@ -128,6 +128,8 @@ class KokkosSoA {
 
 #ifdef KOKKOS_ENABLE_CUDA
   using DeviceSpace = Kokkos::CudaSpace;
+#elifdef KOKKOS_ENABLE_HIP
+  using DeviceSpace = Kokkos::HIPSpace;
 #else
   using DeviceSpace = Kokkos::HostSpace;
 #endif

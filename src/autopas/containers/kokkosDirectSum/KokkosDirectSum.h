@@ -653,6 +653,9 @@ class KokkosDirectSum : public ParticleContainerInterface<Particle_T> {
 #ifdef KOKKOS_ENABLE_CUDA
   using DeviceSpace = Kokkos::CudaSpace;
   constexpr static bool useHostView = false;
+#elifdef KOKKOS_ENABLE_HIP
+  using DeviceSpace = Kokkos::HIP;
+  constexpr static bool useHostView = false;
 #else
   using DeviceSpace = Kokkos::HostSpace;
   constexpr static bool useHostView = true;

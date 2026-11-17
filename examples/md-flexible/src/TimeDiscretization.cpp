@@ -21,6 +21,9 @@ namespace TimeDiscretization {
 #ifdef KOKKOS_ENABLE_CUDA
 using DeviceSpace = Kokkos::CudaSpace;
 constexpr bool ForEachHostFlag = false;
+#elifdef KOKKOS_ENABLE_HIP
+using DeviceSpace = Kokkos::HIP;
+constexpr bool ForEachHostFlag = false;
 #else
 using DeviceSpace = Kokkos::HostSpace;
 constexpr bool ForEachHostFlag = true;
