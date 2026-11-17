@@ -150,6 +150,7 @@ if (HAS_AVX)
             md-flexible-avx.test-unaligned
             PROPERTIES
             ENVIRONMENT  "${LSAN_OPTIONS_STR}"
+            LABELS checkExamples
     )
 else ()
   message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
@@ -193,6 +194,7 @@ set_tests_properties(
         # This adds lsanignoreList.txt to ignore MPI internal leaks
         PROPERTIES
             ENVIRONMENT  "${LSAN_OPTIONS_STR}"
+            LABELS checkExamples
 )
 
 # add the executable to checkExamples as dependency
