@@ -396,6 +396,10 @@ std::string MDFlexConfig::to_string() const {
     printOption(globalForce);
   }
 
+  if (not gravityIsZero()) {
+    printOption(gravity);
+  }
+
   if (useThermostat.value) {
     os << useThermostat.name << ":" << endl;
     // since these parameters are
