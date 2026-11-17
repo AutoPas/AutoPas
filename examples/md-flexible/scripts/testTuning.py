@@ -57,7 +57,7 @@ simulation=os.path.abspath(simulation)
 
 # default search directory for inputs:
 if not configsDirs:
-    configsDirs=['../input/testTuning/']
+    configsDirs=['testTuning/']
 
 # directory for simulation output
 outputDir="testTuning_"+datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
