@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include "NumThreadGuard.h"
 #include "autopas/AutoPas.h"
 #include "autopas/baseFunctors/InteractionListGeneratorFunctor.h"
 #include "autopas/particles/OwnershipState.h"
@@ -22,7 +23,6 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/generators/GridGenerator.h"
-#include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 namespace {
