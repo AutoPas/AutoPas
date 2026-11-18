@@ -8,7 +8,8 @@
 
 #include "utils/Timer.h"
 
-autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool energyMeasurements)
+autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool energyMeasurements,
+                                          bool usingFastParticlesBuffer)
     : _loggerName("IterationLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_ITERATIONS
   const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
@@ -31,18 +32,18 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
       "remainderTraversal[ns],"
       "rebuildNeighborLists[ns],"
       "computeInteractionsTotal[ns],"
-      "tuning[ns]"
-#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
-      ",numParticlesBuffer,"
-      "numParticlesOwned,"
-      "numParticlesHalo,"
-      "numParticlesFast,"
-      "estimateNumParticlesBuffer,"
-      "estimateRemainderTraversal[ns],"
-      "estimateRebuildNeighborLists[ns],"
-      "doDynamicRebuild"
-#endif
-      ;
+      "tuning[ns]";
+  if (usingFastParticlesBuffer) {
+    csvHeader.append(
+        ",numParticlesBuffer,"
+        "numParticlesOwned,"
+        "numParticlesHalo,"
+        "numParticlesFast,"
+        "estimateNumParticlesBuffer,"
+        "estimateRemainderTraversal[ns],"
+        "estimateRebuildNeighborLists[ns],"
+        "doDynamicRebuild");
+  }
   if (energyMeasurements) {
     csvHeader.append(
         ",energyWatts[W],"
@@ -62,48 +63,33 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
 
 void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
                                             const std::string &functorName, bool inTuningPhase, long timeTuning,
-                                            const IterationMeasurements &measurements) const {
+                                            const IterationMeasurements &measurements,
+                                            bool usingFastParticlesBuffer) const {
 #ifdef AUTOPAS_LOG_ITERATIONS
   const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
-               energyWatts, energyJoules, energyDeltaT, energyTotalRebuild, energyTotalNonRebuild, energyTotal
-#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
-               ,
+               energyWatts, energyJoules, energyDeltaT, energyTotalRebuild, energyTotalNonRebuild, energyTotal,
                numParticlesBuffer, numParticlesOwned, numParticlesHalo, numParticlesFast, estimateNumParticlesBuffer,
-               estimateRemainderTraversalTime, estimateRebuildNeighborTime, doDynamicRebuild
-#endif
-  ] = measurements;
-  if (energyMeasurementsPossible) {
-#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
-    spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName,
-               inTuningPhase ? "true" : "false", configuration.getCSVLine(), timeIteratePairwise,
-               timeRemainderTraversal, timeRebuild, timeTotal, timeTuning, numParticlesBuffer, numParticlesOwned,
-               numParticlesHalo, numParticlesFast, estimateNumParticlesBuffer, estimateRemainderTraversalTime,
-               estimateRebuildNeighborTime, doDynamicRebuild ? "true" : "false", energyWatts, energyJoules,
-               energyDeltaT);
-#else
-    spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
-               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
-               timeTuning, energyWatts, energyJoules, energyDeltaT);
-#endif
-  } else {
-#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
-    spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName,
-               inTuningPhase ? "true" : "false", configuration.getCSVLine(), timeIteratePairwise,
-               timeRemainderTraversal, timeRebuild, timeTotal, timeTuning, numParticlesBuffer, numParticlesOwned,
-               numParticlesHalo, numParticlesFast, estimateNumParticlesBuffer, estimateRemainderTraversalTime,
-               estimateRebuildNeighborTime, doDynamicRebuild ? "true" : "false");
-#else
-    spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
-               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
-               timeTuning);
-#endif
+               estimateRemainderTraversalTime, estimateRebuildNeighborTime, doDynamicRebuild] = measurements;
+  fmt::memory_buffer logBuffer;
+
+  fmt::format_to(std::back_inserter(logBuffer), "{},{},{},{},{},{},{},{},{}", iteration, functorName,
+                 inTuningPhase ? "true" : "false", configuration.getCSVLine(), timeIteratePairwise,
+                 timeRemainderTraversal, timeRebuild, timeTotal, timeTuning);
+
+  if (usingFastParticlesBuffer) {
+    fmt::format_to(std::back_inserter(logBuffer), ",{},{},{},{},{},{},{},{}", numParticlesBuffer, numParticlesOwned,
+                   numParticlesHalo, numParticlesFast, estimateNumParticlesBuffer, estimateRemainderTraversalTime,
+                   estimateRebuildNeighborTime, doDynamicRebuild ? "true" : "false");
   }
+
+  if (energyMeasurementsPossible) {
+    fmt::format_to(std::back_inserter(logBuffer), ",{},{},{}", energyWatts, energyJoules, energyDeltaT);
+  }
+
+  spdlog::get(_loggerName)->info("{}", fmt::to_string(logBuffer));
 #endif
 }
+
 autopas::IterationLogger::~IterationLogger() {
 #ifdef AUTOPAS_LOG_ITERATIONS
   spdlog::drop(_loggerName);

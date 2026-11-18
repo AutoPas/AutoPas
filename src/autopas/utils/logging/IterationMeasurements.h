@@ -66,7 +66,6 @@ struct IterationMeasurements {
    */
   long energyTotal{};
 
-#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
   /**
    * Number of particles in the buffer during remainder Traversal
    */
@@ -106,6 +105,5 @@ struct IterationMeasurements {
    * True if dynamic rebuild would be initiated in the current iteration otherwise false
    */
   bool doDynamicRebuild{false};
-#endif
 };
 }  // namespace autopas
