@@ -6,10 +6,18 @@
 
 #include "LJFunctorTestHWY.h"
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/ParticleDefinitions.h"
 #include "autopas/utils/generators/UniformGenerator.h"
+#include "molecularDynamicsLibrary/HWYHelpers.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 
 void LJFunctorTestHWY::SetUp() {
@@ -821,3 +829,316 @@ INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorTestHWY,
                          ::testing::Combine(::testing::Bool(), ::testing::Bool(), ::testing::Bool(),
                                             ::testing::ValuesIn(patterns)),
                          toString);
+
+namespace {
+
+template <bool forceGenericFallback, class D>
+void verifyReductionHelpersForTag(D d, double errorTol) {
+  const size_t lanes = mdLib::highway::Lanes(d);
+  const size_t allocLanes = std::max<size_t>(mdLib::highway::MaxLanes(D{}), lanes);
+
+  auto makeInputs = [&](double base, double step) {
+    std::vector<double> values(allocLanes, 0.0);
+    double sum = 0.0;
+    for (size_t k = 0; k < lanes; ++k) {
+      const double sign = (k % 2 == 0) ? 1.0 : -1.0;
+      const double val = sign * (base + step * static_cast<double>(k + 1) + 0.0625 * static_cast<double>(k * k));
+      values[k] = val;
+      sum += val;
+    }
+    return std::pair{values, sum};
+  };
+
+  auto [v0Data, sum0] = makeInputs(1.25, 0.3);
+  auto [v1Data, sum1] = makeInputs(2.50, 0.7);
+  auto [v2Data, sum2] = makeInputs(0.75, 0.4);
+  auto [v3Data, sum3] = makeInputs(3.10, 0.2);
+  auto [v4Data, sum4] = makeInputs(1.80, 0.5);
+  auto [v5Data, sum5] = makeInputs(2.20, 0.6);
+
+  const auto v0 = mdLib::highway::LoadU(d, v0Data.data());
+  const auto v1 = mdLib::highway::LoadU(d, v1Data.data());
+  const auto v2 = mdLib::highway::LoadU(d, v2Data.data());
+  const auto v3 = mdLib::highway::LoadU(d, v3Data.data());
+  const auto v4 = mdLib::highway::LoadU(d, v4Data.data());
+  const auto v5 = mdLib::highway::LoadU(d, v5Data.data());
+
+  EXPECT_NEAR(mdLib::hwy_helpers::reduceSumHalving<forceGenericFallback>(d, v0), sum0, errorTol);
+  EXPECT_NEAR(mdLib::hwy_helpers::reduceSumHalving<forceGenericFallback>(d, v5), sum5, errorTol);
+
+  double a = 10.5;
+  double b = -4.25;
+  mdLib::hwy_helpers::reduceAdd2_InterleaveFirst<forceGenericFallback>(d, v0, v1, a, b);
+  EXPECT_NEAR(a, 10.5 + sum0, errorTol);
+  EXPECT_NEAR(b, -4.25 + sum1, errorTol);
+  mdLib::hwy_helpers::reduceSub2_InterleaveFirst<forceGenericFallback>(d, v2, v3, a, b);
+  EXPECT_NEAR(a, 10.5 + sum0 - sum2, errorTol);
+  EXPECT_NEAR(b, -4.25 + sum1 - sum3, errorTol);
+
+  double x = -1.5;
+  double y = 3.25;
+  double z = 7.75;
+  mdLib::hwy_helpers::reduceAdd3_InterleaveFirst<forceGenericFallback>(d, v0, v1, v2, x, y, z);
+  EXPECT_NEAR(x, -1.5 + sum0, errorTol);
+  EXPECT_NEAR(y, 3.25 + sum1, errorTol);
+  EXPECT_NEAR(z, 7.75 + sum2, errorTol);
+  mdLib::hwy_helpers::reduceSub3_InterleaveFirst<forceGenericFallback>(d, v3, v4, v5, x, y, z);
+  EXPECT_NEAR(x, -1.5 + sum0 - sum3, errorTol);
+  EXPECT_NEAR(y, 3.25 + sum1 - sum4, errorTol);
+  EXPECT_NEAR(z, 7.75 + sum2 - sum5, errorTol);
+
+  double g0 = 0.5;
+  double g1 = -1.25;
+  double g2 = 2.75;
+  double g3 = 4.5;
+  mdLib::hwy_helpers::reduceAdd4_Interleaved<forceGenericFallback>(d, v0, v1, v2, v3, g0, g1, g2, g3);
+  EXPECT_NEAR(g0, 0.5 + sum0, errorTol);
+  EXPECT_NEAR(g1, -1.25 + sum1, errorTol);
+  EXPECT_NEAR(g2, 2.75 + sum2, errorTol);
+  EXPECT_NEAR(g3, 4.5 + sum3, errorTol);
+
+  // Verify Vec2Store only modifies ptr[0..1] and leaves neighboring sentinel elements untouched.
+  constexpr size_t kBufSize = 16;
+  constexpr size_t kTargetIdx = 4;
+  auto initCanaryBuf = [&](double offset) {
+    std::array<double, kBufSize> buf{};
+    for (size_t idx = 0; idx < kBufSize; ++idx) {
+      buf[idx] = offset + static_cast<double>(idx);
+    }
+    return buf;
+  };
+  const auto fxInit = initCanaryBuf(100.0);
+  const auto fyInit = initCanaryBuf(200.0);
+  const auto fzInit = initCanaryBuf(300.0);
+  auto fxBuf = fxInit;
+  auto fyBuf = fyInit;
+  auto fzBuf = fzInit;
+
+  mdLib::hwy_helpers::reduceAdd6Half_Vec2Store<forceGenericFallback>(d, v0, v1, v2, v3, v4, v5, &fxBuf[kTargetIdx],
+                                                                     &fyBuf[kTargetIdx], &fzBuf[kTargetIdx]);
+  EXPECT_NEAR(fxBuf[kTargetIdx + 0], fxInit[kTargetIdx + 0] + sum0, errorTol);
+  EXPECT_NEAR(fxBuf[kTargetIdx + 1], fxInit[kTargetIdx + 1] + sum3, errorTol);
+  EXPECT_NEAR(fyBuf[kTargetIdx + 0], fyInit[kTargetIdx + 0] + sum1, errorTol);
+  EXPECT_NEAR(fyBuf[kTargetIdx + 1], fyInit[kTargetIdx + 1] + sum4, errorTol);
+  EXPECT_NEAR(fzBuf[kTargetIdx + 0], fzInit[kTargetIdx + 0] + sum2, errorTol);
+  EXPECT_NEAR(fzBuf[kTargetIdx + 1], fzInit[kTargetIdx + 1] + sum5, errorTol);
+
+  for (size_t idx = 0; idx < kBufSize; ++idx) {
+    if (idx != kTargetIdx && idx != kTargetIdx + 1) {
+      EXPECT_DOUBLE_EQ(fxBuf[idx], fxInit[idx]) << "Add6Half overwrote fxBuf[" << idx << "]";
+      EXPECT_DOUBLE_EQ(fyBuf[idx], fyInit[idx]) << "Add6Half overwrote fyBuf[" << idx << "]";
+      EXPECT_DOUBLE_EQ(fzBuf[idx], fzInit[idx]) << "Add6Half overwrote fzBuf[" << idx << "]";
+    }
+  }
+
+  mdLib::hwy_helpers::reduceSub6Half_Vec2Store<forceGenericFallback>(d, v0, v1, v2, v3, v4, v5, &fxBuf[kTargetIdx],
+                                                                     &fyBuf[kTargetIdx], &fzBuf[kTargetIdx]);
+  EXPECT_NEAR(fxBuf[kTargetIdx + 0], fxInit[kTargetIdx + 0], errorTol);
+  EXPECT_NEAR(fxBuf[kTargetIdx + 1], fxInit[kTargetIdx + 1], errorTol);
+  EXPECT_NEAR(fyBuf[kTargetIdx + 0], fyInit[kTargetIdx + 0], errorTol);
+  EXPECT_NEAR(fyBuf[kTargetIdx + 1], fyInit[kTargetIdx + 1], errorTol);
+  EXPECT_NEAR(fzBuf[kTargetIdx + 0], fzInit[kTargetIdx + 0], errorTol);
+  EXPECT_NEAR(fzBuf[kTargetIdx + 1], fzInit[kTargetIdx + 1], errorTol);
+
+  for (size_t idx = 0; idx < kBufSize; ++idx) {
+    if (idx != kTargetIdx && idx != kTargetIdx + 1) {
+      EXPECT_DOUBLE_EQ(fxBuf[idx], fxInit[idx]) << "Sub6Half overwrote fxBuf[" << idx << "]";
+      EXPECT_DOUBLE_EQ(fyBuf[idx], fyInit[idx]) << "Sub6Half overwrote fyBuf[" << idx << "]";
+      EXPECT_DOUBLE_EQ(fzBuf[idx], fzInit[idx]) << "Sub6Half overwrote fzBuf[" << idx << "]";
+    }
+  }
+}
+
+template <class D>
+void verifyReductionBothModes(D d) {
+  constexpr double kTol = 1e-11;
+  verifyReductionHelpersForTag<false>(d, kTol);
+  verifyReductionHelpersForTag<true>(d, kTol);
+}
+
+template <size_t kLanes, size_t kMaxLanes = mdLib::_maxVecLengthDouble>
+void verifyFixedTagIfSupported() {
+  if constexpr (kMaxLanes >= kLanes) {
+    verifyReductionBothModes(mdLib::highway::FixedTag<double, kLanes>{});
+  }
+}
+
+template <class SoAType>
+void expectSoAForcesNear(const autopas::SoA<SoAType> &soa1, const autopas::SoA<SoAType> &soa2, double tol,
+                         const std::string &context) {
+  ASSERT_EQ(soa1.size(), soa2.size()) << context;
+  const double *const __restrict fx1 = soa1.template begin<Molecule::AttributeNames::forceX>();
+  const double *const __restrict fy1 = soa1.template begin<Molecule::AttributeNames::forceY>();
+  const double *const __restrict fz1 = soa1.template begin<Molecule::AttributeNames::forceZ>();
+  const double *const __restrict fx2 = soa2.template begin<Molecule::AttributeNames::forceX>();
+  const double *const __restrict fy2 = soa2.template begin<Molecule::AttributeNames::forceY>();
+  const double *const __restrict fz2 = soa2.template begin<Molecule::AttributeNames::forceZ>();
+  for (size_t i = 0; i < soa1.size(); ++i) {
+    EXPECT_NEAR(fx1[i], fx2[i], tol) << context << " i=" << i << " fx";
+    EXPECT_NEAR(fy1[i], fy2[i], tol) << context << " i=" << i << " fy";
+    EXPECT_NEAR(fz1[i], fz2[i], tol) << context << " i=" << i << " fz";
+  }
+}
+
+}  // namespace
+
+/**
+ * Verifies all custom Highway reduction helpers across native full/half tags, 1-lane tags, and multiple fixed/capped
+ * vector widths under both the native fast path and the generic ReduceSum fallback, including strict 2-element
+ * store bounds for Vec2Store.
+ */
+TEST(LJFunctorTestHWYReduction, FixedAndFallbackMatchReference) {
+  verifyReductionBothModes(mdLib::tag_double);
+  verifyReductionBothModes(mdLib::tag_double_half);
+  verifyReductionBothModes(mdLib::highway::FixedTag<double, 1>{});
+  verifyReductionBothModes(mdLib::highway::Half<mdLib::highway::CappedTag<double, 2>>{});
+  verifyReductionBothModes(mdLib::highway::CappedTag<double, 1>{});
+  verifyReductionBothModes(mdLib::highway::CappedTag<double, 2>{});
+  verifyReductionBothModes(mdLib::highway::CappedTag<double, 4>{});
+  verifyReductionBothModes(mdLib::highway::CappedTag<double, 8>{});
+
+  verifyFixedTagIfSupported<2>();
+  verifyFixedTagIfSupported<4>();
+  verifyFixedTagIfSupported<8>();
+}
+
+/**
+ * Verifies pattern allowlist checks and compares LJFunctorHWY against LJFunctor for boundary particle counts
+ * spanning 128-bit single-lane halves up to >2048-bit (35 > 32 lanes) across Single, Pair, and Verlet kernels.
+ */
+TEST(LJFunctorTestHWYBoundaryCounts, MatchesReferenceForEdgeParticleCounts) {
+  using namespace autopas::utils::ArrayMath::literals;
+
+  constexpr double cutoff = 6.0;
+  constexpr double skin = 2.0;
+  constexpr double interactionLengthSq = (cutoff + skin) * (cutoff + skin);
+  constexpr double epsilon = 1.0;
+  constexpr double sigma = 1.0;
+  constexpr double tol = LJFunctorTestHWY::_maxError;
+
+  EXPECT_TRUE(mdLib::LJFunctorHWY<Molecule>(cutoff).isVecPatternAllowed(VectorizationPattern::p1xVec));
+  EXPECT_TRUE(mdLib::LJFunctorHWY<Molecule>(cutoff).isVecPatternAllowed(VectorizationPattern::pVecx1));
+  EXPECT_EQ(mdLib::LJFunctorHWY<Molecule>(cutoff).isVecPatternAllowed(VectorizationPattern::p2xVecDiv2),
+            mdLib::_maxVecLengthDouble >= 2);
+  EXPECT_EQ(mdLib::LJFunctorHWY<Molecule>(cutoff).isVecPatternAllowed(VectorizationPattern::pVecDiv2x2),
+            mdLib::_maxVecLengthDouble >= 2);
+
+  auto fillDeterministicCell = [](FMCell &cell, size_t count, const std::array<double, 3> &origin, size_t idOffset) {
+    cell.clear();
+    for (size_t idx = 0; idx < count; ++idx) {
+      const double x = origin[0] + 0.5 + 1.1 * static_cast<double>(idx % 4);
+      const double y = origin[1] + 0.5 + 1.1 * static_cast<double>((idx / 4) % 4);
+      const double z = origin[2] + 0.5 + 1.1 * static_cast<double>(idx / 16);
+      const Molecule p({x, y, z}, {0.0, 0.0, 0.0}, idOffset + idx, 0);
+      cell.addParticle(p);
+    }
+  };
+
+  const std::array<size_t, 7> particleCounts{1, 2, 3, 5, 9, 17, 35};
+  const std::array<VectorizationPattern, 4> allPatterns{VectorizationPattern::p1xVec, VectorizationPattern::p2xVecDiv2,
+                                                        VectorizationPattern::pVecDiv2x2, VectorizationPattern::pVecx1};
+
+  for (const size_t n : particleCounts) {
+    {
+      FMCell cellRef;
+      fillDeterministicCell(cellRef, n, {0.0, 0.0, 0.0}, 0);
+      FMCell cellHWY(cellRef);
+
+      mdLib::LJFunctor<Molecule, true, false, autopas::FunctorN3Modes::Both, true> ljRef(cutoff);
+      mdLib::LJFunctorHWY<Molecule, true, false, autopas::FunctorN3Modes::Both, true> ljHWY(cutoff);
+      ljRef.setParticleProperties(epsilon * 24.0, sigma * sigma);
+      ljHWY.setParticleProperties(epsilon * 24.0, sigma * sigma);
+
+      ljRef.initTraversal();
+      ljHWY.initTraversal();
+      ljRef.SoALoader(cellRef, cellRef._particleSoABuffer, 0, false);
+      ljHWY.SoALoader(cellHWY, cellHWY._particleSoABuffer, 0, false);
+      ljRef.SoAFunctorSingle(cellRef._particleSoABuffer, true);
+      ljHWY.SoAFunctorSingle(cellHWY._particleSoABuffer, true);
+      ljRef.endTraversal(true);
+      ljHWY.endTraversal(true);
+
+      EXPECT_NEAR(ljHWY.getPotentialEnergy(), ljRef.getPotentialEnergy(), tol) << "Single N=" << n;
+      EXPECT_NEAR(ljHWY.getVirial(), ljRef.getVirial(), tol) << "Single N=" << n;
+      expectSoAForcesNear(cellHWY._particleSoABuffer, cellRef._particleSoABuffer, tol, "Single N=" + std::to_string(n));
+    }
+
+    for (const auto pattern : allPatterns) {
+      mdLib::LJFunctorHWY<Molecule, true, false, autopas::FunctorN3Modes::Both, true> patternProbe(cutoff);
+      if (not patternProbe.isVecPatternAllowed(pattern)) {
+        continue;
+      }
+      for (const bool newton3 : {false, true}) {
+        FMCell cell1Ref, cell2Ref;
+        fillDeterministicCell(cell1Ref, n, {0.0, 0.0, 0.0}, 0);
+        fillDeterministicCell(cell2Ref, n, {5.0, 0.0, 0.0}, 1000);
+        FMCell cell1HWY(cell1Ref), cell2HWY(cell2Ref);
+
+        mdLib::LJFunctor<Molecule, true, false, autopas::FunctorN3Modes::Both, true> ljRef(cutoff);
+        mdLib::LJFunctorHWY<Molecule, true, false, autopas::FunctorN3Modes::Both, true> ljHWY(cutoff);
+        ljHWY.setVecPattern(pattern);
+        ljRef.setParticleProperties(epsilon * 24.0, sigma * sigma);
+        ljHWY.setParticleProperties(epsilon * 24.0, sigma * sigma);
+
+        ljRef.initTraversal();
+        ljHWY.initTraversal();
+        ljRef.SoALoader(cell1Ref, cell1Ref._particleSoABuffer, 0, false);
+        ljRef.SoALoader(cell2Ref, cell2Ref._particleSoABuffer, 0, false);
+        ljHWY.SoALoader(cell1HWY, cell1HWY._particleSoABuffer, 0, false);
+        ljHWY.SoALoader(cell2HWY, cell2HWY._particleSoABuffer, 0, false);
+        ljRef.SoAFunctorPair(cell1Ref._particleSoABuffer, cell2Ref._particleSoABuffer, newton3);
+        ljHWY.SoAFunctorPair(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, newton3);
+        ljRef.endTraversal(newton3);
+        ljHWY.endTraversal(newton3);
+
+        const std::string ctx = "Pair N=" + std::to_string(n) +
+                                " pattern=" + autopas::VectorizationPatternOption::getOptionNames().at(pattern) +
+                                " n3=" + std::to_string(newton3);
+        EXPECT_NEAR(ljHWY.getPotentialEnergy(), ljRef.getPotentialEnergy(), tol) << ctx;
+        EXPECT_NEAR(ljHWY.getVirial(), ljRef.getVirial(), tol) << ctx;
+        expectSoAForcesNear(cell1HWY._particleSoABuffer, cell1Ref._particleSoABuffer, tol, ctx + " cell1");
+        expectSoAForcesNear(cell2HWY._particleSoABuffer, cell2Ref._particleSoABuffer, tol, ctx + " cell2");
+      }
+    }
+
+    for (const bool newton3 : {false, true}) {
+      FMCell cellRef;
+      fillDeterministicCell(cellRef, n, {0.0, 0.0, 0.0}, 0);
+      FMCell cellHWY(cellRef);
+
+      std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborLists(n);
+      for (size_t i = 0; i < n; ++i) {
+        for (size_t j = newton3 ? i + 1 : 0; j < n; ++j) {
+          if (i == j) {
+            continue;
+          }
+          const auto dr = cellRef[i].getR() - cellRef[j].getR();
+          if (autopas::utils::ArrayMath::dot(dr, dr) <= interactionLengthSq) {
+            neighborLists[i].push_back(j);
+          }
+        }
+      }
+
+      mdLib::LJFunctor<Molecule, true, false, autopas::FunctorN3Modes::Both, true> ljRef(cutoff);
+      mdLib::LJFunctorHWY<Molecule, true, false, autopas::FunctorN3Modes::Both, true> ljHWY(cutoff);
+      ljRef.setParticleProperties(epsilon * 24.0, sigma * sigma);
+      ljHWY.setParticleProperties(epsilon * 24.0, sigma * sigma);
+
+      ljRef.initTraversal();
+      ljHWY.initTraversal();
+      ljRef.SoALoader(cellRef, cellRef._particleSoABuffer, 0, false);
+      ljHWY.SoALoader(cellHWY, cellHWY._particleSoABuffer, 0, false);
+      for (size_t i = 0; i < n; ++i) {
+        ljRef.SoAFunctorVerlet(cellRef._particleSoABuffer, i, neighborLists[i], newton3);
+        ljHWY.SoAFunctorVerlet(cellHWY._particleSoABuffer, i, neighborLists[i], newton3);
+      }
+      ljRef.endTraversal(newton3);
+      ljHWY.endTraversal(newton3);
+
+      const std::string ctx = "Verlet N=" + std::to_string(n) + " n3=" + std::to_string(newton3);
+      EXPECT_NEAR(ljHWY.getPotentialEnergy(), ljRef.getPotentialEnergy(), tol) << ctx;
+      EXPECT_NEAR(ljHWY.getVirial(), ljRef.getVirial(), tol) << ctx;
+      expectSoAForcesNear(cellHWY._particleSoABuffer, cellRef._particleSoABuffer, tol, ctx);
+    }
+  }
+}
