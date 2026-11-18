@@ -48,7 +48,7 @@ class RebuildEstimateManager {
     _numSamples++;
   }
 
-  /*
+  /**
    * Predicts the rebuild time based on the current samples.
    * @return The predicted rebuild time.
    */
@@ -60,6 +60,9 @@ class RebuildEstimateManager {
     return rebuildEstimate;
   }
 
+  /**
+   * Resets the manager to the empty state.
+   */
   void reset() {
     _rebuildTimes.assign(_numMaxSamples, 0);
     _currentIndex = 0;
@@ -113,6 +116,8 @@ class RemainderTraversalEstimateManager {
    * Maintains a ring buffer over distinct _numParticlesInBuffer values.
    * When the buffer is full and a new (larger) numParticleBuffer value is added, the oldest sample is removed.
    * The accumulated _sumRemainderTraversalTime is not treated as a ring buffer.
+   * @param numParticleBuffer The number of particles in the buffer for which the remainder traversal time was measured.
+   * @param remainderTraversalTime The measured remainder traversal time for the given numParticleBuffer.
    */
   void addNewPoint(const long numParticleBuffer, const long remainderTraversalTime) {
     _sumRemainderTraversalTime += remainderTraversalTime;
@@ -138,7 +143,7 @@ class RemainderTraversalEstimateManager {
   }
 
   /**
-   * Returns the sum of all remainder traversal times, including those with an empty buffer.
+   * @return _sumRemainderTraversalTime, the sum of all remainder traversal times.
    */
   [[nodiscard]] long getSumRemainderTraversalTime() const { return _sumRemainderTraversalTime; }
 
@@ -159,6 +164,7 @@ class RemainderTraversalEstimateManager {
    * their corresponding remainder traversal times.
    * @param numParticlesInBuffer The number of particles in the buffer for which the remainder traversal time should be
    * predicted.
+   * @return The predicted remainder traversal time for the given numParticlesInBuffer.
    */
   [[nodiscard]] double predict(const long numParticlesInBuffer) const {
     if (_numDifferentXConsidered < _minSamples) {
@@ -230,11 +236,22 @@ class RebuildDecisionContext {
    */
   RebuildDecisionContext() : _rebuildTimeEstimator(), _remainderTraversalTimePredictor(){};
 
-  /// For rebuildNeighborTimeEstimate logging.
+  /**
+   * For rebuildNeighborTimeEstimate logging.
+   * @return The estimated rebuild time based on the current samples.
+   */
   [[nodiscard]] double getRebuildNeighborTimeEstimate() const { return _rebuildNeighborTimeEstimate; }
-  /// For remainderTraversalTimeEstimate  logging.
+
+  /**
+   * For remainderTraversalTimeEstimate logging.
+   * @return The estimated remainder traversal time based on the current samples.
+   */
   [[nodiscard]] double getRemainderTraversalTimeEstimate() const { return _remainderTraversalTimeEstimate; }
-  /// For particlesBufferEstimate  logging.
+
+  /**
+   * For particlesBufferEstimate logging.
+   * @return The estimated number of particles in buffer in the next iteration based on the current samples.
+   */
   [[nodiscard]] size_t getNumParticlesBufferEstimate() const { return _numParticlesBufferEstimate; }
 
   /**
@@ -283,6 +300,11 @@ class RebuildDecisionContext {
     _remainderTraversalTimePredictor.addNewPoint(static_cast<long>(numParticlesBuffer), remainderTraversalTime);
   }
 
+  /**
+   * Updates the estimated number of particles in the buffer for the next iteration based on the current number of
+   * particles and the increase in number of particles in the buffer from the last iteration.
+   * @param currentNumParticlesBuffer Current number of particles in the particle buffer
+   */
   void updateNumParticlesBufferEstimate(const long currentNumParticlesBuffer) {
     _afterFastAddNumParticlesBuffer = currentNumParticlesBuffer;
     _numParticlesBufferEstimate = _afterFastAddNumParticlesBuffer + _lastIncreaseNumParticlesBuffer;
@@ -294,7 +316,7 @@ class RebuildDecisionContext {
    *
    * Updates the internal dynamic rebuild flag (_doDynamicRebuild).
    *
-   * @param curr_iter current iteration, or current rebuild frequency if one would rebuild in the current iteration
+   * @param currIter current iteration, or current rebuild frequency if one would rebuild in the current iteration
    * @return True if a dynamic rebuild should be triggered due to particle buffer fullness.
    */
   bool decideToRebuildOnParticleBufferFullness(const unsigned int currIter) {
