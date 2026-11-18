@@ -148,7 +148,7 @@ class RemainderTraversalEstimateManager {
   [[nodiscard]] long getSumRemainderTraversalTime() const { return _sumRemainderTraversalTime; }
 
   /**
-   * Reset the manager to the empty state.
+   * Resets the manager to the empty state.
    */
   void reset() {
     _numParticlesInBuffer.clear();
@@ -172,7 +172,8 @@ class RemainderTraversalEstimateManager {
     }
     std::pair<double, double> linRegCoeffs;
     linRegCoeffs = utils::Math::simpleLeastSquares(_numParticlesInBuffer, _remainderTraverlsalTime);
-    const double prediction = linRegCoeffs.first + linRegCoeffs.second * static_cast<double>(numParticlesInBuffer);
+    auto prediction = linRegCoeffs.first + linRegCoeffs.second * static_cast<double>(numParticlesInBuffer);
+    return prediction < 0 ? 0 : prediction;  // Remainder traversal time cannot be negative.
   }
 
  private:
@@ -267,20 +268,11 @@ class RebuildDecisionContext {
   }
 
   /**
-   * The function is called the remainder traversal have been executed for all the functors.
+   * The function is called after the remainder traversal has been called for all the functors, i.e. at the start of
+   * next iteration in updateContainer(). It adds a new data point to the remainder traversal time predictor.
    *
-   * Updates the traversal time estimators depending on the current particle
-   * buffer size and detects numerical overflow conditions that may trigger
-   * a dynamic rebuild.
-   *
-   * Additionally, tracks the increase in the number of particles in the buffer
-   * to support future buffer size estimation.
-   *
-   * Special case:
-   * If a rebuild is performed in the current iteration, the particle buffer
-   * is reset due to particles being resorted into containers. In this case,
-   * the buffer increase cannot be computed from the immediately preceding
-   * iteration and must instead refer to an earlier one.
+   * Additionally, tracks the increase in the number of particles in the buffer due to other mechanisms (e.g. periodic/
+   * MPI boundaries, domain resizing, etc.) to support future buffer size estimation.
    *
    * @param remainderTraversalTime Measured total remainder traversal time (over all computeInteraction calls, e.g.
    * 2B+3B)
@@ -290,11 +282,11 @@ class RebuildDecisionContext {
     _lastRemainderTraversalTime = remainderTraversalTime;
 
     if (numParticlesBuffer > 0) {
-      // numParticleBuffer should not never really decrease, but this is a safety check to avoid underflow in case of
-      // unexpected behavior.
-      _lastIncreaseNumParticlesBuffer = numParticlesBuffer > _afterFastAddNumParticlesBuffer
-                                            ? numParticlesBuffer - _afterFastAddNumParticlesBuffer
-                                            : 0;
+      _lastIncreaseNumParticlesBuffer = numParticlesBuffer - _afterFastAddNumParticlesBuffer;
+      if (_lastIncreaseNumParticlesBuffer < 0) {
+        throw autopas::utils::ExceptionHandler::AutoPasException(
+            "Number of particles in buffer should never decrease except due to rebuilding.");
+      }
     }
 
     _remainderTraversalTimePredictor.addNewPoint(static_cast<long>(numParticlesBuffer), remainderTraversalTime);
@@ -303,6 +295,7 @@ class RebuildDecisionContext {
   /**
    * Updates the estimated number of particles in the buffer for the next iteration based on the current number of
    * particles and the increase in number of particles in the buffer from the last iteration.
+   * This is called after adding the fast particles to the buffer.
    * @param currentNumParticlesBuffer Current number of particles in the particle buffer
    */
   void updateNumParticlesBufferEstimate(const long currentNumParticlesBuffer) {
@@ -314,9 +307,7 @@ class RebuildDecisionContext {
    * Determines whether the particle buffer has grown large enough such that
    * performing a rebuild is more advantageous than executing another remainder traversal.
    *
-   * Updates the internal dynamic rebuild flag (_doDynamicRebuild).
-   *
-   * @param currIter current iteration, or current rebuild frequency if one would rebuild in the current iteration
+   * @param currIter iteration since the last rebuild.
    * @return True if a dynamic rebuild should be triggered due to particle buffer fullness.
    */
   bool decideToRebuildOnParticleBufferFullness(const unsigned int currIter) {
@@ -331,12 +322,7 @@ class RebuildDecisionContext {
       _rebuildNeighborTimeEstimate = valueRebuild;
       _remainderTraversalTimeEstimate = valueRemainder;
 
-      // First full term: value_rebuild / (curr_iter * (curr_iter + 1)), but denominator is the same, so can be ignored.
-      // const double rebuildIncline = value_rebuild / (curr_iter * (curr_iter + 1));
-
-      // Second full term: (value_remainder * curr_iter -
-      // static_cast<double>(_remainderTraversalTimePredictor.getSumY())) / (curr_iter * (curr_iter + 1)), but the
-      // denominator is same and can be ignored.
+      // The rebuild criteria is derived in the paper "To be updated".
       const double remainderIncline =
           (valueRemainder * currIter -
            static_cast<double>(_remainderTraversalTimePredictor.getSumRemainderTraversalTime()));
@@ -389,9 +375,14 @@ class RebuildDecisionContext {
    */
   size_t _numParticlesBufferEstimate{0};
 
-  /// For rebuildNeighborTimeEstimate logging.
+  /**
+   * Stores the estimated rebuild time for logging.
+   */
   double _rebuildNeighborTimeEstimate{std::numeric_limits<double>::quiet_NaN()};
-  /// For remainderTraversalTimeEstimate  logging.
+
+  /**
+   * Stores the estimated remainder traversal time for logging.
+   */
   double _remainderTraversalTimeEstimate{std::numeric_limits<double>::quiet_NaN()};
 };
 }  // namespace autopas::utils::RegressionModels

@@ -1273,7 +1273,7 @@ IterationMeasurements LogicHandler<Particle_T>::computeInteractions(Functor &fun
   // for logging in current iteration
   size_t numParticlesBuffer;
   bool doDynamicRebuild{false};
-  double predRebuild{0.}, predRemainder{0.};
+  double predRebuild, predRemainder;
 
 #ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
   // storing values to be logged from the current iteration
