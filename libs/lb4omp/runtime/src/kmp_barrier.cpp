@@ -499,6 +499,7 @@ __kmp_hyper_barrier_gather(enum barrier_type bt, kmp_info_t *this_thr, int gtid,
     if (((tid >> level) & (branch_factor - 1)) != 0) {
       kmp_int32 parent_tid = tid & ~((1 << (level + branch_bits)) - 1);
 
+      KMP_MB(); // Synchronize parent and child threads.
       KA_TRACE(20,
                ("__kmp_hyper_barrier_gather: T#%d(%d:%d) releasing T#%d(%d:%d) "
                 "arrived(%p): %llu => %llu\n",
@@ -540,6 +541,7 @@ __kmp_hyper_barrier_gather(enum barrier_type bt, kmp_info_t *this_thr, int gtid,
       kmp_flag_64 c_flag(&child_bar->b_arrived, new_state);
       c_flag.wait(this_thr, FALSE USE_ITT_BUILD_ARG(itt_sync_obj));
       ANNOTATE_BARRIER_END(child_thr);
+      KMP_MB(); // Synchronize parent and child threads.
 #if USE_ITT_BUILD && USE_ITT_NOTIFY
       // Barrier imbalance - write min of the thread time and a child time to
       // the thread.
