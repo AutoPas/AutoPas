@@ -1112,13 +1112,22 @@ size_t LogicHandler<Particle_T>::getNumParticlesBufferEstimate() const {
 
 template <typename Particle_T>
 bool LogicHandler<Particle_T>::neighborListsAreValid() {
+  auto tunersTriggerRebuild = _tuningManager->requiresRebuilding(_iteration);
+
+#ifdef AUTOPAS_DYNAMIC_CONTAINERS_FPB
+  if (tunersTriggerRebuild) {
+    // Since tuners trigger a rebuild, we expect a configuration change.
+    _rebuildDecisionContext.afterConfigurationChange();
+  }
+#endif
+
   if (_doDynamicRebuild or
 #ifndef AUTOPAS_DYNAMIC_CONTAINERS_FPB
       // Fixed-interval rebuild of the neighbor list; FPB rebuilds on demand instead.
       // Standard dynamic rebuilding still makes use of this to avoid excessive buffer filling.
       (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency) or
 #endif
-      _tuningManager->requiresRebuilding(_iteration)) {
+      tunersTriggerRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 
