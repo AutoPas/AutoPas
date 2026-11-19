@@ -251,6 +251,7 @@ else()
       (LIBOMP_ARCH STREQUAL i386) OR
 #      (LIBOMP_ARCH STREQUAL arm) OR
       (LIBOMP_ARCH STREQUAL aarch64) OR
+      (LIBOMP_ARCH STREQUAL aarch64_a64fx) OR
       (LIBOMP_ARCH STREQUAL ppc64le) OR
       (LIBOMP_ARCH STREQUAL ppc64))
      AND # OS supported?

@@ -76,10 +76,14 @@
 #endif
 #cmakedefine01 MSVC
 #define KMP_MSVC_COMPAT MSVC
+#cmakedefine01 LIBOMP_ARCH_AARCH64_A64FX
+#define KMP_ARCH_AARCH64_A64FX LIBOMP_ARCH_AARCH64_A64FX
 
 // Configured cache line based on architecture
 #if KMP_ARCH_PPC64
 # define CACHE_LINE 128
+#elif KMP_ARCH_AARCH64_A64FX
+# define CACHE_LINE 256
 #else
 # define CACHE_LINE 64
 #endif
