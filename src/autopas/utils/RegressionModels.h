@@ -193,31 +193,31 @@ class RemainderTraversalEstimateManager {
    * Stores the current index where the next sample will be added in the _numParticlesInBuffer and
    * _remainderTraverlsalTime vectors.
    */
-  size_t _currentIndex = 0;
+  size_t _currentIndex{0};
 
   /**
    * Minimum number of samples needed to make a prediction.
    * Set to 2 as a linear regression requires at least two points to define a line.
    */
-  size_t _minSamples = 2;
+  const size_t _minSamples{2};
 
   /**
    * Maximum number of samples considered to make a prediction.
    * Set to 5 based on trials with different numbers of samples to ensure that the estimate is reliable while keeping
    * computation time low.
    */
-  size_t _maxSamples = 5;
+  const size_t _maxSamples{5};
 
   /**
    * Counter to keep track of different number of buffer particles considered for prediction.
    */
-  size_t _numDifferentXConsidered = 0;
+  size_t _numDifferentXConsidered{0};
 
   /**
    * To keep a running sum of the remainder traversal times for all the iterations, including where the particle buffer
    * size is zero.
    */
-  long _sumRemainderTraversalTime = 0;
+  long _sumRemainderTraversalTime{0};
 
   /**
    * Used to track the largest _numParticlesInBuffer seen so far.
@@ -264,7 +264,7 @@ class RebuildDecisionContext {
   void afterRebuild(const long rebuildTime) {
     _rebuildTimeEstimator.addNewPoint(rebuildTime);
     _remainderTraversalTimePredictor.reset();
-    _remainderTraversalTimeEstimate = std::numeric_limits<double>::quiet_NaN();
+    _remainderTraversalTimeEstimate = 0;
   }
 
   /**
@@ -288,7 +288,6 @@ class RebuildDecisionContext {
             "Number of particles in buffer should never decrease except due to rebuilding.");
       }
     }
-
     _remainderTraversalTimePredictor.addNewPoint(static_cast<long>(numParticlesBuffer), remainderTraversalTime);
   }
 
@@ -317,11 +316,15 @@ class RebuildDecisionContext {
     const auto valueRemainder =
         _remainderTraversalTimePredictor.predict(static_cast<long>(_numParticlesBufferEstimate));
 
-    if (valueRemainder > 0) {
-      // for logging
-      _rebuildNeighborTimeEstimate = valueRebuild;
-      _remainderTraversalTimeEstimate = valueRemainder;
+    // for logging and testing
+    _rebuildNeighborTimeEstimate = valueRebuild;
+    _remainderTraversalTimeEstimate = valueRemainder;
 
+    if (std::isnan(valueRebuild)) {
+      throw autopas::utils::ExceptionHandler::AutoPasException("No rebuild samples available.");
+    }
+
+    if (valueRemainder > 0) {
       // The rebuild criteria is derived in the paper "To be updated".
       const double remainderIncline =
           (valueRemainder * currIter -
@@ -383,6 +386,6 @@ class RebuildDecisionContext {
   /**
    * Stores the estimated remainder traversal time for logging.
    */
-  double _remainderTraversalTimeEstimate{std::numeric_limits<double>::quiet_NaN()};
+  double _remainderTraversalTimeEstimate{0.};
 };
 }  // namespace autopas::utils::RegressionModels

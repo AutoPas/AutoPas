@@ -144,12 +144,22 @@ TEST(RegressionModelsTest, testRebuildDecisionContext) {
   // First rebuild
   EXPECT_TRUE(std::isnan(rebuildDecisionContext.getRebuildNeighborTimeEstimate()));
   rebuildDecisionContext.afterRebuild(100);
+  EXPECT_TRUE(std::isnan(rebuildDecisionContext.getRebuildNeighborTimeEstimate()));
 
-  rebuildDecisionContext.afterRemainderTraversal(10, 0);
+  EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 0.);
+  rebuildDecisionContext.afterRemainderTraversal(0, 0);
+  EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 0.);
+
   rebuildDecisionContext.updateNumParticlesBufferEstimate(3);
   EXPECT_EQ(rebuildDecisionContext.getNumParticlesBufferEstimate(), 3);
   // Not enough remainder traversal times collected
   EXPECT_FALSE(rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(rf));
+
+  // Rebuild estimate is now updated.
+  EXPECT_FALSE(std::isnan(rebuildDecisionContext.getRebuildNeighborTimeEstimate()));
+  EXPECT_EQ(rebuildDecisionContext.getRebuildNeighborTimeEstimate(), 100);
+
+  EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 0.);
 
   // Steps since rebuild: 2
   rf++;
@@ -159,34 +169,44 @@ TEST(RegressionModelsTest, testRebuildDecisionContext) {
   // Not enough remainder traversal times collected
   EXPECT_FALSE(rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(rf));
 
+  EXPECT_EQ(rebuildDecisionContext.getRebuildNeighborTimeEstimate(), 100);
+  EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 25);
+
   // Steps since rebuild: 3
   rf++;
-  rebuildDecisionContext.afterRemainderTraversal(30, 5);
-  EXPECT_TRUE(std::isnan(rebuildDecisionContext.getRemainderTraversalTimeEstimate()));
+  // second real sample (as we ignore the samples where number of buffer particles is zero)
+  rebuildDecisionContext.afterRemainderTraversal(25, 5);
+
   rebuildDecisionContext.updateNumParticlesBufferEstimate(6);
   EXPECT_EQ(rebuildDecisionContext.getNumParticlesBufferEstimate(), 7);
+
   // Another remainder traversal with a full buffer is cheaper than a rebuild
   EXPECT_FALSE(rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(rf));
+
   // Updated after the last decision
   EXPECT_EQ(rebuildDecisionContext.getRebuildNeighborTimeEstimate(), 100);
-  EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 50);
+  EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 35);
 
   // Steps since rebuild: 4
   rf++;
-  rebuildDecisionContext.afterRemainderTraversal(50, 7);
+  rebuildDecisionContext.afterRemainderTraversal(35, 7);
   rebuildDecisionContext.updateNumParticlesBufferEstimate(20);
   EXPECT_EQ(rebuildDecisionContext.getNumParticlesBufferEstimate(), 21);
   // Rebuild is cheaper than another remainder traversal with a full buffer
   EXPECT_TRUE(rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(rf));
-  EXPECT_NEAR(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 190, 1e-6);
+  EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 105);
+
+  // Rebuild
   rebuildDecisionContext.afterRebuild(120);
 
   // Steps since rebuild: 1
-  // Check reset behavior
-  EXPECT_TRUE(std::isnan(rebuildDecisionContext.getRemainderTraversalTimeEstimate()));
+  // Check reset behavior and updated estimate of rebuild cost
+  EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 0);
 
   rebuildDecisionContext.updateNumParticlesBufferEstimate(1);
   EXPECT_EQ(rebuildDecisionContext.getNumParticlesBufferEstimate(), 2);
   // Not enough remainder traversal times collected
   EXPECT_FALSE(rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(1));
+  EXPECT_EQ(rebuildDecisionContext.getRebuildNeighborTimeEstimate(), 110);
+  EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 0);
 }
