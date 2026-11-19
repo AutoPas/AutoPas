@@ -66,6 +66,7 @@ class RebuildEstimateManager {
   void reset() {
     _rebuildTimes.assign(_numMaxSamples, 0);
     _currentIndex = 0;
+    _numSamples = 0;
     _rebuildTimesSum = 0;
   }
 
@@ -78,17 +79,17 @@ class RebuildEstimateManager {
   /**
    * Stores the sum of the current samples of the rebuild times.
    */
-  long _rebuildTimesSum = 0;
+  long _rebuildTimesSum{0};
 
   /**
    * Stores the current number of samples in the _rebuildTimes vector.
    */
-  size_t _numSamples = 0;
+  size_t _numSamples{0};
 
   /**
    * Stores the current index in the _rebuildTimes vector where the next sample will be added.
    */
-  size_t _currentIndex = 0;
+  size_t _currentIndex{0};
 
   /**
    * Stores the maximum number of samples in the _rebuildTimes vector.
@@ -96,7 +97,7 @@ class RebuildEstimateManager {
    * is not overly influenced by older samples. The magic number 5 was chosen by trial and error with different number
    * of samples.
    */
-  size_t _numMaxSamples = 5;
+  const size_t _numMaxSamples{5};
 };
 
 /**
@@ -266,6 +267,12 @@ class RebuildDecisionContext {
     _remainderTraversalTimePredictor.reset();
     _remainderTraversalTimeEstimate = 0;
   }
+
+  /**
+   * Called whenever autotuner changes the algorithmic configuration to ensure that rebuild estimate is accurate for the
+   * currently used algorithmic configuration.
+   */
+  void afterConfigurationChange() { _rebuildTimeEstimator.reset(); }
 
   /**
    * The function is called after the remainder traversal has been called for all the functors, i.e. at the start of

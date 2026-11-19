@@ -9,131 +9,79 @@
 using namespace autopas::utils::RegressionModels;
 
 TEST(RegressionModelsTest, testRebuildEstimateManager) {
-  /*
-  RunningMean mean;
-  Mean mean_2(2);  // Mean over last two samples
-  Mean mean_3(3);  // Mean over last three samples
-  EXPECT_EQ(mean.getN(), 0);
-  EXPECT_EQ(mean_2.getN(), 0);
-  EXPECT_EQ(mean_3.getN(), 0);
+  RebuildEstimateManager rebuildPredictor{};
 
-  // Add points
-  EXPECT_EQ(mean.addNewPoint(10), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(mean.addNewPoint(20), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(mean_2.addNewPoint(10), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(mean_2.addNewPoint(20), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(mean_3.addNewPoint(10), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(mean_3.addNewPoint(20), RegressionBase::ReturnCode::OK_REG);
+  rebuildPredictor.addNewPoint(10);
+  EXPECT_EQ(rebuildPredictor.predict(), 10);
+  rebuildPredictor.addNewPoint(10);
+  EXPECT_EQ(rebuildPredictor.predict(), 10);
+  rebuildPredictor.addNewPoint(16);
+  EXPECT_EQ(rebuildPredictor.predict(), 12);
+  rebuildPredictor.addNewPoint(12);
+  EXPECT_EQ(rebuildPredictor.predict(), 12);
+  rebuildPredictor.addNewPoint(7);
+  EXPECT_EQ(rebuildPredictor.predict(), 11);
 
-  // check predict
-  auto result = mean.predict();
-  EXPECT_TRUE(result._isOk);
-  EXPECT_DOUBLE_EQ(result._value, 15);
-  EXPECT_DOUBLE_EQ(mean_2.predict()._value, 15);
-  EXPECT_DOUBLE_EQ(mean_3.predict()._value, 15);
+  // Adding 6th sample, prediction will be average of last 5 samples only.
+  rebuildPredictor.addNewPoint(15);
+  EXPECT_EQ(rebuildPredictor.predict(), 12);
 
-  EXPECT_EQ(mean.addNewPoint(30), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(mean_2.addNewPoint(30), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(mean_3.addNewPoint(30), RegressionBase::ReturnCode::OK_REG);
-
-  result = mean.predict();
-  EXPECT_TRUE(result._isOk);
-  EXPECT_DOUBLE_EQ(result._value, 20);
-  EXPECT_DOUBLE_EQ(mean_2.predict()._value, 25);
-  EXPECT_DOUBLE_EQ(mean_3.predict()._value, 20);
-
-  // Exceed maximum number of points
-  EXPECT_EQ(mean.addNewPoint(40), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(mean_2.addNewPoint(40), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(mean_3.addNewPoint(40), RegressionBase::ReturnCode::OK_REG);
-
-  result = mean.predict();
-  EXPECT_TRUE(result._isOk);
-  EXPECT_DOUBLE_EQ(result._value, 25);
-  EXPECT_DOUBLE_EQ(mean_2.predict()._value, 35);
-  EXPECT_DOUBLE_EQ(mean_3.predict()._value, 30);
-
-  // Reset
-  mean.reset();
-  mean_2.reset();
-  mean_3.reset();
-
-  EXPECT_EQ(mean.getN(), 0);
-
-  // Correct behavior if there are not enough points for prediction
-  EXPECT_EQ(mean.predict()._returnCode, RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG);
-  EXPECT_EQ(mean_2.predict()._returnCode, RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG);
-  EXPECT_EQ(mean_3.predict()._returnCode, RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG);
-
-  EXPECT_EQ(mean.addNewPoint(20), RegressionBase::ReturnCode::OK_REG);
-  result = mean.predict();
-  EXPECT_TRUE(result._isOk);
-  EXPECT_DOUBLE_EQ(result._value, 20);
-  */
+  // Testing reset function, e.g. when a new configuration is used.
+  rebuildPredictor.reset();
+  rebuildPredictor.addNewPoint(40);
+  EXPECT_EQ(rebuildPredictor.predict(), 40);
 }
 
 TEST(RegressionModelsTest, testRemainderTraversalEstimateManager) {
-  /*
-  SimpleLinearRegression reg(2, 3);
+  RemainderTraversalEstimateManager remTravPredictor{};
+  EXPECT_EQ(remTravPredictor.predict(10), 0);
 
-  EXPECT_EQ(reg.addNewPoint(1, 2), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(reg.addNewPoint(2, 3), RegressionBase::ReturnCode::OK_REG);
+  // First sample
+  remTravPredictor.addNewPoint(10, 150);
+  EXPECT_EQ(remTravPredictor.predict(15), 0);
 
-  auto result = reg.predict(3);
-  EXPECT_TRUE(result._isOk);
-  EXPECT_NEAR(result._value, 4.0, 1e-6);  // y = x + 1 = (x=3) 4
+  // another sample (x,y) with same x value is ignored and one sample point is not enough for a linear regression, so
+  // expected prediction is still zero.
+  remTravPredictor.addNewPoint(10, 160);
+  EXPECT_EQ(remTravPredictor.predict(15), 0);
 
-  EXPECT_EQ(reg.addNewPoint(3, 7), RegressionBase::ReturnCode::OK_REG);
+  // Second sample
+  remTravPredictor.addNewPoint(20, 300);
+  EXPECT_EQ(remTravPredictor.predict(30), 450);
+  EXPECT_EQ(remTravPredictor.getSumRemainderTraversalTime(), 610);
 
-  result = reg.predict(6);
-  EXPECT_TRUE(result._isOk);
-  EXPECT_NEAR(result._value, 14.0, 1e-6);  // y = 2.5*x - 1 = (x=6) 14
+  // a new sample must have a larger x value than previously seen or it will be ignored.
+  remTravPredictor.addNewPoint(18, 300);
+  EXPECT_EQ(remTravPredictor.predict(30), 450);
 
-  EXPECT_EQ(reg.addNewPoint(6, 32), RegressionBase::ReturnCode::OK_REG);
+  // Third sample
+  remTravPredictor.addNewPoint(30, 450);
+  EXPECT_EQ(remTravPredictor.predict(40), 600);
 
-  result = reg.predict(7);
-  EXPECT_TRUE(result._isOk);
-  // Ring buffer behavior
-  // Using all points: y = 6.357*x - 8.071 = (x=7) 36.428, but without the oldest point: y = 7.5*x - 13.5 = (x=7) 39
-  EXPECT_NEAR(result._value, 39.0, 1e-6);
+  // Fourth sample
+  remTravPredictor.addNewPoint(60, 900);
+  EXPECT_EQ(remTravPredictor.predict(80), 1200);
 
-  // The first added point (1,2) is no longer relevant for prediction but still contributes to the sum of y values
-  EXPECT_EQ(reg.getSumY(), 44);
+  // Fifth sample
+  remTravPredictor.addNewPoint(90, 1350);
+  EXPECT_EQ(remTravPredictor.predict(100), 1500);
 
-  // Reset
-  reg.reset();
-  EXPECT_EQ(reg.getN(), 0);
-  EXPECT_EQ(reg.getSumY(), 0);
+  // Sample 6-10, to show that only last five samples are used for prediction
+  remTravPredictor.addNewPoint(150, 3000);
+  remTravPredictor.addNewPoint(300, 6000);
+  remTravPredictor.addNewPoint(600, 12000);
+  remTravPredictor.addNewPoint(1200, 24000);
+  remTravPredictor.addNewPoint(2400, 48000);
 
-  EXPECT_EQ(reg.predict(6)._returnCode, RegressionBase::ReturnCode::NOT_ENOUGH_POINTS_REG);
+  EXPECT_EQ(remTravPredictor.predict(4000), 80000);
 
-  // numDifferentXConsidered
-  EXPECT_EQ(reg.getNumDifferentXConsidered(), 0);
-  EXPECT_EQ(reg.addNewPoint(1, 1), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(reg.getNumDifferentXConsidered(), 1);
-  // adding another point with x<=1 would be ignored.
-  EXPECT_EQ(reg.addNewPoint(1, 2), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(reg.getNumDifferentXConsidered(), 1);
+  // but sum contains all the samples added so far
+  EXPECT_EQ(remTravPredictor.getSumRemainderTraversalTime(), 96610);
 
-  EXPECT_EQ(reg.addNewPoint(2, 2), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(reg.addNewPoint(3, 3), RegressionBase::ReturnCode::OK_REG);
-  EXPECT_EQ(reg.getNumDifferentXConsidered(), 3);
-
-  result = reg.predict(5);
-  EXPECT_TRUE(result._isOk);
-  EXPECT_NEAR(result._value, 5, 1e-6);  // y = x
-
-  // should replace (1,1)
-  EXPECT_EQ(reg.addNewPoint(4, 5), RegressionBase::ReturnCode::OK_REG);
-  // should replace (2,2)
-  EXPECT_EQ(reg.addNewPoint(6, 9), RegressionBase::ReturnCode::OK_REG);
-
-  EXPECT_EQ(reg.getNumDifferentXConsidered(), 3);
-
-  result = reg.predict(7);
-  EXPECT_TRUE(result._isOk);
-  EXPECT_NEAR(result._value, 11, 1e-6);  // y = 2x
-  */
+  // Testing reset
+  remTravPredictor.reset();
+  EXPECT_EQ(remTravPredictor.predict(10), 0);
+  EXPECT_EQ(remTravPredictor.getSumRemainderTraversalTime(), 0);
 }
 
 TEST(RegressionModelsTest, testRebuildDecisionContext) {
@@ -209,4 +157,10 @@ TEST(RegressionModelsTest, testRebuildDecisionContext) {
   EXPECT_FALSE(rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(1));
   EXPECT_EQ(rebuildDecisionContext.getRebuildNeighborTimeEstimate(), 110);
   EXPECT_EQ(rebuildDecisionContext.getRemainderTraversalTimeEstimate(), 0);
+
+  // Reset internal rebuild time estimator when configuration changes.
+  rebuildDecisionContext.afterConfigurationChange();
+  rebuildDecisionContext.afterRebuild(10);
+  EXPECT_FALSE(rebuildDecisionContext.decideToRebuildOnParticleBufferFullness(1));
+  EXPECT_EQ(rebuildDecisionContext.getRebuildNeighborTimeEstimate(), 10);
 }

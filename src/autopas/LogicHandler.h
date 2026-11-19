@@ -183,7 +183,7 @@ class LogicHandler {
 
     // For standard LAMMPS-like dynamic rebuilding, we check first if a particle has moved more than half the skin
     // distance and if so, we set the dynamic rebuild flag to true.
-    // For static rebuilding, this call does nothing.
+    // For static rebuilding and as well as dynamic rebuilding with fast particles buffer, this call does nothing.
     this->checkNeighborListsInvalidDoDynamicRebuild();
 
     bool doDataStructureUpdate = not neighborListsAreValid();
