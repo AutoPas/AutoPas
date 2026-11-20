@@ -8,7 +8,8 @@
 
 #include "utils/Timer.h"
 
-autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool energyMeasurements)
+autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool energyMeasurements,
+                                          bool usingFastParticlesBuffer)
     : _loggerName("IterationLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_ITERATIONS
   const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
@@ -32,6 +33,17 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
       "rebuildNeighborLists[ns],"
       "computeInteractionsTotal[ns],"
       "tuning[ns]";
+  if (usingFastParticlesBuffer) {
+    csvHeader.append(
+        ",numParticlesBuffer,"
+        "numParticlesOwned,"
+        "numParticlesHalo,"
+        "numParticlesFast,"
+        "estimateNumParticlesBuffer,"
+        "estimateRemainderTraversal[ns],"
+        "estimateRebuildNeighborLists[ns],"
+        "doDynamicRebuild");
+  }
   if (energyMeasurements) {
     csvHeader.append(
         ",energyWatts[W],"
@@ -49,29 +61,37 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
 #endif
 }
 
-autopas::IterationLogger::~IterationLogger() {
+void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
+                                            const std::string &functorName, bool inTuningPhase, long timeTuning,
+                                            const IterationMeasurements &measurements,
+                                            bool usingFastParticlesBuffer) const {
 #ifdef AUTOPAS_LOG_ITERATIONS
-  spdlog::drop(_loggerName);
+  const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
+               energyWatts, energyJoules, energyDeltaT, energyTotalRebuild, energyTotalNonRebuild, energyTotal,
+               numParticlesBuffer, numParticlesOwned, numParticlesHalo, numParticlesFast, estimateNumParticlesBuffer,
+               estimateRemainderTraversalTime, estimateRebuildNeighborTime, doDynamicRebuild] = measurements;
+  fmt::memory_buffer logBuffer;
+
+  fmt::format_to(std::back_inserter(logBuffer), "{},{},{},{},{},{},{},{},{}", iteration, functorName,
+                 inTuningPhase ? "true" : "false", configuration.getCSVLine(), timeIteratePairwise,
+                 timeRemainderTraversal, timeRebuild, timeTotal, timeTuning);
+
+  if (usingFastParticlesBuffer) {
+    fmt::format_to(std::back_inserter(logBuffer), ",{},{},{},{},{},{},{},{}", numParticlesBuffer, numParticlesOwned,
+                   numParticlesHalo, numParticlesFast, estimateNumParticlesBuffer, estimateRemainderTraversalTime,
+                   estimateRebuildNeighborTime, doDynamicRebuild ? "true" : "false");
+  }
+
+  if (energyMeasurementsPossible) {
+    fmt::format_to(std::back_inserter(logBuffer), ",{},{},{}", energyWatts, energyJoules, energyDeltaT);
+  }
+
+  spdlog::get(_loggerName)->info("{}", fmt::to_string(logBuffer));
 #endif
 }
 
-void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
-                                            const std::string &functorName, bool inTuningPhase, long timeTuning,
-                                            const IterationMeasurements &measurements) const {
+autopas::IterationLogger::~IterationLogger() {
 #ifdef AUTOPAS_LOG_ITERATIONS
-  const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
-               energyWatts, energyJoules, energyDeltaT, energyTotalRebuild, energyTotalNonRebuild, energyTotal] =
-      measurements;
-  if (energyMeasurementsPossible) {
-    spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
-               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
-               timeTuning, energyWatts, energyJoules, energyDeltaT);
-  } else {
-    spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
-               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
-               timeTuning);
-  }
+  spdlog::drop(_loggerName);
 #endif
 }
